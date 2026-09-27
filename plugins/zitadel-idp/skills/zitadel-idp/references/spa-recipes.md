@@ -453,3 +453,46 @@ Two pragmatic options:
 - Console messages capture (`page.on('console', m => console.log(m.text()))`) shows no `ERR_CERT_AUTHORITY_INVALID` for `sslip.io` URLs.
 - Headless and headed runs produce the same result (some cert validation paths differ between them — `ignoreHTTPSErrors` covers both).
 - A second spec that depends on the first being logged-in still works after the first runs (no cross-test session bleed-over).
+
+## Recipe — UI language from the IdP (`locale` claim)
+
+### When to use
+
+Several SPAs share one Zitadel and you want each person to see the product in **their** language, set once per person in the IdP, rather than a language switch per app that disagrees across apps and devices.
+
+### How the language travels
+
+- **Source:** the human user's `profile.preferredLanguage`, a short code (`pt`, `en` — Quirk 22).
+- **Emitted as the OIDC `locale` claim** under the `profile` scope. The **id_token** carries it only when the OIDC app has `idTokenUserinfoAssertion: true`; without that flag an SPA running `loadUserInfo: false` never sees a language. The userinfo endpoint carries it with the `profile` scope. (Read in the v4.15.0 source: `internal/api/oidc/userinfo.go` builds it with `oidc.NewLocale(human.PreferredLanguage)`; `token_code.go` → `token.go` copy the userinfo claims into the id_token when the app asserts them.)
+- **No language set → `"locale": null`**, not a missing key: the `zitadel/oidc` v3 `Locale` type marshals the root tag as `null`, and the field is a non-nil pointer, so `omitempty` keeps it. Treat `null` and absent the same.
+- **Access tokens do not carry it** (Quirk 11). A backend that needs the language reads it from userinfo, not from the JWT.
+
+### Reading it in the SPA
+
+With `oidc-client-ts`, the claim is `user.profile.locale` (typed `locale?: string` in `IdTokenClaims`). Resolve it by the **primary subtag**, so a legacy `pt-BR` or an `en-US` still lands:
+
+```ts
+export type Language = "pt-BR" | "en";
+
+export function resolveLanguage(locale: string | null | undefined, fallback: Language = "pt-BR"): Language {
+  const primary = (locale ?? "").trim().toLowerCase().split(/[-_]/)[0];
+  if (primary === "") return fallback; // no language in the IdP: keep today's behaviour
+  if (primary === "pt") return "pt-BR";
+  return "en";                          // any other language: pick your product's lingua franca
+}
+```
+
+Then drive everything from the resolved value: `<html lang>`, the `Intl` number and date formatters, and the dictionary. How you translate (a typed dictionary, i18next, react-intl) is an app decision; this recipe only fixes **where the language comes from**.
+
+### Three limits to design around
+
+1. **Plan for "next login".** The claim is read from the id_token issued at login, so a language changed in the Console reaches the app at the next login. Whether a silent refresh picks it up sooner was **not** measured; don't promise it.
+2. **Pre-login screens cannot know it.** Remember the last language seen in `localStorage` (a cache wrapped in `try/catch`, never the truth) and fall back to the default; the first login overrides it.
+3. **The account data decides, not the app.** Seed scripts and provisioning services tend to hardcode `preferredLanguage`; in the stack this recipe came from, the seed YAML, the bootstrap and the provisioning service all fixed `pt`, so every account they created spoke Portuguese. Giving someone English is a **data** change in the IdP, and the plan for the feature has to name who makes it.
+
+### Validation
+
+- An e2e spec that logs in as a real user whose `preferredLanguage` is `en` and asserts `<html lang="en">` plus one English heading. It is the only test that proves the claim really leaves Zitadel: unit tests with a mocked `profile.locale` stay green even if the IdP never emits it.
+- A second spec with a `pt` user keeps the default language green.
+- Before the suite, prove the test account's credential with the Session API (`api-cheatsheet.md` §"Prove a user's password without a browser") so a missing account fails as a named error, not as a login timeout.
+- Measured 2026-09-27 on v4.15.0 (`react-oidc-context` 3.3.1, `oidc-client-ts` 3.5.0, `loadUserInfo: false`, app with `idTokenUserinfoAssertion: true`): the English spec passed on its first run against the real IdP.

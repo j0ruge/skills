@@ -1,10 +1,10 @@
 {
   "name": "zitadel-idp",
-  "description": "Self-hosted Zitadel v4 OIDC field guide — a numbered quirk catalogue, working docker-compose and an idempotent TypeScript bootstrap. High-friction traps: FirstInstance env placement, JWT/JWKS over self-signed HTTPS, TLS-terminating proxy (`--tlsMode external`) and the console's mixed-content `Failed to fetch`, v2.66→v4 upgrade, API v1→v2, silent-renew, 401 storms. Triggers — zitadel, oidc self-hosted, silent-renew, JWKS, masterkey, v2.66→v4, tlsMode external, pre-cutover check.",
+  "description": "Self-hosted Zitadel v4 OIDC field guide — a numbered quirk catalogue, working docker-compose and an idempotent TypeScript bootstrap. High-friction traps: FirstInstance env placement, JWT/JWKS over self-signed HTTPS, `--tlsMode external` and the console's mixed-content `Failed to fetch`, v2.66→v4, API v1→v2, silent-renew, 401 storms, UI language from the `locale` claim. Triggers — zitadel, oidc self-hosted, JWKS, masterkey, v2.66→v4, tlsMode external, pre-cutover check, locale claim.",
   "author": {
     "name": "Chewiesoft"
   },
-  "version": "0.16.1",
+  "version": "0.17.0",
   "category": "development",
   "keywords": [
     "zitadel",
@@ -78,7 +78,14 @@
     "jwks-positive-check",
     "project-role-rename",
     "role-key-immutable",
-    "claim-alias"
+    "claim-alias",
+    "locale-claim",
+    "preferred-language",
+    "i18n",
+    "id-token-userinfo-assertion",
+    "session-api-v2",
+    "password-check-no-browser",
+    "adduser-v2-payload"
   ],
   "platforms": [
     "claude-code",

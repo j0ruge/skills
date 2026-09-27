@@ -1,5 +1,34 @@
 # Changelog — zitadel-idp
 
+## [0.17.0] - 2026-09-27
+
+### Added
+
+- **Quirk 53: o idioma do usuário chega ao app como o claim OIDC `locale`**, e a receita de SPA
+  que o usa (`spa-recipes.md` §"Recipe — UI language from the IdP"). O `preferredLanguage` do
+  usuário humano vira `locale` no escopo `profile`. No id_token ele só aparece se o app OIDC tiver
+  `idTokenUserinfoAssertion: true`, vem `null` quando não há idioma e não viaja no access token.
+  Medido ponta a ponta no v4.15.0: um spec Playwright logado com um usuário `en` viu
+  `<html lang="en">`. A receita traz o resolvedor por subtag primária e os três limites: próximo
+  login, telas antes do login e o idioma como dado da conta.
+- **Prova de senha sem navegador** (`api-cheatsheet.md` §"Prove a user's password without a
+  browser"): `SessionService/CreateSession` com `checks.user` e `checks.password`, seguido de
+  `DeleteSession`, com os corpos montados por `jq --arg`. Valida uma conta de teste antes da suíte,
+  em vez de descobrir o erro num timeout de login do e2e.
+- Nota da variante Connect de `AddHumanUser` e do `CreateAuthorization` com usuário em outra org,
+  ambos medidos.
+
+### Fixed
+
+- **O headline do Quirk 5 contradizia a própria skill.** Ele afirmava que o payload de usuário
+  humano exige `firstName`/`lastName` e recusa `givenName`/`familyName`. Isso vale só para a v1; o
+  `api-v1-to-v2-mapping.md` e a nota do §"Seed an admin user" já diziam o contrário para a v2.
+  Medido em 2026-09-27: `UserService/AddHumanUser` com o formato v2 criou o usuário numa chamada.
+- **O exemplo de seed em v2 usava `preferredLanguage: "pt-BR"`**, que a v2 recusa (Quirk 22). Virou
+  `pt`.
+- `metadata.version` do `SKILL.md` estava em 0.14.0 enquanto o plugin estava em 0.16.1; agora os
+  dois dizem 0.17.0.
+
 ## [0.16.1] - 2026-09-22
 
 ### Fixed

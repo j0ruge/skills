@@ -2,6 +2,37 @@
 
 Lessons retrofitted into the skill, dated. Each entry describes **what** changed and **why** (the symptom it would have prevented).
 
+## 2026-09-27 — Quirk 53 (idioma pelo claim `locale`), prova de senha pela Session API e o Quirk 5 corrigido — bump 0.16.1 → 0.17.0
+
+**Sintoma que teria evitado:** um time quer que cada pessoa veja a SPA no próprio idioma e decide
+lê-lo do IdP. A skill não dizia como o idioma viaja, e três coisas sabotam a ideia em silêncio:
+- sem `idTokenUserinfoAssertion`, o id_token nunca traz o `locale`, e a SPA com
+  `loadUserInfo: false` não vê idioma nenhum;
+- uma conta sem idioma devolve `null`;
+- todo usuário criado por seed ou serviço nasce com o idioma que o código fixou.
+
+A receita nova registra o caminho e os limites. A prova é um e2e contra o IdP real, porque teste
+unitário com `profile.locale` mockado passa mesmo que o IdP nunca emita o claim.
+
+**Receita que faltava:** provar a senha de uma conta de teste sem navegador
+(`CreateSession`/`DeleteSession`). Uma conta ausente ou com senha errada deixa de aparecer como
+timeout de login no Playwright, que parece problema de redirect ou do IdP.
+
+**Correção:** o headline do Quirk 5 dizia que `givenName`/`familyName` são recusados. Isso é
+verdade só na v1. Na v2 (REST e Connect) são exatamente esses os nomes, e a própria skill já dizia
+isso no `api-v1-to-v2-mapping.md`. O exemplo de seed em v2 usava `pt-BR`, que a v2 recusa.
+
+**Medido em 2026-09-27, Zitadel v4.15.0 local:**
+- `AddHumanUser` via Connect criou uma conta ativa com `preferredLanguage: en`;
+- `CreateAuthorization` deu o papel num projeto de outra org;
+- `CreateSession` validou a senha;
+- o spec e2e em inglês de uma SPA (`react-oidc-context` 3.3.1, `oidc-client-ts` 3.5.0) passou na
+  primeira rodada.
+
+O caminho de emissão do claim foi lido no código-fonte (`internal/api/oidc/userinfo.go`,
+`token.go`), não medido isoladamente. Se o refresh silencioso atualiza o claim antes do próximo
+login **não** foi medido, e a receita diz isso.
+
 ## 2026-09-18 — Quirk 52: o laço de `401` que todo quirk de papel produz, e o passo que todos assumem — bump 0.15.0 → 0.16.0
 
 **Sintoma que teria evitado:** uma conta entra em laço — a tela do IdP aceita a senha, o navegador

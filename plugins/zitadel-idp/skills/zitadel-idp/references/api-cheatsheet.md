@@ -341,7 +341,7 @@ CREATE=$(curl -sS -X POST "http://<external-domain>/v2/users/human" \
   -H "Authorization: Bearer $PAT" -H "x-zitadel-orgid: $ORG" -H 'Content-Type: application/json' \
   -d '{
     "username": "admin@example.com",
-    "profile": {"givenName":"Admin","familyName":"Example","displayName":"Admin Example","preferredLanguage":"pt-BR"},
+    "profile": {"givenName":"Admin","familyName":"Example","displayName":"Admin Example","preferredLanguage":"pt"},
     "email": {"email":"admin@example.com","isVerified":true},
     "password": {"password":"ChangeMe-2026!","changeRequired":false}
   }')
@@ -356,9 +356,36 @@ curl -sS -X POST "http://<external-domain>/management/v1/users/$USERID/grants" \
 **Notes**:
 
 - `/v2/users/human` (v2 REST) accepts `givenName`/`familyName` (not `firstName`/`lastName` — that's the v1 `/management/v1/users/human` shape, see §"Create a human user"). The two endpoints have different field names; pick one consistently.
+- **Connect-protocol twin:** `POST /zitadel.user.v2.UserService/AddHumanUser` takes the **same v2 body** with `organizationId` moved from the header into the body (Quirk 27). Measured on v4.15.0 (2026-09-27): one call with `{organizationId, username, profile:{givenName, familyName, displayName, preferredLanguage:"en"}, email:{email, isVerified:true}, password:{password, changeRequired:false}}` returned `{userId}` for a user already `USER_STATE_ACTIVE`, and the grant followed through `/zitadel.authorization.v2.AuthorizationService/CreateAuthorization` with `{userId, projectId, organizationId: <org that owns the project>, roleKeys:[…]}` (the user may live in a different org than the project).
+- `preferredLanguage` is a **short** code in v2 (`pt`, `en`) — `pt-BR` is rejected with `400 LANG-…` (Quirk 22, `api-v1-to-v2-mapping.md`). Whatever you put here is what the user's `locale` claim will say (Quirk 53), so a seed that hardcodes `pt` makes every seeded account Portuguese.
 - `email.isVerified: true` is required if you want the user to log in immediately without an SMTP-sent verification link.
-- `password.changeRequired: false` skips the forced password-change wizard on first login. Useful for dev seeds; **never** for production users.
+- `password.changeRequired: false` skips the forced password-change wizard on first login. Useful for dev seeds; **never** for production users. The password must carry all four character classes (Quirk 39).
 - Whitelist policies (e.g., `enforce-jrc-email-whitelist`) intercept this call. If the user creation 422s, check your `pre_creation_user` Action.
+
+---
+
+## Prove a user's password without a browser (Session API v2)
+
+A seeded or test account is only useful if its credential actually opens a session — and finding out inside a Playwright run costs a 20 s login timeout that reads like an IdP or redirect problem. The Session API answers the same question in one call, with no Login UI, no OIDC app and no redirect URI:
+
+```bash
+PAT=$(cat <volume>/admin.pat); API=http://<external-domain>
+LOGIN=user@example.com   # the loginName; the password comes from wherever you stored it
+# Build every body with `jq --arg` so the password never lands in argv or in your terminal.
+SID=$(jq -n --arg u "$LOGIN" --arg pw "$PW" '{checks:{user:{loginName:$u}, password:{password:$pw}}}' \
+  | curl -sS -X POST "$API/zitadel.session.v2.SessionService/CreateSession" \
+      -H "Authorization: Bearer $PAT" -H 'Content-Type: application/json' -d @- \
+  | jq -r '.sessionId // empty')
+[ -n "$SID" ] && echo "password ok" || echo "password REJECTED"
+# Clean up: the probe session is real, delete it.
+jq -n --arg s "$SID" '{sessionId:$s}' \
+  | curl -sS -X POST "$API/zitadel.session.v2.SessionService/DeleteSession" \
+      -H "Authorization: Bearer $PAT" -H 'Content-Type: application/json' -d @- > /dev/null
+```
+
+- A `sessionId` back means the user exists, is active and the password matched. Anything else is a failure — read `.message` before assuming it was the password.
+- It proves the **credential**, not the app: roles, redirect URIs and the `locale`/role claims are still the OIDC flow's business (→ Quirk 44 for the credential-free client check, Quirk 52 for the role loop).
+- Measured on v4.15.0 (2026-09-27): used to validate a freshly created e2e account before the suite ran; the Playwright login that followed passed first time.
 
 ---
 
