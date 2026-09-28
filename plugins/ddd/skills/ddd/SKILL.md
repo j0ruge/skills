@@ -1,7 +1,7 @@
 ---
 name: ddd
 metadata:
-  version: 0.4.2
+  version: 0.4.3
 description: Domain-Driven Design toolkit — analyzes codebases for DDD violations, guides strategic design (event storming, context mapping), generates legacy→DDD migration specs. Language-agnostic. Synthesizes Evans + Vernon + modular-monolith practice. Triggers — DDD, bounded context, aggregate, event storming, hexagonal, legacy migration, architecture review.
 ---
 
@@ -51,6 +51,7 @@ Ao receber a solicitação, identifique **qual dos 4 modos** se aplica (pode ser
 - `references/context-mapping.md` (se há múltiplos módulos/serviços; inclui Notification pattern, wire formats, temporal coupling)
 - `references/domain-events-catalog.md` (se há eventos suspeitos — naming, payload, publicação)
 - `references/application-services.md` (se há suspeita de lógica vazada pra service layer, God service, fat application service; inclui Saga orq/coreografia e compensating patterns)
+- `references/cqrs-event-sourcing.md` (se o código já tem read model/projeção separada, event store, Outbox ou conflito de concorrência em writes; também quando o time propõe adotar CQRS/ES)
 - `references/refactoring-and-insights.md` (sinais de drift, conceitos implícitos, integridade do modelo)
 
 **Saída:** relatório estruturado com severidade (ver template na seção "Outputs" abaixo).
@@ -87,6 +88,7 @@ Ao receber a solicitação, identifique **qual dos 4 modos** se aplica (pode ser
 - `references/architecture-styles.md` (decidir o alvo)
 - `references/domain-events-catalog.md` (ao propor eventos do novo modelo — naming, payload, versionamento)
 - `references/application-services.md` (modelar command handlers, Sagas e camada de aplicação do alvo)
+- `references/cqrs-event-sourcing.md` (se a spec for decidir CQRS, event sourcing ou Outbox no alvo: checklist antes de adotar e alternativas mais leves)
 - `references/acceleration-tools.md` (SWOT + estimativas pra fase 0 da spec + Knowledge Acquisition cycles)
 - `references/scenarios.md` (acceptance tests por aggregate)
 

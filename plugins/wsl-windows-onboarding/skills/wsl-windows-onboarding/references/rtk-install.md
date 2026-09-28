@@ -34,7 +34,7 @@ The installer prints something like:
 
 If you skip step 2, `rtk` is "command not found" even though it installed perfectly. Add the line to `~/.bashrc` and open a new shell (or `source ~/.bashrc`). Don't reinstall — it's only PATH.
 
-> **If you later switch to zsh:** this PATH line lives in `~/.bashrc`, which zsh does **not** read — `rtk` will be "not found" again in zsh until you add the same `export PATH="$HOME/.local/bin:$PATH"` to `~/.zshrc`. On Ubuntu the system profile won't add `~/.local/bin` for a zsh login shell either, so the explicit line is required. See `references/shell-setup.md`.
+> **If you later switch to zsh:** this PATH line lives in `~/.bashrc`, which zsh does **not** read — `rtk` will be "not found" again in zsh until you add the same `export PATH="$HOME/.local/bin:$PATH"` to `~/.zshrc`. On Ubuntu the system profile won't add `~/.local/bin` for a zsh login shell either, so the explicit line is required. The zsh setup itself is in `shell-setup.md`, which SKILL.md routes directly (step 4).
 
 ## Alternative install methods
 

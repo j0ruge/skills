@@ -12,6 +12,25 @@ e reparou que a última pasta no destino era de dias atrás. A causa raiz foi o
 
 ---
 
+## Sumário
+
+- [§1. Primeiro: prove que o backup de hoje existe e está completo](#1-primeiro-prove-que-o-backup-de-hoje-existe-e-está-completo)
+  - [§1.1 Tamanho é proxy fraco — prove integridade e prove que há DADOS](#11-tamanho-é-proxy-fraco--prove-integridade-e-prove-que-há-dados)
+  - [§1.2 O healthcheck de um container de backup normalmente mede a coisa errada](#12-o-healthcheck-de-um-container-de-backup-normalmente-mede-a-coisa-errada)
+- [§2. Os quatro padrões de falha silenciosa](#2-os-quatro-padrões-de-falha-silenciosa)
+  - [2.1 `ignore_errors` + `no_log` na mesma task = silêncio absoluto](#21-ignore_errors--no_log-na-mesma-task--silêncio-absoluto)
+  - [2.2 A mesma causa numa task SEM `ignore_errors` = parada total](#22-a-mesma-causa-numa-task-sem-ignore_errors--parada-total)
+  - [2.3 `set -euo pipefail` + `tar` num diretório vivo](#23-set--euo-pipefail--tar-num-diretório-vivo)
+  - [2.4 Um caminho ausente derruba o backup inteiro](#24-um-caminho-ausente-derruba-o-backup-inteiro)
+  - [2.5 O caminho de push nunca foi estabelecido — e ninguém verificou por host](#25-o-caminho-de-push-nunca-foi-estabelecido--e-ninguém-verificou-por-host)
+- [§3. Anatomia do pipeline, e onde cada etapa falha](#3-anatomia-do-pipeline-e-onde-cada-etapa-falha)
+  - [3.1 A variável "documentada" que o código não lê](#31-a-variável-documentada-que-o-código-não-lê)
+  - [3.3 `docker volume ls` não enxerga bind mount](#33-docker-volume-ls-não-enxerga-bind-mount)
+  - [3.2 Renomear container é mudança de duas pontas](#32-renomear-container-é-mudança-de-duas-pontas)
+- [§4. A aritmética da retenção](#4-a-aritmética-da-retenção)
+- [§5. Exclusões: a decisão de apagar dado para sempre](#5-exclusões-a-decisão-de-apagar-dado-para-sempre)
+  - [Regras](#regras)
+
 ## §1. Primeiro: prove que o backup de hoje existe e está completo
 
 Antes de investigar qualquer coisa, meça. `scripts/check-backup-freshness.sh`

@@ -1,7 +1,7 @@
 ---
 name: wsl-windows-onboarding
 metadata:
-  version: 0.4.2
+  version: 0.4.3
 description: "End-to-end onboarding of a Windows machine to WSL2 — enable WSL, install rtk, migrate dev projects off C:\\ into the Linux filesystem with rsync that keeps .git/.env and validates before deleting. Knows the traps from a real migration: rtk missing from PATH, /mnt/c slowness, the whole git tree reading as modified (CRLF/filemode). Triggers — migrate projects to WSL, set up WSL for development, install rtk on Windows, slow WSL builds, resume an interrupted migration."
 ---
 

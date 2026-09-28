@@ -1,5 +1,16 @@
 # Changelog — `wsl-windows-onboarding`
 
+## [0.4.3] — 2026-09-28
+
+Conformidade com as boas práticas do agentskills.io, apontada pelo `skill-quality-audit` v0.2.0:
+1 aviso → 0. Nenhuma instrução muda.
+
+- **C2, `rtk-install.md` encadeava `references/shell-setup.md`.** Uma reference apontando para outra
+  cria um segundo nível de leitura a partir do `SKILL.md`. A nota "If you later switch to zsh" passa
+  a citar só o nome, `shell-setup.md`, e lembra que o `SKILL.md` o roteia direto (passo 4).
+  `rtk-install.md` fica com 106 linhas (5.404 → 5.457 chars).
+- Como reverter: `git revert` do commit que traz esta entrada.
+
 ## [0.4.2] — 2026-09-03
 
 Prompt audit (`/claude-api prompt-audit`, modelo-alvo Claude Fable 5.1); relatório completo fora do repo. Zero usuário/host/projeto do autor no corpo — a arqueologia já estava no CHANGELOG.

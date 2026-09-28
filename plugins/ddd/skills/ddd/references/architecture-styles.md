@@ -6,6 +6,28 @@ Não há "arquitetura DDD oficial". DDD é sobre *modelagem* — ele se acomoda 
 
 ---
 
+## Sumário
+
+- [Default contemporâneo — Modular Monolith](#default-contemporâneo--modular-monolith)
+- [Hexagonal / Ports & Adapters](#hexagonal--ports--adapters)
+- [Layered Architecture](#layered-architecture)
+- [Microservices](#microservices)
+  - [Distributed Monolith — antipadrão a evitar](#distributed-monolith--antipadrão-a-evitar)
+- [Event-Driven Architecture (EDA)](#event-driven-architecture-eda)
+- [Matriz decisória](#matriz-decisória)
+- [Dependency Inversion Principle (DIP) — coração da hexagonal](#dependency-inversion-principle-dip--coração-da-hexagonal)
+  - [Reforço via testes de arquitetura](#reforço-via-testes-de-arquitetura)
+- [Inbound vs. Outbound Adapters — com exemplos](#inbound-vs-outbound-adapters--com-exemplos)
+  - [Inbound (dirigem o domínio)](#inbound-dirigem-o-domínio)
+  - [Outbound (domínio dirige)](#outbound-domínio-dirige)
+- [REST como estilo arquitetural — não só protocolo](#rest-como-estilo-arquitetural--não-só-protocolo)
+  - [Resources orientados a caso de uso, não a aggregates](#resources-orientados-a-caso-de-uso-não-a-aggregates)
+  - [Hypermedia (HATEOAS) — opcional, pragmaticamente](#hypermedia-hateoas--opcional-pragmaticamente)
+  - [Content negotiation e versioning](#content-negotiation-e-versioning)
+  - [Erros como valores semânticos](#erros-como-valores-semânticos)
+  - [REST vs. RPC vs. GraphQL vs. gRPC](#rest-vs-rpc-vs-graphql-vs-grpc)
+- [Recomendação default pra ERP greenfield](#recomendação-default-pra-erp-greenfield)
+
 ## Default contemporâneo — Modular Monolith
 
 `[prática pós-2020]` — consenso crescente em 2024-2026: para greenfield (inclusive ERPs), **comece com modular monolith**. Microserviços são decisão, não default.

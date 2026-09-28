@@ -1,5 +1,28 @@
 # pdfmake Patterns & Examples
 
+## Contents
+
+- [Server-Side Setup (Node.js/TypeScript)](#server-side-setup-nodejstypescript)
+- [Tables with Conditional Columns](#tables-with-conditional-columns)
+- [Multi-Column Info Block](#multi-column-info-block)
+- [Dynamic Header with Logo and Revision](#dynamic-header-with-logo-and-revision)
+- [Vector Logo (SVG)](#vector-logo-svg)
+- [Bold Markup Parser](#bold-markup-parser)
+- [Observation Engine Pattern](#observation-engine-pattern)
+- [Hash-Based Revision Control](#hash-based-revision-control)
+- [Custom Table Layout](#custom-table-layout)
+- [Two-Column Summary (Conditions + Totals)](#two-column-summary-conditions--totals)
+- [Pitfalls — pdfmake v0.3.x + TypeScript](#pitfalls--pdfmake-v03x--typescript)
+  - [`pdfmake/interfaces` não resolve em `moduleResolution: "NodeNext"`](#pdfmakeinterfaces-não-resolve-em-moduleresolution-nodenext)
+  - [Font path em monorepos — usar `require.resolve`](#font-path-em-monorepos--usar-requireresolve)
+  - [Cell padding NÃO é descontado de `widths` — última coluna corta silenciosamente](#cell-padding-não-é-descontado-de-widths--última-coluna-corta-silenciosamente)
+  - [Coluna `"*"` cresce além da página com token sem espaço](#coluna--cresce-além-da-página-com-token-sem-espaço)
+  - [Fonte Roboto bundled: ligaduras "fi"/"fl"/"ffi" somem do PDF](#fonte-roboto-bundled-ligaduras-fiflffi-somem-do-pdf)
+  - [`pdfmake.addFonts()` rejeita AFM silenciosamente — erro 500 no render](#pdfmakeaddfonts-rejeita-afm-silenciosamente--erro-500-no-render)
+  - [Header/footer em `content[]` não repetem — use os slots `header`/`footer`](#headerfooter-em-content-não-repetem--use-os-slots-headerfooter)
+  - [Bloco se parte no meio / título de seção fica órfão — agrupe com `unbreakable`](#bloco-se-parte-no-meio--título-de-seção-fica-órfão--agrupe-com-unbreakable)
+  - [SVG com fills via `<style>`/classe não renderiza — inline os `fill`](#svg-com-fills-via-styleclasse-não-renderiza--inline-os-fill)
+
 ## Server-Side Setup (Node.js/TypeScript)
 
 ```typescript

@@ -10,6 +10,29 @@ Para cada achado, classifique severidade:
 
 ---
 
+## Sumário
+
+- [1. Ubiquitous Language](#1-ubiquitous-language)
+- [2. Entities vs Value Objects](#2-entities-vs-value-objects)
+- [3. Aggregates](#3-aggregates)
+- [4. Services](#4-services)
+- [5. Repository](#5-repository)
+- [6. Domain Events](#6-domain-events)
+- [7. Bounded Contexts e estrutura de módulos](#7-bounded-contexts-e-estrutura-de-módulos)
+- [8. Context Map / Integrações](#8-context-map--integrações)
+- [9. Arquitetura / camadas](#9-arquitetura--camadas)
+- [10. Smells gerais](#10-smells-gerais)
+- [Como produzir o relatório de Analysis](#como-produzir-o-relatório-de-analysis)
+- [Apêndice — Snippets bom/ruim (agnósticos)](#apêndice--snippets-bomruim-agnósticos)
+  - [Anemic model vs Rich domain](#anemic-model-vs-rich-domain)
+  - [Value Object vs primitive obsession](#value-object-vs-primitive-obsession)
+  - [Aggregate — referência por ID vs navegação](#aggregate--referência-por-id-vs-navegação)
+  - [Repository — collection-like vs DAO vazado](#repository--collection-like-vs-dao-vazado)
+  - [Domain Event — específico vs genérico](#domain-event--específico-vs-genérico)
+  - [Application Service — fino vs gordo](#application-service--fino-vs-gordo)
+  - [Bounded Context — vazamento vs ACL](#bounded-context--vazamento-vs-acl)
+- [Heurísticas sobre granularidade](#heurísticas-sobre-granularidade)
+
 ## 1. Ubiquitous Language
 
 - [ ] Classes/métodos/tabelas usam termos do negócio? Ou técnicos genéricos (`Manager`, `Handler`, `Processor`, `Util`, `Helper`)?

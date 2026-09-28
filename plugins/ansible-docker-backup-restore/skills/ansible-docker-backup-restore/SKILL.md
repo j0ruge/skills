@@ -1,7 +1,7 @@
 ---
 name: ansible-docker-backup-restore
 metadata:
-  version: 1.3.2
+  version: 1.3.3
 description: "Back up and restore a Linux server's Docker services with Ansible — volume tars, pg_dump/mysqldump, snapshot-guarded overwrite, and proof the nightly backup still runs. Catches restores that look green but are broken: 200s serving the wrong page, auth-plugin drift in restored datadirs, silently dead backups. Proves a dump by its contents, not its size. Triggers — ansible, backup, restore, disaster recovery, mysqldump, retention, dump integrity, backup healthcheck lies."
 ---
 
@@ -66,10 +66,14 @@ Leia a linha que descreve o que você está prestes a fazer.
 | **encerrar um restore, ou desconfiar de um backup** | `references/backup-pipeline-e-falha-silenciosa.md` — **gate** |
 | reportar resultado, despachar subagente, **ou depurar erro que não fecha** | `references/provas-que-nao-mentem.md` |
 
-Em `assets/` há um contrato de variáveis, a guarda anti-sobrescrita comentada e
-um script de backup de volumes — pontos de partida, não código para colar sem
-ler. Em `scripts/check-backup-freshness.sh` há uma checagem somente-leitura de
-"o backup de hoje existe e está completo".
+Assets e script são pontos de partida, não código para colar sem ler:
+
+| Arquivo | Use quando |
+|---|---|
+| `assets/restore-defaults.yml` | for montar a role de restore (uma role, playbooks finos): é o contrato de variáveis do `defaults/main.yml`. Troque todo `<>` e derive `compose_project` do prefixo do volume |
+| `assets/restore-volume-guard.yml` | for escrever a task que grava num volume: é a guarda anti-sobrescrita comentada, e a ordem das etapas só muda depois de ler `references/restore-volumes-e-guarda.md` §2 |
+| `assets/backup-volumes.sh` | o host não tiver script de backup de volumes, ou o que existe morrer no `tar` rc=1 de banco vivo. Antes de acrescentar exclusão, leia `references/backup-pipeline-e-falha-silenciosa.md` §2.3 e §5 |
+| `scripts/check-backup-freshness.sh` | for provar que o backup de hoje existe e está completo (Gate 2, item 2). Somente leitura |
 
 ---
 

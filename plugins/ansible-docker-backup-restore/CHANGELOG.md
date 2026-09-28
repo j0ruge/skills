@@ -2,6 +2,25 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.3.3] — 2026-09-28
+
+Conformidade com a spec e as boas práticas do agentskills.io, apontada pelo `skill-quality-audit`
+v0.2.0: 2 avisos → 0. Sem mudança de comportamento; scripts e assets ficam byte-idênticos.
+
+- **B1, assets órfãos.** O `SKILL.md` falava de "um contrato de variáveis, a guarda
+  anti-sobrescrita comentada e um script de backup de volumes" sem nomear os arquivos, e os três
+  contavam como órfãos. O parágrafo vira uma tabela "Arquivo | Use quando":
+  `assets/restore-defaults.yml` (ao montar a role de restore), `assets/restore-volume-guard.yml`
+  (ao escrever a task que grava num volume; a ordem das etapas só muda depois do §2 de
+  `restore-volumes-e-guarda.md`), `assets/backup-volumes.sh` (host sem script de volumes, ou o
+  `tar` rc=1 de banco vivo; exclusão só depois do §2.3 e do §5) e
+  `scripts/check-backup-freshness.sh` (Gate 2, item 2).
+- **C3, `backup-pipeline-e-falha-silenciosa.md` sem sumário.** Ganha `## Sumário` com âncoras
+  para as 16 seções (`##` e `###`), logo depois da introdução.
+- Números: `SKILL.md` 196 → 200 linhas (11.822 → 12.424 chars);
+  `backup-pipeline-e-falha-silenciosa.md` 445 → 464 linhas.
+- Como reverter: `git revert` do commit que traz esta entrada.
+
 ## [1.3.2] — 2026-09-03
 
 Prompt audit (`/claude-api prompt-audit`, modelo-alvo Claude Fable 5.1); relatório completo fora do repo. Skill de operação frágil: scripts e assets ficam byte-idênticos (keep list #3).

@@ -6,6 +6,31 @@ Fontes: `[IDDD cap.8]`, `[Evans Reference]`, event-driven.io (Oskar Dudycz), Mic
 
 ---
 
+## Sumário
+
+- [Naming — regras obrigatórias](#naming--regras-obrigatórias)
+  - [1. Passado perfeito, sempre](#1-passado-perfeito-sempre)
+  - [2. Entity + Verb, nessa ordem](#2-entity--verb-nessa-ordem)
+  - [3. Específico, nunca genérico](#3-específico-nunca-genérico)
+  - [4. Fato de negócio, não técnico](#4-fato-de-negócio-não-técnico)
+  - [5. Idioma consistente](#5-idioma-consistente)
+- [Estrutura — payload mínimo e útil](#estrutura--payload-mínimo-e-útil)
+  - [Campos obrigatórios em TODO domain event](#campos-obrigatórios-em-todo-domain-event)
+  - [Dados essenciais (NÃO o aggregate inteiro)](#dados-essenciais-não-o-aggregate-inteiro)
+  - [Incluir dados "derivados frequentes"](#incluir-dados-derivados-frequentes)
+- [Categorias de eventos](#categorias-de-eventos)
+  - [1. Lifecycle events (criação, remoção)](#1-lifecycle-events-criação-remoção)
+  - [2. State transition events](#2-state-transition-events)
+  - [3. Attribute change events (menos frequente)](#3-attribute-change-events-menos-frequente)
+  - [4. Integration events (cruzam bounded context)](#4-integration-events-cruzam-bounded-context)
+- [Quando emitir — critérios](#quando-emitir--critérios)
+- [Quando NÃO emitir](#quando-não-emitir)
+- [Publicação — padrão Outbox](#publicação--padrão-outbox)
+- [Consumo — idempotência obrigatória](#consumo--idempotência-obrigatória)
+- [Schema evolution — versionamento](#schema-evolution--versionamento)
+- [Catálogo template (para documentar eventos por contexto)](#catálogo-template-para-documentar-eventos-por-contexto)
+- [Checklist pra revisar um evento proposto](#checklist-pra-revisar-um-evento-proposto)
+
 ## Naming — regras obrigatórias
 
 ### 1. Passado perfeito, sempre

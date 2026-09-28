@@ -2,6 +2,27 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [0.4.3] - 2026-09-28
+
+Conformidade com a spec e as boas práticas do agentskills.io, apontada pelo `skill-quality-audit`
+v0.2.0: 7 avisos → 0. Nenhum conteúdo técnico muda.
+
+- **B1, `cqrs-event-sourcing.md` órfão.** Só o modo Teaching apontava para ele, pelo nome solto; o
+  modo Analysis, que é quem encontra um read model ou um event store no código, nunca o carregava.
+  O `SKILL.md` passa a rotear `references/cqrs-event-sourcing.md` no Modo 1 (código com read
+  model/projeção, event store, Outbox ou conflito de concorrência em writes, ou proposta de adotar
+  CQRS/ES) e no Modo 3 (spec que vai decidir CQRS, event sourcing ou Outbox no alvo).
+- **C2, `refactoring-and-insights.md` citava `references/glossary.md`.** O texto falava do glossário
+  **do projeto** do usuário, não do da skill, e o prefixo o fazia ler como cadeia de reference.
+  Reescrito: "num `glossary.md` versionado no repositório do projeto (ao lado do código), não no
+  Notion".
+- **C3, cinco references acima de 300 linhas sem sumário.** Ganham `## Sumário` com âncoras (`##` e
+  `###`) antes da primeira seção: `application-services.md` (366 → 398 linhas),
+  `architecture-styles.md` (327 → 349), `code-review-heuristics.md` (392 → 415),
+  `domain-events-catalog.md` (305 → 330) e `tactical-patterns.md` (710 → 766).
+- `SKILL.md`: 315 → 317 linhas (16.341 → 16.686 chars).
+- Como reverter: `git revert` do commit que traz esta entrada.
+
 ## [0.4.2] - 2026-09-03
 
 Prompt audit (`/claude-api prompt-audit`, modelo-alvo Claude Fable 5.1); relatório completo fora do repo. O `SKILL.md` operacional estava limpo nos sinais de regex (0 caps da lista, 0 tickets,

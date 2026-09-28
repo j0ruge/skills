@@ -1,7 +1,7 @@
 ---
 name: pdf-generation
 metadata:
-  version: 1.6.1
+  version: 1.6.2
 description: "PDF generation design toolkit — analyze a reference template, pick the library (pdfmake, pdf-lib, PDFKit, Puppeteer, @react-pdf), and design modular sections with conditional columns, revision control, and visual verification. Carries hard-won pdfmake pitfalls: column widths that silently push the table off the page, colorless SVG logos, glyph-eating ligatures. Triggers — PDF generation, PDF template, pdfmake, invoice/proposal/report PDF, column overflow, SVG logo in PDF."
 ---
 

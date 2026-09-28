@@ -85,7 +85,7 @@ O mesmo termo tem o mesmo significado em **todo** o Bounded Context:
 
 Quando a linguagem divaga, o modelo está perdendo integridade. Ex.: PM começa a usar "lead" em vez de "prospect"; dev mantém o código com `Prospect` — em 6 meses ninguém sabe mais qual é qual.
 
-**Prática:** glossário da UL vivo, revisado a cada sprint. `references/glossary.md` do projeto, não no Notion.
+**Prática:** glossário da UL vivo, revisado a cada sprint, num `glossary.md` versionado no repositório do projeto (ao lado do código), não no Notion.
 
 ### 4.2 Bounded Context claro
 

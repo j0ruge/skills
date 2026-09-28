@@ -1,5 +1,16 @@
 # Changelog — pdf-generation
 
+## [1.6.2] — 2026-09-28
+
+Conformidade com as boas práticas do agentskills.io, apontada pelo `skill-quality-audit` v0.2.0:
+1 aviso → 0. Nenhum conteúdo muda.
+
+- **C3, `references/pdfmake-patterns.md` sem sumário.** Com 540 linhas, o arquivo não tinha índice
+  nas primeiras 40, e quem procurava um pitfall lia o arquivo inteiro. Ganha `## Contents` (o
+  arquivo é em inglês) com âncoras para as 11 seções `##` e os 10 pitfalls `###`, logo abaixo do
+  título: 540 → 563 linhas.
+- Como reverter: `git revert` do commit que traz esta entrada.
+
 ## [1.6.1] — 2026-09-03
 
 Prompt audit (`/claude-api prompt-audit`, modelo-alvo Claude Fable 5.1); relatório completo fora do repo.

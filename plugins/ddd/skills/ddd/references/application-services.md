@@ -7,6 +7,38 @@ Application Service é a camada mais subestimada de DDD. Quando mal feita, toda 
 
 ---
 
+## Sumário
+
+- [1. Responsabilidades (e só elas)](#1-responsabilidades-e-só-elas)
+  - [O que Application Service NÃO faz](#o-que-application-service-não-faz)
+- [2. Anatomia de um Application Service](#2-anatomia-de-um-application-service)
+- [3. Command Handler pattern](#3-command-handler-pattern)
+  - [Vantagens](#vantagens)
+  - [Exemplo](#exemplo)
+  - [Quando usar](#quando-usar)
+  - [Quando não valer a pena](#quando-não-valer-a-pena)
+- [4. Decorators transversais](#4-decorators-transversais)
+  - [Composição](#composição)
+  - [Regra](#regra)
+- [5. Unit of Work](#5-unit-of-work)
+  - [Lifecycle](#lifecycle)
+  - [Benefícios](#benefícios)
+  - [Armadilhas](#armadilhas)
+- [6. Compensating Transactions e Saga](#6-compensating-transactions-e-saga)
+  - [Coreografia (events encadeados)](#coreografia-events-encadeados)
+  - [Orquestração (Process Manager / Saga)](#orquestração-process-manager--saga)
+  - [Process Manager vs. Saga (nomenclatura)](#process-manager-vs-saga-nomenclatura)
+  - [Compensating Transactions](#compensating-transactions)
+  - [Padrões de compensação](#padrões-de-compensação)
+  - [Retries, idempotência e dead-letter](#retries-idempotência-e-dead-letter)
+  - [Event Replay e recuperação](#event-replay-e-recuperação)
+  - [Agnóstico — Saga mínimo](#agnóstico--saga-mínimo)
+  - [Armadilhas](#armadilhas-1)
+- [7. Application Service vs. Domain Service vs. Handler — limites claros](#7-application-service-vs-domain-service-vs-handler--limites-claros)
+- [8. Antipadrões frequentes](#8-antipadrões-frequentes)
+- [9. Checklist de auditoria](#9-checklist-de-auditoria)
+- [10. Quando Application Service é pouco — e você precisa de mais](#10-quando-application-service-é-pouco--e-você-precisa-de-mais)
+
 ## 1. Responsabilidades (e só elas)
 
 `[IDDD cap.14]`

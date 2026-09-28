@@ -11,7 +11,7 @@
     {
       "name": "ansible-docker-backup-restore",
       "source": "./plugins/ansible-docker-backup-restore",
-      "version": "1.3.2",
+      "version": "1.3.3",
       "description": "Back up and restore a Linux server's Docker services with Ansible — volume tars, pg_dump/mysqldump, snapshot-guarded overwrite, and proof the nightly backup still runs. Catches restores that look green but are broken: 200s serving the wrong page, auth-plugin drift in restored datadirs, silently dead backups. Proves a dump by its contents, not its size. Triggers — ansible, backup, restore, disaster recovery, mysqldump, retention, dump integrity, backup healthcheck lies.",
       "category": "development",
       "keywords": [
@@ -150,7 +150,7 @@
     {
       "name": "wsl-windows-onboarding",
       "source": "./plugins/wsl-windows-onboarding",
-      "version": "0.4.2",
+      "version": "0.4.3",
       "description": "End-to-end onboarding of a Windows machine to WSL2 — enable WSL, install rtk, migrate dev projects off C:\\ into the Linux filesystem with rsync that keeps .git/.env and validates before deleting. Knows the traps from a real migration: rtk missing from PATH, /mnt/c slowness, the whole git tree reading as modified (CRLF/filemode). Triggers — migrate projects to WSL, set up WSL for development, install rtk on Windows, slow WSL builds, resume an interrupted migration.",
       "category": "development",
       "keywords": [
@@ -435,7 +435,7 @@
     {
       "name": "ddd",
       "source": "./plugins/ddd",
-      "version": "0.4.2",
+      "version": "0.4.3",
       "description": "Domain-Driven Design toolkit — analyzes codebases for DDD violations, guides strategic design (event storming, context mapping), generates legacy→DDD migration specs. Language-agnostic. Synthesizes Evans + Vernon + modular-monolith practice. Triggers — DDD, bounded context, aggregate, event storming, hexagonal, legacy migration, architecture review.",
       "category": "architecture",
       "keywords": [
@@ -622,7 +622,7 @@
     {
       "name": "pdf-generation",
       "source": "./plugins/pdf-generation",
-      "version": "1.6.1",
+      "version": "1.6.2",
       "description": "PDF generation design toolkit — analyze a reference template, pick the library (pdfmake, pdf-lib, PDFKit, Puppeteer, @react-pdf), and design modular sections with conditional columns, revision control, and visual verification. Carries hard-won pdfmake pitfalls: column widths that silently push the table off the page, colorless SVG logos, glyph-eating ligatures. Triggers — PDF generation, PDF template, pdfmake, invoice/proposal/report PDF, column overflow, SVG logo in PDF.",
       "category": "development",
       "keywords": [
