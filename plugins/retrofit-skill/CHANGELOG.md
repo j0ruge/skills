@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.5.0] — 2026-09-28
+
+### Retrofit mantém a skill no formato da spec agentskills.io
+
+Retrofit só soma texto. Na auditoria de 2026-09-28 contra a spec aberta
+(https://agentskills.io/specification) e as boas práticas do mesmo site, o marketplace tinha
+cinco `SKILL.md` acima de 500 linhas (o maior com 970), um de 110 mil chars (~27k tokens, 5x
+o orçamento recomendado do corpo) e um `name` fora da spec (`coderabbit_pr`). Nenhum passo do
+retrofit media isso.
+
+Nova seção **"Mantenha a skill no formato da spec"**: frontmatter só com os seis campos da
+spec (autor e versão em `metadata`), orçamento de 500 linhas / ~20 mil chars, lição entra na
+seção de gotchas, references a um nível e com condição de leitura. Gate nos dois modos:
+`validate-versions.py` (check 7, novo) no marketplace e a `skill-quality-audit` quando
+instalada.
+
+**Como reverter:** `git revert` do commit; a 0.4.0 continua funcional.
+
 ## [0.4.0] — 2026-09-11
 
 Dois acréscimos, e os dois vêm do mesmo incidente: um retrofit que **danificou o

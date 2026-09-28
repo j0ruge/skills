@@ -235,6 +235,32 @@ A `description` (frontmatter do SKILL.md + `plugin.json` + `marketplace.json`) �
 - Se o retrofit empurrar a descrição além do teto, **enxugue em vez de só somar**: comece com UMA frase do que a skill faz, mantenha 1–2 diferenciais distintivos, e termine com um `Triggers —` compacto (≤8 frases/keywords, não um dump de palavras).
 - **Espelhe a MESMA descrição enxuta** nos três lugares (SKILL.md, `plugin.json`, `marketplace.json`).
 
+## Mantenha a skill no formato da spec (agentskills.io)
+
+Retrofit só soma texto, e é assim que uma skill passa do orçamento: a auditoria de 2026-09-28
+achou `SKILL.md` com 970 linhas e outro com 110 mil chars (~27k tokens) no marketplace. A régua
+é a spec aberta (https://agentskills.io/specification) e as boas práticas do mesmo site:
+
+- **Frontmatter:** no topo só `name`, `description`, `license`, `compatibility`, `metadata` e
+  `allowed-tools`. `name` com a-z, 0-9 e hífen, igual ao diretório. Autor e versão vão em
+  `metadata` (`metadata.author`, `metadata.version`, em texto). Listas em bloco, nunca `[a, b]`.
+- **Orçamento:** `SKILL.md` abaixo de 500 linhas e de ~20 mil chars (~5 mil tokens). Se a lição
+  empurrar para cima disso, mova detalhe para `references/`, não comprima a lição até sumir.
+- **Onde a lição entra:** na seção de gotchas/armadilhas do `SKILL.md`, uma linha por correção.
+  Detalhe longo vai para uma reference.
+- **References a um nível:** o `SKILL.md` roteia cada uma e diz **quando** ler ("leia
+  `references/x.md` se a API devolver não-200", não "veja references/"). Reference acima de
+  300 linhas ganha sumário no topo.
+
+Gate, nos dois modos:
+
+```bash
+# modo completo (marketplace): o check 7 do validate-versions cobre a spec
+python scripts/validate-versions.py
+# qualquer modo, se o auditor estiver instalado (harness Hermes do JorUge)
+python3 ~/.hermes/skills/devops/skill-quality-audit/scripts/audit_skill_quality.py <dir-da-skill> --external auto
+```
+
 ## Editando `marketplace.json` com segurança
 
 Ele lista TODOS os plugins, cada um com seu próprio `"description"`/`"version"`. Ao editar programaticamente, **escope ao bloco do plugin alvo** — um match ingênuo em `"description":` (ou `sed` global) atinge as descrições de todos os plugins e as sobrescreve. Localize o bloco pelo `"name": "$ARGUMENTS"` e só então troque `version`/`description` dentro dele; depois confirme que as demais entradas ficaram intactas (ex.: contar descrições distintas) e rode `python -m json.tool` antes de commitar.
