@@ -40,7 +40,7 @@ Always render this section, even when clean (this tells the user the pass ran). 
 
 When Status is `BLOCKED`:
 - Overall grade is forced to **F** regardless of anything else in the report.
-- Each row must appear again under "Must Fix (CRITICAL)" with the full remediation block from `references/detection-passes.md` pass 6.10 (env var + rotate + rewrite history + install ggshield pre-commit).
+- Each row must appear again under "Must Fix (CRITICAL)" with the full remediation block from `detection-passes.md` pass 6.10 (the SKILL.md routes it) (env var + rotate + rewrite history + install ggshield pre-commit).
 - If multiple rows share the same file and kind, collapse them into a single row `Lines: 30, 53, 62, ...` and note the count.
 
 ---
@@ -121,7 +121,7 @@ If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, th
 | MEMORY.md | OK / N/A | MEMORY.md | — |
 | Contract Tests | OK / DRIFTED | src/__tests__/contracts.test.ts | `FORMA_PAGAMENTO`: test asserts 4 items, export has 7 |
 
-> The **Contract Tests** row is produced by pass 6.5.3 (Contract Drift in Tests). Render `DRIFTED` when an exported constant in the diff is asserted by a test with a stale literal shape. When status is `DRIFTED`, the corresponding finding goes into the main Findings Table as HIGH (or MEDIUM for internal-only constants) — see `references/detection-passes.md` pass 6.5.3 for severity rules.
+> The **Contract Tests** row is produced by pass 6.5.3 (Contract Drift in Tests). Render `DRIFTED` when an exported constant in the diff is asserted by a test with a stale literal shape. When status is `DRIFTED`, the corresponding finding goes into the main Findings Table as HIGH (or MEDIUM for internal-only constants) — see `detection-passes.md` pass 6.5.3 (the SKILL.md routes it) for severity rules.
 
 **Docstring coverage of changed CODE files**: {WITH_DOCS}/{Total_changed_functions} functions/methods have up-to-date documentation ({percentage}%)
 

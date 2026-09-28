@@ -4,6 +4,21 @@ This file contains all detection patterns applied per-file during code review an
 
 When analyzing a file, apply **all applicable passes** below. Return findings as a structured list.
 
+## Contents
+
+- [Finding Format](#finding-format)
+- [Zen Principles Analysis (Passes 5.1–5.5)](#zen-principles-analysis-passes-5155)
+  - [5.1 Readability](#51-beautiful-is-better-than-ugly--readability-counts) · [5.2 Explicit](#52-explicit-is-better-than-implicit) · [5.3 Simple](#53-simple-is-better-than-complex) · [5.4 Flat](#54-flat-is-better-than-nested) · [5.5 Errors](#55-errors-should-never-pass-silently)
+- [Additional Detection Passes (6.1–6.11)](#additional-detection-passes-61611)
+  - [6.1 Bug Detection](#61-bug-detection) · [6.2 Security](#62-security) · [6.3 Performance](#63-performance) · [6.4 Type Safety](#64-type-safety)
+  - [6.5 Documentation Sync & Docstring Coverage](#65-documentation-sync--docstring-coverage)
+  - [6.6 Race Conditions & TOCTOU](#66-race-conditions--toctou-time-of-check-to-time-of-use)
+  - [6.7 Accessibility](#67-accessibility) · [6.8 Data Integrity & Schema Safety](#68-data-integrity--schema-safety)
+  - [6.9 Dead Code & Unused Symbols](#69-dead-code--unused-symbols) — run by the B2 sweep agent, not per-file
+  - [6.10 Hardcoded Secrets Detection](#610-hardcoded-secrets-detection) — always on, gates the grade
+  - [6.11 Silent-Blinding Sensors](#611-silent-blinding-sensors) — always on, never a gate
+- [Severity Reference](#severity-reference)
+
 ## Finding Format
 
 Each finding must include:
@@ -365,7 +380,7 @@ Every finding carries a **Confidence** (High / Medium / Low) reflecting how many
 - **LOW** for everything else (newly-added-but-unused scaffolding, pre-existing tooling-surfaced dead code, unused imports/locals, cleanup suggestions).
 - **Never CRITICAL or HIGH. This pass never forces the grade to F and never blocks a PR.** It is a cleanliness recommendation, not a gate. (Contrast pass 6.10, which always blocks.)
 
-**Output format**: include the symbol/file, the kind (unused export / orphaned file / unreachable / unused import / unused dependency / diff-orphaned), the location, the bucket (PR / pre-existing), the confidence, and a one-line recommended cleanup. Populate the **🧹 Dead Code & Cleanup** section in the report (see `references/report-template.md`); findings flow into Recommended Actions → *Consider Fixing (MEDIUM/LOW)* and contribute to the **Code Quality (Zen)** grade rationale.
+**Output format**: include the symbol/file, the kind (unused export / orphaned file / unreachable / unused import / unused dependency / diff-orphaned), the location, the bucket (PR / pre-existing), the confidence, and a one-line recommended cleanup. Populate the **🧹 Dead Code & Cleanup** section in the report (see `report-template.md`, which the SKILL.md routes); findings flow into Recommended Actions → *Consider Fixing (MEDIUM/LOW)* and contribute to the **Code Quality (Zen)** grade rationale.
 
 ### 6.10 Hardcoded Secrets Detection
 
@@ -423,7 +438,7 @@ This pass approximates what a dedicated secret scanner (GitGuardian, gitleaks, t
 > 4. **Consider rewriting git history** (`git filter-repo` or BFG Repo-Cleaner) *only* if the secret hasn't been pushed yet or the repo is private and coordinated with the team — history rewrites break other contributors' clones.
 > 5. **Install `ggshield` pre-commit hook** (`pip install ggshield && ggshield install -m local`) to catch the next leak on your machine before it leaves.
 
-**Output format for pass 6.10 findings**: in addition to the standard finding format, populate the "Secrets Detection" table in the report (see `references/report-template.md`). Any ≥1 finding in this pass forces overall grade to **F** and prepends a BLOCKED banner to the report.
+**Output format for pass 6.10 findings**: in addition to the standard finding format, populate the "Secrets Detection" table in the report (see `report-template.md`, which the SKILL.md routes). Any ≥1 finding in this pass forces overall grade to **F** and prepends a BLOCKED banner to the report.
 
 ---
 

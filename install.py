@@ -52,7 +52,7 @@ CURSOR_SKILL_MAP: list[dict[str, Any]] = [
         "cursor_name": "coderabbit-pr",
         "display": "CodeRabbit PR — resolve CodeRabbit bot review comments on a GitHub PR",
         "source_type": "skill",
-        "source_dir": "plugins/codereview/skills/coderabbit_pr",
+        "source_dir": "plugins/codereview/skills/coderabbit-pr",
     },
     {
         "plugin": "cors",

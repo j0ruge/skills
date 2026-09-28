@@ -2,6 +2,77 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.0.0] — 2026-09-28
+
+**Quebra de compatibilidade:** a skill `coderabbit_pr` passa a se chamar **`coderabbit-pr`**. O
+comando vira `/codereview:coderabbit-pr` e **o nome antigo `/codereview:coderabbit_pr` deixa de
+funcionar** — scripts, aliases, prompts de pipeline e anotações que o invocam precisam trocar o
+`_` por `-`. Por isso o bump é MAJOR. O resto da versão é progressive disclosure das duas skills,
+pela spec do agentskills.io e a auditoria `skill-quality-audit` v0.2.0. Nenhum fato, comando ou
+armadilha saiu: o que deixou os `SKILL.md` foi para `references/`, ou já estava lá e virou apontador.
+
+### `coderabbit-pr` 4.0.0 (antes `coderabbit_pr` 3.6.0)
+
+**Por quê.** **A2 (ERRO):** `name` só aceita a-z, 0-9 e hífen simples, e o `_` de `coderabbit_pr`
+viola a spec; como o `name` tem de ser igual ao diretório, os dois mudam juntos. **C1 (ERRO):** 531
+linhas e 30.710 chars, acima do teto de 500 linhas e do orçamento de ~20.000 chars do corpo.
+
+- **Renomeada:** diretório `skills/coderabbit_pr/` → `skills/coderabbit-pr/` e `name: coderabbit-pr`.
+  O nome para o Cursor no `install.py` já era `coderabbit-pr`; só o `source_dir` muda.
+- **`SKILL.md` (531 → 339 linhas, 30.710 → 19.837 chars).** Fica o fluxo inteiro das seis fases, com
+  os comandos de 1.1–1.3 e da limpeza da Fase 6 inline, a tabela de decisão da 3.1 e o roteamento de
+  modelo (a tabela perdeu a coluna "Why", que virou o parágrafo abaixo dela). "Operating
+  Principles" virou **Gotchas**, sem as linhas que só repetiam as fases. Nova seção **References**,
+  cada arquivo com a condição de leitura.
+- **`references/regression-testing.md` (novo):** a Fase 4 por extenso — quando pular, o baseline
+  4.0 e seu formato, a tabela de detecção do comando de teste (4.1), os cinco casos de comparação
+  (4.2), a reexecução em cascata e a 4.3. No `SKILL.md` ficam as regras de pular, "baseline antes do
+  primeiro fix", "nunca silenciar teste" e a cascata.
+- **`references/byte-exact-verification.md` (novo):** o passo 3.1 1.1 — por que o `Read` não é fiel
+  a bytes e os comandos `od`/`tr`/`xxd`/`repr()`. No `SKILL.md` fica a regra com o `od -c`.
+- **`references/thread-resolution.md` (novo):** os três comandos GraphQL da Fase 5 e o bloco
+  `### Conversations`. No `SKILL.md` ficam os três passos, o `true` por linha, o gate
+  `unresolved: 0` e o teto de 100 threads. Os comandos continuam rodando inline.
+- **`references/checklist-template.md`:** as duas regras que só funcionam em par (nome fixo +
+  apagar no sucesso) e a nota de retomada, que estavam na Fase 6, entraram em §File naming; o
+  template (b) ganhou a forma genérica ("once the underlying cause clears") que estava no `SKILL.md`.
+  Os modelos (a)/(b) da Fase 2 saíram do `SKILL.md`, que agora aponta para cá.
+- `metadata.version` 3.6.0 → 4.0.0 (a própria skill quebra compatibilidade pelo nome).
+
+### `codereview` 2.0.0 (antes 1.20.0)
+
+**Por quê.** **B1:** `detection-passes.md`, `per-file-agent.md`, `sweep-agent.md` e
+`toctou-patterns.md` eram lidos pelos agentes pelo caminho absoluto do prompt, e o `SKILL.md` não
+dizia quando o orquestrador deveria lê-los. **C1:** 22.164 chars. **C2:** `detection-passes.md` e
+`report-template.md` citavam um ao outro com o prefixo `references/`. **C3:** `detection-passes.md`
+com 500 linhas e sem sumário.
+
+- **Nova seção References** no `SKILL.md`: as seis references, cada uma com quem a lê e quando o
+  orquestrador deve lê-la (Fase B ou B2 inline, redo do sweep, recalibração e bloco de remediação
+  da 6.10 na Fase C, corrida entre arquivos, step 10). A frase de `configuration.md` saiu do User
+  Input para lá.
+- **`SKILL.md` (254 → 250 linhas, 22.164 → 19.682 chars)** com as References incluídas: prosa da
+  Fase A, B, B2 e do step 10 da Fase C comprimida (o racional de "por que script" já está na 6.10
+  de `detection-passes.md`; as regras de renderização do Overall Grade já estão no
+  `report-template.md`); "Operating Principles" virou **Operating Principles and Gotchas**, sem as
+  linhas duplicadas do roteamento e da Fase A. Os dois prompts de lançamento dos agentes não
+  mudaram uma vírgula.
+- **`detection-passes.md`:** sumário (`## Contents`) no topo, com âncoras para 5.1–5.5, 6.1–6.11 e a
+  Severity Reference. As duas citações a `report-template.md` e a de `report-template.md` a
+  `detection-passes.md` passam a usar só o nome do arquivo, dizendo que o `SKILL.md` roteia.
+- **Mantido de propósito:** os `{SKILL_DIR}/references/…` dentro de `per-file-agent.md`,
+  `sweep-agent.md` e da 6.6 de `detection-passes.md`. São o contrato dos subagentes, e o caminho
+  absoluto é o que fez 4 de 4 agentes lerem as references na medição da 1.19.0 (contra 1 de 66
+  com caminho relativo). O auditor os marca como C2; aqui o C2 é aceito.
+- `metadata.version` 1.20.0 → 2.0.0, alinhado ao plugin (a convenção da 1.20.0).
+
+**Auditor** (`audit_skill_quality.py --external off --no-changelog-required --desc-budget 0`):
+`coderabbit-pr` antes 2 ERROS (A2, C1) + 1 AVISO (C1 chars), depois 0 + 0; `codereview` antes 5
+AVISOS (B1, C1, C2 ×2, C3), depois 3 AVISOS C2, todos dos contratos de agente acima.
+
+**Como reverter:** `git revert` do commit que traz esta entrada. Quem já trocou para
+`/codereview:coderabbit-pr` precisa voltar para `/codereview:coderabbit_pr` depois do revert.
+
 ## [1.20.0] — 2026-09-11
 
 Novo passe de detecção **6.11 — Silent-Blinding Sensors**, always-on como o 6.10 mas **sem gate de

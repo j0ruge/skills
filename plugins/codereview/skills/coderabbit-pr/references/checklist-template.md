@@ -95,12 +95,23 @@ Coverage gap: this PR has not been reviewed by Copilot. Re-request the review on
 quota renews.
 ```
 
+Generic form: `No review was performed — this is not an approval. Reviewer reported:` followed by
+the literal text the bot returned as a quote, then `Coverage gap: this PR has not been reviewed by
+{Reviewer Name}. Re-request the review once the underlying cause clears.`
+
 ### File naming
 
 Always `{reviewer}-review.md` in the project root — never a per-PR variant such as
 `gemini-review-pr15.md`. Projects gitignore these with `*-review.md`, and a suffixed name
 slips past that pattern and survives as an untracked file forever. The fixed name is safe
 because SKILL.md Phase 6 deletes these files when the run succeeds.
+
+The two rules only work as a pair: **always the fixed name**, and **always delete on
+success**. The fixed name is safe *because* nothing survives to collide with it. If a
+previous run's file is still there, that is a bug Phase 6 exists to prevent (and Phase 1.1
+sweeps as a backstop) — not a reason to rename. This does not break resumability: cleanup
+runs only on the success path, so an interrupted run leaves its checklists exactly where a
+resume needs them, and a checklist that survives is a signal the previous run did not finish.
 
 ---
 
