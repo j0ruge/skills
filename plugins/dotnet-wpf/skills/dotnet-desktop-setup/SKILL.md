@@ -1,7 +1,7 @@
 ---
 name: dotnet-desktop-setup
 metadata:
-  version: 1.7.0
+  version: 1.8.0
 description: C#/.NET desktop scaffolding (WinForms / WPF / Avalonia) — generates CLAUDE.md, scoped rules, .editorconfig, Directory.Build.props, global.json. Audits coupling (UI/logic, God Classes). Triggers — dotnet setup, .NET scaffolding, WPF project, WinForms project, editorconfig.
 ---
 

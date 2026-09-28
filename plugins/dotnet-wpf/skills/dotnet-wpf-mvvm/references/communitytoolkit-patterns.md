@@ -5,6 +5,64 @@ Leia durante o Passo 4 (criacao de ViewModels).
 
 ---
 
+## Sumario
+
+- [Template base de ViewModel (Passo 4)](#template-base-de-viewmodel-passo-4)
+- [ObservableObject (Base Class)](#observableobject-base-class)
+- [\[ObservableProperty\]](#observableproperty)
+- [\[RelayCommand\]](#relaycommand)
+- [ObservableValidator (Validacao)](#observablevalidator-validacao)
+- [Exemplo Completo: LicenceManager ViewModel](#exemplo-completo-licencemanager-viewmodel)
+
+---
+
+## Template base de ViewModel (Passo 4)
+
+Para cada tela, crie um ViewModel seguindo este template:
+
+```csharp
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+
+namespace MeuProjeto.ViewModels;
+
+public partial class MainWindowViewModel : ObservableObject
+{
+    private readonly IMyService _service;
+
+    // Propriedades observaveis — o source generator cria a propriedade publica
+    [ObservableProperty]
+    private string _titulo;
+
+    [ObservableProperty]
+    private bool _isProcessando;
+
+    // Injecao de dependencia via construtor
+    public MainWindowViewModel(IMyService service)
+    {
+        _service = service;
+    }
+
+    // Commands — o source generator cria TituloCommand (IRelayCommand)
+    [RelayCommand]
+    private async Task CarregarDadosAsync()
+    {
+        IsProcessando = true;
+        try
+        {
+            var dados = await _service.ObterDadosAsync();
+            Titulo = dados.Nome;
+        }
+        finally
+        {
+            IsProcessando = false;
+        }
+    }
+}
+```
+
+---
+
 ## ObservableObject (Base Class)
 
 Toda ViewModel deve herdar de `ObservableObject`. Ele implementa `INotifyPropertyChanged`

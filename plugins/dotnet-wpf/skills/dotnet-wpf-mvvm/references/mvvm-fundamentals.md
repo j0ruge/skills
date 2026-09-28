@@ -166,8 +166,8 @@ Nao use `[ObservableProperty]` na collection — declare como propriedade public
 Quando um ViewModel precisa avisar outro de um evento pontual (ex: arquivo salvo,
 navegacao concluida), use o `WeakReferenceMessenger` do CommunityToolkit. Para estado que
 varios ViewModels leem (usuario logado, dados carregados, modo de operacao), um servico
-Singleton com `INotifyPropertyChanged` e mais simples — ver SKILL.md, secao
-"Estado Compartilhado (IAppStateService)":
+Singleton com `INotifyPropertyChanged` e mais simples — ver a secao
+"Estado Compartilhado (IAppStateService)" logo abaixo:
 
 ### 1. Defina a mensagem
 ```csharp
@@ -193,6 +193,45 @@ public partial class OutroViewModel : ObservableObject, IRecipient<DadosSalvosMe
         Status = $"Arquivo salvo: {message.NomeArquivo}";
     }
 }
+```
+
+---
+
+## Estado Compartilhado (IAppStateService)
+
+Para apps com multiplas paginas que compartilham estado (ex: dados carregados, modo de operacao,
+filtros ativos), um servico Singleton com `INotifyPropertyChanged` e mais simples e direto que
+`IMessenger` (WeakReferenceMessenger):
+
+```csharp
+public interface IAppStateService : INotifyPropertyChanged
+{
+    VDR? Vdr { get; }
+    bool IsVdrLoaded { get; }
+    bool ModoCoCAtivado { get; }
+    string SelectedPath { get; }
+    void CarregarVdr(VDR vdr, string path, bool modoCoc);
+}
+```
+
+**Quando usar IAppStateService vs IMessenger:**
+
+| Cenario | Padrao |
+|---------|--------|
+| Estado central que multiplos VMs leem | IAppStateService (Singleton + INotifyPropertyChanged) |
+| Evento pontual entre VMs sem estado | IMessenger (WeakReferenceMessenger) |
+| Notificacao de navegacao | IMessenger |
+| Dados de sessao (usuario logado, modo) | IAppStateService |
+
+**Regra critica:** se ViewModels assinam `PropertyChanged` de um servico Singleton, registrar
+os VMs tambem como Singleton para evitar memory leak (ver SKILL.md, Detalhe #27).
+
+**Testabilidade:** `IAppStateService` e facilmente mockavel com NSubstitute:
+```csharp
+var appState = Substitute.For<IAppStateService>();
+appState.IsVdrLoaded.Returns(true);
+appState.Vdr.Returns(new VDR1800());
+var vm = new ChannelsPageViewModel(appState);
 ```
 
 ---
@@ -229,4 +268,4 @@ private void IrParaConfiguracoes()
 O WPF automaticamente renderiza a View correta baseado no tipo do ViewModel.
 
 Para apps mais complexas, use `INavigationService` do WPF-UI
-(veja `references/wpfui-integration.md`).
+(veja `wpfui-integration.md`, roteado pelo SKILL.md).

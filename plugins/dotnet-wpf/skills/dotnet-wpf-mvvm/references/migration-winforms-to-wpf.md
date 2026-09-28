@@ -5,6 +5,21 @@ Leia quando o projeto ainda e WinForms.
 
 ---
 
+## Sumario
+
+- [Estrategia: Strangler Fig Pattern](#estrategia-strangler-fig-pattern)
+- [Fase 0: Pre-requisitos](#fase-0-pre-requisitos)
+- [Fase 1: Converter .csproj](#fase-1-converter-csproj)
+- [Fase 2: Mapeamento WinForms → WPF](#fase-2-mapeamento-winforms--wpf)
+- [Fase 3-4: Criar ViewModel e Bindings](#fase-3-4-criar-viewmodel-e-bindings)
+- [10 Pitfalls Comuns na Migracao](#10-pitfalls-comuns-na-migracao)
+- [Coexistencia durante Migracao](#coexistencia-durante-migracao)
+- [Coexistencia WinForms + WPF (.NET 8+)](#coexistencia-winforms--wpf-net-8)
+- [Migracao de DataGridView para WPF DataGrid](#migracao-de-datagridview-para-wpf-datagrid)
+- [Checklist Pos-Migracao](#checklist-pos-migracao)
+
+---
+
 ## Estrategia: Strangler Fig Pattern
 
 Nao reescreva tudo de uma vez. Migre form-a-form, mantendo o app funcional a cada passo:

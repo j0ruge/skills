@@ -1,7 +1,7 @@
 ---
 name: dotnet-wpf-mvvm
 metadata:
-  version: 1.7.0
+  version: 1.8.0
 description: WinForms→WPF MVVM migration plus new WPF screens — CommunityToolkit.Mvvm, WPF-UI, ViewModels, data binding, Commands, navigation, DI via Microsoft.Extensions.Hosting. Setup and E2E live in sibling skills. Triggers — MVVM, WinForms to WPF, CommunityToolkit, data binding, RelayCommand.
 ---
 
@@ -10,8 +10,8 @@ description: WinForms→WPF MVVM migration plus new WPF screens — CommunityToo
 Skill para migrar projetos WinForms para WPF com MVVM e para construir novas telas WPF
 seguindo o padrao MVVM moderno com CommunityToolkit.Mvvm + WPF-UI.
 
-Usa **progressive disclosure** — este arquivo contem o workflow e decisoes. Templates,
-exemplos de codigo e guias detalhados ficam em `references/` e sao lidos sob demanda.
+Este arquivo contem o workflow, as decisoes e as armadilhas. Templates, exemplos de codigo e
+guias detalhados ficam em `references/` (a tabela no fim diz quando ler cada um).
 
 ---
 
@@ -46,9 +46,8 @@ Antes de aplicar MVVM, o projeto deve ter:
 2. **Sem MessageBox em services** — services retornam `Result<T>` ou lancam excecoes
 3. **Target framework .NET 8+** — source generators exigem .NET moderno
 
-Se o projeto nao atende esses requisitos, use a skill `dotnet-desktop-setup` primeiro para
-desacoplar e configurar. O MVVM funciona melhor quando os services ja existem — o ViewModel
-simplesmente orquestra chamadas aos services e expoe dados para a View.
+Se nao atende, use a skill `dotnet-desktop-setup` primeiro para desacoplar e configurar: o
+ViewModel so orquestra chamadas a services que ja existem e expoe dados para a View.
 
 ---
 
@@ -61,20 +60,11 @@ Execute os passos em ordem. Cada passo verifica o estado atual antes de agir.
 Avalie o projeto para entender o ponto de partida:
 
 ```bash
-# Verificar framework UI
-grep -r "UseWPF\|UseWindowsForms" *.csproj
-
-# Verificar se CommunityToolkit.Mvvm ja esta instalado
-grep -r "CommunityToolkit.Mvvm" *.csproj
-
-# Contar event handlers no code-behind (quanto trabalho tem pela frente)
-grep -rn "_Click\|_Changed\|_Loaded\|_SelectionChanged" *.xaml.cs *.cs
-
-# Verificar services existentes
-find . -name "*Service.cs" -type f
-
-# Verificar se tem MessageBox em services (anti-padrao)
-grep -rn "MessageBox" --include="*Service.cs"
+grep -r "UseWPF\|UseWindowsForms" *.csproj            # framework UI
+grep -r "CommunityToolkit.Mvvm" *.csproj              # toolkit ja instalado?
+grep -rn "_Click\|_Changed\|_Loaded\|_SelectionChanged" *.xaml.cs *.cs   # handlers a migrar
+find . -name "*Service.cs" -type f                    # services existentes
+grep -rn "MessageBox" --include="*Service.cs"         # MessageBox em service (anti-padrao)
 ```
 
 Apresente o relatorio ao usuario:
@@ -83,99 +73,40 @@ Apresente o relatorio ao usuario:
 
 ### Passo 2: Instalar Pacotes
 
-Adicione os pacotes necessarios via `dotnet add`:
-
 ```bash
 dotnet add <projeto>.csproj package CommunityToolkit.Mvvm
 dotnet add <projeto>.csproj package Microsoft.Extensions.Hosting
+dotnet add <projeto>.csproj package WPF-UI   # so se WPF-UI ainda nao estiver instalado
 ```
 
-Se WPF-UI nao estiver instalado:
-```bash
-dotnet add <projeto>.csproj package WPF-UI
-```
-
-Verifique que o `.csproj` tem:
-```xml
-<UseWPF>true</UseWPF>
-```
+Verifique que o `.csproj` tem `<UseWPF>true</UseWPF>`.
 
 ### Passo 3: Configurar App.xaml.cs como Composition Root
 
 Leia `references/wpfui-integration.md` para o template completo de App.xaml.cs.
 
-O App.xaml.cs deve:
-1. Criar `IHost` com `Host.CreateDefaultBuilder()`
-2. Registrar **todos** os services no DI container
-3. Registrar **todos** os ViewModels (Singleton para apps com NavigationView — ver Detalhe #27)
-4. Registrar **todas** as Pages/Windows (Transient ou Singleton conforme necessidade)
-5. Registrar services WPF-UI: INavigationService, IContentDialogService, IThemeService
-6. Iniciar o host em `OnStartup`, parar em `OnExit`
+O App.xaml.cs cria o `IHost` com `Host.CreateDefaultBuilder()`; registra **todos** os services,
+**todos** os ViewModels (Singleton com NavigationView — Detalhe #27), **todas** as Pages/Windows
+(Transient ou Singleton conforme necessidade) e os services WPF-UI (INavigationService,
+IContentDialogService, IThemeService); inicia o host em `OnStartup` e para em `OnExit`.
 
 Padrao de registro:
 ```csharp
-// Services de negocio
-services.AddSingleton<ILicenseService, LicenseService>();
-
-// ViewModels — Singleton para evitar memory leak quando assinam PropertyChanged
-// de servicos Singleton (ver Detalhe #27)
-services.AddSingleton<MainWindowViewModel>();
-
-// Windows/Pages
-services.AddTransient<MainWindow>();
+services.AddSingleton<ILicenseService, LicenseService>();  // services de negocio
+services.AddSingleton<MainWindowViewModel>();  // VM Singleton: evita o leak do Detalhe #27
+services.AddTransient<MainWindow>();           // Windows/Pages
 ```
 
-Para apps simples (1 janela, sem navegacao entre paginas), o registro minimo e:
-- MainWindow + MainWindowViewModel
-- Services de negocio
-- Nao precisa de INavigationService/IPageService
+App simples (1 janela, sem navegacao entre paginas): registro minimo e MainWindow +
+MainWindowViewModel + services de negocio, sem INavigationService/IPageService.
 
 ### Passo 4: Criar ViewModels
 
-Leia `references/communitytoolkit-patterns.md` para patterns detalhados.
-
-Para cada tela, crie um ViewModel seguindo este template:
-
-```csharp
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-
-namespace MeuProjeto.ViewModels;
-
-public partial class MainWindowViewModel : ObservableObject
-{
-    private readonly IMyService _service;
-
-    // Propriedades observaveis — o source generator cria a propriedade publica
-    [ObservableProperty]
-    private string _titulo;
-
-    [ObservableProperty]
-    private bool _isProcessando;
-
-    // Injecao de dependencia via construtor
-    public MainWindowViewModel(IMyService service)
-    {
-        _service = service;
-    }
-
-    // Commands — o source generator cria TituloCommand (IRelayCommand)
-    [RelayCommand]
-    private async Task CarregarDadosAsync()
-    {
-        IsProcessando = true;
-        try
-        {
-            var dados = await _service.ObterDadosAsync();
-            Titulo = dados.Nome;
-        }
-        finally
-        {
-            IsProcessando = false;
-        }
-    }
-}
-```
+Para cada tela, crie um ViewModel `partial` que herda `ObservableObject`, recebe os services
+por injecao no construtor, expoe estado com `[ObservableProperty]` e acoes com `[RelayCommand]`
+(o async com `try/finally` em volta de um `IsProcessando`). Leia
+`references/communitytoolkit-patterns.md` antes de escrever o primeiro: o template base desta
+etapa abre o arquivo, seguido dos patterns detalhados.
 
 **Regras do source generator:**
 - A classe deve ser `partial` — source generators precisam disso
@@ -187,30 +118,19 @@ public partial class MainWindowViewModel : ObservableObject
 
 Substitua event handlers por bindings e commands:
 
-**Antes (code-behind):**
 ```xml
+<!-- Antes: Click="BtnCarregar_Click" + x:Name="txtNome", e no code-behind
+     txtNome.Text = _service.Carregar(); -->
 <Button Content="Carregar" Click="BtnCarregar_Click" />
 <TextBox x:Name="txtNome" />
-```
-```csharp
-private void BtnCarregar_Click(object sender, RoutedEventArgs e)
-{
-    txtNome.Text = _service.Carregar();
-}
-```
 
-**Depois (MVVM):**
-```xml
+<!-- Depois (MVVM) -->
 <Button Content="Carregar" Command="{Binding CarregarDadosCommand}" />
 <TextBox Text="{Binding Titulo, UpdateSourceTrigger=PropertyChanged}" />
 ```
 ```csharp
 // Code-behind fica so com DI wiring
-public MainWindow(MainWindowViewModel viewModel)
-{
-    InitializeComponent();
-    DataContext = viewModel;
-}
+public MainWindow(MainWindowViewModel viewModel) { InitializeComponent(); DataContext = viewModel; }
 ```
 
 **Mapeamento rapido de controles:**
@@ -230,408 +150,154 @@ public MainWindow(MainWindowViewModel viewModel)
 | `scrollViewer.ScrollToTop()` | `PropertyChanged` handler no code-behind (excecao MVVM documentada) |
 | `Mouse.OverrideCursor = Wait` | `[ObservableProperty] bool IsLoading` + trigger ou converter no XAML |
 
-**Dialogs MVVM-friendly:**
-```csharp
-// Em vez de: MessageBox.Show("Erro")
-// Use Microsoft.Win32 para file dialogs:
-var dialog = new Microsoft.Win32.OpenFileDialog { Filter = "HID files|*.hid" };
-if (dialog.ShowDialog() == true)
-{
-    CaminhoArquivo = dialog.FileName;
-}
-```
-
-Para dialogs mais complexos, use `IContentDialogService` do WPF-UI
-(veja `references/wpfui-integration.md`).
+**Dialogs MVVM-friendly:** em vez de `MessageBox.Show("Erro")`, file dialog com
+`new Microsoft.Win32.OpenFileDialog { Filter = "HID files|*.hid" }` e
+`if (dialog.ShowDialog() == true) CaminhoArquivo = dialog.FileName;`. Para dialogs complexos,
+`IContentDialogService` do WPF-UI: leia `references/wpfui-integration.md` para registrar.
 
 ### Passo 6: Verificacao
 
-Apos aplicar MVVM, verifique:
-
-1. **Build:** `dotnet build` deve compilar sem erros nem warnings de source generators
-2. **Testes:** `dotnet test` — todos os testes existentes devem passar (MVVM nao muda services)
-3. **Code-behind limpo:** Cada `.xaml.cs` deve ter apenas:
-   - `InitializeComponent()`
-   - `DataContext = viewModel` (ou atribuicao via DI)
-   - Event handlers de UI-only (ex: Window closing, drag behavior)
-4. **Atualizar CLAUDE.md:** Atualizar descricao do stack e arquitetura do projeto
-5. **Funcionalidade:** Testar manualmente que a UI funciona como antes
-6. **Testes de ViewModel:** Criar testes xUnit para o novo ViewModel (ver secao abaixo)
+1. **Build:** `dotnet build` sem erros nem warnings de source generators
+2. **Testes:** `dotnet test` — os existentes passam (MVVM nao muda services)
+3. **Code-behind limpo:** cada `.xaml.cs` so com `InitializeComponent()`, `DataContext = viewModel`
+   (ou atribuicao via DI) e handlers UI-only (ex: Window closing, drag behavior)
+4. **CLAUDE.md:** atualizar descricao do stack e arquitetura do projeto
+5. **Funcionalidade:** testar manualmente que a UI funciona como antes
+6. **Testes de ViewModel:** criar testes xUnit para o novo ViewModel (secao abaixo)
 
 ---
 
 ## Testes de ViewModel (Recomendacao)
 
-Cada migracao MVVM deve incluir testes de ViewModel. Eles sao a melhor forma de blindar
-o projeto contra regressoes durante refatoracoes — testam toda a logica de apresentacao
-sem abrir janelas, sao rapidos e confiaveis no CI.
+Cada migracao MVVM inclui testes de ViewModel: blindam contra regressoes em refatoracoes,
+testam a logica de apresentacao sem abrir janelas, rapidos e confiaveis no CI.
 
-### O que testar
-
-| Aspecto | Exemplo |
-|---------|---------|
-| Estado inicial | Propriedades iniciam com valores default corretos |
-| Commands executam | `CarregarCommand.Execute()` popula propriedades |
-| CanExecute | Botao desabilitado quando pre-condicao nao e atendida |
-| Validacao | Dados invalidos mostram erro, nao executam acao |
-
-### Padrao para Commands com Dialogs
-
-Commands que abrem `OpenFileDialog` nao sao testaveis unitariamente. Extraia a logica
-para um metodo publico testavel:
-
-```csharp
-// No ViewModel — o Command chama o dialog e depois o metodo testavel
-[RelayCommand]
-private void CarregarHardwareId()
-{
-    var dialog = new Microsoft.Win32.OpenFileDialog { Filter = "*.hid" };
-    if (dialog.ShowDialog() == true)
-        PopularCampos(_service.RecuperarDeArquivo(dialog.FileName));
-}
-
-// Metodo publico testavel (sem dialog)
-public void PopularCampos(HardwareInfo hwInfo)
-{
-    CompanyName = hwInfo.CompanyName;
-    ProcessorId = hwInfo.ProcessorID;
-    // ...
-    IsSaveEnabled = true;
-}
-```
-
-```csharp
-// No teste
-[Fact]
-public void PopularCampos_AtualizaPropriedadesEHabilitaSave()
-{
-    var vm = new MainWindowViewModel(service);
-    vm.PopularCampos(new HardwareInfo { CompanyName = "JRC" });
-
-    Assert.Equal("JRC", vm.CompanyName);
-    Assert.True(vm.IsSaveEnabled);
-}
-```
-
-### Cuidado com testes que usam reflection
-
-Testes que acessam metodos privados via `typeof(Page).GetMethod("NomeMetodo", BindingFlags.NonPublic)`
-quebrarao quando o metodo for movido do code-behind para o ViewModel. O `typeof` precisa ser
-atualizado de `typeof(MinhaPage)` para `typeof(MinhaPageViewModel)`. Identifique esses testes
-ANTES de mover codigo — consulte a checklist pre-migracao.
-
-### Testes E2E (para projetos maiores)
-
-Para smoke tests visuais em projetos com muitas telas, use a skill irma
-`dotnet-wpf-e2e-testing` (FlaUI + xUnit): setup do projeto, AutomationId, Page Objects
-e CI. Os testes unitarios de ViewModel continuam aqui.
+- **Commands com dialogs** — Command que abre `OpenFileDialog` nao e testavel unitariamente: ele
+  chama o dialog e delega a um metodo publico testavel (`PopularCampos(HardwareInfo)`).
+- **Reflection** — `typeof(Page).GetMethod("NomeMetodo", BindingFlags.NonPublic)` quebra quando o
+  metodo vai para o ViewModel (`typeof(MinhaPage)` vira `typeof(MinhaPageViewModel)`).
+  Identifique esses testes ANTES de mover codigo.
+- Leia `references/viewmodel-testing.md` quando for escrever esses testes (o que testar, com
+  exemplos, e o codigo do Command, do metodo testavel e do teste xUnit).
+- **E2E** — smoke tests visuais em projetos com muitas telas: skill irma `dotnet-wpf-e2e-testing`
+  (FlaUI + xUnit: setup, AutomationId, Page Objects e CI). Testes de ViewModel continuam aqui.
 
 ---
 
 ## Cenarios Comuns
 
-### Projeto WPF com code-behind (sem MVVM)
-
-Este e o cenario mais comum — o projeto ja e WPF mas usa event handlers diretamente.
-Execute todos os 6 passos. O Passo 4 e o mais trabalhoso: extrair logica dos event handlers
-para ViewModels.
-
-### Projeto WinForms (migrar para WPF + MVVM)
-
-Leia `references/migration-winforms-to-wpf.md` antes de comecar.
-A migracao acontece em duas fases:
-1. **Fase A:** Converter Form para Window/Page (XAML equivalente ao layout do Form)
-2. **Fase B:** Aplicar MVVM (Passos 3-6 deste workflow)
-
-Migre form-a-form usando Strangler Fig pattern. Nao migre tudo de uma vez.
-
-### Novo projeto WPF do zero
-
-Leia `references/project-structure.md` para a estrutura de pastas recomendada.
-Crie a estrutura Models/Views/ViewModels/Services antes de comecar a codar.
-Comece pelo Passo 2 (pacotes), pule para Passo 3 (DI), depois crie ViewModels e Views.
-
-### Adicionar navegacao entre paginas
-
-Leia `references/wpfui-integration.md` secao sobre NavigationView.
-Use `INavigationService` + `IPageService` do WPF-UI para navegacao DI-friendly.
+- **WPF com code-behind (sem MVVM)** — o mais comum. Os 6 passos; o Passo 4 (extrair logica dos handlers para ViewModels) e o mais trabalhoso.
+- **WinForms** — leia `references/migration-winforms-to-wpf.md` antes de comecar. Fase A: Form vira Window/Page (XAML equivalente ao layout); Fase B: MVVM (Passos 3-6). Form-a-form (Strangler Fig), nunca tudo de uma vez.
+- **Novo projeto do zero** — leia `references/project-structure.md` para a estrutura de pastas; crie Models/Views/ViewModels/Services antes de codar. Passo 2, Passo 3 (DI), depois ViewModels e Views.
+- **Navegacao entre paginas** — `INavigationService` + `IPageService` do WPF-UI; leia a secao NavigationView de `references/wpfui-integration.md` para configurar.
 
 ---
 
-## Detalhes Criticos
+## Detalhes Criticos (armadilhas)
 
-1. **Classes devem ser `partial`** — source generators do CommunityToolkit exigem `partial class`.
-   Sem `partial`, `[ObservableProperty]` e `[RelayCommand]` nao geram codigo e o build falha.
+| # | Armadilha | Regra |
+|---|-----------|-------|
+| 1 | Classe sem `partial` | `[ObservableProperty]` e `[RelayCommand]` nao geram codigo e o build falha |
+| 2 | Campo `[ObservableProperty]` publico | O campo e `private`: `_nomeDoNavio` gera `NomeDoNavio`; publico conflita |
+| 3 | Dialog WinForms em projeto WPF | `Microsoft.Win32.OpenFileDialog`/`SaveFileDialog`, nao os de System.Windows.Forms |
+| 4 | `[ObservableProperty]` em `ObservableCollection<T>` | Desnecessario: `public ObservableCollection<Item> Items { get; } = new();` ja implementa `INotifyCollectionChanged` |
+| 5 | CLAUDE.md desatualizado apos migrar | Referencias a Form*.cs envelhecem: atualize stack, nomes de arquivos UI e tabela de projetos |
+| 6 | CanExecute | `[RelayCommand(CanExecute = nameof(PodeSalvar))]` + `SalvarCommand.NotifyCanExecuteChanged()` quando a condicao mudar |
+| 7 | Async command | Metodo que retorna `Task` gera `IAsyncRelayCommand`: desabilita o botao durante a execucao e suporta cancelamento |
+| 8 | String sem inicializar | `private string _nome = string.Empty;`; sem isso bindings podem receber null (warnings ou comportamento inesperado) |
+| 9 | MessageBox em app simples | Em 1-2 telas, `StatusMessage` na barra de status e mais simples e testavel que `IDialogService`; `IContentDialogService` fica para multiplas telas ou dialogs complexos |
+| 10 | Icone pixelado em FluentWindow | `Icon=` no XAML e `BitmapImage` carregam o menor frame do .ico; use `BitmapDecoder` (maior resolucao) e declare o .ico como `<ApplicationIcon>` E `<Resource>` no .csproj |
 
-2. **Campos `[ObservableProperty]` devem ser `private`** — o generator cria a propriedade publica
-   a partir do nome do campo: `_nomeDoNavio` gera `NomeDoNavio`. Se o campo for publico, conflita.
+Leia a secao "Icone da Aplicacao" de `references/wpfui-integration.md` para aplicar o #10.
 
-3. **Nao misturar dialogs WinForms e WPF** — em projetos WPF, usar `Microsoft.Win32.OpenFileDialog`
-   e `Microsoft.Win32.SaveFileDialog`, nao os equivalentes de System.Windows.Forms.
+| # | WPF-UI 4.2.0 | Regra |
+|---|--------------|-------|
+| 11 | `ui:Page` NAO existe | `<Page>` padrao (`System.Windows.Controls`); code-behind herda `Page`, NAO `INavigableView<T>` |
+| 12 | `INavigationViewPageProvider` | Esta em `Wpf.Ui.Abstractions` (NAO em `Wpf.Ui` nem `Wpf.Ui.Controls`); `GetPage(Type pageType)` retorna `object?` |
+| 13 | `MessageBoxButton` conflita | `using MessageBoxButton = System.Windows.MessageBoxButton;` e `using MessageBoxImage = System.Windows.MessageBoxImage;` |
+| 14 | `Wpf.Ui.Controls` global | Conflita com `System.Windows.Controls` (TextBox, ComboBox, Page, Button, `MessageBoxButton`). Qualifique (`: Wpf.Ui.Controls.FluentWindow`) ou use alias (`using ControlAppearance = Wpf.Ui.Controls.ControlAppearance;`) |
+| 15 | PageService e manual | Sem implementacao built-in: `PageService(IServiceProvider sp)` com `GetPage(Type) => sp.GetService(pageType)`; setup `RootNavigation.SetPageProviderService(pageProvider)` (NAO `SetPageService()`) |
+| 16 | Action items do NavigationView | Sem `TargetPageType` (Browse/Upload), nem `ItemInvoked` nem `SelectionChanged` disparam: `PreviewMouseLeftButtonUp` no item, com `e.Handled = true` |
 
-4. **`ObservableCollection<T>` nao precisa de `[ObservableProperty]`** — declare como propriedade
-   publica simples: `public ObservableCollection<Item> Items { get; } = new();`. A collection ja
-   implementa `INotifyCollectionChanged` internamente.
+**17 a 26 — listas grandes, performance e UI.** Leia `references/performance-patterns.md` quando a
+Page tiver lista grande, filtro digitado ou WindowsFormsHost (texto completo e codigo): **17**
+DataGrid com `AutoGenerateColumns="False"`, coluna oculta nao e declarada; **18** o NavigationView
+da altura infinita a Page e ListBox/DataGrid/ListView renderiza TODOS os items: `MaxHeight` +
+`Page_SizeChanged`; **19** Page pesada como `Singleton` (a `Transient` e reconstruida a cada
+navegacao), com `ReloadData()`; **20** `WindowBackdropType="None"` com WindowsFormsHost (`Mica`
+deixa controles WinForms **invisiveis**, bug documentado pela Microsoft); **21** `Page.Resources`
+antes do conteudo, senao `StaticResource` falha em runtime ("StaticResourceExtension"); **22**
+`SolidColorBrush.Freeze()` em brushes estaticos (thread-safety); **23** 100K+ linhas: `List<T>`
+tipado + LINQ em background, nao `DataView.RowFilter` (reflexao, NAO thread-safe; se usar, copie o
+DataTable antes; `DefaultView` compartilhado entre consumidores causa race conditions); **24**
+debounce de 300ms com `CancellationTokenSource` no filtro; **25** cache `??=` em propriedade
+formatada lida a cada frame; **26** caches estaticos como `IReadOnlyList<T>`, nao `List<T>`.
 
-5. **Atualizar CLAUDE.md apos migrar** — referencias a Form*.cs ficam desatualizadas apos migracao.
-   Atualizar descricao do stack, nomes de arquivos UI, e tabela de projetos.
-
-6. **CanExecute com `[RelayCommand]`** — para habilitar/desabilitar botoes automaticamente,
-   use `[RelayCommand(CanExecute = nameof(PodeSalvar))]` e chame
-   `SalvarCommand.NotifyCanExecuteChanged()` quando a condicao mudar.
-
-7. **Async commands cancelam automaticamente** — se o metodo retorna `Task`, o `[RelayCommand]`
-   gera `IAsyncRelayCommand` que desabilita o botao durante execucao e suporta cancelamento.
-
-8. **Inicializar campos string com `= string.Empty`** — campos `[ObservableProperty]` do tipo
-   string devem ser inicializados: `private string _nome = string.Empty;`. Sem isso, bindings
-   podem receber null e causar warnings ou comportamento inesperado.
-
-9. **StatusMessage como alternativa a MessageBox** — para apps simples (1-2 telas), substituir
-   `MessageBox.Show()` por atualizar uma propriedade `StatusMessage` no ViewModel e exibi-la
-   na barra de status e mais simples e testavel que criar `IDialogService`. Reservar
-   `IContentDialogService` do WPF-UI para apps com multiplas telas ou dialogs complexos.
-
-10. **Icone da aplicacao em FluentWindow** — nao usar `Icon=` no XAML nem `BitmapImage` no
-    code-behind (ambos carregam o menor frame do .ico e ficam pixelados). Usar `BitmapDecoder`
-    para selecionar o frame de maior resolucao. Declarar o .ico como `<ApplicationIcon>` E
-    `<Resource>` no .csproj. Veja `references/wpfui-integration.md` secao "Icone da Aplicacao".
-
-11. **`ui:Page` NAO existe no WPF-UI 4.2.0** — usar `<Page>` padrao do WPF
-    (namespace `System.Windows.Controls`). Code-behind herda `Page`, NAO `INavigableView<T>`.
-
-12. **`INavigationViewPageProvider` esta em `Wpf.Ui.Abstractions`** — NAO em `Wpf.Ui` nem
-    `Wpf.Ui.Controls`. Metodo: `GetPage(Type pageType)` retorna `object?`.
-
-13. **`MessageBoxButton` conflita com WPF-UI** — quando ambos namespaces sao usados, adicionar
-    alias: `using MessageBoxButton = System.Windows.MessageBoxButton;` e
-    `using MessageBoxImage = System.Windows.MessageBoxImage;`.
-
-14. **Nao importar `Wpf.Ui.Controls` globalmente** — causa conflitos com `MessageBoxButton`,
-    `Page`, etc. Qualificar tipos WPF-UI individualmente:
-    `public partial class MainWindow : Wpf.Ui.Controls.FluentWindow`.
-
-15. **PageService deve ser criado manualmente** — WPF-UI nao fornece implementacao built-in de
-    `INavigationViewPageProvider`. Criar classe `PageService(IServiceProvider sp)` com
-    `GetPage(Type) => sp.GetService(pageType)`. Setup:
-    `RootNavigation.SetPageProviderService(pageProvider)` (NAO `SetPageService()`).
-
-16. **NavigationView action items: usar `PreviewMouseLeftButtonUp`** — no WPF-UI 4.2.0,
-    nem `ItemInvoked` nem `SelectionChanged` disparam para NavigationViewItems sem
-    `TargetPageType` (items de acao como Browse/Upload). Usar `PreviewMouseLeftButtonUp`
-    diretamente no NavigationViewItem com `e.Handled = true`.
-
-17. **DataGrid: usar `AutoGenerateColumns="False"`** — definir colunas explicitamente em XAML
-    para controlar visibilidade, headers e formatacao. Colunas que nao devem aparecer simplesmente
-    nao sao declaradas (mais limpo que `Visibility="Collapsed"` em cada coluna).
-
-18. **NavigationView quebra virtualizacao** — o NavigationView do WPF-UI internamente usa layout
-    que da **altura infinita** as paginas. Qualquer ListBox/DataGrid/ListView dentro de uma Page
-    recebe ActualHeight infinito e renderiza TODOS os items (virtualizacao desabilitada).
-    Fix: usar `MaxHeight` fixo + `Page_SizeChanged` para ajustar dinamicamente:
-    ```csharp
-    private void Page_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        if (dgvLog != null && e.NewSize.Height > 100)
-            dgvLog.MaxHeight = e.NewSize.Height - 120;
-    }
-    ```
-
-19. **Singleton para paginas pesadas** — Pages registradas como `Transient` sao recriadas a cada
-    navegacao (visual tree, bindings, tudo reconstruido). Para paginas com dados grandes, registrar
-    como `Singleton` no DI evita reconstrucao e mantem estado de scroll/filtro. Adicionar metodo
-    `ReloadData()` para resetar quando novos dados sao carregados.
-
-20. **WindowBackdropType="None" com WindowsFormsHost** — `Mica` habilita transparencia
-    internamente, o que torna controles WinForms (via WindowsFormsHost) **invisiveis**. Bug
-    documentado pela Microsoft. Usar `WindowBackdropType="None"` se WindowsFormsHost for necessario.
-
-21. **Page.Resources antes do conteudo** — declarar `<Page.Resources>` com Styles/converters
-    antes do conteudo XAML (DockPanel, Grid, etc). Se declarado depois, `StaticResource` falha
-    com erro "StaticResourceExtension" em runtime.
-
-22. **SolidColorBrush.Freeze()** — brushes estaticos devem ser frozen para thread-safety:
-    ```csharp
-    private static SolidColorBrush CreateFrozenBrush(byte r, byte g, byte b)
-    {
-        var brush = new SolidColorBrush(Color.FromRgb(r, g, b));
-        brush.Freeze();
-        return brush;
-    }
-    ```
-
-23. **LINQ filter em POCOs em vez de DataView.RowFilter** — para listas grandes (100K+),
-    converter DataTable para `List<T>` tipado em background e filtrar com LINQ e mais rapido
-    e thread-safe que DataView.RowFilter (que usa reflexao e nao e thread-safe).
-
-24. **Debounce para filtros** — em TextBoxes de filtro, usar debounce de 300ms com
-    `CancellationTokenSource` para filtrar enquanto o usuario digita sem travar a UI:
-    ```csharp
-    _filterCts?.Cancel();
-    _filterCts?.Dispose();
-    _filterCts = new CancellationTokenSource();
-    _ = Task.Delay(300, _filterCts.Token).ContinueWith(t => {
-        if (!t.IsCanceled) Dispatcher.Invoke(ApplyFilter);
-    });
-    ```
-
-25. **Lazy property caching com ??=** — para propriedades formatadas chamadas repetidamente
-    pelo binding (ex: DateTimeFormatted), usar lazy initialization para evitar ToString() em
-    cada frame de renderizacao:
-    ```csharp
-    private string? _formatted;
-    public string Formatted => _formatted ??= DateTime.ToString("dd/MM/yyyy HH:mm:ss");
-    ```
-
-26. **IReadOnlyList para caches** — expor caches estaticos como `IReadOnlyList<T>` em vez de
-    `List<T>` para prevenir modificacao acidental por consumidores.
-
-27. **Lifecycle mismatch: Transient VM + Singleton Service = memory leak** — se um ViewModel
-    registrado como Transient assina `PropertyChanged` de um servico Singleton (ex: IAppStateService),
-    cada navegacao cria uma nova instancia que nunca e dessubscrita. O Singleton mantem delegate
-    references para instancias mortas, impedindo o GC. Em apps com NavigationView, onde paginas sao
-    recriadas a cada navegacao, isso causa leak cumulativo. **Fix preferido**: registrar ViewModels
-    como Singleton (consistente com Detalhe #19 sobre paginas pesadas). Alternativas: implementar
-    `IDisposable` com unsubscribe, ou usar `WeakEventManager` (mas este requer `System.Windows`
-    que viola a separacao ViewModel/UI).
-
-28. **Visibility bindings esquecidos ao migrar handlers** — ao converter Click handlers que
-    alternavam `Visibility` de paineis para Commands no ViewModel, e comum criar as propriedades
-    `IsXxxVisible` no VM mas esquecer de adicionar `Visibility="{Binding IsXxxVisible,
-    Converter={StaticResource BoolToVis}}"` no XAML. O resultado e que os Commands executam mas
-    nada muda visualmente. Sempre auditar o XAML apos converter handlers de visibilidade.
+27. **Lifecycle mismatch: Transient VM + Singleton Service = memory leak** — VM `Transient` que
+    assina `PropertyChanged` de servico Singleton (ex: IAppStateService) ganha instancia nova a
+    cada navegacao, nunca dessubscrita: o Singleton guarda delegates de instancias mortas e o GC
+    nao as coleta. Com NavigationView (paginas recriadas a cada navegacao) o leak e cumulativo.
+    **Fix preferido:** ViewModels como Singleton (consistente com #19). Alternativas:
+    `IDisposable` com unsubscribe, ou `WeakEventManager` (requer `System.Windows`, o que viola a
+    separacao ViewModel/UI).
+28. **Visibility bindings esquecidos ao migrar handlers** — ao trocar Click handlers que
+    alternavam `Visibility` por Commands, e comum criar `IsXxxVisible` no VM e esquecer
+    `Visibility="{Binding IsXxxVisible, Converter={StaticResource BoolToVis}}"` no XAML: o Command
+    executa e nada muda na tela. Audite o XAML depois de converter handlers de visibilidade.
 
 ---
 
 ## Anti-padroes desta Skill
 
-- **ViewModel referenciando UI** — ViewModel nao importa `System.Windows` nem acessa
-  controles da View; e isso que o mantem testavel sem abrir janela. Use bindings, Messenger
-  (eventos pontuais) ou um servico de estado compartilhado (secao abaixo).
-- **Logica de negocio no ViewModel** — ViewModel orquestra, Service executa. Se o ViewModel
-  esta fazendo IO, parsing ou calculo complexo, mova para um Service.
-- **`new ViewModel()` no XAML** — funciona, mas impede DI. Prefira injetar via construtor.
-- **Ignorar UpdateSourceTrigger** — `TextBox` default e `LostFocus`. Use
-  `UpdateSourceTrigger=PropertyChanged` para validacao em tempo real.
-- **`List<T>` em vez de `ObservableCollection<T>`** — `List` nao notifica a View quando
-  itens sao adicionados/removidos. Sempre use `ObservableCollection` para listas bindadas.
-- **DataGrid/ListView para listas grandes (>5K items)** — WPF DataGrid e ListView travam
-  dentro de NavigationView mesmo com virtualizacao. Usar ListBox com paginacao (500 items/pagina)
-  ou registrar a Page como Singleton. Nunca confiar apenas na virtualizacao sem testar.
-- **DataView.RowFilter em background thread** — DataView NAO e thread-safe. Usar LINQ em
-  `List<T>` tipado ou copiar o DataTable antes de filtrar. `DefaultView` compartilhado entre
-  consumidores causa race conditions.
-- **SymbolIcons inexistentes** — nem todos os icones listados na documentacao do WPF-UI existem
-  na versao 4.2.0. Exemplos que NAO existem: `SignalStrength24`, `PlugConnected24`. Testar
-  em runtime antes de commitar.
-- **`async void` em metodos que nao sao event handlers** — metodos `async void` fora de
-  handlers UI (Click, Loaded) causam excecoes nao-observadas que podem crashar a aplicacao.
-  Sempre usar `async Task` e `await` no chamador. `[RelayCommand]` gera `IAsyncRelayCommand`
-  que ja usa `async Task` internamente — nunca converter para `async void`.
-- **`using Wpf.Ui.Controls;` global** — conflita com `System.Windows.Controls` (TextBox,
-  ComboBox, Page, Button). Usar type aliases: `using ControlAppearance = Wpf.Ui.Controls.ControlAppearance;`
-- **ContentDialogPresenter no XAML** — o elemento correto e `<ui:ContentDialogHost>`, nao
-  `<ui:ContentPresenter>` ou `<ui:ContentDialogPresenter>`. Erro comum que causa crash.
-- **ShowSimpleDialogAsync sem using** — `ShowSimpleDialogAsync` e extension method em
-  `Wpf.Ui.Extensions`. Requer `using Wpf.Ui.Extensions;` no arquivo.
-- **`new Service()` dentro do ViewModel** — ViewModel nao deve instanciar servicos diretamente.
-  Use injecao de construtor. Se o service e thin wrapper (ex: `new UsuariosServicos(repo)`), injete
-  a interface subjacente diretamente (`IUsuariosRepositorio`) e chame `_repo.Salvar()`. Instanciar
-  services no VM impede mocking nos testes e viola o principio de inversao de dependencias.
-- **Remover error handling ao migrar handlers** — handlers de Click frequentemente tem `try/catch`
-  com `MessageBox.Show()` no catch. Ao migrar para `[RelayCommand]`, e facil esquecer o error path.
-  O resultado e que falhas sao engolidas silenciosamente (o usuario nao recebe feedback). Sempre
-  preservar error handling: use `StatusMessage` property ou `IContentDialogService` no catch.
+| Anti-padrao | Por que e o que fazer |
+|-------------|-----------------------|
+| ViewModel referenciando UI | Nao importa `System.Windows` nem acessa controles da View: e isso que o mantem testavel sem abrir janela. Use bindings, Messenger (eventos pontuais) ou `IAppStateService` (secao abaixo) |
+| Logica de negocio no ViewModel | ViewModel orquestra, Service executa: IO, parsing ou calculo complexo vao para um Service |
+| `new ViewModel()` no XAML | Funciona, mas impede DI; injete via construtor |
+| Ignorar UpdateSourceTrigger | O default do `TextBox` e `LostFocus`; use `UpdateSourceTrigger=PropertyChanged` para validacao em tempo real |
+| `List<T>` em vez de `ObservableCollection<T>` | `List` nao notifica a View quando itens sao adicionados/removidos |
+| DataGrid/ListView para listas grandes (>5K items) | Travam dentro de NavigationView mesmo com virtualizacao. ListBox com paginacao (500 items/pagina) ou Page Singleton; nunca confie so na virtualizacao sem testar |
+| DataView.RowFilter em background thread | DataView NAO e thread-safe (Detalhe #23) |
+| SymbolIcons inexistentes | Nem todo icone da documentacao existe no WPF-UI 4.2.0 (ex.: `SignalStrength24`, `PlugConnected24`); teste em runtime antes de commitar |
+| `async void` fora de event handler | Fora de handlers UI (Click, Loaded) a excecao nao e observada e pode crashar a app. Use `async Task` e `await` no chamador; `[RelayCommand]` ja gera `IAsyncRelayCommand` com `async Task`, nunca converta para `async void` |
+| ContentDialogPresenter no XAML | O elemento correto e `<ui:ContentDialogHost>`, nao `<ui:ContentPresenter>` ou `<ui:ContentDialogPresenter>`; erro comum que causa crash |
+| ShowSimpleDialogAsync sem using | E extension method em `Wpf.Ui.Extensions`: requer `using Wpf.Ui.Extensions;` |
+| `new Service()` dentro do ViewModel | Impede mocking e viola inversao de dependencias; injete via construtor. Thin wrapper (ex: `new UsuariosServicos(repo)`): injete a interface subjacente (`IUsuariosRepositorio`) e chame `_repo.Salvar()` |
+| Remover error handling ao migrar handlers | O `try/catch` com `MessageBox.Show()` do Click handler some na migracao para `[RelayCommand]` e a falha e engolida sem feedback. Preserve o error path: `StatusMessage` ou `IContentDialogService` no catch |
 
 ---
 
 ## Checklist Pre-Migracao de Pagina
 
-Antes de migrar cada Page para MVVM, audite o code-behind e verifique:
+Antes de migrar cada Page para MVVM, audite o code-behind:
 
-1. **Event handlers** — listar todos (Click, Loaded, TextChanged, SelectionChanged, KeyDown)
-2. **Visibilidade por codigo** — `element.Visibility = Visible/Collapsed` → precisara de
-   binding com `BooleanToVisibilityConverter`. Facil de esquecer (ver Detalhe #28)
-3. **ComboBox com selecao logica** — se a selecao do ComboBox afeta comportamento (ex: tipo
-   de filtro), precisa de binding ou `SelectionChanged` handler que atualiza o ViewModel
-4. **Error handling em handlers** — `try/catch` com MessageBox → preservar no ViewModel com
-   `StatusMessage` ou `IContentDialogService` (nao remover silenciosamente)
-5. **Custom controls imperativos** — controles com API `GetValue()/SetValue()/SetDate()` sem
-   DependencyProperties → nao suportam binding (ver secao Custom Controls abaixo)
-6. **Operacoes visuais** — `ScrollToTop()`, `Focus()`, `Mouse.OverrideCursor` → manter em
-   code-behind como excecao MVVM documentada (a mesma da tabela do Passo 5)
-7. **Testes com reflection** — testes que usam `typeof(Page).GetMethod()` para metodos privados
-   quebrarao quando o metodo for movido para o ViewModel. Atualizar `typeof` apos mover
-
----
-
-## Estado Compartilhado (IAppStateService)
-
-Para apps com multiplas paginas que compartilham estado (ex: dados carregados, modo de operacao,
-filtros ativos), um servico Singleton com `INotifyPropertyChanged` e mais simples e direto que
-`IMessenger` (WeakReferenceMessenger):
-
-```csharp
-public interface IAppStateService : INotifyPropertyChanged
-{
-    VDR? Vdr { get; }
-    bool IsVdrLoaded { get; }
-    bool ModoCoCAtivado { get; }
-    string SelectedPath { get; }
-    void CarregarVdr(VDR vdr, string path, bool modoCoc);
-}
-```
-
-**Quando usar IAppStateService vs IMessenger:**
-
-| Cenario | Padrao |
-|---------|--------|
-| Estado central que multiplos VMs leem | IAppStateService (Singleton + INotifyPropertyChanged) |
-| Evento pontual entre VMs sem estado | IMessenger (WeakReferenceMessenger) |
-| Notificacao de navegacao | IMessenger |
-| Dados de sessao (usuario logado, modo) | IAppStateService |
-
-**Regra critica:** se ViewModels assinam `PropertyChanged` de um servico Singleton, registrar
-os VMs tambem como Singleton para evitar memory leak (ver Detalhe #27).
-
-**Testabilidade:** `IAppStateService` e facilmente mockavel com NSubstitute:
-```csharp
-var appState = Substitute.For<IAppStateService>();
-appState.IsVdrLoaded.Returns(true);
-appState.Vdr.Returns(new VDR1800());
-var vm = new ChannelsPageViewModel(appState);
-```
+1. **Event handlers** — listar todos (Click, Loaded, TextChanged, SelectionChanged, KeyDown).
+2. **Visibilidade por codigo** — `element.Visibility = Visible/Collapsed` pede binding com
+   `BooleanToVisibilityConverter`. Facil de esquecer (Detalhe #28).
+3. **ComboBox com selecao logica** — se a selecao afeta comportamento (ex: tipo de filtro),
+   precisa de binding ou `SelectionChanged` handler que atualiza o ViewModel.
+4. **Error handling em handlers** — `try/catch` com MessageBox vira `StatusMessage` ou
+   `IContentDialogService` no ViewModel, nunca remocao silenciosa.
+5. **Custom controls imperativos** — API `GetValue()/SetValue()/SetDate()` sem
+   DependencyProperties nao suporta binding (secao "Estado Compartilhado e Custom Controls").
+6. **Operacoes visuais** — `ScrollToTop()`, `Focus()`, `Mouse.OverrideCursor` ficam no
+   code-behind como excecao MVVM documentada (a mesma da tabela do Passo 5).
+7. **Testes com reflection** — `typeof(Page).GetMethod()` em metodo privado quebra quando o
+   metodo vai para o ViewModel; atualize o `typeof` apos mover.
 
 ---
 
-## Custom Controls e Data Binding
+## Estado Compartilhado e Custom Controls
 
-Se o projeto usa UserControls custom (ex: controles de formulario especializados como
-APTCheckBoxWPF, AptDateWPF), audite ANTES de planejar a migracao:
-
-1. **Verificar DependencyProperties** — o controle expoe DP para seu valor principal?
-   ```bash
-   grep -r "DependencyProperty" <pasta-dos-controles-custom>/
-   ```
-   Se retorna vazio, o controle nao suporta data binding.
-
-2. **API imperativa = sem binding** — se o controle usa `GetValue()/SetValue()/SetDate()/GetDay()`
-   em vez de DependencyProperties, data binding bidirecional e impossivel.
-
-3. **Abordagem pragmatica para migracao:**
-   - ViewModel gerencia Commands e estado de visibilidade (funciona sem DP)
-   - Code-behind mantem mapeamento imperativo (FillForm/GetForm) como excecao documentada
-   - Planejar spec separada para adicionar DependencyProperties aos custom controls
-   - Quando DPs estiverem prontas, substituir code-behind por binding no XAML
-
-4. **Adicionar DependencyProperties** (spec separada) — cada controle precisa de pelo menos
-   uma DP para seu valor principal. Exemplo para um checkbox custom:
-   ```csharp
-   public static readonly DependencyProperty ValueProperty =
-       DependencyProperty.Register(nameof(Value), typeof(string), typeof(APTCheckBoxWPF),
-           new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,
-               OnValueChanged));
-   ```
+- **Estado compartilhado** — estado central que varios VMs leem (dados carregados, modo, filtros,
+  usuario logado) vai num `IAppStateService` Singleton com `INotifyPropertyChanged`; evento
+  pontual entre VMs ou notificacao de navegacao vai no `IMessenger` (WeakReferenceMessenger).
+  VMs que assinam o `PropertyChanged` dele tambem sao Singleton (Detalhe #27). Leia a secao
+  "Estado Compartilhado (IAppStateService)" de `references/mvvm-fundamentals.md` quando for
+  desenhar o estado.
+- **Custom Controls** — UserControl custom sem `DependencyProperty` para o valor principal (API
+  imperativa `GetValue()/SetValue()/SetDate()/GetDay()`) nao aceita binding bidirecional. Leia
+  `references/custom-controls-binding.md` antes de planejar a migracao de Page que os usa.
 
 ---
 
@@ -641,8 +307,11 @@ Leia estes arquivos **somente quando necessario** no passo correspondente:
 
 | Arquivo | Leia quando... |
 |---------|----------------|
-| `references/mvvm-fundamentals.md` | Usuario e novo em MVVM ou quer entender conceitos |
-| `references/communitytoolkit-patterns.md` | Passo 4 — criando ViewModels com source generators |
-| `references/wpfui-integration.md` | Passo 3 — configurando DI, navegacao e theming com WPF-UI |
-| `references/migration-winforms-to-wpf.md` | Projeto e WinForms e precisa migrar para WPF |
-| `references/project-structure.md` | Criando projeto do zero ou reorganizando pastas |
+| `references/mvvm-fundamentals.md` | Quando o usuario for novo em MVVM ou for usar Messenger/IAppStateService |
+| `references/communitytoolkit-patterns.md` | No Passo 4, para criar ViewModels com source generators |
+| `references/wpfui-integration.md` | No Passo 3, para configurar DI, navegacao, dialogs e theming com WPF-UI |
+| `references/migration-winforms-to-wpf.md` | Quando o projeto for WinForms e precisar migrar para WPF |
+| `references/project-structure.md` | Quando criar projeto do zero ou reorganizar pastas |
+| `references/viewmodel-testing.md` | Ao escrever testes de ViewModel (Command com dialog, reflection) |
+| `references/custom-controls-binding.md` | Antes de migrar Page com UserControls custom sem DependencyProperty |
+| `references/performance-patterns.md` | Quando houver lista grande, filtro digitado ou WindowsFormsHost (Detalhes #17-#26) |

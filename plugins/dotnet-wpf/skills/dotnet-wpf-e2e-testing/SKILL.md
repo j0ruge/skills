@@ -1,7 +1,7 @@
 ---
 name: dotnet-wpf-e2e-testing
 metadata:
-  version: 1.7.0
+  version: 1.8.0
 description: FlaUI + xUnit E2E testing for WPF — project setup, AutomationId annotation, Page Objects, smoke tests, file-dialog automation, CI/CD wiring. Unit tests live in dotnet-wpf-mvvm. Triggers — WPF E2E, FlaUI, AutomationId, Page Object, smoke test.
 ---
 
@@ -362,7 +362,7 @@ public class MainWindowTests : FlaUITestBase
 }
 ```
 
-#### Cuidado com linters e auto-formatters
+#### Armadilha: linters e auto-formatters
 
 Testes E2E têm fluxos com efeito colateral (Arrange → Act com dialog → Assert) que linters e refactors automáticos podem reorganizar sem entender a lógica: uma chamada de helper cujo único efeito é abrir o dialog parece "código morto", e um literal de teste parece candidato a `CultureInfo.CurrentCulture`. O teste continua compilando e passa a verificar outra coisa.
 
@@ -373,198 +373,21 @@ Recomendações:
 
 #### Extraindo helpers para reduzir duplicação
 
-Quando múltiplos testes compartilham fluxos (ex: carregar arquivo, preencher campos, salvar), extraia métodos helpers privados na classe de teste. Isso centraliza screenshot on failure e evita copiar/colar blocos de 20+ linhas entre testes:
-
-```csharp
-// Helper reutilizado por todos os testes que carregam .hid
-private void LoadHardwareId(MainWindowPage page)
-{
-    var hidPath = Path.GetFullPath(TestConstants.SampleHidPath);
-    try
-    {
-        page.ClickLoadHardware();
-        FileDialogHelper.SelectFile(MainWindow, hidPath);
-    }
-    catch (Exception ex)
-    {
-        CaptureScreenshot("LoadHardwareId_Error");
-        throw new InvalidOperationException($"Dialog falhou: {ex.Message}", ex);
-    }
-    Retry.WhileTrue(
-        () => string.IsNullOrEmpty(MainWindowPage.GetText(page.CompanyNameTextBox)),
-        timeout: TimeSpan.FromSeconds(10));
-}
-```
+Quando múltiplos testes compartilham fluxos (ex: carregar arquivo, preencher campos, salvar), extraia métodos helpers privados na classe de teste. Isso centraliza screenshot on failure e evita copiar/colar blocos de 20+ linhas entre testes.
+O exemplo `LoadHardwareId()` (dialog, screenshot no erro, `Retry.WhileTrue` até o campo popular) está em `references/file-dialogs.md`; leia-o quando o helper abrir um dialog.
 
 ### Passo 6: Lidar com File Dialogs
 
-File dialogs (`OpenFileDialog`, `SaveFileDialog`) são janelas Win32 fora da árvore visual WPF. Existem duas estratégias:
+File dialogs (`OpenFileDialog`, `SaveFileDialog`) são janelas Win32 fora da árvore visual WPF. Existem duas estratégias.
+O código completo de ambas (`IFileDialogService`, `WpfFileDialogService`, ViewModel, `FileDialogHelper`) está em `references/file-dialogs.md`: leia-o antes de escrever qualquer uma.
 
-#### Estratégia A: Abstrair com IFileDialogService (Recomendado)
-
-A melhor abordagem para testabilidade é abstrair dialogs atrás de uma interface, permitindo substituição por fake em testes.
-
-```csharp
-// Interface
-public interface IFileDialogService
-{
-    string? OpenFile(string filter);
-    string? SaveFile(string filter, string defaultFileName);
-}
-
-// Produção
-public class WpfFileDialogService : IFileDialogService
-{
-    public string? OpenFile(string filter)
-    {
-        var dlg = new Microsoft.Win32.OpenFileDialog { Filter = filter };
-        return dlg.ShowDialog() == true ? dlg.FileName : null;
-    }
-
-    public string? SaveFile(string filter, string defaultFileName)
-    {
-        var dlg = new Microsoft.Win32.SaveFileDialog
-        {
-            Filter = filter,
-            FileName = defaultFileName
-        };
-        return dlg.ShowDialog() == true ? dlg.FileName : null;
-    }
-}
-```
-
-No ViewModel, injete `IFileDialogService` e separe a lógica testável do dialog:
-
-```csharp
-public partial class MainWindowViewModel(
-    LicenseService licenseService,
-    IFileDialogService fileDialog) : ObservableObject
-{
-    [RelayCommand]
-    private void CarregarHardwareId()
-    {
-        var path = fileDialog.OpenFile("Hardware ID|*.hid");
-        if (path is not null)
-        {
-            PopularCampos(licenseService.RecuperarDeArquivo(path));
-        }
-    }
-
-    // Método testável separado — sem dependência de dialog
-    public void PopularCampos(HardwareInfo info) { /* ... */ }
-}
-```
-
-#### Estratégia B: Automatizar o Dialog Diretamente
-
-Para testes E2E reais que precisam testar o fluxo completo incluindo o dialog, automatize o dialog Win32 via FlaUI. A automação de file dialogs é significativamente mais complexa do que parece — requer múltiplas estratégias de fallback e waits explícitos porque o dialog Win32 varia entre versões do Windows e localizações.
-
-```csharp
-using System.IO;
-using System.Threading;
-using FlaUI.Core.AutomationElements;
-using FlaUI.Core.Input;
-using FlaUI.Core.Tools;
-using FlaUI.Core.WindowsAPI;
-
-namespace MyApp.E2ETests.Infrastructure;
-
-public static class FileDialogHelper
-{
-    public static void SelectFile(Window parentWindow, string filePath,
-        int timeoutMs = TestConstants.ElementTimeoutMs)
-    {
-        if (!File.Exists(filePath))
-        {
-            throw new FileNotFoundException($"Arquivo não existe: {filePath}");
-        }
-
-        InteractWithDialog(parentWindow, filePath, timeoutMs);
-    }
-
-    public static void SaveFile(Window parentWindow, string filePath,
-        int timeoutMs = TestConstants.ElementTimeoutMs)
-    {
-        var dir = Path.GetDirectoryName(filePath);
-        if (dir is not null) { Directory.CreateDirectory(dir); }
-
-        InteractWithDialog(parentWindow, filePath, timeoutMs);
-    }
-
-    private static void InteractWithDialog(Window parentWindow, string filePath,
-        int timeoutMs)
-    {
-        // 1. Esperar o dialog modal aparecer
-        var dialog = Retry.WhileNull(
-            () => parentWindow.ModalWindows.FirstOrDefault(),
-            timeout: TimeSpan.FromMilliseconds(timeoutMs),
-            interval: TimeSpan.FromMilliseconds(300)
-        ).Result ?? throw new TimeoutException(
-            $"File dialog não apareceu após {timeoutMs}ms");
-
-        // 2. Esperar dialog renderizar completamente
-        //    Thread.Sleep é necessário aqui — Retry não resolve porque o dialog
-        //    aparece na árvore antes dos controles internos estarem prontos
-        Thread.Sleep(TestConstants.DialogRenderDelayMs);
-        dialog.SetForeground();
-        Thread.Sleep(TestConstants.DialogFocusDelayMs);
-
-        // 3. Encontrar campo filename (AutomationId "1148" no Win10/11)
-        var fileNameEdit = dialog.FindFirstDescendant(
-            cf => cf.ByAutomationId("1148"));
-
-        if (fileNameEdit is not null)
-        {
-            // Click → Ctrl+A → Delete → Type caminho completo
-            fileNameEdit.Click();
-            Thread.Sleep(TestConstants.FieldActivationDelayMs);
-            Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
-            Thread.Sleep(TestConstants.KeystrokeDelayMs);
-            Keyboard.Press(VirtualKeyShort.DELETE);
-            Thread.Sleep(TestConstants.KeystrokeDelayMs);
-            Keyboard.Type(filePath);
-            Thread.Sleep(TestConstants.InputProcessingDelayMs);
-        }
-        else
-        {
-            // Fallback: Alt+D foca a barra de endereço, Alt+N foca filename
-            Keyboard.TypeSimultaneously(VirtualKeyShort.ALT, VirtualKeyShort.KEY_D);
-            Thread.Sleep(TestConstants.InputProcessingDelayMs);
-            Keyboard.Type(Path.GetDirectoryName(filePath) ?? filePath);
-            Thread.Sleep(TestConstants.FieldActivationDelayMs);
-            Keyboard.Press(VirtualKeyShort.ENTER);
-            Thread.Sleep(TestConstants.NavigationDelayMs);
-            Keyboard.TypeSimultaneously(VirtualKeyShort.ALT, VirtualKeyShort.KEY_N);
-            Thread.Sleep(TestConstants.FieldActivationDelayMs);
-            Keyboard.Type(Path.GetFileName(filePath));
-            Thread.Sleep(TestConstants.FieldActivationDelayMs);
-        }
-
-        // 4. Confirmar — tentar botão por AutomationId, por nome, ou Enter
-        var confirmBtn = dialog.FindFirstDescendant(
-            cf => cf.ByAutomationId("1"))?.AsButton();
-        if (confirmBtn is not null)
-        {
-            confirmBtn.Invoke();
-        }
-        else
-        {
-            var namedBtn = dialog.FindFirstDescendant(
-                cf => cf.ByName("Abrir"))?.AsButton()
-                ?? dialog.FindFirstDescendant(cf => cf.ByName("Open"))?.AsButton()
-                ?? dialog.FindFirstDescendant(cf => cf.ByName("Salvar"))?.AsButton();
-            if (namedBtn is not null) { namedBtn.Invoke(); }
-            else { Keyboard.Press(VirtualKeyShort.ENTER); }
-        }
-
-        // 5. Esperar dialog fechar
-        Retry.WhileTrue(
-            () => parentWindow.ModalWindows.Length > 0,
-            timeout: TimeSpan.FromMilliseconds(timeoutMs + 5000),
-            interval: TimeSpan.FromMilliseconds(500));
-    }
-}
-```
+- **Estratégia A — abstrair com `IFileDialogService` (recomendado):** interface com `OpenFile(filter)` e `SaveFile(filter, defaultFileName)`, implementação de produção com `Microsoft.Win32`, injetada no ViewModel. A lógica pós-dialog vira método público testável (`PopularCampos(HardwareInfo)`), e o teste troca o serviço por fake.
+- **Estratégia B — automatizar o dialog Win32 via FlaUI:** para E2E que precisa cobrir o fluxo completo, incluindo o dialog. É bem mais complexa do que parece: o dialog varia entre versões do Windows e localizações, e exige fallbacks e waits explícitos. O `FileDialogHelper` (`SelectFile` falha se o arquivo não existe; `SaveFile` cria o diretório) segue cinco passos:
+  1. Esperar o modal: `Retry.WhileNull(() => parentWindow.ModalWindows.FirstOrDefault(), ...)`, com `TimeoutException` se não aparecer.
+  2. Esperar o render: `Thread.Sleep(DialogRenderDelayMs)`, `SetForeground()`, `Thread.Sleep(DialogFocusDelayMs)`.
+  3. Campo filename pelo AutomationId `"1148"` (Win10/11): Click, Ctrl+A, Delete, digitar o caminho completo. Sem o campo: Alt+D (barra de endereço) com o diretório + Enter, depois Alt+N com o nome do arquivo.
+  4. Confirmar pelo botão de AutomationId `"1"`, senão por nome (`"Abrir"`, `"Open"`, `"Salvar"`), senão Enter.
+  5. Esperar o dialog fechar: `Retry.WhileTrue(() => parentWindow.ModalWindows.Length > 0, ...)` com timeout `timeoutMs + 5000`.
 
 > **Sobre Thread.Sleep em file dialogs:** Embora a orientação geral seja evitar `Thread.Sleep()`, dialogs Win32 são uma exceção legítima. O dialog aparece na árvore de automação antes dos controles internos estarem prontos para interação. Os sleeps entre operações de teclado garantem que cada keystroke é processado antes do próximo. Sem eles, a automação é instável.
 
@@ -608,3 +431,4 @@ Ao criar testes E2E para uma tela WPF, siga este checklist:
 | `references/flaui-patterns.md` | Padrões avançados FlaUI, wait strategies, DataGrid, navegação | Ao criar Page Objects complexos ou lidar com controles específicos |
 | `references/xaml-automation.md` | Setup de AutomationId, WPF-UI specifics, AutomationPeer | Ao preparar XAML para testes, especialmente com controles WPF-UI |
 | `references/ci-cd-setup.md` | GitHub Actions, Azure DevOps, runners self-hosted | Ao configurar pipeline de CI/CD para testes E2E |
+| `references/file-dialogs.md` | `IFileDialogService` + fake, `FileDialogHelper` completo, helper `LoadHardwareId()` | Quando o fluxo testado abre `OpenFileDialog`/`SaveFileDialog` (Passo 6) |

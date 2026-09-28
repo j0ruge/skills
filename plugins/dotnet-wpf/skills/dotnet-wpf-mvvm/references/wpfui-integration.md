@@ -5,6 +5,20 @@ Leia durante o Passo 3 (configurar App.xaml.cs).
 
 ---
 
+## Sumario
+
+- [App.xaml — Configuracao de Tema](#appxaml--configuracao-de-tema)
+- [App.xaml.cs — Composition Root Completo](#appxamlcs--composition-root-completo)
+- [FluentWindow](#fluentwindow)
+- [NavigationView (Apps Multi-Pagina)](#navigationview-apps-multi-pagina)
+- [Conflitos de Namespace (WPF-UI 4.2.0)](#conflitos-de-namespace-wpf-ui-420)
+- [NavigationView: Items de Acao vs Paginas](#navigationview-items-de-acao-vs-paginas)
+- [IContentDialogService (Dialogs MVVM-Friendly)](#icontentdialogservice-dialogs-mvvm-friendly)
+- [Troca de Tema em Runtime](#troca-de-tema-em-runtime)
+- [Icone da Aplicacao](#icone-da-aplicacao)
+
+---
+
 ## App.xaml — Configuracao de Tema
 
 ```xml

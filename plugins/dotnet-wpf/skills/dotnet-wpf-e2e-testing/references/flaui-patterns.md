@@ -188,7 +188,7 @@ public abstract class PageBase(Window window)
 
     /// <summary>
     /// Lê texto de controles WPF-UI que podem não expor .Text via AsTextBox().
-    /// Consulte references/xaml-automation.md para detalhes.
+    /// Consulte xaml-automation.md (roteado pelo SKILL.md) para detalhes.
     /// </summary>
     public static string GetText(AutomationElement element)
     {

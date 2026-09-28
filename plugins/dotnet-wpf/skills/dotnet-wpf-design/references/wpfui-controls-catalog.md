@@ -7,6 +7,20 @@ Leia quando quiser saber quais controles do WPF-UI estao disponiveis para uma si
 
 ---
 
+## Sumario
+
+- [1. Input Controls](#1-input-controls)
+- [2. Button Variants](#2-button-variants)
+- [3. Cards](#3-cards)
+- [4. Dialogs e Notificacoes](#4-dialogs-e-notificacoes)
+- [5. Date & Time](#5-date--time)
+- [6. Progress & Loading](#6-progress--loading)
+- [7. Scroll Controls](#7-scroll-controls)
+- [8. Window & Theme](#8-window--theme)
+- [Gotchas Conhecidos (WPF-UI 4.2.0)](#gotchas-conhecidos-wpf-ui-420)
+
+---
+
 ## 1. Input Controls
 
 ### ui:TextBox — TextBox com PlaceholderText e Icon

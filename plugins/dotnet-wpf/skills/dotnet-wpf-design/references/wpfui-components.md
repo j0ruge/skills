@@ -180,4 +180,4 @@ O header do NavigationView (barra de informacoes do navio) fica fora do scroll:
 ```
 
 Para que o conteudo da pagina NAO role com o header, adicione
-`ScrollViewer.CanContentScroll="False"` na Page (ver `references/layout-patterns.md`).
+`ScrollViewer.CanContentScroll="False"` na Page (ver `layout-patterns.md`, roteado pelo SKILL.md).

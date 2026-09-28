@@ -8,6 +8,16 @@ quando o Claude esta trabalhando em arquivos que casam com o glob pattern.
 
 ---
 
+## Sumario
+
+- [1. testing.md](#1-testingmd)
+- [2. ui-decoupling.md](#2-ui-decouplingmd)
+- [3. architecture.md](#3-architecturemd)
+- [4. domain.md](#4-domainmd)
+- [Notas de Adaptacao](#notas-de-adaptacao)
+
+---
+
 ## 1. testing.md
 
 ```markdown

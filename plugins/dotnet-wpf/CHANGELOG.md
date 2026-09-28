@@ -2,6 +2,56 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.8.0] - 2026-09-28
+
+Progressive disclosure nas quatro skills, pela spec aberta agentskills.io (SKILL.md abaixo de
+500 linhas e de ~5.000 tokens, references a um nível do SKILL.md, reference longa com sumário) e
+pelos achados do `skill-quality-audit` v0.2.0: C1 (tamanho do SKILL.md), C2 (reference que cita
+outra por `references/`) e C3 (reference com mais de 300 linhas sem sumário). Nenhum conteúdo
+saiu: o que deixou o SKILL.md foi movido para `references/` ou comprimido sem perder fato,
+comando ou número.
+
+| Skill | Antes (linhas / chars) | Depois |
+|-------|------------------------|--------|
+| dotnet-wpf-design | 970 / 43.298 | 313 / 19.700 |
+| dotnet-wpf-e2e-testing | 610 / 23.508 | 434 / 18.723 |
+| dotnet-wpf-mvvm | 648 / 28.379 | 317 / 19.756 |
+| dotnet-desktop-setup | 250 | 250 (só a versão) |
+
+- **dotnet-wpf-design** — o cookbook vira um índice (ID, sintoma, fix curto, arquivo da receita).
+  As receitas que não tinham casa em outra reference (FORM-001, FORM-002, FORM-004, THEME-001,
+  TYPO-001, CTRL-001, CTRL-002, CTRL-003, CTRL-008, DRY-001) foram movidas na íntegra para a nova
+  `references/cookbook.md`, com sumário. LAYOUT-001/002/003, FORM-003, BRAND-001, CTRL-004 a 007
+  e RES-001 já tinham o recipe completo em `layout-patterns.md`, `form-design.md` e
+  `wpfui-theming-overrides.md`; o resumo duplicado saiu do SKILL.md. Anti-padrões (14) e
+  Detalhes Críticos (11) ficam no SKILL.md, comprimidos e com a mesma numeração, que as
+  references citam. `wpfui-components.md` deixa de citar `references/layout-patterns.md` (C2);
+  `wpfui-controls-catalog.md` (425 linhas) ganha sumário (C3). A tabela de references passa a
+  dizer quando ler cada uma.
+- **dotnet-wpf-e2e-testing** — o código do Passo 6 (`IFileDialogService`, `WpfFileDialogService`,
+  ViewModel, `FileDialogHelper`) e o exemplo `LoadHardwareId()` vão para a nova
+  `references/file-dialogs.md`. O SKILL.md guarda as duas estratégias, os cinco passos do helper
+  (AutomationId `1148` e `1`, fallback Alt+D/Alt+N, botões por nome, timeouts) e a nota sobre
+  `Thread.Sleep`. `flaui-patterns.md` deixa de citar `references/xaml-automation.md` (C2). A seção
+  dos linters vira "Armadilha".
+- **dotnet-wpf-mvvm** — o template de ViewModel do Passo 4 passa a abrir
+  `communitytoolkit-patterns.md`; o código dos testes de ViewModel vai para a nova
+  `references/viewmodel-testing.md`; "Custom Controls e Data Binding" para a nova
+  `references/custom-controls-binding.md`; "Estado Compartilhado (IAppStateService)" para
+  `mvvm-fundamentals.md`, ao lado do Messenger; o texto completo, com código, dos Detalhes #17 a
+  #26 para a nova `references/performance-patterns.md`. No SKILL.md os 28 Detalhes Críticos
+  mantêm a numeração (as references citam o #27), em tabela e resumo; os anti-padrões viram
+  tabela, e o de `DataView.RowFilter` aponta para o #23. `mvvm-fundamentals.md` deixa de citar
+  `references/wpfui-integration.md` (C2); `communitytoolkit-patterns.md`,
+  `migration-winforms-to-wpf.md` e `wpfui-integration.md` ganham sumário (C3).
+- **dotnet-desktop-setup** — `scoped-rules-templates.md` (320 linhas) ganha sumário das seções de
+  fora dos blocos de template (C3).
+
+As quatro skills sobem `metadata.version` para 1.8.0, espelhando o plugin.
+
+**Como reverter:** `git revert` do commit que traz esta entrada. Nenhum arquivo foi apagado: o
+revert restaura os SKILL.md originais e remove as cinco references novas.
+
 ## [1.7.0] - 2026-09-03
 
 Prompt audit (`/claude-api prompt-audit`, modelo-alvo Claude Fable 5.1); relatório completo fora do repo. Quatro skills auditadas; um commit por plugin.
