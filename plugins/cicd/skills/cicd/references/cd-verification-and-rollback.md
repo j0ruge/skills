@@ -9,7 +9,26 @@ success.
 These bite on cutovers and first production deploys, where there is no previous good
 state to fall back on and nobody has yet learned what "normal" looks like.
 
+> **Quando ler este arquivo (sintomas-chave por seção):** você está desenhando (ou depurando) a parte do CD que **prova** que o deploy deu certo — rollback, smoke, gates de saúde — ou desconfia de um sinal verde. Tema unificador: **o sensor disse sim enquanto a coisa que ele representa era falsa**, ou o sensor nunca rodou e o silêncio passou por sucesso. Sintomas-chave: (§1) rollback "concluiu" e a versão quebrada segue servindo — capturou tag mutável; `previous_tag=unknown` no 1º deploy é correto, mas precisa aparecer no summary; (§2) run vermelho diz "rollback complete" e produção está fora — `up -d` retornando 0 não prova que a versão anterior boota, fica healthy e responde; (§3) um gate `if: success()` não aparece no log **justo** no deploy que falhou — e o posicionamento deliberado **depois** do rollback é o que faz uma falha marcar o run vermelho SEM derrubar a aplicação; (§4) container de backup `healthy` há meses sem um único dump, porque o healthcheck olha a porta HTTP de status e não o artefato — prova real é `gzip -t` + contar `COPY` + registro conhecido (tamanho é proxy fraco: um dump só com DDL é grande e inútil); (§5) `pg_dump` autenticando como `erp,zitadel`; (§6) captura de log vazia lida como "limpo"; (§7) `vars.X` que parece ausente porque só o environment foi consultado. Complementa o `cd-pipeline-pitfalls.md`, que trata de camadas divergentes; aqui o assunto é a **evidência**.
+
 ---
+
+## Sumário
+
+- [§1. Capture the rollback tag from immutable tags only](#1-capture-the-rollback-tag-from-immutable-tags-only)
+- [§2. A rollback that isn't re-smoked proves nothing](#2-a-rollback-that-isnt-re-smoked-proves-nothing)
+- [§3. `if: success()` never runs after a red step — order your gates deliberately](#3-if-success-never-runs-after-a-red-step--order-your-gates-deliberately)
+- [§4. A backup gate must check the artifact, not the container's health](#4-a-backup-gate-must-check-the-artifact-not-the-containers-health)
+- [§5. `prodrigestivill/postgres-backup-local` accepts a CSV list only in `POSTGRES_DB`](#5-prodrigestivillpostgres-backup-local-accepts-a-csv-list-only-in-postgres_db)
+- [§6. Prove the sensor before trusting its silence](#6-prove-the-sensor-before-trusting-its-silence)
+- [§6a. When you prove a sensor by BREAKING the code, the sabotage is the probe — and it can fail to land](#6a-when-you-prove-a-sensor-by-breaking-the-code-the-sabotage-is-the-probe--and-it-can-fail-to-land)
+- [§6b. A text-scanning assertion reads the COMMENT that explains the thing it guards](#6b-a-text-scanning-assertion-reads-the-comment-that-explains-the-thing-it-guards)
+- [§7. `${{ vars.X }}` resolves at repository level too, not just environment](#7--varsx--resolves-at-repository-level-too-not-just-environment)
+- [§8. `cmd | tail` throws the exit code away — and `PIPESTATUS` does not exist in zsh](#8-cmd--tail-throws-the-exit-code-away--and-pipestatus-does-not-exist-in-zsh)
+- [§9. Passo one-shot cujo produto é ESTADO: o smoke prova que o serviço responde, não que o passo escreveu](#9-passo-one-shot-cujo-produto-é-estado-o-smoke-prova-que-o-serviço-responde-não-que-o-passo-escreveu)
+- [§10. `migrate deploy` green does not say WHICH role the application runs as](#10-migrate-deploy-green-does-not-say-which-role-the-application-runs-as)
+- [§11. A gate that observes shared state through its OWN connection measures itself](#11-a-gate-that-observes-shared-state-through-its-own-connection-measures-itself)
+- [Symptoms → section](#symptoms--section)
 
 ## §1. Capture the rollback tag from immutable tags only
 

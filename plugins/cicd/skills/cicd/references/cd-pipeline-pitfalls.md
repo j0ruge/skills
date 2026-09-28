@@ -2,7 +2,29 @@
 
 Failures that bite hardest in mid-flight cutovers, when the CD pipeline is already in motion and the operator is improvising fixes on the live host. Each costs 15-60 minutes the first time, and the cause is in a different layer than the visible symptom.
 
+> **Quando ler este arquivo (sintomas-chave por seção):** você está num cutover de produção (ou hotfix) e o sintoma envolve uma divergência entre camadas — secret atualizado mas container ainda com valor antigo, frontend buildado contra URL errada, manual `docker compose run` derrubando containers de outros serviços, OU **401 inconsistente em produção com token sabido válido** (split entre 200/401 sob hits paralelos). Sintomas-chave: (§1) SPA com 404 em todas as chamadas API após login funcionar — VITE_* base URL drift; (§2) "operator clone" do repo no host com versão stale do compose — e o **§2a**, que o qualifica: o drift ali é inerte para a aplicação (o CD recheca do workspace do runner) e é o **único** caminho de deploy do próprio `runner`, ou path canônico do runbook não existe no host (deploy real é via runner workspace); (§3) `docker compose --profile X run` derrubando containers running; (§4) `compose run` orphan herdou `VIRTUAL_HOST` do serviço e foi registrado no upstream pool do nginx-proxy/Traefik — round-robin manda ~50% das requests pra container stale com config velha. Diagnóstico canônico §4: 20 hits paralelos com mesmo token → split de status codes = upstream pool poisoned.
+
 ---
+
+## Sumário
+
+- [§1. Vite/CRA build args are baked at image build time, not runtime](#1-vitecra-build-args-are-baked-at-image-build-time-not-runtime)
+  - [§1b. The flip side — a server-side secret must be RUNTIME, never a build-arg](#1b-the-flip-side--a-server-side-secret-must-be-runtime-never-a-build-arg)
+  - [§1c. A build-time-baked image needs an environment suffix in its tag](#1c-a-build-time-baked-image-needs-an-environment-suffix-in-its-tag)
+  - [§1d. `20-envsubst-on-templates.sh` renders the whole templates directory](#1d-20-envsubst-on-templatessh-renders-the-whole-templates-directory)
+- [§2. Operator clone of the repo on the deploy host is a footgun](#2-operator-clone-of-the-repo-on-the-deploy-host-is-a-footgun)
+  - [§2a. The asymmetry that makes the clone dangerous instead of merely useless: it IS the deploy path for the runner](#2a-the-asymmetry-that-makes-the-clone-dangerous-instead-of-merely-useless-it-is-the-deploy-path-for-the-runner)
+- [§3. `docker compose --profile X run` reconciles unrelated services](#3-docker-compose---profile-x-run-reconciles-unrelated-services)
+- [§4. `compose run` orphans + reverse-proxy upstream poisoning](#4-compose-run-orphans--reverse-proxy-upstream-poisoning)
+- [When you don't see your error here](#when-you-dont-see-your-error-here)
+- [§5. Container script writing output outside WORKDIR — soft-failure that hides forever](#5-container-script-writing-output-outside-workdir--soft-failure-that-hides-forever)
+- [§6. Bind mount uid mismatch on GHA runners — container can't write to host-mounted dir](#6-bind-mount-uid-mismatch-on-gha-runners--container-cant-write-to-host-mounted-dir)
+- [§7. `docker compose up -d --wait` scope — passing service names limits the wait](#7-docker-compose-up--d---wait-scope--passing-service-names-limits-the-wait)
+- [§8. Wrapper process as PID 1 swallows SIGTERM — no graceful shutdown](#8-wrapper-process-as-pid-1-swallows-sigterm--no-graceful-shutdown)
+- [§9. Actions expression syntax inside a shell COMMENT invalidates the whole workflow](#9-actions-expression-syntax-inside-a-shell-comment-invalidates-the-whole-workflow)
+- [§11. A URI-reserved character in a database password breaks the CONNECTION URL, not the password](#11-a-uri-reserved-character-in-a-database-password-breaks-the-connection-url-not-the-password)
+- [§12. OIDC redirect URIs are compared byte for byte — and your e2e cannot see half of them](#12-oidc-redirect-uris-are-compared-byte-for-byte--and-your-e2e-cannot-see-half-of-them)
+- [§10. `compose run`/`up` não RECONSTRÓI imagem cuja tag já existe — a lição 29 pelo lado do build](#10-compose-runup-não-reconstrói-imagem-cuja-tag-já-existe--a-lição-29-pelo-lado-do-build)
 
 ## §1. Vite/CRA build args are baked at image build time, not runtime
 
@@ -187,9 +209,9 @@ curl -sI https://app.example.com/ | grep -i content-security-policy    # origins
 
 ## §2. Operator clone of the repo on the deploy host is a footgun
 
-**Symptom**: You're debugging a cutover, SSH'd into the prod host, and run `docker compose -f /home/operator/myproject/infra/docker/docker-compose.prod.yml --profile bootstrap run --rm idp-bootstrap` to retry the bootstrap step manually. Output includes `Container zitadel Recreated` — and suddenly the running stack got rolled back to a previous version.
+**Symptom**: You're debugging a cutover, SSH'd into the prod host, and run `docker compose -f ~/myproject/infra/docker/docker-compose.prod.yml --profile bootstrap run --rm idp-bootstrap` to retry the bootstrap step manually. Output includes `Container zitadel Recreated` — and suddenly the running stack got rolled back to a previous version.
 
-**Cause**: That repo at `/home/operator/myproject/` is a **stale checkout** from before the latest CD merge (e.g., still has `image: ghcr.io/zitadel/zitadel:v2.66.10` while the live stack is on `v4.15.0`). `docker compose --profile bootstrap run` doesn't run only the profile-tagged service — it reconciles **every service in the compose file** if their actual state differs from the file's spec. With a stale image tag, "differs" means "downgrade running container".
+**Cause**: That repo at `~/myproject/` (in the operator's home) is a **stale checkout** from before the latest CD merge (e.g., still has `image: ghcr.io/zitadel/zitadel:v2.66.10` while the live stack is on `v4.15.0`). `docker compose --profile bootstrap run` doesn't run only the profile-tagged service — it reconciles **every service in the compose file** if their actual state differs from the file's spec. With a stale image tag, "differs" means "downgrade running container".
 
 **Why this is a footgun**: in proper CD setups, the source of truth for compose is **the runner workspace** (`actions/checkout` into `/runner/_work/...`), which is fresh per deploy. The operator clone exists for "convenience" — e.g., legacy from a manual-deploy era, or set up so the operator can `cd` and run docker commands without context-switching. But it diverges silently and there's no warning when you use it.
 
@@ -384,8 +406,8 @@ The answer is usually that two layers disagree and the "freshness boundary" betw
 **Cause**: The script (Node, Python, Bash) resolves an output path relative to its own location (`__dirname`, `__file__`, `$(dirname "$0")`) that walks **upward into the source tree** — e.g.:
 
 ```typescript
-// packages/idp/scripts/bootstrap-zitadel.ts
-const outFile = resolve(__dirname, '../../../infra/docker/zitadel/local/bootstrap.json');
+// <repo>/packages/idp/scripts/bootstrap-zitadel.ts (user project, not this skill)
+const outFile = resolve(__dirname, '..', '..', '..', 'infra/docker/zitadel/local/bootstrap.json');
 //                                  └─ 3 levels up out of packages/idp/dist/scripts/
 //                                     into the monorepo root, then back down into infra/
 writeFileSync(outFile, JSON.stringify(result, null, 2));
@@ -407,12 +429,12 @@ grep -nE "^COPY |^ADD " packages/<offending-package>/Dockerfile
 #    COPY destinations (or not a runtime-writable mount like /tmp/) is the bug.
 ```
 
-The diff is usually obvious: the script writes to `../../../infra/...` and the Dockerfile only has `COPY packages/<self>/ ...`. There's no overlap — the path simply doesn't exist in the image.
+The diff is usually obvious: the script writes to `<repo>/infra/...` (three `..` segments up from `__dirname`) and the Dockerfile only has `COPY packages/<self>/ ...`. There's no overlap — the path simply doesn't exist in the image.
 
 **Canonical fix — best-effort wrap (narrowed to expected errno)**:
 
 ```typescript
-const outFile = resolve(__dirname, '../../../infra/docker/zitadel/local/bootstrap.json');
+const outFile = resolve(__dirname, '..', '..', '..', 'infra/docker/zitadel/local/bootstrap.json');
 try {
   writeFileSync(outFile, JSON.stringify(result, null, 2));
   console.log(`[bootstrap] OK → ${outFile}`);

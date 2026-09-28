@@ -2,6 +2,49 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-09-28 — Progressive disclosure: o `SKILL.md` vira roteador, e sintomas e lições viram references — bump 2.34.1 → [2.35.0]
+
+**O quê:** o `SKILL.md` caiu de 392 linhas / 110.525 chars para 226 linhas / 16.710 chars. Nada
+foi apagado; o que saiu foi movido sem edição:
+
+- a tabela **Quick Troubleshooting** (72 linhas) foi para `references/symptom-index.md`;
+- a tabela **Lessons Learned** (lições 1 a 105, mais a linha sem número do 401 intermitente) foi
+  para `references/lessons-learned.md`, com os mesmos números e um índice por tema;
+- os cinco parágrafos "Trigger pra `x.md`" foram para o topo da reference correspondente, como
+  bloco "Quando ler este arquivo" / "Sintomas-chave". Isso vale para `cd-pipeline-pitfalls`,
+  `cd-verification-and-rollback`, `ci-cost-minutes`, `django-backend` e
+  `self-hosted-runner-docker`.
+
+O `SKILL.md` ficou com um fluxo padrão (detectar a stack, grep no índice de sintomas, abrir a
+reference, ler a lição pelo número). Ficaram também a detecção de projeto, o blueprint dos três
+workflows, a tabela de roteamento e a seção **Gotchas**, com as 17 armadilhas de maior custo em uma
+linha cada, apontando para a lição. Os comandos úteis e os arquivos do pipeline continuam lá. Cada
+linha da tabela de roteamento diz quando ler aquela reference.
+
+Nas references:
+
+- As oito com mais de 300 linhas ganharam `## Sumário` com âncoras.
+- `ci-cost-minutes.md` e `troubleshooting-shared.md` citam a irmã só pelo nome, sem o prefixo
+  `references/`.
+- `cd-pipeline-pitfalls.md` §5 escreve o caminho do projeto do usuário como
+  `resolve(__dirname, '..', '..', '..', 'infra/...')` e `<repo>/infra/...`. A semântica é a mesma
+  de `'../../../infra/...'`.
+- Os caminhos de máquina viraram `~/myproject/` e `<runner-home>/...`.
+
+**Por quê:** a auditoria `skill-quality-audit` v0.2.0 mede a skill contra a spec e as boas
+práticas do agentskills.io. Ela apontou um erro, B3 (`../../../infra/...` parecia sair da
+skill). Apontou também 12 avisos:
+
+- C1: o corpo tinha cerca de 27 mil tokens, mais de cinco vezes o orçamento de ~5.000;
+- B4: caminhos `/home/<user>` em três references;
+- C2: duas references encadeavam uma irmã;
+- C3: oito references com mais de 300 linhas não tinham sumário.
+
+Depois da mudança: 0 erros, 0 avisos, e os INFO F1 e F2 também fecharam. O `metadata.version`
+do `SKILL.md` acompanha o plugin.
+
+**Como reverter:** `git revert` do commit que traz esta entrada.
+
 ## 2026-09-28 — O segundo timeout, e a `lookup` que não entrega JSON — bump 2.34.0 → [2.34.1]
 
 **O quê:** a §6b de `self-hosted-job-migration.md` ganha o `asyncUtilTimeout` do Testing Library,

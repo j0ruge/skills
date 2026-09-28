@@ -4,6 +4,34 @@ Esta reference cobre o caso **runner em container** com a imagem `myoung34/githu
 
 A imagem `myoung34/github-runner` é a fonte mais usada para conteinerizar o runner do GitHub Actions: binário oficial empacotado em Ubuntu, lê config via env vars, suporta JIT/ephemeral, integra com `docker.sock` mount para evitar docker-in-docker. Mas existem 6 pegadinhas que mordem na primeira tentativa de envelopá-la em um Dockerfile customizado para integrar com seu compose de produção.
 
+## Sumário
+
+- [Quando usar esta reference](#quando-usar-esta-reference)
+- [§1. CMD herdado é zerado quando você define ENTRYPOINT](#1-cmd-herdado-é-zerado-quando-você-define-entrypoint)
+- [§2. Env var de labels é `LABELS`, não `RUNNER_LABELS`](#2-env-var-de-labels-é-labels-não-runner_labels)
+- [§3. `EPHEMERAL=true` + `restart: always` = loop infinito](#3-ephemeraltrue--restart-always--loop-infinito)
+- [§4. `gpg --dearmor` falha em buildkit não-tty](#4-gpg---dearmor-falha-em-buildkit-não-tty)
+- [§5. Registration tokens são single-use e vencem em 1h](#5-registration-tokens-são-single-use-e-vencem-em-1h)
+- [§5b. Multi-job CD em um dia exaure o token mesmo dentro da janela de 1h](#5b-multi-job-cd-em-um-dia-exaure-o-token-mesmo-dentro-da-janela-de-1h)
+- [§6. Stale runner registrations no GitHub bloqueiam re-registro limpo](#6-stale-runner-registrations-no-github-bloqueiam-re-registro-limpo)
+- [Template canônico — Dockerfile + entrypoint](#template-canônico--dockerfile--entrypoint)
+- [Sequência de bring-up limpo](#sequência-de-bring-up-limpo)
+- [§7. `RUNNER_REGISTRATION_TOKEN` como GitHub secret estática = chicken-and-egg armadilha](#7-runner_registration_token-como-github-secret-estática--chicken-and-egg-armadilha)
+  - [Migração ACCESS_TOKEN in-place — o fix durável (recomendado)](#migração-access_token-in-place--o-fix-durável-recomendado)
+- [§8. Binário do runner deprecado → "cannot receive messages" (crashloop independente do token)](#8-binário-do-runner-deprecado--cannot-receive-messages-crashloop-independente-do-token)
+  - [§8a. `DISABLE_AUTO_UPDATE` é footgun: qualquer valor não-vazio (até `"0"`) desliga](#8a-disable_auto_update-é-footgun-qualquer-valor-não-vazio-até-0-desliga)
+  - [§8b. A variante SILENCIOSA: runner `online`, ocioso e mudo (migração para o Broker)](#8b-a-variante-silenciosa-runner-online-ocioso-e-mudo-migração-para-o-broker)
+- [§9. Config-reuse ressuscita credencial morta após o GitHub apagar o registro](#9-config-reuse-ressuscita-credencial-morta-após-o-github-apagar-o-registro)
+- [§10. Falhas EMPILHADAS: §9 → PAT 401 → §8 (descascar em ordem)](#10-falhas-empilhadas-9--pat-401--8-descascar-em-ordem)
+- [§10a. PAT-401 STANDALONE: o "fix durável" (PAT dedicado) expirou](#10a-pat-401-standalone-o-fix-durável-pat-dedicado-expirou)
+- [§11. Detecção proativa: não descubra o deploy `queued` semanas depois](#11-detecção-proativa-não-descubra-o-deploy-queued-semanas-depois)
+  - [A. Preflight gate — falha rápida no push](#a-preflight-gate--falha-rápida-no-push)
+  - [B. Watchdog agendado — rede de segurança periódica](#b-watchdog-agendado--rede-de-segurança-periódica)
+  - [C. Currency de versão — a que pega o runner mudo antes de alguém deployar](#c-currency-de-versão--a-que-pega-o-runner-mudo-antes-de-alguém-deployar)
+- [§12. O runner conteinerizado NÃO compartilha o filesystem do host — e metade do comando funciona](#12-o-runner-conteinerizado-não-compartilha-o-filesystem-do-host--e-metade-do-comando-funciona)
+- [§13. O runner conteinerizado precisa de TODO binário que o workflow invoca — e nada avisa que falta](#13-o-runner-conteinerizado-precisa-de-todo-binário-que-o-workflow-invoca--e-nada-avisa-que-falta)
+- [Sintomas → seção](#sintomas--seção)
+
 ## Quando usar esta reference
 
 - Você está montando um `infra/docker/runner/Dockerfile` que estende `myoung34/github-runner`.
@@ -15,6 +43,8 @@ A imagem `myoung34/github-runner` é a fonte mais usada para conteinerizar o run
 - Log repete `Failed to create a session. The runner registration has been deleted from the server` (§9).
 - Runner com `ACCESS_TOKEN`/PAT: log `curl (22) 401` / `Invalid configuration provided for token` ao obter o token — o PAT (o "fix durável" da migração §7) expirou/foi revogado (§10a).
 - `DISABLE_AUTO_UPDATE: "0"` não ligou o auto-update, ou runner pinado por digest deprecou meses depois (§8a).
+
+> **Sintomas-chave por seção:** presença de `infra/docker/runner/Dockerfile` (ou similar) com `FROM myoung34/github-runner` no projeto, OU `docker-compose.*.yml` com serviço cujo `image:`/`build:` referencia esse runner conteinerizado. Sintomas-chave: container em loop de restart com exit 0/2, logs com "Configuring → Settings Saved → fim", "Cannot configure the runner because it is already configured", build falhando em `gpg --dearmor`, ou `gh api .../actions/runners` mostrando label `default` em vez da configurada. **§7 cobre o cenário deadlock-em-prod**: deploy queued + `gh-runner` em `Restarting` + log `404 /actions/runner-registration` = `secrets.RUNNER_REGISTRATION_TOKEN` estática expirou e o equilíbrio "compose detecta no-diff e não recria" quebrou (host restart, OOM, ephemeral ciclando). Recovery exige 3 passos coordenados: rotacionar GH secret + deletar registro fantasma + subir runner via `compose -p <project> up -d --no-deps runner` (não `docker run` — sem labels compose, próximo CD `up` conflita). Fix permanente: token gerado a quente no workflow OU migrar pro compose centralizado de runners com `ACCESS_TOKEN` (PAT). **§8/§9 cobrem dois crashloops ORTOGONAIS ao token** (mordem até runners em ACCESS_TOKEN): §8 = `Runner version vX is deprecated and cannot receive messages` (binário velho — `compose pull` + ligar auto-update; cuidado: `DISABLE_AUTO_UPDATE` desliga com QUALQUER valor não-vazio, até `"0"`); §9 = `Failed to create a session. The runner registration has been deleted from the server` (reuso de config ressuscita credencial morta — `docker volume rm <config-volume>`). Isolation key dos três: o log (`404 registration`=§7, `registration has been deleted`=§9, `version deprecated`=§8). **Mas podem EMPILHAR** — um único deploy queued pode exigir §9 → PAT 401 → §8 em sequência, cada fix desmascarando o próximo; ver §10 (descascar em ordem, re-ler os logs após cada passo). **§8b é a variante SILENCIOSA do §8** — runner `online`, `healthy`, `RestartCount` baixo e mudo (migração para o Broker): nenhuma das assinaturas acima aparece, e o sensor é o filesystem (`ls -d /actions-runner/bin.*`), não o log; o §8a explica por que o auto-update não salva esse desenho. **§11 é o complemento proativo**: o deploy self-hosted fica `queued` em silêncio (o `timeout-minutes` não conta em fila, só após pickup), então §11 cobre a **detecção** — preflight gate (precisa PAT admin; `GITHUB_TOKEN` não lista runners) + watchdog agendado + **camada C, currency de versão** — a única das três que pega o §8b, porque presença e deploy-preso medem efeitos e ela mede a causa (cheque status de JOB, não de run; `schedule` só roda do branch default).
 
 ## §1. CMD herdado é zerado quando você define ENTRYPOINT
 
@@ -766,7 +796,7 @@ please re-configure. Runner registrations are automatically deleted for runners 
 have not connected to the service recently.
 ...
 Runner reusage is enabled / The runner has already been configured /
-Reusage is enabled. Storing data to /home/runner/config/<repo>
+Reusage is enabled. Storing data to <runner-home>/config/<repo>
 ```
 
 **Causa**: o GitHub **apaga o registro server-side** de runners offline por tempo demais (semanas). Com `CONFIGURED_ACTIONS_RUNNER_FILES_DIR` apontando para um **named volume** (reuso de config ligado), o entrypoint encontra o `.runner`/`.credentials` persistidos, decide "já está configurado" e **reaproveita a credencial morta** em vez de re-registrar com o PAT → a sessão falha → crashloop.

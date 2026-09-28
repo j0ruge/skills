@@ -4,6 +4,28 @@ Infrastructure scenarios that apply to both backend and frontend.
 
 ---
 
+## Sumário
+
+- [1. `unauthorized` on GHCR (Self-Hosted Runner)](#1-unauthorized-on-ghcr-self-hosted-runner)
+- [1a. `TLS handshake timeout` on GHCR (Self-Hosted Runner)](#1a-tls-handshake-timeout-on-ghcr-self-hosted-runner)
+- [2. `network declared as external, but could not be found`](#2-network-declared-as-external-but-could-not-be-found)
+- [3. Default/self-signed certificate served — `ERR_SSL_VERSION_OR_CIPHER_MISMATCH` or `curl: (60) SSL certificate problem: self-signed certificate`](#3-defaultself-signed-certificate-served--err_ssl_version_or_cipher_mismatch-or-curl-60-ssl-certificate-problem-self-signed-certificate)
+  - [Tell them apart FIRST — read the certificate, don't guess](#tell-them-apart-first--read-the-certificate-dont-guess)
+  - [3c — issuance was ATTEMPTED and FAILED transiently, and nothing will retry soon](#3c--issuance-was-attempted-and-failed-transiently-and-nothing-will-retry-soon)
+- [4. Runner Offline / Labels Not Found](#4-runner-offline--labels-not-found)
+- [5. Concurrency Group Blocking Deploys](#5-concurrency-group-blocking-deploys)
+- [6. `Missing script: "exec"` em workspace de monorepo npm](#6-missing-script-exec-em-workspace-de-monorepo-npm)
+- [7. `ESLint couldn't find an eslint.config.(js|mjs|cjs) file`](#7-eslint-couldnt-find-an-eslintconfigjsmjscjs-file)
+- [8. `Cannot find package 'X' imported from /node_modules/<other-pkg>` em monorepo workspace](#8-cannot-find-package-x-imported-from-node_modulesother-pkg-em-monorepo-workspace)
+- [9. GitHub deploy keys são per-repo unique (transferRepo)](#9-github-deploy-keys-são-per-repo-unique-transferrepo)
+- [10. Operational gotchas — `.env` com leading whitespace + `sed -i`](#10-operational-gotchas--env-com-leading-whitespace--sed--i)
+- [11. CI gate duplicado entre `ci.yml` e `cd-staging.yml` → composite action](#11-ci-gate-duplicado-entre-ciyml-e-cd-stagingyml--composite-action)
+- [12. `actionlint` — e por que ele passa verde sem ter lido o seu shell](#12-actionlint--e-por-que-ele-passa-verde-sem-ter-lido-o-seu-shell)
+  - [12a. 🔴 Sem `shellcheck` no PATH, o actionlint sai 0 sem ler os `run:`](#12a--sem-shellcheck-no-path-o-actionlint-sai-0-sem-ler-os-run)
+  - [12b. Instalar e **provar** antes de confiar](#12b-instalar-e-provar-antes-de-confiar)
+  - [12c. Ele exige repositório git, e diz isso de um jeito enganoso](#12c-ele-exige-repositório-git-e-diz-isso-de-um-jeito-enganoso)
+  - [12d. Label self-hosted precisa de allowlist, senão ele reprova o seu padrão](#12d-label-self-hosted-precisa-de-allowlist-senão-ele-reprova-o-seu-padrão)
+
 ## 1. `unauthorized` on GHCR (Self-Hosted Runner)
 
 **Message:**
@@ -353,7 +375,7 @@ gh api /repos/<owner>/<repo>/actions/runners \
   --jq '.runners[] | {id, name, status, busy, labels: [.labels[].name]}'
 ```
 
-Se `RestartCount > 0` e logs em loop com "Configuring → Settings Saved → fim" ou "Cannot configure the runner because it is already configured", **vá direto para `references/self-hosted-runner-docker.md`** — cobre os 6 gotchas específicos da imagem (CMD herdado zerado, env var `LABELS` vs `RUNNER_LABELS`, state residual em FS layer, `gpg --dearmor` em buildkit, registration token single-use, registros stale no GH).
+Se `RestartCount > 0` e logs em loop com "Configuring → Settings Saved → fim" ou "Cannot configure the runner because it is already configured", **vá direto para `self-hosted-runner-docker.md`** (roteado pelo SKILL.md) — cobre os 6 gotchas específicos da imagem (CMD herdado zerado, env var `LABELS` vs `RUNNER_LABELS`, state residual em FS layer, `gpg --dearmor` em buildkit, registration token single-use, registros stale no GH).
 
 **Monitor queue:**
 

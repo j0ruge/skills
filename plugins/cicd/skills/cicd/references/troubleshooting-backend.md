@@ -4,6 +4,32 @@ Backend-specific troubleshooting scenarios. For shared infrastructure scenarios,
 
 ---
 
+## Sumário
+
+- [Diagnosis by Exit Code](#diagnosis-by-exit-code)
+  - [Exit 1 — Generic Failure (Test/Lint)](#exit-1--generic-failure-testlint)
+  - [Exit 2 — Misuse of Command](#exit-2--misuse-of-command)
+  - [Exit 127 — Command Not Found](#exit-127--command-not-found)
+  - [Exit 134 — SIGABRT (OOM)](#exit-134--sigabrt-oom)
+  - [Exit 137 — SIGKILL (OOM Killer)](#exit-137--sigkill-oom-killer)
+- [By Error Message](#by-error-message)
+  - [`manifest unknown`](#manifest-unknown)
+  - [Zod Validation Error](#zod-validation-error)
+  - [`EADDRINUSE`](#eaddrinuse)
+  - [`Cannot find module` (case-sensitivity)](#cannot-find-module-case-sensitivity)
+  - [`TS2688` / `TS2724` — Prisma type errors](#ts2688--ts2724--prisma-type-errors)
+  - [`npx biome check .` fails on non-source files](#npx-biome-check--fails-on-non-source-files)
+  - [Biome 2.x config error (`unknown key "ignore"`)](#biome-2x-config-error-unknown-key-ignore)
+  - [`ERR_CONNECTION_REFUSED` via browser (nginx-proxy OK)](#err_connection_refused-via-browser-nginx-proxy-ok)
+  - ["No pending migrations" but app crashes with missing column/table](#no-pending-migrations-but-app-crashes-with-missing-columntable)
+- [Monorepo npm workspaces — armadilhas de build/runtime na imagem](#monorepo-npm-workspaces--armadilhas-de-buildruntime-na-imagem)
+  - [`ERR_MODULE_NOT_FOUND` / `ERR_UNKNOWN_FILE_EXTENSION` ao rodar `node dist/index.js`](#err_module_not_found--err_unknown_file_extension-ao-rodar-node-distindexjs)
+  - [Vite/Build do frontend falha resolvendo um sibling — `npm ci -w` escopado não basta](#vitebuild-do-frontend-falha-resolvendo-um-sibling--npm-ci--w-escopado-não-basta)
+  - [Container não-root não grava no named volume](#container-não-root-não-grava-no-named-volume)
+  - [Corolário da imagem `tsx`-runtime: enxugar com `--omit=dev`](#corolário-da-imagem-tsx-runtime-enxugar-com---omitdev)
+- [Diagnosis Flow — Backend](#diagnosis-flow--backend)
+- [Diagnostic Commands](#diagnostic-commands)
+
 ## Diagnosis by Exit Code
 
 ### Exit 1 — Generic Failure (Test/Lint)

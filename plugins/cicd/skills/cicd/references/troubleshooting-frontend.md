@@ -4,6 +4,22 @@ Frontend-specific troubleshooting scenarios. For shared infrastructure scenarios
 
 ---
 
+## Sumário
+
+- [Detailed Scenarios](#detailed-scenarios)
+  - [1. Blank Page (SPA does not load)](#1-blank-page-spa-does-not-load)
+  - [2. Failing API Calls (CORS, wrong URL)](#2-failing-api-calls-cors-wrong-url)
+  - [3. 404 on React Router Routes](#3-404-on-react-router-routes)
+  - [4. `Cannot access 'X' before initialization` (Runtime)](#4-cannot-access-x-before-initialization-runtime)
+  - [5. `unhealthy` Container — Healthcheck Fails on Alpine](#5-unhealthy-container--healthcheck-fails-on-alpine)
+  - [6. Vitest Collecting Playwright E2E Tests](#6-vitest-collecting-playwright-e2e-tests)
+  - [7. nginx Container 403 — Empty dist/](#7-nginx-container-403--empty-dist)
+  - [8. Vitest com `environment: 'jsdom'` falha pré-test ou em `signal AbortSignal`](#8-vitest-com-environment-jsdom-falha-pré-test-ou-em-signal-abortsignal)
+  - [9. CI typecheck passa verde mas erros de tipo escapam pra produção](#9-ci-typecheck-passa-verde-mas-erros-de-tipo-escapam-pra-produção)
+  - [10. Job de teste **verde** com milhares de linhas de ruído — e o ruído que é sensor cego](#10-job-de-teste-verde-com-milhares-de-linhas-de-ruído--e-o-ruído-que-é-sensor-cego)
+- [Diagnosis Flow — Frontend](#diagnosis-flow--frontend)
+- [Diagnostic Commands](#diagnostic-commands)
+
 ## Detailed Scenarios
 
 ### 1. Blank Page (SPA does not load)
@@ -153,7 +169,7 @@ docker exec <web-container> ls -la /usr/share/nginx/html/
 
 ```text
 Error: Cannot find package 'jsdom' imported from
-  /home/runner/work/.../node_modules/vitest/dist/chunks/index.<hash>.js
+  <runner-home>/work/.../node_modules/vitest/dist/chunks/index.<hash>.js
 
 Test Files (N)  Tests no tests  Errors N errors
 ```

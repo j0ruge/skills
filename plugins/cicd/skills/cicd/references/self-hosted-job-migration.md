@@ -1,5 +1,27 @@
 # Migrar um job cobrado para o runner self-hosted — o que quebra
 
+## Sumário
+
+- [Quando usar esta reference](#quando-usar-esta-reference)
+- [O pré-voo, na ordem de risco medida](#o-pré-voo-na-ordem-de-risco-medida)
+- [§1. O runner não tem `yarn` — e o `cache:` do `setup-node` morre antes do `install`](#1-o-runner-não-tem-yarn--e-o-cache-do-setup-node-morre-antes-do-install)
+- [§2. O job não alcança o `services:` container](#2-o-job-não-alcança-o-services-container)
+  - [Duas hipóteses plausíveis que custam rodadas — e são falsas](#duas-hipóteses-plausíveis-que-custam-rodadas--e-são-falsas)
+  - [A causa real: o runner pode estar dentro de um container](#a-causa-real-o-runner-pode-estar-dentro-de-um-container)
+  - [Descubra em vez de supor](#descubra-em-vez-de-supor)
+- [§3. `container:` não é a saída se o runner estiver desatualizado](#3-container-não-é-a-saída-se-o-runner-estiver-desatualizado)
+- [§4. Workspace sujo entre execuções](#4-workspace-sujo-entre-execuções)
+- [§5. Como confirmar que a migração pegou](#5-como-confirmar-que-a-migração-pegou)
+- [§5b. Produção: qual runner — e quando a mudança passa a valer](#5b-produção-qual-runner--e-quando-a-mudança-passa-a-valer)
+- [§6. A migração desvenda a dívida do repositório — e o primeiro verde não está a um passo](#6-a-migração-desvenda-a-dívida-do-repositório--e-o-primeiro-verde-não-está-a-um-passo)
+  - [§6a. O runner é root — e o teste de permissão para de medir](#6a-o-runner-é-root--e-o-teste-de-permissão-para-de-medir)
+  - [§6b. O timeout default do test runner foi calibrado para a máquina de desenvolvimento](#6b-o-timeout-default-do-test-runner-foi-calibrado-para-a-máquina-de-desenvolvimento)
+- [§7. Sem `.env` no CI, um módulo que faz `throw` no import derruba a suíte inteira](#7-sem-env-no-ci-um-módulo-que-faz-throw-no-import-derruba-a-suíte-inteira)
+- [§8. Snapshot que grava valor de ambiente força o CI a reproduzir o valor EXATO](#8-snapshot-que-grava-valor-de-ambiente-força-o-ci-a-reproduzir-o-valor-exato)
+- [§9. Job de GATE muda de natureza ao migrar — o que vigia o runner não pode rodar nele](#9-job-de-gate-muda-de-natureza-ao-migrar--o-que-vigia-o-runner-não-pode-rodar-nele)
+- [§10. A lição que generaliza](#10-a-lição-que-generaliza)
+- [§11. Build de imagem no self-hosted: tire o `setup-buildx` e o cache `gha`](#11-build-de-imagem-no-self-hosted-tire-o-setup-buildx-e-o-cache-gha)
+
 ## Quando usar esta reference
 
 Você decidiu puxar a alavanca de custo da `ci-cost-minutes.md` §3a — mover `ci` / `build-and-push`

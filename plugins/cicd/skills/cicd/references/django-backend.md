@@ -14,6 +14,8 @@ escopado, rollback); só o **backend** muda de Node para Python. Use junto com
 - Estáticos do admin retornam 404 sob gunicorn.
 - "Como faço o `prisma migrate deploy` em Django?" / migração one-off no CD.
 
+> **Gatilho:** o backend é **Django/Python** (`manage.py`, `requirements.txt`, gunicorn) — não Node/Prisma. Sintomas-chave: deploy `wait healthy` nunca fica `healthy` com healthcheck `GET /healthz/ 400` (ALLOWED_HOSTS sem `127.0.0.1`/`localhost`); admin 403 CSRF sob HTTPS atrás de nginx-proxy (falta `CSRF_TRUSTED_ORIGINS`/`SECURE_PROXY_SSL_HEADER`); estáticos do admin 404 sob gunicorn (falta WhiteNoise + `collectstatic` em build); `python:slim` sem curl no HEALTHCHECK (usar `python -c urllib`); migração one-off `manage.py migrate --noinput`; two-origin SPA↔API via CORS (`CORS_ALLOWED_ORIGINS` no Django + `VITE_API_URL` build-arg no front).
+
 ## §1. `ALLOWED_HOSTS` sem `127.0.0.1` → healthcheck do container responde 400 (nunca fica healthy)
 
 **Sintoma**: `build`/`push`/GHCR `login`/`pull` e a **migração** passam; só o passo

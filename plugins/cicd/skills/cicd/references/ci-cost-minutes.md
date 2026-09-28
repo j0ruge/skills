@@ -7,7 +7,29 @@ Tema unificador: **o custo não é proporcional ao tempo de execução** — ele
 de jobs em runner hospedado, e boa parte do trabalho pode migrar para capacidade que a organização
 já paga e mantém ociosa.
 
+> **Quando ler este arquivo (sintomas-chave por seção):** a restricao e a **cota de minutos**, nao um pipeline quebrado — "estamos no limite do Actions", "como economizar", "rodar CI so em producao". Tema: o custo **nao** e proporcional ao tempo de execucao. Sintomas-chave: (§1) otimizaram a duracao dos jobs e a fatura nao cedeu — o GitHub arredonda **cada JOB para cima ao minuto**, entao job de 51s custa 1 min e paralelizar em dois jobs ADICIONA um minuto; (§2) `/actions/runs/<id>/timing` reportando `billable.UBUNTU.total_ms: 0` com `run_duration_ms` de minutos — numero enganoso que faz concluir "nao gastamos nada"; medir por `/actions/runs/<id>/jobs` com `runner_group_name` (`GitHub Actions`=cobrado, `Default`=self-hosted/gratis), e lembrar que `gh api /repos/.../actions/runners` **nao lista runner de organizacao** (lista vazia nao prova ausencia — confirme pelo `runner_name` de um deploy que concluiu); (§3) o mesmo SHA testado tres vezes (PR → push develop → tag) e `paths-ignore` que so paga no `push` (em `pull_request` o filtro avalia o diff inteiro do PR, entao so pula um PR 100% documentacao); (§4) o que PARECE economia e nao e — a composite action da licao 43 cura *drift*, o job continua rodando e a economia e zero; e `cache: 'yarn'` configurado nao garante cache quente (entradas expiram em 7 dias; confira `/actions/cache/usage`). Complementa a licao 7 (lint local antes do push), que e a mesma ideia vista pelo lado do desperdicio.
+
 ---
+
+## Sumário
+
+- [1. O modelo de custo (as três regras que decidem tudo)](#1-o-modelo-de-custo-as-três-regras-que-decidem-tudo)
+- [2. Como medir — e a armadilha que invalida a medição](#2-como-medir--e-a-armadilha-que-invalida-a-medição)
+- [3. Alavancas, por retorno sobre risco](#3-alavancas-por-retorno-sobre-risco)
+  - [(a) Mover jobs cobrados para o self-hosted ocioso — maior economia](#a-mover-jobs-cobrados-para-o-self-hosted-ocioso--maior-economia)
+  - [(b) `paths-ignore` — no `push`, onde ele paga](#b-paths-ignore--no-push-onde-ele-paga)
+  - [(c) O mesmo commit testado três vezes](#c-o-mesmo-commit-testado-três-vezes)
+  - [(d) Fundir jobs pequenos](#d-fundir-jobs-pequenos)
+  - [(e) Gate local de pre-push](#e-gate-local-de-pre-push)
+- [4. O que NÃO economiza (e parece que sim)](#4-o-que-não-economiza-e-parece-que-sim)
+- [5. Quando a cota acaba de verdade — o job que não parece bloqueio](#5-quando-a-cota-acaba-de-verdade--o-job-que-não-parece-bloqueio)
+  - [Assinatura](#assinatura)
+  - [Onde a mensagem realmente está](#onde-a-mensagem-realmente-está)
+  - [O que continua funcionando](#o-que-continua-funcionando)
+  - [O sósia: workflow inválido produz quase a mesma assinatura](#o-sósia-workflow-inválido-produz-quase-a-mesma-assinatura)
+  - [Diagnóstico em uma linha](#diagnóstico-em-uma-linha)
+  - [5a. Deploy manual enquanto o bloqueio dura — e os dois falsos verdes do caminho](#5a-deploy-manual-enquanto-o-bloqueio-dura--e-os-dois-falsos-verdes-do-caminho)
+- [6. Checklist rápido](#6-checklist-rápido)
 
 ## 1. O modelo de custo (as três regras que decidem tudo)
 
@@ -88,7 +110,7 @@ build-and-push:
 ⚠️ **A migração custa mais do que trocar o `runs-on`.** O runner hospedado é uma imagem curada
 com toolchain pré-instalada e uma topologia de rede específica; o self-hosted não é nada disso.
 Numa migração real medida, o job levou **cinco execuções** para ficar verde — e o que quebrou não
-foi o que se esperava. **`references/self-hosted-job-migration.md` é o runbook dessa parte**; o
+foi o que se esperava. **`self-hosted-job-migration.md` (roteado pelo SKILL.md) é o runbook dessa parte**; o
 resumo, na ordem de risco medida:
 
 | # | Verificar | Sintoma |
