@@ -363,6 +363,11 @@ Por que o passo 4 é regra, e não zelo: **os dois falsos verdes desta receita f
   `-a '{"cmd":"…","stdin":"{{ lookup(\"pipe\",\"gh auth token\") }}"}'`. Prove a entrega com
   `"cmd":"wc -c"` (conta os bytes, sem imprimir o token). O `lookup` roda **localmente**, então o
   valor nunca aparece no comando da transcrição.
+- **E a `lookup('file')` de um JSON não entrega JSON.** O Jinja do ansible interpreta o conteúdo e
+  passa um dict Python, com aspas simples, e o `json.load` do outro lado morre com `Expecting
+  property name enclosed in double quotes`. Para entrada estruturada (lista de contas com senha, por
+  exemplo), grave o arquivo em **base64** (`… | base64 -w0 > entrada.b64`, com `umask 077`) e
+  decodifique no script. O Jinja não mexe numa string base64.
 
 Quando o pipeline voltar, o branch de ambiente precisa refletir o que está servindo: promova por PR
 com merge commit mesmo sabendo que o run vai morrer em 3 s, e diga isso no corpo do PR.

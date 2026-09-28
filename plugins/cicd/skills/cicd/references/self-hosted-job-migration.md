@@ -364,6 +364,25 @@ limite.
 
 O teto não esconde teste travado: 15 s ainda é rápido para acusar um `await` que nunca resolve.
 
+**E há um segundo timeout, que o `testTimeout` não toca.** O `waitFor`/`findBy*` do Testing
+Library desiste em **1 s** por padrão (`asyncUtilTimeout`), independente do limite do caso. No
+segundo run, com o `testTimeout` já em 15 s, reprovou outro caso: `Found multiple elements with the
+text of: Valor unitário`. O DOM tinha **duas** linhas de item, porque a animação de saída do
+`AnimatePresence` mantém o elemento que sai até terminar, e no host compartilhado ela passou de 1 s.
+No primeiro run o mesmo caso tinha passado: é sensível a tempo. A cura é
+`configure({ asyncUtilTimeout: 5_000 })` no setup global, com o motivo escrito.
+
+- **Reproduza de forma determinística encolhendo o timeout, não tentando deixar a máquina lenta.**
+  Uma config temporária que estende a real (`mergeConfig(base, { test: { setupFiles: [...] } })`)
+  com um setup que faz `configure({ asyncUtilTimeout: 30 })` reproduziu o erro idêntico ao do CI
+  2 de 2 vezes numa máquina rápida. Confirme que a sonda entrou (um `console.log` no setup extra),
+  porque o CLI do vitest **não** aceita `--setupFiles` e a sonda silenciosa só parece rodar.
+- **`taskset -c 0` não discrimina essa classe.** Com 1 CPU, o caso isolado **passou** sem a correção
+  (3 de 3): a falha depende da contenção da suíte paralela inteira, não da CPU lenta. Uma suíte verde
+  sob `taskset` é evidência fraca, e não serve como sensor.
+- Prove a config nos dois estados: um `waitFor` que só resolve após 2 s tem de passar com o setup
+  e falhar com `configure({ asyncUtilTimeout: 1000 })`.
+
 ## §7. Sem `.env` no CI, um módulo que faz `throw` no import derruba a suíte inteira
 
 O `.env` é gitignored — corretamente — então o checkout do CI não tem nenhum. Se algum módulo faz

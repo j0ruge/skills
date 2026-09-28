@@ -2,6 +2,23 @@
 
 Lessons retrofitted into the skill, dated. Each entry describes **what** changed and **why** (the symptom it would have prevented).
 
+## 2026-09-28 — O segundo timeout, e a `lookup` que não entrega JSON — bump 2.34.0 → [2.34.1]
+
+**O quê:** a §6b de `self-hosted-job-migration.md` ganha o `asyncUtilTimeout` do Testing Library,
+com a técnica de reprodução determinística e o aviso de que `taskset` não serve de sensor. A §5a
+de `ci-cost-minutes.md` ganha a armadilha da `lookup('file')` do ansible. As lições 102 e 105 e a
+linha de timeout do Quick Troubleshooting foram atualizadas.
+
+**Por quê:** a 2.34.0 publicou a §6b com um timeout só (o `testTimeout`), e o run seguinte do mesmo
+pipeline reprovou pelo outro. Com o `testTimeout` já em 15 s, um `waitFor` desistiu no padrão de
+1 s, porque a animação de saída do `AnimatePresence` manteve duas linhas no DOM. O erro
+(`Found multiple elements`) não menciona timeout nenhum. Dois achados do diagnóstico viraram regra:
+encolher o timeout para 30 ms reproduziu o erro do CI 2 de 2 vezes numa máquina rápida, enquanto
+prender a suíte a 1 CPU com `taskset` **não** reproduziu (o caso isolado passou 3 de 3 sem a
+correção). E, ao criar contas no IdP pelo mesmo caminho da §5a, a `lookup('file')` de um JSON chegou
+ao script como dict Python. O `json.load` falhou antes de qualquer chamada à API, então nada foi
+criado pela metade.
+
 ## 2026-09-28 — O que a migração para o self-hosted revela no primeiro run — bump 2.33.0 → [2.34.0]
 
 **O quê:** cinco lições novas (101 a 105), três seções novas em
