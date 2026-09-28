@@ -6,6 +6,30 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-09-28 — Skills no formato da spec aberta agentskills.io + check 7
+
+- **Tipo:** correção de causa raiz (nada media o formato da skill) · melhoria (progressive
+  disclosure em 11 skills).
+- **Antes:** auditoria com a `skill-quality-audit` contra a spec e as boas práticas do
+  agentskills.io: 1 `name` fora da spec (`coderabbit_pr`), 5 `SKILL.md` acima de 500 linhas
+  (970, 769, 648, 610, 531), 8 acima de 20 mil chars (o `cicd` com 110.525, ~27k tokens),
+  2 `B3` (path relativo saindo da skill), campos mortos `user_invocable`/`argument_description`
+  em 2 skills e dezenas de avisos de reference órfã, cadeia de references e reference longa sem
+  sumário.
+- **Depois:** 0 ERRO do auditor em todas as skills do marketplace; todos os `SKILL.md` abaixo de
+  500 linhas e de 20 mil chars; `validate-versions.py` verde com 1 aviso justificado
+  (`argument-hint` do `ticket`). 12 plugins com bump e entrada no CHANGELOG.
+- **Causa raiz:** os checks 1–6 só olhavam versão, plataforma e description; o formato da skill
+  não tinha sensor, e retrofit só soma texto.
+- **Padronizado em:** check 7 no `validate-versions.py` (erro: `name`, description, flow style,
+  mais de 500 linhas; aviso: campo de topo fora da spec, mais de 20 mil chars); `scripts/pre-commit`
+  passa a disparar também em `SKILL.md`; `CLAUDE.md` § *Skill format*; `retrofit-skill` 0.5.0
+  com a seção "Mantenha a skill no formato da spec".
+- **Autoria preservada:** os plugins `criar-prd`, `criar-task`, `criar-techspec` e
+  `executar-task` (Alexandre Souza Pereira, PR #2) não foram tocados.
+
+---
+
 ## 2026-09-03 — Prompt audit das 16 skills + poka-yoke na kaizen-software + custo do codereview
 
 - **Tipo:** melhoria (16 skills re-lidas para o modelo atual) · correção de causa raiz (cruft

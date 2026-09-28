@@ -8,6 +8,10 @@ Verificacoes (na ordem em que rodam):
   4. Plugins com 'cursor' em platforms tem ao menos uma entrada em CURSOR_SKILL_MAP (install.py)
   5. CHANGELOG.md de cada plugin contem entrada para a versao atual ([x.y.z], com colchetes)
   6. 'description' identica em SKILL.md, plugin.json e marketplace.json (+ aviso de tamanho)
+  7. Todo SKILL.md segue a spec aberta agentskills.io (https://agentskills.io/specification):
+     name a-z/0-9/hifen igual ao diretorio, description 1-1024, compatibility <= 500,
+     nenhuma colecao em flow style, SKILL.md < 500 linhas (erro); campo de topo fora da
+     spec e SKILL.md > 20.000 chars (~5.000 tokens) saem como aviso.
 
 Por que a verificacao 6 existe: a description e a UNICA superficie de triggering do
 plugin -- e por ela (mais o nome) que o agente decide invocar a skill. Como ela e
@@ -193,6 +197,70 @@ def _set_marketplace_description(marketplace_path: Path, name: str, new_desc: st
         marketplace_path, pat, lambda m: m.group(1) + repl_tail,
         f'marketplace.json description for {name}',
     )
+
+
+# Check 7 -- spec agentskills.io. Os limites vem da spec e do validador de referencia
+# skills-ref (validator.py); reconferir com:
+#   gh api "repos/agentskills/agentskills/commits?path=docs/specification.mdx&per_page=1"
+SPEC_FIELDS = {'name', 'description', 'license', 'compatibility', 'metadata', 'allowed-tools'}
+SPEC_NAME_RE = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
+SPEC_MAX_NAME, SPEC_MAX_DESC, SPEC_MAX_COMPAT = 64, 1024, 500
+SPEC_MAX_LINES = 500          # spec: "Keep your main SKILL.md under 500 lines"
+SPEC_WARN_CHARS = 20000       # ~5.000 tokens, orcamento recomendado do corpo pela spec
+_FLOW_RE = re.compile(r'^\s*[^\s#:][^:]*:\s*[\[{]')
+
+
+def _check_skill_spec(repo_root: Path) -> 'tuple[list[str], list[str]]':
+    """Confere cada plugins/*/skills/*/SKILL.md contra a spec agentskills.io.
+
+    Por que existe: os checks 1-6 so olham versao, plataforma e description. Nada media o
+    formato da skill em si, e a auditoria de 2026-09-28 achou 1 name fora da spec
+    (coderabbit_pr), 5 SKILL.md acima de 500 linhas e um de 110 mil chars (~27k tokens,
+    5x o orcamento do corpo). O Claude Code tolera tudo isso; consumidor estrito (skills-ref,
+    outros clientes da spec) nao.
+    """
+    errors, warnings = [], []
+    try:
+        import yaml
+    except ImportError:
+        return [], ['  spec check: pyyaml ausente -> check 7 PULADO (pip install pyyaml)']
+    for skill_md in sorted((repo_root / 'plugins').glob('*/skills/*/SKILL.md')):
+        rel = skill_md.relative_to(repo_root).as_posix()
+        text = skill_md.read_text(encoding='utf-8')
+        m = _FRONTMATTER_RE.match(text)
+        if not m:
+            errors.append(f'  {rel}: sem frontmatter --- ... ---')
+            continue
+        try:
+            data = yaml.safe_load(m.group(1)) or {}
+        except yaml.YAMLError:
+            continue  # o check 6 ja reporta YAML invalido com a causa tipica
+        name = data.get('name')
+        dirname = skill_md.parent.name
+        if not isinstance(name, str) or not SPEC_NAME_RE.match(name) or len(name) > SPEC_MAX_NAME:
+            errors.append(f'  {rel}: name {name!r} fora da spec (a-z, 0-9, hifen simples, ate {SPEC_MAX_NAME})')
+        elif name != dirname:
+            errors.append(f'  {rel}: name {name!r} difere do diretorio {dirname!r}')
+        desc = data.get('description')
+        if not isinstance(desc, str) or not desc.strip() or len(desc) > SPEC_MAX_DESC:
+            errors.append(f'  {rel}: description ausente ou acima de {SPEC_MAX_DESC} chars')
+        compat = data.get('compatibility')
+        if compat is not None and (not isinstance(compat, str) or not 1 <= len(compat) <= SPEC_MAX_COMPAT):
+            errors.append(f'  {rel}: compatibility precisa ser texto de 1 a {SPEC_MAX_COMPAT} chars')
+        flow = [l.split(':', 1)[0].strip() for l in m.group(1).splitlines() if _FLOW_RE.match(l)]
+        if flow:
+            errors.append(f'  {rel}: flow style ([a, b] / {{a: b}}) em {flow}: strictyaml/skills-ref nao le; use lista em bloco')
+        extra = sorted(set(data) - SPEC_FIELDS)
+        if extra:
+            warnings.append(f'  {rel}: campos de topo fora da spec {extra} (skills-ref reprova; '
+                            f'mantenha so se o Claude Code usa, e diga por que no CHANGELOG)')
+        n_lines = len(text.splitlines())
+        if n_lines > SPEC_MAX_LINES:
+            errors.append(f'  {rel}: SKILL.md com {n_lines} linhas > {SPEC_MAX_LINES} (spec): mover detalhe para references/')
+        if len(text) > SPEC_WARN_CHARS:
+            warnings.append(f'  {rel}: SKILL.md com {len(text)} chars > {SPEC_WARN_CHARS} (~5.000 tokens, '
+                            f'orcamento recomendado do corpo pela spec)')
+    return errors, warnings
 
 
 def _load_cursor_skill_map(repo_root: Path) -> 'list[dict] | None':
@@ -419,6 +487,11 @@ def main():
                 errors.append(
                     f'  {name}: CHANGELOG.md missing entry for v{plugin_version}'
                 )
+
+    # Check 7: spec agentskills.io em cada SKILL.md (sem --fix: e decisao de conteudo)
+    spec_errors, spec_warnings = _check_skill_spec(repo_root)
+    errors.extend(spec_errors)
+    warnings.extend(spec_warnings)
 
     if fix_mode and fixes_applied > 0:
         print(f'\nApplied {fixes_applied} format-preserving fix(es).')

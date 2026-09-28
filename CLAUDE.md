@@ -148,6 +148,25 @@ work stop firing on their canonical phrases, and `/doctor` shows
 the budget (raising costs ~5k tokens per session and consumes rate limits
 faster).
 
+## Skill format (agentskills.io spec)
+
+Every `SKILL.md` follows the open spec at https://agentskills.io/specification, which other
+clients and the reference validator (`skills-ref`) read strictly even where Claude Code is lenient.
+`scripts/validate-versions.py` check 7 enforces it.
+
+- **Frontmatter:** top level holds only `name`, `description`, `license`, `compatibility`,
+  `metadata`, `allowed-tools`. `name` is a-z, 0-9 and single hyphens and equals the directory
+  (`coderabbit_pr` had to become `coderabbit-pr` in codereview 2.0.0). Version lives in
+  `metadata.version`. Lists in block style, never `[a, b]`. A Claude Code-only field
+  (e.g. `argument-hint`) stays only when it does something, and the CHANGELOG says why — the
+  field names are hyphenated; `user_invocable`/`argument_description` with underscores were
+  silently ignored.
+- **Budget:** `SKILL.md` under 500 lines (error) and ~20,000 chars / ~5,000 tokens (warning).
+  Detail goes to `references/`, each routed from `SKILL.md` with *when* to read it; references
+  stay one level deep and get a table of contents past 300 lines.
+- **Audit a skill:** `python3 ~/.hermes/skills/devops/skill-quality-audit/scripts/audit_skill_quality.py plugins/<p>/skills/<s> --external off --no-changelog-required --desc-budget 0`
+  (optional; lives in the owner's Hermes harness).
+
 ## Prompt hygiene
 
 Skills are prompts, and prompts age with the model they were written for. A

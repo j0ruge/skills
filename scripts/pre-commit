@@ -8,8 +8,8 @@ set -e
 # Verificar se algum arquivo de plugin foi modificado
 STAGED=$(git diff --cached --name-only)
 
-if echo "$STAGED" | grep -qE '(plugin\.json|marketplace\.json|CHANGELOG\.md)'; then
-    echo "[pre-commit] Plugin files changed — validating version consistency..."
+if echo "$STAGED" | grep -qE '(plugin\.json|marketplace\.json|CHANGELOG\.md|SKILL\.md)'; then
+    echo "[pre-commit] Plugin files changed — validating versions, descriptions and skill spec..."
     python3 scripts/validate-versions.py
     if [ $? -ne 0 ]; then
         echo ""
