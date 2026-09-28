@@ -2,6 +2,66 @@
 
 Hit an error and want to know what to fix? Search this file. Each row is keyed on the error message Zitadel actually returns.
 
+## Sumário
+
+- [Setup / docker-compose errors](#setup--docker-compose-errors)
+  - [`open /current-dir/admin.pat: permission denied`](#open-current-diradminpat-permission-denied)
+  - [`Errors.Instance.Domain.AlreadyExists`](#errorsinstancedomainalreadyexists)
+  - [`setup failed, skipping cleanup` followed by container restart loop](#setup-failed-skipping-cleanup-followed-by-container-restart-loop)
+  - [PAT file never appears at the expected path](#pat-file-never-appears-at-the-expected-path)
+- [API errors](#api-errors)
+  - [Hosted UI returns `{"code":5,"message":"Not Found"}` after `signinRedirect`](#hosted-ui-returns-code5messagenot-found-after-signinredirect)
+  - [`/oauth/v2/authorize?...&prompt=none` returns 400 in a loop / SPA stuck on "verifying session…"](#oauthv2authorizepromptnone-returns-400-in-a-loop--spa-stuck-on-verifying-session)
+  - [SPA stuck on "Verifying session…" with no IdP-side error — boot-time `signinSilent` recursion](#spa-stuck-on-verifying-session-with-no-idp-side-error--boot-time-signinsilent-recursion)
+  - [Logout returns `error=invalid_request post_logout_redirect_uri invalid` / SPA lands on `/login?error=invalid_request`](#logout-returns-errorinvalid_request-post_logout_redirect_uri-invalid--spa-lands-on-loginerrorinvalid_request)
+  - [`redirect_uri missing in client configuration` after multi-app refactor regression (quirk 23)](#redirect_uri-missing-in-client-configuration-after-multi-app-refactor-regression-quirk-23)
+  - [Backend rejects JWT 401 even though `iss`/`aud`/`exp`/signature are correct](#backend-rejects-jwt-401-even-though-issaudexpsignature-are-correct)
+  - [401 storm with apparently-valid JWT — dashboard "flashes", every `/api` call returns 401, then 429](#401-storm-with-apparently-valid-jwt--dashboard-flashes-every-api-call-returns-401-then-429)
+  - [401 storm starting ~10 min after backend restart, with apparently-valid JWT](#401-storm-starting-10-min-after-backend-restart-with-apparently-valid-jwt)
+  - [`signinRedirect()` does nothing — clicking "Entrar" / "Login" produces no console error, no navigation, no network request](#signinredirect-does-nothing--clicking-entrar--login-produces-no-console-error-no-navigation-no-network-request)
+  - [MFA setup re-prompts every login despite `forceMfa: false`](#mfa-setup-re-prompts-every-login-despite-forcemfa-false)
+  - [`Instance not found. Make sure you got the domain right.` (with `unable to set instance using origin ...`)](#instance-not-found-make-sure-you-got-the-domain-right-with-unable-to-set-instance-using-origin-)
+  - [`Organisation doesn't exist (AUTH-Bs7Ds)`](#organisation-doesnt-exist-auth-bs7ds)
+  - [`User could not be found (COMMAND-3M9ds)` on `_deactivate` or `_reactivate`](#user-could-not-be-found-command-3m9ds-on-_deactivate-or-_reactivate)
+  - [`User with state initial can only be deleted not deactivated (COMMAND-ke0fw)`](#user-with-state-initial-can-only-be-deleted-not-deactivated-command-ke0fw)
+  - [`405 Method Not Allowed` on `/management/v1/users/{userId}/grants/_search`](#405-method-not-allowed-on-managementv1usersuseridgrants_search)
+  - [`invalid AddOIDCAppRequest.ClockSkew: value must be inside range (0s, 5s)`](#invalid-addoidcapprequestclockskew-value-must-be-inside-range-0s-5s)
+  - [`invalid AddHumanUserRequest.UserName: value length must be between 1 and 200 runes, inclusive`](#invalid-addhumanuserrequestusername-value-length-must-be-between-1-and-200-runes-inclusive)
+  - [`invalid SetUpOrgRequest.User: value is required`](#invalid-setuporgrequestuser-value-is-required)
+- [JWT validation errors](#jwt-validation-errors)
+  - [`JWTClaimValidationFailed: unexpected "aud" claim value`](#jwtclaimvalidationfailed-unexpected-aud-claim-value)
+  - [`JWSSignatureVerificationFailed`](#jwssignatureverificationfailed)
+  - [One account loops back to the login screen while the others log in fine](#one-account-loops-back-to-the-login-screen-while-the-others-log-in-fine)
+  - [Roles array always empty](#roles-array-always-empty)
+  - [`INVALID_TOKEN: no sub`](#invalid_token-no-sub)
+  - [Seed user JWT missing role added later to YAML](#seed-user-jwt-missing-role-added-later-to-yaml)
+  - [Browser 401 storm on cross-origin API, same backend OK via `curl`](#browser-401-storm-on-cross-origin-api-same-backend-ok-via-curl)
+- [SMTP / invitation errors](#smtp--invitation-errors)
+  - [Invitation emails not arriving](#invitation-emails-not-arriving)
+  - ["Invitation link expired" too quickly](#invitation-link-expired-too-quickly)
+- [Reverse proxy / TLS termination](#reverse-proxy--tls-termination)
+  - [Zitadel won't start (or won't accept traffic) when fronted by a TLS-terminating reverse proxy](#zitadel-wont-start-or-wont-accept-traffic-when-fronted-by-a-tls-terminating-reverse-proxy)
+  - [Zitadel admin Console: `(unknown) Failed to fetch` (environment.json `api` http vs `issuer` https)](#zitadel-admin-console-unknown-failed-to-fetch-environmentjson-api-http-vs-issuer-https)
+- [Post-upgrade errors (v2.66 → v4)](#post-upgrade-errors-v266--v4)
+  - [`404 Not Found` on `/ui/v2/login` immediately after the v4 boot](#404-not-found-on-uiv2login-immediately-after-the-v4-boot)
+  - [401 storm right after the v4 boot — JWKS keys regenerated](#401-storm-right-after-the-v4-boot--jwks-keys-regenerated)
+  - [`setup` phase hangs > 5 minutes during the v4 first boot](#setup-phase-hangs--5-minutes-during-the-v4-first-boot)
+  - [Branding (logo / colors) gone after the upgrade](#branding-logo--colors-gone-after-the-upgrade)
+  - [`zitadel-login` container loops on "Awaiting file and reading token" (Login UI v2 never becomes healthy)](#zitadel-login-container-loops-on-awaiting-file-and-reading-token-login-ui-v2-never-becomes-healthy)
+  - [`Errors.Project.App.AlreadyExisting` (or `Errors.User.AlreadyExisting`) — your idempotency matcher missed it](#errorsprojectappalreadyexisting-or-errorsuseralreadyexisting--your-idempotency-matcher-missed-it)
+  - [Setup migration `03_default_instance` fails: `duplicate key value violates unique constraint "unique_constraints_pkey"` / `Errors.Instance.Domain.AlreadyExists`](#setup-migration-03_default_instance-fails-duplicate-key-value-violates-unique-constraint-unique_constraints_pkey--errorsinstancedomainalreadyexists)
+  - [Bootstrap fails with `INVALID_ARGUMENT: missing organization_id` after partial v2 refactor](#bootstrap-fails-with-invalid_argument-missing-organization_id-after-partial-v2-refactor)
+  - [OIDC client_id mismatch — `Errors.App.NotFound` immediately after a clean cutover](#oidc-client_id-mismatch--errorsappnotfound-immediately-after-a-clean-cutover)
+  - [Wrong-environment IDs in prod IdP — bootstrap defaulted to `dev`](#wrong-environment-ids-in-prod-idp--bootstrap-defaulted-to-dev)
+  - ["A senha é inválida" / `password.check.failed` despite the env value matching](#a-senha-é-inválida--passwordcheckfailed-despite-the-env-value-matching)
+  - [`idp-bootstrap` container fails with `ERR_MODULE_NOT_FOUND` for a path under `src/`](#idp-bootstrap-container-fails-with-err_module_not_found-for-a-path-under-src)
+  - [The bootstrap logs `reuse` for everything and you cannot tell success from a no-op](#the-bootstrap-logs-reuse-for-everything-and-you-cannot-tell-success-from-a-no-op)
+- [CI / smoke-e2e errors (GHA runner)](#ci--smoke-e2e-errors-gha-runner)
+  - [`migration failed name=03_default_instance err.parent="open /current-dir/admin.pat: permission denied"` followed by `unique_constraints_pkey` cascade](#migration-failed-name03_default_instance-errparentopen-current-diradminpat-permission-denied-followed-by-unique_constraints_pkey-cascade)
+  - [`Bootstrap fails with COMMAND-VoaRj "Password must contain upper case"` on `AddHumanUser`](#bootstrap-fails-with-command-voarj-password-must-contain-upper-case-on-addhumanuser)
+  - [`zitadel-login` container never goes Healthy in CI; `up --wait --wait-timeout 120` times out](#zitadel-login-container-never-goes-healthy-in-ci-up---wait---wait-timeout-120-times-out)
+- [When you don't see your error here](#when-you-dont-see-your-error-here)
+
 ## Setup / docker-compose errors
 
 ### `open /current-dir/admin.pat: permission denied`
@@ -92,7 +152,7 @@ curl -sS -X PUT http://<external-domain>/management/v1/projects/$PROJECT/apps/$A
 
 **Cause**: `<AuthProvider>` (or whatever component invokes `signinSilent`) wraps the entire `<Routes>` tree, including the `/silent-renew` route. When the iframe loads `/silent-renew`, it re-mounts the whole app — including the provider — which triggers another `signinSilent`, which opens another iframe, and so on. The original parent's Promise is never settled because no descendant ever reaches its `signinSilentCallback`.
 
-**Fix**: Skip the boot-time renew when the current route is part of the auth flow (`/login`, `/silent-renew`, `/auth/callback`) AND when the page is itself an iframe (`window.self !== window.top`). Both checks are necessary — the route-name check covers the first iframe load, the iframe check covers cases where the IdP redirects the iframe to a path that isn't in your route table. See `references/spa-recipes.md §"Recipe 1 — Boot-time silent renew with InMemoryWebStorage" §"Trap 1"`.
+**Fix**: Skip the boot-time renew when the current route is part of the auth flow (`/login`, `/silent-renew`, `/auth/callback`) AND when the page is itself an iframe (`window.self !== window.top`). Both checks are necessary — the route-name check covers the first iframe load, the iframe check covers cases where the IdP redirects the iframe to a path that isn't in your route table. See `spa-recipes.md §"Recipe 1 — Boot-time silent renew with InMemoryWebStorage" §"Trap 1"`.
 
 A second, independent gotcha lives in the same recipe: if you protect the boot useEffect with the textbook `let cancelled = false; return () => { cancelled = true; }` pattern, **React StrictMode breaks it** — the cleanup runs after the first effect, sets `cancelled = true` in the first run's closure, and when the Promise resolves it skips `setBootstrapping(false)`. Same lockup symptom, different cause. Use a ref to gate re-execution and let the state set fire on the second run; do not branch on a closure-scoped `cancelled` flag. See `spa-recipes.md §"Trap 2"`.
 
@@ -635,7 +695,7 @@ After the fix the browser may still serve the old `environment.json` from its se
 
 ## Post-upgrade errors (v2.66 → v4)
 
-These show up specifically after bumping the Zitadel image from v2.66.x to v4.x. The full upgrade procedure (snapshot, schema migration, container split) lives in `references/migration-v2-to-v4.md` — this section is the lookup table for the four most common failure modes during the upgrade window.
+These show up specifically after bumping the Zitadel image from v2.66.x to v4.x. The full upgrade procedure (snapshot, schema migration, container split) lives in `migration-v2-to-v4.md` — this section is the lookup table for the four most common failure modes during the upgrade window.
 
 ### `404 Not Found` on `/ui/v2/login` immediately after the v4 boot
 

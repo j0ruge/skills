@@ -2,6 +2,27 @@
 
 This reference covers validating Zitadel-issued access tokens in a backend. Examples are TypeScript with `jose`, but the patterns translate directly to other JWT libraries (Go's `oidc/v3`, Java's Spring Security `OAuth2ResourceServer`, Python's `python-jose`).
 
+## Sumário
+
+- [Prerequisites at the Zitadel side](#prerequisites-at-the-zitadel-side)
+- [Required SPA scopes for the project audience](#required-spa-scopes-for-the-project-audience)
+- [Audience: project ID, not client ID](#audience-project-id-not-client-id)
+- [JWKS caching](#jwks-caching)
+- [Access token vs ID token — what's actually inside](#access-token-vs-id-token--whats-actually-inside)
+- [Mapping claims to your `AuthContext`](#mapping-claims-to-your-authcontext)
+- [Express middleware pattern](#express-middleware-pattern)
+- [Authorization on top of validation](#authorization-on-top-of-validation)
+- [When NOT to use JWT validation — opaque tokens + introspection](#when-not-to-use-jwt-validation--opaque-tokens--introspection)
+- [Common pitfalls](#common-pitfalls)
+- [Trusting a self-signed JWKS endpoint from Node](#trusting-a-self-signed-jwks-endpoint-from-node)
+- [Logout / RP-initiated logout](#logout--rp-initiated-logout)
+- [Network reachability to the IdP from the JWT validator](#network-reachability-to-the-idp-from-the-jwt-validator)
+  - [Diagnosis (3 commands)](#diagnosis-3-commands)
+  - [Fix — `extra_hosts` mapping the IdP hostname to the docker bridge](#fix--extra_hosts-mapping-the-idp-hostname-to-the-docker-bridge)
+  - [Logging tip — emit the JOSE error code via a structured logger, not `console.error`](#logging-tip--emit-the-jose-error-code-via-a-structured-logger-not-consoleerror)
+  - [Confirming the 401-storm did NOT happen — the positive check](#confirming-the-401-storm-did-not-happen--the-positive-check)
+- [Going further](#going-further)
+
 ## Prerequisites at the Zitadel side
 
 Before tokens contain what you expect, the OIDC application must have these flags set (see `api-cheatsheet.md §"Create OIDC application"`):
@@ -392,7 +413,9 @@ see it, so it belongs to a "10 minutes later, before you walk away" checklist.
 
 ## Going further
 
-- API endpoint reference: `references/api-cheatsheet.md`
-- Two instances side by side, or moving users between them: `references/multi-instance-and-user-migration.md`
-- Tenant→orgId mapping for the AuthContext: `references/tenant-org-mapping.md`
-- Errors during validation: `references/troubleshooting.md`
+_Sibling files in this folder; SKILL.md routes each one directly._
+
+- API endpoint reference: `api-cheatsheet.md`
+- Two instances side by side, or moving users between them: `multi-instance-and-user-migration.md`
+- Tenant→orgId mapping for the AuthContext: `tenant-org-mapping.md`
+- Errors during validation: `troubleshooting.md`

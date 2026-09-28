@@ -2,6 +2,27 @@
 
 Lessons retrofitted into the skill, dated. Each entry describes **what** changed and **why** (the symptom it would have prevented).
 
+## 2026-09-28 — Progressive disclosure: o catálogo de quirks vira reference e o SKILL.md vira índice — bump 0.17.0 → 0.18.0
+
+**Por quê:** a auditoria `skill-quality-audit` v0.2.0, que mede a skill contra a spec e as boas
+práticas do agentskills.io, apontou 14 avisos. O corpo tinha 63.445 chars (C1), mais de 3x o
+orçamento de ~20.000. Dois scripts do projeto do usuário apareciam como se fossem da skill (B2).
+Seis references citavam irmãs pelo caminho `references/`, o que cria cadeias de mais de um nível
+(C2). Outras seis passavam de 300 linhas sem sumário (C3).
+
+**O que mudou:**
+- os quirks 1 a 53 foram para `references/quirks.md` sem edição e com a mesma numeração;
+- o `SKILL.md` ficou com fluxo padrão, tabela de roteamento com condição para cada reference, asset
+  e script, e "Gotchas — the quirk index", uma linha por quirk;
+- as references citam irmãs só pelo nome e ganharam `## Sumário` com âncoras;
+- `load-bootstrap.sh` e `bootstrap-zitadel.ts` aparecem como arquivos do projeto do usuário, e o
+  template da skill continua em `assets/bootstrap-zitadel.ts`.
+
+**Números:** `SKILL.md` 198 linhas / 63.445 chars → 147 linhas / 16.206 chars. Auditoria: 0 erros e
+14 avisos → 0 erros e 0 avisos.
+
+**Como reverter:** `git revert` do commit que traz esta entrada.
+
 ## 2026-09-27 — Quirk 53 (idioma pelo claim `locale`), prova de senha pela Session API e o Quirk 5 corrigido — bump 0.16.1 → 0.17.0
 
 **Sintoma que teria evitado:** um time quer que cada pessoa veja a SPA no próprio idioma e decide

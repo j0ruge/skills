@@ -6,6 +6,24 @@ This is a working reference for refactoring callers (bootstrap scripts, admin to
 
 For the actual upgrade procedure (image bump, schema migration, login UI split), see `migration-v2-to-v4.md`. This file is about **callers**, not the IdP itself.
 
+## Sumário
+
+- [§1. Path prefixes (v4.x)](#1-path-prefixes-v4x)
+- [§2. Service mapping (covers the 13 v1 calls in `bootstrap-zitadel.ts`)](#2-service-mapping-covers-the-13-v1-calls-in-bootstrap-zitadelts)
+  - [§2.1. List\* response field names — non-uniform across services (v4.15 verified)](#21-list-response-field-names--non-uniform-across-services-v415-verified)
+  - [§2.2. List\* request shapes — `filters()` is the only path](#22-list-request-shapes--filters-is-the-only-path)
+  - [§2.3. Single-resource response field names — `*Id`, not `id`](#23-single-resource-response-field-names--id-not-id)
+- [§3. Contextual info (header → body)](#3-contextual-info-header--body)
+- [§4. Body-shape changes worth flagging](#4-body-shape-changes-worth-flagging)
+  - [`AddHumanUser` — `firstName/lastName` → `givenName/familyName`](#addhumanuser--firstnamelastname--givennamefamilyname)
+  - [`CreateApplication` (replaces `apps/oidc`) — discriminator + nested config (v4.15 verified)](#createapplication-replaces-appsoidc--discriminator--nested-config-v415-verified)
+  - [`AuthorizationService` (replaces `users/grants`) — Create requires `organizationId`; Update/Delete take `id`](#authorizationservice-replaces-usersgrants--create-requires-organizationid-updatedelete-take-id)
+- [§5. Idempotence patterns](#5-idempotence-patterns)
+- [§6. What's still v1-only (as of v4.15)](#6-whats-still-v1-only-as-of-v415)
+- [§7. Auth — unchanged across v1/v2](#7-auth--unchanged-across-v1v2)
+- [§8. Migration checklist (per caller / script)](#8-migration-checklist-per-caller--script)
+- [§9. Going further](#9-going-further)
+
 ## §1. Path prefixes (v4.x)
 
 | Surface | Path | When |
@@ -364,7 +382,9 @@ Practical sequence when refactoring a single caller from v1 to v2:
 
 ## §9. Going further
 
-- Upgrade procedure (image bump + schema migration): `references/migration-v2-to-v4.md`.
-- Working v1 endpoints with payload examples: `references/api-cheatsheet.md` (v1 reference; intro now points here for v2 work).
-- Idempotence Quirk 14 (`COMMAND-1m88i "No changes"`) — same in v1 and v2: `references/api-cheatsheet.md §"Create OIDC application"`.
+_Sibling files in this folder; SKILL.md routes each one directly._
+
+- Upgrade procedure (image bump + schema migration): `migration-v2-to-v4.md`.
+- Working v1 endpoints with payload examples: `api-cheatsheet.md` (v1 reference; intro now points here for v2 work).
+- Idempotence Quirk 14 (`COMMAND-1m88i "No changes"`) — same in v1 and v2: `api-cheatsheet.md §"Create OIDC application"`.
 - Bootstrap script with v1 calls annotated with v2 equivalents: `assets/bootstrap-zitadel.ts`.

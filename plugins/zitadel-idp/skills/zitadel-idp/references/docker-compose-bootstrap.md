@@ -2,6 +2,29 @@
 
 This reference covers the surprising parts of standing up Zitadel locally with `docker compose`. The "happy path" examples in the upstream docs work, but several details are easy to miss and they cascade into hard-to-diagnose failures. Each section below explains the **why** so you can adapt rather than copy.
 
+## Sumário
+
+- [§1. `ZITADEL_FIRSTINSTANCE_*` env vars belong on the `zitadel` service](#1-zitadel_firstinstance_-env-vars-belong-on-the-zitadel-service)
+- [§2. Volume permissions: chown to uid 1000 before first boot](#2-volume-permissions-chown-to-uid-1000-before-first-boot)
+- [§3. External domain, Host header, and sslip.io](#3-external-domain-host-header-and-sslipio)
+- [§4. `start-from-init` re-runs setup on every boot — that's fine](#4-start-from-init-re-runs-setup-on-every-boot--thats-fine)
+- [§5. Mailpit / SMTP for invite + recovery flows](#5-mailpit--smtp-for-invite--recovery-flows)
+- [§6. Verifying the boot worked](#6-verifying-the-boot-worked)
+- [§7. TLS terminated by reverse proxy (Caddy / NGINX / Traefik)](#7-tls-terminated-by-reverse-proxy-caddy--nginx--traefik)
+- [§"Quirk 24 — masterkey via flag em v2.66.x"](#quirk-24--masterkey-via-flag-em-v266x)
+- [§8. Compose v4: login-container + nginx routing (Quirk 25)](#8-compose-v4-login-container--nginx-routing-quirk-25)
+  - [Compose mínimo](#compose-mínimo)
+  - [Nginx routing](#nginx-routing)
+  - [Caddy equivalente](#caddy-equivalente)
+  - [Como detectar que o roteamento está OK](#como-detectar-que-o-roteamento-está-ok)
+  - [E se eu quiser ficar com Login UI v1?](#e-se-eu-quiser-ficar-com-login-ui-v1)
+- [§"DefaultInstance feature flags pre-config" (Quirk 31)](#defaultinstance-feature-flags-pre-config-quirk-31)
+- [§"nginx-proxy: split VIRTUAL_HOST + VIRTUAL_PATH" (Quirk 32)](#nginx-proxy-split-virtual_host--virtual_path-quirk-32)
+- [§"Idp-bootstrap Dockerfile: `src/` + canonical YAML path"](#idp-bootstrap-dockerfile-src--canonical-yaml-path)
+- [§"PASSWORDCHANGEREQUIRED for CI/CD reproducibility"](#passwordchangerequired-for-cicd-reproducibility)
+- [§"Smoke-e2e plumbing checklist for GHA"](#smoke-e2e-plumbing-checklist-for-gha)
+- [§9. Where to go next](#9-where-to-go-next)
+
 ## §1. `ZITADEL_FIRSTINSTANCE_*` env vars belong on the `zitadel` service
 
 The Zitadel image has three relevant subcommands:
@@ -502,7 +525,8 @@ Bringing a long-disabled smoke-e2e job back to green tends to expose 4-5 layers 
      run: |
        RAND_TAIL="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 28)"
        export ZITADEL_SEED_USER_PASSWORD="Aa1!${RAND_TAIL}"
-       npx tsx scripts/bootstrap-zitadel.ts
+       # the project's own script; the skill ships its template as assets/bootstrap-zitadel.ts
+       npx tsx "$GITHUB_WORKSPACE/packages/idp/scripts/bootstrap-zitadel.ts"
    ```
 
 4. **Apply Prisma (or your ORM's) migrations to the ephemeral Postgres** before integration tests. `prisma generate` produces `_generated/client` (otherwise vitest collect dies with `ERR_MODULE_NOT_FOUND`); `prisma migrate deploy` against the test DB gives the schema (otherwise SELECTs hit `relation does not exist`):
@@ -552,7 +576,9 @@ Bringing a long-disabled smoke-e2e job back to green tends to expose 4-5 layers 
 
 ## §9. Where to go next
 
-- Programmatic configuration: `references/api-cheatsheet.md` (v1) + `references/api-v1-to-v2-mapping.md` (v2)
-- Upgrading from v2.66 to v4: `references/migration-v2-to-v4.md`
-- Token validation in your backend: `references/token-validation.md`
-- Errors during steps above: `references/troubleshooting.md`
+_Sibling files in this folder; SKILL.md routes each one directly._
+
+- Programmatic configuration: `api-cheatsheet.md` (v1) + `api-v1-to-v2-mapping.md` (v2)
+- Upgrading from v2.66 to v4: `migration-v2-to-v4.md`
+- Token validation in your backend: `token-validation.md`
+- Errors during steps above: `troubleshooting.md`

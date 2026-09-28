@@ -2,6 +2,37 @@
 
 This file collects working SPA wiring recipes that the upstream `react-oidc-context` and `oidc-client-ts` docs hint at but don't show end-to-end. Each one is here because we hit it in production and the obvious-looking implementation failed in a non-obvious way.
 
+## Sumário
+
+- [Recipe 1 — Boot-time silent renew with `InMemoryWebStorage`](#recipe-1--boot-time-silent-renew-with-inmemorywebstorage)
+  - [When to use](#when-to-use)
+  - [Why the obvious thing fails](#why-the-obvious-thing-fails)
+  - [The three traps](#the-three-traps)
+  - [The full recipe](#the-full-recipe)
+  - [What this buys you](#what-this-buys-you)
+  - [Validation](#validation)
+- [Recipe — Defense in depth against 401-storm-revokes-session](#recipe--defense-in-depth-against-401-storm-revokes-session)
+  - [What problem this solves](#what-problem-this-solves)
+  - [Layer 1 — Dedupe lives in the API client, expose `refreshToken()` public](#layer-1--dedupe-lives-in-the-api-client-expose-refreshtoken-public)
+  - [Layer 2 — TanStack Query `retry` predicate filters 401](#layer-2--tanstack-query-retry-predicate-filters-401)
+  - [Layer 3 — `apiclient:unauthorized` listener with route guard + state.returnTo](#layer-3--apiclientunauthorized-listener-with-route-guard--statereturnto)
+  - [What this buys you](#what-this-buys-you-1)
+  - [Validation](#validation-1)
+  - [Why all three layers, not just one](#why-all-three-layers-not-just-one)
+- [Recipe — E2E browser tests (Playwright) against self-signed Zitadel](#recipe--e2e-browser-tests-playwright-against-self-signed-zitadel)
+  - [When to use](#when-to-use-1)
+  - [Why the obvious thing fails](#why-the-obvious-thing-fails-1)
+  - [The fix](#the-fix)
+  - [Logging in real users](#logging-in-real-users)
+  - [`storageState` reuse: why it's tricky with `InMemoryWebStorage`](#storagestate-reuse-why-its-tricky-with-inmemorywebstorage)
+  - [Validation](#validation-2)
+- [Recipe — UI language from the IdP (`locale` claim)](#recipe--ui-language-from-the-idp-locale-claim)
+  - [When to use](#when-to-use-2)
+  - [How the language travels](#how-the-language-travels)
+  - [Reading it in the SPA](#reading-it-in-the-spa)
+  - [Three limits to design around](#three-limits-to-design-around)
+  - [Validation](#validation-3)
+
 ## Recipe 1 — Boot-time silent renew with `InMemoryWebStorage`
 
 ### When to use

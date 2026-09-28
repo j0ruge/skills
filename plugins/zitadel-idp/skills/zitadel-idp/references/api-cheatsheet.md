@@ -2,7 +2,7 @@
 
 This is a working reference for the REST endpoints we actually use in a typical IdP integration: org/project/role/app provisioning, user management, and grant lifecycle. Each section gives the exact path, method, body shape, and the gotcha that bit us when we first wrote it.
 
-> **For new code on Zitadel v4: prefer the v2 service surface.** This cheatsheet documents the v1 endpoints actually exercised by `assets/bootstrap-zitadel.ts` and similar working bootstraps — they keep working in v4 and are useful when you need a quick paste-able cURL. For greenfield work or refactors, see `references/api-v1-to-v2-mapping.md` for the v2 (Connect protocol) equivalents, payload diffs (`firstName/lastName` → `givenName/familyName`, `userName` → `username`, `pt-BR` → `pt`), and the contextual `orgId` move from header into body. v1 is not deprecated in v4 — mixing v1 and v2 calls in the same script is fine.
+> **For new code on Zitadel v4: prefer the v2 service surface.** This cheatsheet documents the v1 endpoints actually exercised by `assets/bootstrap-zitadel.ts` and similar working bootstraps — they keep working in v4 and are useful when you need a quick paste-able cURL. For greenfield work or refactors, see `api-v1-to-v2-mapping.md` for the v2 (Connect protocol) equivalents, payload diffs (`firstName/lastName` → `givenName/familyName`, `userName` → `username`, `pt-BR` → `pt`), and the contextual `orgId` move from header into body. v1 is not deprecated in v4 — mixing v1 and v2 calls in the same script is fine.
 
 All examples assume:
 
@@ -24,6 +24,29 @@ x-zitadel-orgid: <numeric orgId, NOT the domain tenantId>
 See `tenant-org-mapping.md` for why this distinction matters.
 
 ---
+
+## Sumário
+
+- [API surface — three coexisting families](#api-surface--three-coexisting-families)
+- [Create an organization](#create-an-organization)
+- [Create a project](#create-a-project)
+- [Create project roles](#create-project-roles)
+- [Renaming a project role](#renaming-a-project-role)
+  - [The alias is what makes the schedule yours](#the-alias-is-what-makes-the-schedule-yours)
+- [Create an OIDC application](#create-an-oidc-application)
+- [Create a human user](#create-a-human-user)
+- [Seed an admin user (bootstrap-time)](#seed-an-admin-user-bootstrap-time)
+- [Prove a user's password without a browser (Session API v2)](#prove-a-users-password-without-a-browser-session-api-v2)
+- [Re-reading bootstrap output after volume reset](#re-reading-bootstrap-output-after-volume-reset)
+- [Login policy tweaks (instance-wide UX)](#login-policy-tweaks-instance-wide-ux)
+  - [`mfaInitSkipLifetime: "0s"` — disable the MFA setup re-prompt](#mfainitskiplifetime-0s--disable-the-mfa-setup-re-prompt)
+  - [`loginV2.required: false` — use the bundled Login UI v1](#loginv2required-false--use-the-bundled-login-ui-v1)
+- [User grants (assign / revoke project roles)](#user-grants-assign--revoke-project-roles)
+- [Working bootstrap reference](#working-bootstrap-reference)
+- [Rate limiting and pagination](#rate-limiting-and-pagination)
+- [v3 → v4 breaking changes worth knowing](#v3--v4-breaking-changes-worth-knowing)
+- [v2.66 → v4 upgrade?](#v266--v4-upgrade)
+- [Going further](#going-further)
 
 ## API surface — three coexisting families
 
@@ -428,10 +451,10 @@ Equivalent in Docker Compose:
 services:
   backend:
     environment:
-      AUTH_AUDIENCE: ${PROJECT_ID:?run scripts/load-bootstrap.sh first}
+      AUTH_AUDIENCE: ${PROJECT_ID:?run load-bootstrap.sh first}
 ```
 
-…paired with a `scripts/load-bootstrap.sh` that exports the values from the JSON before `docker compose up`.
+…paired with a `load-bootstrap.sh` in your project's scripts folder (the skill does not ship one) that exports the values from the JSON before `docker compose up`.
 
 **What invalidates on every reset** (if you cache any of these, refresh them):
 
@@ -550,12 +573,14 @@ The full idempotent bootstrap script for Org/Project/Roles/App is at `assets/boo
 
 ## v2.66 → v4 upgrade?
 
-If you're not adding callers but **upgrading the IdP itself** from v2.66.x to v4.x, this cheatsheet is the wrong starting point — you want `references/migration-v2-to-v4.md`, which covers pre-flight (Postgres requirement, masterkey, snapshot), the schema migration that runs automatically in v4's `setup` phase, the new `zitadel-login` container, validation, and rollback. Direct v2.66 → v4 is supported when Postgres is already in place; no v3 stop required.
+If you're not adding callers but **upgrading the IdP itself** from v2.66.x to v4.x, this cheatsheet is the wrong starting point — you want `migration-v2-to-v4.md`, which covers pre-flight (Postgres requirement, masterkey, snapshot), the schema migration that runs automatically in v4's `setup` phase, the new `zitadel-login` container, validation, and rollback. Direct v2.66 → v4 is supported when Postgres is already in place; no v3 stop required.
 
 ---
 
 ## Going further
 
-- Token validation patterns in your backend: `references/token-validation.md`.
-- Mapping domain `tenantId` to numeric `orgId`: `references/tenant-org-mapping.md`.
-- Stuck on an error: `references/troubleshooting.md`.
+_Sibling files in this folder; SKILL.md routes each one directly._
+
+- Token validation patterns in your backend: `token-validation.md`.
+- Mapping domain `tenantId` to numeric `orgId`: `tenant-org-mapping.md`.
+- Stuck on an error: `troubleshooting.md`.

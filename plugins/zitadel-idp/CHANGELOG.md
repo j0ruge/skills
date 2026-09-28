@@ -1,5 +1,37 @@
 # Changelog — zitadel-idp
 
+## [0.18.0] - 2026-09-28
+
+### Changed
+
+- **Progressive disclosure do `SKILL.md`, pela spec e pelas boas práticas do agentskills.io.**
+  A auditoria `skill-quality-audit` v0.2.0 apontou 0 erros e 14 avisos: C1 (corpo com 63.445
+  chars, mais de 3x o orçamento de ~20.000), B2 (dois scripts do projeto do usuário citados como se
+  fossem da skill), C2 (seis references encadeando irmãs pelo caminho `references/`) e C3 (seis
+  references com mais de 300 linhas sem sumário). Depois: 0 erros e 0 avisos.
+- **O catálogo de quirks saiu do `SKILL.md` inteiro e sem edição** para o novo
+  `references/quirks.md`. Os números 1 a 53 foram mantidos, porque as outras references citam
+  "Quirk N". No `SKILL.md` ficou a seção "Gotchas — the quirk index", com uma linha por quirk, e o
+  fluxo padrão: casar o sintoma no índice e ler a entrada completa em `quirks.md`, ou
+  `troubleshooting.md` quando nada casa.
+- **A tabela de roteamento cobre todas as references**, `quirks.md` incluída, e diz quando ler cada
+  uma. Os `assets/` e o `scripts/reset-zitadel.sh` também são roteados com a condição de uso.
+- **Cadeias entre references cortadas (C2):** `api-cheatsheet.md`, `api-v1-to-v2-mapping.md`,
+  `docker-compose-bootstrap.md`, `migration-v2-to-v4.md`, `token-validation.md` e
+  `troubleshooting.md` citam as irmãs só pelo nome do arquivo. As seções "Going further" e "Where
+  to go next" avisam que o `SKILL.md` roteia cada uma direto.
+- **Sumário com âncoras (C3)** no início de `api-cheatsheet.md`, `api-v1-to-v2-mapping.md`,
+  `docker-compose-bootstrap.md`, `spa-recipes.md`, `token-validation.md` e `troubleshooting.md`.
+- **Scripts do projeto do usuário (B2):** o `load-bootstrap.sh` de `api-cheatsheet.md` é descrito
+  como um script do seu projeto, que a skill não traz. O passo de CI de
+  `docker-compose-bootstrap.md` chama `"$GITHUB_WORKSPACE/packages/idp/scripts/bootstrap-zitadel.ts"`
+  (o `working-directory` segue `packages/idp`), com um comentário dizendo que o arquivo é do projeto e que o template da skill é
+  `assets/bootstrap-zitadel.ts`. O comportamento do passo é o mesmo.
+- `SKILL.md`: 198 linhas / 63.445 chars → 147 linhas / 16.206 chars. `metadata.version` do
+  `SKILL.md` acompanha o plugin (0.18.0).
+
+**Como reverter:** `git revert` do commit que traz esta entrada.
+
 ## [0.17.0] - 2026-09-27
 
 ### Added

@@ -229,7 +229,9 @@ None of these are required — your v1-shaped bootstrap continues to work. Refac
 
 ## §7. Where to go next
 
-- v1 → v2 endpoint refactor: `references/api-v1-to-v2-mapping.md`.
-- Compose v4 with login-container + nginx: `references/docker-compose-bootstrap.md §8`.
-- Post-upgrade error patterns (the 4 symptoms above expanded with diagnostics): `references/troubleshooting.md §"Post-upgrade errors (v2.66 → v4)"`.
-- Branding survives upgrades but the asset path can drift: `references/branding.md` (Quirks 19–22).
+_Sibling files in this folder; SKILL.md routes each one directly._
+
+- v1 → v2 endpoint refactor: `api-v1-to-v2-mapping.md`.
+- Compose v4 with login-container + nginx: `docker-compose-bootstrap.md §8`.
+- Post-upgrade error patterns (the 4 symptoms above expanded with diagnostics): `troubleshooting.md §"Post-upgrade errors (v2.66 → v4)"`.
+- Branding survives upgrades but the asset path can drift: `branding.md` (Quirks 19–22).
