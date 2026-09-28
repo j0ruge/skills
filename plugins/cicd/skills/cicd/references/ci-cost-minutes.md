@@ -329,6 +329,44 @@ gh api "/repos/<o>/<r>/actions/runs/<id>/jobs" \
 `.jobs[]`, e no workflow inválido essa lista é vazia: o `jq` não imprime linha nenhuma, nem
 `VAZIO`, nem `0`. Um sensor que emudece onde deveria acusar é indistinguível de um que não rodou.
 
+### 5a. Deploy manual enquanto o bloqueio dura — e os dois falsos verdes do caminho
+
+Com o CD morto pelo bloqueio, a promoção precisa sair da máquina do operador. A receita que
+funcionou, espelhando o job `deploy` em vez de improvisar:
+
+1. **Gate local** com os mesmos passos das composite actions de CI, e o resultado publicado como
+   status de commit (`gh api -X POST repos/<o>/<r>/statuses/<sha> -f context=local/ci …`), que não é
+   Actions e não passa pela cota.
+2. **Build e push local com as tags do pipeline** (`sha-<short>` + móvel). O token do `gh`
+   normalmente **não** tem `write:packages`: `gh auth refresh -h github.com -s write:packages` é
+   interativo, então quem roda é o humano. Os `build-args` saem do workflow, e um `VITE_*` que
+   é secret (client ID OIDC) pode ser lido do **bundle servido**, porque já é público lá. Grave em
+   arquivo sem imprimir.
+3. **Deploy dentro do container do runner**, no workspace do CD, onde o compose e o contexto de
+   `docker login` são os mesmos. O `.env` que o CD gera a partir dos secrets **não persiste** entre
+   runs. Reconstrua-o a partir dos containers vivos (`docker inspect --format '{{range
+   .Config.Env}}{{println .}}{{end}}'`), imprimindo só nome e comprimento de cada chave, e confira
+   que a senha do banco casa com a embutida no `DATABASE_URL` vivo antes de subir.
+4. **Prove pelo container**, nunca pelo exit code do script: `Created` e `Config.Image` mudaram, e
+   o bundle servido por HTTPS mudou de hash.
+
+Por que o passo 4 é regra, e não zelo: **os dois falsos verdes desta receita foram medidos.**
+
+- **`docker compose run` sem `-T` consome o stdin.** Um script passado por `bash -s < deploy.sh`
+  chega até o `compose run … prisma migrate deploy`, que lê o **resto do script** como entrada. O
+  bash chega ao EOF e sai **0** logo depois da migration, sem ter feito `up`. O container seguia
+  com o `Created` do dia anterior. Rode o script por arquivo (`docker cp` + `bash /tmp/x.sh
+  </dev/null`) e use `run -T … </dev/null`.
+- **O ansible ad-hoc ignora `stdin=` em forma livre.** Com `-a "cmd='…' stdin=…"`, o valor não
+  chega e o `docker login --password-stdin` não loga nada. O `config.json` do runner mantém o
+  `mtime` antigo, e o pull responde `denied`. Em JSON chega:
+  `-a '{"cmd":"…","stdin":"{{ lookup(\"pipe\",\"gh auth token\") }}"}'`. Prove a entrega com
+  `"cmd":"wc -c"` (conta os bytes, sem imprimir o token). O `lookup` roda **localmente**, então o
+  valor nunca aparece no comando da transcrição.
+
+Quando o pipeline voltar, o branch de ambiente precisa refletir o que está servindo: promova por PR
+com merge commit mesmo sabendo que o run vai morrer em 3 s, e diga isso no corpo do PR.
+
 ## 6. Checklist rápido
 
 - [ ] O repositório é privado? (se público, não há o que economizar)

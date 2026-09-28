@@ -2,6 +2,39 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-09-28 — O que a migração para o self-hosted revela no primeiro run — bump 2.33.0 → [2.34.0]
+
+**O quê:** cinco lições novas (101 a 105), três seções novas em
+`self-hosted-job-migration.md` (§6a, §6b, §11), uma linha nova na tabela da §9, uma seção nova
+em `ci-cost-minutes.md` (§5a) e três linhas no Quick Troubleshooting. O `metadata.version` do
+`SKILL.md` estava defasado em 2.28.0 e volta a acompanhar o `plugin.json`.
+
+**Por quê:** num bloqueio de billing do Actions, o CD de staging de um monorepo npm foi migrado
+para o runner self-hosted (`myoung34`, conteinerizado, efêmero) seguindo esta skill. O pré-voo
+passou, o runner pegou todos os jobs de primeira, e o primeiro run **reprovou duas vezes por
+causas que a §6 descrevia só em termos gerais**:
+
+- **§6a — o runner é root.** Um teste que simula falha de disco com `chmod 0o500` recebeu `null`,
+  porque root ignora bit de permissão. Medido nos dois usuários: `EACCES` como uid 1001, escrita
+  bem-sucedida como uid 0, `ENOTDIR` nos dois. A cura separa o sensor que roda sempre (raiz =
+  arquivo) do caso de permissão (`skipIf` root). O regime do CI foi provado num container
+  `node:22` e por sabotagem.
+- **§6b — o timeout default é da máquina de desenvolvimento.** Uma varredura de I/O foi de 0,5 s
+  para 11,5 s, e uma dúzia de casos ficou entre 2,3 e 4,5 s contra o limite de 5 s. O log por
+  **caso** (não por arquivo) mostrou os vizinhos antes da próxima rodada. Uma sonda de 7 s nos dois
+  estados provou a config.
+
+E três lições de desenho e operação que a skill não cobria:
+
+- **§11 — build sem `setup-buildx` e sem cache `gha`.** Copiados do hospedado, descartavam o cache
+  do host e dependiam da API de cache que o bloqueio derruba. Entra um prune por idade
+  (`until=168h`), porque o disco do host estava em 84%.
+- **§9 — a terceira opção do preflight de staging:** hospedado e fora do `needs:`. Foi a escolhida.
+- **§5a — o deploy manual enquanto o bloqueio dura**, com dois falsos verdes medidos na mesma
+  receita: `compose run` sem `-T` comendo o `bash -s` (exit 0 sem `up`) e o `stdin=` do ansible
+  ad-hoc ignorado em forma livre. Os dois só apareceram porque a prova era o `Created` do
+  container, não o exit code.
+
 ## 2026-09-22 — Quatro cegueiras de um primeiro deploy real — bump 2.32.0 → [2.33.0]
 
 **O quê:** quatro lições novas (97, 98, 99, 100), três seções novas

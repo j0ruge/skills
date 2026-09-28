@@ -301,6 +301,69 @@ o código que cobrem.
 
 ---
 
+### §6a. O runner é root — e o teste de permissão para de medir
+
+Um teste que simula falha de disco com `chmod 0o500` e espera o erro **reprova** no runner
+self-hosted: o `putObject` passa e o teste recebe `null`. Não é defeito de produção. Um runner
+conteinerizado como o `myoung34/github-runner` roda como **root**, e root ignora bit de permissão
+(`CAP_DAC_OVERRIDE`). No `ubuntu-latest` o usuário era `runner`, então o teste nunca tinha rodado
+num regime em que a premissa dele fosse falsa.
+
+Medido nos dois usuários, com o mesmo script:
+
+| | uid 1001 | uid 0 |
+| --- | --- | --- |
+| `chmod 0o500` + escrita | `EACCES` | **escreve sem erro** |
+| arquivo no lugar do diretório + `mkdir` | `ENOTDIR` | `ENOTDIR` |
+
+**Cura em duas metades, porque cada uma mede uma coisa diferente:**
+
+- O sensor que roda **sempre** usa uma falha que root não contorna. Aponte a raiz do storage para
+  um **arquivo**: todo `mkdir` abaixo dela dá `ENOTDIR`. Prefira isso a plantar o arquivo num
+  caminho derivado da key, porque drivers costumam guardar o objeto num caminho por hash
+  (`<raiz>/<hash[0:2]>/<hash>`) e o teste acoplado ao layout passa a mentir quando ele muda.
+- O caso específico de permissão continua, com `it.skipIf(process.getuid?.() === 0)` e o motivo
+  escrito no teste. Ele roda nas máquinas de desenvolvimento, que não são root.
+
+**Prove o regime do CI sem esperar o CI:** `docker run --rm -v "$PWD":/repo -w /repo/<pacote>
+node:22 npx vitest run <arquivo>` executa como uid 0. Use a imagem Debian, não a Alpine: os
+binários nativos do `node_modules` (esbuild, rollup) foram instalados para glibc. Depois saboteie
+o embrulho de erro do driver (relançar o erro cru) e confira que o sensor novo reprova **como
+root**. Antes de rodar, confirme com `grep` que a sabotagem entrou (ver `cd-verification-and-rollback.md` §6a).
+
+Para achar os outros casos de uma vez: `grep -rln "chmod\|getuid\|EACCES\|EPERM"` nos arquivos
+de teste. Um acerto que é só comentário não conta.
+
+### §6b. O timeout default do test runner foi calibrado para a máquina de desenvolvimento
+
+No mesmo primeiro run, o gate do frontend reprovou por **timeout**: uma varredura de ~1500
+arquivos versionados levou **11,5 s** contra o default de 5 s do vitest. Na máquina de
+desenvolvimento, o arquivo inteiro leva 0,5 s. O host self-hosted típico é compartilhado com
+outros serviços, tem poucas CPUs e guarda o `_work` num volume nomeado, e a suíte paralela disputa
+o I/O. A lentidão não é uniforme: I/O sofreu 25×, CPU bem menos.
+
+Não conserte só o caso que reprovou, porque os vizinhos estão logo atrás. Liste do log os casos
+**individuais** perto do limite. As linhas de arquivo mostram totais e enganam: o limite é por caso.
+
+```bash
+gh api repos/<o>/<r>/actions/jobs/<job_id>/logs | sed 's/\x1b\[[0-9;]*m//g' \
+  | grep -E 'Z {3,}[✓×] .* [0-9]+ms$' | sed -E 's/^\S+ +//' \
+  | awk '{n=$NF; sub(/ms$/,"",n); if (n+0>=2000) print n"ms", $0}' | sort -rn | head
+```
+
+Medido: um caso reprovado (11,5 s) e **uma dúzia entre 2,3 e 4,5 s**. O pior deles estava a 90% do
+limite.
+
+- **Timeout global com folga sobre o pior medido** (`testTimeout: 15_000`, 3× os 4,5 s), com o
+  motivo escrito na config. Sem o porquê, a próxima pessoa "arruma" de volta para o default.
+- **Timeout próprio para a varredura de I/O** (`it(..., fn, 60_000)`). O limite dela é da natureza
+  do teste, não do default da suíte.
+- **Prove que a config vale:** uma sonda descartável com `await new Promise(r => setTimeout(r,
+  7000))` tem de **passar** com a config e dar timeout com `--testTimeout=5000`. Sem os dois
+  estados, um `testTimeout` digitado no bloco errado do config passa despercebido.
+
+O teto não esconde teste travado: 15 s ainda é rápido para acusar um `await` que nunca resolve.
+
 ## §7. Sem `.env` no CI, um módulo que faz `throw` no import derruba a suíte inteira
 
 O `.env` é gitignored — corretamente — então o checkout do CI não tem nenhum. Se algum módulo faz
@@ -382,7 +445,15 @@ O que decide é **qual runner vigia qual**:
 | ---- | ------- | ----- | --------------------- |
 | preflight de staging | `[self-hosted, staging]` | label `staging` | ❌ tautológico — perde o fail-fast |
 | preflight de produção | `[self-hosted, staging]` | label `production` | ✅ máquinas diferentes, fail-fast intacto |
+| preflight de staging | `ubuntu-latest`, **fora** do `needs:` | label `staging` | ⚠️ vigia de fora e deixa o run vermelho, mas **não barra**; sob bloqueio de cota fica vermelho com o deploy verde |
 | watchdog agendado (lição 51) | `ubuntu-latest` | qualquer label | ✅ — e por isso **fica** no hospedado |
+
+A terceira linha é a opção que a lista original não tinha, e foi a escolhida num caso real. Com
+gates e builds já no self-hosted, o preflight hospedado **no** `needs:` faria o bloqueio de cota
+matar o CD inteiro de novo. Levado para o self-hosted, ficaria tautológico. Fora do `needs:`, ele
+continua transformando "sem runner" em run vermelho, e não barrar nada custa pouco: sem runner, o
+`deploy` também não roda. Sob bloqueio, o vermelho dele é verdadeiro (o vigia não conseguiu
+vigiar), e o comentário do job precisa dizer isso para ninguém ler o run como deploy quebrado.
 
 O watchdog é o que **não** deve migrar, nem sob bloqueio de cota. Sob bloqueio ele está morto — mas
 alarme morto é melhor que alarme verde que não enxerga, e ele é o que sobra da camada de detecção
@@ -405,3 +476,40 @@ Quando o runner é uma caixa-preta — sem SSH, sem `docker exec`, sem saber se 
 resultado de cada candidato custa segundos e substitui uma rodada inteira de adivinhação.
 
 Faça isso **na primeira falha**, não depois do terceiro palpite.
+
+---
+
+## §11. Build de imagem no self-hosted: tire o `setup-buildx` e o cache `gha`
+
+O `build-and-push` do blueprint hospedado faz `docker/setup-buildx-action` e passa
+`cache-from/to: type=gha`. Copiado tal qual para o runner self-hosted, os dois viram peso morto ou
+risco:
+
+- **`setup-buildx-action` cria um builder `docker-container` descartável** a cada job. O cache de
+  camadas dele morre com o job, e é exatamente o que o host persistente teria de graça. Um runner
+  que já traz `docker-ce-cli` com o plugin `buildx` tem o builder `default` (driver `docker`).
+  Confira com `docker buildx ls` de dentro do runner e deixe o `build-push-action` usá-lo.
+- **`type=gha` não é suportado pelo driver `docker`, e depende da API de cache do Actions**, a
+  mesma infraestrutura que um bloqueio de cota derruba (`ci-cost-minutes.md` §5). Migrar para
+  sobreviver ao bloqueio e manter o cache nela seria trocar uma dependência por outra.
+
+O custo aparece no disco do host: o cache de camadas passa a crescer a cada deploy, num host que já
+serve outros projetos (medido: 84% de disco e 6,4 GB de build cache parado **antes** da migração).
+Limite com um prune por idade no job de deploy, depois do `image prune`:
+
+```yaml
+- name: Prune imagens órfãs e cache de build
+  if: always()
+  run: |
+    docker image prune -f
+    docker builder prune -f --filter until=168h
+```
+
+`until=168h` preserva o que a última semana usou, que é o que deixa o próximo build rápido. Um
+`--all` ou um teto de tamanho seriam mais agressivos, e o cache é do **daemon**, compartilhado com
+os outros projetos do host.
+
+Onde um gate de CI e o `build-and-push` passam a disputar um runner único, **eles serializam**
+(tabela do pré-voo, item 6). Um runner efêmero ainda se registra de novo entre jobs. Diga o novo
+tempo de CD em voz alta no PR, para ninguém ler a lentidão como regressão.
+
