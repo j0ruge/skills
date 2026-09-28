@@ -1,10 +1,10 @@
 ---
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
-user_invocable: true
-argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 metadata:
-  version: 2.0.2
+  version: 2.1.0
+  user_invocable: "true"
+  argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
 
 # TODO.md → GitHub issues
@@ -48,6 +48,20 @@ Opções: `--file` (padrão `TODO.md`), `--repo OWNER/NAME` (padrão: o repo do 
 obrigatório num clone cujo `origin` é um caminho local) e `--dump DIR` (grava os corpos
 renderizados em disco, sem rede). Mexeu no script? Rode `python3 scripts/test_todo_issues.py
 <TODO.md de um repo real, já no esqueleto>`, que não usa a rede.
+
+## Scripts disponíveis
+
+Só `todo_issues.py` se executa (`--help` lista todas as opções). Os outros três são módulos que ele
+importa conforme o modo: abra-os só para depurar ou alterar esse modo.
+
+| Arquivo | O que é | Quando abrir |
+|---|---|---|
+| `scripts/todo_issues.py` | ponto de entrada: plano, `--apply`, `--audit`/`--fix`, modo relatório | sempre: é o `$S` dos comandos acima |
+| `scripts/kit.py` | acha o kit sdd, confere os requisitos (rc 3) e chama o sensor `check-todo.sh` | ao depurar um requisito recusado ou o kit errado |
+| `scripts/todo_format.py` | `--audit`/`--fix`: as regras `AUTO` e `MANUAL`, e a recusa rc 6 do `--write` | ao depurar ou alterar uma regra de formato |
+| `scripts/report.py` | modo relatório (`ACHADOS-*.md`): `CREATE closed`, `LINK?`, `COMMENT`, `CLOSE` | ao depurar ou alterar o modo relatório |
+| `scripts/test_todo_issues.py` | testes sem rede do espelho e do modo relatório | depois de mexer em `todo_issues.py` ou `report.py` |
+| `scripts/test_todo_format.py` | testes sem rede do `--audit`/`--fix` (precisa do kit e do git) | depois de mexer em `todo_format.py` ou `kit.py` |
 
 ## Como ler o plano
 

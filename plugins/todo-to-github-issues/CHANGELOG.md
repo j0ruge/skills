@@ -3,6 +3,42 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.1.0] — 2026-09-28
+
+Conformidade com a spec do agentskills.io, apontada pelo `skill-quality-audit` v0.2.0: 6 avisos → 3,
+e os 3 que ficam são falso positivo (ver B7 abaixo). Minor porque o frontmatter muda; nenhum script
+muda.
+
+### Changed
+
+- **A4, `user_invocable` e `argument_description` saem do topo do frontmatter e vão para
+  `metadata`, em texto.** A doc do Claude Code (code.claude.com/docs/en/skills, "Frontmatter
+  reference") só reconhece os campos com hífen (`user-invocable`, `argument-hint`) e diz que um
+  campo que não casa com a tabela, hífen incluído, é ignorado sem erro. Os dois nunca tiveram
+  efeito: `user_invocable: true` repetia o default de `user-invocable` (`true`), e o
+  `argument_description` nunca apareceu no autocomplete. Converter para `argument-hint` ligaria um
+  hint que a skill nunca teve, com um campo fora da spec: o `skills-ref` reprova, e o upload para
+  claude.ai ou a Skills API falha com "Unexpected key(s)". Em `metadata` o texto continua no
+  arquivo para quem o lê, e o comportamento é o mesmo de antes.
+
+### Fixed
+
+- **B2, quatro scripts contados como órfãos.** O `SKILL.md` invoca o espelho como
+  `{SKILL_DIR}/scripts/todo_issues.py`, forma que o auditor não reconhece (o normalizador dele trata
+  `<x>/`, `{{x}}/` e `MAIUSCULA/`, não `{x}/`); `kit.py`, `report.py` e `todo_format.py` são módulos
+  importados por ele e não eram citados em lugar nenhum. Nova seção `## Scripts disponíveis`: os
+  seis arquivos de `scripts/`, o que cada um é e quando abrir. O bloco `## Comando` não muda.
+- **B6, `scripts/__pycache__`.** Não era versionado (o `.gitignore` da raiz já ignora
+  `__pycache__/`); era lixo local, movido para a lixeira.
+
+### Mantido
+
+- **B7, `kit.py`, `report.py` e `todo_format.py` sem shebang.** São módulos (sem `__main__`, sem
+  argparse, modo 644) que `todo_issues.py` importa conforme o modo. Um shebang anunciaria uma
+  execução direta que não existe; o B7 e o F3 do auditor sobre eles são falso positivo.
+- Números: `SKILL.md` 186 → 200 linhas (13.110 → 14.238 chars).
+- Como reverter: `git revert` do commit que traz esta entrada.
+
 ## [2.0.2] — 2026-09-26
 
 ### Fixed
