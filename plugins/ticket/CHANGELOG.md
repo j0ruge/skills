@@ -1,5 +1,56 @@
 # Changelog — ticket
 
+## [1.6.0] — 2026-09-28
+
+Progressive disclosure da skill `ticket` pela spec do agentskills.io, a partir da auditoria
+`skill-quality-audit` v0.2.0. Nenhum fato, comando ou armadilha saiu: o que deixou o `SKILL.md`
+foi para `references/`, e o que já existia lá virou apontador em vez de cópia.
+
+### Por quê
+
+- **C1 (ERRO):** o `SKILL.md` tinha 769 linhas e 34.461 chars — acima do teto de 500 linhas e
+  do orçamento de ~5.000 tokens (20.000 chars) que a spec recomenda para o corpo.
+- **A4:** `argument_description` e `user_invocable` eram campos de topo fora da spec. O Claude
+  Code também não os lia: a doc de skills diz que o nome do campo tem de bater com a tabela, hífen
+  incluído, e que campo desconhecido é ignorado sem erro. Os dois eram letra morta.
+- **C3:** `references/workflow.md` tinha 468 linhas e nenhum sumário.
+- **F1/F2 (info):** references citadas sem dizer quando ler, e nenhuma seção de armadilhas.
+
+### O que mudou
+
+- **Frontmatter:** `argument_description` virou `argument-hint: "start (open) | split | close | status"`,
+  o campo real do Claude Code (dica no autocomplete do `/ticket:ticket`), que passa a funcionar
+  agora. Ele segue fora da spec aberta, então o auditor ainda o aponta (A4) e um upload para o
+  claude.ai o recusaria; fica porque o plugin é só `claude-code` (`platforms`), onde plugin skills
+  aceitam todos os campos da tabela do Claude Code. `user_invocable: true` saiu: o
+  `user-invocable` do Claude Code já vale `true` por padrão, então o comportamento é o mesmo. `metadata.version` estava em 1.5.0
+  (defasado desde a 1.5.1) e foi alinhado em 1.6.0.
+- **`SKILL.md` (769 → 323 linhas, 34.461 → 19.685 chars):** fica com a detecção de projeto, o
+  roteamento, o esqueleto executável de cada comando (comando principal + regra de cada passo), as
+  regras e uma seção nova **Armadilhas e tratamento de erros**, que junta numa tabela os sensores
+  que mentem (exit 0 do `acli`, lag da JQL, `@me`, `commentBody`, `comment create`, `comment list`
+  achatando ADF, flag `released`). As credenciais REST são carregadas uma vez, no topo, em vez de
+  em cada bloco. Cada reference agora é citada com a condição de leitura.
+- **`references/start.md` (novo, 297 linhas):** os sub-fluxos A e B e o "registrar sem começar"
+  por extenso, como estavam no `SKILL.md`.
+- **`references/close.md` (novo, 196 linhas):** os 11 passos do `close` por extenso.
+- **`references/campos.md` (novo, 294 linhas, com sumário):** a metade de `workflow.md` sobre
+  sprint, story points, `fixVersion` e a releitura, mais a criação por REST com `fixVersion` numa
+  chamada e o conselho de montar o ADF num script gravado em arquivo (vindos do sub-fluxo B), e os
+  arquivos de config do MCP (`~/.claude.json`/`.mcp.json`) que só estavam no tratamento de erros.
+- **`references/workflow.md` (468 → 243 linhas):** fica com transições, branch base, tipos, gotchas
+  do `acli`, sub-issues e vínculos; ganhou o comando pronto de atribuir por accountId, que estava
+  no sub-fluxo A. Abaixo de 300 linhas, dispensa sumário.
+- Citação entre references só pelo nome do arquivo, sem o prefixo `references/`, dizendo que o
+  `SKILL.md` roteia o alvo.
+- `description` não foi tocada.
+
+**Auditor** (`audit_skill_quality.py --external off --no-changelog-required --desc-budget 0`):
+antes 1 ERRO (C1) + 3 AVISOS (A4, C1 chars, C3); depois 0 ERRO + 1 AVISO (A4 do `argument-hint`,
+mantido de propósito, ver acima).
+
+**Como reverter:** `git revert` do commit que traz esta entrada.
+
 ## [1.5.1] — 2026-09-18
 
 Duas correções de precisão vindas de um `close` real (SQ-133, projeto SQ), as
