@@ -4,6 +4,22 @@ This is **not** a literal port of `bash-patterns.md`. PowerShell has different p
 
 Target: **PowerShell 7+** (pwsh) for cross-platform; **PowerShell 5.1** (Windows-only, default Windows 10/11) when the user explicitly says "no install of pwsh". Where 5.1 differs, the section calls it out.
 
+## Sumário
+
+- [Header — strict mode + script-dir resolution](#header--strict-mode--script-dir-resolution)
+- [Color logging (works on PS 5.1 + 7)](#color-logging-works-on-ps-51--7)
+- [LAN IP detection](#lan-ip-detection)
+- [Healthchecks](#healthchecks)
+  - [Postgres in docker](#postgres-in-docker)
+  - [HTTP service](#http-service)
+- [Port reclaim — Windows-native](#port-reclaim--windows-native)
+- [Cleanup — Register-EngineEvent + try/finally](#cleanup--register-engineevent--tryfinally)
+- [Patching `.env` files](#patching-env-files)
+- [Heredoc-equivalent — multi-line file content](#heredoc-equivalent--multi-line-file-content)
+- [Background services with prefixed output (PS 7+)](#background-services-with-prefixed-output-ps-7)
+- [Final summary](#final-summary)
+- [Bash → PowerShell equivalence cheatsheet](#bash--powershell-equivalence-cheatsheet)
+
 ## Header — strict mode + script-dir resolution
 
 ```powershell

@@ -102,7 +102,7 @@ env "${BOOTSTRAP_ENV[@]}" \
   ZITADEL_API_URL="${ZITADEL_BASE}" \
   OIDC_REDIRECT_URIS="${WEB_BASE}/auth/callback,${WEB_BASE}/silent-renew" \
   OIDC_POST_LOGOUT_URIS="${WEB_BASE}/login,${WEB_BASE}/" \
-  npx tsx scripts/bootstrap-zitadel.ts
+  npx tsx packages/idp/scripts/bootstrap-zitadel.ts   # the project's own script, not part of this skill
 ```
 
 **Option B: hash all the inputs into the cache key.**
@@ -187,7 +187,8 @@ import { resolve } from 'node:path';
  * In dev, divergence means "kill this process and re-run the launcher".
  */
 export function checkConfigSanity(env: { AUTH_AUDIENCE: string }): void {
-  const path = resolve(process.cwd(), '../../infra/.../bootstrap.json');
+  // <repo>/infra/.../bootstrap.json: two levels up from the backend package's cwd
+  const path = resolve(process.cwd(), '..', '..', 'infra/.../bootstrap.json');
   if (!existsSync(path)) return;
   const truth = JSON.parse(readFileSync(path, 'utf8')) as { projectId?: string };
   if (truth.projectId && env.AUTH_AUDIENCE !== truth.projectId) {

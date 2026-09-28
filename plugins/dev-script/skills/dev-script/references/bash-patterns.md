@@ -2,6 +2,29 @@
 
 These are the canonical idioms used in JRC `dev.sh` scripts. They handle the long tail of "works on my machine" problems (different distros, different `ss`/`fuser`/`lsof` versions, broken `kill -- -PID`, missing `realpath`).
 
+## Sumário
+
+- [Header — strict mode + portable script-dir resolution](#header--strict-mode--portable-script-dir-resolution)
+- [Resolve the package manager (Corepack-aware)](#resolve-the-package-manager-corepack-aware)
+- [Color logging — terse, prefix-able](#color-logging--terse-prefix-able)
+- [Argument parsing](#argument-parsing)
+- [LAN IP detection (Linux/macOS)](#lan-ip-detection-linuxmacos)
+- [Healthchecks (per-component, with timeout)](#healthchecks-per-component-with-timeout)
+  - [Postgres in a docker container](#postgres-in-a-docker-container)
+  - [HTTP service](#http-service)
+  - [Bootstrap script](#bootstrap-script)
+- [Port discovery — find-next-free with peer coordination](#port-discovery--find-next-free-with-peer-coordination)
+  - [Peer coordination — passing the chosen port to dependent services](#peer-coordination--passing-the-chosen-port-to-dependent-services)
+  - [Synergy with `strictPort: true`](#synergy-with-strictport-true)
+  - [Race window](#race-window)
+- [Port reclaim with a fallback chain](#port-reclaim-with-a-fallback-chain)
+  - [Fourth fallback: `pgrep` by command line](#fourth-fallback-pgrep-by-command-line)
+- [Trap-based cleanup](#trap-based-cleanup)
+- [Reading values out of `.env` (CRLF-safe)](#reading-values-out-of-env-crlf-safe)
+- [Patching `.env` files in place](#patching-env-files-in-place)
+- [Generated wrapper config (Vite example)](#generated-wrapper-config-vite-example)
+- [Final summary block](#final-summary-block)
+
 ## Header — strict mode + portable script-dir resolution
 
 ```bash
@@ -342,7 +365,7 @@ Avoid bare `pgrep -af node` or `pgrep -af npm` — they match every Node tool th
 When the dev stack lives inside a monorepo (`packages/backend`, `apps/web`, `services/api/`), the *intuitive* tightening is to add the package path to the pattern: `tsx.*packages/backend.*server\.ts`. **This silently never matches.** The actual cmdline of a `tsx` process invoked from the monorepo is:
 
 ```
-node /home/u/repo/packages/backend/node_modules/.bin/tsx watch --env-file=.env src/server.ts
+node <repo>/packages/backend/node_modules/.bin/tsx watch --env-file=.env src/server.ts
 ```
 
 `packages/backend` appears **before** `tsx`, not after. The regex `tsx.*packages/backend.*server\.ts` requires the opposite order, never matches, and `kill_known_dev_servers` becomes a silent no-op while looking like it's working — the worst kind of bug because `pgrep -af` returning nothing reads as "nothing to kill" instead of "regex mismatch".

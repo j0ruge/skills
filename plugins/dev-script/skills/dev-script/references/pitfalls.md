@@ -2,6 +2,31 @@
 
 These are the recurring traps in JRC stacks. The dev script must protect against them — either by setting things up correctly the first time, or by surfacing the failure mode loudly when conditions change.
 
+## Sumário
+
+- [P1 — Vite ≥ 5 blocks non-localhost hosts](#p1--vite--5-blocks-non-localhost-hosts)
+- [P2 — Backend Node can't validate JWKS over HTTPS with a self-signed cert](#p2--backend-node-cant-validate-jwks-over-https-with-a-self-signed-cert)
+- [P3 — Stale `AUTH_AUDIENCE` after IdP volume reset](#p3--stale-auth_audience-after-idp-volume-reset)
+- [P4 — Zitadel persists `externalDomain` on init](#p4--zitadel-persists-externaldomain-on-init)
+- [P5 — Bootstrap idempotency: `400 COMMAND-1m88i "No changes"`](#p5--bootstrap-idempotency-400-command-1m88i-no-changes)
+- [P6 — `--tlsMode external` flag missing on Zitadel start](#p6----tlsmode-external-flag-missing-on-zitadel-start)
+- [P7 — `crypto.subtle` unavailable outside secure contexts](#p7--cryptosubtle-unavailable-outside-secure-contexts)
+- [P8 — Backend rate limiter too tight for dev](#p8--backend-rate-limiter-too-tight-for-dev)
+- [P9 — Multiple stale dev servers holding ports](#p9--multiple-stale-dev-servers-holding-ports)
+  - [P9a — `pkill -f <pattern>` can match the command line of the shell running it](#p9a--pkill--f-pattern-can-match-the-command-line-of-the-shell-running-it)
+  - [P9b — a background wrapper reporting "finished" says nothing about a `nohup`'d child](#p9b--a-background-wrapper-reporting-finished-says-nothing-about-a-nohupd-child)
+- [P10 — Background processes orphaned after Ctrl+C](#p10--background-processes-orphaned-after-ctrlc)
+- [P11 — Bootstrap script writes to stdout but not the expected file](#p11--bootstrap-script-writes-to-stdout-but-not-the-expected-file)
+- [P12 — Compose `network_mode: host` on macOS/Windows](#p12--compose-network_mode-host-on-macoswindows)
+- [P13 — `.env` patcher uses `/` as sed delimiter and breaks on URLs](#p13--env-patcher-uses--as-sed-delimiter-and-breaks-on-urls)
+- [P14 — `sed -i` portability between GNU and BSD](#p14--sed--i-portability-between-gnu-and-bsd)
+- [P15 — Hot reload restart while bootstrap running](#p15--hot-reload-restart-while-bootstrap-running)
+- [P16 — Long-lived dev sessions accumulate zombie watchers (silent)](#p16--long-lived-dev-sessions-accumulate-zombie-watchers-silent)
+- [P17 — Foreign port owner + `strictPort` = silent "script hang"](#p17--foreign-port-owner--strictport--silent-script-hang)
+- [P18 — CRLF line endings in `.env` silently corrupt values read with `grep | cut`](#p18--crlf-line-endings-in-env-silently-corrupt-values-read-with-grep--cut)
+- [P19 — `node_modules` built on another platform: "Failed to load native binding"](#p19--node_modules-built-on-another-platform-failed-to-load-native-binding)
+- [P20 — `yarn` name collision: the launcher invokes the wrong binary (Debian `cmdtest`)](#p20--yarn-name-collision-the-launcher-invokes-the-wrong-binary-debian-cmdtest)
+
 ## P1 — Vite ≥ 5 blocks non-localhost hosts
 
 **Symptom**: Site works on `http://localhost:5173` but `https://<lan-ip>.sslip.io:5443` returns
@@ -240,7 +265,7 @@ trap cleanup EXIT SIGINT SIGTERM
 **Fix in the dev script**: verify the **expected output** is present, not just the exit code:
 
 ```bash
-npx tsx scripts/bootstrap.ts
+npx tsx packages/idp/scripts/bootstrap.ts   # the project's own script, not part of this skill
 test -s infra/.../bootstrap.json || { log_error "Bootstrap did not produce bootstrap.json"; exit 1; }
 ```
 

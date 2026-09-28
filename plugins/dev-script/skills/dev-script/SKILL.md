@@ -1,7 +1,7 @@
 ---
 name: dev-script
 metadata:
-  version: 0.5.3
+  version: 0.6.0
 description: "Generates idempotent dev.sh / dev.ps1 launchers for the current stack — Compose orchestration, healthchecks, two-strategy port handling (find-next-free for foreign-owned ports, kill-and-reclaim for own orphans), HTTPS-on-LAN via mkcert+Caddy, boot-time sanity check, Windows↔WSL migration guards. Triggers — dev script, single-command dev, mkcert, kill port, port discovery, script hangs, CRLF .env, native binding error."
 ---
 
@@ -43,7 +43,7 @@ Walk the project tree and identify:
 9. **mkcert / TLS posture** — `command -v mkcert` plus any existing `infra/certs/` folder. If mkcert is installed and the user wants LAN access, that's the recipe.
 10. **Existing dev script** — read `dev.sh` / `dev.ps1` / `Makefile` / `Justfile` / `Taskfile.yml` if present. Improve, don't replace.
 
-**Read references/stack-detection.md** for the exact patterns and grep recipes.
+**Read `references/stack-detection.md`** when you need the exact patterns and grep recipes for this phase.
 
 ### Phase 2 — Confirm the plan with the user
 
@@ -108,7 +108,7 @@ If the detected stack has no IdP, the generated `dev.sh` should **not** contain 
 
 ### 3. Idempotent re-runs are the point
 
-Re-running the script should converge, not diverge. Patterns from `references/idempotency-and-state.md`:
+Re-running the script should converge, not diverge. Patterns from `references/idempotency-and-state.md` (read it when designing the state file or the re-run guards):
 
 - Always re-derive volatile IDs (`projectId`, `clientId`) from the bootstrap output — never hardcode in `.env` files committed to the repo.
 - Persist a state file (`.dev.script.state` or similar) capturing values that, if changed, require a destructive reset (e.g., Zitadel `externalDomain`). Compare against current invocation; abort with a clear message if reset is required, suggesting the precise flag.
@@ -159,14 +159,14 @@ These are the recurring traps in JRC stacks. Read `references/pitfalls.md` for t
 
 ## References — when to read what
 
-| If you need… | Read… |
+| Read it when you need… | Reference |
 |---|---|
-| The exact things to grep/read in the project | `references/stack-detection.md` |
-| Bash idioms for healthchecks, port kill, trap, color logs | `references/bash-patterns.md` |
-| PowerShell equivalents (idiomatic, not literal ports) | `references/powershell-patterns.md` |
-| The full mkcert + Caddy + Vite + backend wiring | `references/tls-https-recipe.md` |
-| State file format, drift detection, re-run discipline | `references/idempotency-and-state.md` |
-| The recurring traps in JRC stacks | `references/pitfalls.md` |
+| When detecting the stack: the exact things to grep/read in the project | `references/stack-detection.md` |
+| When writing bash: idioms for healthchecks, port kill, trap, color logs | `references/bash-patterns.md` |
+| When writing `dev.ps1`: PowerShell equivalents (idiomatic, not literal ports) | `references/powershell-patterns.md` |
+| When the stack needs LAN HTTPS: the full mkcert + Caddy + Vite + backend wiring | `references/tls-https-recipe.md` |
+| When designing re-runs: state file format, drift detection, re-run discipline | `references/idempotency-and-state.md` |
+| When encoding or debugging a trap: the recurring traps in JRC stacks, with symptoms | `references/pitfalls.md` |
 
 ## Templates — `assets/`
 

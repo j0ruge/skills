@@ -1,5 +1,30 @@
 # Changelog — `dev-script`
 
+## [0.6.0] — 2026-09-28
+
+Progressive disclosure e autocontenção pela spec e pelas boas práticas do agentskills.io, a partir
+da auditoria `skill-quality-audit` v0.2.0. Antes: 1 erro (B3) e 5 avisos (B2, B4, C3 ×3). Depois:
+0 erros e 0 avisos. O `SKILL.md` não mudou de tamanho: 188 linhas, de 17.234 para 17.506 chars. O
+que mudou foi a redação das citações de reference.
+
+### Changed
+
+- **Sumário com âncoras (C3)** no início de `bash-patterns.md` (515 linhas), `pitfalls.md` (429) e
+  `powershell-patterns.md` (322).
+- **Caminhos do projeto do usuário escritos como tal:**
+  - B3: em `idempotency-and-state.md`, o `sanity.ts` de exemplo resolve
+    `resolve(process.cwd(), '..', '..', 'infra/.../bootstrap.json')`, com um comentário
+    `<repo>/infra/...`. A semântica é a mesma de `'../../infra/...'`.
+  - B2: os comandos de bootstrap de `idempotency-and-state.md` e `pitfalls.md` (P11) usam
+    `packages/idp/scripts/...`, o mesmo caminho do exemplo de `bash-patterns.md` e de
+    `stack-detection.md`. Um comentário diz que o script é do projeto, não da skill.
+- **Caminho de máquina (B4):** a saída de `pgrep` de exemplo em `bash-patterns.md` usa
+  `<repo>/packages/...` no lugar de `/home/u/repo/...`.
+- **Quando ler cada reference (F1):** a tabela "References — when to read what" e as duas citações
+  soltas do `SKILL.md` passam a dizer quando ler. `metadata.version` do `SKILL.md` acompanha o plugin.
+
+**Como reverter:** `git revert` do commit que traz esta entrada.
+
 ## [0.5.3] — 2026-09-03
 
 Prompt audit (`/claude-api prompt-audit`, modelo-alvo Claude Fable 5.1); relatório completo fora do repo.
