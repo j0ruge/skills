@@ -2,6 +2,24 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.1.0] — 2026-09-29
+
+### Pass 6.11 ganha duas formas de sensor cego
+
+Duas lições da sessão que integrou a `skill-quality-audit` ao `/retrofit-skill`. As duas são
+sensores que ficam verdes sem que nada tenha melhorado, e nenhuma cabia nas cinco formas.
+
+- **Verde por subtração.** Um ensaio apagou, numa cópia desta skill, as citações que os
+  subagentes leem em `per-file-agent.md` e `detection-passes.md`. O auditor saiu com `rc=0` e um
+  aviso C2 a menos, e os agentes estariam quebrados. Numa revisão, isso aparece como teste
+  removido, `.skip`, `eslint-disable` novo ou glob de ignore mais largo, no mesmo diff em que a
+  contagem melhora. A calibração exclui o caso em que o próprio objeto da checagem foi apagado.
+- **Gate opcional que some.** O gate do `retrofit-skill` 0.5.0 era "se o auditor estiver
+  instalado" e apontava para um caminho que não existia. Ele nunca rodou, e nada imprimiu SKIP.
+
+Só a reference muda. O `SKILL.md` está a 137 chars do orçamento de ~20k e não recebeu texto.
+
+
 ## [2.0.0] — 2026-09-28
 
 **Quebra de compatibilidade:** a skill `coderabbit_pr` passa a se chamar **`coderabbit-pr`**. O

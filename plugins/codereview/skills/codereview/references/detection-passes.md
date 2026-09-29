@@ -461,7 +461,7 @@ The unifying test, and the question to ask of any sensor in a diff:
 A sensor that answers "stops reporting" is worse than no sensor, because its presence is read as
 coverage. That is what makes this a review-time finding rather than a style note.
 
-#### The five forms
+#### The seven forms
 
 | Form | What to grep for | Why it blinds |
 |------|------------------|---------------|
@@ -469,6 +469,8 @@ coverage. That is what makes this a review-time finding rather than a style note
 | **Negative verdict** | success defined as *"did not match a list of failure strings"* — `grep -q 'error\|failed' \|\| echo OK` | Everything that breaks **before** the tool runs (connection refused, container missing, permission denied) matches no failure pattern and reads as success |
 | **Gate aimed at the wrong target** | `head -1`, `[0]`, a glob assumed singular, a hardcoded filename where the build emits N | The gate passes green over a file it was never supposed to be the only one checking |
 | **Dedup key too coarse** | an alert/idempotency key built from `{rule, day, entity}` with no per-event discriminant | The second real occurrence in the same window collides with the first and is dropped forever — and by the second one nobody is watching |
+| **Green by subtraction** | a diff where a check's count drops (fewer warnings, fewer failing tests, lint clean) in the same change that deletes, skips or loosens what the check reads — a removed test, `.skip`/`xit`, a new `eslint-disable`/`# noqa`, a widened ignore glob, a deleted citation or fixture | The sensor turns greener because its input shrank, not because the defect was fixed; the report reads as an improvement |
+| **Optional gate that vanishes** | a gate guarded by `[ -f "$TOOL" ] &&`, `command -v x &&`, `if exists(...)`, "run X if installed", with no `else` that prints SKIP | When the tool or path is missing the gate simply does not run, and a gate that did not run looks exactly like one that passed |
 | **Assertion without a timeout** | `curl`/`fetch`/`http` in an assertion with no `--max-time`/`--connect-timeout`/`AbortSignal` | On a network failure the body is empty, "no forbidden pattern found" counts zero occurrences in nothing, and prints `ok` |
 
 #### Calibration — what is NOT a finding
@@ -479,6 +481,7 @@ Flag only when the swallowed/negative/untimed value **decides an alert, a gate, 
 - A `catch` that swallows and then **has a fallback with observable behavior** (renders an empty state, returns a documented default that the caller handles) — not a finding.
 - A retry loop that logs each failure and gives up loudly — not a finding; it reports.
 - Test code asserting a failure path — not a finding.
+- A deleted test/check whose subject was deleted in the same diff (the feature is gone) — not a finding; green by subtraction is when the subject **stays** and only its check goes.
 
 The distinction is observability, not syntax: `catch {}` next to a `console.error` is noisy code;
 `catch {}` where the caught value was the only input to a warning is a blind sensor.
