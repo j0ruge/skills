@@ -1,0 +1,29 @@
+{
+  "name": "skill-quality-audit",
+  "description": "Audita Agent Skills: spec, autocontenção, claims e tamanho. Porta de entrada da família: fixa a ordem das fases, é somente leitura por padrão (reparo só com autorização) e entrega relatório com comando e rc. Triggers — auditar skill, auditoria completa de skills, skill no padrão, validar SKILL.md, skills-ref, skill pronta para publicar.",
+  "author": {
+    "name": "Chewiesoft"
+  },
+  "version": "0.4.0",
+  "category": "quality",
+  "keywords": [
+    "skill-audit",
+    "agent-skills",
+    "agentskills-spec",
+    "skills-ref",
+    "self-contained",
+    "portability",
+    "claims",
+    "sensors",
+    "progressive-disclosure",
+    "skill-refactoring",
+    "trigger-evals",
+    "read-only",
+    "hermes"
+  ],
+  "platforms": [
+    "claude-code",
+    "cursor"
+  ],
+  "skills": "./skills"
+}

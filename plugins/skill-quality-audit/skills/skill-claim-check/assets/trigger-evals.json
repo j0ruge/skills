@@ -1,0 +1,18 @@
+[
+  {"query": "vou escrever na reference que o timeout da API é 30 segundos, como deixo isso verificável?", "should_trigger": true},
+  {"query": "a skill diz que a flag --force não existe, confirma antes de eu responder que não dá", "should_trigger": true},
+  {"query": "a skill afirma que funciona na versão 1.3, isso ainda vale?", "should_trigger": true},
+  {"query": "revisa a skill do colega e marca toda afirmação sem fonte", "should_trigger": true},
+  {"query": "editei o SKILL.md e coloquei vários limites e tamanhos, confere se cada um tem como reconferir", "should_trigger": true},
+  {"query": "acho que a skill envelheceu, os comandos que ela cita mudaram", "should_trigger": true},
+  {"query": "a skill não menciona suporte a proxy, então o sistema não tem isso, certo?", "should_trigger": true},
+  {"query": "fiz várias edições na skill e o git status continua limpo, estranho", "should_trigger": true},
+  {"query": "move o inventário de hosts do SKILL.md para references", "should_trigger": false},
+  {"query": "a skill depende de um script em outra pasta, deixa ela autocontida", "should_trigger": false},
+  {"query": "escreve um teste unitário para essa função de parsing", "should_trigger": false},
+  {"query": "qual é o limite de upload configurado no nginx do servidor?", "should_trigger": false},
+  {"query": "atualiza a versão do pacote no package.json", "should_trigger": false},
+  {"query": "gera o changelog da release a partir dos commits", "should_trigger": false},
+  {"query": "faz code review do script de backup", "should_trigger": false},
+  {"query": "resume a documentação da API em uma página", "should_trigger": false}
+]

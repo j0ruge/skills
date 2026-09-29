@@ -1,0 +1,19 @@
+[
+  {"query": "acabei de mexer na skill de inventário de rede, roda uma auditoria nela antes de eu commitar e me diz se ficou alguma reference quebrada", "should_trigger": true},
+  {"query": "quero uma auditoria completa da família de skills de auditoria (self-containment, claim-check, refactoring), só leitura, com relatório", "should_trigger": true},
+  {"query": "um colega quer a skill de backup do ansible, ela está pronta pra ir pro harness dele ou depende de coisa daqui?", "should_trigger": true},
+  {"query": "revisa se a skill de integração com a API de mensagens está no padrão: frontmatter, autocontida, sem path da minha máquina", "should_trigger": true},
+  {"query": "essa skill tem 700 linhas e metade é inventário de host, audita e me diz o que tem que ir pra references", "should_trigger": true},
+  {"query": "audita as skills que eu criei essa semana e corrige o que estiver fora do padrão, pode editar só dentro delas", "should_trigger": true},
+  {"query": "o skills-ref não está instalado aqui, tem outro jeito de validar o SKILL.md contra a spec?", "should_trigger": true},
+  {"query": "passou no audit-skill.sh com rc 0, isso quer dizer que a skill está boa?", "should_trigger": true},
+  {"query": "essas skills estão boas para entrar no marketplace de plugins?", "should_trigger": true},
+  {"query": "cria uma skill nova para consultar a API do monitoramento a partir desse passo a passo que a gente fez hoje", "should_trigger": false},
+  {"query": "faz um code review do PR 42 do repo do frontend antes do merge", "should_trigger": false},
+  {"query": "auditoria dos lançamentos contábeis do mês: quem lançou e quando", "should_trigger": false},
+  {"query": "otimiza a descrição da skill qa-report pra ela disparar mais vezes, roda o loop de eval", "should_trigger": false},
+  {"query": "instala a skill de driver de impressora que veio do outro harness", "should_trigger": false},
+  {"query": "o gateway do hermes caiu depois que eu editei o config.yaml, me ajuda", "should_trigger": false},
+  {"query": "resume o que a skill kaizen faz em três linhas", "should_trigger": false},
+  {"query": "auditoria de segurança do servidor de arquivos: portas abertas e usuários com sudo", "should_trigger": false}
+]

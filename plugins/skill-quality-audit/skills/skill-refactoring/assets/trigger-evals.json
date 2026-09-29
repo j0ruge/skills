@@ -1,0 +1,18 @@
+[
+  {"query": "o SKILL.md da skill de deploy tem 900 linhas, reorganiza com progressive disclosure", "should_trigger": true},
+  {"query": "essa skill mistura workflow com inventário de hosts, separa em references", "should_trigger": true},
+  {"query": "comprime essa skill sem perder os pitfalls", "should_trigger": true},
+  {"query": "a skill passou de 20 mil caracteres, o que eu tiro do corpo?", "should_trigger": true},
+  {"query": "quero transformar os blocos de comando repetidos da skill em scripts", "should_trigger": true},
+  {"query": "extrair as funções da skill para um arquivo separado resolve o tamanho?", "should_trigger": true},
+  {"query": "a skill cresceu depois da última refatoração, precisa enxugar de novo", "should_trigger": true},
+  {"query": "o corpo da skill está inchado e a descrição não reflete mais o que ela faz", "should_trigger": true},
+  {"query": "a skill tem path absoluto da minha máquina, corrige", "should_trigger": false},
+  {"query": "confere se os números que a skill cita ainda são verdade", "should_trigger": false},
+  {"query": "refatora essa classe Python que tem 900 linhas", "should_trigger": false},
+  {"query": "divide esse componente React em componentes menores", "should_trigger": false},
+  {"query": "o README do projeto está enorme, resume", "should_trigger": false},
+  {"query": "cria uma skill nova a partir dessa conversa", "should_trigger": false},
+  {"query": "limpa os logs antigos do servidor", "should_trigger": false},
+  {"query": "reorganiza as pastas do repositório por feature", "should_trigger": false}
+]

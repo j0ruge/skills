@@ -258,6 +258,34 @@ CURSOR_SKILL_MAP: list[dict[str, Any]] = [
         "source_type": "skill",
         "source_dir": "plugins/kaizen-software/skills/kaizen-software",
     },
+    {
+        "plugin": "skill-quality-audit",
+        "cursor_name": "skill-quality-audit",
+        "display": "Skill Quality Audit — read-only audit of Agent Skills (spec, self-containment, claims, size); entry point of the family",
+        "source_type": "skill",
+        "source_dir": "plugins/skill-quality-audit/skills/skill-quality-audit",
+    },
+    {
+        "plugin": "skill-quality-audit",
+        "cursor_name": "skill-self-containment",
+        "display": "Skill Self-Containment — checks that a skill runs on its own (machine paths, missing/orphan files, external deps)",
+        "source_type": "skill",
+        "source_dir": "plugins/skill-quality-audit/skills/skill-self-containment",
+    },
+    {
+        "plugin": "skill-quality-audit",
+        "cursor_name": "skill-claim-check",
+        "display": "Skill Claim Check — every factual claim in a skill gets a sensor, a derivation or a date",
+        "source_type": "skill",
+        "source_dir": "plugins/skill-quality-audit/skills/skill-claim-check",
+    },
+    {
+        "plugin": "skill-quality-audit",
+        "cursor_name": "skill-refactoring",
+        "display": "Skill Refactoring — shrinks a bloated SKILL.md with progressive disclosure or table compression",
+        "source_type": "skill",
+        "source_dir": "plugins/skill-quality-audit/skills/skill-refactoring",
+    },
 ]
 
 # Plugins not available for Cursor (Claude Code only).

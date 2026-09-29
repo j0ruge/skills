@@ -1,0 +1,18 @@
+[
+  {"query": "essa skill funciona se eu copiar a pasta para outra máquina? acho que ela chama script que está fora dela", "should_trigger": true},
+  {"query": "vou mandar a skill de backup para um colega, verifica se ela é autocontida", "should_trigger": true},
+  {"query": "a skill cita references/inventario.md mas acho que esse arquivo não existe mais", "should_trigger": true},
+  {"query": "tem path /home/eu/projetos dentro da skill, como deixo ela portátil?", "should_trigger": true},
+  {"query": "cria a skill já autocontida: scripts, references e assets dentro dela", "should_trigger": true},
+  {"query": "o SKILL.md manda rodar um script de outro repositório, isso é problema?", "should_trigger": true},
+  {"query": "quero empacotar essa skill para outro harness sem levar conhecimento tribal", "should_trigger": true},
+  {"query": "a skill ficou com arquivo em references que ninguém cita, o que eu faço com ele?", "should_trigger": true},
+  {"query": "o SKILL.md passou de 600 linhas, move o que for referência para references", "should_trigger": false},
+  {"query": "essa skill diz que o limite é 20 mil caracteres, isso ainda é verdade?", "should_trigger": false},
+  {"query": "cria um script python para listar os containers do servidor", "should_trigger": false},
+  {"query": "faz backup da pasta de skills no google drive", "should_trigger": false},
+  {"query": "copia o arquivo de configuração do nginx para o outro servidor", "should_trigger": false},
+  {"query": "revisa o PR do frontend e aponta imports quebrados", "should_trigger": false},
+  {"query": "instala o plugin de code review do marketplace", "should_trigger": false},
+  {"query": "o docker compose referencia um volume que não existe, corrige", "should_trigger": false}
+]
