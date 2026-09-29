@@ -10,7 +10,7 @@ For Cursor, skills are installed via the interactive `install.py` script at the 
 ## Marketplace Structure
 
 ```
-skills_commands_manager/
+skills/
 ├── .claude-plugin/
 │   └── marketplace.json          # Marketplace catalog (lists all plugins)
 ├── plugins/                      # Plugin directories (one per plugin)
@@ -198,13 +198,18 @@ account that ships it.
 | Brand / company (fictional) | **Chewiesoft** | `author.name` in `plugin.json`, `owner.name` in `marketplace.json`, README/install.py headings |
 | Marketplace slug | **chewiesoft-marketplace** | `name` in `.claude-plugin/marketplace.json`, key in `.claude/settings.json` |
 | GitHub owner / user | **j0ruge** | All clone/install URLs, `git remote` |
-| Canonical repo URL | **`https://github.com/j0ruge/skills_commands_manager`** | All install snippets, README, this CLAUDE.md |
+| Canonical repo URL | **`https://github.com/j0ruge/skills`** | All install snippets, README, this CLAUDE.md |
 
 Chewiesoft is **not** a GitHub organization. The repo lives under the personal
 user `j0ruge`.
 
+The repo was called `skills_commands_manager` until 2026-09-29. GitHub redirects
+the old URL, so existing clones and `/plugin marketplace add` registrations keep
+working, but new text uses `j0ruge/skills`. The redirect lasts only while no
+new repo takes the old name.
+
 ### DO
-- Use `j0ruge/skills_commands_manager` in every install/clone snippet
+- Use `j0ruge/skills` in every install/clone snippet
   (`README.md`, this `CLAUDE.md`, `install.py`, `.claude/settings.json`,
   `/plugin marketplace add` examples).
 - Keep `"author": { "name": "Chewiesoft" }` in plugin manifests and
@@ -212,10 +217,10 @@ user `j0ruge`.
   not repo references.
 - When introducing a new plugin, use the same pairing: `author.name =
   "Chewiesoft"` and any source/clone URL pointing at
-  `j0ruge/skills_commands_manager`.
+  `j0ruge/skills`.
 
 ### DON'T
-- Don't write URLs like `Chewiesoft/skills_commands_manager` or
+- Don't write URLs like `Chewiesoft/skills` or
   `chewiesoft/...` as if Chewiesoft were a GitHub org — it isn't. The user
   `j0ruge` owns the repo.
 - Don't introduce URLs pointing at any other GitHub owner or repo name for
@@ -240,8 +245,8 @@ When registering plugins in `marketplace.json`, the `source` field supports:
 ### Cursor
 
 ```bash
-git clone git@github.com:j0ruge/skills_commands_manager.git
-cd skills_commands_manager
+git clone git@github.com:j0ruge/skills.git
+cd skills
 python install.py
 ```
 
@@ -258,7 +263,7 @@ Users can install this marketplace in Claude Code:
 
 Or clone the repo and add locally:
 ```
-/plugin marketplace add ./path/to/skills_commands_manager
+/plugin marketplace add ./path/to/skills
 ```
 
 ## Speckit (Development Tooling)

@@ -1,4 +1,4 @@
-# Kaizen Log — skills_commands_manager
+# Kaizen Log — skills
 
 Registro de melhorias: o que mudou, por quê, e onde o aprendizado foi padronizado
 para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles contam o

@@ -487,13 +487,13 @@ _CLAUDE_CODE_INSTRUCTIONS = """\
   Add the marketplace inside Claude Code (run as slash commands):
 
     Via GitHub:
-      /plugin marketplace add j0ruge/skills_commands_manager
+      /plugin marketplace add j0ruge/skills
 
     Via SSH:
-      /plugin marketplace add git@github.com:j0ruge/skills_commands_manager.git
+      /plugin marketplace add git@github.com:j0ruge/skills.git
 
     Via local clone:
-      /plugin marketplace add ./skills_commands_manager
+      /plugin marketplace add ./skills
 
   Then install individual plugins:
       /plugin install cicd

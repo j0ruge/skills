@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.1] — 2026-09-29
+
+### O repo do marketplace se chama `skills`
+
+O repositório `j0ruge/skills_commands_manager` foi renomeado para `j0ruge/skills`, e a pasta
+local também. A busca do repo no modo completo tentava primeiro `../skills_commands_manager` e
+passaria a cair na busca por nome parecido. Agora ela tenta `../skills` e, depois, o nome antigo,
+para clones que ainda não foram renomeados.
+
 ## [0.6.0] — 2026-09-29
 
 ### A skill-quality-audit vira a régua do retrofit; a skill-creator passa a ser condicional

@@ -1,7 +1,7 @@
 ---
 description: Apply non-obvious session lessons to a target skill in two modes — full (marketplace skill: bumps version, updates CHANGELOG/marketplace.json/README, commits and pushes) or lean (local skill in another repo: edits files + CHANGELOG and commits there, no bump or marketplace changes). Triggers — retrofit, skill-maintenance, session-lessons, lean-retrofit, local-skill.
 metadata:
-  version: 0.6.0
+  version: 0.6.1
 ---
 
 A régua deste retrofit é a família `skill-quality-audit`: um baseline antes de
@@ -52,7 +52,8 @@ marketplace? → **completo**. É local, normalmente uma correção de
 cobertura/documentação? → **enxuto**. Na dúvida, pergunte ao usuário.
 
 PARA LOCALIZAR O REPO DO MARKETPLACE (só no modo completo):
-- Primeiro tente `../skills_commands_manager` (sibling do repo atual).
+- Primeiro tente `../skills` (sibling do repo atual) e, se não existir, o nome
+  antigo `../skills_commands_manager` (o repo foi renomeado em 2026-09-29).
 - Se não existir, procure siblings com nome contendo "skills" ou "commands".
 - Se ainda não achar, me pergunte o caminho. Não adivinhe.
 - Confirme o caminho encontrado antes de seguir.
