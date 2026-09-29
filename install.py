@@ -291,8 +291,19 @@ def _split_frontmatter(content: str) -> tuple[str, str]:
 
 
 def _remove_metadata_block(fm_text: str) -> str:
-    """Remove the 'metadata:' key and its indented children from YAML frontmatter text."""
-    return re.sub(r"^metadata:\n(?:[ \t]+[^\n]*\n)*", "", fm_text, flags=re.MULTILINE)
+    """Remove the 'metadata:' key and its indented children from YAML frontmatter text.
+
+    fm_text comes from _split_frontmatter without the closing '---', so when metadata is
+    the LAST key its final child line has no trailing newline. Requiring one left that
+    line behind as an orphan indented line -> invalid YAML in the Cursor SKILL.md
+    (todo-to-github-issues shipped broken that way). The end-of-text anchor closes it.
+    """
+    return re.sub(
+        r"^metadata:[ \t]*\r?\n"
+        r"(?:[ \t]+[^\n]*(?:\n|\Z)"          # indented child line (the last one may lack \n)
+        r"|[ \t]*\r?\n(?=[ \t]+\S)"          # blank line inside the block
+        r"|#[^\n]*\n(?=[ \t]+\S))*",          # column-0 comment inside the block
+        "", fm_text, flags=re.MULTILINE)
 
 
 def _adapt_body(body: str) -> str:

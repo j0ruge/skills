@@ -12,6 +12,8 @@ Verificacoes (na ordem em que rodam):
      name a-z/0-9/hifen igual ao diretorio, description 1-1024, compatibility <= 500,
      nenhuma colecao em flow style, SKILL.md < 500 linhas (erro); campo de topo fora da
      spec e SKILL.md > 20.000 chars (~5.000 tokens) saem como aviso.
+  8. O SKILL.md que o install.py gera para o Cursor (sem o bloco metadata) e YAML valido,
+     com name e description.
 
 Por que a verificacao 6 existe: a description e a UNICA superficie de triggering do
 plugin -- e por ela (mais o nome) que o agente decide invocar a skill. Como ela e
@@ -274,6 +276,44 @@ def _load_cursor_skill_map(repo_root: Path) -> 'list[dict] | None':
     return getattr(module, 'CURSOR_SKILL_MAP', None)
 
 
+# Check 8 -- o frontmatter que o Cursor recebe. So o Cursor le a copia adaptada pelo
+# install.py, entao nenhum outro gate a via: em 2026-09-29 o _remove_metadata_block
+# deixava a ultima linha do bloco metadata solta quando ele fechava o frontmatter, e 12
+# arquivos saiam com YAML invalido (todo-to-github-issues ja publicado assim).
+def _check_cursor_frontmatter(repo_root: Path) -> 'tuple[list[str], list[str]]':
+    try:
+        import yaml
+    except ImportError:
+        return [], ['  cursor check: pyyaml ausente -> check 8 PULADO (pip install pyyaml)']
+    install_py = repo_root / 'install.py'
+    if not install_py.exists():
+        return [], []
+    spec = importlib.util.spec_from_file_location('install', install_py)
+    install = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(install)
+    errors = []
+    for entry in getattr(install, 'CURSOR_SKILL_MAP', []):
+        if entry.get('source_type') != 'skill':
+            continue  # commands ganham frontmatter novo, montado pelo instalador
+        skill_md = repo_root / entry['source_dir'] / 'SKILL.md'
+        if not skill_md.exists():
+            errors.append(f'  {entry["cursor_name"]}: CURSOR_SKILL_MAP aponta para {skill_md} inexistente')
+            continue
+        fm, _ = install._split_frontmatter(skill_md.read_text(encoding='utf-8'))
+        fm = install._remove_metadata_block(fm)
+        try:
+            data = yaml.safe_load(fm)
+        except yaml.YAMLError as exc:
+            errors.append(f'  {entry["cursor_name"]}: frontmatter adaptado para o Cursor e YAML '
+                          f'invalido ({str(exc).splitlines()[0]})')
+            continue
+        if not isinstance(data, dict) or 'metadata' in data or not data.get('name') \
+                or not data.get('description'):
+            errors.append(f'  {entry["cursor_name"]}: frontmatter adaptado para o Cursor sem name/'
+                          f'description ou com metadata residual')
+    return errors, []
+
+
 def main():
     fix_mode = '--fix' in sys.argv
     repo_root = Path(__file__).resolve().parent.parent
@@ -492,6 +532,11 @@ def main():
     spec_errors, spec_warnings = _check_skill_spec(repo_root)
     errors.extend(spec_errors)
     warnings.extend(spec_warnings)
+
+    # Check 8: frontmatter adaptado para o Cursor (sem --fix: o conserto e no install.py)
+    cursor_errors, cursor_notes = _check_cursor_frontmatter(repo_root)
+    errors.extend(cursor_errors)
+    notes.extend(cursor_notes)
 
     if fix_mode and fixes_applied > 0:
         print(f'\nApplied {fixes_applied} format-preserving fix(es).')
