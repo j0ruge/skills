@@ -1,15 +1,37 @@
 ---
 description: Apply non-obvious session lessons to a target skill in two modes — full (marketplace skill: bumps version, updates CHANGELOG/marketplace.json/README, commits and pushes) or lean (local skill in another repo: edits files + CHANGELOG and commits there, no bump or marketplace changes). Triggers — retrofit, skill-maintenance, session-lessons, lean-retrofit, local-skill.
 metadata:
-  version: 0.4.0
+  version: 0.6.0
 ---
 
-Invoque a skill `skill-creator` antes de qualquer outra ação nesta task —
-ela orienta o processo de melhorar skills existentes. Se ela não estiver
-disponível, prossiga mesmo assim e me avise.
+A régua deste retrofit é a família `skill-quality-audit`: um baseline antes de
+editar e um gate por regressão depois (seção *Localizar o auditor* e passo 4).
+A skill `skill-creator` **não** abre o fluxo. Ela só entra no caso do passo 3,
+quando a lição muda a `description`.
 
 Analise as lições aprendidas nesta sessão e aplique as relevantes à skill
 `$ARGUMENTS`.
+
+## Princípio: nada ou melhor, nunca pior
+
+Um retrofit termina de dois jeitos: a skill ficou melhor, ou ficou **igual**
+(nenhuma lição se aplica, ou nenhuma cabe sem estragar algo). Pior, nunca. Os
+sensores deste fluxo servem ao princípio, e o princípio vem antes deles:
+
+- **Achado da auditoria é sinal, não ordem.** Zerar um aviso pode piorar a
+  skill. Na `codereview`, os avisos C2 vêm das instruções que os subagentes
+  leem por caminho absoluto: "corrigir" o C2 derruba o aviso e quebra os
+  agentes. Antes de mudar algo por causa de um achado, pergunte se a skill
+  fica melhor para quem a usa, e não se o sensor fica verde.
+- **Dívida antiga não se conserta dentro do retrofit.** O escopo é a lição da
+  sessão. A dívida vai para o resumo como sugestão, e o conserto vira uma
+  tarefa própria, com a autorização de reparo da `skill-quality-audit`.
+- **Lição existente não sai sem prova.** Linha removida precisa de motivo
+  escrito na proposta: está obsoleta (com o comando que mostra isso), foi
+  movida (para onde) ou foi fundida (com qual). "Enxugar" sem provar não é
+  motivo.
+- **Se a lição não cabe sem piorar, não aplique.** Diga isso e pare, como no
+  passo 2.
 
 ## PASSO 0 — escolher o MODO (enxuto vs completo)
 
@@ -65,6 +87,37 @@ Se for symlink: **não existe cópia para sincronizar**, e editar a fonte já
 atualiza a instalação. Pule qualquer passo de "ressincronizar" — ele só pode
 causar dano.
 
+## Localizar o auditor (skill-quality-audit)
+
+O script `audit_skill_quality.py` é somente leitura, usa só a stdlib e roda em
+~0,1 s. Procure-o nesta ordem:
+
+```bash
+# modo completo: o marketplace sempre traz o auditor
+SQA=<REPO>/plugins/skill-quality-audit/skills/skill-quality-audit/scripts/audit_skill_quality.py
+# qualquer modo: plugin instalado, skill local ou harness Hermes
+[ -f "$SQA" ] || SQA=$(find ~/.claude/plugins/cache ~/.claude/skills "${HERMES_HOME:-$HOME/.hermes}/skills" \
+  -path '*skill-quality-audit/scripts/audit_skill_quality.py' 2>/dev/null | sort -V | tail -1)  # cache guarda uma pasta por versão
+echo "SQA=${SQA:-AUSENTE}"
+```
+
+- **Se não achar, é `[SKIP] auditor ausente`,** e isso vai escrito na proposta e
+  no resumo final. SKIP é um gate que não rodou, **nunca** uma aprovação. A versão
+  0.5.0 deste comando apontava para um caminho `~/.hermes/...` que não existia, e
+  o gate nunca rodou sem que nada avisasse.
+- **O alvo precisa ter `SKILL.md`.** Um plugin só de comandos (como este
+  `retrofit-skill`) também vira SKIP explícito, e o gate dele fica sendo o
+  `validate-versions.py`.
+- **Flags:** `FLAGS=(--desc-budget 0)`, porque o Claude Code não corta a
+  description em 60 chars como o Hermes. No modo completo, use
+  `FLAGS=(--desc-budget 0 --no-changelog-required)`: no marketplace o CHANGELOG
+  versionado fica no nível do plugin, e sem essa flag o check B5 acusa um falso
+  erro. **Use array e `"${FLAGS[@]}"`, não string:** o zsh não divide `$FLAGS`
+  em palavras, o script recebe as flags como um argumento só e sai com `rc=2`.
+  Isso foi medido no ensaio desta versão.
+- **`rc=2` é uso inválido, não resultado.** Nesse caso o JSON sai vazio. Corrija
+  a chamada antes de seguir.
+
 ## ANTES DE EDITAR — atualize o repo local
 
 Sincronize o repo alvo com o remoto **antes de tocar em qualquer arquivo**. Numa
@@ -92,6 +145,19 @@ Só comece a editar depois de estar em dia (fast-forward limpo ou rebase). Assim
 o commit nasce sobre o estado atual do remoto e o push final passa de primeira,
 em vez de rebasear com a edição já feita.
 
+**Depois, grave o baseline** de cada skill (diretório com `SKILL.md`) que o
+retrofit vai tocar. Isso é a fase 1 da `skill-quality-audit`:
+
+```bash
+B=$(mktemp -d); ALVO=<dir-da-skill>
+python3 "$SQA" "$ALVO" --format json --claims "${FLAGS[@]}" > "$B/antes.json"; echo "rc=$?"
+wc -lc "$ALVO/SKILL.md"
+```
+
+Sem o baseline não há como separar a dívida antiga da regressão nova. Uma skill
+real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um gate
+"cru" bloquearia qualquer retrofit por eles.
+
 ## Fluxo
 
 1. Liste as lições NÃO-ÓBVIAS da sessão: erros corrigidos, comportamentos
@@ -103,6 +169,20 @@ em vez de rebasear com a edição já feita.
 3. Antes de editar, mostre: **o modo escolhido (enxuto/completo)** + arquivos
    a mudar + resumo do diff + tipo de bump (patch/minor/major — só no modo
    completo) + justificativa. Espere minha confirmação.
+
+   A proposta também traz o **baseline resumido**: linhas e chars do
+   `SKILL.md`, os ERRO/AVISO que já existiam e o `SQA` usado (ou o SKIP e o
+   motivo). Se a lição levar o `SKILL.md` para perto do teto da spec (500
+   linhas, ~20 mil chars), diga já na proposta para qual `references/` o
+   detalhe vai. A decisão entre extrair e comprimir é da skill
+   `skill-refactoring`; carregue-a só nesse caso.
+
+   **`skill-creator`, só quando a lição muda a `description`.** Nesse caso,
+   pergunte se quero medir o gatilho. Se eu disser que sim, use o otimizador de
+   description dela com o eval set de gatilho da skill (`assets/trigger-evals.json`
+   ou `evals/`, no formato dela) antes do commit. Fora desse caso ela não é
+   invocada: o loop dela (evals com subagentes, viewer, benchmark) não faz parte
+   de um retrofit, e carregá-la custa ~8k tokens por execução.
 
 4. Após eu confirmar:
 
@@ -116,6 +196,7 @@ em vez de rebasear com a edição já feita.
    - Atualize `<REPO>/README.md`: a **versão na tabela de plugins sempre** muda
      junto com o bump — não é condicional. Se a linha da skill descreve o que
      cada versão trouxe, acrescente uma frase; não um parágrafo.
+   - Rode o **gate da auditoria** (seção abaixo) em cada skill tocada.
    - **Verifique por releitura, não por ter editado.** Ter rodado o `sed` não
      prova que o arquivo mudou: um padrão que não casou falha em silêncio, e a
      description é a superfície de triggering — com os arquivos fora de sincronia,
@@ -209,11 +290,81 @@ em vez de rebasear com a edição já feita.
    - Adicione/atualize um `CHANGELOG.md` dentro da pasta da skill com a data
      de hoje, explicando O QUÊ e POR QUÊ. Se a skill não tem versionamento,
      não invente `plugin.json`/bump — só registre a lição.
+   - Rode o **gate da auditoria** (seção abaixo) em cada skill tocada.
    - Commit NO REPO onde a skill vive: `feat|fix($ARGUMENTS): <resumo>`. **Sem
      trailer `Co-Authored-By`** — ver *Autoria dos commits* abaixo. Push só se o
      usuário pedir.
    - NÃO toque em `marketplace.json`, no README do marketplace, nem em versões
      do marketplace.
+
+## Gate da auditoria (depois de editar, antes do commit)
+
+Vale para os dois modos, em cada skill com `SKILL.md` que o retrofit tocou. Com
+`[SKIP] auditor ausente`, diga isso no resumo e siga só com os outros gates.
+
+```bash
+python3 "$SQA" "$ALVO" --format json --claims "${FLAGS[@]}" > "$B/depois.json"; echo "rc=$?"
+git -C "$ALVO" add -N .                          # arquivo novo (reference) entra no diff
+git -C "$ALVO" diff -U0 -- . > "$B/diff.txt"     # linhas acrescentadas e removidas
+python3 - "$B" <<'EOF'
+import json, re, sys
+b = sys.argv[1]
+ler = lambda n: json.load(open(f'{b}/{n}.json'))['skills'][0]
+antes, depois = ler('antes'), ler('depois')
+chave = lambda f: (f['level'], f['id'], f['msg'])
+grave = lambda f: f['level'] in ('ERRO', 'AVISO')
+velhos = {chave(f) for f in antes['findings'] if grave(f)}
+atuais = {chave(f) for f in depois['findings'] if grave(f)}
+for k in sorted(atuais):
+    print('NOVO     ' if k not in velhos else 'dívida   ', *k)
+for k in sorted(velhos - atuais):
+    print('SUMIU    ', *k)                       # precisa de motivo, não é vitória automática
+# linhas novas e removidas por arquivo, lidas dos cabeçalhos @@ do diff -U0
+novas, removidas, arq = {}, {}, None
+for l in open(f'{b}/diff.txt', encoding='utf-8'):
+    if l.startswith('--- '):
+        velho = l[6:].strip() if l.startswith('--- a/') else None
+    elif l.startswith('+++ '):
+        arq = l[6:].strip() if l.startswith('+++ b/') else velho
+    elif l.startswith('@@') and arq:
+        m = re.search(r'-\d+(?:,(\d+))? \+(\d+)(?:,(\d+))?', l)
+        rem, ini, n = int(m.group(1) or 1), int(m.group(2)), int(m.group(3) or 1)
+        novas.setdefault(arq, set()).update(range(ini, ini + n))
+        removidas[arq] = removidas.get(arq, 0) + rem
+for a in sorted(set(novas) | set(removidas)):
+    print('LER      ', a, f'+{len(novas.get(a, ()))} -{removidas.get(a, 0)} linha(s)')
+for c in depois.get('claims', []):
+    if any(a.endswith(c['file']) and c['line'] in ls for a, ls in novas.items()):
+        print('CLAIM    ', f"{c['file']}:{c['line']}", c['kind'], '|', c['text'][:90])
+EOF
+```
+
+- **`NOVO` bloqueia,** com uma saída: a exceção legítima. Se a própria lição
+  exige o que o check acusa (um contrato novo de subagente lido por caminho
+  absoluto, um campo de topo que o harness só lê ali; a tabela *Erros comuns*
+  da `skill-quality-audit` lista esses casos), não deforme a skill para o gate
+  passar. Declare a exceção na proposta, com o motivo, e registre-a no
+  CHANGELOG. Sem exceção declarada, corrija antes do commit. Uma mensagem com
+  contagem que mudou (ex.: o `SKILL.md` cresceu de novo) aparece como `NOVO` e
+  o `SUMIU` correspondente: o retrofit piorou algo que já estava fora.
+- **`dívida` não bloqueia e não se conserta aqui:** vai para o resumo e para o
+  CHANGELOG como dívida pré-existente (ver *Princípio*).
+- **`SUMIU` precisa de motivo.** Um achado que desapareceu só é melhora se a
+  causa foi resolvida. Se ele sumiu porque a reference, a citação ou a lição
+  que o gerava foi apagada, a skill pode ter piorado com o sensor mais verde.
+- **O `-N` do `LER` é a outra metade.** Cada linha removida tem que estar
+  justificada na proposta (obsoleta com prova, movida ou fundida). Se não
+  estiver, restaure.
+- **Cada `CLAIM` recebe um veredito:** `tem sensor` (comando, `arquivo:símbolo`
+  ou URL), `derivar` (a fórmula no lugar do valor), `datar` (data e comando de
+  medição) ou `remover`. Um retrofit escreve "medido em 11/09/2026" e "91 linhas"
+  o tempo todo, e é exatamente isso que apodrece. A régua é a da skill
+  `skill-claim-check`; carregue-a se algum claim ficar sem veredito óbvio. A
+  lista é heurística e deixa passar afirmação em prosa (no ensaio, "600 segundos"
+  não apareceu). Por isso o gate imprime `LER` com as linhas novas de cada
+  arquivo: leia todas elas.
+- **Teto de 2 ciclos** (corrigir e rodar o gate de novo). Se ainda sobrar `NOVO`,
+  pare e relate em vez de insistir.
 
 ## Autoria dos commits
 
@@ -257,8 +408,7 @@ Gate, nos dois modos:
 ```bash
 # modo completo (marketplace): o check 7 do validate-versions cobre a spec
 python scripts/validate-versions.py
-# qualquer modo, se o auditor estiver instalado (harness Hermes do JorUge)
-python3 ~/.hermes/skills/devops/skill-quality-audit/scripts/audit_skill_quality.py <dir-da-skill> --external auto
+# qualquer modo: baseline + gate da auditoria (seções "Localizar o auditor" e "Gate da auditoria")
 ```
 
 ## Editando `marketplace.json` com segurança

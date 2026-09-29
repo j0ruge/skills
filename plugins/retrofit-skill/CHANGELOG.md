@@ -1,5 +1,55 @@
 # Changelog
 
+## [0.6.0] — 2026-09-29
+
+### A skill-quality-audit vira a régua do retrofit; a skill-creator passa a ser condicional
+
+**A skill-creator era carregada em toda execução e não fazia nada nela.** São 485 linhas e
+~33 mil chars (~8k tokens) por retrofit. O que ela tem de próprio (o loop de evals com
+subagentes, o viewer, o benchmark e o otimizador de description) nunca rodava num retrofit. O
+que ela ensina de escrita já estava na seção de formato da spec e na família
+`skill-quality-audit`. No Cursor ela nem existe. Agora o retrofit só a chama quando a lição muda
+a `description` e o usuário quer medir o gatilho.
+
+**O gate da 0.5.0 nunca rodou.** Ele apontava para `~/.hermes/skills/devops/skill-quality-audit/`,
+que não existia, e o plugin também não estava instalado. O `CLAUDE.md` do repo tinha o mesmo
+caminho morto. A nova seção *Localizar o auditor* procura primeiro no marketplace, depois no
+cache de plugins (a versão mais alta, porque o cache guarda uma pasta por versão), em
+`~/.claude/skills` e no Hermes. Se não achar, registra `[SKIP]`, que nunca conta como aprovação.
+
+**O gate compara com um baseline, não com zero.** Rodado contra o `codereview`, o auditor acusou
+3 avisos C2 que já existiam e um B5 (CHANGELOG ausente) que é falso positivo no marketplace, onde
+o CHANGELOG fica no nível do plugin. Um gate "cru" bloquearia todo retrofit. Agora o baseline é
+gravado antes da edição e, depois dela, só achado `NOVO` bloqueia; a dívida antiga vai para o
+resumo. Os claims que o `--claims` acha nas linhas acrescentadas recebem veredito (sensor,
+derivar, datar, remover), com teto de 2 ciclos de correção.
+
+**Medido no ensaio**, numa cópia descartável do `codereview` (acrescentei uma reference citada e
+ausente, uma reference órfã e dois números sem fonte):
+- `FLAGS="--desc-budget 0 --no-changelog-required"` como string saiu com `rc=2` no zsh, que não
+  divide `$FLAGS` em palavras. Por isso o comando usa array e `"${FLAGS[@]}"`.
+- O gate marcou os dois B1 como `NOVO` e os três C2 como dívida, e listou o claim da reference
+  nova. Não pegou "600 segundos" no `SKILL.md`, porque a heurística do `--claims` deixa passar
+  prosa. Por isso o gate também imprime `LER` com a contagem de linhas novas por arquivo.
+
+**Nada ou melhor, nunca pior.** Um sensor mais verde não prova uma skill melhor. Na
+`codereview`, os 3 avisos C2 vêm das instruções que os subagentes leem por caminho absoluto, e
+"corrigi-los" quebra os agentes. No ensaio, apagar essas citações deixou o auditor com `rc=0` e
+um aviso a menos, e a skill ficou pior. Por isso o comando ganhou a seção *Princípio*:
+- achado é sinal, não ordem;
+- dívida antiga não se conserta dentro do retrofit;
+- lição existente só sai com prova (obsoleta, movida ou fundida);
+- lição que não cabe sem piorar não é aplicada.
+
+O gate passou a imprimir `SUMIU` (achado que desapareceu, que precisa de motivo) e `-N` linhas
+removidas por arquivo. O mesmo ensaio saiu assim: `SUMIU` nos dois C2 e `-1` em cada contrato. O
+`NOVO` ganhou uma saída para a exceção legítima (declarada e registrada no CHANGELOG), para que o
+gate não force a distorcer a skill até ele passar.
+
+Também corrige o drift: o `metadata.version` do comando estava em 0.4.0 com o plugin em 0.5.0.
+
+**Como reverter:** `git revert` do commit; a 0.5.0 continua funcional (sem gate efetivo).
+
 ## [0.5.0] — 2026-09-28
 
 ### Retrofit mantém a skill no formato da spec agentskills.io

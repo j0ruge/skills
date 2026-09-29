@@ -164,8 +164,9 @@ clients and the reference validator (`skills-ref`) read strictly even where Clau
 - **Budget:** `SKILL.md` under 500 lines (error) and ~20,000 chars / ~5,000 tokens (warning).
   Detail goes to `references/`, each routed from `SKILL.md` with *when* to read it; references
   stay one level deep and get a table of contents past 300 lines.
-- **Audit a skill:** `python3 ~/.hermes/skills/devops/skill-quality-audit/scripts/audit_skill_quality.py plugins/<p>/skills/<s> --external off --no-changelog-required --desc-budget 0`
-  (optional; lives in the owner's Hermes harness).
+- **Audit a skill:** `python3 plugins/skill-quality-audit/skills/skill-quality-audit/scripts/audit_skill_quality.py plugins/<p>/skills/<s> --external off --no-changelog-required --desc-budget 0`
+  (the auditor ships in this repo as the `skill-quality-audit` plugin; `/retrofit-skill` runs it
+  as a baseline before editing and a regression gate after).
 
 ## Prompt hygiene
 
