@@ -3,6 +3,14 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.0.1] — 2026-09-30
+
+### Fixed
+- `plugin.json` no longer declares `"agents": "./agents"`. With that field, `claude plugin install` failed
+  with `Validation errors: agents: Invalid input`; the `agents/` directory is discovered automatically,
+  as in the official plugins (e.g. `coderabbit`). The template in this repo's `CLAUDE.md` still shows the
+  field, which is where the mistake came from.
+
 ## [1.0.0] — 2026-09-30
 
 ### Added
