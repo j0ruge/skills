@@ -47,6 +47,11 @@ CMD_RE = re.compile(r"<command-name>/?([^<\s]+)</command-name>")
 ARGS_RE = re.compile(r"<command-args>(.*?)</command-args>", re.S)
 CORRECTION_START = re.compile(r"^\s*(n[aã]o\b|errado|na verdade|pare\b|wrong|actually|stop\b)", re.I)
 CORRECTION_ANY = re.compile(r"\b(de novo|again)\b", re.I)
+# O Claude narrando que a realidade não bate com a instrução: é o pitfall contornado sem erro de
+# ferramenta (E2E de 2026-09-30: path errado na skill, achado por `find`, zero is_error).
+DEVIATION_RE = re.compile(
+    r"doesn['’]t exist|does not exist|not in the expected|not where|no such file|instead of"
+    r"|n[aã]o existe|n[aã]o encontrei|em vez de|ao inv[eé]s de|no lugar de|n[aã]o est[aá] onde", re.I)
 NO_LESSONS_RE = re.compile(r"sem li[cç][oõ]es novas|no new lessons", re.I)
 
 
@@ -310,7 +315,11 @@ class Scanner:
         content = msg.get("content")
         if kind == "assistant" and isinstance(content, list):
             for block in content:
-                if not isinstance(block, dict) or block.get("type") != "tool_use":
+                if not isinstance(block, dict):
+                    continue
+                if block.get("type") == "text" and DEVIATION_RE.search(block.get("text", "")):
+                    self._bump("friction")
+                if block.get("type") != "tool_use":
                     continue
                 name = block.get("name")
                 self.last_tool = name

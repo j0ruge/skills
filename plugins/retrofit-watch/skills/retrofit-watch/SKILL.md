@@ -5,7 +5,7 @@ license: MIT
 compatibility: Claude Code 2.1.163+ (Stop additionalContext); testado na 2.1.283 em 2026-09-30. Hook em Python 3, só biblioteca padrão, e git no PATH.
 metadata:
   author: JorUge
-  version: "0.1.0"
+  version: "0.1.1"
 ---
 
 # retrofit-watch
@@ -36,8 +36,10 @@ continua exigindo a sua confirmação.
    Ficam sempre de fora `retrofit-skill`, `retrofit-watch` e a família `skill-quality-audit`.
 3. **Conta os sinais** desde a carga, para a skill vigiada carregada por último:
    - **trabalho:** chamadas de ferramenta;
-   - **atrito:** erro de ferramenta, interrupção, ou prompt seu com cara de correção ("não…",
-     "errado", "na verdade", "de novo").
+   - **atrito:** erro de ferramenta, interrupção, prompt seu com cara de correção ("não…",
+     "errado", "na verdade", "de novo"), ou o próprio Claude narrando que a realidade não bate
+     com a instrução ("não existe", "em vez de", "not in the expected location"). Este último é o
+     pitfall contornado **sem** erro de ferramenta.
 4. **Adia** quando o turno terminou esperando você (pergunta, `AskUserQuestion`,
    `ExitPlanMode`, plan mode).
 5. **Pede a retro:**
@@ -107,4 +109,4 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
 |---|---|
 | `references/criteria.md` | ao fazer a retro: critérios, triagem, formato e exemplos |
 | `scripts/retrofit_watch.py` | o hook (`stop` e `baseline`). O plugin o registra no `hooks/hooks.json` da raiz, que o formato de plugin exige |
-| `tests/test_retrofit_watch.py` | 28 testes: classificação e gatilho (`python3 tests/test_retrofit_watch.py`) |
+| `tests/test_retrofit_watch.py` | 30 testes: classificação e gatilho (`python3 tests/test_retrofit_watch.py`) |

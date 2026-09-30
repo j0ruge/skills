@@ -1,5 +1,25 @@
 # Changelog — retrofit-watch
 
+## [0.1.1] — 2026-09-30
+
+### Fixed
+
+- **Pitfall contornado sem erro de ferramenta não disparava a retro.** No E2E com a cópia
+  instalada, a skill de teste apontava para um arquivo inexistente. O Claude verificou antes de
+  ler, achou o arquivo certo por `find` e terminou com trabalho = 4 e atrito = 0: nenhum
+  `is_error`, abaixo do limiar de 5. O pitfall mais comum (instrução errada, contornada com
+  elegância) passava em branco. Agora o texto do assistente que narra o desvio, com a skill
+  vigiada ativa, conta como atrito: `não existe`, `em vez de`, `not in the expected location`,
+  `instead of` e afins (`DEVIATION_RE`). Com a mudança, o mesmo prompt produziu a retro com a
+  lição e a oferta do `/retrofit-skill`.
+- 2 testes novos (narração de desvio conta; narração comum não conta), 30 no total. A mutação
+  que remove o sinal é pega pelo teste novo.
+
+### Como reverter
+
+`git revert` deste commit. O limiar volta a depender só de erro de ferramenta, interrupção e
+correção do usuário.
+
 ## [0.1.0] — 2026-09-30
 
 Primeira versão. Um Stop hook percebe quando uma skill nossa trabalhou na sessão e pede ao

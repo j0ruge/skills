@@ -134,6 +134,10 @@ def prompt(text):
     return [{"type": "user", "message": {"role": "user", "content": text}}]
 
 
+def assistant_text(text):
+    return [{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": text}]}}]
+
+
 def quoted_base_dir(path):
     """A frase citada dentro de um tool_result não é carga de skill."""
     return [{"type": "user", "message": {"role": "user", "content": [
@@ -324,6 +328,20 @@ class StopTest(unittest.TestCase):
         self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), tool(),
                    prompt("não, errado: use o outro arquivo"))
         self.assertIsNotNone(self.run_hook())
+
+    def test_assistant_narrating_a_deviation_counts_as_friction(self):
+        """A instrução da skill estava errada e o Claude contornou sem erro de ferramenta."""
+        self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), tool(),
+                   assistant_text("File not in the expected location — searching the rest of the repo."))
+        self.assertIsNotNone(self.run_hook())
+        self.write(skill_typed("graphify", self.w.graphify), tool(),
+                   assistant_text("O arquivo config/x.yaml não existe; usei conf/app.yaml em vez dele."))
+        self.assertIn("graphify", self.context_of(self.run_hook()))
+
+    def test_ordinary_narration_is_not_friction(self):
+        self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), tool(),
+                   assistant_text("Rodei os testes e todos passaram."))
+        self.assertIsNone(self.run_hook())
 
     def test_retrofit_run_suppresses_target(self):
         self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), tool(error=True),
