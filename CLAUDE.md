@@ -45,8 +45,8 @@ Each `plugin.json` includes a `platforms` field declaring which platforms suppor
    │   └── plugin.json        # Plugin manifest (name, description, author, etc.)
    ├── commands/               # Command definitions (.md files)
    ├── skills/                 # Skill definitions (SKILL.md files)
-   ├── agents/                 # Agent definitions (.md files) [optional]
-   └── hooks/                  # Hook configurations [optional]
+   ├── agents/                 # Agent definitions (.md files) [optional, auto-discovered]
+   └── hooks/hooks.json        # Hook configuration [optional, auto-discovered]
    ```
 
 2. Create `plugins/my-plugin/.claude-plugin/plugin.json`:
@@ -61,11 +61,15 @@ Each `plugin.json` includes a `platforms` field declaring which platforms suppor
      "keywords": ["relevant", "tags"],
      "platforms": ["claude-code", "cursor"],
      "commands": "./commands",
-     "skills": "./skills",
-     "agents": "./agents",
-     "hooks": "./hooks"
+     "skills": "./skills"
    }
    ```
+   Do **not** declare `agents` or `hooks` as a directory: `"agents": "./agents"` and `"hooks": "./hooks"`
+   fail `claude plugin install` with `agents: Invalid input` / `hooks: Invalid input` (validated 2026-09-30).
+   `agents/*.md` and `hooks/hooks.json` are discovered automatically. If you must declare them, the valid
+   forms are a list of files (`"agents": ["./agents/reviewer.md"]`) and the file path
+   (`"hooks": "./hooks/hooks.json"`). Check with `claude plugin validate plugins/<name>` before publishing.
+
    Set `"platforms": ["claude-code"]` if the plugin uses Claude Code-specific APIs (e.g., status line, MCP tools) and cannot work in Cursor.
 
 3. Register the plugin in `.claude-plugin/marketplace.json`:
