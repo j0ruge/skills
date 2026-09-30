@@ -1,0 +1,27 @@
+{
+  "name": "hook-builder",
+  "description": "Build, package and prove Claude Code hooks against the current official reference: right event and output channel, real payload capture, loop guards, plugin-data state, fixture tests and a live firing check. Triggers — hook, hooks.json, PreToolUse, PostToolUseFailure, Stop hook, UserPromptExpansion, SessionStart, plugin hook.",
+  "author": {
+    "name": "Chewiesoft"
+  },
+  "version": "0.1.0",
+  "category": "development",
+  "keywords": [
+    "hooks",
+    "claude-code-hooks",
+    "hooks.json",
+    "PreToolUse",
+    "PostToolUseFailure",
+    "Stop-hook",
+    "UserPromptExpansion",
+    "SessionStart",
+    "plugin-hooks",
+    "stop_hook_active",
+    "hook-testing",
+    "hook-debugging"
+  ],
+  "platforms": [
+    "claude-code"
+  ],
+  "skills": "./skills"
+}

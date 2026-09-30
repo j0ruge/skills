@@ -298,7 +298,7 @@ CURSOR_SKILL_MAP: list[dict[str, Any]] = [
 # Plugins not available for Cursor (Claude Code only).
 # Used as a sanity check at module import: if a Claude-only plugin ever leaks into
 # CURSOR_SKILL_MAP, fail fast instead of generating a broken Cursor install.
-CLAUDE_CODE_ONLY = {"statusline"}
+CLAUDE_CODE_ONLY = {"statusline", "hook-builder"}
 
 _cursor_plugins = {entry["plugin"] for entry in CURSOR_SKILL_MAP}
 _cursor_incompatible = _cursor_plugins & CLAUDE_CODE_ONLY

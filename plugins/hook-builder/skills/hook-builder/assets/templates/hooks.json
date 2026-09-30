@@ -1,0 +1,30 @@
+{
+  "description": "AJUSTE: o que este plugin faz com hooks (aparece no /hooks)",
+  "hooks": {
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/hook.py"],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/hook.py"],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

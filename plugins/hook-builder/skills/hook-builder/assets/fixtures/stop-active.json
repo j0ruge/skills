@@ -1,0 +1,12 @@
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "transcript_path": "/home/user/.claude/projects/-home-user-my-project/00000000-0000-4000-8000-000000000001.jsonl",
+  "cwd": "/home/user/my-project",
+  "prompt_id": "00000000-0000-4000-8000-0000000000aa",
+  "permission_mode": "default",
+  "hook_event_name": "Stop",
+  "stop_hook_active": true,
+  "last_assistant_message": "Pronto: rodei os testes e corrigi o import.",
+  "background_tasks": [],
+  "session_crons": []
+}

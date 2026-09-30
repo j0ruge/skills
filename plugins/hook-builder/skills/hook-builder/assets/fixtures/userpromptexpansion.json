@@ -1,0 +1,13 @@
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "transcript_path": "/home/user/.claude/projects/-home-user-my-project/00000000-0000-4000-8000-000000000001.jsonl",
+  "cwd": "/home/user/my-project",
+  "prompt_id": "00000000-0000-4000-8000-0000000000aa",
+  "permission_mode": "default",
+  "hook_event_name": "UserPromptExpansion",
+  "expansion_type": "slash_command",
+  "command_name": "probe-skill",
+  "command_args": "",
+  "command_source": "projectSettings",
+  "prompt": "/probe-skill"
+}

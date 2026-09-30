@@ -1,0 +1,17 @@
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "transcript_path": "/home/user/.claude/projects/-home-user-my-project/00000000-0000-4000-8000-000000000001.jsonl",
+  "cwd": "/home/user/my-project",
+  "prompt_id": "00000000-0000-4000-8000-0000000000aa",
+  "permission_mode": "default",
+  "hook_event_name": "PostToolUseFailure",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "false",
+    "description": "Run false command"
+  },
+  "tool_use_id": "toolu_01EXAMPLE",
+  "error": "Exit code 1",
+  "is_interrupt": false,
+  "duration_ms": 315
+}
