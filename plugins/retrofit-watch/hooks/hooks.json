@@ -1,0 +1,30 @@
+{
+  "description": "retrofit-watch: ao fim do turno em que uma skill nossa trabalhou, pede ao Claude a retro dela e oferece o /retrofit-skill",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "resume|fork",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/skills/retrofit-watch/scripts/retrofit_watch.py", "baseline"],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/skills/retrofit-watch/scripts/retrofit_watch.py", "stop"],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

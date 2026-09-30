@@ -6,6 +6,41 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-09-30 — Retro de skill puxada por hook (retrofit-watch) + skill de hooks (hook-builder)
+
+- **Tipo:** poka-yoke (a retro deixa de depender de alguém lembrar) · padronização (como se
+  escreve e se prova um hook).
+- **Antes:** melhorar uma skill exigia que o usuário lembrasse, no fim da sessão, de pedir a
+  análise e depois o `/retrofit-skill`. Sem o pedido, o pitfall da sessão se perdia. O
+  marketplace não tinha nenhum hook. A única skill de hooks na máquina (`hooks-2-0-builder`,
+  local e fora do git) tratava de uma proposta experimental.
+- **Depois:**
+  - `retrofit-watch` 0.1.0: um Stop hook percebe que uma skill nossa trabalhou (marketplace →
+    retrofit full; skill versionada em repo nosso → lean) e pede a retro no próprio turno. Adia
+    quando o turno espera o usuário, faz no máximo 2 retros por skill por sessão e cala em
+    `claude -p`.
+  - `hook-builder` 0.1.0: a skill de hooks com probe de payload, harness de fixture e lint de
+    config.
+- **Medição:**
+  - `retrofit-watch`: 28 testes; 9 mutações pegas pelo teste certo; E2E ao vivo com
+    `claude -p --plugin-dir` nos três casos (sem lição, lição real depois de adiar e retomar,
+    skill de terceiro que não dispara).
+  - `hook-builder`: a linha de base sem a skill errou 8 pontos (evento, canal, recarga, debug,
+    estado, disparo, gate) e, com a skill, os dois cenários acertaram todos.
+- **Causa raiz:** o processo de melhoria era puxado pela memória do usuário, não pelo fluxo de
+  trabalho. Hooks escritos de memória erram exatamente onde o teste com pipe não enxerga (evento
+  e canal de saída).
+- **Lição que o E2E trouxe:** a primeira versão do filtro exigia "o que resolveu", e com isso
+  descartava a lição mais importante, a skill com instrução quebrada que ninguém conseguiu
+  consertar. O pitfall sem solução passou a entrar, marcado "sem correção verificada".
+- **Padronizado em:**
+  - `plugins/hook-builder` (workflow, gotchas, `outdated-sources.md` com a linha de base);
+  - `plugins/retrofit-watch/skills/retrofit-watch/references/criteria.md`, adaptado da
+    `self-learning` (kulaxyz, MIT) e do loop "Lições" de um agente de propostas de
+    um projeto interno.
+
+---
+
 ## 2026-09-28 — Skills no formato da spec aberta agentskills.io + check 7
 
 - **Tipo:** correção de causa raiz (nada media o formato da skill) · melhoria (progressive

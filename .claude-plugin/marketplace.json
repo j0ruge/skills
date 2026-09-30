@@ -995,6 +995,28 @@
       "platforms": [
         "claude-code"
       ]
+    },
+    {
+      "name": "retrofit-watch",
+      "source": "./plugins/retrofit-watch",
+      "version": "0.1.0",
+      "description": "Stop hook that notices when one of our skills (j0ruge/skills marketplace or a git-tracked project skill) did real work in the session and asks Claude for an evidence-backed retro that offers /retrofit-skill; also runs the retro on demand. Triggers — skill retro, retrofit-watch, session lessons, skill pitfalls, skill improvement, retrofit reminder.",
+      "category": "development",
+      "keywords": [
+        "retrofit",
+        "skill-maintenance",
+        "session-lessons",
+        "stop-hook",
+        "hooks",
+        "self-improvement",
+        "pitfalls",
+        "continuous-improvement",
+        "kaizen",
+        "retrofit-skill"
+      ],
+      "platforms": [
+        "claude-code"
+      ]
     }
   ]
 }
