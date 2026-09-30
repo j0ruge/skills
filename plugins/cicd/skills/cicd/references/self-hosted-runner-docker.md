@@ -28,6 +28,7 @@ A imagem `myoung34/github-runner` é a fonte mais usada para conteinerizar o run
   - [A. Preflight gate — falha rápida no push](#a-preflight-gate--falha-rápida-no-push)
   - [B. Watchdog agendado — rede de segurança periódica](#b-watchdog-agendado--rede-de-segurança-periódica)
   - [C. Currency de versão — a que pega o runner mudo antes de alguém deployar](#c-currency-de-versão--a-que-pega-o-runner-mudo-antes-de-alguém-deployar)
+  - [D. Onde o vigia mora quando o Actions hospedado não é confiável](#d-onde-o-vigia-mora-quando-o-actions-hospedado-não-é-confiável)
 - [§12. O runner conteinerizado NÃO compartilha o filesystem do host — e metade do comando funciona](#12-o-runner-conteinerizado-não-compartilha-o-filesystem-do-host--e-metade-do-comando-funciona)
 - [§13. O runner conteinerizado precisa de TODO binário que o workflow invoca — e nada avisa que falta](#13-o-runner-conteinerizado-precisa-de-todo-binário-que-o-workflow-invoca--e-nada-avisa-que-falta)
 - [Sintomas → seção](#sintomas--seção)
@@ -786,6 +787,30 @@ runner — não para permissão, concorrência nem cota.
 **Fix**: o mesmo do §8 (binário atual). Se a imagem é **pinada por digest**, `docker compose
 pull` não muda nada — é preciso bumpar o `FROM` e reconstruir (§8a).
 
+**Recorrência medida em 30/09/2026** (lições 108, 109) — o mesmo §8b, em outro host, e três
+coisas que o caso de 18/09 não mostrou:
+
+- **Dois desempates baratos antes do `_diag`.** (a) Um **vizinho no mesmo host, na mesma versão**,
+  pode anunciar o que o seu esconde: o `erp-api-runner` registrou em claro `Runner version v2.335.1
+  is deprecated and cannot receive messages` enquanto o `dsr-frontend-runner`, idêntico, parava mudo
+  em `Listening for Jobs`. Leia `docker logs --tail 3` de **todos** os runners do host. (b) O
+  `SelfUpdate-*.log` do dia termina em `Waiting for Runner.Listener (12) to complete` e nada depois;
+  no caso medido havia um por dia, sempre às 01:58, desde 24/07 — o swap morrendo no restart do
+  contêiner (§8a), dois meses de sinal antes da recusa.
+- 🔴 **Yokoten por host, não por arquivo.** O compose era "replicado em cada servidor" e o `pull`
+  não: produção recebeu imagem nova em 02/09, staging ficou na de 19/06, e emudeceu em 30/09. Um
+  README que diz "o mesmo compose em todo host" dá a impressão de que a *operação* também é a
+  mesma. Conserte (e vigie) **todos os hosts na mesma execução** — Ansible ou um loop de SSH —,
+  e antes do `pull` marque a imagem atual (`docker tag …:latest …:pre-AAAAMMDD`) como rollback.
+- ⚠️ **`A session for this runner already exists` / `Runner connect error: Conflict. Retrying
+  until reconnected` logo após o `--force-recreate` é transitório.** É a sessão do contêiner
+  destruído, ainda viva no Broker; expirou em ~3 min. Recriar de novo só reinicia o relógio. O fim
+  real não é `online` nem `Listening for Jobs` — é o job em fila ganhar `runner_name`:
+
+  ```bash
+  gh api repos/<o>/<r>/actions/runs/<id>/jobs --jq '.jobs[] | "\(.name) \(.status) \(.runner_name // "-")"'
+  ```
+
 ## §9. Config-reuse ressuscita credencial morta após o GitHub apagar o registro
 
 **Sintoma**: `RestartCount` alto; `docker logs` repete:
@@ -893,7 +918,9 @@ ssh host 'cd /opt/<proj>/infra/<env> && docker compose -p <project> --env-file .
 Defesa em profundidade. As duas camadas clássicas vêm primeiro; a **terceira** existe porque
 nenhuma delas cobre o caso silencioso. Todas em `ubuntu-latest` — um vigia do runner não pode
 depender do runner que vigia, senão fica `queued` junto, que é exatamente o silêncio que ele
-existe para quebrar.
+existe para quebrar. ⚠️ Mas o hospedado tem um modo de falha próprio — o bloqueio de cobrança do
+org, que mata as três juntas; e B só olha deploy, não CI de PR. Onde pôr o vigia quando isso
+importa: **camada D**, no fim desta seção.
 
 <CRITICAL>
 **A e B não pegam o runner `online` e mudo do §8b — foi medido.** Vale saber disso antes de
@@ -993,7 +1020,7 @@ gh api "repos/$REPO/actions/runners" \
   --jq '.runners[] | select(.status=="online") | "\(.name)\t\(.version)"' |
 while IFS=$'\t' read -r NOME VERSAO; do
   ATRASO=$(( $(echo "$ATUAL" | cut -d. -f2) - $(echo "$VERSAO" | cut -d. -f2) ))
-  [ "$ATRASO" -ge "${MAX_MINORS_ATRASO:-3}" ] \
+  [ "$ATRASO" -ge "${MAX_MINORS_ATRASO:-1}" ] \
     && echo "::error::$NOME em $VERSAO, $ATRASO minors atrás de $ATUAL — bumpe o FROM (§8a/§8b)"
 done
 ```
@@ -1018,10 +1045,15 @@ watchdog útil em vez de vermelho por motivo errado.
 
 Duas escolhas que valem explicar:
 
-- **Limiar em minors, não em "igual à última".** A cadência de release é ~mensal e o GitHub
-  tolera alguns atrás; exigir igualdade transforma o gate em ruído mensal, e ruído que sempre
-  acende deixa de ser lido. `3` dá cerca de um trimestre de folga e ainda pega de longe um
-  runner 18 minors atrasado, que foi o caso real.
+- **Limiar em minors, e `1`, não `3`** (lição 107). Esta seção recomendava `3` — "cerca de um
+  trimestre de folga" — e **o `3` não teria disparado no caso de 30/09/2026**: o GitHub recusou a
+  `2.335.1` quando ela estava só **2 minors** atrás da `2.337.0` (lançada em 26/08, recusa ~5
+  semanas depois). A tolerância real é menor do que a cadência sugere, e o GitHub não a publica.
+  Com `1` o gate acende no mês em que sai uma release nova e o runner não a aplicou — é o mesmo
+  fato que o `bin.*` do §8b mostra, visto pela API. Ele não vira ruído permanente, porque num
+  runner saudável o auto-update apaga o atraso em dias; se acender todo mês, o problema é o
+  runner (§8a), não o limiar. Mantenha o valor em variável e registre a data de cada recusa
+  observada: o número certo é medido, não deduzido.
 - **Usa o mesmo `RUNNER_STATUS_PAT` da camada A**, com a mesma degradação: sem secret, avisa
   e sai 0. Vale dizer no aviso *o que se perde* — sem isso, "checagem desligada" se lê como
   detalhe, quando é justamente a metade que enxerga o §8b.
@@ -1032,6 +1064,44 @@ tempo: elas avisam e param de proteger, e sobra só a camada B — a que já sab
 este caso.
 
 **Quando aplicar:** sempre que houver deploy self-hosted disparado por push/tag. O preflight dá ❌ imediato no push (e protege contra deploy sem runner); o watchdog cobre qualquer deploy que já tenha ficado preso (inclusive os disparados quando o runner já estava morto). Juntos transformam "semanas de silêncio" em "falha vermelha em minutos / ≤6h". Lembre: isto é **detecção**, não cura — o root-cause (§7–§10) continua sendo operacional/host-side.
+
+### D. Onde o vigia mora quando o Actions hospedado não é confiável
+
+A, B e C rodam em `ubuntu-latest` para não depender do runner que vigiam. Isso tem um segundo modo
+comum de falha, e ele foi medido (lição 106): **o bloqueio de cobrança do org mata as três ao mesmo
+tempo.** Em 28/09/2026 o `Deploy Watchdog` passou a "falhar" em 3 s com 0 steps (a anotação do
+check-run diz *"recent account payments have failed"*); em 30/09 o runner emudeceu (§8b) e o CI de
+uma PR ficou 30+ min em fila sem vigia nenhum. E mesmo vivo, o B do exemplo olha só `cd-*.yml`:
+**job de CI de PR em fila não é deploy preso**, e passa.
+
+A pergunta útil é *onde* cada sinal pode ser lido sem depender do que está sendo vigiado:
+
+| Onde | Lê `bin.*` / log / imagem? | Lê job em fila? | Por que sim / por que não |
+| --- | --- | --- | --- |
+| Actions hospedado (A/B/C) | ❌ só a API | ✅ | cobrado em repo privado; morre inteiro no bloqueio de cota (lição 74) |
+| No próprio runner | ✅ | ✅ | runner mudo ⇒ vigia mudo; o job do vigia fica em fila junto |
+| Orquestrador externo com SSH nos hosts | ✅ | ✅ | a credencial precisa de `docker` (≈ root) e mora **fora** do host — em host misto, é a maior superfície possível |
+| **Timer (systemd/cron) no host do runner** | ✅ | — | a credencial não sai do host; mede a **causa**, com semanas de antecedência |
+| **Orquestrador externo (n8n, cron em outro host) só com a API** | — | ✅ | PAT só leitura de Actions; vê **qualquer** job `self-hosted` em fila, qualquer causa |
+
+Por isso **duas camadas, cada uma cobrindo o ponto cego da outra**:
+
+- **D1 — no host, sinal antecedente.** Script versionado ao lado do compose dos runners, instalado
+  por timer em **cada** host (§8b, yokoten por host). Por contêiner: `bin.*` ao lado do `bin/`;
+  imagem com mais de ~30 dias; `docker logs --since 25h` com `deprecated|registration has been
+  deleted|404`; `restarting` ou `RestartCount` subindo. Reporta **sempre**, inclusive `ok` —
+  o `ok` é o heartbeat.
+- **D2 — fora, sintoma + dead-man.** Job com label `self-hosted` em `queued` acima de um limiar em
+  qualquer repositório atendido pelos runners, e **host sem heartbeat do D1** acima da cadência do
+  D1 mais uma folga. Os números são escolha de desenho, não medição — derive-os do seu caso: o
+  limiar de fila fica acima do pickup normal (segundos, com runner ocioso) e abaixo do tempo em que
+  um humano percebe sozinho (30+ min no incidente); o do heartbeat, D1 diário + ~2 h. O dead-man é
+  o que cobre a fraqueza do D1: morrer junto com o host.
+
+O alerta leva a receita do conserto; remediação automática (`pull` mensal) vem **depois** de o
+sensor provar que acusa — sensor antes de atuador. E prove a sonda como qualquer outra (lição 93):
+`docker exec <runner> mkdir /actions-runner/bin.9.9.9` tem de gerar alerta, e o `rmdir` tem de
+calá-lo.
 
 ## §12. O runner conteinerizado NÃO compartilha o filesystem do host — e metade do comando funciona
 
@@ -1207,4 +1277,8 @@ usa mais. Sem a primeira, volta o `command not found`.
 | Preflight precisa listar runners mas o `GITHUB_TOKEN` dá 403 / lista vazia | §11 (`/actions/runners` exige admin → PAT `Administration: Read`; watchdog usa só `GITHUB_TOKEN`/`actions:read`) |
 | Passo do CD diz que um caminho do HOST não existe (`--env-file`, `-f`) com o arquivo intacto lá | §12 (o CLI do compose roda DENTRO do runner; bind mount resolve no daemon, flag resolve no container — montar o diretório `ro`) |
 | `docker compose -f` apontando para o clone do operador, tendo checkout disponível | §12 (nota) — use o compose do CHECKOUT: deploy por SHA de verdade, e o gate passa a medir o arquivo que será aplicado |
+| Watchdog/preflight de runner "falhando" em ~3 s com 0 steps justo quando o runner emudece; ou CI de PR em fila sem alerta nenhum | §11 D (o vigia hospedado morre no bloqueio de cota, e B só olha deploy — timer no host + orquestrador externo) |
+| Camada C configurada e o runner mudo mesmo assim, 2 minors atrás | §11 C (limiar `1`, não `3` — lição 107) |
+| `A session for this runner already exists` / `Conflict. Retrying until reconnected` logo após `--force-recreate` | §8b (transitório, ~3 min; a prova é o `runner_name` no job em fila) |
+| Conserto do §8b feito e outro host com o mesmo compose segue mudo | §8b (yokoten por host — o `pull` não se replica) |
 | Revisor afirma que `GET /actions/runners` não devolve `version` (citando a doc) | §11 C (nota) — o schema publicado omite, a resposta viva traz; refute com uma chamada |

@@ -2,6 +2,28 @@
 
 Lessons retrofitted into the skill, dated. Each entry describes **what** changed and **why** (the symptom it would have prevented).
 
+## 2026-09-30 — O vigia do runner sai do Actions hospedado, e o limiar de versão cai de 3 para 1 — bump 2.35.0 → [2.36.0]
+
+**Por quê:** incidente medido em 30/09/2026 (PR com CI 30+ min em `queued`). O runner de staging
+emudeceu no §8b (`2.335.1` recusada, `bin.2.337.0/` baixado e não aplicado desde 03/09), e **nada
+avisou**: o `Deploy Watchdog` em `ubuntu-latest` estava morto pelo bloqueio de cobrança do org desde
+28/09, e mesmo vivo só olhava `cd-*.yml`. Ao revisar o §11 contra o caso, a camada C também falhava:
+com o default `MAX_MINORS_ATRASO=3` ela não acusaria um runner **2 minors** atrás — que foi
+exatamente o atraso que o GitHub recusou.
+
+**O quê:**
+
+- `self-hosted-runner-docker.md` §11 ganha a **camada D** — onde o vigia mora quando o hospedado não
+  é confiável: tabela de candidatos (hospedado, o próprio runner, SSH do orquestrador, timer no host,
+  orquestrador só com a API) e o desenho em duas camadas (D1 no host, sinal antecedente + heartbeat;
+  D2 fora, job `self-hosted` em fila + dead-man), com o ensaio sabotado (`mkdir bin.9.9.9`).
+- §11 C: default `MAX_MINORS_ATRASO` de `3` para `1`, com a medição que derrubou o `3`.
+- §8b: recorrência de 30/09 — vizinho no mesmo host que loga `deprecated` em claro, assinatura do
+  `SelfUpdate-*.log`, yokoten **por host** (produção atualizada em 02/09, staging não), e o
+  `Conflict` de sessão pós-recreate como transitório, com a prova pelo `runner_name`.
+- `lessons-learned.md`: lições 106–109 e índice por tema. `symptom-index.md`: +2 linhas.
+  `SKILL.md`: 1 gotcha e as contagens da tabela de roteamento.
+
 ## 2026-09-28 — Progressive disclosure: o `SKILL.md` vira roteador, e sintomas e lições viram references — bump 2.34.1 → [2.35.0]
 
 **O quê:** o `SKILL.md` caiu de 392 linhas / 110.525 chars para 226 linhas / 16.710 chars. Nada

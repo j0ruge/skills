@@ -1,7 +1,7 @@
 ---
 name: cicd
 metadata:
-  version: 2.35.0
+  version: 2.36.0
 description: "GitHub Actions / Docker / GHCR pipeline troubleshooting and config, auto-routed by stack (Node/Prisma, Django/gunicorn, Vite). Self-hosted runner runbook — what breaks when you move a billed job onto one, which runner to trust for production — deploy-time proof (rollback with re-smoke, backup gates that check the dump), and Actions minute economics. Triggers — CI/CD, GitHub Actions, job never starts, Actions minutes/quota, GHCR auth, self-hosted runner, deploy queued, rollback/backup gate."
 ---
 
@@ -78,8 +78,8 @@ Frontend:          checkout → install → lint → typecheck → test (Vitest)
 
 | Condition | Reference |
 | --- | --- |
-| When you have an error message or symptom and don't know the layer yet (all tags, 72 rows) | `references/symptom-index.md` |
-| When another file cites a lesson by number, or you want every lesson on one theme (105 numbered lessons + theme index) | `references/lessons-learned.md` |
+| When you have an error message or symptom and don't know the layer yet (all tags, 74 rows) | `references/symptom-index.md` |
+| When another file cites a lesson by number, or you want every lesson on one theme (109 numbered lessons + theme index) | `references/lessons-learned.md` |
 | When the failure is shared infra: GHCR `unauthorized` / TLS timeout, nginx-proxy network, SSL/ACME certificate (3a/3b/3c), runner via systemd offline, concurrency, monorepo npm (`exec`, ESLint v9, hoisting), deploy keys, `.env` whitespace, composite action, `actionlint` | `references/troubleshooting-shared.md` |
 | When the runner is a container (`FROM myoung34/github-runner`, `infra/docker/runner/`): crashloop, `404 registration`, `registration has been deleted`, `version deprecated`, PAT 401, mute runner, silent `queued`, host paths, missing binaries | `references/self-hosted-runner-docker.md` |
 | Before configuring a new environment's shared infra (runner, GHCR, DNS) | `references/checklist-shared.md` |
@@ -106,6 +106,7 @@ One line each; read the numbered lesson in `references/lessons-learned.md` when 
 - **`${{ }}` inside a shell comment in `run:` invalidates the whole workflow**, which then does not fire on its own triggers (lesson 83). Gate with `actionlint`, which exits 0 without reading `run:` when `shellcheck` is missing from PATH (lesson 82).
 - **`cmd | tail` returns `tail`'s status**, and `${PIPESTATUS[0]}` expands empty in zsh. Redirect to a file and read `$?`, or `set -o pipefail` (lesson 84).
 - **A self-hosted deploy stuck in `queued` is silent:** `timeout-minutes` only starts after pickup (lesson 51). The log signature separates the modes (`404 registration` §7, `registration has been deleted` §9, `version deprecated` §8, PAT `401` §10a); they can stack (§10), and a mute runner shows none of them (§8b, `ls -d /actions-runner/bin.*`).
+- **The runner watchdog cannot live on hosted Actions alone:** a billing block kills preflight, watchdog and version check together, and the classic watchdog ignores PR CI. Put a timer on the runner host (`bin.*` next to `bin/`) plus an external orchestrator that sees any `self-hosted` job queued and the host's heartbeat; fix and watch **every** host sharing the compose. Version gate: 1 minor behind, not 3 (lessons 106–108).
 - **`DISABLE_AUTO_UPDATE` with any non-empty value, even `"0"`, disables auto-update** (lesson 48). In an ephemeral container that wipes state the update can never land; bump the `FROM` (lesson 87).
 - **Roll back only to an immutable `sha-*` tag**, since the failing deploy just re-pointed `latest`, and re-smoke after `up -d`, whose exit 0 only means Docker accepted the request (lessons 59, 60).
 - **`if: success()` skips exactly the deploy that failed.** Put secondary gates after the rollback step (lesson 61).
