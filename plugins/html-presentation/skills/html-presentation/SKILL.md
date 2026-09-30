@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.0.1"
+  version: "1.1.0"
 ---
 
 # HTML Presentation
@@ -37,6 +37,10 @@ language. If the user already said it, don't ask again.
 Convert documents to Markdown before reading (MinerU for PDFs when available; `pdftotext -layout` otherwise,
 and treat its tables with suspicion because it interleaves columns). Read all of it. Keep the originals
 next to the project (`material/`) so the reviewer can check against them.
+
+A PowerPoint source needs two passes: `python-pptx` for the text and the speaker notes, and
+`soffice --headless --convert-to pdf` then MinerU for the layout and tables. The PDF export drops the notes,
+and in the IACS E26/E27 deck (30/09/2026) the notes held a whole slide's talk.
 
 ### 3. Plan the talk before designing
 
@@ -116,7 +120,8 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
   `window.opener` / `postMessage`.
 - **Footer collisions.** The last section label runs into the page number, and two sections starting near
   the end overlap. The template anchors the last label to the right and hides colliding labels except the
-  active one.
+  active one. Keep section names to about 12 characters: with five longer names in 22 slides, only the
+  active label showed on every slide (IACS deck, 30/09/2026).
 - **Empty stage.** A narrow `max-width` on titles makes 3-line headings and leaves the bottom third blank. If
   a slide looks sparse, raise the type before adding content.
 - **The builder's review misses content loss.** In the origin session the fresh reviewer found 6 material
@@ -127,6 +132,19 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
   sections or classification.
 - **Confidential source.** Material marked "Confidential" stays out of public places. Don't publish the
   deck as a public artifact; mark the PDF with the classification.
+- **Glyph missing from the self-hosted font.** A latin subset (IBM Plex in the origin projects) has no `≠`,
+  `→` or `←`. The browser swaps fonts for that one glyph and it renders misaligned ("=/"); `build.py` does
+  not notice. Draw such symbols as inline SVG sized in `em`.
+- **Photo or dark slide lost in the PDF.** The print rules repaint every `.slide` with `--bg` and reuse
+  `.slide::before` as the 5px bar. A cover with a single-class selector loses its photo (white title on a
+  light page), and a veil drawn with `::before` collapses to a 5px strip over a bright photo. Give such
+  slides their own print rule (background again, veil with `inset:0`) and look at page 1 of the PDF.
+- **Deck several times heavier than its assets.** `build.py` inlines every `url(assets/...)` separately:
+  one photo used by four rules (screen and print, cover and close) made a 1.7 MB deck; declared once as
+  `--photo:url(...)` it was 569 KB (IACS deck, 30/09/2026).
+- **Source line under the content.** `.src` sits at a fixed spot above the footer (`position:absolute`), so
+  content that grows runs under it: 3 slides of the IACS deck (30/09/2026), one of them after a review fix.
+  Look for it in every shot.
 
 ## Files
 

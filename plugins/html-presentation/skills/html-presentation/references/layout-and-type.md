@@ -29,12 +29,28 @@ The slide padding is 112 / 128 / 150. The bottom 150 px belong to the footer, so
   When "consecutive years" and "total times" differ, show both.
 - **Rules** (`.rule`): icon + short rule + one-line why. Two columns when there are 4.
 - **Action block** (`.act`, brand-soft background): what to do. One per slide, near the end of the reading
-  order.
+  order. Only for actions: an objective or a claim goes in the lead, or on a line with a 2px brand bar. In
+  the IACS deck (30/09/2026) the pink block on 8 of 21 slides read as wallpaper, and a design critique
+  flagged it.
 - **Mockups** (chat, email, AI prompt, auto-reply, "To:" autocomplete): build them in HTML in the
   project's visual grammar, with invented neutral names. They beat screenshots: translatable, sharp when
   projected, no real data. Put numbered pins on the *edges* of the mockup (position the card
   `relative`) so they never cover text, and mark the mockup illustrative in its `aria-label`.
 - **Close** (`.close`): 3 principles + a dark contact panel with the address in mono and the deadline.
+- **Agenda** (`.agenda`, for talks of about 30 minutes or more): one row per `data-section`. Fill the minutes
+  from the notes instead of typing them, or they drift after the first timing change. Inside the template's
+  script, after `secs` exists:
+  ```js
+  document.querySelectorAll('.agenda [data-sec]').forEach(el => {
+    const t = slides.reduce((a, s, k) => a + (s.dataset.section === el.dataset.sec ? secs[k] : 0), 0);
+    el.textContent = '~' + Math.max(1, Math.round(t / 60)) + ' min';
+  });
+  ```
+- **References appendix**: when the user asks for a citation standard (e.g. ABNT NBR 6023:2018), put the list
+  after the close, as reading slides for the PDF. Their notes say they are not presented and carry
+  `data-t="5"`; questions stay on the close. Before writing an "Acesso em", confirm the URL answers
+  (`curl -s -o /dev/null -w '%{http_code}' -L <url>`). Cite a page that blocks bots by the archived copy you
+  actually read.
 
 ## Refuse
 

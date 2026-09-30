@@ -3,6 +3,27 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.1.0] — 2026-09-30
+
+### Added
+- PowerPoint sources (step 2): `python-pptx` for text and speaker notes, `soffice` → PDF → MinerU for the
+  layout. The PDF export drops the notes, and in the IACS E26/E27 deck they held a whole slide's talk.
+- `references/layout-and-type.md`: an **Agenda** component whose minutes come from the `data-t` of each
+  section, and a **References appendix** (citation standard such as ABNT NBR 6023:2018, reading slides after
+  the close, each URL checked with `curl` before its "Acesso em").
+- Gotchas: glyph missing from the self-hosted font (`≠ → ←`), photo or dark slide lost in the PDF (print
+  rules repaint `.slide` and reuse `.slide::before`), the same image inlined once per `url()` (1.7 MB →
+  569 KB with one `--photo` variable), and the `.src` line running under content that grows.
+
+### Changed
+- "Footer collisions" now says to keep section names to about 12 characters.
+- The action block is for actions only; objectives and claims go in the lead or on a line with a brand bar.
+
+### Why
+Second real deck built with the skill: a 30-minute technical training on IACS UR E26/E27 from a PPTX
+(25 slides, room + Meet + PDF). Every item above failed or was fixed during that session. The print-CSS
+failure was reproduced without the fix before it was written down.
+
 ## [1.0.1] — 2026-09-30
 
 ### Fixed
