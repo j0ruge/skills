@@ -238,6 +238,13 @@ CURSOR_SKILL_MAP: list[dict[str, Any]] = [
         "source_dir": "plugins/pdf-generation/skills/pdf-generation",
     },
     {
+        "plugin": "html-presentation",
+        "cursor_name": "html-presentation",
+        "display": "HTML Presentation — timed HTML slide deck from source material (DESIGN.md, presenter notes + timer, PDF, speaker script)",
+        "source_type": "skill",
+        "source_dir": "plugins/html-presentation/skills/html-presentation",
+    },
+    {
         "plugin": "whisper-preprocess",
         "cursor_name": "whisper-preprocess",
         "display": "Whisper Preprocess — offline ffmpeg + OpenAI Whisper audio→text (silence removal, voice enhancement, segmentation)",

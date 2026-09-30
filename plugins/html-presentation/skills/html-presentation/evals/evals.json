@@ -1,0 +1,25 @@
+{
+  "skill_name": "html-presentation",
+  "evals": [
+    {
+      "id": 1,
+      "name": "treinamento-senhas",
+      "prompt": "Transforma este PDF de política de senhas (politica-senhas.pdf) numa palestra de 10 minutos para o time todo, em português. Vou apresentar na sala e no Meet, e quem faltar recebe o PDF. Contato no fim: seguranca@acme.example.",
+      "expected_output": "Deck HTML autocontido de ~10 lâminas, notas por lâmina somando ≤ 9:30, PDF com uma página por lâmina, roteiro, fiel aos números da política (14 caracteres, 10 senhas, MFA 01/03/2026, 1 hora, 37/29 incidentes).",
+      "files": [
+        "evals/files/politica-senhas.pdf"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "relatorio-diretoria",
+      "prompt": "Monta uma apresentação de 8 minutos para a diretoria com os números da sprint 42 (sprint-42.md), usando o DESIGN.md deste repo. Quem apresenta é a Ana Ribeiro, tech lead.",
+      "expected_output": "Deck HTML autocontido de ~8 lâminas com tokens do Harbor (#0f766e/#115e59), texto branco nunca sobre #0f766e, gráfico/tabela das métricas, pedido de vaga de QA no fechamento, notas ≤ 7:30.",
+      "files": [
+        "evals/files/sprint-42.md",
+        "evals/files/DESIGN.md"
+      ]
+    }
+  ],
+  "note": "Inputs are synthetic (a fictional password policy PDF, a sprint report and a fictional DESIGN.md). Iteration 1 (2026-09-30): with skill 17/17 checks, without 12/17."
+}

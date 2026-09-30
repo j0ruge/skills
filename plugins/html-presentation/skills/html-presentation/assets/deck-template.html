@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[Título da palestra]</title>
+<style>
+/* ── Fontes ────────────────────────────────────────────────────────────
+   Se o DESIGN.md do projeto define uma família, copie os .woff2 para
+   assets/fonts/ ao lado deste arquivo e declare aqui. build.py embute
+   tudo o que for url(assets/...) como data URI, e o deck funciona offline.
+   @font-face{font-family:'Minha Sans';font-weight:100 900;src:url(assets/fonts/minha-sans.woff2) format('woff2')}
+*/
+
+/* ── Tokens ────────────────────────────────────────────────────────────
+   Substitua pelos valores do DESIGN.md do projeto. Os nomes são papéis, não cores:
+   --brand só em marca/progresso/ícone (não é fundo de texto);
+   --brand-strong é a versão que aguenta texto branco por cima (≥ 4.5:1);
+   --brand-soft + --brand-deep formam o bloco de ação (meça o par). */
+:root{
+  --brand:#2563eb; --brand-strong:#1d4ed8; --brand-soft:#dbeafe; --brand-deep:#172554;
+  --bg:#fafaf9; --card:#ffffff; --surface-low:#f5f5f4; --muted:#efeeed; --subtle:#e7e5e4;
+  --fg:#1c1917; --fg2:#44403c; --fg3:#6b6663; --border:#e2e0de;
+  --warn-bg:#fef3c7; --warn-fg:#92400e; --crit-bg:#ffe4e6; --crit-fg:#9f1239;
+  --ok-fg:#166534; --neutral-bg:#efeeed; --neutral-fg:#57534e;
+  --dark:#292524; --dark-fg:#e7e5e4; --dark-accent:#44403c;
+  --shadow-low:0 1px 2px rgb(28 25 23/.06),0 1px 3px rgb(28 25 23/.04);
+  --shadow-high:0 8px 24px rgb(28 25 23/.10);
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--dark);color:var(--fg);font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased}
+
+/* ── Palco 1920×1080 escalado. Centralize com translate, nunca com grid ─
+   place-items:center (e até "unsafe center") corta o palco quando a janela
+   é menor que 1920: notebook 1366/1280, justamente o caso do Meet. */
+#viewport{position:fixed;inset:0;overflow:hidden}
+#stage{width:1920px;height:1080px;position:absolute;left:50%;top:50%;background:var(--bg);transform-origin:center center;overflow:hidden;box-shadow:0 8px 32px rgb(0 0 0/.25)}
+#stage::before{content:"";position:absolute;inset:0 0 auto 0;height:5px;background:var(--brand);z-index:5}
+
+.slide{position:absolute;inset:0;padding:112px 128px 150px;display:none;flex-direction:column}
+.slide.active{display:flex}
+/* O conteúdo é visível por padrão: sem fill-mode "both", senão o screenshot e o PDF pegam o texto esmaecido. */
+.slide.active .enter{animation:enter .45s var(--ease)}
+@keyframes enter{from{opacity:.001;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.slide.active .enter{animation:none}}
+
+/* ── Escala de projeção: medida para o fundo da sala e para o Meet ───── */
+h1,h2,h3{font-weight:700;letter-spacing:-.02em;color:var(--fg);text-wrap:balance}
+.t-hero{font-size:132px;line-height:1.0;letter-spacing:-.035em}
+.t-title{font-size:76px;line-height:1.06}
+.t-sub{font-size:34px;line-height:1.35;font-weight:400;color:var(--fg2);max-width:30ch}
+.t-lead{font-size:36px;line-height:1.4;color:var(--fg2);max-width:52ch;text-wrap:pretty}
+.t-body{font-size:31px;line-height:1.45;color:var(--fg2);text-wrap:pretty}
+.t-small{font-size:20px;line-height:1.4;color:var(--fg3)}
+.t-label{font-size:19px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums slashed-zero}
+b,strong{font-weight:600;color:var(--fg)}
+.head{display:flex;flex-direction:column;gap:26px;margin-bottom:64px}
+.head .t-title{max-width:30ch}  /* estreito demais gera 3 linhas e deixa o palco vazio embaixo */
+
+/* ── Rodapé: linha-horizonte de progresso por seção ─────────────────── */
+#footer{position:absolute;left:128px;right:128px;bottom:52px;height:56px;display:grid;grid-template-columns:auto 1fr auto;align-items:end;gap:48px;z-index:4}
+#footer .brandmark{font-weight:700;font-size:26px;letter-spacing:-.01em;color:var(--fg)}
+.cover .top .brandmark{font-weight:700;font-size:40px;letter-spacing:-.01em;color:var(--fg)}
+.cover .top img{height:58px}
+#footer .logo{height:34px;width:auto;display:block}
+#horizon{position:relative;height:40px}
+#horizon .track{position:absolute;left:0;right:0;bottom:6px;height:3px;background:var(--subtle);border-radius:9999px}
+#horizon .fill{position:absolute;left:0;bottom:6px;height:3px;background:var(--brand);border-radius:9999px;transition:width .6s var(--ease)}
+#horizon .sec{position:absolute;bottom:18px;font-size:19px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);white-space:nowrap;transition:color .3s}
+#horizon .sec::after{content:"";position:absolute;left:0;top:26px;width:2px;height:13px;background:var(--border)}
+#horizon .sec.on{color:var(--fg)}
+#horizon .sec.on::after{background:var(--brand)}
+#horizon .sec.end{transform:translateX(-100%)}  /* senão a última seção colide com o número da página */
+#horizon .sec.end::after{left:auto;right:0}
+#horizon .sec.tight:not(.on){color:transparent}  /* rótulos que colidem: fica só a marca; o da seção ativa aparece */
+#pageno{font-family:var(--mono);font-size:20px;font-weight:500;color:var(--fg3)}
+#pageno b{color:var(--fg);font-weight:600}
+.cover-mode #footer{opacity:0;pointer-events:none}
+
+/* ── Componentes ──────────────────────────────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-low);padding:36px 40px}
+.act{background:var(--brand-soft);border-radius:16px;padding:30px 40px;display:flex;gap:28px;align-items:flex-start}
+.act .ico{flex:none;width:44px;height:44px;color:var(--brand-strong);margin-top:2px}
+.act p{font-size:31px;line-height:1.42;color:var(--brand-deep)}
+.act b{color:var(--brand-deep);font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:10px;border-radius:4px;padding:6px 14px;font-size:19px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.chip::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
+.chip.warn{background:var(--warn-bg);color:var(--warn-fg)}
+.chip.crit{background:var(--crit-bg);color:var(--crit-fg)}
+.chip.neutral{background:var(--neutral-bg);color:var(--neutral-fg)}
+.ico{stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.src{position:absolute;right:128px;bottom:124px;font-size:19px;color:var(--fg3);text-align:right;line-height:1.4}
+.pin{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:9999px;background:var(--brand-strong);color:#fff;font-family:var(--mono);font-weight:600;font-size:19px}
+
+.cols{display:grid;gap:64px;flex:1;min-height:0}
+.rules{display:flex;flex-direction:column;gap:38px}
+.rule{display:grid;grid-template-columns:56px 1fr;gap:26px;align-items:start}
+.rule .ico{width:46px;height:46px;color:var(--fg);margin-top:4px}
+.rule h3{font-size:36px;line-height:1.25;font-weight:600;letter-spacing:-.01em;margin-bottom:6px}
+.rule p{font-size:29px;line-height:1.45;color:var(--fg2);max-width:50ch}
+
+/* Capa */
+.cover{padding:0}
+.cover .top{position:absolute;left:128px;top:104px;right:128px;display:flex;justify-content:space-between;align-items:center}
+.cover .top .mono{font-size:22px;color:var(--fg3)}
+.cover .body{position:absolute;left:128px;top:250px;right:128px}
+.cover .hline{position:absolute;left:0;right:0;top:720px;height:1px;background:var(--border)}
+.cover .hline::before{content:"";position:absolute;left:0;top:-1px;width:460px;height:3px;background:var(--brand)}
+.cover .meta{position:absolute;left:128px;top:764px;right:128px;display:grid;grid-template-columns:repeat(3,auto) 1fr;gap:72px;align-items:start}
+.cover .meta div{display:flex;flex-direction:column;gap:8px}
+.cover .meta .v{font-size:30px;font-weight:600;color:var(--fg)}
+.cover .meta .credit{justify-self:end;text-align:right;max-width:560px}
+
+/* Colunas de itens (ex.: 4 tipos de algo) — divisória fina, não cartões iguais */
+.items{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--border)}
+.item{padding:36px 32px 0 0;display:flex;flex-direction:column;gap:14px}
+.item+.item{padding-left:32px;border-left:1px solid var(--border)}
+.item .ico{width:56px;height:56px;color:var(--brand)}
+.item h3{font-size:34px;font-weight:600;line-height:1.2}
+.item p{font-size:27px;line-height:1.4;color:var(--fg2)}
+
+/* Ficha (caso/incidente/fato) no vocabulário de "detalhe" de app */
+.split{display:grid;grid-template-columns:1fr 1.05fr;gap:72px;flex:1;min-height:0;align-items:start}
+.record{padding:0;overflow:hidden}
+.record .rh{display:flex;justify-content:space-between;align-items:center;padding:26px 36px;background:var(--surface-low)}
+.record .rh b{font-size:24px}
+.record dl{display:grid;grid-template-columns:220px 1fr}
+.record dt,.record dd{padding:22px 36px;border-top:1px solid var(--muted);font-size:24px;line-height:1.4}
+.record dt{font-size:19px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);padding-top:26px}
+.record dd{color:var(--fg);padding-left:0}
+
+/* Fluxo em etapas */
+.flow{display:grid;grid-template-columns:repeat(5,1fr)}
+.step{position:relative;padding:0 28px 0 0}
+.step .n{width:56px;height:56px;border-radius:9999px;display:grid;place-items:center;font-family:var(--mono);font-weight:600;font-size:24px;background:var(--card);border:2px solid var(--fg);color:var(--fg);position:relative;z-index:1}
+.step.hot .n{background:var(--brand-strong);border-color:var(--brand-strong);color:#fff}
+.step::before{content:"";position:absolute;left:56px;right:0;top:27px;height:2px;background:var(--border)}
+.step:last-child::before{display:none}
+.step h3{font-size:34px;font-weight:600;line-height:1.25;margin:28px 0 10px}
+.step p{font-size:27px;line-height:1.42;color:var(--fg2)}
+
+/* Tabela de ranking */
+.rank{width:100%;border-collapse:collapse}
+.rank th{font-size:19px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);text-align:left;padding:0 20px 14px;border-bottom:1px solid var(--border)}
+.rank td{padding:10px 20px;font-size:27px;border-bottom:1px solid var(--muted);color:var(--fg3)}
+.rank td.r{font-family:var(--mono);font-weight:600;width:70px;text-align:right}
+.rank tr.hl td{color:var(--fg)}
+.rank tr.hl td.r{color:var(--brand-strong)}
+.rank tr.hl td.t{font-weight:600}
+.rank td.c{text-align:right}
+
+/* Gráfico de barras em SVG: uma série, sem legenda; destaque só na barra que importa */
+.chart{display:flex;flex-direction:column;gap:6px}
+.chart h3{font-size:30px;font-weight:600;line-height:1.25}
+.chart .k{font-size:25px;color:var(--fg2);margin-bottom:40px}
+.chart svg{width:100%;height:auto;overflow:visible}
+.chart svg text{font-family:var(--mono);font-size:17px;fill:var(--fg3)}
+.chart svg .val{fill:var(--fg);font-weight:600;font-size:20px}
+.chart svg rect.bar{fill:var(--fg2)}
+.chart svg rect.bar.hot{fill:var(--brand-strong)}
+
+/* Fechamento com contato */
+.close{display:grid;grid-template-columns:1.1fr .9fr;gap:88px;flex:1;min-height:0;align-items:start}
+.princ{display:flex;flex-direction:column;border-top:1px solid var(--border)}
+.princ div{padding:32px 0;border-bottom:1px solid var(--border);font-size:35px;line-height:1.4;color:var(--fg2)}
+.contact{background:var(--dark);color:var(--dark-fg);border-radius:24px;padding:48px;display:flex;flex-direction:column;gap:22px;position:relative;overflow:hidden}
+.contact::before{content:"";position:absolute;left:0;top:0;right:0;height:5px;background:var(--brand)}
+.contact h3{color:#fff;font-size:46px;line-height:1.15}
+.contact p{font-size:28px;line-height:1.45;color:var(--dark-fg)}
+.contact .addr{font-family:var(--mono);font-size:42px;font-weight:600;color:#fff}
+.contact .dl{border-top:1px solid var(--dark-accent);padding-top:24px;font-size:25px}
+
+/* ── Notas (N) e janela do apresentador (P) ─────────────────────────── */
+.notes{display:none}
+#notesPanel{position:fixed;left:0;right:0;bottom:0;max-height:42vh;overflow:auto;background:#1c1917;color:#e7e5e4;font-family:var(--sans);font-size:17px;line-height:1.55;padding:18px 28px 22px;display:none;z-index:20;border-top:3px solid var(--brand)}
+#notesPanel.on{display:block}
+#notesPanel .bar{display:flex;gap:24px;align-items:baseline;margin-bottom:10px;font-family:var(--mono);font-size:14px;color:#b5b1af}
+#notesPanel .bar b{color:#fff;font-size:22px}
+#notesPanel p{margin:6px 0;max-width:110ch}
+#help{position:fixed;right:16px;bottom:12px;font:13px var(--sans);color:#b5b1af;opacity:0;transition:opacity .3s;z-index:21;pointer-events:none}
+body:hover #help{opacity:.9}
+body.presenter{overflow:auto;background:#1c1917;color:#e7e5e4}
+body.presenter #viewport,body.presenter #help{display:none}
+#pview{display:none;padding:32px 40px;font-family:var(--sans);max-width:1200px}
+body.presenter #pview{display:block}
+#pview .row{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #44403c;padding-bottom:16px;margin-bottom:20px}
+#pview .clock{font-family:var(--mono);font-size:56px;font-weight:600;color:#fff}
+#pview .plan{font-family:var(--mono);font-size:20px;color:#b5b1af}
+#pview .plan b{color:#fff}
+#pview .plan.late b{color:#ff8a8f}
+#pview h2{color:#fff;font-size:34px;margin-bottom:14px}
+#pview .pn p{font-size:22px;line-height:1.6;margin:10px 0;max-width:75ch}
+#pview .next{margin-top:28px;color:#b5b1af;font-size:18px}
+#pview .next b{color:#fff}
+#pview .btns{margin-top:24px;display:flex;gap:12px}
+#pview button{font:600 16px var(--sans);height:44px;padding:0 20px;border-radius:6px;border:1px solid #44403c;background:#292524;color:#fff;cursor:pointer}
+#pview button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+/* ── PDF: uma lâmina por página, com seção + classificação + página ──── */
+@page{size:1920px 1080px;margin:0}
+@media print{
+  html,body{height:auto;overflow:visible;background:var(--bg)}
+  #viewport{position:static;overflow:visible}
+  #stage{transform:none!important;position:static;box-shadow:none;height:auto;overflow:visible;background:none}
+  #stage::before,#footer,#notesPanel,#help{display:none!important}
+  .slide{position:relative;display:flex!important;width:1920px;height:1080px;break-after:page;background:var(--bg);overflow:hidden}
+  .slide::before{content:"";position:absolute;inset:0 0 auto 0;height:5px;background:var(--brand)}
+  .slide .enter{animation:none!important}
+  .slide::after{content:attr(data-print);position:absolute;right:128px;bottom:52px;font:500 20px var(--mono);color:var(--fg3)}
+}
+</style>
+</head>
+<body data-classification="Uso interno" data-brand="[Organização]">
+<!--
+CONTRATO DE DIREÇÃO: preencha antes de construir e mantenha atualizado.
+THESIS: [a ideia que esta palestra defende e o formato genérico que ela recusa]
+OWN-WORLD: [tokens/fonte/regra de cor do DESIGN.md do projeto]
+STORY: [o que a plateia entende, acredita e faz ao final]
+FIRST VIEWPORT: [composição da capa]
+FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
+-->
+<div id="viewport"><div id="stage">
+
+<!-- ═══ Lâminas de exemplo: um componente por lâmina. Apague as que não usar. ═══
+     Cada <section> precisa de data-section (parte da fala, vazio na capa), data-title
+     e uma <aside class="notes" data-t="segundos">. A soma de data-t fica em
+     duração − 30 s, para caber pergunta. -->
+
+<section class="slide cover" data-section="" data-title="Capa">
+  <div class="top enter"><span class="brandmark">[Organização]</span><span class="mono">[REF-0000]</span></div>
+  <div class="body enter">
+    <h1 class="t-hero">[Título em<br>duas linhas]</h1>
+    <p class="t-sub" style="margin-top:32px">[Subtítulo: para quem e por quê]</p>
+  </div>
+  <div class="hline"></div>
+  <div class="meta enter">
+    <div><span class="t-label">Evento</span><span class="v">[Evento]</span></div>
+    <div><span class="t-label">Data</span><span class="v mono">[dd/mm/aaaa]</span></div>
+    <div><span class="t-label">Apresenta</span><span class="v">[Nome · Área]</span></div>
+    <div class="credit t-small">[Crédito da fonte do conteúdo]</div>
+  </div>
+  <aside class="notes" data-t="30"><p>[Abertura: o que é, por que agora, quanto tempo, como vai ser.]</p></aside>
+</section>
+
+<section class="slide" data-section="[Parte 1]" data-title="[Conceito]">
+  <div class="head enter">
+    <h2 class="t-title">[Afirmação completa, não rótulo]</h2>
+    <p class="t-lead">[Uma ou duas frases que se explicam sem narração. <b>O ponto-chave em negrito.</b>]</p>
+  </div>
+  <div class="items enter">
+    <div class="item"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg><h3>[Item]</h3><p>[Exemplo concreto]</p></div>
+    <div class="item"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg><h3>[Item]</h3><p>[Exemplo concreto]</p></div>
+    <div class="item"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3 21 20H3z"/></svg><h3>[Item]</h3><p>[Exemplo concreto]</p></div>
+    <div class="item"><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg><h3>[Item]</h3><p>[Exemplo concreto]</p></div>
+  </div>
+  <aside class="notes" data-t="45"><p>[Fala]</p></aside>
+</section>
+
+<section class="slide" data-section="[Parte 1]" data-title="[Dados]">
+  <div class="head enter" style="margin-bottom:44px"><h2 class="t-title">[O que os números dizem]</h2></div>
+  <div class="cols enter" style="grid-template-columns:1.2fr 1fr">
+    <div class="chart">
+      <h3>[Métrica]</h3><p class="k">[Leitura em uma linha, ex.: <b>10×</b> em uma década]</p>
+      <svg viewBox="0 0 520 300" role="img" aria-label="[descrição textual dos valores]">
+        <line x1="0" y1="250" x2="520" y2="250" stroke="var(--border)" stroke-width="1.5"/>
+        <rect class="bar" x="10" y="200" width="62" height="50" rx="4"/><rect class="bar" x="96" y="150" width="62" height="100" rx="4"/>
+        <rect class="bar" x="182" y="100" width="62" height="150" rx="4"/><rect class="bar hot" x="268" y="20" width="62" height="230" rx="4"/>
+        <g text-anchor="middle"><text class="val" x="41" y="190">[v]</text><text class="val" x="127" y="140">[v]</text><text class="val" x="213" y="90">[v]</text><text class="val" x="299" y="10">[v]</text>
+        <text x="41" y="280">[a]</text><text x="127" y="280">[a]</text><text x="213" y="280">[a]</text><text x="299" y="280">[a]</text></g>
+      </svg>
+    </div>
+    <div class="act" style="align-self:center"><svg class="ico" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><p>[Conclusão prática. <b>O que fazer.</b>]</p></div>
+  </div>
+  <p class="src">Fonte: [fonte, ano]</p>
+  <aside class="notes" data-t="50"><p>[Fala: diga o número exatamente como está na fonte.]</p></aside>
+</section>
+
+<section class="slide" data-section="[Parte 2]" data-title="[Caso]">
+  <div class="head enter"><h2 class="t-title">[Aconteceu de verdade]</h2></div>
+  <div class="split enter">
+    <div class="rules">
+      <p class="t-lead" style="max-width:34ch">[O que houve, em uma frase.]</p>
+      <div class="act"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><p>[Por que isso importa para <b>esta plateia</b>.]</p></div>
+    </div>
+    <div class="card record">
+      <div class="rh"><b>[Nome do caso]</b><span class="chip crit">[Status]</span></div>
+      <dl><dt>Data</dt><dd class="mono">[dd/mm/aaaa]</dd><dt>[Campo]</dt><dd>[Valor]</dd><dt>[Campo]</dt><dd>[Valor]</dd></dl>
+    </div>
+  </div>
+  <aside class="notes" data-t="45"><p>[Fala]</p></aside>
+</section>
+
+<section class="slide" data-section="[Parte 2]" data-title="[Como funciona]">
+  <div class="head enter"><h2 class="t-title">[Processo em etapas]</h2><p class="t-lead">[Contexto]</p></div>
+  <div class="flow enter">
+    <div class="step"><div class="n">1</div><h3>[Verbo]</h3><p>[Detalhe]</p></div>
+    <div class="step"><div class="n">2</div><h3>[Verbo]</h3><p>[Detalhe]</p></div>
+    <div class="step hot"><div class="n">3</div><h3>[Verbo]</h3><p>[Detalhe]</p></div>
+    <div class="step hot"><div class="n">4</div><h3>[Verbo]</h3><p>[Detalhe]</p></div>
+    <div class="step hot"><div class="n">5</div><h3>[Verbo]</h3><p>[Detalhe]</p></div>
+  </div>
+  <aside class="notes" data-t="50"><p>[Fala]</p></aside>
+</section>
+
+<section class="slide" data-section="[Parte 2]" data-title="[Ranking]">
+  <div class="head enter" style="margin-bottom:28px;gap:14px"><h2 class="t-title" style="max-width:none">[Ranking em uma linha]</h2><p class="t-small">Fonte: [fonte]</p></div>
+  <table class="rank enter">
+    <thead><tr><th style="text-align:right">#</th><th>[Coluna]</th><th style="text-align:right">[Coluna]</th></tr></thead>
+    <tbody>
+      <tr class="hl"><td class="r">1</td><td class="t">[Destaque]</td><td class="c"><span class="chip neutral">[info]</span></td></tr>
+      <tr><td class="r">2</td><td>[Item]</td><td class="c"><span class="chip warn">Novo</span></td></tr>
+    </tbody>
+  </table>
+  <aside class="notes" data-t="45"><p>[Fala]</p></aside>
+</section>
+
+<section class="slide" data-section="[Parte 3]" data-title="[Regras práticas]">
+  <div class="head enter"><h2 class="t-title">[Regras do dia a dia]</h2></div>
+  <div class="cols enter" style="grid-template-columns:1fr 1fr;gap:88px">
+    <div class="rules">
+      <div class="rule"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><div><h3>[Regra]</h3><p>[Por quê, em uma frase]</p></div></div>
+      <div class="rule"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg><div><h3>[Regra]</h3><p>[Por quê]</p></div></div>
+    </div>
+    <div class="rules">
+      <div class="rule"><svg class="ico" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><div><h3>[Regra]</h3><p>[Por quê]</p></div></div>
+      <div class="act"><svg class="ico" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg><p>[Se der errado: <b>a quem avisar e quando</b>.]</p></div>
+    </div>
+  </div>
+  <aside class="notes" data-t="50"><p>[Fala]</p></aside>
+</section>
+
+<section class="slide" data-section="[Conclusão]" data-title="Conclusão">
+  <div class="head enter"><h2 class="t-title">[A frase que a plateia deve lembrar]</h2></div>
+  <div class="close enter">
+    <div class="princ"><div>[Princípio 1]</div><div>[Princípio 2]</div><div><b>[Princípio 3]</b></div></div>
+    <div class="contact">
+      <h3>[Chamada para ação]</h3>
+      <span class="addr">[contato@exemplo]</span>
+      <p>[Instrução curta]</p>
+      <p class="dl">[Prazo ou próximo passo]</p>
+    </div>
+  </div>
+  <aside class="notes" data-t="50"><p>[Fechamento + "Alguma pergunta?"]</p></aside>
+</section>
+
+<footer id="footer" aria-hidden="true">
+  <span class="brandmark">[Organização]</span><!-- ou <img class="logo" src="assets/logo.svg" alt=""> -->
+  <div id="horizon"><div class="track"></div><div class="fill"></div></div>
+  <div id="pageno"></div>
+</footer>
+</div></div>
+
+<div id="notesPanel" role="region" aria-label="Notas do apresentador"></div>
+<div id="help">← → navegar · N notas · P janela do apresentador · F tela cheia · R zera o tempo</div>
+<div id="pview">
+  <div class="row"><span class="clock" id="pclock">00:00</span><span class="plan" id="pplan"></span></div>
+  <h2 id="ptitle"></h2><div class="pn" id="pnotes"></div><p class="next" id="pnext"></p>
+  <div class="btns"><button id="pprev">← Anterior</button><button id="pnextb">Próxima →</button><button id="preset">Zerar cronômetro</button></div>
+</div>
+
+<script>
+(() => {
+  const slides = [...document.querySelectorAll('.slide')];
+  const N = slides.length, stage = document.getElementById('stage');
+  const presenter = /[?&]apresentador/.test(location.search);
+  const klass = document.body.dataset.classification || '';
+  const pad = n => String(n).padStart(2, '0');
+  const fmt = s => pad(Math.floor(s / 60)) + ':' + pad(Math.floor(s % 60));
+  const secs = slides.map(s => +(s.querySelector('.notes')?.dataset.t || 0));
+  const planAt = i => secs.slice(0, i).reduce((a, b) => a + b, 0);
+  let i = 0, t0 = null, pwin = null;
+
+  // PDF: o rodapé some na impressão; seção + classificação + página vão no data-print
+  slides.forEach((s, k) => s.dataset.print = (k ? [klass, s.dataset.section].filter(Boolean).join(' · ') + ' · ' : '') + pad(k + 1) + ' / ' + pad(N));
+
+  const horizon = document.getElementById('horizon'), fill = horizon.querySelector('.fill');
+  const secEls = [], starts = {}, span = Math.max(1, N - 2);
+  slides.forEach((s, k) => { const n = s.dataset.section; if (n && !(n in starts)) starts[n] = k; });
+  Object.entries(starts).forEach(([name, k]) => {
+    const el = document.createElement('span'); el.className = 'sec'; el.textContent = name;
+    el.style.left = ((k - 1) / span * 100) + '%';
+    horizon.appendChild(el); secEls.push([name, el]);
+  });
+  // Última seção ancorada à direita (senão invade o número da página); rótulos que se sobrepõem
+  // mostram só a marca, exceto o da seção ativa. offsetLeft/Width são px do palco, antes do scale().
+  if (secEls.length) { const last = secEls[secEls.length - 1][1]; last.style.left = '100%'; last.classList.add('end'); }
+  const box = el => el.classList.contains('end') ? [el.offsetLeft - el.offsetWidth, el.offsetLeft] : [el.offsetLeft, el.offsetLeft + el.offsetWidth];
+  for (let a = 0; a < secEls.length - 1; a++) {
+    const [, ra] = box(secEls[a][1]), [lb] = box(secEls[a + 1][1]);
+    if (ra + 24 > lb) { secEls[a][1].classList.add('tight'); secEls[a + 1][1].classList.add('tight'); }
+  }
+
+  const fit = () => { const s = Math.min(innerWidth / 1920, innerHeight / 1080); stage.style.transform = `translate(-50%, -50%) scale(${s})`; };
+  const notesHTML = k => slides[k].querySelector('.notes')?.innerHTML || '';
+  const panel = document.getElementById('notesPanel');
+
+  function renderNotes() {
+    const el = t0 ? (Date.now() - t0) / 1000 : 0, plan = planAt(i);
+    if (panel.classList.contains('on')) panel.innerHTML = `<div class="bar"><b>${pad(i + 1)} · ${slides[i].dataset.title}</b><span>decorrido ${fmt(el)}</span><span>plano ${fmt(plan)}–${fmt(plan + secs[i])}</span><span>total ${fmt(planAt(N))}</span></div>` + notesHTML(i);
+    if (presenter) {
+      document.getElementById('ptitle').textContent = `${pad(i + 1)} / ${pad(N)} · ${slides[i].dataset.title}`;
+      document.getElementById('pnotes').innerHTML = notesHTML(i);
+      document.getElementById('pnext').innerHTML = i < N - 1 ? `Próxima: <b>${slides[i + 1].dataset.title}</b>` : 'Última lâmina';
+      const pp = document.getElementById('pplan');
+      pp.innerHTML = `plano desta lâmina <b>${fmt(plan)}–${fmt(plan + secs[i])}</b> · total ${fmt(planAt(N))}`;
+      pp.classList.toggle('late', el > plan + secs[i] + 15);
+      document.getElementById('pclock').textContent = fmt(el);
+    }
+  }
+
+  function show(k, from) {
+    i = Math.max(0, Math.min(N - 1, k));
+    slides.forEach((s, j) => s.classList.toggle('active', j === i));
+    stage.classList.toggle('cover-mode', i === 0);
+    fill.style.width = (i === 0 ? 0 : (i - 1) / span * 100) + '%';
+    secEls.forEach(([n, el]) => el.classList.toggle('on', n === slides[i].dataset.section));
+    document.getElementById('pageno').innerHTML = `<b>${pad(i + 1)}</b> / ${pad(N)}`;
+    if (i > 0 && t0 === null) t0 = Date.now();
+    try { history.replaceState(null, '', location.pathname + location.search + '#' + (i + 1)); } catch (e) {}
+    renderNotes();
+    // file:// não compartilha BroadcastChannel entre janelas: sincronize pela referência direta
+    if (from !== 'peer') {
+      try { if (pwin && !pwin.closed) pwin.postMessage({ deck: i }, '*'); } catch (e) {}
+      try { if (presenter && opener) opener.postMessage({ deck: i }, '*'); } catch (e) {}
+    }
+  }
+  setInterval(renderNotes, 1000);
+  addEventListener('message', e => { if (e.data && typeof e.data.deck === 'number') show(e.data.deck, 'peer'); });
+  addEventListener('keydown', e => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const k = e.key;
+    if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(k)) { e.preventDefault(); show(i + 1); }
+    else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); show(i - 1); }
+    else if (k === 'Home') show(0); else if (k === 'End') show(N - 1);
+    else if (k === 'n' || k === 'N') { panel.classList.toggle('on'); renderNotes(); }
+    else if ((k === 'p' || k === 'P') && !presenter) pwin = open(location.pathname + '?apresentador#' + (i + 1), 'apresentador', 'width=1100,height=760');
+    else if (k === 'f' || k === 'F') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
+    else if (k === 'r' || k === 'R') t0 = Date.now();
+  });
+  document.getElementById('viewport').addEventListener('click', e => show(i + (e.clientX > innerWidth / 3 ? 1 : -1)));
+  let tx = null;
+  addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+  addEventListener('touchend', e => { if (tx === null) return; const d = e.changedTouches[0].clientX - tx; if (Math.abs(d) > 50) show(i + (d < 0 ? 1 : -1)); tx = null; });
+  if (presenter) {
+    document.body.classList.add('presenter'); document.title = 'Apresentador · ' + document.title;
+    document.getElementById('pprev').onclick = () => show(i - 1);
+    document.getElementById('pnextb').onclick = () => show(i + 1);
+    document.getElementById('preset').onclick = () => { t0 = Date.now(); renderNotes(); };
+  }
+  addEventListener('resize', fit); fit();
+  show(Math.max(0, (parseInt(location.hash.slice(1), 10) || 1) - 1), 'init');
+})();
+</script>
+</body>
+</html>

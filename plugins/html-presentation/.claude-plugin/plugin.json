@@ -1,0 +1,28 @@
+{
+  "name": "html-presentation",
+  "description": "Build a polished, self-contained HTML slide deck (1920×1080) for a timed talk from source material — honoring the project's DESIGN.md, with presenter notes, a presenter window with timer, a PDF for absentees and a speaker script generated from the notes, checked by an independent reviewer agent. Triggers — presentation, slide deck, palestra, apresentação HTML, treinamento, 15x15, talk from a PDF, speaker notes.",
+  "author": {
+    "name": "Chewiesoft"
+  },
+  "version": "1.0.0",
+  "category": "operations",
+  "keywords": [
+    "presentation",
+    "slides",
+    "slide-deck",
+    "html-deck",
+    "speaker-notes",
+    "presenter-view",
+    "palestra",
+    "apresentacao",
+    "training",
+    "design-system",
+    "pdf-export"
+  ],
+  "platforms": [
+    "claude-code",
+    "cursor"
+  ],
+  "skills": "./skills",
+  "agents": "./agents"
+}
