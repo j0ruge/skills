@@ -9,7 +9,7 @@ Maps AI review bots to their GitHub login, comment structure, and output file na
 | CodeRabbit | `coderabbitai[bot]`, `coderabbitai` | `coderabbit-review.md` | Inline + review body with `<details>` blocks |
 | GitHub Copilot | `copilot-pull-request-reviewer[bot]` (review object), `Copilot` (its inline comments) | `copilot-review.md` | Review body + inline comments, under two logins |
 | Gemini Code Assist | `gemini-code-assist[bot]` | `gemini-review.md` | Inline + review body summary |
-| Codex | `chatgpt-codex-connector[bot]` | `codex-review.md` | Inline comments only |
+| Codex | `chatgpt-codex-connector[bot]` | `codex-review.md` | Inline comments + boilerplate review body + status summary on the issue |
 
 ## Comment Structures by Reviewer
 
@@ -49,11 +49,29 @@ Posts in **two places**:
 
 ### Codex (`chatgpt-codex-connector[bot]`)
 
-Posts **inline comments** — similar to Copilot style.
+Posts in **three places** (measured on a `@codex review` request, 2026-10-01):
 
-- Plain text with markdown
+1. **Status summary** — an *issue* comment (`/issues/{PR}/comments`, which Phase 1 does not read)
+   marked `<!-- codex-pull-request-review-summary -->`, with a table whose Status cell goes
+   `🔄 **Running**` → `✅ **Completed**` (four minutes apart in that run). It appears **first**,
+   before any finding exists.
+2. **Review object** — state `COMMENTED`, body `### 💡 Codex Review` + a "Reviewed commit" line and
+   an "About Codex in GitHub" `<details>` block. Pure metadata: discard it.
+3. **Inline comments** — the findings. Title in bold, preceded by a priority badge
+   (`![P1 Badge](https://img.shields.io/badge/P1-orange…)`); often an `AGENTS.md reference:` link.
+
+- Severity marker: the `P<n>` badge. No fixed mapping — recalibrate in Phase 3 (Default: MEDIUM)
 - May include code suggestions in fenced blocks
-- Default severity: MEDIUM
+
+**While the summary says `Running`, Codex is pending — case (b), not a pass.** At that moment
+`/pulls/{PR}/comments` holds zero Codex findings, and a wait loop that accepts *any* comment from
+the bot exits on the summary itself. Wait for `Completed` before extracting:
+
+```bash
+gh api "repos/$REPO/issues/$PR/comments" --paginate \
+  --jq '.[] | select(.body | contains("codex-pull-request-review-summary")) | .body' \
+  | grep -oE 'Running|Completed' | tail -1
+```
 
 ## Detection Strategy
 

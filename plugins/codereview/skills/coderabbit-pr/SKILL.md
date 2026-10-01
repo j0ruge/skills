@@ -1,7 +1,7 @@
 ---
 name: coderabbit-pr
 metadata:
-  version: 4.0.1
+  version: 4.0.2
 description: Resolves AI review comments on a GitHub PR — auto-detects CodeRabbit, Copilot, Gemini, Codex; creates per-reviewer checklists, verifies findings against current code (with byte-exact inspection when reviewers cite invisible/control characters), applies fixes, runs regression tests, resolves GitHub conversations, then cleans up its own checklist files. Triggers — coderabbit, copilot review, gemini review, codex review, fix PR review.
 ---
 
@@ -193,9 +193,9 @@ review" and "nobody looked at this PR".
 
 - **(a) It reviewed and found nothing** — a genuine pass.
 - **(b) It never actually ran** — quota exhausted, bot error, review still pending. Bots announce it
-  in the review body (e.g. *"Copilot was unable to review this pull request because the user who
-  requested the review has reached their quota limit"*), and a check that sits `PENDING` forever is
-  the same story. Recording it as "approved without issues" is false and buries a coverage gap. Do
+  in the review body (Copilot: *"unable to review … reached their quota limit"*); a check stuck
+  `PENDING`, or a Codex summary comment still `Running` (registry), is the same story. Recording it
+  as "approved without issues" is false and buries a coverage gap. Do
   not count a (b) reviewer as coverage, and say so in the closing report.
 
 Where it goes: **without `--keep-checklists`** (default), do **not** write a file — Phase 6 would

@@ -2,6 +2,23 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.3.1] — 2026-10-01
+
+### `coderabbit-pr` 4.0.2: o Codex "Running" é pendente, não aprovação
+
+Lição de um `@codex review` no PR JRC-Brasil/sales_quote#402.
+
+- **O resumo vem antes da revisão.** O Codex publicou primeiro um comentário de *issue* com o
+  marcador `<!-- codex-pull-request-review-summary -->` e o status `🔄 Running` (21:13:21Z); o review
+  e os dois achados P1 inline só chegaram com o status `✅ Completed` (21:17:23Z). Um laço de espera
+  que aceitava qualquer comentário do bot saiu no resumo, e a Fase 1 leria zero achados, o que a
+  Fase 2 registraria como caso (a), aprovação, quando era o caso (b), pendente. A Fase 2 (b) cita
+  agora o resumo em `Running`, e o `reviewer-registry.md` traz o comando que lê o status (rodado no
+  PR #402: devolve `Completed`).
+- **Registro corrigido.** A linha do Codex dizia *"Inline comments only"*; o medido foram três
+  objetos: o resumo de status (fora dos endpoints que a Fase 1 lê), um review `COMMENTED` de corpo
+  padrão (metadado, descartar) e os comentários inline com o selo `P<n>` como marcador de severidade.
+
 ## [2.3.0] — 2026-10-01
 
 ### Modo `worktree`: revisar o que ainda não foi commitado
