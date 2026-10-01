@@ -4,6 +4,13 @@ Registro por sessão da skill; o changelog **versionado** é `plugins/ticket/CHA
 (a entrada 1.4.0 de 2026-09-03 resume o que está aqui). Cada entrada registra **o que
 mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-01 — refatoração: folga abaixo do orçamento de 20k chars
+
+- Pedida pelo JorUge depois da 1.6.2, que fechou com 19.999 chars. Pela `skill-refactoring`, só sai
+  do `SKILL.md` o que as references já tinham por extenso (provado por grep): o curl do close step 5
+  (`close.md:84`), a migração do endpoint MCP (`campos.md`, §Issue existente) e o pseudo-código da
+  detecção pela branch. A narrativa dos workflows e a tabela de armadilhas ficaram intactas.
+
 ## 2026-10-01 — `open` do SBM-1: o projeto que ainda não existia
 
 - **Projeto novo.** `GET /project/SBM` respondeu "Nenhum projeto poderia ser encontrado". O dev

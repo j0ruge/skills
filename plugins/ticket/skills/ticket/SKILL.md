@@ -3,7 +3,7 @@ name: ticket
 description: "Jira ticket lifecycle for JRC Brasil projects, integrated with Git — create issues/sub-issues and branches, close with an auto-generated summary. Per-repo config via `.jira-project`; discovers project-specific transitions instead of assuming. New issues are born in the active sprint with story points and fixVersion, each read back by the sensor that can see it. Triggers — ticket, Jira, criar issue, fechar ticket, sprint, story points, fixVersion, acli."
 argument-hint: "start (open) | split | close | status"
 metadata:
-  version: 1.6.2
+  version: 1.6.3
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -232,13 +232,8 @@ por extenso, para ler antes do primeiro `close`: `references/close.md`.
    (validado 2026-05-20). O campo é **`commentBody`**, não `body`. Sem MCP: ADF JSON via
    `acli jira workitem comment create --key "${PROJECT}-XXX" --body-file /tmp/comment.json`
    (markdown vira texto puro ali). 🔴 **Confirme por REST**, nunca por `acli comment list`:
-
-   ```bash
-   curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
-     "https://jrcbrasil.atlassian.net/rest/api/3/issue/${PROJECT}-XXX/comment?orderBy=-created&maxResults=1" \
-     | python3 -c "import json,sys; b=json.load(sys.stdin)['comments'][-1]['body']; print(type(b).__name__, len(b.get('content',[])) if isinstance(b,dict) else b[:80])"
-   # espera: dict <N>   ·   se vier `str`, o ADF NÃO foi aceito
-   ```
+   `GET .../issue/${PROJECT}-XXX/comment?orderBy=-created&maxResults=1` com o `body` como
+   **objeto** (`str` = ADF recusado). Comando pronto em `references/close.md` step 5.
 
 6. **Transicionar até o "done"** descobrindo as transições (`getTransitionsForJiraIssue`; aplicar pelo
    `id` da transição cujo `to.name` é o status final) — **RS:** `Em andamento → Aprovação → Finished`; **SQ:**
@@ -282,17 +277,9 @@ por extenso, para ler antes do primeiro `close`: `references/close.md`.
 
 ## Detecção de Issue a partir da Branch
 
-Lógica comum a todos os comandos (com `$BRANCH_PREFIX` carregado da "Detecção de Projeto"):
-
-```javascript
-const branch = execSync('git branch --show-current').toString().trim();
-// Exemplo: BRANCH_PREFIX="SQ" → regex /^(SQ-\d+)/
-const match = branch.match(new RegExp(`^(${BRANCH_PREFIX}-\\d+)`));
-const issueKey = match ? match[1] : null;
-```
-
-Se `issueKey` for `null`, perguntar ao dev: "Não consegui detectar a issue da
-branch atual. Qual é a key? (ex.: `${PROJECT}-605`)"
+Lógica comum a todos os comandos: casar `git branch --show-current` com o regex
+`^(${BRANCH_PREFIX}-\d+)` (`$BRANCH_PREFIX` vem da "Detecção de Projeto"). Sem match, perguntar
+ao dev: "Não consegui detectar a issue da branch atual. Qual é a key? (ex.: `${PROJECT}-605`)"
 
 ---
 
@@ -309,16 +296,14 @@ sempre a releitura do campo pelo REST.
 | `json: unknown field "additionalAttributes"` no `edit` | O `acli` aceita a chave **só no `create`**; issue existente → MCP `editJiraIssue` (v1.3.22). |
 | `body:` no `addCommentToJiraIssue` | O servidor valida **depois** de receber o corpo: `MCP error -32602: ... Required at commentBody` custa reenviar o resumo inteiro (medido em 18/09/2026). |
 | `acli jira workitem comment --key …` | `comment` é grupo (`create`/`list`/`update`/`delete`/`visibility`); dá `✗ Error: unknown flag: --key`. Use `comment create`. |
-| `acli comment list --json` como sensor | Achata o ADF para texto puro: comentário perfeito aparece como string crua (medido em 11/09/2026). Confira pelo REST (close step 5). |
+| `acli comment list --json` como sensor | Achata o ADF para texto puro: comentário perfeito aparece como string crua (medido em 11/09/2026). Confira pelo REST (`references/close.md` step 5). |
 | Flag `released` como sensor de release | Metadado marcado à mão, atrasa (versões lançadas constavam `released=False`). Quem sabe é a tag/versão em `origin/main`. |
 
 **Erros:**
 
 - **`acli` falha:** mostrar o erro completo ao dev e sugerir verificar credenciais/conexão.
 - **MCP atlassian ausente ou só com `authenticate`:** antes de supor falta de login, confira o
-  endpoint — o HTTP+SSE (`https://mcp.atlassian.com/v1/sse`, `"type": "sse"`) caiu em 30/jun/2026:
-  `claude mcp add --transport http atlassian https://mcp.atlassian.com/v1/mcp`. Autorização que não
-  completa → `.../v1/mcp/authv2` (leia `references/campos.md §Issue existente` nesse caso).
+  endpoint (o HTTP+SSE `/v1/sse` caiu em 30/jun/2026): leia `references/campos.md §Issue existente`.
 - **Branch não está em `${BASE_BRANCH}`** ou **mudanças não commitadas:** avisar antes de criar ou
   trocar de branch.
 - **Transição falha (`"No allowed transitions found"`):** listar as transições reais com

@@ -1,5 +1,27 @@
 # Changelog — ticket
 
+## [1.6.3] — 2026-10-01
+
+### Por quê
+
+O `SKILL.md` fechou a 1.6.2 com 19.999 chars, no limite de ~20 mil, e a próxima lição não caberia
+sem estourar o orçamento. Aplicada a `skill-refactoring` (progressive disclosure), sem extrair
+narrativa de workflow (o caso real da skill mostra que isso quebra o encadeamento) e sem tocar na
+tabela de armadilhas.
+
+### O quê
+
+Três blocos que as references já traziam por extenso viraram ponteiro no `SKILL.md` (19.999 →
+19.387 chars, 326 → 311 linhas):
+
+- close step 5: o `curl` que relê o comentário fica em `references/close.md` step 5 (idêntico);
+  no `SKILL.md` restam o endpoint e o critério (`body` objeto; `str` = ADF recusado).
+- Erros → MCP atlassian: a migração do endpoint (`/v1/sse` → `/v1/mcp`, `authv2`) fica em
+  `references/campos.md §Issue existente`, que já tinha a versão completa.
+- Detecção de issue pela branch: o pseudo-código JavaScript vira uma frase com o mesmo regex.
+
+Como reverter: `git revert` do commit desta versão.
+
 ## [1.6.2] — 2026-10-01
 
 ### Por quê
