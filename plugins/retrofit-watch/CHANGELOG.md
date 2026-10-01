@@ -1,5 +1,26 @@
 # Changelog — retrofit-watch
 
+## [0.2.0] — 2026-10-01
+
+### Added
+
+- **Modo `kit`: o hook passa a vigiar o kit `sdd`.** Na sessão da SQ-152 do `sales_quote`, uma
+  PLAN inteira com o `/sdd-plan` e o `sdd-planner`, mais o `sdd approve` e o `sdd run`, deixaram
+  o estado da sessão com `"skills": {}`. O `/sdd-plan` é comando sem `:`, o subagente chega como
+  `Agent` com `subagent_type`, e o CLI é Bash comum. Nada disso era reconhecido, e o atrito real
+  do kit (o approve que só comitou o `00-missao.md`, o `sdd status` que travou) só virou achado
+  porque alguém pediu.
+- Um kit é reconhecido pelo **binário no `PATH`**: o `realpath` aponta o repo, e o `origin` tem
+  de ser nosso, a mesma régua do modo lean. Contam como trabalho do kit o comando `/<kit>-*`, o
+  subagente `<kit>-*` e o binário chamado no Bash (início do comando ou depois de `;&|(`, para
+  `grep sdd arquivo` não contar). `"kits"` no `~/.claude/retrofit-watch.json` muda a lista; o
+  padrão é `["sdd"]`.
+- A lição de kit vai para o **`TODO.md` do repo do kit**, no formato e com a catraca dele, para
+  o `sdd kaizen` triar. O `/retrofit-skill` não é oferecido. `Edit`/`Write` nesse `TODO.md`
+  encerra a retro do kit na sessão. A seção 7 do `criteria.md` diz como registrar.
+- As fases headless do `sdd run` continuam caladas: a retro precisa de alguém para responder.
+- 5 testes novos (35 no total). Oito sabotagens do código novo, uma por peça, foram todas pegas.
+
 ## [0.1.1] — 2026-09-30
 
 ### Fixed

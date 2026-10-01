@@ -105,3 +105,20 @@ Rodo `/retrofit-skill:retrofit-skill ticket`?
 Rode o comando indicado e deixe o `/retrofit-skill` conduzir. Ele escolhe o modo, faz baseline
 de auditoria, mostra a proposta e pede confirmação antes de editar, commitar e dar push. O
 `retrofit-watch` não pede outra retro daquela skill nesta sessão.
+
+## 7. Quando quem trabalhou foi um kit (`sdd`)
+
+O kit não é skill: a lição vira **achado no `TODO.md` do repo do kit**, para o laço do próprio kit
+(`sdd kaizen`) triar. Não ofereça o `/retrofit-skill`. O bloco é o mesmo da seção 5, com
+`(kit → TODO.md do sdd_agents)` no título e a pergunta "Registro no TODO.md do kit?".
+
+Depois do "sim":
+
+- leia o cabeçalho do `TODO.md` do kit e siga o formato dele: item com âncora `arquivo:linha`,
+  data e "descoberto por", no máximo 8 linhas, na seção aberta;
+- mova a catraca no mesmo commit (no `sdd_agents`: `todo-findings` em `tests/health-baseline.txt`);
+- valide com o sensor do kit (`tests/check-todo.sh --check TODO.md`) antes de commitar;
+- commite num branch e pergunte antes do push e do PR, como qualquer `chore(todo)` do kit.
+
+Escrever o `TODO.md` com `Edit` ou `Write` encerra a retro do kit nesta sessão. Escrito por script
+no Bash, o hook não percebe, e pode pedir uma segunda retro se o atrito continuar.

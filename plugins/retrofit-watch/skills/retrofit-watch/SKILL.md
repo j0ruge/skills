@@ -1,11 +1,11 @@
 ---
 name: retrofit-watch
-description: "Stop hook that notices when one of our skills (j0ruge/skills marketplace or a git-tracked project skill) did real work in the session and asks Claude for an evidence-backed retro that offers /retrofit-skill; also runs the retro on demand. Triggers — skill retro, retrofit-watch, session lessons, skill pitfalls, skill improvement, retrofit reminder."
+description: "Stop hook that notices when one of our skills (j0ruge/skills marketplace or a git-tracked project skill) or one of our kits (sdd) did real work in the session and asks Claude for an evidence-backed retro: /retrofit-skill for a skill, a TODO.md finding for a kit; also runs the retro on demand. Triggers — skill retro, retrofit-watch, session lessons, skill pitfalls, sdd kit lessons, retrofit reminder."
 license: MIT
 compatibility: Claude Code 2.1.163+ (Stop additionalContext); testado na 2.1.283 em 2026-09-30. Hook em Python 3, só biblioteca padrão, e git no PATH.
 metadata:
   author: JorUge
-  version: "0.1.1"
+  version: "0.2.0"
 ---
 
 # retrofit-watch
@@ -24,13 +24,16 @@ continua exigindo a sua confirmação.
 1. **Detecta a skill.** Em cada Stop, lê só as linhas novas do transcript. A carga de uma skill
    deixa uma entrada `isMeta` com `Base directory for this skill: <path>`, tanto quando o
    Claude chama a skill quanto quando você digita `/skill`. Plugin só de comandos é
-   reconhecido pelo nome `plugin:comando`.
+   reconhecido pelo nome `plugin:comando`. Um **kit** (padrão `sdd`) é reconhecido pelo prefixo:
+   o comando `/sdd-*`, o subagente `sdd-*` e o binário `sdd` chamado no Bash (no início do
+   comando ou depois de `;`, `&`, `|`, `(`; `grep sdd arquivo` não conta).
 2. **Classifica o dono** pelo `realpath` do path:
 
    | Origem | Modo | Argumento do retrofit |
    |---|---|---|
    | cache ou clone do `chewiesoft-marketplace` (j0ruge/skills), inclusive por symlink e worktree | full | o **nome do plugin** (`codereview:coderabbit-pr` → `codereview`) |
    | skill rastreada no git de um repo cujo `origin` é de `j0ruge`, `JRC-Brasil` ou `chewiesoft` | lean | o nome da skill |
+   | kit: o binário no `PATH` (por `realpath`, então o symlink de `~/.hermes/bin` vale) cai num repo cujo `origin` é nosso | kit | nenhum: a lição vai para o `TODO.md` do repo do kit |
    | `skills-lock.json`, `.agents/skills`, `~/.agents`, `~/.hermes`, outro marketplace, origin de terceiro, fora do git | ignora | — |
 
    Ficam sempre de fora `retrofit-skill`, `retrofit-watch` e a família `skill-quality-audit`.
@@ -55,7 +58,7 @@ continua exigindo a sua confirmação.
 
 ## Quando a retro for pedida (ou sob demanda)
 
-Ao fazer a retro, leia `references/criteria.md`: sinais, filtro de evidência, triagem
+Ao fazer a retro, leia `references/criteria.md` (para um kit, a seção 7): sinais, filtro de evidência, triagem
 skill × projeto × descarte, auto-audit de segredos e o formato do bloco. Em resumo:
 
 1. **Levante as lições** desta sessão que caibam no escopo da skill:
@@ -87,6 +90,7 @@ Sem argumento, faz a retro de cada skill nossa usada na sessão.
 | desligar | `RETROFIT_WATCH=off` no ambiente, ou desabilitar o plugin |
 | testar em `claude -p` | `RETROFIT_WATCH=force` |
 | mudar donos, incluir ou excluir skills | `~/.claude/retrofit-watch.json`: `{"owners": [...], "include": ["skill"], "exclude": ["plugin-ou-skill"], "deny_roots": ["~/x"]}` |
+| mudar os kits vigiados | `"kits": ["sdd"]` no mesmo arquivo (`[]` desliga) |
 | ver o que aconteceu | `${CLAUDE_PLUGIN_DATA}/metrics.jsonl` (resultado de cada retro: `none`/`lessons`) e `errors.log` |
 
 O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado depois de
@@ -95,6 +99,8 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
 ## Gotchas e limites conhecidos
 
 - **Skill usada dentro de subagente** não é vista: ela não aparece no transcript principal.
+- **As fases headless do `sdd run`** (`claude -p`) ficam caladas de propósito: a retro precisa de
+  alguém para responder, e o laço por dados delas é o `sdd kaizen`.
 - **O gate de sessão desassistida** usa `CLAUDE_CODE_SESSION_ATTENDED` e
   `CLAUDE_CODE_ENTRYPOINT`, observadas na 2.1.283 mas não documentadas. Se uma versão nova
   mudar isso, o hook passa a pedir retro também em `-p`. Confira com o probe da skill
@@ -109,4 +115,4 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
 |---|---|
 | `references/criteria.md` | ao fazer a retro: critérios, triagem, formato e exemplos |
 | `scripts/retrofit_watch.py` | o hook (`stop` e `baseline`). O plugin o registra no `hooks/hooks.json` da raiz, que o formato de plugin exige |
-| `tests/test_retrofit_watch.py` | 30 testes: classificação e gatilho (`python3 tests/test_retrofit_watch.py`) |
+| `tests/test_retrofit_watch.py` | 35 testes: classificação, gatilho e kit (`python3 tests/test_retrofit_watch.py`) |

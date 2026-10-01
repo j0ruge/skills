@@ -88,6 +88,24 @@ class World:
         commit_all(self.napkin)
         self.unversioned = make_skill(self.home / ".claude/skills", "qa-execution")
         self.hermes = make_skill(self.home / ".hermes/skills/autonomous-ai-agents", "hermes-agent")
+        # kit nosso (o sdd): binário no PATH por symlink, como o ~/.hermes/bin/sdd
+        self.kit_repo = self.tmp / "repos/sdd_agents"
+        init_repo(self.kit_repo, "https://github.com/j0ruge/sdd_agents.git")
+        (self.kit_repo / "bin").mkdir()
+        (self.kit_repo / "bin/sdd").write_text("#!/bin/sh\n")
+        (self.kit_repo / "bin/sdd").chmod(0o755)
+        (self.kit_repo / "TODO.md").write_text("# TODO\n")
+        commit_all(self.kit_repo)
+        self.bindir = self.tmp / "bin"
+        self.bindir.mkdir()
+        os.symlink(self.kit_repo / "bin/sdd", self.bindir / "sdd")
+        # kit de terceiro, com o mesmo formato
+        third = self.tmp / "repos/outro-kit"
+        init_repo(third, "https://github.com/alguem/outro-kit.git")
+        (third / "otk").write_text("#!/bin/sh\n")
+        (third / "otk").chmod(0o755)
+        commit_all(third)
+        os.symlink(third / "otk", self.bindir / "otk")
         self.transcript = self.tmp / "session.jsonl"
         self.transcript.write_text("")
 
@@ -127,6 +145,16 @@ def tool(name="Bash", error=False):
             {"type": "tool_use", "id": "toolu_t", "name": name, "input": {}}]}},
         {"type": "user", "message": {"role": "user", "content": [
             {"type": "tool_result", "tool_use_id": "toolu_t", "content": "x", "is_error": error}]}},
+    ]
+
+
+def tool_with(name, tool_input, error=False):
+    """Chamada de ferramenta com input (Agent, Bash, Edit), no formato do transcript."""
+    return [
+        {"type": "assistant", "message": {"role": "assistant", "content": [
+            {"type": "tool_use", "id": "toolu_i", "name": name, "input": tool_input}]}},
+        {"type": "user", "message": {"role": "user", "content": [
+            {"type": "tool_result", "tool_use_id": "toolu_i", "content": "x", "is_error": error}]}},
     ]
 
 
@@ -232,7 +260,8 @@ class StopTest(unittest.TestCase):
             "hook_event_name": "Stop" if sub == "stop" else "SessionStart", "permission_mode": mode,
             "stop_hook_active": active, "last_assistant_message": last, "source": "resume"})
         full_env = dict(os.environ, HOME=str(self.w.home), CLAUDE_PLUGIN_DATA=str(self.w.data),
-                        CLAUDE_CODE_SESSION_ATTENDED="1", CLAUDE_CODE_ENTRYPOINT="cli")
+                        CLAUDE_CODE_SESSION_ATTENDED="1", CLAUDE_CODE_ENTRYPOINT="cli",
+                        PATH=f"{self.w.bindir}{os.pathsep}{os.environ.get('PATH', '')}")
         full_env.pop("RETROFIT_WATCH", None)
         full_env.update(env or {})
         proc = subprocess.run([sys.executable, str(SCRIPT), sub], input=payload, capture_output=True,
@@ -362,6 +391,48 @@ class StopTest(unittest.TestCase):
             fh.write(json.dumps(tool(error=True)[0])[30:] + "\n")
             fh.write(json.dumps(tool(error=True)[1]) + "\n")
         self.assertIsNotNone(self.run_hook())
+
+    def kit_config(self, kits):
+        (self.w.home / ".claude").mkdir(parents=True, exist_ok=True)
+        (self.w.home / ".claude/retrofit-watch.json").write_text(json.dumps({"kits": kits}))
+
+    def test_kit_command_typed_is_seen_and_points_to_the_kit_todo(self):
+        """/sdd-plan não tem `:` nem Base directory: o prefixo do kit é o que o reconhece."""
+        self.write(skill_typed("sdd-plan", args="tema"), *[tool()] * 5)
+        text = self.context_of(self.run_hook())
+        self.assertIn("kit sdd", text)
+        self.assertIn(str(self.w.kit_repo / "TODO.md"), text)
+        self.assertNotIn("/retrofit-skill", text)
+
+    def test_kit_subagent_is_seen(self):
+        """Agent com subagent_type `sdd-*` vigia o kit; um erro depois dele é atrito do kit."""
+        self.write(tool_with("Agent", {"subagent_type": "sdd-planner", "prompt": "p"}), tool(error=True))
+        self.assertIn("kit sdd", self.context_of(self.run_hook()))
+
+    def test_kit_cli_in_bash_is_seen_but_not_as_an_argument(self):
+        """`cd x && sdd run` e `echo y | sdd approve` são o kit; `grep sdd arquivo` não é."""
+        self.write(*[tool_with("Bash", {"command": "grep -n sdd TODO.md"})] * 6)
+        self.assertIsNone(self.run_hook())
+        self.write(tool_with("Bash", {"command": "cd /r && sdd run m"}),
+                   tool_with("Bash", {"command": "echo y | sdd approve m"}), *[tool()] * 4)
+        self.assertIn("kit sdd", self.context_of(self.run_hook()))
+
+    def test_writing_the_kit_todo_suppresses_the_next_retro(self):
+        """O registro no TODO.md do kit é o retrofit dele: o atrito seguinte não pede outra retro."""
+        self.write(skill_typed("sdd-plan"), tool(error=True))
+        self.context_of(self.run_hook())
+        self.write(tool_with("Edit", {"file_path": str(self.w.kit_repo / "TODO.md")}),
+                   tool(error=True), tool(error=True), tool(error=True))
+        self.assertIsNone(self.run_hook())
+
+    def test_third_party_kit_and_disabled_kits_are_ignored(self):
+        """Binário de repo de terceiro não vira kit; `kits: []` desliga o sdd."""
+        self.kit_config(["otk"])
+        self.write(skill_typed("otk-plan"), *[tool()] * 6)
+        self.assertIsNone(self.run_hook())
+        self.kit_config([])
+        self.write(skill_typed("sdd-plan"), *[tool()] * 6)
+        self.assertIsNone(self.run_hook())
 
     def test_kill_switch_unattended_and_force(self):
         self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), *[tool(error=True)] * 3)

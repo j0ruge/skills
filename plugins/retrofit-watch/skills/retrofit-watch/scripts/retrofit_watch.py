@@ -9,10 +9,15 @@ Registrado em hooks/hooks.json:
 argumento é o nome do PLUGIN) ou skill versionada em git num repo de dono conhecido (modo lean).
 Terceiros, skills fora do git e as do Hermes ficam de fora.
 
+"Kit" = produto nosso que não é skill, reconhecido pelo binário (padrão: `sdd`, o kit de
+~/repos/sdd_agents). O binário resolvido no PATH aponta o repo; contam como trabalho do kit o
+comando `/<kit>-*`, o subagente `<kit>-*` e o próprio binário no Bash. A lição vai para o
+TODO.md do repo do kit, não para o /retrofit-skill.
+
 Controle por ambiente:
   RETROFIT_WATCH=off     desliga
   RETROFIT_WATCH=force   roda mesmo em sessão desassistida (testes com claude -p)
-Config opcional em ~/.claude/retrofit-watch.json: owners, include, exclude, deny_roots.
+Config opcional em ~/.claude/retrofit-watch.json: owners, include, exclude, deny_roots, kits.
 
 Estado em ${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json (offset do transcript e contadores).
 Nunca grava texto do assistente. Qualquer erro interno vai para <data>/errors.log e sai com 0.
@@ -22,6 +27,7 @@ import fcntl
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -31,6 +37,7 @@ from pathlib import Path
 MARKETPLACE = "chewiesoft-marketplace"
 DEFAULT_OWNERS = ("j0ruge", "jrc-brasil", "chewiesoft")
 ALWAYS_EXCLUDED = {"retrofit-skill", "retrofit-watch", "skill-quality-audit"}
+DEFAULT_KITS = ("sdd",)
 MAX_REVIEWS = 2
 FIRST_REVIEW_WORK = 5
 SECOND_REVIEW_FRICTION = 2
@@ -79,6 +86,10 @@ class Context:
         return ALWAYS_EXCLUDED | set(self.config.get("exclude", []))
 
     @property
+    def kits(self):
+        return tuple(k for k in self.config.get("kits", DEFAULT_KITS) if isinstance(k, str) and k)
+
+    @property
     def deny_roots(self):
         roots = [self.home / ".agents", self.home / ".hermes"]
         roots += [Path(os.path.expanduser(r)) for r in self.config.get("deny_roots", [])]
@@ -117,6 +128,34 @@ def _full(plugin, skill, ctx):
 
 def _lean(name, repo):
     return {"key": f"lean:{repo}:{name}", "mode": "lean", "arg": name, "label": name, "repo": repo}
+
+
+def _owned(top, ctx):
+    """O `origin` do repo é de um dono nosso?"""
+    origin = _git(["remote", "get-url", "origin"], top) or ""
+    owner = re.search(r"[:/]([^/:]+)/[^/]+?(?:\.git)?/?$", origin)
+    return bool(owner) and owner.group(1).lower() in ctx.owners
+
+
+def kit_of(name, ctx):
+    """`sdd`, `sdd-plan` e `sdd-planner` são do kit `sdd`; o resto não é de kit nenhum."""
+    for kit in ctx.kits:
+        if name == kit or name.startswith(kit + "-"):
+            return kit
+    return None
+
+
+def classify_kit(kit, ctx):
+    """Repo do kit pelo binário no PATH (o symlink de ~/.hermes/bin leva ao clone). None = não vigiar."""
+    if kit in ctx.excluded:
+        return None
+    exe = shutil.which(kit)
+    if not exe:
+        return None
+    top = _git(["rev-parse", "--show-toplevel"], os.path.dirname(os.path.realpath(exe)))
+    if not top or not _owned(top, ctx):
+        return None
+    return {"key": f"kit:{top}", "mode": "kit", "arg": kit, "label": f"kit {kit}", "repo": top}
 
 
 def classify_plugin(plugin, ctx):
@@ -169,9 +208,7 @@ def classify_path(path, ctx):
     rel = os.path.relpath(os.path.join(real, "SKILL.md"), top)
     if _git(["ls-files", "--error-unmatch", "--", rel], top) is None:
         return None
-    origin = _git(["remote", "get-url", "origin"], top) or ""
-    owner = re.search(r"[:/]([^/:]+)/[^/]+?(?:\.git)?/?$", origin)
-    if not owner or owner.group(1).lower() not in ctx.owners:
+    if not _owned(top, ctx):
         return None
     return _lean(name, top)
 
@@ -285,11 +322,45 @@ class Scanner:
         if f"full:{target[0]}" not in done:
             done.append(f"full:{target[0]}")
 
+    def kit(self, kit):
+        cache = self.st["classified"]
+        if f"kit:{kit}" not in cache:
+            cache[f"kit:{kit}"] = classify_kit(kit, self.ctx)
+        info = cache[f"kit:{kit}"]
+        if info is not None:
+            self._watch(info)
+
+    def kit_todo_written(self, path):
+        """O registro no TODO.md do kit é o retrofit dele: a retro daquele kit não volta."""
+        real = os.path.realpath(path or "")
+        for key, entry in self.st["skills"].items():
+            if entry["mode"] == "kit" and real == os.path.join(entry["repo"], "TODO.md"):
+                entry["reviews"] = MAX_REVIEWS
+                if key not in self.st["done"]:
+                    self.st["done"].append(key)
+
+    def tool_use(self, name, tool_input):
+        """Agent `<kit>-*` e o binário do kit no Bash passam a vigiar o kit antes de contar."""
+        if name == "Agent":
+            kit = kit_of(str(tool_input.get("subagent_type", "")), self.ctx)
+            if kit:
+                self.kit(kit)
+        elif name == "Bash":
+            command = str(tool_input.get("command", ""))
+            for kit in self.ctx.kits:
+                if re.search(rf"(?:^|[;&|(])\s*(?:\S*/)?{re.escape(kit)}\s", command + " "):
+                    self.kit(kit)
+                    break
+        elif name in ("Edit", "Write"):
+            self.kit_todo_written(tool_input.get("file_path"))
+
     def invocation(self, name, args):
         plugin = name.split(":", 1)[0]
         if plugin == "retrofit-skill":
             self._retrofit_ran(args)
             self.st["current"] = None
+        elif ":" not in name and kit_of(name, self.ctx):
+            self.kit(kit_of(name, self.ctx))
         elif ":" in name:
             info = classify_plugin(plugin, self.ctx)
             if info is not None:
@@ -323,10 +394,11 @@ class Scanner:
                     continue
                 name = block.get("name")
                 self.last_tool = name
+                tool_input = block.get("input") if isinstance(block.get("input"), dict) else {}
                 if name == "Skill":
-                    tool_input = block.get("input") or {}
                     self.invocation(str(tool_input.get("skill", "")), tool_input.get("args", ""))
                 elif name not in NON_WORK_TOOLS:
+                    self.tool_use(name, tool_input)
                     self._bump("work")
         elif kind == "user":
             if d.get("isMeta"):
@@ -381,24 +453,29 @@ def waiting_for_user(payload, last_tool):
 
 def describe(entry):
     cmd = f"`/retrofit-skill:retrofit-skill {entry['arg']}`"
+    if entry["mode"] == "kit":
+        todo = os.path.join(entry["repo"], "TODO.md")
+        return (f"o `{entry['label']}` (repo {os.path.basename(entry['repo'])}; {entry['work']} chamadas, "
+                f"{entry['friction']} sinais de atrito) → registrar como achado em `{todo}`, no formato "
+                "e com a catraca do próprio kit")
     if entry["mode"] == "full":
         where = "marketplace j0ruge/skills, modo full"
     else:
         where = f"versionada em {os.path.basename(entry['repo'] or '?')}, modo lean"
-    return f"`{entry['label']}` ({where}; {entry['work']} chamadas, {entry['friction']} sinais de atrito) → {cmd}"
+    return f"a skill `{entry['label']}` ({where}; {entry['work']} chamadas, {entry['friction']} sinais de atrito) → {cmd}"
 
 
 def build_output(entries):
     skills = "; ".join(describe(e) for e in entries)
     label = entries[0]["label"] if len(entries) == 1 else "<skill>"
     text = (
-        f"retrofit-watch: nesta sessão trabalhou a skill {skills}. Antes de encerrar, faça a retro: "
-        "liste só lições desta sessão no escopo da skill — pitfall (uma instrução da skill falhou ou "
+        f"retrofit-watch: nesta sessão trabalhou {skills}. Antes de encerrar, faça a retro: "
+        "liste só lições desta sessão no escopo da skill ou do kit — pitfall (uma instrução da skill falhou ou "
         "estava errada, ou faltou um aviso) ou melhoria (faltou passo ou gatilho) —, cada uma com a "
         "evidência (comando ou erro) e o padrão de falha que a skill evitaria; diga o que resolveu ou "
         "marque \"sem correção verificada\". Lição que só vale neste projeto vai para memória ou "
         f"CLAUDE.md, não para a skill. Se nenhuma houver, responda só \"retro {label}: sem lições "
-        "novas\". Se houver, termine perguntando se deve rodar o comando indicado (com pitfall sem "
+        "novas\". Se houver, termine perguntando se deve executar a ação indicada (com pitfall sem "
         "correção verificada, proponha investigar antes). Não execute nada agora e não cite valores "
         "de segredo."
     )
@@ -445,7 +522,8 @@ def cmd_stop(payload, ctx):
                 st["pending"] = []
             state.save()
             return None
-        if not st["skills"] and not any(marker in chunk for marker in MARKERS):
+        markers = MARKERS + tuple(kit.encode() for kit in ctx.kits)
+        if not st["skills"] and not any(marker in chunk for marker in markers):
             state.save()
             return None
         scanner = Scanner(st, ctx)

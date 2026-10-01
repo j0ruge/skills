@@ -1,10 +1,10 @@
 {
   "name": "retrofit-watch",
-  "description": "Stop hook that notices when one of our skills (j0ruge/skills marketplace or a git-tracked project skill) did real work in the session and asks Claude for an evidence-backed retro that offers /retrofit-skill; also runs the retro on demand. Triggers — skill retro, retrofit-watch, session lessons, skill pitfalls, skill improvement, retrofit reminder.",
+  "description": "Stop hook that notices when one of our skills (j0ruge/skills marketplace or a git-tracked project skill) or one of our kits (sdd) did real work in the session and asks Claude for an evidence-backed retro: /retrofit-skill for a skill, a TODO.md finding for a kit; also runs the retro on demand. Triggers — skill retro, retrofit-watch, session lessons, skill pitfalls, sdd kit lessons, retrofit reminder.",
   "author": {
     "name": "Chewiesoft"
   },
-  "version": "0.1.1",
+  "version": "0.2.0",
   "category": "development",
   "keywords": [
     "retrofit",
@@ -16,7 +16,8 @@
     "pitfalls",
     "continuous-improvement",
     "kaizen",
-    "retrofit-skill"
+    "retrofit-skill",
+    "sdd"
   ],
   "platforms": [
     "claude-code"
