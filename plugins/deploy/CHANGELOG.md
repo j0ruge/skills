@@ -2,6 +2,20 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-10-01 — PR pulado pelo `paths-ignore` também chega sem gate — bump 2.2.0 → [2.2.1]
+
+**O quê:** o Step 4 ganha um parágrafo: além do bloqueio de cobrança, um PR cujos arquivos casam
+**todos** com o `paths-ignore` do CI não gera run nenhum, e "nenhum run" não é verde quando o
+linter verifica esses mesmos arquivos. Antes de promover, compare `paths-ignore` com o escopo do
+linter e rode o lint do repositório inteiro no `SOURCE`.
+
+**Por quê:** numa promoção real (`develop → staging`) o deploy foi pulado porque o CI do
+`cd-staging` reprovou no `prettier --check .` por causa de um único arquivo, `TODO.md`. Ele tinha
+entrado por um PR que só mexia em `.md`; o `ci.yml` ignora `**/*.md` e o PR saiu sem nenhum
+check, enquanto o Prettier cobre `.md`. A skill só citava o bloqueio de cobrança como origem de
+conteúdo sem gate. Correção verificada no projeto: o arquivo foi para o `.prettierignore` e o CI
+dos dois PRs seguintes (develop e promoção) passou nos três checks.
+
 ## 2026-09-03 — Falha transitória de registry: reexecutar, não re-promover — bump 2.1.1 → [2.2.0]
 
 **O quê:** o Step 7 ganha a seção *"Some red runs mean run it again, not start over"*, e o Step 4

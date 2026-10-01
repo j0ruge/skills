@@ -1,7 +1,7 @@
 ---
 description: Promote code to staging (and on to production) through the repo's real CD pipeline. Reads each workflow's `on.push.branches` and `runs-on` instead of assuming — the wrong branch can deploy production, and a hosted job under a billing block never starts. Waits for CI green on the exact commit, promotes by PR merge commit, watches the run, then proves the deploy by the data. Triggers — deploy staging, promote to staging, subir para staging, CD pipeline, cd-staging, promover para produção.
 metadata:
-  version: 2.2.0
+  version: 2.2.1
 ---
 
 ## Deploy to Staging
@@ -188,6 +188,13 @@ prettier from the other PR is what it looked like. It is not your regression, bu
 it is yours to clear; do it in a separate commit so the merge commit stays a
 pure reconciliation and the fix is easy to drop if upstream cleans it up. Squashing that reconciliation rewrites the
 shared history and guarantees the same conflict returns on the next promotion.
+
+The quota block is not the only way content arrives ungated. A PR whose files **all** match the
+CI's `paths-ignore` (`**/*.md`, `docs/**`) gets **no run at all** — and "no run" is not green when
+the linter checks those same files. Measured: a PR touching only `TODO.md` merged with zero checks,
+while `prettier --check .` covers `.md`; the next promotion's CI went red on that one file and the
+deploy was skipped. Compare `paths-ignore` with the linter's scope (`.prettierignore`), and run the
+repo-wide lint on `SOURCE` before promoting.
 
 Count the first one before you promote. A CD that has been failing for a while (Step 0b) turns
 the next successful run into something that is **not incremental**: the backlog ships all at once.
