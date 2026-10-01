@@ -14,8 +14,8 @@ aspas, o laço roda uma vez só com todos os ids juntos. A API respondeu `NOT_FO
 
 - A 5.2 passa a receber a saída da 5.1 por pipe, com `while IFS=$'\t' read -r id _`, que se
   comporta igual no bash e no zsh. Entra também a nota do porquê, com o erro medido.
-- Uma linha nova em Gotchas do `SKILL.md` aponta para a 5.2. O `metadata.version` da skill vai a
-  4.0.1.
+- O passo 5.2 do `SKILL.md` ganha a mesma regra numa linha, em vez de um item novo em Gotchas,
+  para o arquivo ficar abaixo de 20 mil chars (19.916). O `metadata.version` da skill vai a 4.0.1.
 
 ## [2.1.0] — 2026-09-29
 
