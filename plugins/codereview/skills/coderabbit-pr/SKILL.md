@@ -290,7 +290,8 @@ reviewer, not only those processed in Phase 3. Run the three steps directly (com
 silently skips a thread reports success just as convincingly as one that didn't.
 
 1. **5.1** list the unresolved threads (GraphQL `reviewThreads`, `isResolved == false`);
-2. **5.2** resolve each with the `resolveReviewThread` mutation — every line must print `true`;
+2. **5.2** resolve each with the `resolveReviewThread` mutation, piping 5.1 into `while read` (a
+   `for id in $ids` loop never splits in zsh) — every line must print `true`;
    anything else means the thread is still open, carry it into 5.3;
 3. **5.3** count again: `unresolved: 0` is the success condition and the gate for Phase 6. Not zero →
    report which threads remain and why; never describe the run as complete. `reviewThreads(first: 100)`
@@ -337,5 +338,3 @@ the final report carries the findings table, since the file it came from is gone
   "not applicable" waiting to happen (3.1 step 1.1).
 - **Fixes on the wrong branch fail silently** — confirm `headRefName` first (1.1).
 - **A reviewer that never ran is not a pass** (Phase 2, case b).
-- **Never loop over `$ids` to resolve threads**: zsh does not split it, and every mutation fails
-  as one joined id. Pipe 5.1 into `while read` (`references/thread-resolution.md` §5.2).
