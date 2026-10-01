@@ -172,6 +172,12 @@ curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
   "$J/issue/SQ-107?fields=fixVersions"                                     # ÚNICO sensor de leitura
 ```
 
+**Versão que ainda não existe, no `start`:** só crie depois de o dev confirmar o nome — é ato de
+projeto, não de cartão. Use o `id` da resposta (não o `name`) em `fixVersions:[{"id":…}]` do
+`POST /issue`, e confira pela releitura. Medido em 2026-10-01: `0.10.0` no SQ → `id` 10110, e o
+`GET ?fields=fixVersions` devolveu `['0.10.0']`. A receita esteve sempre nesta tabela; o que
+faltava era o B1 do `start` apontar para ela quando a versão proposta não existe.
+
 ⚠️ **`updated` não é sensor**: o Jira não bumpa `fields.updated` numa mudança de
 `fixVersions`. Concluir "não gravou" pelo timestamp é errado.
 

@@ -3,7 +3,7 @@ name: ticket
 description: "Jira ticket lifecycle for JRC Brasil projects, integrated with Git — create issues/sub-issues and branches, close with an auto-generated summary. Per-repo config via `.jira-project`; discovers project-specific transitions instead of assuming. New issues are born in the active sprint with story points and fixVersion, each read back by the sensor that can see it. Triggers — ticket, Jira, criar issue, fechar ticket, sprint, story points, fixVersion, acli."
 argument-hint: "start (open) | split | close | status"
 metadata:
-  version: 1.6.0
+  version: 1.6.1
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -135,7 +135,10 @@ Analise o argumento passado pelo usuário e execute o comando correspondente:
    Bug; default Tarefa), **story points sempre** ("Quantos pontos? (1, 2, 3, 5, 8, 13)" — ofereça
    sua estimativa se ele não souber; só siga sem score se ele recusar), **sprint** (sem resposta,
    perguntar "Quer adicionar à sprint atual?") e **fixVersion** quando o projeto versiona releases
-   (liste as existentes e proponha a próxima; `acli` e MCP são cegos nesse campo).
+   (liste as existentes e proponha a próxima; `acli` e MCP são cegos nesse campo). A próxima
+   **ainda não existe** no Jira → confirme com o dev (criar versão é decisão de projeto, como no
+   close step 7) e crie por REST (`references/campos.md §fixVersion`, linha "Criar versão"); o
+   `id` devolvido, não o nome, vai no `fixVersions` do POST da issue.
 2. **Descobrir a sprint ativa antes de criar** (mesmo comando e regra do A4; mais de uma → perguntar;
    nenhuma → `references/campos.md §Quando não aparece sprint ativa`).
 3. **Criar já com sprint e story points** — `create --from-json` com `additionalAttributes`, que

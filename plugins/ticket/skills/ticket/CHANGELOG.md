@@ -4,6 +4,13 @@ Registro por sessão da skill; o changelog **versionado** é `plugins/ticket/CHA
 (a entrada 1.4.0 de 2026-09-03 resume o que está aqui). Cada entrada registra **o que
 mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-01 — `start` do SQ-153: a versão que ainda não existia
+
+Publicado como **v1.6.1**. A fixVersion 0.10.0 não existia no SQ; o B1 não roteava para a linha
+"Criar versão" de `campos.md §fixVersion`, e o comando foi remontado à mão (`POST /version` →
+id 10110, releitura `['0.10.0']`). A lição inicial ("falta a receita") era falsa — a receita
+existia; faltava o ponteiro. Corrigido antes de editar.
+
 ## 2026-09-11 — `close` da RS-877: três sensores que mentem
 
 Publicado como **v1.5.0** (detalhe em `plugins/ticket/CHANGELOG.md`).

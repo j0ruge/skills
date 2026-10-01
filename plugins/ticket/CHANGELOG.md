@@ -1,5 +1,22 @@
 # Changelog — ticket
 
+## [1.6.1] — 2026-10-01
+
+### Por quê
+
+Na abertura do SQ-153 a fixVersion proposta (0.10.0) não existia no Jira. O B1 do `start` dizia só
+"liste as existentes e proponha a próxima" e não tratava o caso de a próxima faltar — ao contrário do
+close step 7, que manda parar e perguntar. O executor leu a subseção de criação da issue, não a tabela
+de operações da §fixVersion, e remontou o `POST /version` por conta própria. Funcionou, mas por sorte:
+a receita estava a uma seção de distância e nada apontava para ela.
+
+### O que mudou
+
+- `SKILL.md` B1: versão proposta inexistente → confirmar com o dev, criar por REST
+  (`campos.md §fixVersion`), usar o `id` devolvido no `fixVersions` do POST.
+- `references/campos.md §fixVersion`: parágrafo com o caso medido (0.10.0 → id 10110, releitura
+  `['0.10.0']`).
+
 ## [1.6.0] — 2026-09-28
 
 Progressive disclosure da skill `ticket` pela spec do agentskills.io, a partir da auditoria
