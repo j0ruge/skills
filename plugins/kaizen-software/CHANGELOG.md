@@ -2,6 +2,21 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.3.1] — 2026-10-01
+
+### Poka-yoke para estado de "já feito"
+
+Lição de uma sessão real: uma régua de lembretes gravava o degrau como "disparado" antes de o rascunho
+existir. O caminho sem credencial não desfazia o registro, e a oferta se perdia em silêncio depois do
+conserto. Os 5 porquês chegaram à causa ("o estado gravava por padrão"), mas a skill não oferecia o
+contraveneno, e o reflexo seria remendar só aquele caminho — o próximo ramo novo repetiria o defeito.
+
+- `references/kaizen-conceitos.md`, item **Poka-yoke**: o padrão "confirmar para manter" — o registro nasce
+  desfeito e só o ramo que confirmou a ação o mantém (gravar depois do efeito, ou `try/finally` que desfaz
+  por padrão), com uma sonda de invariante que fique vermelha no código antigo.
+- Evidência na sessão: a sonda de invariante falhou no código anterior ("degrau gravado sem rascunho") e
+  passou depois da inversão.
+
 ## [1.3.0] — 2026-09-03
 
 Pergunta do usuário, logo depois da 1.2.0: "além do poka-yoke, algum outro conceito do Kaizen está
