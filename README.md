@@ -379,6 +379,8 @@ A Stop hook notices when one of **our** skills did real work in the session and 
 **Ours** = the `chewiesoft-marketplace` cache or clone (full mode; the retrofit argument is the **plugin** name) or a skill tracked in git in a repo owned by `j0ruge`, `JRC-Brasil` or `chewiesoft` (lean mode). Third-party skills, `skills-lock.json` entries, `.agents/skills`, `~/.hermes` and untracked skills are ignored.
 It defers while the turn waits for you, asks at most twice per skill per session, stays silent in `claude -p` and never stores assistant text. `RETROFIT_WATCH=off` disables it; `~/.claude/retrofit-watch.json` tunes owners/include/exclude.
 
+**Credits.** The retro criteria (moment signals, promotion rule, triage and the secret self-audit) are adapted from [`self-learning`](https://github.com/Kulaxyz/self-learning-skills) by [Kulaxyz](https://github.com/Kulaxyz) (MIT). Thank you for publishing it. The difference is in purpose: `self-learning` creates a new skill on its own, while `retrofit-watch` sends the lesson to a skill that already exists, through `/retrofit-skill` and its confirmation gate.
+
 </details>
 
 <details>
@@ -614,6 +616,10 @@ Para atualizar plugins instalados:
 
 - [Plugin Marketplaces — Claude Code Docs](https://code.claude.com/docs/en/plugin-marketplaces)
 - [Plugins Reference — Claude Code Docs](https://code.claude.com/docs/en/plugins-reference)
+
+### Skills that inspired ours
+
+- [Kulaxyz/self-learning-skills](https://github.com/Kulaxyz/self-learning-skills) (MIT), by [Kulaxyz](https://github.com/Kulaxyz): a self-improving skill that harvests a hard-won golden path from a session into a reusable skill. Its criteria are the basis of `retrofit-watch`'s retro (`plugins/retrofit-watch/skills/retrofit-watch/references/criteria.md`). Thanks to the author for sharing it.
 
 ### Cursor support (used to design `install.py` and the `platforms` field)
 
