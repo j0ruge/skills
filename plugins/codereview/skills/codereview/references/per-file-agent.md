@@ -15,6 +15,7 @@ The reads are independent — issue them as one batch of parallel tool calls, th
 
 - Judge the diff and the file(s) you were given. Imports from other changed files are noted for the orchestrator's cross-file pass, not chased: the orchestrator holds the whole picture and runs that pass itself.
 - Static analysis only. Do not build reproduction sandboxes, do not run the project's test suite or its commands, do not walk the repository beyond the file, its diff and the definitions it imports. A finding you would need to reproduce goes in the list with `needs reproduction` in its description — the orchestrator, or the human, reproduces after the report.
+- Quote every glob in a shell command (`grep -rn X --include='*.ts'`). zsh aborts an unquoted `*.ts` with `no matches found` and the grep never runs: that is a failed command, never "no references".
 - Plan on roughly ten tool calls in total. A review that keeps exploring re-bills its whole context on every turn, and what it finds late is what the orchestrator's cross-file pass was going to check anyway.
 
 ## What to apply

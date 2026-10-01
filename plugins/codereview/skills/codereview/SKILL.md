@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.1.0
+  version: 2.2.0
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -86,7 +86,7 @@ Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. T
 1. Verify git repo:  `git rev-parse --is-inside-work-tree`
 2. Detect base branch (try: origin HEAD symbolic-ref, then main, then master)
 3. Current branch: `git rev-parse --abbrev-ref HEAD`
-4. Merge base:  `git merge-base {BASE_BRANCH} HEAD`
+4. Merge base:  `git merge-base {BASE_BRANCH} HEAD`, or the base commit the user names (`base=<sha>`, even in prose)
 5. Changed files: `git diff {MERGE_BASE}...HEAD --name-only`
 6. Diff stats:  `git diff {MERGE_BASE}...HEAD --stat`
 7. Commit log:  `git log {MERGE_BASE}..HEAD --oneline --no-decorate`
@@ -103,7 +103,7 @@ Classify each changed file:
 - DOCS: *.md, *.txt
 - STYLES: CSS/SCSS/LESS
 
-For each CODE file, check test coverage by probing candidate test file paths — same dir (`{Base}.test.{ext}`, `{Base}.spec.{ext}`), a `__tests__` sibling, then the project test root — and record it as WITH_TESTS / STALE_TESTS / NO_TESTS. Probe all CODE files in one shell loop (one Bash call that prints `path|status` per file), not one call per file.
+For each CODE file, check test coverage by probing candidate test file paths — same dir (`{Base}.test.{ext}`, `{Base}.spec.{ext}`), a `__tests__` sibling, then the project test root, then a changed test that imports it — and record it as WITH_TESTS / STALE_TESTS / NO_TESTS. Probe all CODE files in one shell loop (one Bash call that prints `path|status` per file), not one call per file.
 
 Phase A hands Phases B and C: BASE_BRANCH, BRANCH_NAME, MERGE_BASE, DIFF_STAT, COMMIT_LOG, the FILES list (path, category, test_status), COUNTS per category, and SECRETS_PRESCAN.
 

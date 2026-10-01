@@ -96,6 +96,7 @@ If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, th
 | src/components/Quote.tsx | WITH_TESTS | src/test/Quote.test.tsx | Updated in this branch |
 | src/hooks/useCalc.ts | NO_TESTS | — | New file, needs tests |
 | src/utils/format.ts | STALE_TESTS | src/test/format.test.tsx | Test not updated |
+| src/services/approve.ts | WITH_TESTS (indirect) | src/test/services.test.ts | No test of its own name; a changed test imports it |
 
 **Coverage of changed CODE files**: {WITH_TESTS}/{Total_CODE} files have up-to-date tests ({percentage}%)
 
@@ -105,6 +106,8 @@ If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, th
 > - `Total_CODE` — total number of files classified as CODE in the changed-files list.
 > - `STALE_TESTS` files are **excluded** from the numerator (they have a test file but it was not updated, so coverage is considered incomplete).
 > - Files classified as TESTS, CONFIG, or UI_LIB are not counted in either numerator or denominator.
+> - `WITH_TESTS (indirect)` — no test file carries the CODE file's name, but a test changed in this range imports it. It counts in the numerator. Probing by name alone misses use cases tested through one shared suite: on a 31-file range (measured 2026-10-01) it found 5 files with tests, and the import probe found 15.
+> - The import probe does not see transitive coverage (a component exercised only through its parent's test). Judge it in Phase C and say so in Notes, instead of leaving `NO_TESTS` unqualified.
 
 ---
 

@@ -2,6 +2,32 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.2.0] — 2026-10-01
+
+### Três lições de uma revisão por faixa de commits
+
+Lições da revisão dos 7 commits de correção do QA da SQ-153 no `sales_quote` (`2773ce14..a08f54a6`).
+
+- **`base=<sha>`: revisar uma faixa nomeada em prosa.** O pedido foi "os 7 commits de `8cae117f` a
+  `a08f54a6`, sobre `2773ce14`", e a skill só sabia calcular `git merge-base {BASE_BRANCH} HEAD`,
+  que revisaria a branch inteira. O passo 4 da Fase A passa a aceitar o commit-base que o usuário
+  nomear, mesmo em prosa, e o `configuration.md` ganha a linha `base`. O fim da faixa continua
+  sendo `HEAD`; fim diferente não foi medido e não entrou.
+- **A sonda de testes também procura quem importa o arquivo.** Procurar só pelo nome achou 5 de
+  31 arquivos com teste. Os use cases eram cobertos por uma suíte compartilhada
+  (`alcada-solicitacoes.test.ts`) alterada na mesma faixa. Uma sonda por import, medida na
+  mesma faixa, achou 15. O `report-template.md` ganha o rótulo `WITH_TESTS (indirect)`, que conta
+  no numerador, e o aviso de que a cobertura transitiva (um componente exercitado pelo teste do
+  pai) continua sendo julgamento da Fase C.
+- **Glob sem aspas no zsh é comando que falhou, não resultado.** `--include=*.ts` sem aspas saiu
+  duas vezes com `(eval):1: no matches found`, e um agente por arquivo relatou que o grep sobre
+  `docs/routes.md` não tinha rodado. `per-file-agent.md` e `sweep-agent.md` passam a exigir
+  glob entre aspas e a tratar `no matches found` como falha, nunca como "zero referências".
+
+O `SKILL.md` fica em 19.965 chars (antes 19.863), abaixo do aviso C1 de 20 mil; o detalhe foi
+para as references. O `metadata.version` da skill vai a 2.2.0. Os três avisos C2 (cadeia de
+references que os subagentes leem por caminho absoluto) são dívida antiga e ficam como estão.
+
 ## [2.1.1] — 2026-10-01
 
 ### `coderabbit-pr`: a Fase 5.2 deixa de quebrar no zsh

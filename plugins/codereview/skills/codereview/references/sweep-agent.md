@@ -9,6 +9,8 @@ You are the whole-repo DEAD CODE sweep of the `codereview` skill (pass 6.9). You
 
 Both are independent — one batch of parallel tool calls. From then on grep several symbols per call, and do not run the test suite, build reproductions, or read files whole when a grep answers the question: this agent's cost is its turn count over a growing context.
 
+Quote every glob in a shell command (`grep -rn X --include='*.ts'`). zsh aborts an unquoted `*.ts` with `no matches found` and the grep never runs: a reference count taken from that output is a failed command, never "zero refs".
+
 ## Build two buckets
 
 - **BUCKET A (introduced/orphaned by THIS PR)**: symbols/files the diff ADDED that nothing references yet, and symbols/files the diff ORPHANED (last caller/import removed). For each candidate, grep the WHOLE repo (excluding the defining file) for references — including non-code files (HTML/JSX templates, JSON/YAML config, SQL, route manifests, DI registration, .env). Zero refs + not public-API + not framework/dynamically-wired → flag.
