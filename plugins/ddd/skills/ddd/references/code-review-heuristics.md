@@ -23,6 +23,7 @@ Para cada achado, classifique severidade:
 - [9. Arquitetura / camadas](#9-arquitetura--camadas)
 - [10. Smells gerais](#10-smells-gerais)
 - [Como produzir o relatório de Analysis](#como-produzir-o-relatório-de-analysis)
+- [Heurísticas sobre granularidade](#heurísticas-sobre-granularidade)
 - [Apêndice — Snippets bom/ruim (agnósticos)](#apêndice--snippets-bomruim-agnósticos)
   - [Anemic model vs Rich domain](#anemic-model-vs-rich-domain)
   - [Value Object vs primitive obsession](#value-object-vs-primitive-obsession)
@@ -31,7 +32,6 @@ Para cada achado, classifique severidade:
   - [Domain Event — específico vs genérico](#domain-event--específico-vs-genérico)
   - [Application Service — fino vs gordo](#application-service--fino-vs-gordo)
   - [Bounded Context — vazamento vs ACL](#bounded-context--vazamento-vs-acl)
-- [Heurísticas sobre granularidade](#heurísticas-sobre-granularidade)
 
 ## 1. Ubiquitous Language
 
@@ -220,6 +220,14 @@ Para cada achado:
 
 ---
 
+## Heurísticas sobre granularidade
+
+- Análise leve (review de PR): foque em camadas 1-6
+- Auditoria completa (review de codebase): inclua 7-10
+- Due-diligence arquitetural (vender/comprar): todas + matriz de dívida técnica quantificada
+
+---
+
 ## Apêndice — Snippets bom/ruim (agnósticos)
 
 Use esses como referência pra ilustrar achados no relatório de analysis. Adapte à linguagem do projeto alvo.
@@ -405,11 +413,3 @@ class IdentityToOrderAcl {
   }
 }
 ```
-
----
-
-## Heurísticas sobre granularidade
-
-- Análise leve (review de PR): foque em camadas 1-6
-- Auditoria completa (review de codebase): inclua 7-10
-- Due-diligence arquitetural (vender/comprar): todas + matriz de dívida técnica quantificada

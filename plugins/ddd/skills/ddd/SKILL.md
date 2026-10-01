@@ -1,7 +1,7 @@
 ---
 name: ddd
 metadata:
-  version: 0.4.3
+  version: 0.5.0
 description: Domain-Driven Design toolkit — analyzes codebases for DDD violations, guides strategic design (event storming, context mapping), generates legacy→DDD migration specs. Language-agnostic. Synthesizes Evans + Vernon + modular-monolith practice. Triggers — DDD, bounded context, aggregate, event storming, hexagonal, legacy migration, architecture review.
 ---
 
@@ -18,7 +18,7 @@ Considere o argumento antes de prosseguir. Entradas válidas incluem (mas não s
 - `design [domínio]` → guiar strategic design (event storming, context map)
 - `spec [projeto]` → gerar spec de conversão para DDD
 - `explain [conceito]` → ensinar/esclarecer conceito DDD (ex.: "explain aggregate", "explain bounded context")
-- `review [path]` → revisão de código com heurísticas DDD
+- `review [path]` → revisão de código com heurísticas DDD — de um codebase, ou do diff de uma tarefa/PR (ver "Review de diff" no Modo 1)
 
 ---
 
@@ -55,6 +55,15 @@ Ao receber a solicitação, identifique **qual dos 4 modos** se aplica (pode ser
 - `references/refactoring-and-insights.md` (sinais de drift, conceitos implícitos, integridade do modelo)
 
 **Saída:** relatório estruturado com severidade (ver template na seção "Outputs" abaixo).
+
+#### Review de diff (PR, branch, working tree)
+
+**Quando:** a revisão é da **mudança** de uma tarefa — antes de um PR, ou o checkpoint de DDD que o projeto exige antes de concluir trabalho que toca a modelagem — e não do codebase inteiro.
+
+- **Escopo:** `git diff <base>` (ou o working tree) + os colaboradores diretos dos arquivos tocados. Sem fan-out: subagente para um diff pequeno custa mais do que revisa.
+- **Foco:** seções 1-6 de `references/code-review-heuristics.md` (ver "Heurísticas sobre granularidade" lá). Carregue outra reference só se o diff tocar o tema dela.
+- **Perguntas sobre a mudança:** criou transação que modifica mais de um agregado? Regra nova caiu no application service em vez do agregado? Evento ou payload novo/mudado (e quem consome)? Import novo entre módulos/bounded contexts?
+- **Saída curta:** resumo de 2-3 linhas, achados com severidade e evidência `arquivo:linha`, e o que está bom — não o relatório completo do template abaixo.
 
 ### Modo 2 — Strategic Design (workshops, descoberta, context map)
 

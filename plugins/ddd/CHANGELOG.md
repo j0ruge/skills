@@ -2,6 +2,29 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [0.5.0] - 2026-10-01
+
+Lição de uma sessão real (sales_quote, SQ-153): o `CLAUDE.md` do projeto exige rodar a skill antes de
+concluir trabalho que toca a modelagem, e a chamada foi `review <path> — escopo: o diff não
+commitado`. O Modo 1 só descrevia a análise do **codebase inteiro** ("aponta codebase", template
+"Relatório — <projeto>", fan-out para codebase grande), sem escopo, foco nem saída para revisar a
+**mudança** de uma tarefa. A revisão saiu por improviso. O padrão de falha que isto evita: carregar
+referências e subagentes do codebase inteiro para um diff pequeno, ou pular a checagem obrigatória
+por parecer cara.
+
+- **`SKILL.md`, Modo 1:** sub-bloco "Review de diff (PR, branch, working tree)". O escopo é `git diff
+  <base>` mais os colaboradores diretos dos arquivos tocados, sem fan-out, com as seções 1-6 da
+  checklist. Traz quatro perguntas sobre a mudança (transação sobre mais de um agregado, regra
+  caindo no application service, evento ou payload novo, import entre módulos) e pede saída curta.
+  A entrada `review [path]` passa a citar o diff.
+- **`code-review-heuristics.md`:** "Heurísticas sobre granularidade" (que já dizia "review de PR:
+  camadas 1-6") sai do fim do arquivo, depois de ~190 linhas de snippets, e vai para antes do
+  Apêndice. O item do Sumário acompanha. O conteúdo não muda.
+- A regra nasceu de um improviso que funcionou na sessão, e ainda não foi exercitada como texto
+  escrito. A primeira revisão de diff com a 0.5.0 é o teste dela.
+- `SKILL.md`: 317 → 326 linhas (17.197 → 18.271 chars).
+- Como reverter: `git revert` do commit que traz esta entrada.
+
 ## [0.4.3] - 2026-09-28
 
 Conformidade com a spec e as boas práticas do agentskills.io, apontada pelo `skill-quality-audit`
