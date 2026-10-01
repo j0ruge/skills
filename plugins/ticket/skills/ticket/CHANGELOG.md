@@ -4,6 +4,16 @@ Registro por sessão da skill; o changelog **versionado** é `plugins/ticket/CHA
 (a entrada 1.4.0 de 2026-09-03 resume o que está aqui). Cada entrada registra **o que
 mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-01 — `open` do SBM-1: o projeto que ainda não existia
+
+- **Projeto novo.** `GET /project/SBM` respondeu "Nenhum projeto poderia ser encontrado". O dev
+  autorizou criar; `POST /rest/api/3/project` com `gh-simplified-agility-scrum` criou o projeto
+  10183 (team-managed), o board 117 (`simple`, achado por `GET /rest/agile/1.0/board?projectKeyOrId=SBM`)
+  e a sprint 573 `future`. Os tipos vieram com ids próprios (Tarefa 10306, `Subtask` em vez de
+  `Subtarefa`). Receita em `workflow.md §Projeto novo`.
+- **Sprint `future`.** Sem sprint ativa, o `POST /issue` com `customfield_10020: 573` gravou; a
+  releitura REST mostrou `(573, 'SBM Sprint 1', 'future')`. Registrado em `campos.md`.
+
 ## 2026-10-01 — `start` do SQ-153: a versão que ainda não existia
 
 Publicado como **v1.6.1**. A fixVersion 0.10.0 não existia no SQ; o B1 não roteava para a linha

@@ -1,5 +1,24 @@
 # Changelog — ticket
 
+## [1.6.2] — 2026-10-01
+
+### Por quê
+
+Na abertura do SBM-1 o projeto Jira SBM ainda não existia. O bootstrap da skill só sabia perguntar
+key e board de um projeto existente, e o executor teve de descobrir sozinho o `POST /project`, o
+template team-managed, o board criado junto e os ids de tipo por projeto. O board novo também só
+tinha uma sprint `future`, e o item 3 de "Quando não aparece sprint ativa" oferecia apenas criar
+sprint ou deixar no backlog.
+
+### O quê
+
+- `references/workflow.md` ganha `## Projeto novo`: confirmação com o dev, `POST /project` (Scrum
+  ou Kanban, team-managed), board pela API agile, releitura do projeto para `id` e `issueTypes`
+  (no SBM a subtarefa é `Subtask`, não `Subtarefa`).
+- `SKILL.md` roteia o bootstrap para essa seção quando o projeto não existe no Jira.
+- `references/campos.md`: sprint `future` existente vira terceira opção (id em número puro grava;
+  releitura mostra `state: future`, medido no SBM-1).
+
 ## [1.6.1] — 2026-10-01
 
 ### Por quê

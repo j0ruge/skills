@@ -113,6 +113,32 @@ versionado, explícito, e vale para quem clonar:
 BASE_BRANCH=develop
 ```
 
+## Projeto novo
+
+Quando o `GET /rest/api/3/project/<KEY>` responde "Nenhum projeto poderia ser encontrado", a key
+ainda não existe. Criar projeto é ato de projeto: **confirme com o dev** a key, o nome e o modelo
+(Scrum ou Kanban) antes do POST. Medido ao criar o SBM em 2026-10-01:
+
+```bash
+set -a; . ~/.hermes/.env; set +a; J=https://jrcbrasil.atlassian.net/rest/api/3
+curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" "$J/myself"            # accountId do líder
+curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -X POST -H 'Content-Type: application/json' \
+  -d '{"key":"<KEY>","name":"<nome>","projectTypeKey":"software",
+       "projectTemplateKey":"com.pyxis.greenhopper.jira:gh-simplified-agility-scrum",
+       "leadAccountId":"<accountId>","assigneeType":"UNASSIGNED"}' "$J/project"
+# kanban: ...:gh-simplified-agility-kanban. Os dois criam projeto team-managed (style next-gen).
+curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+  "https://jrcbrasil.atlassian.net/rest/agile/1.0/board?projectKeyOrId=<KEY>"   # $BOARD
+```
+
+- **Releia o projeto** com `GET $J/project/<KEY>`: ele traz o `id` (vai no `project.id` do
+  `POST /issue`) e os `issueTypes` **deste** projeto, com ids próprios. No SBM a subtarefa veio
+  como `Subtask`, e não como `Subtarefa`: confira o nome antes do `split`.
+- O board nasce junto (no SBM: `type: simple`), com uma sprint `future` já criada e **nenhuma
+  ativa**. Ver `campos.md §Quando não aparece sprint ativa`, item 3.
+- Versão e issue seguem os caminhos de sempre (`campos.md §fixVersion`). Depois, grave o
+  `.jira-project` com os ids descobertos no comentário de cabeçalho.
+
 ## Tipos de Issue (em PT-BR)
 
 - História, Tarefa, Bug, Epic, Subtarefa, Entrevista, Análise, DevOps, Divida Técnica, Idea

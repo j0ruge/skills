@@ -82,8 +82,10 @@ acli jira board list-sprints --id $BOARD --state active --json \
    → o array de sprint das issues já traz `id` + `boardId` da sprint corrente.
 3. **Board scrum sem sprint aberta** (todas `closed`/`future`): não invente uma —
    avise o dev e pergunte se deve criar (`acli jira sprint create`) ou deixar no
-   backlog conscientemente. Board **kanban** não tem sprint: nesse caso o campo
-   simplesmente não se aplica.
+   backlog conscientemente. Se já existe uma `future` (projeto Scrum novo nasce com uma), ela é
+   a terceira opção: o id dela em número puro no `customfield_10020` grava, e a releitura mostra
+   `state: future` (medido no SBM-1, sprint 573). Iniciar a sprint continua sendo decisão do dev.
+   Board **kanban** não tem sprint: nesse caso o campo simplesmente não se aplica.
 
 ### Issue nova — `create --from-json` (não precisa de MCP)
 

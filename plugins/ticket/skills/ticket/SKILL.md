@@ -3,7 +3,7 @@ name: ticket
 description: "Jira ticket lifecycle for JRC Brasil projects, integrated with Git — create issues/sub-issues and branches, close with an auto-generated summary. Per-repo config via `.jira-project`; discovers project-specific transitions instead of assuming. New issues are born in the active sprint with story points and fixVersion, each read back by the sensor that can see it. Triggers — ticket, Jira, criar issue, fechar ticket, sprint, story points, fixVersion, acli."
 argument-hint: "start (open) | split | close | status"
 metadata:
-  version: 1.6.1
+  version: 1.6.2
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -55,13 +55,13 @@ BASE_BRANCH=develop   # opcional — base de branches/PR; se ausente, detectar (
 | `$BRANCH_PREFIX` | Prefixo da branch (`${BRANCH_PREFIX}-XXX_descricao`); geralmente = `$PROJECT`, pode divergir por convenção do time |
 | `$BASE_BRANCH` | Base de branches e PRs. **Opcional**; se ausente, **detectar** — nunca chutar, nem `main` nem `develop`: `git symbolic-ref --short refs/remotes/origin/HEAD` (`origin/develop` → `develop`) ou `git remote show origin \| sed -n 's/.*HEAD branch: //p'` (falhando, `references/workflow.md §Branch base`) |
 
-**Bootstrap se `.jira-project` não existir:** avisar o dev; perguntar **project key** (ex.: `SQ`,
+**Bootstrap se `.jira-project` não existir:** avisar o dev (projeto inexistente: `references/workflow.md §Projeto novo`); perguntar **project key** (ex.: `SQ`,
 `RS`, `BAT` — sugerir pelo nome do repo + entries `project_jira_*` na auto-memory), **board ID**
 (`mcp__atlassian__searchJiraIssuesUsingJql(jql: "project = $PROJECT", maxResults: 1)` ou
 `acli jira board list`; vários boards → perguntar qual) e **branch prefix** (default = key); criar o
-arquivo com os valores + comentário cabeçalho explicando a origem (`.gitignore` só se houver dado
-sensível — keys e board IDs não são secretos) e seguir com o comando pedido. Arquivo no repo (não env var nem
-auto-memory): versionado, explícito, sobrevive a troca de máquina e a limpeza de memória.
+arquivo com os valores + cabeçalho com a origem (`.gitignore` só se houver dado
+sensível — keys e board IDs não são secretos) e seguir com o comando pedido. Arquivo versionado no repo, não env var
+nem auto-memory: explícito, sobrevive a troca de máquina e à limpeza de memória.
 
 ## Roteamento de Comandos
 
