@@ -2,6 +2,21 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.1.1] — 2026-10-01
+
+### `coderabbit-pr`: a Fase 5.2 deixa de quebrar no zsh
+
+A Fase 5.2 trazia `for id in <thread IDs from 5.1>; do`, e o jeito natural de preencher o
+placeholder é guardar os ids numa variável e iterar com `$ids`. No zsh, que não separa variável sem
+aspas, o laço roda uma vez só com todos os ids juntos. A API respondeu `NOT_FOUND … global id of
+'PRRT_…\nPRRT_…'` e nenhuma conversa foi resolvida no PR #401 do `sales_quote`. Só a recontagem da
+5.3 (`unresolved: 2 of 2`) acusou a falha.
+
+- A 5.2 passa a receber a saída da 5.1 por pipe, com `while IFS=$'\t' read -r id _`, que se
+  comporta igual no bash e no zsh. Entra também a nota do porquê, com o erro medido.
+- Uma linha nova em Gotchas do `SKILL.md` aponta para a 5.2. O `metadata.version` da skill vai a
+  4.0.1.
+
 ## [2.1.0] — 2026-09-29
 
 ### Pass 6.11 ganha duas formas de sensor cego

@@ -1,7 +1,7 @@
 ---
 name: coderabbit-pr
 metadata:
-  version: 4.0.0
+  version: 4.0.1
 description: Resolves AI review comments on a GitHub PR — auto-detects CodeRabbit, Copilot, Gemini, Codex; creates per-reviewer checklists, verifies findings against current code (with byte-exact inspection when reviewers cite invisible/control characters), applies fixes, runs regression tests, resolves GitHub conversations, then cleans up its own checklist files. Triggers — coderabbit, copilot review, gemini review, codex review, fix PR review.
 ---
 
@@ -337,3 +337,5 @@ the final report carries the findings table, since the file it came from is gone
   "not applicable" waiting to happen (3.1 step 1.1).
 - **Fixes on the wrong branch fail silently** — confirm `headRefName` first (1.1).
 - **A reviewer that never ran is not a pass** (Phase 2, case b).
+- **Never loop over `$ids` to resolve threads**: zsh does not split it, and every mutation fails
+  as one joined id. Pipe 5.1 into `while read` (`references/thread-resolution.md` §5.2).

@@ -26,12 +26,19 @@ gh api graphql -f query='{
 
 Resolve threads from **all** reviewers (coderabbitai, copilot, gemini, codex, …), not only those processed in Phase 3.
 
+Feed 5.1's output straight into the loop, one thread per line:
+
 ```bash
-for id in <thread IDs from 5.1>; do
+<5.1 command> | while IFS=$'\t' read -r id _; do
   gh api graphql -f query="mutation { resolveReviewThread(input: {threadId: \"$id\"}) { thread { isResolved } } }" \
     --jq '.data.resolveReviewThread.thread.isResolved' | sed "s|^|$id -> |"
 done
 ```
+
+Do **not** capture the ids in a variable and loop with `for id in $ids`. zsh does not word-split an
+unquoted variable, so the loop runs **once** with every id joined by newlines, and the API answers
+`NOT_FOUND … global id of 'PRRT_…\nPRRT_…'`. Measured on 2026-10-01: zero threads resolved, caught
+only by 5.3 reporting `unresolved: 2 of 2`. `while read` behaves the same in bash and zsh.
 
 Each line must print `true`. Anything else (an error, `false`) means that thread is still open — carry it into 5.3.
 
