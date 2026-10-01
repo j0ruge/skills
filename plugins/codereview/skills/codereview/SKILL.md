@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.2.0
+  version: 2.3.0
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -79,7 +79,7 @@ Regardless of failures, always produce a final report listing all files analyzed
 
 ### Phase A: Git Context, File Classification & Secrets Pre-Scan (inline, main session)
 
-Every step is a fixed command with one right answer, so it runs inline, not in an agent: an agent only adds variation, latency and the chance of a silently dropped field — and without the secrets pre-scan JSON the F-grade gate goes blind. The outputs are small (file names, stats, a one-line log).
+Every step is a fixed command with one right answer, so it runs inline, not in an agent: an agent only adds variation, latency and the chance of a silently dropped field — and without the secrets pre-scan JSON the F-grade gate goes blind. Outputs are small.
 
 Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. Three Bash turns cover steps 1–8 — (1) steps 1–3, base-branch detection as one fallback chain; (2) step 4; (3) steps 5–8 as parallel calls in one message — because every extra orchestrator turn is a main-model round-trip over the whole session context:
 
@@ -109,7 +109,7 @@ Phase A hands Phases B and C: BASE_BRANCH, BRANCH_NAME, MERGE_BASE, DIFF_STAT, C
 
 **Why a script**: LLMs are not regex engines — `initialPassword: 'foo'` (`password` as a suffix) is easy to miss by eye. `scripts/scan_secrets.py` applies the 6.10 regex catalog with Python `re`, the exception list (env lookups, placeholders, `.env.example`) and `ggshield`/`gitleaks` when on PATH; agents' 6.10 findings only supplement it. It runs locally because CI scanners like GitGuardian block the push — see it before the secret reaches a remote branch.
 
-If CHANGED_FILES is empty, output: "No changes detected between this branch and `{BASE_BRANCH}`." and stop.
+Empty CHANGED_FILES, dirty `git status --porcelain` → `worktree` mode (`references/configuration.md`). Both empty → output "No changes detected between this branch and `{BASE_BRANCH}`." and stop.
 
 If more than 15 CODE files, prioritize by change size (diff stat lines). Note deprioritized files.
 

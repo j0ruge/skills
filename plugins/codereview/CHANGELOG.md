@@ -2,6 +2,30 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.3.0] — 2026-10-01
+
+### Modo `worktree`: revisar o que ainda não foi commitado
+
+Lição de uma revisão no `~/.hermes`, repositório em que se trabalha direto na `main`.
+
+- **Diff de commits vazio não quer dizer que não há mudança.** No branch base, `git merge-base main HEAD`
+  devolveu o próprio `HEAD` (`243a8c4`). A Fase A mandava parar com "No changes detected", mas havia
+  30 arquivos modificados e uma skill inteira sem commit. Agora, com CHANGED_FILES vazio e
+  `git status --porcelain` sujo, a skill entra no modo `worktree`, documentado no `configuration.md`:
+  lista de arquivos (`git diff HEAD --name-only` mais `git ls-files --others --exclude-standard`),
+  diff por arquivo e cabeçalho do relatório `working tree vs HEAD {sha}`.
+- **O pre-scan de segredos precisa das duas fontes.** `git diff HEAD` não mostra arquivo novo, e o
+  código da skill nova só chegou ao `scan_secrets.sh` pelo `git diff --no-index /dev/null <arquivo>`
+  (rc 1 é normal nesse comando). Medido nesta sessão: as duas saídas passaram pelo script, que devolveu
+  JSON válido com `errors: []`.
+- **Não medido com agentes:** a revisão rodou a Fase B inline (≤3 arquivos de código). A regra de
+  escrever o comando de diff por extenso no prompt dos agentes (`{MERGE_BASE}...HEAD` sairia vazio)
+  vem da leitura do `per-file-agent.md`, não de uma execução.
+
+O `SKILL.md` ganha 48 chars (19.784 → 19.832, contados como o auditor conta; os "19.965" da 2.2.0
+eram bytes do `wc -c`). Para caber, a frase "The outputs are small (file names, stats, a one-line
+log)." foi fundida à anterior como "Outputs are small.". Os três avisos C2 continuam como dívida antiga.
+
 ## [2.2.0] — 2026-10-01
 
 ### Três lições de uma revisão por faixa de commits
