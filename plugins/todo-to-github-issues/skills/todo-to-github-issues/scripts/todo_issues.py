@@ -376,6 +376,25 @@ def prose(body: str) -> str:
     return re.sub(r"\]\([^)]*\)", "]", body)
 
 
+LINE_REF_RE = re.compile(r"(`[^`\s:]*):\d+(?:-\d+)?`")
+
+
+def update_kind(it: Item, iss: dict, ctx: Ctx) -> str:
+    """`anchor` when the live issue differs from the new render ONLY in line numbers of code
+    references (`` `path:N` ``, `` `:N` ``, the Âncora's included); `text` otherwise. Compared after
+    dropping every link target (permalink sha, footer link) and the hidden markers (old issues have no
+    `todo-src`): each of those made a synced mirror read as changed, measured 86, 59 and 16 false
+    positives of 86. Only a number after `:` inside backticks is normalized — a bare digit is content
+    (`90 → 85`), and title and section (footer) changes stay `text`."""
+    def norm(b: str) -> str:
+        b = re.sub(r"<!--.*?-->", "", b, flags=re.S)
+        b = re.sub(r"\]\([^)]*\)", "]", b)
+        return LINE_REF_RE.sub(r"\1:N`", b).strip()
+    if iss.get("title") != issue_title(it):
+        return "text"
+    return "anchor" if norm(iss.get("body") or "") == norm(render_body(it, ctx)) else "text"
+
+
 def guess_renames(plan: Plan, ctx: Ctx, threshold: float = 0.85) -> None:
     """A retitled item reads as ORPHAN + CREATE; pair them when the text barely moved."""
     for iss in plan.orphans:
@@ -506,8 +525,9 @@ def main() -> int:
         print(f"DUP     key {k} is on issues {nums} — the lowest number wins; close the others by hand")
     for it in plan.create:
         print(f"CREATE  L{it.start:<4} {short(it.title)}")
-    for it, iss in plan.update:
-        print(f"UPDATE  #{iss['number']:<4} L{it.start:<4} {short(it.title)}")
+    kinds = [update_kind(it, iss, ctx) for it, iss in plan.update]
+    for (it, iss), kind in zip(plan.update, kinds):
+        print(f"UPDATE  #{iss['number']:<4} L{it.start:<4} ({kind:<6}) {short(it.title)}")
     for it in plan.skip_resolved:
         print(f"SKIP    L{it.start:<4} RESOLVED by, no issue to mirror — {short(it.title, 60)}")
     for it, iss in plan.closed_present:
@@ -521,7 +541,8 @@ def main() -> int:
               f"closing it and opening a new one, rekey it BEFORE --apply:\n"
               f"        gh issue view {iss['number']} -R {ctx.repo} --json body -q .body | "
               f"sed 's/todo-key: {old}/todo-key: {it.key}/' | gh issue edit {iss['number']} -R {ctx.repo} --body-file -")
-    print(f"summary create={len(plan.create)} update={len(plan.update)} ok={len(plan.ok)} "
+    print(f"summary create={len(plan.create)} update={len(plan.update)} (anchor {kinds.count('anchor')}) "
+          f"ok={len(plan.ok)} "
           f"skip={len(plan.skip_resolved)} closed-present={len(plan.closed_present)} "
           f"orphans={len(plan.orphans)} dup={len(plan.dup_issues)}")
     if not a.apply:

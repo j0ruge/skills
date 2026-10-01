@@ -3,6 +3,40 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.2.0] — 2026-10-01
+
+Minor porque a saída do plano muda: cada `UPDATE` vem marcado e o resumo ganha a contagem.
+
+### Added
+
+- **`UPDATE (anchor)` × `UPDATE (text)` no plano, e `update=N (anchor M)` no resumo.** A skill
+  mandava provar à mão que um `UPDATE` em massa era só número de linha ("`--dump` contra o corpo
+  vivo, dígitos normalizados"). Medido num espelho recém-sincronizado (`update=0`), essa receita
+  acusava diferença em **86 de 86** issues cruas, 59 sem a linha `# título` do dump, 59 com o sha do
+  permalink normalizado e **16** ainda com dígitos normalizados (issues antigas sem `todo-src`). Cada
+  camada só aparece por tentativa. Agora `update_kind()` compara o corpo vivo com o novo sem destino
+  de link e sem marcadores, e normaliza só o número depois de `:` dentro de crases. Um número solto
+  (`90 → 85`), o título e a seção continuam sendo `text`. Medido em duas versões antigas do `TODO.md`
+  do kit contra as issues vivas: 25 de 25 e 23 de 24 `anchor`; o único `text` é o #156, que de fato
+  ganhou uma frase.
+
+### Changed
+
+- **`ORPHAN`: o item que saiu por decisão se fecha à mão, como `not planned`.** O `--close-orphans`
+  fecha como concluída, com o comentário fixo "achado fechado". Na varredura D15 do kit
+  (`7ee1c3e`), quatro itens saíram por decisão (cabeçalho de sensor, refutação, YAGNI) e teriam ficado
+  registrados como consertados. A linha da tabela e "Erros comuns" mandam achar o commit que removeu o
+  item (`git log -S`) e fechar esses com `gh issue close --reason "not planned"`, antes do
+  `--close-orphans`.
+
+### Limites
+
+- Cinco probes novos no `test_todo_issues.py`, e a sabotagem de cada regra da classificação (sem tirar
+  os marcadores, sem tirar os links, sem normalizar a referência, normalizando todo dígito, sem olhar o
+  título, sempre `anchor`) deixa a suíte vermelha. Dois desses sabotadores sobreviviam à primeira
+  versão dos probes e ganharam probe próprio. **Sobrevive** apagar o marcador da linha impressa: o
+  `main()` precisa do `gh`, e nenhum teste offline passa pela saída do plano, como antes.
+
 ## [2.1.0] — 2026-09-28
 
 Conformidade com a spec do agentskills.io, apontada pelo `skill-quality-audit` v0.2.0: 6 avisos → 3,

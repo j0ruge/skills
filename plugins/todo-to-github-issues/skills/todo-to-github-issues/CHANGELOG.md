@@ -3,6 +3,21 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-01 — a receita de prova que mentia
+
+Publicado como **v2.2.0**.
+
+- O humano pediu para sincronizar o `TODO.md` do kit depois da varredura D15. O plano deu 24
+  `UPDATE` e 4 `ORPHAN`. A prova "é só número" pela receita da skill acusou as 24; descontada a
+  linha `# título` do `--dump`, sobrou uma (#156) — prova feita à mão, por tentativa. Medida depois
+  num espelho já sincronizado, a receita tinha quatro camadas de falso positivo (86 → 59 → 59 → 16
+  de 86). A prova saiu da skill e entrou no script: `UPDATE (anchor)` / `UPDATE (text)`.
+- As 4 órfãs tinham saído por decisão (`7ee1c3e`), não por conserto. O `--close-orphans` as
+  fecharia como concluídas, com o texto "achado fechado". Foram fechadas à mão como `not planned`, cada uma
+  com o destino. A tabela passou a dizer isso.
+- A sabotagem achou dois probes cegos na primeira versão: o teste roda sem sha (o permalink não
+  mudava) e o número "trocado" era acrescentado, não trocado. Os dois foram reescritos e agora mordem.
+
 ## 2026-09-26 — a largura que a skill guardava sozinha
 
 Publicado como **v2.0.2**.

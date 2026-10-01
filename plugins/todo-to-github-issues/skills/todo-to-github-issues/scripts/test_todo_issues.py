@@ -123,6 +123,50 @@ it3 = items[3]
 block = "\n".join(it3.raw)
 p = t.build_plan(reparsed(block, block + " extra"), issues)
 check("body edit -> 1 update", len(p.update) == 1 and p.update[0][1]["number"] == 103)
+
+# update_kind: a moved line number is `anchor`; anything a reader would see as new is `text`.
+ia = next(i for i in items if i.anchor and f"`{i.anchor[0]}:{i.anchor[1]}" in "\n".join(i.raw))
+ia_n = 100 + items.index(ia)
+ia_block = "\n".join(ia.raw)
+ia_tok = f"`{ia.anchor[0]}:{ia.anchor[1]}"
+
+
+def kind_after(new_block: str, live=None):
+    p = t.build_plan(reparsed(ia_block, new_block), live or issues)
+    u = [x for x in p.update if x[1]["number"] == ia_n]
+    assert len(u) == 1, f"probe did not produce the UPDATE it measures: {len(u)}"
+    return t.update_kind(u[0][0], u[0][1], ctx)
+
+
+shifted = ia_block.replace(ia_tok, f"`{ia.anchor[0]}:{ia.anchor[1] + 7}", 1)
+check("anchor line shift -> UPDATE (anchor)", kind_after(shifted) == "anchor")
+check("a word changed -> UPDATE (text)", kind_after(shifted + " palavra") == "text")
+# The bare number must CHANGE, not appear: appending one also changes the text around it, and a
+# sabotage that normalized every digit survived the appending form.
+before90 = as_issues(reparsed(ia_block, ia_block + " total 90"))
+check("a bare number changed -> UPDATE (text)", kind_after(shifted + " total 85", before90) == "text")
+# Live bodies rendered at an older HEAD: every permalink sha differs. Without dropping link targets
+# a pure line shift read as `text` — 59 of 86 on a synced mirror. Needs two real shas of this repo.
+_shas = _sp.run(["git", "-C", ctx.root, "log", "-2", "--format=%H"], capture_output=True, text=True,
+                check=False).stdout.split() if KIT else []
+if len(_shas) == 2:
+    ctx_new = t.Ctx(repo="o/r", root=ctx.root, relpath="TODO.md", sha=_shas[0], branch="main")
+    ctx_old = t.Ctx(repo="o/r", root=ctx.root, relpath="TODO.md", sha=_shas[1], branch="main")
+    live_old = as_issues(items, ctx_old)
+    u = [x for x in t.build_plan(reparsed(ia_block, shifted), live_old).update if x[1]["number"] == ia_n]
+    check("permalinks at another sha + line shift -> UPDATE (anchor)",
+          len(u) == 1 and "/blob/" + _shas[1] in u[0][1]["body"]
+          and t.update_kind(u[0][0], u[0][1], ctx_new) == "anchor")
+else:
+    check("the TODO.md's repo has two commits (permalink probe needs them)", False)
+old_style = copy.deepcopy(issues)
+old_style[ia_n - 100]["body"] = old_style[ia_n - 100]["body"].replace("\n<!-- todo-src: TODO.md -->", "")
+check("an old issue without todo-src still reads as (anchor)",
+      "todo-src" not in old_style[ia_n - 100]["body"] and kind_after(shifted, old_style) == "anchor")
+retitled = copy.deepcopy(issues)
+retitled[ia_n - 100]["title"] += " x"
+check("a live title that differs -> UPDATE (text)", kind_after(shifted, retitled) == "text")
+
 sec = next(i for i in items if i.section and i.section != items[0].section)
 p = t.build_plan(reparsed(f"# {sec.section}\n", f"# {sec.section} renomeada\n"), issues)
 check("section rename -> its items update", len(p.update) == sum(i.section == sec.section for i in items))
