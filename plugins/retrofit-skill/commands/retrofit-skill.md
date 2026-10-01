@@ -1,7 +1,7 @@
 ---
 description: Apply non-obvious session lessons to a target skill in two modes — full (marketplace skill: bumps version, updates CHANGELOG/marketplace.json/README, commits and pushes) or lean (local skill in another repo: edits files + CHANGELOG and commits there, no bump or marketplace changes). Triggers — retrofit, skill-maintenance, session-lessons, lean-retrofit, local-skill.
 metadata:
-  version: 0.6.1
+  version: 0.6.2
 ---
 
 A régua deste retrofit é a família `skill-quality-audit`: um baseline antes de
@@ -228,7 +228,7 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
          print('plugin só de comandos — o canônico é o plugin.json, não há SKILL.md')
      for sp in skills:
          sk = io.open(sp, encoding='utf-8').read()
-         d = re.search(r'^description:\s*(.*?)(?=\n[a-z_]+:|\n---)', sk, re.S | re.M).group(1).strip().strip('"')
+         d = re.search(r'^description:\s*(.*?)(?=\n[A-Za-z0-9_-]+:|\n---)', sk, re.S | re.M).group(1).strip().strip('"')
          print(f'{sp}: igual ao plugin.json?', d == pj['description'], '| len', len(d))
      def _e_do_plugin(linha):
          if not linha.startswith('|'):
@@ -257,6 +257,12 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
      Daí o `glob`: sem skill, ele diz que o canônico é o `plugin.json`; com
      várias, imprime uma linha por skill para você julgar — em vez de colapsar
      tudo num booleano que mente nos dois casos.
+
+     ⚠️ **O fim da `description` é a próxima chave do frontmatter — e chave pode ter hífen.**
+     A forma anterior parava em `\n[a-z_]+:`, e `argument-hint:` (campo real do Claude Code)
+     não casa: a captura atravessava até `metadata:` e o cheque dizia `False` para uma
+     description idêntica (medido no retrofit do `ticket` v1.6.1: 511 chars capturados × 456
+     reais). Um falso negativo ensina a ignorar o cheque, que é o mesmo dano de um falso positivo.
 
      ⚠️ **E o cheque do README já foi ele próprio o sensor cego.** A forma
      anterior perguntava `f"| {pj['version']} |" in rd` — se a string existe em

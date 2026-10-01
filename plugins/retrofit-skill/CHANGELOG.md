@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.2] — 2026-10-01
+
+### O cheque da description parava na chave errada
+
+O cheque independente do modo completo achava o fim da `description` do `SKILL.md` pela próxima
+chave `\n[a-z_]+:`. Chave com hífen (`argument-hint:`, campo real do Claude Code) não casa, então a
+captura engolia a linha seguinte e o cheque respondia `False` para uma description idêntica — medido no
+retrofit do `ticket` v1.6.1 (511 chars capturados × 456 reais). O padrão passa a `\n[A-Za-z0-9_-]+:`,
+provado nos dois estados contra o mesmo arquivo antes da troca.
+
 ## [0.6.1] — 2026-09-29
 
 ### O repo do marketplace se chama `skills`
