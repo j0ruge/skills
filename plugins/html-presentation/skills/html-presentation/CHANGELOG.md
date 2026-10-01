@@ -2,6 +2,14 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-10-01 — Church cell group, "A esperança está voltando" (v1.1.1)
+- Source was a 2-page study guide (PDF) for a 20-minute discussion at home, shown on a living-room TV;
+  Bible verses quoted in full (NVI). 13 slides, 19:00 of notes, three discussion blocks of 3 min.
+- Lesson added: print takes `.slide::after` for `data-print`, so an `::after` decoration needs a combined
+  print rule (dark cover with a dawn glow).
+- Confirmed, no change: the reviewer caught a quotation that differed from the chosen Bible translation
+  (the source paraphrased Acts 1:11 inside quotes). Fidelity rule already covers it.
+
 ## 2026-09-30 — IACS E26/E27 training (v1.1.0)
 - Source was a PPTX (15 slides) for a 30-minute technical training, presented by someone else from the
   delivered HTML; references in ABNT at the user's request. 25 slides, 25:15 of notes.

@@ -3,6 +3,13 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.1.1] — 2026-10-01
+
+### Fixed
+- Gotcha "Photo or dark slide lost in the PDF" now warns that print also takes `.slide::after` (the
+  `data-print` footer). A cell-group deck drew its cover's dawn glow with `::after`; one combined print rule
+  (`content:attr(data-print)` over the glow, `inset:0`) kept both, checked on page 1 of the PDF.
+
 ## [1.1.0] — 2026-09-30
 
 ### Added

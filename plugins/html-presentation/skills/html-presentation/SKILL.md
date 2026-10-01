@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.1.0"
+  version: "1.1.1"
 ---
 
 # HTML Presentation
@@ -139,6 +139,10 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
   `.slide::before` as the 5px bar. A cover with a single-class selector loses its photo (white title on a
   light page), and a veil drawn with `::before` collapses to a 5px strip over a bright photo. Give such
   slides their own print rule (background again, veil with `inset:0`) and look at page 1 of the PDF.
+  Print also takes `.slide::after` for the `data-print` footer, so a slide decorated with `::after` (a dawn
+  glow on a dark cover) loses either the decoration or its page number. Put both in one print rule:
+  `content:attr(data-print)` over the decoration's background, `inset:0`, text aligned bottom-right
+  (cell-group deck, 01/10/2026).
 - **Deck several times heavier than its assets.** `build.py` inlines every `url(assets/...)` separately:
   one photo used by four rules (screen and print, cover and close) made a 1.7 MB deck; declared once as
   `--photo:url(...)` it was 569 KB (IACS deck, 30/09/2026).
