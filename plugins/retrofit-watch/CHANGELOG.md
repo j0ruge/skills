@@ -1,5 +1,25 @@
 # Changelog — retrofit-watch
 
+## [0.3.1] — 2026-10-02
+
+### Documented
+
+- **Limite declarado: a atribuição gruda na última skill carregada.** Nesta sessão do
+  `sdd_agents`, o hook atribuiu à `todo-to-github-issues` 54 chamadas e 3 atritos. Ela fez 8
+  chamadas sem erro; o resto era a implementação da 0.3.0, outra tarefa, e os 3 "atritos" eram
+  `Edit` sem `Read` prévio. O `Scanner` mantém `current` até outra skill carregar.
+- **Medido antes de consertar.** Sobre 376 transcripts de 14 dias (150 com skill nossa), 41% do
+  atrito atribuído (173 de 421) cai depois de um prompt novo do usuário que não responde a uma
+  pergunta. Os pedidos de retro elegíveis quase não mudam (195 → 193), porque trabalho ≥ 5 já os
+  dispara: o custo é um pedido a mais, que o filtro de evidência descarta.
+- **Correção refutada, por isso não há mudança de código.** "Prompt novo encerra a atribuição,
+  salvo resposta a uma pergunta" zeraria 8 atritos possivelmente legítimos do `zitadel-idp` (sessão
+  `44820556`): a continuação da tarefa chega como "sim", "roda", "pode empurrar" e um pedido longo
+  de ajuste, depois de propostas sem "?". O formato do prompt não separa outra tarefa de
+  continuação. A fila headless da 0.3.0 quase não sofre: 5 de 373 fases têm mais de um prompt real.
+- O caminho que sobra é atribuir por proximidade a uma ação da própria skill; falta um sinal
+  confiável do que é essa ação.
+
 ## [0.3.0] — 2026-10-02
 
 ### Changed

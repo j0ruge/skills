@@ -5,7 +5,7 @@ license: MIT
 compatibility: Claude Code 2.1.163+ (Stop additionalContext); testado na 2.1.283 em 2026-09-30. Hook em Python 3, só biblioteca padrão, e git no PATH.
 metadata:
   author: JorUge
-  version: "0.3.0"
+  version: "0.3.1"
 ---
 
 # retrofit-watch
@@ -110,6 +110,12 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
 ## Gotchas e limites conhecidos
 
 - **Skill usada dentro de subagente** não é vista: ela não aparece no transcript principal.
+- **A atribuição gruda na última skill carregada** até outra ser carregada, inclusive em outra
+  tarefa da mesma sessão. Medido em 2026-10-02 (376 sessões, 14 dias): 41% do atrito atribuído
+  vem depois de um prompt novo seu. Encerrar no prompt novo foi refutado: a continuação chega como
+  "sim", "roda", "pode empurrar", sem "?" antes. Por isso a retro filtra por evidência ligada à
+  skill (seção 2 do `criteria.md`): atrito de outra tarefa é "sem lições novas". Fases headless
+  quase não sofrem (5 de 373 com mais de um prompt).
 - **As fases headless do `sdd run`** (`claude -p`) nunca recebem a retro: ela vai para a fila e é
   feita depois, com você. A fila mora no diretório de dados do plugin para que nenhum sensor do kit
   a veja (`git status`, `hat_guard_check`, guarda de kit); um arquivo dentro do repo, mesmo

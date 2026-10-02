@@ -999,7 +999,7 @@
     {
       "name": "retrofit-watch",
       "source": "./plugins/retrofit-watch",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "description": "Stop hook that notices when one of our skills (j0ruge/skills marketplace or a git-tracked project skill) or one of our kits (sdd) did real work in the session and asks Claude for an evidence-backed retro: /retrofit-skill for a skill, a TODO.md finding for a kit. Headless sessions (sdd run phases) are queued outside the repo for a later retro. Triggers — skill retro, retrofit-watch, session lessons, skill pitfalls, sdd kit lessons, pending retros.",
       "category": "development",
       "keywords": [
