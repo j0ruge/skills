@@ -2,6 +2,32 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.4.0] — 2026-10-01
+
+### `coderabbit-pr` 4.1.0: o conserto de lógica tem sensor próprio, um achado por vez
+
+Lição de uma análise do laço de revisão do kit `sdd_agents`, provocada por uma sugestão do
+`/insights` ("teste cada conserto antes da próxima rodada").
+
+- **O probe do achado não testa o conserto.** A regressão nasce no código novo: um probe que só
+  reproduz o achado fica verde com um conserto que tira o sintoma e abre um fail-open ao lado. Medido
+  no kit: no PR #46 o conserto da r1 do CodeRabbit apodreceu a âncora de um mutante e a suíte rápida
+  ficou verde; no PR #45 foram três `sdd health` (~22 min cada) para uma branch; no `check-todo.sh`,
+  três rodadas seguidas em que o conserto de uma criou o defeito da seguinte.
+- **A Fase 3.2 separa lógica de mecânica.** Conserto de lógica (guarda, ramo, parser, regex, código
+  de saída) vai no modelo principal, um por vez, pelo laço novo em `references/fix-loop.md`: probe
+  vermelho pelo motivo certo, conserto, **sabotagem do conserto** até um probe ficar vermelho, suíte
+  rápida (mais a metade barata do catálogo de mutação quando houver) antes do próximo. Prosa, nome e
+  formatação continuam em lote, e só esses vão para agentes paralelos acima de 5. Rodar a suíte uma
+  vez depois do lote era o que entregava a regressão à rodada seguinte dos bots.
+- **Regra de parada.** Duas regressões criadas por conserto na mesma vizinhança: parar de remendar e
+  nomear o estado que falta.
+- **O gate declarado vence a detecção.** A tabela 4.1 ganha a prioridade 0: `TEST_CMD` do
+  `.sdd/config.sh` ou a suíte nomeada no `CLAUDE.md`/`AGENTS.md`. Um kit de bash e markdown não tem
+  nenhum dos arquivos da tabela e caía em "pergunte ao usuário".
+- Fora de propósito: `git diff --stat` por achado e a proibição de `sed -i` em glob, sugeridas pelo
+  `/insights`, sem caso medido que as sustente.
+
 ## [2.3.1] — 2026-10-01
 
 ### `coderabbit-pr` 4.0.2: o Codex "Running" é pendente, não aprovação

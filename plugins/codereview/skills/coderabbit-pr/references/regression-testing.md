@@ -48,6 +48,7 @@ If the baseline already shows N>0 failures, document them in each `{reviewer}-re
 
 | Priority | Detection | Command |
 |----------|-----------|---------|
+| 0 | The project **declares** its gate: `TEST_CMD` in `.sdd/config.sh`, or a suite named in `CLAUDE.md` / `AGENTS.md` (e.g. `tests/run-all.sh`) | That command — the declared gate beats detection; a bash/markdown kit has none of the files below and would otherwise fall to "ask" |
 | 1 | `package.json` has `scripts.test` | `npm test` |
 | 2 | Monorepo with multiple `package.json` | `npm test` in each package with modified files |
 | 3 | `*.sln` or `*.csproj` exists | `dotnet test` |

@@ -1,7 +1,7 @@
 ---
 name: coderabbit-pr
 metadata:
-  version: 4.0.2
+  version: 4.1.0
 description: Resolves AI review comments on a GitHub PR — auto-detects CodeRabbit, Copilot, Gemini, Codex; creates per-reviewer checklists, verifies findings against current code (with byte-exact inspection when reviewers cite invisible/control characters), applies fixes, runs regression tests, resolves GitHub conversations, then cleans up its own checklist files. Triggers — coderabbit, copilot review, gemini review, codex review, fix PR review.
 ---
 
@@ -42,6 +42,7 @@ Read each one at the step that needs it:
   zero-width or other invisible/control characters, before any verdict.
 - `references/regression-testing.md` — read before the first fix of Phase 3.2 (the baseline is taken
   there) and at Phase 4: baseline format, test-command detection, comparison cases.
+- `references/fix-loop.md` — read at Phase 3.2 before the first logic fix.
 - `references/thread-resolution.md` — read when you reach Phase 5: the GraphQL commands that list, resolve and
   recount the review threads.
 
@@ -253,10 +254,10 @@ For each item (or group of items in the same file):
 
 #### 3.2 Fix Execution
 
-**Before the first fix, capture the test baseline** (Phase 4.0, in `references/regression-testing.md`).
-Then: **5 or fewer fixes** → apply them directly in the main model; **more than 5** → cheaper-model
-agents in parallel, grouped by file, each receiving the file path, the fixes (exact
-old_string → new_string or clear descriptions) and the instruction to change nothing beyond them.
+**Before the first fix, capture the test baseline** (Phase 4.0). Then **logic fixes** (guard,
+branch, parser, regex, exit code): one at a time, main model, via `references/fix-loop.md`.
+**Mechanical** (prose, naming): ≤5 → main model; more → cheaper-model agents in parallel by
+file, given exact old → new, changing nothing else.
 
 #### 3.3 Update Checklists
 
@@ -338,3 +339,4 @@ the final report carries the findings table, since the file it came from is gone
   "not applicable" waiting to happen (3.1 step 1.1).
 - **Fixes on the wrong branch fail silently** — confirm `headRefName` first (1.1).
 - **A reviewer that never ran is not a pass** (Phase 2, case b).
+- **A probe of the finding does not test the fix** — sabotage it until one goes red (3.2).
