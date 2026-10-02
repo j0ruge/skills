@@ -1,7 +1,7 @@
 ---
 description: Apply non-obvious session lessons to a target skill in two modes — full (marketplace skill: bumps version, updates CHANGELOG/marketplace.json/README, commits and pushes) or lean (local skill in another repo: edits files + CHANGELOG and commits there, no bump or marketplace changes). Triggers — retrofit, skill-maintenance, session-lessons, lean-retrofit, local-skill.
 metadata:
-  version: 0.6.2
+  version: 0.7.0
 ---
 
 A régua deste retrofit é a família `skill-quality-audit`: um baseline antes de
@@ -146,6 +146,25 @@ Só comece a editar depois de estar em dia (fast-forward limpo ou rebase). Assim
 o commit nasce sobre o estado atual do remoto e o push final passa de primeira,
 em vez de rebasear com a edição já feita.
 
+**Árvore suja com arquivos que não são seus = outra sessão viva no mesmo
+checkout.** O índice do git é **um só** para todas as sessões: o que você pôs nele
+com `git add` sai no commit de **quem commitar primeiro**. Medido em 02/10/2026:
+um retrofit deixou 5 arquivos no índice enquanto pedia confirmação, outra sessão
+commitou o trabalho dela com `git commit` e levou o retrofit inteiro dentro de um
+commit com o título dela, já empurrado para a `main`. Os arquivos compartilhados
+(`marketplace.json`, `README.md`) pioram o caso: os dois trabalhos caem no mesmo
+arquivo, e nenhum `git add <arquivo>` separa um do outro. Nesse caso, edite e
+commite num worktree próprio, e não toque no checkout compartilhado:
+
+```bash
+git worktree add -b retrofit-<skill> <scratchpad>/wt origin/main   # edite, valide e commite lá
+git -C <scratchpad>/wt push origin HEAD:main                       # push; se rejeitar, rebase lá
+git worktree remove <scratchpad>/wt && git branch -D retrofit-<skill>
+```
+
+Mesmo com a árvore limpa, só ponha arquivo no índice **no mesmo comando do
+commit**, nunca antes de pedir confirmação.
+
 **Depois, grave o baseline** de cada skill (diretório com `SKILL.md`) que o
 retrofit vai tocar. Isso é a fase 1 da `skill-quality-audit`:
 
@@ -280,6 +299,10 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
      ```bash
      git add -A && git diff --cached --stat
      ```
+
+     O `-A` só vale num worktree próprio ou numa árvore que estava limpa antes
+     de você editar (ver *ANTES DE EDITAR*). Num checkout que outra sessão usa,
+     ele leva o trabalho dela no seu commit.
 
      Um arquivo que você não pretendia tocar é **sinal, não ruído** — e foi o
      único sensor que pegou o clobber do PASSO 0 (`CHANGELOG.md | 567 ++++----`

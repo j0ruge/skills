@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.7.0] — 2026-10-02
+
+### Outra sessão no mesmo checkout commitou o retrofit
+
+O *ANTES DE EDITAR* ganha o caso da árvore suja com arquivos que não são do retrofit: é outra
+sessão viva no mesmo checkout, e o índice do git é um só. O retrofit passa a editar e commitar num
+`git worktree` próprio a partir do `origin/main`, e só põe arquivo no índice no mesmo comando do
+commit. O `git add -A` do modo completo ganha a mesma ressalva.
+
+**Por quê:** no retrofit do `deploy` v2.3.0, os 5 arquivos foram postos no índice antes da
+confirmação. Uma sessão paralela, que mexia no `retrofit-watch`, commitou com `git commit` e levou
+o retrofit dentro do commit dela (`1049f71`, título só do `retrofit-watch`), já empurrado para a
+`main`. Conteúdo íntegro, autoria do histórico errada, e corrigir exigiria force-push num repo em
+uso. `marketplace.json` e `README.md` tinham os dois trabalhos no mesmo arquivo, então nem um
+`git add` por arquivo separaria um do outro. Correção verificada: este próprio retrofit foi feito
+num worktree.
+
 ## [0.6.2] — 2026-10-01
 
 ### O cheque da description parava na chave errada
