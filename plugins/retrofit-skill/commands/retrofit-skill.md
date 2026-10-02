@@ -1,7 +1,7 @@
 ---
 description: Apply non-obvious session lessons to a target skill in two modes — full (marketplace skill: bumps version, updates CHANGELOG/marketplace.json/README, commits and pushes) or lean (local skill in another repo: edits files + CHANGELOG and commits there, no bump or marketplace changes). Triggers — retrofit, skill-maintenance, session-lessons, lean-retrofit, local-skill.
 metadata:
-  version: 0.7.0
+  version: 0.7.1
 ---
 
 A régua deste retrofit é a família `skill-quality-audit`: um baseline antes de
@@ -62,21 +62,10 @@ No modo completo a skill alvo fica em `<REPO>/plugins/$ARGUMENTS/`.
 
 ### 🔴 `~/.claude/skills/<nome>` costuma ser um SYMLINK, não uma cópia
 
-Medido em 11/09/2026, e custou um clobber. A pasta local e a do marketplace
-parecem dois diretórios com os mesmos arquivos — `ls -la` mostra arquivos reais
-(`-rw-rw-r--`), `md5sum` dá igual, e a conclusão natural é "são duas cópias, vou
-ressincronizar no fim". **Errado:** o `ls -la` está listando o conteúdo
-*através* do link.
-
-A consequência é pior que perder tempo. Um `cp marketplace/… local/…` de
-"ressincronização" escreve **através do symlink**, de volta no marketplace — e
-se os caminhos não corresponderem exatamente, sobrescreve o arquivo errado. Foi
-o que houve: `plugins/<skill>/CHANGELOG.md` (versionado) copiado por cima de
-`plugins/<skill>/skills/<skill>/CHANGELOG.md` (registro por sessão), apagando 91
-linhas de histórico. Os dois são distintos de propósito, e cada um diz isso no
-próprio cabeçalho.
-
-Confira o link, não o conteúdo — `-d` faz toda a diferença:
+`ls -la` lista o conteúdo *através* do link e `md5sum` dá igual, então parece
+haver duas cópias. Um `cp` de "ressincronização" escreve através do link, de volta
+no marketplace, e já apagou histórico assim (o caso: *Armadilhas*, §1). Confira o
+link, não o conteúdo — `-d` faz toda a diferença:
 
 ```bash
 ls -ld ~/.claude/skills/<nome>          # `l` no início = symlink; `-la` NÃO mostra isso
@@ -88,19 +77,29 @@ Se for symlink: **não existe cópia para sincronizar**, e editar a fonte já
 atualiza a instalação. Pule qualquer passo de "ressincronizar" — ele só pode
 causar dano.
 
-## Localizar o auditor (skill-quality-audit)
+## Localizar o auditor e os scripts deste comando
 
-O script `audit_skill_quality.py` é somente leitura, usa só a stdlib e roda em
-~0,1 s. Procure-o nesta ordem:
+O `audit_skill_quality.py` (da `skill-quality-audit`) é somente leitura, usa só a
+stdlib e roda em ~0,1 s. Os scripts e a reference deste comando moram na pasta
+do plugin `retrofit-skill` (`$RS`). Procure os dois nesta ordem:
 
 ```bash
-# modo completo: o marketplace sempre traz o auditor
+# modo completo: o marketplace traz os dois
 SQA=<REPO>/plugins/skill-quality-audit/skills/skill-quality-audit/scripts/audit_skill_quality.py
-# qualquer modo: plugin instalado, skill local ou harness Hermes
+RS=<REPO>/plugins/retrofit-skill
+# qualquer modo: plugin instalado, skill local ou harness Hermes (o cache guarda uma pasta por versão)
 [ -f "$SQA" ] || SQA=$(find ~/.claude/plugins/cache ~/.claude/skills "${HERMES_HOME:-$HOME/.hermes}/skills" \
-  -path '*skill-quality-audit/scripts/audit_skill_quality.py' 2>/dev/null | sort -V | tail -1)  # cache guarda uma pasta por versão
-echo "SQA=${SQA:-AUSENTE}"
+  -path '*skill-quality-audit/scripts/audit_skill_quality.py' 2>/dev/null | sort -V | tail -1)
+[ -f "$RS/scripts/audit_gate.py" ] || RS=$(dirname "$(dirname "$(find ~/.claude/plugins/cache \
+  -path '*retrofit-skill/*scripts/audit_gate.py' 2>/dev/null | sort -V | tail -1)")")
+[ -f "$RS/scripts/audit_gate.py" ] || RS=AUSENTE
+echo "SQA=${SQA:-AUSENTE} RS=$RS"
 ```
+
+`RS=AUSENTE` (plugin não instalado nem marketplace à mão) é SKIP do gate, como o auditor ausente.
+
+*Armadilhas*, nas seções abaixo, é `$RS/references/armadilhas-medidas.md`: o caso
+medido por trás de cada regra. Leia a seção citada antes de afrouxar a regra.
 
 - **Se não achar, é `[SKIP] auditor ausente`,** e isso vai escrito na proposta e
   no resumo final. SKIP é um gate que não rodou, **nunca** uma aprovação. A versão
@@ -121,11 +120,9 @@ echo "SQA=${SQA:-AUSENTE}"
 
 ## ANTES DE EDITAR — atualize o repo local
 
-Sincronize o repo alvo com o remoto **antes de tocar em qualquer arquivo**. Numa
-sessão real isto evitaria um push rejeitado: o clone local estava atrás do
-`origin/main` (outra máquina/CI havia empurrado commits), então o `git push`
-falhou e exigiu fetch+rebase no meio do caminho — com o commit já feito sobre
-uma base defasada.
+Sincronize o repo alvo com o remoto **antes de tocar em qualquer arquivo**: com
+o clone atrás do `origin/main`, o push é rejeitado com o commit já feito sobre
+base defasada (*Armadilhas*, §2).
 
 No repo onde o commit vai cair (o marketplace no modo completo; o repo da skill
 no modo enxuto):
@@ -148,13 +145,9 @@ em vez de rebasear com a edição já feita.
 
 **Árvore suja com arquivos que não são seus = outra sessão viva no mesmo
 checkout.** O índice do git é **um só** para todas as sessões: o que você pôs nele
-com `git add` sai no commit de **quem commitar primeiro**. Medido em 02/10/2026:
-um retrofit deixou 5 arquivos no índice enquanto pedia confirmação, outra sessão
-commitou o trabalho dela com `git commit` e levou o retrofit inteiro dentro de um
-commit com o título dela, já empurrado para a `main`. Os arquivos compartilhados
-(`marketplace.json`, `README.md`) pioram o caso: os dois trabalhos caem no mesmo
-arquivo, e nenhum `git add <arquivo>` separa um do outro. Nesse caso, edite e
-commite num worktree próprio, e não toque no checkout compartilhado:
+com `git add` sai no commit de **quem commitar primeiro**, e `marketplace.json` e
+`README.md` misturam os dois trabalhos no mesmo arquivo (*Armadilhas*, §3). Nesse
+caso, edite e commite num worktree próprio, e não toque no checkout compartilhado:
 
 ```bash
 git worktree add -b retrofit-<skill> <scratchpad>/wt origin/main   # edite, valide e commite lá
@@ -231,69 +224,18 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
      reprova vira ruído de fundo. Se a sua edição empurrou a description acima do
      cap, encurte agora — depois vira mutirão.
 
-     Confirmação independente de que os quatro lugares batem:
+     Confirmação independente de que os quatro lugares batem (na raiz do marketplace):
 
      ```bash
-     python3 - <<'EOF'
-     import json, re, io, glob
-     nome = 'SUA-SKILL'
-     pj = json.load(open(f'plugins/{nome}/.claude-plugin/plugin.json'))
-     mk = {p['name']: p for p in json.load(open('.claude-plugin/marketplace.json'))['plugins']}[nome]
-     rd = io.open('README.md', encoding='utf-8').read()
-     print('description plugin.json == marketplace.json:', pj['description'] == mk['description'])
-     print('tamanho:', len(pj['description']), '(cap 500)')
-     skills = sorted(glob.glob(f'plugins/{nome}/skills/*/SKILL.md'))
-     if not skills:
-         print('plugin só de comandos — o canônico é o plugin.json, não há SKILL.md')
-     for sp in skills:
-         sk = io.open(sp, encoding='utf-8').read()
-         d = re.search(r'^description:\s*(.*?)(?=\n[A-Za-z0-9_-]+:|\n---)', sk, re.S | re.M).group(1).strip().strip('"')
-         print(f'{sp}: igual ao plugin.json?', d == pj['description'], '| len', len(d))
-     def _e_do_plugin(linha):
-         if not linha.startswith('|'):
-             return False
-         celula = linha.split('|')[1].strip()
-         celula = re.sub(r'^\[|\]\(#[^)]*\)$', '', celula).strip().strip('*')
-         return celula == nome
-     linhas = [l for l in rd.split('\n') if _e_do_plugin(l)]
-     vers = [l.split('|')[2].strip() for l in linhas if l.split('|')[2].strip() not in ('✓', '—')]
-     print('versao na linha do README:', vers, '— esperado:', [pj['version']], f'({len(linhas)} linhas)')
-     EOF
+     python3 "$RS/scripts/check_release_sync.py" <nome-do-plugin>
      ```
 
-     ⚠️ Este passo existe porque falhou na prática: um retrofit atualizou a
-     description em 2 dos 3 arquivos e deixou o README numa versão antiga. O erro
-     só apareceu na sessão seguinte, quando outra pessoa rodou o validador.
-
-     ⚠️ **O plugin pode não ter `SKILL.md` — e pode ter vários.** A forma
-     anterior lia `plugins/<nome>/skills/<nome>/SKILL.md` como se todo plugin
-     tivesse exatamente um, com o nome do plugin. Dois casos reais quebram isso:
-     um plugin **só de comandos** (o `retrofit-skill` é um) não tem `skills/`, e
-     o cheque estourava em `FileNotFoundError` — um cheque que não roda é pior
-     que um que reprova, porque o erro parece problema do ambiente; e um plugin
-     **multi-skill** (o `dotnet-wpf` tem quatro, com nomes próprios) tem uma
-     `description` por skill, que **legitimamente difere** da do `plugin.json`.
-     Daí o `glob`: sem skill, ele diz que o canônico é o `plugin.json`; com
-     várias, imprime uma linha por skill para você julgar — em vez de colapsar
-     tudo num booleano que mente nos dois casos.
-
-     ⚠️ **O fim da `description` é a próxima chave do frontmatter — e chave pode ter hífen.**
-     A forma anterior parava em `\n[a-z_]+:`, e `argument-hint:` (campo real do Claude Code)
-     não casa: a captura atravessava até `metadata:` e o cheque dizia `False` para uma
-     description idêntica (medido no retrofit do `ticket` v1.6.1: 511 chars capturados × 456
-     reais). Um falso negativo ensina a ignorar o cheque, que é o mesmo dano de um falso positivo.
-
-     ⚠️ **E o cheque do README já foi ele próprio o sensor cego.** A forma
-     anterior perguntava `f"| {pj['version']} |" in rd` — se a string existe em
-     *algum lugar* do arquivo. Ela responde `True` porque **outro** plugin está
-     naquela versão, e o README tem duas tabelas com uma linha do seu plugin em
-     cada (compatibilidade, onde o campo 2 é `✓`, e versões). Foi medido: um
-     `python3` que morreu numa `AssertionError` sem escrever o README, seguido
-     deste cheque dizendo `versao no README: True`. Por isso a forma acima extrai
-     a versão **da linha do seu plugin** e a imprime para comparação, em vez de
-     devolver um booleano — um cheque que não consegue reprovar não é cheque, e
-     um que imprime o valor encontrado deixa o erro visível mesmo quando a
-     comparação está errada.
+     Ele **imprime os valores** encontrados, não só booleanos: leia as versões e o
+     tamanho da description, não apenas os `True`. Plugin só de comandos não tem
+     `SKILL.md` (o canônico é o `plugin.json`); plugin multi-skill imprime uma linha
+     por skill, cuja description pode diferir de propósito, e você julga. Os
+     falsos verdes que o cheque já teve, e por que ele é assim, estão em
+     *Armadilhas*, §4.
    - **Antes do commit, leia o `--stat` e responda por cada arquivo.**
 
      ```bash
@@ -304,13 +246,9 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
      de você editar (ver *ANTES DE EDITAR*). Num checkout que outra sessão usa,
      ele leva o trabalho dela no seu commit.
 
-     Um arquivo que você não pretendia tocar é **sinal, não ruído** — e foi o
-     único sensor que pegou o clobber do PASSO 0 (`CHANGELOG.md | 567 ++++----`
-     num arquivo que o retrofit não deveria ter alterado). O `validate-versions`
-     passou limpo, a releitura da description passou, e mesmo assim havia dano
-     no commit: os gates olham o que você mudou de propósito, e nenhum deles
-     olha o que você mudou sem querer. Contar arquivos é barato e é a última
-     chance antes de o erro virar histórico.
+     Um arquivo que você não pretendia tocar é **sinal, não ruído**: os gates olham
+     o que você mudou de propósito, e só o `--stat` olha o que mudou sem querer. Já
+     foi o único sensor a pegar um clobber (*Armadilhas*, §5).
 
    - Commit: `feat|fix($ARGUMENTS): vX.Y.Z — <resumo>`. **Sem trailer
      `Co-Authored-By`** — ver *Autoria dos commits* abaixo. Push pra origin/main.
@@ -336,37 +274,7 @@ Vale para os dois modos, em cada skill com `SKILL.md` que o retrofit tocou. Com
 python3 "$SQA" "$ALVO" --format json --claims "${FLAGS[@]}" > "$B/depois.json"; echo "rc=$?"
 git -C "$ALVO" add -N .                          # arquivo novo (reference) entra no diff
 git -C "$ALVO" diff -U0 -- . > "$B/diff.txt"     # linhas acrescentadas e removidas
-python3 - "$B" <<'EOF'
-import json, re, sys
-b = sys.argv[1]
-ler = lambda n: json.load(open(f'{b}/{n}.json'))['skills'][0]
-antes, depois = ler('antes'), ler('depois')
-chave = lambda f: (f['level'], f['id'], f['msg'])
-grave = lambda f: f['level'] in ('ERRO', 'AVISO')
-velhos = {chave(f) for f in antes['findings'] if grave(f)}
-atuais = {chave(f) for f in depois['findings'] if grave(f)}
-for k in sorted(atuais):
-    print('NOVO     ' if k not in velhos else 'dívida   ', *k)
-for k in sorted(velhos - atuais):
-    print('SUMIU    ', *k)                       # precisa de motivo, não é vitória automática
-# linhas novas e removidas por arquivo, lidas dos cabeçalhos @@ do diff -U0
-novas, removidas, arq = {}, {}, None
-for l in open(f'{b}/diff.txt', encoding='utf-8'):
-    if l.startswith('--- '):
-        velho = l[6:].strip() if l.startswith('--- a/') else None
-    elif l.startswith('+++ '):
-        arq = l[6:].strip() if l.startswith('+++ b/') else velho
-    elif l.startswith('@@') and arq:
-        m = re.search(r'-\d+(?:,(\d+))? \+(\d+)(?:,(\d+))?', l)
-        rem, ini, n = int(m.group(1) or 1), int(m.group(2)), int(m.group(3) or 1)
-        novas.setdefault(arq, set()).update(range(ini, ini + n))
-        removidas[arq] = removidas.get(arq, 0) + rem
-for a in sorted(set(novas) | set(removidas)):
-    print('LER      ', a, f'+{len(novas.get(a, ()))} -{removidas.get(a, 0)} linha(s)')
-for c in depois.get('claims', []):
-    if any(a.endswith(c['file']) and c['line'] in ls for a, ls in novas.items()):
-        print('CLAIM    ', f"{c['file']}:{c['line']}", c['kind'], '|', c['text'][:90])
-EOF
+python3 "$RS/scripts/audit_gate.py" "$B"           # NOVO / dívida / SUMIU / LER / CLAIM
 ```
 
 - **`NOVO` bloqueia,** com uma saída: a exceção legítima. Se a própria lição
@@ -402,24 +310,23 @@ Os commits deste fluxo saem **apenas com a autoria do usuário**. Não acrescent
 trailer `Co-Authored-By: Claude ...` — nem aqui, nem no corpo de PRs abertos por
 este fluxo.
 
-Vale a pena dizer isto explicitamente em vez de apenas omitir: o prompt padrão do
-Claude Code **instrui** a terminar mensagens de commit com esse trailer, então o
-silêncio deixaria o default vencer. A instrução do usuário tem precedência sobre o
-default — é o histórico do repositório dele, e ele decide de quem é a assinatura.
+Dito explicitamente porque o prompt padrão do Claude Code **instrui** a pôr o
+trailer, e o silêncio deixaria o default vencer. A instrução do usuário vence.
 
 ## Mantenha a descrição ENXUTA (triggering)
 
-A `description` (frontmatter do SKILL.md + `plugin.json` + `marketplace.json`) é a **superfície de triggering** — é só por ela (e pelo nome) que o Claude decide invocar a skill. Um retrofit não pode deixá-la inchar:
+A `description` (frontmatter do SKILL.md, `plugin.json`, `marketplace.json`) é a **superfície
+de triggering**: é por ela e pelo nome que o Claude decide invocar a skill.
 
-- **Não vá só anexando** a lição de cada versão na descrição — é assim que ela vira um paredão de 1000+ chars. Detalhe vai para `references/**` e para a linha do README; a descrição fica curta.
-- **Alvo ~350–500 chars** (teto ~700 só se a skill for genuinamente complexa). Descrições longas demais diluem o sinal e podem ser **silenciosamente cortadas** na lista `/skills`, o que PIORA o triggering.
-- Se o retrofit empurrar a descrição além do teto, **enxugue em vez de só somar**: comece com UMA frase do que a skill faz, mantenha 1–2 diferenciais distintivos, e termine com um `Triggers —` compacto (≤8 frases/keywords, não um dump de palavras).
-- **Espelhe a MESMA descrição enxuta** nos três lugares (SKILL.md, `plugin.json`, `marketplace.json`).
+- **Não anexe a lição de cada versão** nela: detalhe vai para `references/**` e para a linha do
+  README. Descrição longa dilui o sinal e pode ser **cortada em silêncio** na lista `/skills`.
+- **Alvo ~350–500 chars** (teto ~700 só para skill genuinamente complexa). Passou? Enxugue em vez
+  de somar: UMA frase do que faz, 1–2 diferenciais e um `Triggers —` com ≤8 termos.
+- **A MESMA descrição** nos três lugares.
 
 ## Mantenha a skill no formato da spec (agentskills.io)
 
-Retrofit só soma texto, e é assim que uma skill passa do orçamento: a auditoria de 2026-09-28
-achou `SKILL.md` com 970 linhas e outro com 110 mil chars (~27k tokens) no marketplace. A régua
+Retrofit só soma texto, e é assim que uma skill passa do orçamento (*Armadilhas*, §6). A régua
 é a spec aberta (https://agentskills.io/specification) e as boas práticas do mesmo site:
 
 - **Frontmatter:** no topo só `name`, `description`, `license`, `compatibility`, `metadata` e

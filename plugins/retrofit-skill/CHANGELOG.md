@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.7.1] — 2026-10-02
+
+### O comando volta ao orçamento: scripts e reference, sem mudar o fluxo
+
+O comando tinha 450 linhas e ~26,2 mil chars, acima do orçamento de ~20 mil da spec. Refatoração
+pela `skill-refactoring`, sem regra nova nem removida:
+
+- **Scripts** (Passo 3 da `skill-refactoring`): os dois blocos Python embutidos viram
+  `scripts/check_release_sync.py <plugin>` (cheque dos quatro lugares) e
+  `scripts/audit_gate.py <B>` (NOVO/dívida/SUMIU/LER/CLAIM). Provados contra o código original:
+  saída idêntica em 5 plugins reais (só e multi-skill, só comandos) e numa skill editada de
+  propósito; a sabotagem de versão aparece nos valores impressos.
+- **Reference** `references/armadilhas-medidas.md`: as seis narrativas medidas (symlink, repo
+  atrás, outra sessão, cheque dos quatro lugares, `--stat`, orçamento da spec) movidas sem
+  reescrita. Cada regra fica no comando em uma ou duas linhas e cita a seção (*Armadilhas*, §N).
+- **Localizador `$RS`**: o comando acha a própria pasta no marketplace (modo completo) ou no
+  cache do plugin (`sort -V`, a versão mais alta); sem ela, o gate é SKIP como o auditor ausente.
+
+Resultado: 357 linhas e ~20 mil chars. Para reverter, `git revert` deste commit.
+
 ## [0.7.0] — 2026-10-02
 
 ### Outra sessão no mesmo checkout commitou o retrofit
