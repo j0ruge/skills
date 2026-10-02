@@ -2,6 +2,28 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.5.0] — 2026-10-02
+
+### `coderabbit-pr` 4.2.0: worktree em vez de checkout, e só se resolve o que o PR carrega
+
+Lições da corrida no PR j0ruge/sdd_agents#195.
+
+- **Árvore limpa não é árvore parada.** A Fase 1.1 mandava `git checkout <headRefName>` quando a
+  árvore estivesse limpa. Ela estava limpa, na branch de uma missão, enquanto um subagente planner
+  escrevia os artefatos dessa missão no mesmo checkout: o checkout teria levado os arquivos dele
+  para a branch errada. A corrida usou `git worktree add ../sdd_agents-pr195 <branch>` e deixou o
+  checkout intocado. Agora, quando a branch atual difere da do PR, o padrão é o worktree; o
+  comando, o caso "branch já aberta noutro worktree" e a remoção no fim estão na nova
+  `references/pr-branch.md`, junto com a varredura de checklists antigos, que saiu do `SKILL.md`.
+- **Fase 5.0: o head do PR tem de conter os consertos.** A skill nunca commita, então ao fim da
+  Fase 4 o conserto existe só no disco. Seguida ao pé da letra, a corrida resolveria a conversa
+  do CodeRabbit com o head (`3c739aa`) ainda carregando o defeito; o conserto foi empurrado
+  (`96532c9`) antes. O passo novo confere `headRefOid` contra o `HEAD` local e a árvore sem o
+  conserto pendente, e pede ao usuário o commit e o push antes de resolver
+  (`references/thread-resolution.md`).
+- O `SKILL.md` estava em 19 996 chars contra o teto de 20 000; as duas lições entram com o
+  detalhe nas references e o corpo fica menor que antes.
+
 ## [2.4.0] — 2026-10-01
 
 ### `coderabbit-pr` 4.1.0: o conserto de lógica tem sensor próprio, um achado por vez

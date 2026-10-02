@@ -1,7 +1,7 @@
 ---
 name: coderabbit-pr
 metadata:
-  version: 4.1.0
+  version: 4.2.0
 description: Resolves AI review comments on a GitHub PR — auto-detects CodeRabbit, Copilot, Gemini, Codex; creates per-reviewer checklists, verifies findings against current code (with byte-exact inspection when reviewers cite invisible/control characters), applies fixes, runs regression tests, resolves GitHub conversations, then cleans up its own checklist files. Triggers — coderabbit, copilot review, gemini review, codex review, fix PR review.
 ---
 
@@ -32,6 +32,7 @@ This skill is **project-agnostic** and **reviewer-agnostic** — it works with a
 
 Read each one at the step that needs it:
 
+- `references/pr-branch.md` — read at Phase 1.1: the worktree when the branch differs, the sweep.
 - `references/reviewer-registry.md` — read at Phase 1.2 when a login is not in the table below, and
   at 1.3 when structuring findings: comment structure, severity markers and metadata to discard per
   reviewer, plus the rule for unknown bots.
@@ -105,21 +106,11 @@ git branch --show-current
 gh pr view "$PR" --json headRefName -q .headRefName
 ```
 
-**Confirm you are on the PR's branch.** The branch you start on is frequently *not* the PR's — the
-user may have moved on since opening it, and fixes applied there never reach the PR, with nothing
-failing loudly. If the two differ: **working tree clean** → `git checkout <headRefName>` and tell the
-user you switched; **dirty** → stop and report (let the user stash or commit first). When the run
-ends, state which branch the edits landed on.
-
-**Sweep leftover checklists.** `*-review.md` files in the project root are this skill's scratch space
-from a previous run. One whose header names a **different** PR is stale: delete it rather than read
-it as if it described the current PR (Phase 3's cross-reviewer check consults these files).
-
-```bash
-grep -l "Review — PR #" *-review.md 2>/dev/null | while read -r f; do
-  head -5 "$f" | grep -q "PR #${PR}\b" || { echo "stale, removing: $f"; rm -- "$f"; }
-done
-```
+**Work on the PR's branch, without moving the user's checkout.** The branch you start on is often
+*not* the PR's, and fixes made there never reach the PR. If they differ, open a **git worktree** on
+`headRefName` and run everything there — never `git checkout` here: a clean tree is not an idle one
+(a subagent or another session may be writing in it). Then sweep stale `*-review.md` checklists.
+Commands and the why: `references/pr-branch.md`.
 
 #### 1.2 Detect Which Reviewers Are Present
 
@@ -290,6 +281,8 @@ reviewer, not only those processed in Phase 3. Run the three steps directly (com
 `references/thread-resolution.md`, to read when you reach this phase): a delegated batch that
 silently skips a thread reports success just as convincingly as one that didn't.
 
+0. **5.0** the PR head must carry the fixes (`headRefOid` == `HEAD`, nothing uncommitted); if
+   not, ask the user to commit and push first;
 1. **5.1** list the unresolved threads (GraphQL `reviewThreads`, `isResolved == false`);
 2. **5.2** resolve each with the `resolveReviewThread` mutation, piping 5.1 into `while read` (a
    `for id in $ids` loop never splits in zsh) — every line must print `true`;
@@ -337,6 +330,7 @@ the final report carries the findings table, since the file it came from is gone
   (3.1 step 1.5) — the anti-silencing principle of the 4.0 baseline, in another direction.
 - **`Read` is not byte-faithful**: a control-character finding judged from `Read` output is a false
   "not applicable" waiting to happen (3.1 step 1.1).
-- **Fixes on the wrong branch fail silently** — confirm `headRefName` first (1.1).
+- **Fixes on the wrong branch fail silently** — worktree on `headRefName`, never a checkout (1.1).
+- **Resolve only what the PR head carries** — unpushed fix, open thread (5.0).
 - **A reviewer that never ran is not a pass** (Phase 2, case b).
 - **A probe of the finding does not test the fix** — sabotage it until one goes red (3.2).

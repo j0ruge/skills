@@ -6,6 +6,25 @@ silently skips a thread reports success just as convincingly as one that didn't.
 
 `OWNER` and `REPO_NAME` are the two halves of `$REPO`; `PR_NUMBER` is the PR from the user input.
 
+## 5.0 The PR Head Carries the Fixes
+
+Resolving a thread tells every reader "this is fixed in the PR". The skill never commits, so
+right after Phase 4 the fixes exist only on disk. Check before 5.1:
+
+```bash
+git status --porcelain                                  # must not list the files you fixed
+[ "$(gh pr view "$PR" --json headRefOid -q .headRefOid)" = "$(git rev-parse HEAD)" ] \
+  && echo "head carries the fixes" || echo "PR head differs from local HEAD"
+```
+
+Anything uncommitted, or a different head → stop, show the user the diff and ask them to commit
+and push (or to authorise you to). Re-run the check after the push. With Phase 3 having changed
+no files (every item already fixed / not applicable), the check passes trivially — resolve.
+
+Measured on 2026-10-02 (sdd_agents PR #195): followed literally, the run would have resolved the
+CodeRabbit thread while the PR head (`3c739aa`) still carried the defect; the fix was pushed as
+`96532c9` first, and only then resolved.
+
 ## 5.1 List Unresolved Threads
 
 ```bash
