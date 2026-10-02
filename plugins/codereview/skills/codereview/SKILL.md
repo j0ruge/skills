@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.3.0
+  version: 2.6.0
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -109,7 +109,7 @@ Phase A hands Phases B and C: BASE_BRANCH, BRANCH_NAME, MERGE_BASE, DIFF_STAT, C
 
 **Why a script**: LLMs are not regex engines — `initialPassword: 'foo'` (`password` as a suffix) is easy to miss by eye. `scripts/scan_secrets.py` applies the 6.10 regex catalog with Python `re`, the exception list (env lookups, placeholders, `.env.example`) and `ggshield`/`gitleaks` when on PATH; agents' 6.10 findings only supplement it. It runs locally because CI scanners like GitGuardian block the push — see it before the secret reaches a remote branch.
 
-Empty CHANGED_FILES, dirty `git status --porcelain` → `worktree` mode (`references/configuration.md`). Both empty → output "No changes detected between this branch and `{BASE_BRANCH}`." and stop.
+Empty CHANGED_FILES, dirty `git status --porcelain` → `worktree` mode (`references/configuration.md`). Both empty → output "No changes detected between this branch and `{BASE_BRANCH}`." and stop — unless the user scoped paths: then empty is a pathspec error (read configuration.md §Path-scoped reviews).
 
 If more than 15 CODE files, prioritize by change size (diff stat lines). Note deprioritized files.
 
@@ -187,7 +187,7 @@ After all sonnet agents return, the main model:
    - `secrets_prescan.findings` is **authoritative** — every entry is real (regex matched + exception filter applied) and goes straight into the Secrets Detection table.
    - Agent 6.10 findings are **supplemental** (context the regex missed, e.g. a custom DSL with a non-standard keyword). One NOT already in `secrets_prescan` (by `{file, line, kind}`) enters the table only if (a) it shows a concrete literal credential, not a category like "potential leak", AND (b) it matches a 6.10 category or a clear equivalent; otherwise drop it as low-signal speculation.
    - Dedup remaining entries by `{file, line, kind}`; on collision, keep the higher severity and prefer `source=ggshield` > `gitleaks` > `regex` > `sonnet` for provenance.
-3. **Cross-file analysis** — only the main model has the whole picture: races spanning files (check in controller, act in service), schema consistency across related endpoints, import-chain coherence (producer and consumer types match). Add what you find to the list.
+3. **Cross-file analysis** — only the main model has the whole picture: races spanning files (check in controller, act in service), schema consistency across related endpoints, import-chain coherence (producer and consumer types match). Code that already runs (cron, service): read its latest outputs (configuration.md §Runtime evidence). Add what you find to the list.
 4. **Severity recalibration** — review each finding's severity:
    - Per-file agents may over-flag memoization issues (React.memo, useCallback) — downgrade per the rules in detection-passes.md
    - Ambiguous TOCTOU patterns in single-user contexts — downgrade to LOW
@@ -235,7 +235,7 @@ on {area})`, one-word rationales), never prose in place of the table.
 ## Operating Principles and Gotchas
 
 - **Context efficiency**: agents hold file content and diffs, so the main model sees only findings;
-  prioritize by change size; cap analysis at 15 full file reads across all agents.
+  cap analysis at 15 full file reads across all agents.
 - **Measure, don't guess** — the report's last line says how many agents ran, on which model, how many
   tool calls each made and whether the sweep ran. Compare it with `/cost` (or the harness's per-session
   cost log) before and after any change to this skill; a change without that pair of numbers is a guess.
@@ -245,6 +245,5 @@ on {area})`, one-word rationales), never prose in place of the table.
 - **Be fair to generated code** — UI_LIB files get reduced scrutiny (except pass 6.10, which always runs).
 - **Never whitelist a secret finding to reduce noise** — test-file passwords count like production
   ones; GitGuardian agrees. A false-positive re-read costs far less than a leaked credential.
-- **Acknowledge context limits** — if an agent couldn't fully analyze a file, say so.
 - **Ground findings in evidence** — quote the problematic snippet when helpful; for secrets, mask the
   value with `***` (the report itself is copied into chat history).

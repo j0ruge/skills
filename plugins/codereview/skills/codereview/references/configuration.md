@@ -52,3 +52,19 @@ When `$ARGUMENTS` contains key-value overrides, apply them before classification
 ```
 
 Overrides are applied on top of defaults — only the specified values change; unmentioned values keep their defaults.
+
+## Path-scoped reviews
+
+Read this when the user limits the review to paths (`-- dir/ file`, "only the skill folder", "without docs/"). Pass the pathspecs to every Phase A command and to the agent prompts' diff commands.
+
+- **Exclusions go quoted, in long form:** `':(exclude)docs/qa'`. The short `':!docs/qa'` is unsafe in zsh: unquoted, `!` is history expansion; stored in a variable (`P="a :!b"; git diff -- $P`), zsh does not word-split, git receives one bogus pathspec and prints nothing.
+- **Empty output under an explicit path scope is an error, not "No changes detected".** Re-check the pathspecs (`git diff --stat {MERGE_BASE}...HEAD -- <paths>` without exclusions, `git log --oneline -- <paths>`) before stopping. Measured: a 32-commit scope came back as 0 commits from the unquoted form.
+
+## Runtime evidence
+
+Read this in Phase C when the reviewed code already runs (a cron job, a deployed service, a scheduled script) — a diff review cannot see behavior that only shows up on real data.
+
+- Look for the latest 2–3 run outputs: the scheduler's output dir (e.g. `cron/output/<job>/`), the service log, the job's last status. Read them, don't summarize them from memory.
+- Compare each output with what the diff says should happen: a message that contradicts the code's intent, an event firing for the wrong records, a warning that repeats daily. File the mismatch as a finding with the output path and line as evidence.
+- Measured: a review of a daily cron missed, in all per-file agents, an event that re-announced 9 records lost years earlier — it showed only in that morning's output.
+- Never paste client data or credentials from the output into the report: cite the file and summarize.

@@ -163,6 +163,9 @@ ENV_LOOKUP_PATTERNS = [
     re.compile(r"\bsecrets?\.get\s*\(", re.IGNORECASE),
 ]
 
+INTERPOLATION_RE = re.compile(
+    r"#?\{[a-z_][\w.]*(\[[^\]]*\])*(![rsa])?(:[^{}]*)?\}|%\([a-z_]\w*\)[sdr]")
+
 # Caminhos onde placeholder values são esperados — não disparar Env Assignment
 # nem Generic Password se o valor parecer placeholder.
 ENV_TEMPLATE_FILE_PATTERNS = [
@@ -234,6 +237,11 @@ def looks_like_placeholder(raw_value: str) -> bool:
         return True
     # Templates ${VAR}, ${VAR:?...}, ${VAR:-default} são env-substitution, não literal.
     if v.startswith("${") and v.endswith("}"):
+        return True
+    # O valor inteiro é uma interpolação de variável — f-string/format `{self.token}`,
+    # Ruby `#{x}`, `%(x)s` —, não um literal: o valor vem de runtime (ex.: env).
+    # Literal com `{` no meio (`abc{1}xyz`) continua finding.
+    if INTERPOLATION_RE.fullmatch(v):
         return True
     return False
 

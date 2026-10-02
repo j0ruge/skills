@@ -2,6 +2,32 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.6.0] — 2026-10-02
+
+### `codereview` 2.6.0: interpolação não é senha, escopo por caminho e saída real em produção
+
+Lições do review da skill `sbm-renovacao` (repo `~/.hermes`, Jira SBM-1).
+
+- **`scan_secrets.py`: valor que é inteiro uma interpolação deixa de ser finding.** O pré-scan acusou
+  `f'… oauth_token="{self.token}"'` como Generic Password, e a regra do gate (pré-scan é autoritativo,
+  nunca rebaixa) forçaria F num relatório sem credencial: o token vinha de `env_value(...)`.
+  `looks_like_placeholder()` já aceitava `${VAR}`; agora aceita também `{ident.attr}`, `#{x}` e
+  `%(x)s` quando são o valor inteiro. Literal com `{` no meio (`abc{1}xyz`, `{a}{b}hunter2`) continua
+  acusado. Verificado com diff sintético (3 literais acusados, 4 interpolações não) e no diff real
+  (1 → 0 findings).
+- **Review com escopo de caminho: vazio é erro de pathspec, não "No changes".** `P="… :!x"; git diff -- $P`
+  no zsh não divide a variável, o git recebe um pathspec só e não imprime nada; um escopo de 32 commits
+  voltou como 0. Nova seção `references/configuration.md` §Path-scoped reviews (forma `':(exclude)…'`
+  entre aspas e como reconferir), roteada pela regra de "Both empty" da Fase A.
+- **Fase C lê as últimas saídas de código que já roda.** O achado mais útil daquele review (um evento
+  reanunciando 9 registros perdidos anos antes) só aparecia na saída do cron daquela manhã; nenhum agente
+  por arquivo o viu no diff. Nova seção §Runtime evidence, roteada pelo passo 3 da Fase C.
+- **Orçamento:** para caber as duas frases novas abaixo de 20 mil chars, dois trechos duplicados foram
+  fundidos: "prioritize by change size" (já na Fase A, regra dos 15 arquivos) e "Acknowledge context
+  limits" (já na Fase C passo 1, `partially analyzed`, e em Error Handling). `SKILL.md`: 19 832 → 19 929 chars.
+- Dívida pré-existente, não tratada aqui: 3 AVISO C2 (contratos de subagente lidos por caminho
+  absoluto — intencional), F4 sem evals.
+
 ## [2.5.0] — 2026-10-02
 
 ### `coderabbit-pr` 4.2.0: worktree em vez de checkout, e só se resolve o que o PR carrega
