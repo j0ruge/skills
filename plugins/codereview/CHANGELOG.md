@@ -2,6 +2,35 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.7.0] — 2026-10-02
+
+### `coderabbit-pr` 4.3.0: a árvore ocupada, o achado que mora no código e o wrapper que desarma o prazo
+
+Lições do `/codereview:coderabbit-pr` no PR #196 do `sdd_agents`, rodado com o pipeline do kit ainda na
+fase PR.
+
+- **Mesma branch, outro escritor ativo: só leitura até ele sair.** A 2.5.0 resolveu o caso em que a
+  branch do PR é outra (worktree). O caso oposto ficou com "work here": o checkout estava limpo **na
+  branch do PR** enquanto a sessão de PR do pipeline e o catálogo de mutação que ela disparou ainda
+  mediam a árvore. Aplicar um conserto em `bin/` mudaria o conteúdo que o carimbo media, e um
+  `coderabbit-review.md` na raiz seria atribuído pela guarda de chapéu do runner à sessão em curso,
+  parando a linha. Agora: fases 1–3.1 só lendo, checklist fora da árvore, nada aplicado até o escritor
+  sair. Nova seção em `references/pr-branch.md` com a detecção por diretório de trabalho (`/proc/*/cwd`,
+  testada), o ruído que ela traz (o próprio harness, um daemon do Codex de pé havia 14 dias) e por que o
+  worktree não serve (o git recusa um segundo checkout da mesma branch).
+- **Achado ancorado em doc pode ser defeito de código.** O CodeRabbit ancorou em `docs/pipeline.md` um
+  achado sobre o que o `sdd close` imprime; a frase falsa ("merged and spent" sem merge verificado)
+  saía do `bin/sdd`. Consertar só a prosa deixaria o programa mentindo. Passo 3.1, item 1.5, e uma
+  armadilha nova.
+- **Wrapper sugerido desarma o `timeout --foreground`.** O review propôs envolver o passo em `bash -c`
+  para remapear um rc 124 do filho. Com `--foreground` o `timeout` sinaliza só o processo de topo, que
+  passaria a ser o wrapper. Medido: rc 124 nos dois casos, e o passo envolvido escreveu seu marcador
+  3 s depois do prazo, enquanto o passo direto morreu. Armadilha nova; o caso é "demonstrably wrong"
+  do passo 6.
+- **Orçamento:** `SKILL.md` 19 862 → 19 993 chars, pago com quatro compressões de texto redundante (o
+  porquê do "inline", o erro "no comments", a frase da projeção e a intro da Phase 5). Fica a 7 chars
+  do teto de 20 mil: o próximo retrofit move detalhe para `references/`.
+
 ## [2.6.0] — 2026-10-02
 
 ### `codereview` 2.6.0: interpolação não é senha, escopo por caminho e saída real em produção
