@@ -4,6 +4,8 @@
 Registrado em hooks/hooks.json:
   Stop                         -> retrofit_watch.py stop
   SessionStart (resume|fork)   -> retrofit_watch.py baseline
+  SessionStart (startup)       -> retrofit_watch.py pending   (aviso de retro adiada)
+Linha de comando: retrofit_watch.py queue [--done ID...]   (a fila das sessões headless)
 
 "Nossa" = skill do marketplace chewiesoft-marketplace (j0ruge/skills; retrofit modo full, o
 argumento é o nome do PLUGIN) ou skill versionada em git num repo de dono conhecido (modo lean).
@@ -16,9 +18,12 @@ TODO.md do repo do kit, não para o /retrofit-skill.
 
 Controle por ambiente:
   RETROFIT_WATCH=off     desliga
-  RETROFIT_WATCH=force   roda mesmo em sessão desassistida (testes com claude -p)
-Config opcional em ~/.claude/retrofit-watch.json: owners, include, exclude, deny_roots, kits.
+  RETROFIT_WATCH=force   pede a retro mesmo em sessão desassistida (testes com claude -p)
+Config opcional em ~/.claude/retrofit-watch.json: owners, include, exclude, deny_roots, kits,
+unattended ("queue", o padrão, ou "off").
 
+Sessão desassistida (claude -p, fase do sdd run): nada volta para a sessão; com atrito, grava uma
+linha em <data>/queue.jsonl (fora de qualquer repo) para a retro numa sessão com o humano.
 Estado em ${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json (offset do transcript e contadores).
 Nunca grava texto do assistente. Qualquer erro interno vai para <data>/errors.log e sai com 0.
 Só biblioteca padrão.
@@ -42,6 +47,7 @@ MAX_REVIEWS = 2
 FIRST_REVIEW_WORK = 5
 SECOND_REVIEW_FRICTION = 2
 STATE_TTL_SECONDS = 14 * 24 * 3600
+QUEUE_FILE = "queue.jsonl"
 GIT_TIMEOUT = 2
 
 BASE_PREFIX = "Base directory for this skill: "
@@ -486,17 +492,86 @@ def build_output(entries):
     }
 
 
-def attended():
+def session_mode(ctx):
+    """`off`, `attended` (pede a retro agora) ou `queue` (sessão desassistida: grava na fila)."""
     mode = os.environ.get("RETROFIT_WATCH", "").lower()
     if mode == "off":
-        return False
+        return "off"
     if mode == "force":
-        return True
+        return "attended"
     flag = os.environ.get("CLAUDE_CODE_SESSION_ATTENDED")
     if flag is not None:
-        return flag == "1"
-    entry = os.environ.get("CLAUDE_CODE_ENTRYPOINT")
-    return entry is None or entry == "cli"
+        attended = flag == "1"
+    else:
+        entry = os.environ.get("CLAUDE_CODE_ENTRYPOINT")
+        attended = entry is None or entry == "cli"
+    if attended:
+        return "attended"
+    return "off" if str(ctx.config.get("unattended", "queue")).lower() == "off" else "queue"
+
+
+# --- fila das sessões desassistidas ------------------------------------------------------------
+# Uma fase headless (`sdd run`, cron) não tem quem responda à retro, e devolver contexto a ela
+# compraria um turno pago e um escritor a mais no checkout. Por isso ela só grava, FORA de
+# qualquer repo (o diretório de dados do plugin), e a retro acontece depois, numa sessão com o
+# humano. Só entra com atrito: trabalho sem atrito numa sessão que já acabou quase sempre dá
+# "sem lições novas", e reler o transcript para descobrir isso custa caro.
+
+def _queue_lock(ctx):
+    ctx.data_dir.mkdir(parents=True, exist_ok=True)
+    lock = open(ctx.data_dir / "queue.lock", "w")
+    fcntl.flock(lock, fcntl.LOCK_EX)
+    return lock
+
+
+def read_queue(ctx):
+    try:
+        lines = (ctx.data_dir / QUEUE_FILE).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    items = []
+    for line in lines:
+        try:
+            item = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(item, dict) and item.get("id"):
+            items.append(item)
+    return items
+
+
+def enqueue(ctx, payload, entries):
+    session = payload.get("session_id") or "unknown"
+    label = os.environ.get("GIT_REFLOG_ACTION", "")
+    cwd = payload.get("cwd") or os.getcwd()
+    item = {
+        "id": f"{session}:{int(time.time() * 1000)}",
+        "ts": int(time.time()),
+        "session": session,
+        "transcript": payload.get("transcript_path"),
+        "cwd": cwd,
+        "repo": _git(["rev-parse", "--show-toplevel"], cwd) if os.path.isdir(cwd) else None,
+        "phase": label if label.startswith("sdd:") else None,
+        "skills": [{k: e.get(k) for k in ("label", "mode", "arg", "repo", "work", "friction")} for e in entries],
+    }
+    lock = _queue_lock(ctx)
+    try:
+        with open(ctx.data_dir / QUEUE_FILE, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(item, ensure_ascii=False) + "\n")
+    finally:
+        lock.close()
+
+
+def drain(ctx, ids):
+    lock = _queue_lock(ctx)
+    try:
+        keep = [item for item in read_queue(ctx) if item["id"] not in ids]
+        fd, tmp = tempfile.mkstemp(dir=ctx.data_dir, prefix=".tmp-queue-")
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.writelines(json.dumps(item, ensure_ascii=False) + "\n" for item in keep)
+        os.replace(tmp, ctx.data_dir / QUEUE_FILE)
+    finally:
+        lock.close()
 
 
 def record_metric(ctx, payload, pending):
@@ -507,7 +582,8 @@ def record_metric(ctx, payload, pending):
 
 
 def cmd_stop(payload, ctx):
-    if not attended():
+    mode = session_mode(ctx)
+    if mode == "off":
         return None
     transcript = payload.get("transcript_path")
     if not transcript or not os.path.isfile(transcript):
@@ -528,20 +604,51 @@ def cmd_stop(payload, ctx):
             return None
         scanner = Scanner(st, ctx)
         scanner.scan(chunk)
-        if waiting_for_user(payload, scanner.last_tool):
+        if mode == "attended" and waiting_for_user(payload, scanner.last_tool):
             state.save()
             return None
         ready = [e for e in st["skills"].values() if eligible(e)]
+        if mode == "queue":
+            ready = [e for e in ready if e["friction"] >= 1]
         if not ready:
             state.save()
             return None
-        output = build_output(ready)
+        if mode == "queue":
+            enqueue(ctx, payload, ready)
+            output = None
+        else:
+            output = build_output(ready)
+            st["pending"] = [e["label"] for e in ready]
         for entry in ready:
             entry["reviews"] += 1
             entry["work"] = entry["friction"] = 0
-        st["pending"] = [e["label"] for e in ready]
         state.save()
         return output
+
+
+def cmd_pending(payload, ctx):
+    """SessionStart `startup`: uma linha para o humano quando há retro adiada. Nunca vai ao contexto."""
+    if session_mode(ctx) != "attended":
+        return None
+    items = read_queue(ctx)
+    if not items:
+        return None
+    labels = sorted({s.get("label") for item in items for s in item.get("skills", []) if s.get("label")})
+    noun = "retro pendente" if len(items) == 1 else "retros pendentes"
+    return {"systemMessage": f"retrofit-watch: {len(items)} {noun} de sessões headless ({', '.join(labels)}) "
+                             "— /retrofit-watch:retrofit-watch pendentes"}
+
+
+def cmd_queue(argv, ctx):
+    """`queue` lista a fila em JSON; `queue --done ID...` tira as entradas já retradas."""
+    if argv[:1] == ["--done"]:
+        drain(ctx, set(argv[1:]))
+        return 0
+    items = read_queue(ctx)
+    for item in items:
+        item["transcript_exists"] = bool(item.get("transcript")) and os.path.isfile(item["transcript"])
+    print(json.dumps(items, ensure_ascii=False, indent=2))
+    return 0
 
 
 def cmd_baseline(payload, ctx):
@@ -558,8 +665,11 @@ def cmd_baseline(payload, ctx):
 def main(argv):
     if argv and argv[0] in ("-h", "--help"):
         print(__doc__)
-        print("Uso: retrofit_watch.py stop|baseline  (lê o JSON do hook no stdin)")
+        print("Uso: retrofit_watch.py stop|baseline|pending  (lê o JSON do hook no stdin)")
+        print("     retrofit_watch.py queue [--done ID...]  (fila das sessões headless)")
         return 0
+    if argv and argv[0] == "queue":
+        return cmd_queue(argv[1:], Context())
     ctx = None
     try:
         ctx = Context()
@@ -567,7 +677,7 @@ def main(argv):
         payload = json.loads(raw) if raw.strip() else {}
         if not isinstance(payload, dict):
             return 0
-        handler = {"stop": cmd_stop, "baseline": cmd_baseline}.get(argv[0] if argv else "")
+        handler = {"stop": cmd_stop, "baseline": cmd_baseline, "pending": cmd_pending}.get(argv[0] if argv else "")
         if handler is None:
             return 0
         output = handler(payload, ctx)

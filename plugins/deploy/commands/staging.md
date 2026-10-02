@@ -1,7 +1,7 @@
 ---
 description: Promote code to staging (and on to production) through the repo's real CD pipeline. Reads each workflow's `on.push.branches` and `runs-on` instead of assuming — the wrong branch can deploy production, and a hosted job under a billing block never starts. Waits for CI green on the exact commit, promotes by PR merge commit, watches the run, then proves the deploy by the data. Triggers — deploy staging, promote to staging, subir para staging, CD pipeline, cd-staging, promover para produção.
 metadata:
-  version: 2.2.1
+  version: 2.3.0
 ---
 
 ## Deploy to Staging
@@ -169,6 +169,20 @@ git log --no-merges origin/$SOURCE..origin/$TARGET --oneline
 # Does the promotion modify the CD workflows themselves?
 git diff origin/$TARGET origin/$SOURCE --name-only -- .github/workflows/
 ```
+
+**Zero commits in the first count is not "done".** It means an earlier promotion already carried
+everything — not that it reached the environment. Do not open an empty PR (Step 5 has nothing to
+merge). Find the run that the target's current head produced, and go straight to Step 7's proof:
+
+```bash
+git rev-parse --short "origin/$TARGET"     # the merge commit of the last promotion
+gh run list --branch "$TARGET" --limit 3 \
+  --json databaseId,name,conclusion,headSha --jq '.[] | "\(.databaseId) \(.name) \(.conclusion // "—") @\(.headSha[0:7])"'
+```
+
+A red or missing run on that sha means the code is promoted and **not deployed**; a green one still
+needs the container/migration/HTTP proof, because the run before it may have failed and left the
+environment on an older image.
 
 How to read the second one: environment branches accumulate **merge commits**
 from previous promotions, and `--no-merges` filters those out. Empty output is

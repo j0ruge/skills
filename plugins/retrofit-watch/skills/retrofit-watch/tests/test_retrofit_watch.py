@@ -18,6 +18,7 @@ SCRIPT = HERE.parent / "scripts" / "retrofit_watch.py"
 sys.path.insert(0, str(SCRIPT.parent))
 import retrofit_watch as rw  # noqa: E402
 
+UNATTENDED = {"CLAUDE_CODE_SESSION_ATTENDED": "0", "CLAUDE_CODE_ENTRYPOINT": "sdk-cli"}
 GIT_ENV = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t",
                GIT_COMMITTER_EMAIL="t@t", GIT_CONFIG_NOSYSTEM="1")
 
@@ -434,11 +435,86 @@ class StopTest(unittest.TestCase):
         self.write(skill_typed("sdd-plan"), *[tool()] * 6)
         self.assertIsNone(self.run_hook())
 
-    def test_kill_switch_unattended_and_force(self):
+    def test_kill_switch_and_force(self):
         self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), *[tool(error=True)] * 3)
-        self.assertIsNone(self.run_hook(env={"RETROFIT_WATCH": "off"}))
-        self.assertIsNone(self.run_hook(env={"CLAUDE_CODE_SESSION_ATTENDED": "0", "CLAUDE_CODE_ENTRYPOINT": "sdk-cli"}))
+        self.assertIsNone(self.run_hook(env=dict(UNATTENDED, RETROFIT_WATCH="off")))
+        self.assertFalse(self.queue_path().exists(), "off não grava nem a fila")
         self.assertIsNotNone(self.run_hook(env={"CLAUDE_CODE_SESSION_ATTENDED": "0", "RETROFIT_WATCH": "force"}))
+
+    # --- sessão desassistida: fila fora do repo, nada devolvido à sessão -----------------------
+
+    def queue_path(self):
+        return self.w.data / "queue.jsonl"
+
+    def queued(self):
+        if not self.queue_path().exists():
+            return []
+        return [json.loads(line) for line in self.queue_path().read_text().splitlines() if line.strip()]
+
+    def cli(self, *args, env=None):
+        full_env = dict(os.environ, HOME=str(self.w.home), CLAUDE_PLUGIN_DATA=str(self.w.data))
+        full_env.update(env or {})
+        proc = subprocess.run([sys.executable, str(SCRIPT), *args], input="", capture_output=True,
+                              text=True, env=full_env, timeout=20)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return proc.stdout
+
+    def test_unattended_queues_and_says_nothing_to_the_session(self):
+        self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), tool(error=True))
+        out = self.run_hook(last="Segredo do assistente: não grave isto.",
+                            env=dict(UNATTENDED, GIT_REFLOG_ACTION="sdd:REVIEW:ab12cd34"))
+        self.assertIsNone(out, "uma fase headless não pode ganhar turno nem aviso")
+        [item] = self.queued()
+        self.assertEqual(item["session"], "s1")
+        self.assertEqual(item["transcript"], str(self.w.transcript))
+        self.assertEqual(item["phase"], "sdd:REVIEW:ab12cd34")
+        self.assertEqual(item["cwd"], str(self.w.proj))
+        [skill] = item["skills"]
+        self.assertEqual((skill["arg"], skill["mode"], skill["friction"]), ("codereview", "full", 1))
+        self.assertNotIn("Segredo", self.queue_path().read_text(), "texto do assistente nunca é gravado")
+        self.assertIsNone(self.run_hook(env=UNATTENDED))
+        self.assertEqual(len(self.queued()), 1, "sem trabalho novo, nada novo na fila")
+
+    def test_unattended_queue_needs_friction(self):
+        self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), *[tool()] * 8)
+        self.assertIsNone(self.run_hook(env=UNATTENDED))
+        self.assertEqual(self.queued(), [], "trabalho sem atrito não vira retro adiada")
+
+    def test_unattended_does_not_wait_for_an_answer(self):
+        self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), tool(error=True))
+        self.assertIsNone(self.run_hook(last="Rodo isto agora?", env=UNATTENDED))
+        self.assertEqual(len(self.queued()), 1, "ninguém vai responder a pergunta da fase headless")
+
+    def test_unattended_off_in_config_restores_silence(self):
+        (self.w.home / ".claude/retrofit-watch.json").write_text(json.dumps({"unattended": "off"}))
+        self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), tool(error=True))
+        self.assertIsNone(self.run_hook(env=UNATTENDED))
+        self.assertFalse(self.queue_path().exists())
+
+    def test_pending_notice_only_in_attended_sessions(self):
+        self.assertIsNone(self.run_hook("pending"), "fila vazia: nada a dizer")
+        self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), tool(error=True))
+        self.run_hook(env=UNATTENDED)
+        self.assertIsNone(self.run_hook("pending", env=UNATTENDED), "a fase headless seguinte não ouve o aviso")
+        out = self.run_hook("pending")
+        self.assertIn("1 retro", out["systemMessage"])
+        self.assertIn("/retrofit-watch:retrofit-watch pendentes", out["systemMessage"])
+        self.assertNotIn("hookSpecificOutput", out, "o aviso é para o humano, não entra no contexto")
+
+    def test_queue_lists_and_drains_by_id(self):
+        self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), tool(error=True))
+        self.run_hook(env=UNATTENDED)
+        [listed] = json.loads(self.cli("queue"))
+        self.assertTrue(listed["transcript_exists"])
+        self.cli("queue", "--done", listed["id"])
+        self.assertEqual(json.loads(self.cli("queue")), [])
+        self.assertIsNone(self.run_hook("pending"))
+
+    def test_hooks_json_wires_pending_on_startup(self):
+        hooks = json.loads((SCRIPT.parents[3] / "hooks/hooks.json").read_text())["hooks"]
+        startup = [h for group in hooks["SessionStart"] if "startup" in group.get("matcher", "")
+                   for h in group["hooks"]]
+        self.assertTrue(any(h["args"][-1] == "pending" for h in startup))
 
     def test_broken_input_never_breaks_the_session(self):
         self.assertIsNone(self.run_hook(raw="{not json"))

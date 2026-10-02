@@ -1,5 +1,41 @@
 # Changelog — retrofit-watch
 
+## [0.3.0] — 2026-10-02
+
+### Changed
+
+- **A sessão headless deixa de perder a retro: ela vai para uma fila.** Até a 0.2.0, uma fase do
+  `sdd run` (`claude -p`) saía calada no `attended()`, e o atrito de uma skill dentro dela se
+  perdia. O plugin já carregava nessas fases (a linha `init` dos logs do `sdd_agents` de
+  2026-10-01 lista `retrofit-watch`), só não fazia nada. O humano pediu o hook ligado durante o
+  pipeline, com os achados num arquivo que o kit não visse.
+- Em sessão desassistida o hook **não devolve nada** à sessão (nem `additionalContext`, que
+  compraria um turno pago da fase, nem aviso). Com atrito ≥ 1, grava uma linha em
+  `${CLAUDE_PLUGIN_DATA}/queue.jsonl`: sessão, transcript, repo, a fase lida do `GIT_REFLOG_ACTION`
+  (`sdd:REVIEW:<sid8>`, que o `run_phase` do kit já passa) e as contagens. Nunca texto do assistente.
+- **Fora de qualquer repo, de propósito.** Um arquivo dentro do checkout, mesmo no `.gitignore`,
+  seria um escritor a mais na árvore de uma fase cujo `hat_guard_check` e cuja guarda de kit leem
+  a árvore. No diretório de dados do plugin, nenhum sensor do kit o vê.
+- Só entra com atrito. Trabalho sem atrito numa sessão que já acabou quase sempre dá "sem lições
+  novas", e reler o transcript para descobrir isso custa caro.
+- Não espera resposta: o adiamento por pergunta no fim do turno (`waiting_for_user`) vale só em
+  sessão com gente, porque ninguém vai responder à fase.
+
+### Added
+
+- `SessionStart` `startup` → `retrofit_watch.py pending`: numa sessão interativa com fila, uma
+  linha só para o humano (`systemMessage`, fora do contexto) com a contagem e o comando.
+- `retrofit_watch.py queue` lista a fila em JSON (com `transcript_exists`); `queue --done <id>`
+  tira a entrada depois da retro. `/retrofit-watch:retrofit-watch pendentes` faz a retro da fila,
+  pela nova seção 8 do `criteria.md` (ler só o atrito do transcript, nunca ele inteiro).
+- `"unattended": "off"` no `~/.claude/retrofit-watch.json` volta ao silêncio da 0.2.0.
+- 7 testes novos (42 no total). A passada de sabotagem degradou 11 peças do código novo, cada uma
+  com a âncora conferida antes, e as 11 foram pegas.
+
+### Como reverter
+
+`"unattended": "off"` desliga a fila sem reverter o código; `git revert` deste commit volta tudo.
+
 ## [0.2.0] — 2026-10-01
 
 ### Added

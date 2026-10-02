@@ -1,11 +1,11 @@
 ---
 name: retrofit-watch
-description: "Stop hook that notices when one of our skills (j0ruge/skills marketplace or a git-tracked project skill) or one of our kits (sdd) did real work in the session and asks Claude for an evidence-backed retro: /retrofit-skill for a skill, a TODO.md finding for a kit; also runs the retro on demand. Triggers — skill retro, retrofit-watch, session lessons, skill pitfalls, sdd kit lessons, retrofit reminder."
+description: "Stop hook that notices when one of our skills (j0ruge/skills marketplace or a git-tracked project skill) or one of our kits (sdd) did real work in the session and asks Claude for an evidence-backed retro: /retrofit-skill for a skill, a TODO.md finding for a kit. Headless sessions (sdd run phases) are queued outside the repo for a later retro. Triggers — skill retro, retrofit-watch, session lessons, skill pitfalls, sdd kit lessons, pending retros."
 license: MIT
 compatibility: Claude Code 2.1.163+ (Stop additionalContext); testado na 2.1.283 em 2026-09-30. Hook em Python 3, só biblioteca padrão, e git no PATH.
 metadata:
   author: JorUge
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 # retrofit-watch
@@ -52,9 +52,14 @@ continua exigindo a sua confirmação.
 
    O pedido chega ao Claude como "Stop hook feedback" e a você como um aviso de uma linha.
 6. **Cala:**
-   - em sessão desassistida (`claude -p`, cron, missão);
    - numa continuação que o próprio Stop hook pediu (`stop_hook_active`);
    - depois que o `/retrofit-skill` rodou para aquela skill.
+7. **Em sessão desassistida** (`claude -p`, fase do `sdd run`, cron) **não devolve nada à
+   sessão**: um turno a mais seria pago e poria um escritor a mais no checkout da fase. Com atrito
+   ≥ 1, grava uma linha em `${CLAUDE_PLUGIN_DATA}/queue.jsonl`, fora de qualquer repo, com
+   sessão, transcript, repo, a fase (`sdd:REVIEW:<sid8>`, do `GIT_REFLOG_ACTION`) e as contagens.
+   Trabalho sem atrito não entra. Ao abrir uma sessão interativa, um aviso de uma linha (só para
+   você, fora do contexto) diz quantas retros estão pendentes.
 
 ## Quando a retro for pedida (ou sob demanda)
 
@@ -83,12 +88,18 @@ skill × projeto × descarte, auto-audit de segredos e o formato do bloco. Em re
 **Sob demanda:** `/retrofit-watch:retrofit-watch <skill>` faz a mesma retro sem esperar o hook.
 Sem argumento, faz a retro de cada skill nossa usada na sessão.
 
+**Pendentes das sessões headless:** `/retrofit-watch:retrofit-watch pendentes` faz a retro de
+cada entrada da fila, lendo o transcript da sessão que já acabou. Leia antes a seção 8 do
+`references/criteria.md`: como listar (`python3 <dir da skill>/scripts/retrofit_watch.py queue`),
+onde procurar a evidência no transcript e quando tirar a entrada da fila (`queue --done <id>`).
+
 ## Controle
 
 | Quer | Como |
 |---|---|
 | desligar | `RETROFIT_WATCH=off` no ambiente, ou desabilitar o plugin |
-| testar em `claude -p` | `RETROFIT_WATCH=force` |
+| testar em `claude -p` | `RETROFIT_WATCH=force` (pede a retro na própria sessão) |
+| sessão desassistida calada, sem fila | `"unattended": "off"` no `~/.claude/retrofit-watch.json` |
 | mudar donos, incluir ou excluir skills | `~/.claude/retrofit-watch.json`: `{"owners": [...], "include": ["skill"], "exclude": ["plugin-ou-skill"], "deny_roots": ["~/x"]}` |
 | mudar os kits vigiados | `"kits": ["sdd"]` no mesmo arquivo (`[]` desliga) |
 | ver o que aconteceu | `${CLAUDE_PLUGIN_DATA}/metrics.jsonl` (resultado de cada retro: `none`/`lessons`) e `errors.log` |
@@ -99,12 +110,17 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
 ## Gotchas e limites conhecidos
 
 - **Skill usada dentro de subagente** não é vista: ela não aparece no transcript principal.
-- **As fases headless do `sdd run`** (`claude -p`) ficam caladas de propósito: a retro precisa de
-  alguém para responder, e o laço por dados delas é o `sdd kaizen`.
+- **As fases headless do `sdd run`** (`claude -p`) nunca recebem a retro: ela vai para a fila e é
+  feita depois, com você. A fila mora no diretório de dados do plugin para que nenhum sensor do kit
+  a veja (`git status`, `hat_guard_check`, guarda de kit); um arquivo dentro do repo, mesmo
+  ignorado, seria um escritor a mais no checkout da fase.
 - **O gate de sessão desassistida** usa `CLAUDE_CODE_SESSION_ATTENDED` e
   `CLAUDE_CODE_ENTRYPOINT`, observadas na 2.1.283 mas não documentadas. Se uma versão nova
-  mudar isso, o hook passa a pedir retro também em `-p`. Confira com o probe da skill
-  `hook-builder`.
+  mudar isso, o hook passa a pedir retro também em `-p`, o que dá um turno pago à fase. Confira
+  com o probe da skill `hook-builder`.
+- **O transcript some com o tempo** (limpeza do Claude Code, 30 dias por padrão). A entrada cujo
+  transcript não existe mais sai como `transcript_exists: false`: sem evidência não há retro, só o
+  `queue --done`.
 - **Skill local fora do git** (por exemplo `~/.claude/skills/<x>` sem repo) é ignorada, porque
   o retrofit lean commita no repo da skill. Versione a skill, ou ponha no `include`, sabendo
   que o retrofit não terá onde commitar.
@@ -114,5 +130,5 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
 | Arquivo | Para quê |
 |---|---|
 | `references/criteria.md` | ao fazer a retro: critérios, triagem, formato e exemplos |
-| `scripts/retrofit_watch.py` | o hook (`stop` e `baseline`). O plugin o registra no `hooks/hooks.json` da raiz, que o formato de plugin exige |
-| `tests/test_retrofit_watch.py` | 35 testes: classificação, gatilho e kit (`python3 tests/test_retrofit_watch.py`) |
+| `scripts/retrofit_watch.py` | o hook (`stop`, `baseline`, `pending`) e a fila (`queue [--done ID...]`). O plugin o registra no `hooks/hooks.json` da raiz, que o formato de plugin exige |
+| `tests/test_retrofit_watch.py` | 42 testes: classificação, gatilho, kit e fila (`python3 tests/test_retrofit_watch.py`) |

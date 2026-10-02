@@ -12,6 +12,17 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/skills/retrofit-watch/scripts/retrofit_watch.py", "pending"],
+            "timeout": 10
+          }
+        ]
       }
     ],
     "Stop": [

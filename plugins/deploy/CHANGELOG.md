@@ -2,6 +2,19 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-10-02 — Nada a promover não é deploy feito — bump 2.2.1 → [2.3.0]
+
+**O quê:** o Step 4 ganha o ramo "zero commits": quando `origin/$TARGET..origin/$SOURCE` está
+vazio, não se abre PR (o Step 5 não teria o que mergear); acha-se o run do `cd-*` no head atual do
+alvo e vai-se direto à prova do Step 7.
+
+**Por quê:** numa promoção real (`develop → staging`) a contagem deu `0`, porque o PR de promoção
+anterior já tinha levado tudo minutos antes. O fluxo não dizia o que fazer com o zero, e o caminho
+natural era um PR vazio — ou concluir "nada a fazer" sem saber se a promoção anterior subiu. Ali os
+dois runs anteriores do `cd-staging` tinham falhado. Correção verificada: `origin/staging` = merge
+commit do PR de promoção, run do `cd-staging` verde naquele sha, container com a imagem `sha-*`
+correspondente e `Created` no mesmo instante da migration, health respondendo.
+
 ## 2026-10-01 — PR pulado pelo `paths-ignore` também chega sem gate — bump 2.2.0 → [2.2.1]
 
 **O quê:** o Step 4 ganha um parágrafo: além do bloqueio de cobrança, um PR cujos arquivos casam

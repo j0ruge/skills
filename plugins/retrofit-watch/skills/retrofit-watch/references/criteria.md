@@ -122,3 +122,22 @@ Depois do "sim":
 
 Escrever o `TODO.md` com `Edit` ou `Write` encerra a retro do kit nesta sessão. Escrito por script
 no Bash, o hook não percebe, e pode pedir uma segunda retro se o atrito continuar.
+
+## 8. Pendentes: a retro de uma sessão headless que já acabou
+
+A evidência não está no seu contexto, está no transcript da outra sessão. Por isso:
+
+1. **Liste:** `python3 <dir da skill>/scripts/retrofit_watch.py queue`. Cada entrada traz `id`,
+   `transcript`, `transcript_exists`, `repo`, `phase` (`sdd:<FASE>:<sid8>` nas fases do `sdd run`)
+   e, por skill ou kit, `work` e `friction`.
+2. **Leia só o atrito**, nunca o transcript inteiro: os `tool_result` com `"is_error":true`, as
+   linhas do assistente com "não existe", "em vez de" ou "instead of", e as chamadas de ferramenta
+   logo antes de cada um. Um `grep -n` com essas chaves no `.jsonl`, depois um `sed -n` em volta
+   de cada linha, basta. Numa fase do `sdd run`, o handoff dela (`docs/handoffs/<missão>/`) e o
+   `pipeline.log` do repo dizem o que a fase tentava fazer.
+3. **Aplique as seções 2 a 5** como numa retro comum. A fase não pode mais responder, então todo
+   pitfall sem correção verificada fica marcado assim. Atrito que é do repo-alvo ou da missão, e
+   não da skill, é descarte (seção 3).
+4. **Tire da fila só o que foi decidido:** `queue --done <id>` depois da sua resposta (retrofit
+   feito, achado registrado, ou "sem lições novas"). Entrada com `transcript_exists: false` sai
+   sem retro; diga isso no bloco.
