@@ -171,6 +171,21 @@ Contexto:
 {informações adicionais, links, referências}
 ```
 
+## Enriquecer a descrição de uma issue existente
+
+"Enriquece a descrição do X-2" pede **acrescentar**, não reescrever: um `PUT` com
+`description` nova **substitui o campo inteiro** e apaga o texto do autor (no SBM-2,
+dois relatórios colados). Sequência validada em 02/10/2026 (204, prefixo intacto):
+
+1. Backup: `GET $J/issue/X-2?fields=description > antes.json` — é também o rollback.
+2. Monte o ADF novo como `original["content"] + [{"type":"rule"}, heading datado, …]`;
+   nunca reescreva os nós originais (nem para "melhorar" a formatação).
+3. Rode a varredura de marks e estrutura (§Antes de postar) no documento **inteiro**.
+4. No script, antes do PUT: `assert novo["content"][:len(orig)] == orig`.
+5. `PUT $J/issue/X-2` com `{"fields":{"description": novo}}` → espere `204`.
+6. Releia pelo REST e compare o prefixo com `antes.json`; diferença → restaure do backup
+   e avise o dev.
+
 ## Template: Resumo de Fechamento (ADF JSON — legado)
 
 **Fallback** quando o MCP atlassian não está disponível na sessão. Auto-gerado

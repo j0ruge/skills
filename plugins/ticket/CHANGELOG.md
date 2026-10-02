@@ -1,5 +1,23 @@
 # Changelog — ticket
 
+## [1.7.0] — 2026-10-02
+
+### Por quê
+
+Pedido "enriquece a descrição atual do SBM-2 com o que evoluímos aqui": a skill só tinha template
+para a descrição de issue **nova**. O caminho óbvio, um `PUT` com `description` montada do zero,
+substitui o campo inteiro e apaga o texto do autor — no SBM-2, dois relatórios colados.
+
+### O quê
+
+- `references/templates.md` §Enriquecer a descrição de uma issue existente: backup pelo `GET`,
+  ADF novo = `original.content + rule + seção datada`, varredura de marks e estrutura no documento
+  inteiro, `assert` do prefixo antes do `PUT`, `204` e releitura comparando o prefixo com o backup.
+  Validado no SBM-2 em 02/10/2026 (6 → 22 nós, `original preservado: True`).
+- `SKILL.md`: a roteadora do `templates.md` passa a citar esse caso.
+- Dívida pré-existente, não tratada aqui: `argument-hint` no topo do frontmatter (ERRO G2 /
+  AVISO A4 da auditoria; warning do `validate-versions`).
+
 ## [1.6.3] — 2026-10-01
 
 ### Por quê

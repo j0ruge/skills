@@ -3,7 +3,7 @@ name: ticket
 description: "Jira ticket lifecycle for JRC Brasil projects, integrated with Git — create issues/sub-issues and branches, close with an auto-generated summary. Per-repo config via `.jira-project`; discovers project-specific transitions instead of assuming. New issues are born in the active sprint with story points and fixVersion, each read back by the sensor that can see it. Triggers — ticket, Jira, criar issue, fechar ticket, sprint, story points, fixVersion, acli."
 argument-hint: "start (open) | split | close | status"
 metadata:
-  version: 1.6.3
+  version: 1.7.0
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -31,7 +31,8 @@ Caminhos relativos a esta skill. Leia cada uma quando o passo pedir:
 - `references/campos.md` — leia **antes de escrever ou conferir sprint, story points ou
   `fixVersion`**: IDs dos custom fields, sprint ativa que não aparece, `create --from-json`,
   `editJiraIssue`, criação por REST com `fixVersion` e a releitura que confirma o que gravou.
-- `references/templates.md` — leia **ao montar texto para o Jira**: descrição de issue nova, resumo
+- `references/templates.md` — leia **ao montar texto para o Jira** ou ao **enriquecer a descrição** de
+  uma issue existente (acrescentar sem apagar o original): descrição de issue nova, resumo
   de fechamento (markdown ou ADF), a varredura que valida o ADF antes do POST, commit de sub-issue.
 
 ## Detecção de Projeto
