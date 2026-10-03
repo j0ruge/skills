@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.9.0
+  version: 2.9.1
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -109,7 +109,7 @@ For each CODE file, check test coverage by probing candidate test file paths —
 
 Phase A hands Phases B and C: BASE_BRANCH, BRANCH_NAME, MERGE_BASE, DIFF_STAT, COMMIT_LOG, the FILES list (path, category, test_status), COUNTS per category, and SECRETS_PRESCAN.
 
-Empty CHANGED_FILES, dirty `git status --porcelain` → `worktree` mode (`references/configuration.md`). Both empty → output "No changes detected between this branch and `{BASE_BRANCH}`." and stop — unless the user scoped paths: then empty is a pathspec error (read configuration.md §Path-scoped reviews).
+If CHANGED_FILES empty, dirty `git status --porcelain` → `worktree` mode (`references/configuration.md`). Both empty → output "No changes detected between this branch and `{BASE_BRANCH}`." and stop — unless the user scoped paths: then empty is a pathspec error (read configuration.md §Path-scoped reviews).
 
 If more than 15 CODE files, prioritize by change size (diff stat lines). Note deprioritized files.
 

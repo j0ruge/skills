@@ -2,6 +2,20 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.9.1] — 2026-10-03
+
+### `codereview` 2.9.1: a última citação da `configuration.md` diz quando ler
+
+O F1 do `audit_skill_quality.py` (reference citada sem dizer quando ler) vinha de uma linha só das
+quatro que citam a `configuration.md`: a do modo `worktree` na Fase A, *"Empty CHANGED_FILES, dirty
+`git status --porcelain` → `worktree` mode (`references/configuration.md`)"*. O conteúdo já era uma
+condição; faltava a palavra que a diz. Agora é *"If CHANGED_FILES empty, …"*, e as outras três já
+diziam (*"only when `$ARGUMENTS` carries…"*). Dívida registrada na 2.9.0, fechada como tarefa
+própria, sem mudar o que a skill faz.
+
+**Orçamento:** +3 caracteres, o `SKILL.md` fica em 19 998 (o C1 avisa acima de 20 000). A forma mais
+natural, *"If CHANGED_FILES is empty"*, passava por um.
+
 ## [2.9.0] — 2026-10-03
 
 ### `codereview` 2.9.0: o teste vácuo ganha passo próprio, e a re-review converge
