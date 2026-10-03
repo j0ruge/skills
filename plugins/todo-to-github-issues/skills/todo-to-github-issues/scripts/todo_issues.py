@@ -41,7 +41,7 @@ HEADING_RE = re.compile(r"^(#{2,6})\s+(.*?)\s*#*\s*$")
 DATE_TAIL_RE = re.compile(r"\(\d{4}-\d{2}-\d{2}\)\s*$")
 # `RESOLVED by <hash>` in the BODY closes an item; the bare phrase inside backticks (an item
 # ABOUT the convention) must not. The token is the kit's, English in every OUTPUT_LANG.
-RESOLVED_RE = re.compile(r"RESOLVED by\**\s+`?[0-9a-f]{7,40}\b")
+RESOLVED_RE = re.compile(r"RESOLVED by\**\s+`?([0-9a-f]{7,40})\b")
 ANCHOR_RE = re.compile(r"`([A-Za-z0-9_./-]+):(\d+)(?:-(\d+))?`")
 KEY_RE = re.compile(r"<!-- todo-key: ([0-9a-f]+) -->")
 HASH_RE = re.compile(r"<!-- todo-hash: ([0-9a-f]+) -->")
@@ -337,6 +337,43 @@ def fetch_issues(repo: str) -> list[dict]:
     return json.loads(out)
 
 
+def _items_at(ctx: Ctx, ref: str) -> dict[str, Item]:
+    """The file as it stood at `ref`, parsed by this same parser and keyed like the mirror."""
+    old = subprocess.run(["git", "-C", ctx.root, "show", f"{ref}:{ctx.relpath}"],
+                         capture_output=True, text=True, check=False)
+    if old.returncode:
+        return {}
+    with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as fh:
+        fh.write(old.stdout)
+    try:
+        return {it.key: it for it in parse(fh.name)}
+    except (NoOpenMarker, SystemExit):
+        return {}
+    finally:
+        os.unlink(fh.name)
+
+
+def last_text(ctx: Ctx, iss: dict, tries: int = 5) -> tuple[str | None, list[str]]:
+    """Where an orphan's item left the file, and the fixes (`RESOLVED by`) its last text names.
+
+    HEAD cannot answer either question: the item is gone there. The pickaxe on the title lists the
+    commits that changed how often it appears; the removal is the newest one whose PARENT holds the
+    item (matched by the issue's own key, never by title text) and which does not. A commit that
+    only moved the same words elsewhere fails the second half, so a doubt answers None — never a
+    wrong commit. ~0.1 s per orphan on the sdd kit's history.
+    """
+    m = KEY_RE.search(iss.get("body") or "")
+    if not m:
+        return None, []
+    needle = iss["title"].rstrip("…")[:40]
+    log = sh("git", "-C", ctx.root, "log", "--format=%H", "-S", needle, "--", ctx.relpath, check=False)
+    for sha in log.split()[:tries]:
+        before = _items_at(ctx, f"{sha}^").get(m.group(1))
+        if before and m.group(1) not in _items_at(ctx, sha):
+            return sha[:7], RESOLVED_RE.findall(before.rest)
+    return None, []
+
+
 def build_plan(items: list[Item], issues: list[dict], relpath: str = "TODO.md") -> Plan:
     """Only issues mirrored FROM relpath take part: another file's mirror is never an orphan here."""
     plan = Plan()
@@ -532,9 +569,18 @@ def main() -> int:
         print(f"SKIP    L{it.start:<4} RESOLVED by, no issue to mirror — {short(it.title, 60)}")
     for it, iss in plan.closed_present:
         print(f"CLOSED  #{iss['number']:<4} L{it.start:<4} issue closed but the item is still in the file")
+    # An orphan is judged by its LAST text, read from the commit that removed it (last_text): only
+    # one that carried `RESOLVED by` closes as completed, citing the fix. One that left by decision
+    # is the human's to close as not planned — --close-orphans used to call it completed too.
+    gone = {iss["number"]: last_text(ctx, iss) for iss in plan.orphans}
     for iss in plan.orphans:
-        verb = "CLOSE " if a.close_orphans else "ORPHAN"
-        print(f"{verb}  #{iss['number']:<4} item left the file — {short(iss['title'], 70)}")
+        rm, fixes = gone[iss["number"]]
+        where = f"left the file in {rm}" if rm else "removal not found in history"
+        if fixes:
+            verb, why = ("CLOSE " if a.close_orphans else "ORPHAN"), "fixed by " + ", ".join(fixes)
+        else:
+            verb, why = ("SKIP  " if a.close_orphans else "ORPHAN"), "no RESOLVED by — close by hand"
+        print(f"{verb}  #{iss['number']:<4} {where} · {why} — {short(iss['title'], 60)}")
     for iss, it, r in plan.renames:
         old = KEY_RE.search(iss["body"]).group(1)
         print(f"RENAME? #{iss['number']} ↔ L{it.start} ({r:.0%} same text) — to keep the issue instead of "
@@ -544,7 +590,8 @@ def main() -> int:
     print(f"summary create={len(plan.create)} update={len(plan.update)} (anchor {kinds.count('anchor')}) "
           f"ok={len(plan.ok)} "
           f"skip={len(plan.skip_resolved)} closed-present={len(plan.closed_present)} "
-          f"orphans={len(plan.orphans)} dup={len(plan.dup_issues)}")
+          f"orphans={len(plan.orphans)} (fixed {sum(1 for _, f in gone.values() if f)}) "
+          f"dup={len(plan.dup_issues)}")
     if not a.apply:
         print("plan only — rerun with --apply (try --limit 1 first)")
         return 0
@@ -568,11 +615,17 @@ def main() -> int:
                      "--title", issue_title(it), *lab)
         print(f"updated #{iss['number']}")
     if a.close_orphans:
-        ref = ctx.sha[:7] if ctx.sha else ctx.branch
         for iss in plan.orphans:
-            gh_mut("issue", "close", str(iss["number"]), "--repo", ctx.repo, "--comment",
-                   f"O item saiu de `{ctx.relpath}` em `{ref}` — neste formato, achado fechado é apagado do arquivo.")
-            print(f"closed #{iss['number']}")
+            rm, fixes = gone[iss["number"]]
+            if not fixes:
+                print(f"skipped #{iss['number']} — no RESOLVED by in its last text: close it by hand, "
+                      f"`gh issue close {iss['number']} --reason \"not planned\" --comment \"<para onde foi>\"`")
+                continue
+            fx = ", ".join(f"`{h}`" for h in fixes)
+            gh_mut("issue", "close", str(iss["number"]), "--repo", ctx.repo, "--reason", "completed", "--comment",
+                   f"Consertado em {fx}. O item saiu de `{ctx.relpath}` em `{rm}` — neste formato, achado "
+                   f"fechado é apagado do arquivo.")
+            print(f"closed #{iss['number']} (fixed by {', '.join(fixes)})")
     return 0
 
 

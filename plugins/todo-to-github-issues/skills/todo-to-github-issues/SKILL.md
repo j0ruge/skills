@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.2.0
+  version: 2.3.0
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -71,7 +71,7 @@ importa conforme o modo: abra-os só para depurar ou alterar esse modo.
 | `UPDATE (anchor)` | só mudou o número de linha de uma referência `` `arquivo:N` `` (a âncora ou outra no texto): um PR que desloca linhas do arquivo ancorado gera dezenas | `--apply` sem mais prova: o script comparou o corpo vivo sem permalink, sem marcadores e sem esses números |
 | `UPDATE (text)` | texto, título ou seção mudou de verdade | leia o item antes do `--apply`; é o único `UPDATE` que pede olho |
 | `SKIP` | o corpo traz `RESOLVED by <hash>` e não existe issue | nada: não se abre card para achado já fechado |
-| `ORPHAN` | a issue está aberta, mas o item saiu do arquivo | ache o commit que o removeu (`git log -S'<trecho do título>' -- TODO.md`). **Consertado:** `--close-orphans`. **Decidido, refutado ou adiado:** feche à mão, `gh issue close N --reason "not planned" --comment "<para onde foi>"`, **antes** do `--close-orphans`, que fecha todas as que sobrarem |
+| `ORPHAN` | a issue está aberta, mas o item saiu do arquivo. A linha diz em que commit ele saiu e, se o último texto trazia `RESOLVED by`, quem o consertou (`fixed by …`) — lido no commit da remoção, nunca no `HEAD` | **`fixed by`:** `--close-orphans` fecha como concluída, citando o conserto e a remoção. **`no RESOLVED by`** (decidido, refutado, adiado, ou consertado sem o marcador): `--close-orphans` pula (`SKIP`); feche à mão, `gh issue close N --reason "not planned" --comment "<para onde foi>"`. **`removal not found`:** o histórico não decide; investigue com `git log -S'<trecho do título>' -- TODO.md` |
 | `RENAME?` | par `ORPHAN` + `CREATE` com ≥ 85% do mesmo texto: o título mudou | confirme com o humano; se for o mesmo achado, rode o comando impresso **antes** do `--apply`, e a issue antiga vira `UPDATE` |
 | `CLOSED` | a issue foi fechada à mão, mas o item continua no arquivo | decisão humana: reabrir a issue ou apagar o item |
 | `DUP` | duas issues com a mesma chave | feche à mão todas menos a de menor número |
@@ -189,9 +189,10 @@ python3 $S --file ACHADOS-x.md --apply --link 6=153 --link "Uma obs=155"
   vai uma análise, qual heading guarda os achados. Pergunte; não escolha pelo humano.
 - **Fechar órfã sem ler.** `--close-orphans` nunca é o primeiro comando. Primeiro o plano, depois
   confira cada `ORPHAN`.
-- **`--close-orphans` num item que saiu por decisão.** Ele fecha como *concluída*, com o comentário
-  fixo "achado fechado". Item refutado, adiado ou levado para outro lugar (cabeçalho de sensor,
-  YAGNI) fica registrado como consertado. Feche esses à mão como `not planned`, cada um com o destino.
+- **Esperar que o `--close-orphans` feche o item que saiu por decisão.** Ele só fecha a órfã cujo
+  último texto trazia `RESOLVED by <hash>`, e pula as outras com `SKIP`: item refutado, adiado ou
+  levado para outro lugar (cabeçalho de sensor, YAGNI) fica aberto até alguém fechá-lo à mão como
+  `not planned`, com o destino. Até a 2.2.0 ele fechava todas como *concluídas*, sem citar conserto.
 - **Passar `--link` no canário.** O `--limit` limita criações, não comentários: com `--link`, o
   canário já comenta em todas as issues vinculadas.
 - **Traduzir ou resumir o item na issue.** O espelho que se afasta da fonte deixa de ser espelho.

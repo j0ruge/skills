@@ -3,6 +3,21 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-02 — a órfã que fechava sem dizer quem a consertou
+
+Publicado como **v2.3.0**.
+
+- Re-sync do `TODO.md` do kit depois dos PRs #196/#197: o plano deu 8 `ORPHAN`, todas de itens
+  consertados (`RESOLVED by` no último texto). O `--close-orphans` as fecharia com "O item saiu de
+  `TODO.md` em `<HEAD>`" — sem o conserto. Fechei as 8 à mão para citar cada hash; a memória já
+  registrava o mesmo trabalho manual com 14 órfãs em 2026-09-25, e o caso inverso (4 órfãs por
+  decisão que o `--close-orphans` chamaria de concluídas) em 2026-10-01.
+- O script tinha o dado: o commit que removeu o item guarda o texto dele no pai. `last_text()` o lê
+  e o plano passa a dizer `fixed by <hash>` ou `no RESOLVED by`; o `--close-orphans` fecha só o que
+  foi consertado. Protótipo antes do código: 13/13 casos conhecidos em 1,3 s.
+- A sabotagem achou uma regra sem probe (casar pelo título em vez da chave): ganhou o mundo dos
+  títulos gêmeos antes do commit.
+
 ## 2026-10-01 — a receita de prova que mentia
 
 Publicado como **v2.2.0**.

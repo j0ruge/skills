@@ -3,6 +3,32 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.3.0] — 2026-10-02
+
+Minor porque a saída do plano e o comportamento do `--close-orphans` mudam.
+
+### Changed
+
+- **A órfã é julgada pelo ÚLTIMO texto do item, lido no commit que o removeu.** `last_text()` acha
+  esse commit pelo `git log -S` do título, lê o `TODO.md` do pai com o mesmo `parse()` e casa o item
+  pela `todo-key` da issue (nunca pelo título: dois títulos com os mesmos 40 caracteres se
+  confundiriam). O commit só vale como remoção se o pai tem o item **e** ele mesmo não tem; na dúvida
+  responde `None`, nunca um commit errado. Custo medido: ~0,1 s por órfã no histórico do kit.
+- **`ORPHAN` diz onde e por quê:** `left the file in 156ebf9 · fixed by 813f808`, ou
+  `no RESOLVED by — close by hand`, ou `removal not found in history`; o resumo ganha
+  `orphans=N (fixed M)`.
+- **`--close-orphans` fecha só a órfã consertada**, como `completed`, com comentário que cita o
+  conserto e a remoção. A que saiu sem `RESOLVED by` (decidida, refutada, adiada) é pulada com
+  `SKIP` e o comando para fechá-la à mão como `not planned`. Antes ele fechava **todas** como
+  concluídas, com "O item saiu de `TODO.md` em `<HEAD>`" — um sha onde o item já não existe, sem
+  conserto nenhum citado.
+
+Medido em 13 issues de resposta conhecida do kit: as 8 órfãs do PR #197 (remoção `156ebf9`, cada
+conserto certo), as 4 que saíram por decisão na varredura D15 (`7ee1c3e`, nenhum `RESOLVED by`) e a
+#62 (`121a696`, removida em `3c01b88`): **13/13**. Testes sem rede: cinco mundos num repo git
+temporário, e cada regra nova sabotada numa cópia ficou vermelha (sem a 2ª metade da remoção,
+`RESOLVED_RE` sem grupo, `HEAD` no lugar da remoção, título no lugar da chave).
+
 ## [2.2.0] — 2026-10-01
 
 Minor porque a saída do plano muda: cada `UPDATE` vem marcado e o resumo ganha a contagem.

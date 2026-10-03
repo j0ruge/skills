@@ -310,4 +310,68 @@ check("rplan: resolved finding whose issue is open -> close (crash between creat
 p = r.build_rplan(found, [dict(iss, body=iss["body"].replace("report-hash: ", "report-hash: 0"))], {}, {}, stem, False)
 check("rplan: changed text -> update", [i["number"] for _, i in p.update] == [7])
 
+# An orphan is read from the commit that REMOVED its item, never from HEAD (where it is gone). A
+# throwaway repo: one item fixed, one dropped by decision, both deleted in commit 2, and commit 3
+# moves HEAD on so "the removal" and "HEAD" are different answers.
+import subprocess
+with tempfile.TemporaryDirectory() as g:
+    def git(*a):
+        return subprocess.run(["git", "-C", g, "-c", "user.email=t@t", "-c", "user.name=t", *a],
+                              capture_output=True, text=True, check=True).stdout.strip()
+    def put(text, msg):
+        with open(os.path.join(g, "TODO.md"), "w", encoding="utf-8") as fh:
+            fh.write(text)
+        git("add", "TODO.md")
+        git("commit", "-q", "-m", msg)
+        return git("rev-parse", "HEAD")
+    git("init", "-q")
+    top, bottom = "# TODO\n\n## Aberto\n<!-- sdd:open -->\n\n", "\n## Decidido\n<!-- sdd:decided -->\n"
+    fixed = "- [ ] **Item consertado** — `a.sh:1` — texto. RESOLVED by abc1234.\n  — por x (2026-10-01)\n\n"
+    decided = "- [ ] **Item decidido** — `a.sh:2` — texto sem marcador.\n  — por x (2026-10-01)\n\n"
+    keep = "- [ ] **Item que fica** — `a.sh:3` — texto.\n  — por x (2026-10-01)\n"
+    put(top + fixed + decided + keep + bottom, "c1")
+    removal = put(top + keep + bottom, "c2: both items leave")
+    put(top + keep.replace("texto.", "texto, editado.") + bottom, "c3: HEAD moves on")
+    old = os.path.join(g, "old.md")
+    with open(old, "w", encoding="utf-8") as fh:
+        fh.write(top + fixed + decided + keep + bottom)
+    gone = {i.title: i for i in t.parse(old)}
+    gctx = t.Ctx(repo="o/r", root=g, relpath="TODO.md", sha=None, branch="main")
+    iss_fixed, iss_decided = as_issues([gone["Item consertado"], gone["Item decidido"]], gctx)
+    check("orphan: removal commit and fix hash come from the commit that deleted the item",
+          t.last_text(gctx, iss_fixed) == (removal[:7], ["abc1234"]))
+    check("orphan: an item that left without RESOLVED by carries no fix",
+          t.last_text(gctx, iss_decided) == (removal[:7], []))
+    check("orphan: an issue whose item never was in the file is not found",
+          t.last_text(gctx, dict(iss_fixed, title="Nunca existiu", body="<!-- todo-key: 000000000000 -->")) == (None, []))
+with tempfile.TemporaryDirectory() as g:
+    # The removal the pickaxe cannot see: the deleting commit also quotes the title in the decided
+    # section, so the count does not move. The only pickaxe hit with the item in its parent is an
+    # OLDER commit that merely quoted the title — it holds the item on both sides, and must not
+    # pass for the removal: a doubt answers None.
+    git("init", "-q")
+    quote = "- [ ] **Outro item** — `a.sh:4` — cita Item consertado no texto.\n  — por x (2026-10-01)\n\n"
+    put(top + fixed + keep + bottom, "q1")
+    put(top + fixed + quote + keep + bottom, "q2: another item quotes the title")
+    put(top + quote + keep + bottom + "- Item consertado — decidido: saiu por decisão.\n", "q3: leaves, quoted")
+    check("orphan: a commit that only quoted the title is never read as the removal",
+          t.last_text(t.Ctx(repo="o/r", root=g, relpath="TODO.md", sha=None, branch="main"), iss_fixed) == (None, []))
+with tempfile.TemporaryDirectory() as g:
+    # Two titles that share the 40 characters the pickaxe searches with: the item is told apart by
+    # the issue's key, never by its title — the decided one must not inherit the other's fix.
+    git("init", "-q")
+    twin = "Um título longo que começa igual nos dois itens"
+    a = f"- [ ] **{twin}: A** — `a.sh:5` — consertado. RESOLVED by aaa1111.\n  — por x (2026-10-01)\n\n"
+    b = f"- [ ] **{twin}: B** — `a.sh:6` — decidido.\n  — por x (2026-10-01)\n\n"
+    put(top + a + b + keep + bottom, "t1")
+    gone_twin = put(top + keep + bottom, "t2: both twins leave")
+    old = os.path.join(g, "old.md")
+    with open(old, "w", encoding="utf-8") as fh:
+        fh.write(top + a + b + keep + bottom)
+    twins = {i.title: i for i in t.parse(old)}
+    tctx = t.Ctx(repo="o/r", root=g, relpath="TODO.md", sha=None, branch="main")
+    iss_b = as_issues([twins[f"{twin}: B"]], tctx)[0]
+    check("orphan: twin titles are told apart by key — the decided twin inherits no fix",
+          t.last_text(tctx, iss_b) == (gone_twin[:7], []))
+
 sys.exit(1 if fails else 0)
