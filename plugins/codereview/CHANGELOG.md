@@ -2,6 +2,39 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.8.0] — 2026-10-03
+
+### `codereview` 2.8.0: a versão que rodou, o foco em prosa, o repositório shell e o laço de revisão
+
+Lições de quatro rodadas de `/codereview:codereview` no PR #200 do `sdd_agents` (bash + jq + mawk), da
+nota B até todos os critérios em A (11 → 5 → 3 → 0 achados).
+
+- **O rodapé diz qual versão da skill rodou.** A sessão carregou um cache `2.1.1` (`metadata.version:
+  2.1.0`) com a 2.6.0 registrada em `installed_plugins.json`, e nada no relatório mostrava isso: o
+  `base=<sha>` da 2.2.0 faltou e foi improvisado nas rodadas 2–4. O Cost footprint existe para comparar
+  rodadas; sem a versão, a comparação não sabe de qual skill veio cada uma. A Fase A lê o
+  `metadata.version` do `{SKILL_DIR}/SKILL.md` no mesmo turno do passo 1–3.
+- **Foco em prosa.** O pedido nomeava pontos concretos (o separador do checkpoint, o invariante do
+  `jq`), e a skill só aceitava palavras-chave e proibia acrescentar qualquer coisa ao prompt dos agentes
+  — o foco era descartado em silêncio na delegação. Agora: roda `full` com os prompts intactos, e a
+  Fase C responde cada ponto nomeado, dizendo no relatório onde o conferiu.
+- **Repositório shell.** `fileExtensions` não descreve `bin/sdd`, o arquivo principal do repo, que não
+  tem extensão; a classificação foi feita à mão. Preset de shell no `configuration.md`, executável sem
+  extensão é CODE pelo shebang, e uma nota para o repo cujos scripts de teste SÃO o produto (classificados
+  como TESTS, ficariam sem agente por arquivo).
+- **"Falha em silêncio se derivar" é palpite do agente por arquivo.** Ele não lê os testes, por contrato,
+  e deu MEDIUM dizendo que um leitor (`cut`) ficaria cego se o separador mudasse; a sabotagem desse leitor
+  deixou três asserções vermelhas, e o achado caiu para LOW. Novo item na Calibração da 6.11 e uma frase
+  no passo 4 da Fase C: achar o teste que prende o sítio antes de manter a severidade.
+- **Revisar o conserto, não a branch.** Depois de consertar um relatório, a rodada seguinte usa
+  `base=<head já revisado>` e o laço para na primeira rodada sem achado. O achado da rodada 3 estava num
+  comentário que a rodada 2 acabara de escrever. Princípio novo no `SKILL.md` e no `base` do
+  `configuration.md`.
+- **Orçamento:** o `SKILL.md` estava em 20.116 chars (acima de ~20 mil). O "Why a script" e o bloco das
+  duas passadas sempre ligadas saíram dele — eram justificativa, já cobertas pela 6.10 e pela 6.11 do
+  `detection-passes.md`, que recebeu o que faltava (a lista de exceções; por que a 6.11 não força F).
+  Fica em 19.933 chars, 248 linhas.
+
 ## [2.7.0] — 2026-10-02
 
 ### `coderabbit-pr` 4.3.0: a árvore ocupada, o achado que mora no código e o wrapper que desarma o prazo

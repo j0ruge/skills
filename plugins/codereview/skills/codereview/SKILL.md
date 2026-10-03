@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.6.0
+  version: 2.8.0
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -17,6 +17,8 @@ Read the user input before proceeding (if not empty). Valid inputs:
 - Focus area: `security`, `performance`, `types`, `bugs`, `tests`, `docs`, `a11y`, `race-conditions`, `dead-code`
 - File path or glob: review only matching changed files
 - Key-value overrides: `baseDir=app/ fileExtensions=ts,js` (see `references/configuration.md`)
+- Focus in prose ("look at the separator"): run `full`, prompts unchanged; answer each named point in
+  Phase C and say where it was checked
 
 Defaults are `baseDir=src/`, `fileExtensions=ts,tsx`, `frameworkPatterns=react`, tests `**/*.{test,spec}.{ts,tsx}` and `**/test/**`, UI_LIB `src/components/ui/**`, `prisma/**`, `**/generated/**`, CONFIG `*.config.*`, `tsconfig*`, `.env*`, `package.json`.
 
@@ -32,7 +34,7 @@ The agents read their own contract by absolute path (`{SKILL_DIR}/references/…
 reads a file only at the step that needs it:
 
 - `references/configuration.md` — only when `$ARGUMENTS` carries `key=value` overrides or the stack
-  is not TypeScript/React: override syntax and the presets (Python, Vue, Node, .NET).
+  is not TypeScript/React: override syntax and the presets (Python, Vue, Node, .NET, shell).
 - `references/per-file-agent.md` — read it yourself only if Phase B runs inline (≤3 CODE files):
   the Phase B agent contract (batch loading, scope, focus mapping, return format).
 - `references/sweep-agent.md` — read it yourself when the sweep runs inline or the agent under-reports
@@ -81,7 +83,7 @@ Regardless of failures, always produce a final report listing all files analyzed
 
 Every step is a fixed command with one right answer, so it runs inline, not in an agent: an agent only adds variation, latency and the chance of a silently dropped field — and without the secrets pre-scan JSON the F-grade gate goes blind. Outputs are small.
 
-Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. Three Bash turns cover steps 1–8 — (1) steps 1–3, base-branch detection as one fallback chain; (2) step 4; (3) steps 5–8 as parallel calls in one message — because every extra orchestrator turn is a main-model round-trip over the whole session context:
+Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. Three Bash turns cover steps 1–8 — (1) steps 1–3, base-branch detection as one fallback chain, plus this skill's version for the Cost footprint (`sed -n 's/^  version: //p' {SKILL_DIR}/SKILL.md`); (2) step 4; (3) steps 5–8 as parallel calls in one message — because every extra orchestrator turn is a main-model round-trip over the whole session context:
 
 1. Verify git repo:  `git rev-parse --is-inside-work-tree`
 2. Detect base branch (try: origin HEAD symbolic-ref, then main, then master)
@@ -96,7 +98,7 @@ Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. T
 
 Classify each changed file:
 - EXCLUDED: lock files, node_modules, dist, build, .next, min files, binaries, .claude/
-- CODE: source files matching {fileExtensions} in {baseDir}, excluding tests and generated
+- CODE: source files matching {fileExtensions} in {baseDir}, excluding tests and generated; an extensionless executable counts when its shebang runs one of those languages (`bin/tool`, `#!/usr/bin/env bash`)
 - UI_LIB: files in {generatedDirs}
 - TESTS: files matching {testFilePatterns}
 - CONFIG: files matching {configFilePatterns}
@@ -106,8 +108,6 @@ Classify each changed file:
 For each CODE file, check test coverage by probing candidate test file paths — same dir (`{Base}.test.{ext}`, `{Base}.spec.{ext}`), a `__tests__` sibling, then the project test root, then a changed test that imports it — and record it as WITH_TESTS / STALE_TESTS / NO_TESTS. Probe all CODE files in one shell loop (one Bash call that prints `path|status` per file), not one call per file.
 
 Phase A hands Phases B and C: BASE_BRANCH, BRANCH_NAME, MERGE_BASE, DIFF_STAT, COMMIT_LOG, the FILES list (path, category, test_status), COUNTS per category, and SECRETS_PRESCAN.
-
-**Why a script**: LLMs are not regex engines — `initialPassword: 'foo'` (`password` as a suffix) is easy to miss by eye. `scripts/scan_secrets.py` applies the 6.10 regex catalog with Python `re`, the exception list (env lookups, placeholders, `.env.example`) and `ggshield`/`gitleaks` when on PATH; agents' 6.10 findings only supplement it. It runs locally because CI scanners like GitGuardian block the push — see it before the secret reaches a remote branch.
 
 Empty CHANGED_FILES, dirty `git status --porcelain` → `worktree` mode (`references/configuration.md`). Both empty → output "No changes detected between this branch and `{BASE_BRANCH}`." and stop — unless the user scoped paths: then empty is a pathspec error (read configuration.md §Path-scoped reviews).
 
@@ -151,11 +151,6 @@ Spawn **one dedicated agent** for pass 6.9 (Dead Code & Unused Symbols), **in th
 - Narrow focuses (`security`, `a11y`, `types`, `performance`, `docs`, `tests`, `race-conditions`) → **skip it.** Unlike 6.10, dead code is hygiene, not a gate; in a focused security review it is noise.
 - **≤3 CODE files** (routing skipped) → run the sweep **inline in the main model**.
 
-> The two always-on passes sit at opposite ends of that trade-off: **6.10 (Secrets)** runs
-> everywhere *and* gates the grade; **6.11 (Silent-Blinding Sensors)** runs everywhere and gates
-> nothing — a blind sensor reports nothing, so a narrow focus is exactly when it slips through, but
-> forcing an F would stop the blocked-report signal meaning "a credential is exposed".
-
 **Output discipline**: the orchestrator sees only the agent's **final assistant message**, never its grep/tool outputs — so that message is the filled return template from `sweep-agent.md` (ending in `END_OF_DEAD_CODE_SWEEP`), not "done". Launch prompt, placeholders filled:
 
 ```
@@ -192,7 +187,7 @@ After all sonnet agents return, the main model:
    - Per-file agents may over-flag memoization issues (React.memo, useCallback) — downgrade per the rules in detection-passes.md
    - Ambiguous TOCTOU patterns in single-user contexts — downgrade to LOW
    - Patterns that are actually project conventions (check CLAUDE.md) — remove or downgrade
-   - **Pass 6.11 (Silent-Blinding Sensors) findings never rise above HIGH and never touch the grade gate.** Downgrade to LOW, or drop, anything where the swallowed error has observable fallback behavior — the pass is about blind spots, not about `catch` syntax.
+   - **Pass 6.11 (Silent-Blinding Sensors) findings never rise above HIGH and never touch the grade gate.** Downgrade to LOW, or drop, anything where the swallowed error has observable fallback behavior — the pass is about blind spots, not about `catch` syntax. A per-file claim that a future drift would blind a site was made without the tests: find the test that pins it before keeping the severity (detection-passes.md 6.11).
    - **Pass 6.10 (Secrets) findings are NEVER downgraded to MEDIUM/LOW and NEVER removed.** The only allowed recalibration is CRITICAL ↔ HIGH per the test-file nuance in detection-passes.md (inline test literals are HIGH; prod code is CRITICAL; env-var lookups are not flagged at all).
 5. **Deduplication** — remove findings that overlap or repeat the same root cause (does not apply to pass 6.10 — each occurrence is reported, then aggregated if ≥3 in one file or ≥5 across PR).
 6. **Test coverage summary** — compile from Phase A results
@@ -236,9 +231,13 @@ on {area})`, one-word rationales), never prose in place of the table.
 
 - **Context efficiency**: agents hold file content and diffs, so the main model sees only findings;
   cap analysis at 15 full file reads across all agents.
-- **Measure, don't guess** — the report's last line says how many agents ran, on which model, how many
-  tool calls each made and whether the sweep ran. Compare it with `/cost` (or the harness's per-session
-  cost log) before and after any change to this skill; a change without that pair of numbers is a guess.
+- **Measure, don't guess** — the report's last line says which version of this skill ran, how many
+  agents ran, on which model, how many tool calls each made and whether the sweep ran. Compare it with
+  `/cost` (or the harness's per-session cost log) before and after any change to this skill; a change
+  without that pair of numbers is a guess.
+- **Re-review the fix, not the branch** — after fixing a report, the next round runs with
+  `base=<head the last round reviewed>` and stops at the first round that finds nothing; a fix written
+  as prose is the likeliest home of the next finding (measured 11 → 5 → 3 → 0).
 - **Line numbers come from the diff or file actually read** — a line the reader can't find discredits
   the whole report.
 - **A clean report is a valid outcome** — if the code is clean, say so rather than inventing findings.

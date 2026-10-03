@@ -14,7 +14,7 @@
 | `frameworkPatterns` | `react` | Framework hint controlling which framework-specific rules are active. Options: `react` \| `vue` \| `angular` \| `node` \| `dotnet` \| `generic`. |
 | `configFilePatterns` | `["*.config.*", "tsconfig*", ".env*", "package.json"]` | Globs matched as CONFIG files. |
 | `styleFilePatterns` | `["**/*.css", "**/*.scss", "**/*.less"]` | Globs matched as STYLES files. |
-| `base` | — | Commit to diff against, replacing `git merge-base {BASE_BRANCH} HEAD` as `{MERGE_BASE}` in Phase A and in every agent prompt. Use it when the user names the base of a commit range, in prose too ("os commits de X a Y, sobre Z" → `base=Z`): the merge-base would review the whole branch. The range still ends at `HEAD`. |
+| `base` | — | Commit to diff against, replacing `git merge-base {BASE_BRANCH} HEAD` as `{MERGE_BASE}` in Phase A and in every agent prompt. Use it when the user names the base of a commit range, in prose too ("os commits de X a Y, sobre Z" → `base=Z`): the merge-base would review the whole branch. Also the way to re-review only the fixes after a report: `base=<the head the previous round reviewed>`. The range still ends at `HEAD`. |
 | `worktree` | auto | Review uncommitted work instead of `{MERGE_BASE}...HEAD`. Turns on by itself when the committed diff is empty but `git status --porcelain` is not — typically on the base branch itself, where `git merge-base` returns `HEAD` and the normal Phase A would stop with "No changes detected" over pending work. Changed files = `git diff HEAD --name-only` plus `git ls-files --others --exclude-standard`; per-file diff = `git diff HEAD -- <file>`, or `git diff --no-index /dev/null <file>` for an untracked file (rc 1 is normal there). **The secrets pre-scan needs both sources**: pipe `git diff HEAD --unified=0` and the `--no-index` diff of every untracked file into `scan_secrets.sh` — `git diff HEAD` alone never shows new files. Exclude runtime state the user did not author (`*.db`, caches) from CODE. Commit log: none. In agent prompts write the diff command out in full: `{MERGE_BASE}...HEAD` would be empty. The report header says `working tree vs HEAD {sha}`. |
 | `sweep` | `pr` | Scope of the dead-code sweep (pass 6.9). `pr` = Bucket A only (symbols this PR introduced or orphaned); `full` = also run Bucket B (repo-wide tooling over code the PR did not touch, capped). Focus `dead-code` implies `full`. |
 
@@ -38,6 +38,9 @@ When `$ARGUMENTS` contains key-value overrides, apply them before classification
 # Node-only project (no UI framework)
 /codereview fileExtensions=ts,js frameworkPatterns=node
 
+# Shell/bash repo — `bin/tool` with no extension is CODE by its shebang (SKILL.md, Classify)
+/codereview baseDir=. fileExtensions=sh,bash testFilePatterns=**/*.bats frameworkPatterns=generic
+
 # Disable reduced rigor for generated files
 /codereview uiLibReducedRigor=false
 
@@ -50,6 +53,11 @@ When `$ARGUMENTS` contains key-value overrides, apply them before classification
 # C#/.NET minimal — just set framework, use sensible auto-detection
 /codereview fileExtensions=cs frameworkPatterns=dotnet
 ```
+
+In a repo whose test scripts are its product — a kit whose `tests/*.sh` are the sensors the change
+is about — a test change carries as much risk as the runner's. Keep them out of `testFilePatterns`
+(the shell preset counts only `*.bats` as TESTS) so Phase B reviews them as CODE; classified as
+TESTS they get no per-file agent at all.
 
 Overrides are applied on top of defaults — only the specified values change; unmentioned values keep their defaults.
 

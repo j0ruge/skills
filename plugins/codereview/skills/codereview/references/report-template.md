@@ -210,10 +210,12 @@ Rate each criterion A through F:
 The last line of every report — one line, so cost can be compared across runs without opening logs:
 
 ```markdown
-_Cost footprint: {N} per-file agents ({model}), sweep {yes/no} ({model} | inline | skipped), {M} files read in full, agent tool calls {min}–{max}, orchestrator Bash calls {K}._
+_Cost footprint: skill v{X}, {N} per-file agents ({model}), sweep {yes/no} ({model} | inline | skipped), {M} files read in full, agent tool calls {min}–{max}, orchestrator Bash calls {K}._
 ```
 
 The counts come from the agents' trailer lines (`Tool calls: … | Files read in full: …` on per-file agents, `TOOL_CALLS:` on the sweep) and from the orchestrator's own Phase A. Pair it with `/cost` before and after the run to measure a change to this skill.
+
+`skill v{X}` is `metadata.version` of `{SKILL_DIR}/SKILL.md`, read in Phase A. A stale cached copy of this skill once ran a whole review, four rounds of it, with no line saying so — the harness loaded a 2.1-era cache while 2.6.0 was installed, and features the user relied on were simply absent. A footer meant to compare runs has to say which skill produced them.
 
 ---
 

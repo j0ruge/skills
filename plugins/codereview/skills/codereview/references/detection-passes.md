@@ -386,7 +386,7 @@ Every finding carries a **Confidence** (High / Medium / Low) reflecting how many
 
 This pass approximates what a dedicated secret scanner (GitGuardian, gitleaks, trufflehog) would flag. It exists **because CI secret scanners will block the PR on push** — catching these locally saves the user from having to rotate credentials and rewrite git history after the fact.
 
-**Detection is deterministic, not LLM-simulated.** The script `scripts/scan_secrets.py` (invoked via `scripts/scan_secrets.sh`) applies the regex catalog below using Python's `re` engine, plus optionally `ggshield`/`gitleaks` if installed. Phase A runs the script over the unified diff and the output is the **authoritative** input to the Secrets Detection table. Sonnet agents in Phase B still apply this pass for context-aware nuance (e.g. spotting a custom DSL where the keyword is non-standard) but their findings are supplemental — see Phase C merge logic in `SKILL.md`. Why deterministic: LLMs aren't regex engines, and substring shapes like `initialPassword: '...'` (where `password` appears as a suffix) are easy to miss.
+**Detection is deterministic, not LLM-simulated.** The script `scripts/scan_secrets.py` (invoked via `scripts/scan_secrets.sh`) applies the regex catalog below using Python's `re` engine and the exception list (env lookups, placeholders, `.env.example`), plus optionally `ggshield`/`gitleaks` if installed. Phase A runs the script over the unified diff and the output is the **authoritative** input to the Secrets Detection table. Sonnet agents in Phase B still apply this pass for context-aware nuance (e.g. spotting a custom DSL where the keyword is non-standard) but their findings are supplemental — see Phase C merge logic in `SKILL.md`. Why deterministic: LLMs aren't regex engines, and substring shapes like `initialPassword: '...'` (where `password` appears as a suffix) are easy to miss.
 
 **Critical rule: this pass applies to ALL file categories except `EXCLUDED` and `DOCS`** — that includes `CODE`, `TESTS`, `CONFIG`, `UI_LIB`, and `STYLES`. A hardcoded password in `auth.test.ts` is exactly as leaked as one in `server.ts`; GitGuardian does not distinguish, and neither should this pass. This is intentional: test fixtures are one of the most common sources of real-world leaks, because developers underestimate the risk.
 
@@ -445,7 +445,7 @@ This pass approximates what a dedicated secret scanner (GitGuardian, gitleaks, t
 ### 6.11 Silent-Blinding Sensors
 
 **Always runs**, like pass 6.10 — but unlike secrets it is **not a grade gate**: it never forces an F
-and never blocks on its own. It is always on because the cost asymmetry runs the other way from most
+and never blocks on its own, or the BLOCKED banner would stop meaning "a credential is exposed". It is always on because the cost asymmetry runs the other way from most
 passes: the family is cheap to grep for and expensive to discover in production, where by definition
 nothing told you.
 
@@ -482,6 +482,12 @@ Flag only when the swallowed/negative/untimed value **decides an alert, a gate, 
 - A retry loop that logs each failure and gives up loudly — not a finding; it reports.
 - Test code asserting a failure path — not a finding.
 - A deleted test/check whose subject was deleted in the same diff (the feature is gone) — not a finding; green by subtraction is when the subject **stays** and only its check goes.
+- A **future-drift claim** — "if this copy of the constant drifts, the check goes blind" — made by a
+  per-file agent, which by contract does not read the tests. It stays a finding only when no test pins
+  that site: Phase C finds the test that would turn red on the drift, and when one exists the site
+  reports, so the claim drops to a LOW simplification note (or goes). Measured: a MEDIUM "this `cut`
+  reader fails silently if the separator drifts" fell to LOW when sabotaging that reader turned three
+  assertions red.
 
 The distinction is observability, not syntax: `catch {}` next to a `console.error` is noisy code;
 `catch {}` where the caught value was the only input to a warning is a blind sensor.
