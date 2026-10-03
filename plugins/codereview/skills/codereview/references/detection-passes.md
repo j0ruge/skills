@@ -9,7 +9,7 @@ When analyzing a file, apply **all applicable passes** below. Return findings as
 - [Finding Format](#finding-format)
 - [Zen Principles Analysis (Passes 5.1–5.5)](#zen-principles-analysis-passes-5155)
   - [5.1 Readability](#51-beautiful-is-better-than-ugly--readability-counts) · [5.2 Explicit](#52-explicit-is-better-than-implicit) · [5.3 Simple](#53-simple-is-better-than-complex) · [5.4 Flat](#54-flat-is-better-than-nested) · [5.5 Errors](#55-errors-should-never-pass-silently)
-- [Additional Detection Passes (6.1–6.11)](#additional-detection-passes-61611)
+- [Additional Detection Passes (6.1–6.12)](#additional-detection-passes-61612)
   - [6.1 Bug Detection](#61-bug-detection) · [6.2 Security](#62-security) · [6.3 Performance](#63-performance) · [6.4 Type Safety](#64-type-safety)
   - [6.5 Documentation Sync & Docstring Coverage](#65-documentation-sync--docstring-coverage)
   - [6.6 Race Conditions & TOCTOU](#66-race-conditions--toctou-time-of-check-to-time-of-use)
@@ -17,6 +17,7 @@ When analyzing a file, apply **all applicable passes** below. Return findings as
   - [6.9 Dead Code & Unused Symbols](#69-dead-code--unused-symbols) — run by the B2 sweep agent, not per-file
   - [6.10 Hardcoded Secrets Detection](#610-hardcoded-secrets-detection) — always on, gates the grade
   - [6.11 Silent-Blinding Sensors](#611-silent-blinding-sensors) — always on, never a gate
+  - [6.12 Test Quality](#612-test-quality) — TESTS files, on a test-quality focus; never a gate
 - [Severity Reference](#severity-reference)
 
 ## Finding Format
@@ -125,7 +126,7 @@ Apply these 5 principles as analysis lenses to all CODE files (reduced rigor for
 
 ---
 
-## Additional Detection Passes (6.1–6.11)
+## Additional Detection Passes (6.1–6.12)
 
 ### 6.1 Bug Detection
 
@@ -511,6 +512,36 @@ abort or carry the "unknown" state forward explicitly. `unknown` and `healthy` m
 same. Where a verdict is currently negative, note in the finding that the positive success marker is
 strictly better, and that when it is not documented anywhere the honest move is to record the real
 output the first time the tool runs for real, then switch to it.
+
+### 6.12 Test Quality
+
+Applies to TESTS files, which the orchestrator sends to agents when the focus asks for test quality:
+the keyword `tests`, or prose such as "hunt vacuous tests". It is 6.11 turned on the test itself:
+*if the code under test broke, would this assertion go red?* Shapes that answered "no" in a real
+review (2026-10-03, a Python repo; each confirmed by a mutant that survived):
+
+- **An assertion that holds on every path** — `assert not sent` on a connection that was never armed,
+  or in a dry run: nothing would be sent with the guard or without it.
+- **A substring check with no boundary** — `"1=25" in desc` is also true inside `"11=250"`, so six
+  of 31 entries could vanish from the text with the test green. Match with a boundary.
+- **A fixture where both sides are equal** — with L = R in the fixture, swapping the sides in the
+  reader passes every test. One test with the sides different is the fix.
+- **A test that pins the shape the code produces** where the docs promise another one: test and code
+  agree with each other and both disagree with the contract. Read the docstring or description the
+  test is about, not only the code.
+- **A name that promises what no assertion checks** — "refuses before connecting" with a fake that
+  records writes, not connections.
+- **A negative-only assertion** (`"None" not in output`) that a reworded regression also satisfies.
+  Pair it with the positive marker.
+
+**A vacuity claim is `PLAUSIBLE` until a mutant shows it.** The agent sees one test file, and a test
+elsewhere may already kill the mutant: in the same review, one of two "untested" side swaps was caught
+by a sibling test the agent never read. Mark the finding `needs reproduction`; the mutation runs after
+the report, against the related test files rather than the whole suite (configuration.md, *Re-review
+rounds*, says when the tree may be edited).
+
+**Severity:** MEDIUM when the vacuous test is the only one guarding that behavior, LOW for a weak but
+not blind assertion. Like 6.11, never CRITICAL and never a grade gate.
 
 ---
 

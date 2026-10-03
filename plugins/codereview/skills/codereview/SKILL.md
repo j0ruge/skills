@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.8.0
+  version: 2.9.0
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -41,7 +41,7 @@ reads a file only at the step that needs it:
   and you redo the deepsearch: the Phase B2 contract (the two buckets, guardrails, return template).
 - `references/detection-passes.md` — read it yourself when a phase runs inline, and in Phase C for the
   recalibration rules and the pass 6.10 remediation block (the agents load it on their own): every
-  pass (Zen 5.x, 6.1–6.11) and its severity rules.
+  pass (Zen 5.x, 6.1–6.12) and its severity rules.
 - `references/toctou-patterns.md` — the TOCTOU catalog with code examples. Agents load it only for
   check-then-act shapes; read it in Phase C when a race spans files (check in one, act in another).
 - `references/report-template.md` — read at Phase C step 10, before writing the report.
@@ -115,7 +115,7 @@ If more than 15 CODE files, prioritize by change size (diff stat lines). Note de
 
 ### Phase B: Per-File Analysis (sonnet agents, parallel)
 
-For each CODE file (or group of 2-3 small files sharing imports), **spawn a sonnet agent** to analyze it. Launch all agents **in parallel**, in one message.
+For each CODE file (or group of 2-3 small files sharing imports) — and each changed TESTS file on a test-quality focus (6.12) — **spawn a sonnet agent** to analyze it. Launch all agents **in parallel**, in one message.
 
 Each agent reads its instructions itself, when it starts, from `{SKILL_DIR}/references/per-file-agent.md`, so every agent gets the same contract. Emit only the launch prompt below, placeholders filled — nothing added (no themes, framing or reproduction requests: a finding that needs reproducing comes back marked so and is reproduced after the report), nothing removed. `model: "sonnet"` on every call.
 

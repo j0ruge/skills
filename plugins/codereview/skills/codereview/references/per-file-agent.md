@@ -32,7 +32,7 @@ The reads are independent — issue them as one batch of parallel tool calls, th
 - performance → 6.3 Performance + 6.10 Secrets + 6.11 Silent-Blinding Sensors
 - types → 6.4 Type Safety + 6.10 Secrets + 6.11 Silent-Blinding Sensors
 - bugs → 6.1 Bug Detection + 6.6 TOCTOU + 6.10 Secrets + 6.11 Silent-Blinding Sensors
-- tests → test quality + 6.10 Secrets + 6.11 Silent-Blinding Sensors
+- tests → 6.12 Test Quality + 6.10 Secrets + 6.11 Silent-Blinding Sensors
 - docs → 6.5 Documentation Sync + 6.10 Secrets + 6.11 Silent-Blinding Sensors
 - a11y → 6.7 Accessibility + 6.10 Secrets + 6.11 Silent-Blinding Sensors
 - race-conditions → 6.6 TOCTOU + 6.10 Secrets + 6.11 Silent-Blinding Sensors

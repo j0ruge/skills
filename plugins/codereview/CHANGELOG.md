@@ -2,6 +2,38 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.9.0] — 2026-10-03
+
+### `codereview` 2.9.0: o teste vácuo ganha passo próprio, e a re-review converge
+
+Lições do `/codereview` no I10 da S8 do `ui24_agent` (quatro rodadas, grade B → A; o pedido em prosa
+foi "caçar teste vácuo").
+
+- **Passo 6.12 Test Quality** (`references/detection-passes.md`). O mapeamento `tests → test quality`
+  da `per-file-agent.md` apontava para um passo que **não existia em lugar nenhum**. Agora existe, com
+  as seis formas que a sessão confirmou por mutante sobrevivente: asserção que vale em todo caminho
+  (`not sent` numa conexão nunca armada), substring sem borda (`"1=25"` dentro de `"11=250"` — seis
+  de 31 entradas sumiam com o teste verde), fixture com L = R (trocar os lados passava em 587 testes),
+  teste que crava a forma produzida contra a prometida, nome que promete o que nenhuma asserção
+  confere, e asserção só negativa.
+- **A Fase B manda os arquivos TESTS a agentes quando o foco é qualidade de teste** (`SKILL.md`). Só
+  CODE ia a agente; os dois agentes de teste lançados à mão acharam os 4 MEDIUM de teste vácuo da
+  rodada, que os quatro de código não viram.
+- **Vacuidade é `PLAUSIBLE` até um mutante mostrar** (6.12). O agente vê um arquivo de teste só: das
+  duas "trocas de lado não testadas" que ele apontou, uma já era pega por um teste vizinho que ele não
+  leu. A mutação roda depois do relatório, nos arquivos de teste ligados, não na suíte inteira.
+- **Re-review rounds** (`references/configuration.md`, lida em toda rodada com `base=`). Os agentes não
+  veem os relatórios anteriores, e o mesmo achado inalcançável ("lote parcial") voltou nas rodadas 2 e
+  3: achado já descartado com razão escrita, sem evidência nova, é respondido citando o veredito e não
+  conta contra a regra de parada. E com agente ou suíte em background lendo a árvore, comparar outra
+  ref é `git show`/`git diff <ref> --`, nunca `checkout`/`stash` — um `git checkout main` de um
+  segundo, para ver se um aviso de lint era antigo, invalidou uma suíte inteira.
+
+**Orçamento:** o `SKILL.md` ganhou 62 caracteres e fica em 19 995 (o C1 do auditor avisa acima de
+20 000). A próxima lição que precisar do corpo pede um enxugamento com a `skill-refactoring`, como
+tarefa própria. **Dívida que segue:** os 3 C2 (references lidas pelos agentes por caminho absoluto,
+de propósito) e o F1 (`configuration.md` citada sem dizer quando ler).
+
 ## [2.8.2] — 2026-10-03
 
 ### `coderabbit-pr` 4.3.2: no zsh, `path` é o `PATH`
