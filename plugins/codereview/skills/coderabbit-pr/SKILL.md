@@ -1,7 +1,7 @@
 ---
 name: coderabbit-pr
 metadata:
-  version: 4.3.1
+  version: 4.3.2
 description: Resolves AI review comments on a GitHub PR — auto-detects CodeRabbit, Copilot, Gemini, Codex; creates per-reviewer checklists, verifies findings against current code (with byte-exact inspection when reviewers cite invisible/control characters), applies fixes, runs regression tests, resolves GitHub conversations, then cleans up its own checklist files. Triggers — coderabbit, copilot review, gemini review, codex review, fix PR review.
 ---
 
@@ -285,12 +285,10 @@ reviewer, not only those processed in Phase 3. Run the steps directly, never del
 0. **5.0** the PR head must carry the fixes (`headRefOid` == `HEAD`, nothing uncommitted); if
    not, ask the user to commit and push first;
 1. **5.1** list the unresolved threads (GraphQL `reviewThreads`, `isResolved == false`);
-2. **5.2** resolve each with the `resolveReviewThread` mutation, piping 5.1 into `while read` (a
-   `for id in $ids` loop never splits in zsh) — every line must print `true`;
-   anything else means the thread is still open, carry it into 5.3;
+2. **5.2** resolve each with the `resolveReviewThread` mutation, piping 5.1 into `while read` — every
+   line must print `true`; anything else means the thread is still open, carry it into 5.3;
 3. **5.3** count again: `unresolved: 0` is the success condition and the gate for Phase 6. Not zero →
-   report which threads remain and why; never describe the run as complete. `reviewThreads(first: 100)`
-   caps at 100 — on a PR that busy, page through and say so.
+   report which threads remain and why; never describe the run as complete.
 
 Update each checklist's `### Conversations` block (total threads, resolved in this run, previously resolved).
 
@@ -339,3 +337,4 @@ the final report carries the findings table, since the file it came from is gone
 - **A doc-anchored finding may be a code defect** — a prose-only fix leaves the program lying (3.1).
 - **A suggested wrapper can disarm a timeout** — under `timeout --foreground` only the `bash -c`
   wrapper dies, and the real step outlives the deadline (3.1 step 6: demonstrably wrong).
+- **zsh breaks the 5.2 loop two ways** — `for id in $ids` never splits; `read … path` empties `PATH` (5.2).

@@ -2,6 +2,25 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.8.2] — 2026-10-03
+
+### `coderabbit-pr` 4.3.2: no zsh, `path` é o `PATH`
+
+Lição do `/codereview:coderabbit-pr` no PR #208 do `sdd_agents` (dois achados do CodeRabbit, Copilot sem
+cota).
+
+- **A Fase 5.2 perdeu o `PATH` dentro do laço.** A saída da 5.1 traz três colunas (id, autor, caminho
+  do arquivo), e o nome natural para a terceira é `path`. No zsh, `path` é o array amarrado ao `PATH`:
+  `read -r id who path` zerou a busca de comandos, e cada `gh` e `sed` do laço morreu com
+  `command not found` — nenhuma conversa resolvida, e só a recontagem da 5.3 pegou. Renomeada a
+  variável, as mutações responderam `true` e a 5.3 deu `unresolved: 0`. A reference já avisava da
+  armadilha vizinha (`for id in $ids` não divide palavras no zsh); agora avisa desta, no mesmo laço, e
+  o SKILL.md ganha uma linha em Gotchas que cobre as duas.
+- **Orçamento do corpo.** A linha nova levava o `SKILL.md` a 20 096 caracteres (> 20 000, warning do
+  `validate-versions.py`). Saíram do corpo duas cópias do que a `references/thread-resolution.md` já
+  diz e que a Fase 5 manda ler: o parêntese do `for id in $ids` na 5.2 (agora na linha de Gotchas) e
+  o limite de 100 conversas na 5.3. Corpo em 19 963 caracteres.
+
 ## [2.8.1] — 2026-10-03
 
 ### `coderabbit-pr` 4.3.1: o revisor que só posta na issue, e a sonda que erra depois do conserto

@@ -59,6 +59,11 @@ unquoted variable, so the loop runs **once** with every id joined by newlines, a
 `NOT_FOUND … global id of 'PRRT_…\nPRRT_…'`. Measured on 2026-10-01: zero threads resolved, caught
 only by 5.3 reporting `unresolved: 2 of 2`. `while read` behaves the same in bash and zsh.
 
+If you read more columns than the id — 5.1 prints the author and the file path too — never name the
+path variable `path`. In zsh `path` is the array tied to `PATH`, so `read -r id who path` empties the
+search path inside the loop and every `gh` and `sed` after it dies with `command not found`. Measured
+on 2026-10-03: nothing resolved, every line an error, caught by 5.3. Use `_`, or a name like `file`.
+
 Each line must print `true`. Anything else (an error, `false`) means that thread is still open — carry it into 5.3.
 
 ## 5.3 Verify Zero Remain
