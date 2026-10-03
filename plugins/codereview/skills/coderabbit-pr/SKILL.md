@@ -1,7 +1,7 @@
 ---
 name: coderabbit-pr
 metadata:
-  version: 4.3.0
+  version: 4.3.1
 description: Resolves AI review comments on a GitHub PR — auto-detects CodeRabbit, Copilot, Gemini, Codex; creates per-reviewer checklists, verifies findings against current code (with byte-exact inspection when reviewers cite invisible/control characters), applies fixes, runs regression tests, resolves GitHub conversations, then cleans up its own checklist files. Triggers — coderabbit, copilot review, gemini review, codex review, fix PR review.
 ---
 
@@ -83,7 +83,7 @@ never commits: the user decides when. The one tracking file per reviewer in the 
 
 - **`gh` CLI not available or not authenticated**: Stop with: "The `gh` CLI is not installed or authenticated. Run `gh auth login` before using this skill."
 - **PR not found**: Stop with: "PR #{n} not found or insufficient permissions."
-- **No known reviewer bot posted anything at all** (nothing in `/comments` *and* nothing in `/reviews`): Stop with: "No AI review comments found on PR #{n}."
+- **No known reviewer bot posted anything at all** (on none of the three endpoints of 1.2): Stop with: "No AI review comments found on PR #{n}."
   A reviewer that posted but yielded zero actionable findings (an approval, an empty summary, "unable to review") is **not** this case: it goes through Phase 2's zero-findings path and is reported, since its case (b) is a coverage gap the user needs to hear about.
 - **File no longer exists**: Mark as `[x] File removed — not applicable`.
 - **Line not locatable** (heavy modifications since review): Use context clues (function name, surrounding code) to locate. If truly unmappable: `[x] Not locatable in current code — requires manual review`.
@@ -115,13 +115,14 @@ Commands and the why: `references/pr-branch.md`.
 #### 1.2 Detect Which Reviewers Are Present
 
 ```bash
-gh api "repos/$REPO/pulls/$PR/comments" --paginate --jq '[.[].user.login] | unique[]'
-gh api "repos/$REPO/pulls/$PR/reviews"  --paginate --jq '[.[].user.login] | unique[]'
+for e in pulls/$PR/comments pulls/$PR/reviews issues/$PR/comments; do
+  gh api "repos/$REPO/$e" --paginate --jq '[.[].user.login] | unique[]'; done
 ```
 
-Query **both** endpoints and union the results: a reviewer can post only a review body (Gemini's
-summary, a bot reporting it could not run) and another only inline comments — reading one endpoint
-silently drops a reviewer. Match the logins against the known bots:
+Union all three: a reviewer may post only a review body (Gemini's summary, a quota notice), only
+inline comments, or only an issue comment (CodeRabbit on the Free plan: a walkthrough, no review —
+case (b), registry). Skip one and a reviewer silently vanishes. Match the logins against the
+known bots:
 
 | Login | Reviewer |
 |-------|----------|

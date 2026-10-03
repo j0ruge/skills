@@ -27,7 +27,12 @@ symptom — including one that opens a new fail-open next to it. The regression 
    this branch *and* the absence of the other's marker. Cannot build a failing probe? Then the
    finding is unproven — go back to 3.1 and re-judge it before fixing anything.
 2. **Fix** — the minimal change, with the editing tool, on the PR's head branch.
-3. **Green** — the probe from step 1 passes.
+3. **Green** — the probe from step 1 passes. **Still red after the fix? Judge the probe before the
+   fix.** A probe that went red at its first assertion (the missing key) never ran the others, so
+   their expectations are unproven: check each against the fixture and the code that existed before
+   the fix. Measured 2026-10-03 (ui24-agent PR #73): all three post-fix failures were the probe's —
+   a field the output never had, a fixture value assumed instead of read, a label the existing code
+   already produced right. Bending the fix to match them would have shipped the regression.
 4. **Sabotage the fix.** Loosen or revert the line(s) the fix added — the guard becomes a no-op, the
    anchored regex becomes "anywhere", the strict comparison becomes lax — and run the probes again.
    At least one must go red. If none does, the fix has no sensor: write the probe that catches the

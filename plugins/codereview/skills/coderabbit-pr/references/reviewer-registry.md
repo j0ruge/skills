@@ -6,7 +6,7 @@ Maps AI review bots to their GitHub login, comment structure, and output file na
 
 | Reviewer | GitHub Login(s) | Output File | Comment Style |
 |----------|----------------|-------------|---------------|
-| CodeRabbit | `coderabbitai[bot]`, `coderabbitai` | `coderabbit-review.md` | Inline + review body with `<details>` blocks |
+| CodeRabbit | `coderabbitai[bot]`, `coderabbitai` | `coderabbit-review.md` | Inline + review body with `<details>` blocks; on the Free plan only an issue comment |
 | GitHub Copilot | `copilot-pull-request-reviewer[bot]` (review object), `Copilot` (its inline comments) | `copilot-review.md` | Review body + inline comments, under two logins |
 | Gemini Code Assist | `gemini-code-assist[bot]` | `gemini-review.md` | Inline + review body summary |
 | Codex | `chatgpt-codex-connector[bot]` | `codex-review.md` | Inline comments + boilerplate review body + status summary on the issue |
@@ -15,7 +15,7 @@ Maps AI review bots to their GitHub login, comment structure, and output file na
 
 ### CodeRabbit (`coderabbitai[bot]`)
 
-Posts in **two places**:
+Posts in **up to three places**:
 
 1. **Inline review comments** — file-level, attached to diff lines (typically 2-12 per review)
 2. **Review body** — contains the MAJORITY of findings:
@@ -23,6 +23,21 @@ Posts in **two places**:
    - `🧹 Nitpick comments` section with `<details>/<summary>` blocks per file
    - `⚠️ Outside diff range comments` section with same structure
    - Each finding: `` `LINES`: _CATEGORY_ | _SEVERITY_ `` followed by `**TITLE**`
+3. **Issue comment** (`/issues/{PR}/comments`), marked
+   `<!-- This is an auto-generated comment: summarize by coderabbit.ai -->` — walkthrough and run
+   info. Pure metadata, never a finding.
+
+**On the Free plan the issue comment is the only thing it posts**: no inline comment, no review
+object, and the body says *"Your organization is on the Free plan … For a comprehensive line-by-line
+review, please upgrade"*. That is case (b) — it never reviewed the code — not a pass, and not "no
+reviewer" either. Measured 2026-10-03 (ui24-agent PR #73): `/pulls/73/comments` and
+`/pulls/73/reviews` returned only Codex and Copilot; the CodeRabbit login appeared only on the
+issue endpoint, so a two-endpoint detection dropped it from the report without a trace. Confirm:
+
+```bash
+gh api "repos/$REPO/issues/$PR/comments" --paginate \
+  --jq '.[] | select(.user.login == "coderabbitai[bot]") | .body' | grep -c 'on the Free plan'
+```
 
 **Severity markers**: `🔴` Critical, `🟠` Major/HIGH, `🟡` Medium, `🔵` Minor/LOW, `Refactor suggestion` = MEDIUM
 
@@ -51,8 +66,9 @@ Posts in **two places**:
 
 Posts in **three places** (measured on a `@codex review` request, 2026-10-01):
 
-1. **Status summary** — an *issue* comment (`/issues/{PR}/comments`, which Phase 1 does not read)
-   marked `<!-- codex-pull-request-review-summary -->`, with a table whose Status cell goes
+1. **Status summary** — an *issue* comment (`/issues/{PR}/comments`: Phase 1.2 sees the
+   login, Phase 1.3 extracts nothing from it) marked `<!-- codex-pull-request-review-summary -->`,
+   with a table whose Status cell goes
    `🔄 **Running**` → `✅ **Completed**` (four minutes apart in that run). It appears **first**,
    before any finding exists.
 2. **Review object** — state `COMMENTED`, body `### 💡 Codex Review` + a "Reviewed commit" line and
@@ -75,7 +91,7 @@ gh api "repos/$REPO/issues/$PR/comments" --paginate \
 
 ## Detection Strategy
 
-To detect which reviewers are present on a PR, query both comment endpoints and collect unique `user.login` values that match any known bot login from the registry above.
+To detect which reviewers are present on a PR, query the three endpoints and collect unique `user.login` values that match any known bot login from the registry above.
 
 ```bash
 # Collect all unique reviewer bot logins
@@ -84,9 +100,15 @@ gh api "repos/{REPO}/pulls/{PR}/comments" --paginate \
 
 gh api "repos/{REPO}/pulls/{PR}/reviews" --paginate \
   --jq '[.[].user.login] | unique[]'
+
+# Status and summary comments (Codex status, CodeRabbit on the Free plan)
+gh api "repos/{REPO}/issues/{PR}/comments" --paginate \
+  --jq '[.[].user.login] | unique[]'
 ```
 
-Match against the registry. Only process reviewers that have at least one comment.
+Match against the registry. A reviewer found **only** on the issue endpoint posted nothing to
+extract: it goes straight to Phase 2's zero-findings determination, where its comment tells (a)
+from (b). Only reviewers with inline comments or a review body go through Phase 1.3.
 
 ## Extensibility
 

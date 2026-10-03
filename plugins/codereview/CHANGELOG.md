@@ -2,6 +2,36 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.8.1] — 2026-10-03
+
+### `coderabbit-pr` 4.3.1: o revisor que só posta na issue, e a sonda que erra depois do conserto
+
+Lições do `/codereview:coderabbit-pr` no PR #73 do `ui24-agent` (Python, um achado do Codex, Copilot
+sem cota e CodeRabbit no plano Free).
+
+- **A detecção da Fase 1.2 lia dois endpoints, e o CodeRabbit no plano Free só posta no terceiro.**
+  Sem revisão linha a linha, ele não deixa comentário inline nem review object; deixa só um comentário
+  na *issue* (walkthrough + *"Your organization is on the Free plan … please upgrade"*). No PR #73,
+  `/pulls/73/comments` e `/pulls/73/reviews` devolveram só Codex e Copilot, e o login do CodeRabbit
+  apareceu só em `/issues/73/comments`: o relatório sairia sem ele, quando o certo é o caso (b) — ele
+  nunca revisou, e isso é buraco de cobertura. Agora a 1.2 é um laço sobre os três endpoints (testado em
+  bash contra o PR #73; zsh não testado, ausente na máquina — a lista é literal, não `$var`), a parada
+  "nenhum revisor" fala dos três, e o `references/reviewer-registry.md` ganha o terceiro lugar do
+  CodeRabbit, a frase do plano Free com o comando que a acha, e a regra de que revisor visto **só** na
+  issue vai direto à determinação de zero achados da Fase 2. A nota do Codex que dizia "a Fase 1 não lê"
+  esse endpoint virou "a 1.2 vê o login, a 1.3 não extrai nada".
+- **Ainda vermelho depois do conserto: julgue a sonda antes do conserto.** O passo 3 do
+  `references/fix-loop.md` não dizia o que fazer quando o verde não vem. No PR #73 a sonda ficou vermelha
+  pelo motivo certo (a chave nova faltando), e por isso as outras asserções nunca rodaram; depois do
+  conserto, as três falhas eram dela — um campo que a saída nunca teve, um valor do fixture suposto em
+  vez de lido, um rótulo que o código existente já produzia certo. Entortar o conserto para casar com
+  elas teria sido a regressão.
+
+O `SKILL.md` ficou com o mesmo tamanho em caracteres (19 993, medido por `len()` como o
+`audit_skill_quality.py` mede; o C1 avisa acima de 20 000): a 1.2 foi reescrita compacta e o detalhe
+foi para as references. Dívida pré-existente, não tocada: o C2 de `fix-loop.md` citando
+`regression-testing.md` (cadeia de dois níveis).
+
 ## [2.8.0] — 2026-10-03
 
 ### `codereview` 2.8.0: a versão que rodou, o foco em prosa, o repositório shell e o laço de revisão
