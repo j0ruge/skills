@@ -3,6 +3,36 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.3.1] — 2026-10-04
+
+Patch: o contrato do `--close-orphans` não muda (fecha só a órfã cujo último texto trazia
+`RESOLVED by`); a busca da remoção deixa de perder commits, e a órfã sem remoção achada deixa de
+ser empurrada para `not planned`.
+
+### Fixed
+
+- **A remoção é achada pela chave quando o título não acha.** O `last_text()` procurava candidatos só
+  pelo `git log -S` dos 40 primeiros caracteres do título, e esse filtro é cego duas vezes: o parser
+  normaliza espaços repetidos (`re.sub(r"\s+", " ")`), então um título com `` `^  ok    ` `` nunca
+  aparece no arquivo como a issue o escreve; e o commit que apaga o item e cita o título na seção
+  decidida não muda a contagem. Agora, quando nenhum candidato do `-S` serve, o script percorre todo
+  commit que tocou o arquivo, do mais novo ao mais antigo, com o mesmo teste da chave (o pai tem o
+  item, o commit não tem). Cada leitura do arquivo fica em cache durante a execução: 3 ms por versão,
+  ~1,2 s para os 352 commits do `TODO.md` do kit, medido em 2026-10-04.
+- **`removal not found` deixa de virar "not planned".** O plano dizia `no RESOLVED by — close by hand`
+  também quando não achava a remoção, e o `--close-orphans` sugeria `--reason "not planned"`. Agora a
+  linha diz `last text unknown — read it before closing`, e o `SKIP` manda ler o último texto antes de
+  escolher o motivo.
+
+Medido no re-sync do kit em 2026-10-04: a #113 (consertada, `RESOLVED by 0521972`) saiu como
+`removal not found` e só não foi fechada como `not planned` porque o operador sabia do conserto; as
+#143, #154 e #158 (decididas, movidas para a seção decidida com o mesmo título) também saíram sem
+commit. Com a 2.3.1, as quatro saem com a remoção certa (`8a45e71 · fixed by 0521972`, `8577df6`,
+`db2eee1`, `db2eee1`), e as que o `-S` já achava respondem igual (#216, #63). Testes: 71 → 73 `ok`;
+o teste `q3` mantém "o commit que só citou o título nunca é a remoção" e passa a esperar a remoção
+verdadeira em vez de `None`. Sabotado numa cópia: sem o percurso, os dois testes novos ficam
+vermelhos; sem a 2ª metade do teste da chave, o `q3` fica vermelho.
+
 ## [2.3.0] — 2026-10-02
 
 Minor porque a saída do plano e o comportamento do `--close-orphans` mudam.

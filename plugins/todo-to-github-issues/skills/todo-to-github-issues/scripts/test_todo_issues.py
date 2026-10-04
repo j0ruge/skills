@@ -348,14 +348,20 @@ with tempfile.TemporaryDirectory() as g:
     # The removal the pickaxe cannot see: the deleting commit also quotes the title in the decided
     # section, so the count does not move. The only pickaxe hit with the item in its parent is an
     # OLDER commit that merely quoted the title — it holds the item on both sides, and must not
-    # pass for the removal: a doubt answers None.
+    # pass for the removal. Until 2.3.1 the answer here was None ("a doubt answers None"); the walk
+    # over every commit of the file now finds the real removal by the same key test, so q3 is
+    # expected and q2 still never is.
     git("init", "-q")
     quote = "- [ ] **Outro item** — `a.sh:4` — cita Item consertado no texto.\n  — por x (2026-10-01)\n\n"
     put(top + fixed + keep + bottom, "q1")
-    put(top + fixed + quote + keep + bottom, "q2: another item quotes the title")
-    put(top + quote + keep + bottom + "- Item consertado — decidido: saiu por decisão.\n", "q3: leaves, quoted")
+    quoted_only = put(top + fixed + quote + keep + bottom, "q2: another item quotes the title")
+    left_quoted = put(top + quote + keep + bottom + "- Item consertado — decidido: saiu por decisão.\n",
+                      "q3: leaves, quoted")
+    got = t.last_text(t.Ctx(repo="o/r", root=g, relpath="TODO.md", sha=None, branch="main"), iss_fixed)
     check("orphan: a commit that only quoted the title is never read as the removal",
-          t.last_text(t.Ctx(repo="o/r", root=g, relpath="TODO.md", sha=None, branch="main"), iss_fixed) == (None, []))
+          got[0] != quoted_only[:7])
+    check("orphan: a removal the pickaxe cannot see is found by key, with the fix of its last text",
+          got == (left_quoted[:7], ["abc1234"]))
 with tempfile.TemporaryDirectory() as g:
     # Two titles that share the 40 characters the pickaxe searches with: the item is told apart by
     # the issue's key, never by its title — the decided one must not inherit the other's fix.
@@ -373,5 +379,23 @@ with tempfile.TemporaryDirectory() as g:
     iss_b = as_issues([twins[f"{twin}: B"]], tctx)[0]
     check("orphan: twin titles are told apart by key — the decided twin inherits no fix",
           t.last_text(tctx, iss_b) == (gone_twin[:7], []))
+with tempfile.TemporaryDirectory() as g:
+    # A title whose code span holds a run of spaces: the parser collapses it, so the issue title (and
+    # the pickaxe needle cut from it) never occurs in the file. Measured 2026-10-04 on the sdd kit,
+    # issue #113 (`^  ok    `): a FIXED item came out as "removal not found", and the plan told the
+    # human to close it as not planned. The removal is found by the item's key instead.
+    git("init", "-q")
+    spaced = ("- [ ] **A âncora `^  ok    ` do Check não alcança 82** — `a.sh:7` — texto. RESOLVED by def5678.\n"
+              "  — por x (2026-10-01)\n\n")
+    put(top + spaced + keep + bottom, "s1")
+    gone_spaced = put(top + keep + bottom, "s2: the spaced item leaves")
+    put(top + keep.replace("texto.", "texto, editado.") + bottom, "s3: HEAD moves on")
+    old = os.path.join(g, "old.md")
+    with open(old, "w", encoding="utf-8") as fh:
+        fh.write(top + spaced + keep + bottom)
+    sctx = t.Ctx(repo="o/r", root=g, relpath="TODO.md", sha=None, branch="main")
+    iss_s = as_issues([i for i in t.parse(old) if "âncora" in i.title], sctx)[0]
+    check("orphan: a title with a run of spaces is still found, by key — the fix is not lost",
+          t.last_text(sctx, iss_s) == (gone_spaced[:7], ["def5678"]))
 
 sys.exit(1 if fails else 0)

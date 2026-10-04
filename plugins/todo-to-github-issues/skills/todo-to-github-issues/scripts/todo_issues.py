@@ -337,8 +337,25 @@ def fetch_issues(repo: str) -> list[dict]:
     return json.loads(out)
 
 
+_ITEMS_AT: dict[tuple[str, str, str], dict[str, Item]] = {}
+_SHA_REF = re.compile(r"[0-9a-f]{40}\^?")
+
+
 def _items_at(ctx: Ctx, ref: str) -> dict[str, Item]:
-    """The file as it stood at `ref`, parsed by this same parser and keyed like the mirror."""
+    """The file as it stood at `ref`, parsed by this same parser and keyed like the mirror.
+
+    Memoized for the run when `ref` is a full sha (optionally `^`): its content never changes, and
+    the walk in last_text reads the same commits for every orphan.
+    """
+    if not _SHA_REF.fullmatch(ref):
+        return _parse_at(ctx, ref)
+    k = (ctx.root, ctx.relpath, ref)
+    if k not in _ITEMS_AT:
+        _ITEMS_AT[k] = _parse_at(ctx, ref)
+    return _ITEMS_AT[k]
+
+
+def _parse_at(ctx: Ctx, ref: str) -> dict[str, Item]:
     old = subprocess.run(["git", "-C", ctx.root, "show", f"{ref}:{ctx.relpath}"],
                          capture_output=True, text=True, check=False)
     if old.returncode:
@@ -356,21 +373,38 @@ def _items_at(ctx: Ctx, ref: str) -> dict[str, Item]:
 def last_text(ctx: Ctx, iss: dict, tries: int = 5) -> tuple[str | None, list[str]]:
     """Where an orphan's item left the file, and the fixes (`RESOLVED by`) its last text names.
 
-    HEAD cannot answer either question: the item is gone there. The pickaxe on the title lists the
-    commits that changed how often it appears; the removal is the newest one whose PARENT holds the
-    item (matched by the issue's own key, never by title text) and which does not. A commit that
-    only moved the same words elsewhere fails the second half, so a doubt answers None — never a
-    wrong commit. ~0.1 s per orphan on the sdd kit's history.
+    HEAD cannot answer either question: the item is gone there. The removal is the newest commit
+    whose PARENT holds the item (matched by the issue's own key, never by title text) and which does
+    not; a commit that only moved the same words elsewhere fails the second half.
+
+    The pickaxe on the title is the fast way to find candidates, and it is blind twice: the parser
+    collapses whitespace runs, so a title like `^  ok    ` never occurs in the file as the issue
+    spells it; and a commit that deletes the item while quoting its title in the decided section
+    leaves the count unchanged. Both were measured 2026-10-04 on the sdd kit (#113 fixed, #143,
+    #154, #158 decided). So when no pickaxe hit qualifies, every commit that touched the file is
+    tried, newest first, with the same test. Each parse is memoized (_items_at); on the kit's
+    history that walk measured 3 ms a parse, ~1.2 s for all 352 commits, once per run. None means
+    the key never left this checkout's history: a shallow clone, a renamed file, an unmerged branch.
     """
     m = KEY_RE.search(iss.get("body") or "")
     if not m:
         return None, []
+    key = m.group(1)
+
+    def removal(sha: str) -> tuple[str, list[str]] | None:
+        before = _items_at(ctx, f"{sha}^").get(key)
+        if before and key not in _items_at(ctx, sha):
+            return sha[:7], RESOLVED_RE.findall(before.rest)
+        return None
+
     needle = iss["title"].rstrip("…")[:40]
     log = sh("git", "-C", ctx.root, "log", "--format=%H", "-S", needle, "--", ctx.relpath, check=False)
     for sha in log.split()[:tries]:
-        before = _items_at(ctx, f"{sha}^").get(m.group(1))
-        if before and m.group(1) not in _items_at(ctx, sha):
-            return sha[:7], RESOLVED_RE.findall(before.rest)
+        if found := removal(sha):
+            return found
+    for sha in sh("git", "-C", ctx.root, "log", "--format=%H", "--", ctx.relpath, check=False).split():
+        if found := removal(sha):
+            return found
     return None, []
 
 
@@ -578,8 +612,12 @@ def main() -> int:
         where = f"left the file in {rm}" if rm else "removal not found in history"
         if fixes:
             verb, why = ("CLOSE " if a.close_orphans else "ORPHAN"), "fixed by " + ", ".join(fixes)
-        else:
+        elif rm:
             verb, why = ("SKIP  " if a.close_orphans else "ORPHAN"), "no RESOLVED by — close by hand"
+        else:
+            # Unknown is not "absent": a fixed item whose removal was not found must not be steered
+            # to "not planned" (sdd kit #113, 2026-10-04).
+            verb, why = ("SKIP  " if a.close_orphans else "ORPHAN"), "last text unknown — read it before closing"
         print(f"{verb}  #{iss['number']:<4} {where} · {why} — {short(iss['title'], 60)}")
     for iss, it, r in plan.renames:
         old = KEY_RE.search(iss["body"]).group(1)
@@ -617,6 +655,11 @@ def main() -> int:
     if a.close_orphans:
         for iss in plan.orphans:
             rm, fixes = gone[iss["number"]]
+            if not fixes and not rm:
+                print(f"skipped #{iss['number']} — its removal is not in this checkout's history (shallow "
+                      f"clone? renamed file? unmerged branch?), so its last text is unknown: read it, then "
+                      f"close as completed if it carried RESOLVED by, as not planned if it did not")
+                continue
             if not fixes:
                 print(f"skipped #{iss['number']} — no RESOLVED by in its last text: close it by hand, "
                       f"`gh issue close {iss['number']} --reason \"not planned\" --comment \"<para onde foi>\"`")

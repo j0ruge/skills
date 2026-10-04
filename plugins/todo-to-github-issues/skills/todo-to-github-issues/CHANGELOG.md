@@ -3,6 +3,22 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-04 — a órfã consertada que quase saiu como "not planned"
+
+Publicado como **v2.3.1**.
+
+- Re-sync do `TODO.md` do kit depois do lote 3 (PRs #219 e #220): 35 órfãs, 12 com `fixed by`.
+  Quatro saíram como `removal not found`, e o `--close-orphans` sugeriu `--reason "not planned"` para
+  todas. Uma delas, a #113, estava consertada (`RESOLVED by 0521972`); fechei como `completed` à mão
+  porque sabia do conserto, não porque a ferramenta disse.
+- Causa, provada com o histórico: o título da #113 tem `` `^  ok    ` ``, o parser normaliza para
+  `` `^ ok ` ``, e o `git log -S` com esse trecho acha 0 ocorrência no arquivo. As outras três
+  (#143, #154, #158) foram movidas para a seção decidida com o mesmo título, e a contagem 1/1 esconde
+  o commit do `-S`.
+- Protótipo antes do código: percorrer os commits do arquivo com o teste da chave achou as quatro e
+  concordou com o `-S` onde ele já achava. Teste vermelho escrito antes do conserto (título com
+  espaços repetidos), sabotagem nos dois sentidos depois.
+
 ## 2026-10-02 — a órfã que fechava sem dizer quem a consertou
 
 Publicado como **v2.3.0**.
