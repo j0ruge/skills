@@ -259,6 +259,13 @@ CURSOR_SKILL_MAP: list[dict[str, Any]] = [
         "source_dir": "plugins/wsl-windows-onboarding/skills/wsl-windows-onboarding",
     },
     {
+        "plugin": "windows-disk-cleanup",
+        "cursor_name": "windows-disk-cleanup",
+        "display": "Windows Disk Cleanup — measure what fills each drive, prove duplicates by hash, delete in authorized rounds (manifest, reversible first, re-measure)",
+        "source_type": "skill",
+        "source_dir": "plugins/windows-disk-cleanup/skills/windows-disk-cleanup",
+    },
+    {
         "plugin": "kaizen-software",
         "cursor_name": "kaizen-software",
         "display": "Kaizen — continuous improvement across planning, implementation and maintenance (PDCA, 5 whys, kaizen log)",

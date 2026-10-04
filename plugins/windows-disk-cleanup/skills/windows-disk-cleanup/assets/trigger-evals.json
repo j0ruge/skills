@@ -1,0 +1,22 @@
+[
+  {"query": "meu C: ta com 98% usado e o windows ta reclamando de pouco espaço, me ajuda a ver o que da pra apagar sem perder nada", "should_trigger": true},
+  {"query": "quero liberar espaço no C, E e J, tenho muito dado e quero organizar e ver o que posso apagar, mas quem apaga sou eu", "should_trigger": true},
+  {"query": "my D: drive is almost full and I don't know what's eating it, can you find the big stuff and duplicates?", "should_trigger": true},
+  {"query": "o cache do google drive no meu E:\\DriveFS ta com 45 GB, posso apagar essa pasta?", "should_trigger": true},
+  {"query": "achei uma pasta E:\\usuario antigo com AppData de 90 GB de uma instalação velha do windows, da pra deletar?", "should_trigger": true},
+  {"query": "pip, npm, yarn e huggingface tão ocupando uns 40 GB no meu perfil, qual o jeito seguro de limpar?", "should_trigger": true},
+  {"query": "libero a rodada 2 da limpeza de disco que você planejou", "should_trigger": true},
+  {"query": "tenho vários .zip com a pasta extraída do lado em J:\\trabalho, consigo saber se são iguais antes de apagar os zips?", "should_trigger": true},
+  {"query": "low disk space warning on my work laptop, what can I safely delete in AppData?", "should_trigger": true},
+  {"query": "meu ext4.vhdx do WSL tem 60 GB, como faço pra encolher?", "should_trigger": true},
+  {"query": "como eu configuro o Obsidian pra sincronizar o cofre pelo Google Drive sem dar timeout?", "should_trigger": false},
+  {"query": "o docker build ta falhando com 'no space left on device' dentro do container no servidor linux de produção", "should_trigger": false},
+  {"query": "escreve um script python que lista os arquivos maiores que 1GB numa pasta pra eu usar no meu projeto", "should_trigger": false},
+  {"query": "quero migrar meus repos do C:\\source para o WSL pra ficar mais rápido", "should_trigger": false},
+  {"query": "minha query no postgres ta lenta e a tabela tem 40 GB, como otimizo?", "should_trigger": false},
+  {"query": "faz backup dos volumes docker do servidor com ansible antes do deploy", "should_trigger": false},
+  {"query": "o git do meu repo ta com 3 GB por causa de binário no histórico, como limpo?", "should_trigger": false},
+  {"query": "meu celular android ta sem espaço, o whatsapp ocupa 20 GB", "should_trigger": false},
+  {"query": "quantos GB de VRAM o modelo qwen 14b precisa no ollama?", "should_trigger": false},
+  {"query": "explica a diferença entre hardlink e symlink no NTFS", "should_trigger": false}
+]

@@ -1,0 +1,42 @@
+{
+  "name": "windows-disk-cleanup",
+  "description": "Frees Windows disk space without losing data: inventories drives, proves duplicates by hash (hardlinks discounted), deletes only in user-authorized rounds — manifest and reversible step first, re-measure after. Knows dev caches, Drive cache, old profiles, WSL/Docker disks. Triggers — disk full, free up space, C: full, clean disk, what can I delete.",
+  "author": {
+    "name": "Chewiesoft"
+  },
+  "version": "0.1.0",
+  "category": "development",
+  "keywords": [
+    "windows",
+    "disk-space",
+    "disk-cleanup",
+    "free-up-space",
+    "duplicates",
+    "hardlinks",
+    "sha256",
+    "zip-crc32",
+    "pip-cache",
+    "npm-cache",
+    "uv-cache",
+    "temp-folder",
+    "visual-studio-installer",
+    "vscode-obsolete-extensions",
+    "huggingface-cache",
+    "google-drive-cache",
+    "contentcachemaxkbytes",
+    "old-user-profile",
+    "game-saves-rescue",
+    "recycle-bin",
+    "steam",
+    "wsl-vhdx",
+    "docker-vhdx",
+    "storage-sense",
+    "kaizen",
+    "pdca"
+  ],
+  "platforms": [
+    "claude-code",
+    "cursor"
+  ],
+  "skills": "./skills"
+}
