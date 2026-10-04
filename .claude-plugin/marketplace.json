@@ -925,7 +925,7 @@
     {
       "name": "skill-quality-audit",
       "source": "./plugins/skill-quality-audit",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "description": "Audita Agent Skills: spec, autocontenção, claims e tamanho. Porta de entrada da família: fixa a ordem das fases, é somente leitura por padrão (reparo só com autorização) e entrega relatório com comando e rc. Triggers — auditar skill, auditoria completa de skills, skill no padrão, validar SKILL.md, skills-ref, skill pronta para publicar.",
       "category": "quality",
       "keywords": [

@@ -49,6 +49,13 @@ from pathlib import Path
 
 VALID_PLATFORMS = {'claude-code', 'cursor'}
 
+# Campos de topo do Claude Code fora da spec (code.claude.com/docs/en/skills, "Frontmatter
+# reference"): so funcionam no topo. Em plugin com platforms == ['claude-code'] sao custo aceito,
+# como no A4 da skill-quality-audit (CLAUDE_CODE_TOP_FIELDS); manter as duas listas iguais.
+CLAUDE_CODE_TOP_FIELDS = {'when_to_use', 'argument-hint', 'arguments', 'disable-model-invocation',
+                          'user-invocable', 'disallowed-tools', 'model', 'effort', 'context', 'agent',
+                          'background', 'hooks', 'paths', 'shell'}
+
 # Tetos vindos do CLAUDE.md deste repo ("Skill description guidelines"): alvo 350, cap
 # duro 500. Nao sao numeros inventados aqui -- a politica ja estava escrita e nada a
 # media, e foi assim que uma description chegou a 2541 chars. O motivo do cap: quando o
@@ -252,7 +259,14 @@ def _check_skill_spec(repo_root: Path) -> 'tuple[list[str], list[str]]':
         flow = [l.split(':', 1)[0].strip() for l in m.group(1).splitlines() if _FLOW_RE.match(l)]
         if flow:
             errors.append(f'  {rel}: flow style ([a, b] / {{a: b}}) em {flow}: strictyaml/skills-ref nao le; use lista em bloco')
-        extra = sorted(set(data) - SPEC_FIELDS)
+        aceitos = set()
+        try:
+            manifest = json.loads((skill_md.parents[2] / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
+            if isinstance(manifest, dict) and manifest.get('platforms') == ['claude-code']:
+                aceitos = CLAUDE_CODE_TOP_FIELDS
+        except (OSError, ValueError):
+            pass
+        extra = sorted(set(data) - SPEC_FIELDS - aceitos)
         if extra:
             warnings.append(f'  {rel}: campos de topo fora da spec {extra} (skills-ref reprova; '
                             f'mantenha so se o Claude Code usa, e diga por que no CHANGELOG)')

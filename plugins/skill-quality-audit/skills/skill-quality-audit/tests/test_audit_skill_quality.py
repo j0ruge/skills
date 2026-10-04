@@ -425,6 +425,84 @@ class TestCamposHermesNoTopo(Base):
         self.assertIn(("AVISO", False, True), a4)
 
 
+class TestCamposClaudeCodeNoTopo(Base):
+    """`argument-hint` (e os demais campos da tabela do Claude Code) só têm efeito no topo: movê-los
+    para `metadata` desliga a função. Em plugin que declara só `claude-code` são custo aceito (INFO);
+    fora disso o upload para claude.ai/API falha, e seguem AVISO."""
+    UNEXPECTED = ("Validation failed for {d}:\n  - Unexpected fields in frontmatter: {campos}. Only "
+                  "['allowed-tools', 'compatibility', 'description', 'license', 'metadata', 'name'] are allowed.")
+
+    def _skill(self, topo, platforms=None):
+        md = VALID_SKILL_MD.replace("metadata:\n", topo + "metadata:\n").format(name="skill-cc")
+        if platforms is None:
+            return make_skill(self.tmp / "skills", "skill-cc", skill_md=md)
+        plugin = self.tmp / "plugins" / "meu-plugin"
+        d = make_skill(plugin / "skills", "skill-cc", skill_md=md)
+        (plugin / ".claude-plugin").mkdir(parents=True)
+        (plugin / ".claude-plugin" / "plugin.json").write_text(
+            json.dumps({"name": "meu-plugin", "platforms": platforms}), encoding="utf-8")
+        return d
+
+    def _fake_ref(self, saida):
+        bindir = self.tmp / "bin"
+        bindir.mkdir(exist_ok=True)
+        (bindir / "saida.txt").write_text(saida, encoding="utf-8")
+        fake = bindir / "agentskills"
+        fake.write_text(f"#!/bin/sh\ncat '{bindir / 'saida.txt'}'\nexit 1\n", encoding="utf-8")
+        fake.chmod(0o755)
+        self.env["PATH"] = str(bindir) + os.pathsep + "/usr/bin" + os.pathsep + "/bin"
+
+    def _achados(self, d, *extra):
+        rc, out = self.run_script(d, "--audit-skill-sh", self.tmp / "nao-existe.sh", "--format", "json", *extra)
+        return rc, {(x["id"], x["level"]) for x in json.loads(out)["skills"][0]["findings"]}
+
+    def test_argument_hint_em_plugin_so_claude_code_e_info(self):
+        d = self._skill('argument-hint: "start | close"\n', platforms=["claude-code"])
+        self._fake_ref(self.UNEXPECTED.format(d=d, campos="argument-hint"))
+        rc, f = self._achados(d)
+        self.assertIn(("A4", "INFO"), f)
+        self.assertNotIn(("A4", "AVISO"), f)
+        self.assertIn(("G2", "INFO"), f)
+        self.assertNotIn(("G2", "ERRO"), f)
+        self.assertEqual(rc, 0)
+
+    def test_argument_hint_em_plugin_multiplataforma_segue_aviso(self):
+        d = self._skill('argument-hint: "start | close"\n', platforms=["claude-code", "cursor"])
+        self._fake_ref(self.UNEXPECTED.format(d=d, campos="argument-hint"))
+        rc, f = self._achados(d)
+        self.assertIn(("A4", "AVISO"), f)
+        self.assertIn(("G2", "ERRO"), f)
+
+    def test_argument_hint_sem_plugin_segue_aviso(self):
+        d = self._skill('argument-hint: "start | close"\n')
+        self._fake_ref(self.UNEXPECTED.format(d=d, campos="argument-hint"))
+        rc, f = self._achados(d)
+        self.assertIn(("A4", "AVISO"), f)
+        self.assertIn(("G2", "ERRO"), f)
+
+    def test_campo_hermes_aceito_tambem_cala_o_g2(self):
+        d = self._skill("platforms:\n  - linux\n")
+        self._fake_ref(self.UNEXPECTED.format(d=d, campos="platforms"))
+        rc, f = self._achados(d)
+        self.assertIn(("G2", "INFO"), f)
+        self.assertNotIn(("G2", "ERRO"), f)
+
+    def test_g2_com_outro_erro_alem_do_campo_aceito_segue_erro(self):
+        d = self._skill('argument-hint: "start | close"\n', platforms=["claude-code"])
+        self._fake_ref(self.UNEXPECTED.format(d=d, campos="argument-hint")
+                       + "\n  - Directory name 'x' must match skill name 'skill-cc'")
+        rc, f = self._achados(d)
+        self.assertIn(("G2", "ERRO"), f)
+
+    def test_g2_com_campo_nao_aceito_junto_segue_erro(self):
+        d = self._skill('argument-hint: "start | close"\nversion: 1.0.0\n', platforms=["claude-code"])
+        self._fake_ref(self.UNEXPECTED.format(d=d, campos="argument-hint, version"))
+        rc, f = self._achados(d)
+        self.assertIn(("G2", "ERRO"), f)
+        self.assertIn(("A4", "AVISO"), f)  # version continua AVISO
+        self.assertIn(("A4", "INFO"), f)   # argument-hint é custo aceito
+
+
 class TestPlaceholdersEModulos(Base):
     def test_script_citado_por_placeholder_de_raiz_nao_e_orfao(self):
         md = VALID_SKILL_MD.format(name="skill-ph") + \

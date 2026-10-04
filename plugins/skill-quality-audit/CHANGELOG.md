@@ -1,5 +1,31 @@
 # Changelog — skill-quality-audit
 
+## [0.5.0] — 2026-10-04
+
+### `skill-quality-audit` 0.5.0: campo de topo do Claude Code é custo aceito em plugin só `claude-code`
+
+O `ticket` saía com ERRO G2 e AVISO A4 pelo `argument-hint` no topo do frontmatter, e a correção
+que o aviso sugeria ("mover para metadata") pioraria a skill: a doc do Claude Code
+(code.claude.com/docs/en/skills, "Frontmatter reference") diz que o `argument-hint` é a dica do
+autocomplete e que `metadata` é para ferramenta própria — o Claude Code não age sobre o conteúdo.
+Movido, o `/ticket` perde a dica `start (open) | split | close | status`. O custo de mantê-lo é o
+upload para claude.ai/API falhar, que não alcança um plugin declarado só para o Claude Code.
+
+- **A4:** `CLAUDE_CODE_TOP_FIELDS` (os 14 campos da tabela da doc fora da spec) vira INFO "custo
+  aceito" quando o `<plugin>/.claude-plugin/plugin.json` declara `platforms: ["claude-code"]`.
+  Sem manifesto, ou com outra plataforma (`cursor`), segue AVISO.
+- **G2:** reprovação do `skills-ref` cuja **toda** linha de erro é `Unexpected fields` com campos
+  aceitos vira INFO. Antes nem os campos do Hermes (`platforms`), já INFO no A4, escapavam do ERRO.
+  Outro erro na saída, ou um campo fora da lista, mantém o ERRO.
+- **Seis testes novos** (`TestCamposClaudeCodeNoTopo`), três RED antes do código; três sabotagens
+  (ignorar `platforms`, aceitar com outra linha de erro, não checar o subconjunto) deixam testes
+  vermelhos. Caso real: `ticket` 1.8.0 passou de 1 ERRO + 1 AVISO para 0 + 0 com o `skills-ref`
+  0.1.1 de verdade.
+- `scripts/validate-versions.py` do marketplace aplica a mesma regra ao warning do check 7 (lista
+  duplicada lá; o comentário pede para manter as duas iguais). Sondado: com `cursor` no `platforms`
+  do `ticket` o warning volta.
+- `references/checks.md` (A4, G2) e a tabela de erros comuns do `SKILL.md`.
+
 ## [0.4.1] — 2026-10-04
 
 ### `skill-quality-audit` 0.4.1: o B5 acha o CHANGELOG do plugin

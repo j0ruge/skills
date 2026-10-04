@@ -33,6 +33,14 @@ SPEC_FIELDS = {"name", "description", "license", "allowed-tools", "metadata", "c
 #   python3 -m pip index versions skills-ref   (ou https://pypi.org/project/skills-ref/)
 SKILLS_REF_PIN = "skills-ref==0.1.1"
 HERMES_TOP_FIELDS = {"platforms", "required_credential_files", "required_environment_variables", "prerequisites"}
+# Campos da tabela "Frontmatter reference" do Claude Code (code.claude.com/docs/en/skills) fora da spec:
+# só têm efeito no topo (em `metadata` o Claude Code não os lê). Custo aceito (INFO) apenas em skill
+# de plugin cujo plugin.json declara `platforms: ["claude-code"]`; fora disso o upload para
+# claude.ai/API falha e eles seguem AVISO. Reconferir a lista contra a tabela da doc.
+CLAUDE_CODE_TOP_FIELDS = {"when_to_use", "argument-hint", "arguments", "disable-model-invocation",
+                          "user-invocable", "disallowed-tools", "model", "effort", "context", "agent",
+                          "background", "hooks", "paths", "shell"}
+RE_UNEXPECTED = re.compile(r"^\s*-\s*Unexpected fields in frontmatter: (.+?)\. Only \[")
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 MAX_NAME, MAX_DESC, MAX_COMPAT = 64, 1024, 500
 MAX_LINES = 500          # spec Agent Skills: SKILL.md abaixo de 500 linhas
@@ -329,6 +337,20 @@ def find_skill(name: str, roots):
     return None
 
 
+def plugin_so_claude_code(d: Path) -> bool:
+    """Skill de plugin (<plugin>/skills/<skill>/, manifesto em <plugin>/.claude-plugin/plugin.json)
+    cujo `platforms` é exatamente ["claude-code"]. Manifesto ausente ou ilegível = False."""
+    try:
+        data = json.loads((d.parent.parent / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(data, dict) and data.get("platforms") == ["claude-code"]
+
+
+def campos_de_topo_aceitos(d: Path) -> set:
+    return HERMES_TOP_FIELDS | (CLAUDE_CODE_TOP_FIELDS if plugin_so_claude_code(d) else set())
+
+
 def check_frontmatter(rep: Report, fm: FM, args, roots):
     d = fm.data
     for p in fm.errors:
@@ -354,7 +376,8 @@ def check_frontmatter(rep: Report, fm: FM, args, roots):
         elif args.desc_budget and dl > args.desc_budget:
             rep.add(INFO, "A3", f"description com {dl} chars: índices que cortam em {args.desc_budget} "
                                 f"mostram só '{desc.strip()[:args.desc_budget - 3]}...' (confira se o gatilho vem primeiro)")
-    extra = sorted(set(d) - SPEC_FIELDS - HERMES_TOP_FIELDS)
+    aceitos = campos_de_topo_aceitos(rep.path)
+    extra = sorted(set(d) - SPEC_FIELDS - aceitos)
     if extra:
         rep.add(AVISO, "A4", f"campos de topo fora da spec {extra}: skills-ref reprova; mover para metadata "
                              "(author e version viram metadata.author e metadata.version, em texto)")
@@ -362,6 +385,10 @@ def check_frontmatter(rep: Report, fm: FM, args, roots):
     if functional:
         rep.add(INFO, "A4", f"campos de topo fora da spec {functional} ficam: o Hermes só os lê no topo "
                             "(skills-ref reprova; custo aceito)")
+    cc = sorted(set(d) & (aceitos - HERMES_TOP_FIELDS))
+    if cc:
+        rep.add(INFO, "A4", f"campos de topo fora da spec {cc} ficam: o Claude Code só os lê no topo e o "
+                            "plugin declara só claude-code (skills-ref reprova; custo aceito)")
     for key in fm.flow:
         rep.add(ERRO, "A5", f"'{key}' em flow style ([...] ou {{...}}): strictyaml/skills-ref rejeita; usar lista em bloco")
     compat = d.get("compatibility")
@@ -642,8 +669,19 @@ def check_external(rep: Report, args):
     except subprocess.TimeoutExpired:
         rep.add(AVISO, "G2", f"{name} validate não terminou em 120s")
         return
+    saida = (proc.stdout + proc.stderr).strip()
     level = OK if proc.returncode == 0 else ERRO
-    rep.add(level, "G2", f"{name} validate rc={proc.returncode}: {(proc.stdout + proc.stderr).strip()[:240]}")
+    if level == ERRO:
+        # Reprovação só por campo de topo já aceito no A4 é o mesmo custo aceito, não um segundo ERRO.
+        # Qualquer outra linha de erro, ou um campo fora da lista, mantém o ERRO.
+        erros = [l for l in saida.splitlines() if l.lstrip().startswith("- ")]
+        campos = [m.group(1) for m in map(RE_UNEXPECTED.match, erros) if m]
+        if erros and len(campos) == len(erros):
+            nomes = {c.strip() for grupo in campos for c in grupo.split(",")}
+            if nomes <= campos_de_topo_aceitos(rep.path):
+                level = INFO
+                saida = f"só campos de topo aceitos {sorted(nomes)} (custo aceito, ver A4): {saida}"
+    rep.add(level, "G2", f"{name} validate rc={proc.returncode}: {saida[:240]}")
 
 
 def check_family(reports: list, found: dict):
