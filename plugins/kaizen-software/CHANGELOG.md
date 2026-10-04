@@ -2,6 +2,22 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.3.2] — 2026-10-04
+
+### O Check cobre a prosa derivada; o Gemba inclui o que já foi respondido
+
+Lições de uma sessão real (amostra de estoque para uma reunião, com nota no vault e e-mail à equipe):
+
+- **Fase 2, item 6 (Check explícito):** o Check do CSV passou em 20/20 peças, mas a nota escrita a
+  partir dele trazia "DE-JRC 119", somado de cabeça; o agrupamento por comando dava 137. O Check
+  verificava o artefato principal e deixava passar a prosa copiada dele (nota, e-mail, resumo). Agora
+  todo número ou afirmação copiado para a prosa sai de um comando.
+- **Fase 1, item 1 (Gemba primeiro):** a nota do projeto já respondia o que era o local "DE", e mesmo
+  assim a dúvida virou pergunta a um terceiro no rascunho; o usuário teve de repetir ("Já te falei
+  isso"). Agora o Gemba inclui reler memória, notas e a thread antes de perguntar.
+- Evidência: o número foi recalculado (137 + 25 + 22 = 184, igual à coluna do CSV) e a pergunta
+  redundante saiu do rascunho e da nota.
+
 ## [1.3.1] — 2026-10-01
 
 ### Poka-yoke para estado de "já feito"

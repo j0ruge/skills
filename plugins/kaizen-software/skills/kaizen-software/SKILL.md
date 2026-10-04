@@ -1,7 +1,7 @@
 ---
 name: kaizen-software
 metadata:
-  version: 1.3.1
+  version: 1.3.2
 description: "Metodologia Kaizen (melhoria contínua) para planejar, implementar e manter software — e para ensinar Kaizen ao time. Conduz as três fases pelo ciclo PDCA, verifica pelo artefato e não pelo rótulo da ferramenta, prefere poka-yoke a regra escrita, e mapeia os artefatos Kaizen nos que o projeto já tem (ADR, notas, TODO, CHANGELOG). Gatilhos — Kaizen, PDCA, kaizen log/retrospectiva, 5 porquês, poka-yoke, desperdício/dívida técnica, planejar feature, confirmar antes de apagar/limpar."
 ---
 
@@ -28,7 +28,7 @@ Esta skill guia as três fases da vida de um software — planejamento, implemen
 
 Ao planejar uma funcionalidade, mudança ou projeto:
 
-1. **Gemba primeiro.** Explore o código existente, entenda o fluxo atual e os pontos de contato da mudança. Liste os arquivos afetados.
+1. **Gemba primeiro.** Explore o código existente, entenda o fluxo atual e os pontos de contato da mudança. Liste os arquivos afetados. O Gemba inclui o que já foi decidido ou respondido: releia memória, notas e a thread antes de transformar uma dúvida em pergunta para o usuário ou para terceiros.
 2. **Defina o problema em uma frase** e a **métrica de sucesso** (como saberemos que melhorou? ex.: "cotação gerada em < 5 cliques", "zero erros de arredondamento nos testes").
 3. **Cace desperdícios no plano.** Confronte o plano com os 7 desperdícios (`references/desperdicios.md`): há funcionalidade que ninguém pediu? Etapa que gera espera? Complexidade além do requisito? Passo que só funciona se alguém lembrar de fazer X — e que um poka-yoke (validação, gate, hook) dispensaria de lembrar? E os irmãos do muda: o plano empilha tudo no fim (mura)? Sobrecarrega uma pessoa ou um módulo (muri)?
 4. **Fatie em incrementos pequenos.** Cada incremento deve: entregar valor verificável por si só, ser testável, e ser reversível. Ordene do mais valioso/menos arriscado para o mais incerto.
@@ -45,7 +45,7 @@ Ao implementar:
 3. **Jidoka.** Rode os testes após cada incremento. Teste quebrou → pare, avise (o que, onde), conserte, só então avance.
 4. **Regra do escoteiro.** Deixe o código que você tocou um pouco melhor do que encontrou (nome mais claro, código morto removido) — mas melhorias grandes fora do escopo viram entrada de "oportunidade" no kaizen log, não desvio da tarefa.
 5. **Commits pequenos que explicam o porquê.** Um incremento = um commit (ou poucos). A mensagem diz por que a mudança existe, não só o que mudou.
-6. **Check explícito.** Ao final de cada incremento, confronte o resultado com o critério de verificação do plano e diga isso ao usuário: o que era esperado, o que foi observado, passou ou não. Verifique pelo **artefato**, não pelo rótulo que fala dele — "testes verdes", "deploy succeeded" e "healthy" descrevem o processo, e o processo pode ir bem enquanto a coisa que deveria existir não existe (ver *Rótulo ≠ artefato* em `references/kaizen-conceitos.md`). Sonda nova (script, check, healthcheck) só merece confiança depois de ficar vermelha num caso sabotado de propósito e verde num caso bom (ver *Poka-yoke*, ali mesmo).
+6. **Check explícito.** Ao final de cada incremento, confronte o resultado com o critério de verificação do plano e diga isso ao usuário: o que era esperado, o que foi observado, passou ou não. Verifique pelo **artefato**, não pelo rótulo que fala dele — "testes verdes", "deploy succeeded" e "healthy" descrevem o processo, e o processo pode ir bem enquanto a coisa que deveria existir não existe (ver *Rótulo ≠ artefato* em `references/kaizen-conceitos.md`). Sonda nova (script, check, healthcheck) só merece confiança depois de ficar vermelha num caso sabotado de propósito e verde num caso bom (ver *Poka-yoke*, ali mesmo). Número ou afirmação que você copia do artefato para prosa (nota, e-mail, resumo, kaizen log) também é artefato: tire-o de um comando, nunca da conta de cabeça — o Check do artefato principal não cobre a prosa derivada.
 
 ## Fase 3 — MANUTENÇÃO (Check + Act contínuos)
 
