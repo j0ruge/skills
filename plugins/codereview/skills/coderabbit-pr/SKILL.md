@@ -1,7 +1,7 @@
 ---
 name: coderabbit-pr
 metadata:
-  version: 4.3.5
+  version: 4.3.6
 description: Resolves AI review comments on a GitHub PR — auto-detects CodeRabbit, Copilot, Gemini, Codex; creates per-reviewer checklists, verifies findings against current code (with byte-exact inspection when reviewers cite invisible/control characters), applies fixes, runs regression tests, resolves GitHub conversations, then cleans up its own checklist files. Triggers — coderabbit, copilot review, gemini review, codex review, fix PR review.
 ---
 
@@ -35,7 +35,7 @@ Read each one at the step that needs it:
 - `references/pr-branch.md` — read at Phase 1.1, before its worktree, active-writer check and sweep.
 - `references/reviewer-registry.md` — read at Phase 1.2 when a login is not in the table below, and
   at 1.3 when structuring findings: comment structure, severity markers and metadata to discard per
-  reviewer, plus the rule for unknown bots.
+  reviewer, the rule for unknown bots; Phase 2: coverage per commit.
 - `references/checklist-template.md` — read at Phase 2 before writing a checklist: file structure,
   resolved-item format, the zero-findings templates (a)/(b), severity mapping, the Final Result table
   and special cases (no file/line, deleted files, "Also applies to").
@@ -132,7 +132,7 @@ known bots:
 | `gemini-code-assist[bot]` | Gemini |
 | `chatgpt-codex-connector[bot]` | Codex |
 
-With `--reviewer`, filter to that reviewer. No known reviewer → stop with the "no comments" error.
+With `--reviewer`, filter to that reviewer.
 Report: "Found reviews from: {list of reviewers}. Processing {N} reviewer(s)."
 
 #### 1.3 Fetch & Parse Comments Per Reviewer
@@ -190,12 +190,12 @@ review" and "nobody looked at this PR".
   in the review body (Copilot: *"unable to review … reached their quota limit"*); a check stuck
   `PENDING`, or a Codex summary comment still `Running` (registry), is the same story. Recording it
   as "approved without issues" buries a coverage gap: do not count it as coverage, and say so in
-  the closing report.
+  the closing report. **Coverage is per commit**, findings or not: commits after a reviewer's last
+  review are (b) for it (registry).
 
 Where it goes: **without `--keep-checklists`** (default), do **not** write a file — Phase 6 would
 delete it seconds later — and carry the (a)/(b) determination into the **final report**. **With
-`--keep-checklists`**, write the minimal file from the matching template (if so, in
-`references/checklist-template.md`).
+`--keep-checklists`**, write the minimal file from the matching template.
 
 ---
 
@@ -281,7 +281,7 @@ status and the test results.
 
 After all items are processed and tests pass, resolve **all** review threads on the PR — from every
 reviewer, not only those processed in Phase 3. Run the steps directly, never delegated (commands in
-`references/thread-resolution.md`, to read when you reach this phase).
+`references/thread-resolution.md`).
 
 0. **5.0** the PR head must carry the fixes (`headRefOid` == `HEAD`, nothing uncommitted); if
    not, ask the user to commit and push first;
@@ -332,7 +332,7 @@ the final report carries the findings table, since the file it came from is gone
   "not applicable" waiting to happen (3.1 step 1.1).
 - **Fixes on the wrong branch fail silently** — worktree on `headRefName`, never a checkout (1.1).
 - **Resolve only what the PR head carries** — unpushed fix, open thread (5.0).
-- **A reviewer that never ran is not a pass** (Phase 2, case b).
+- **A reviewer that never ran is not a pass**, nor one behind the head (Phase 2, case b).
 - **A probe of the finding does not test the fix** — sabotage it until one goes red (3.2).
 - **A clean tree on the PR branch can still be busy** — another writer: read-only until it exits (1.1).
 - **A doc-anchored finding may be a code defect** — a prose-only fix leaves the program lying (3.1).

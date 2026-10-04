@@ -2,6 +2,38 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.9.5] — 2026-10-04
+
+### `coderabbit-pr` 4.3.6: a cobertura do revisor é por commit, não pelo PR
+
+Lição de uma rodada no PR #219 do `sdd_agents`, onde todo achado já estava consertado e toda
+conversa resolvida — e mesmo assim o relatório quase disse a coisa errada sobre quem revisou o quê.
+
+- **O caso (b) pode ser parcial.** A revisão do CodeRabbit estava em `b9e95ba`; a cabeça do PR era
+  `d8da110`, o commit dos consertos, que ele nunca viu. A skill decidia (a)/(b) por revisor, e um
+  revisor com achados nem passava por essa pergunta. Agora a Fase 2 diz que a cobertura é por
+  commit, com ou sem achados, e a nova seção *Coverage Per Commit* da `reviewer-registry.md` traz o
+  comando que lista o último commit revisado de cada bot contra o `headRefOid`.
+- **Uma resposta em conversa não é revisão.** Medido no mesmo PR: a resposta do CodeRabbit numa
+  thread criou a revisão `5407103528`, de corpo vazio, em `d8da110`. Uma leitura "último review de
+  cada bot" sem filtro dava o commit dos consertos como coberto. O comando usa o mesmo
+  `select(.body != "")` da Fase 1.3.
+- **O CodeRabbit pula uma revisão incremental em silêncio.** No limite de revisões ele não posta
+  revisão nova: **edita** o walkthrough da issue para `## Review limit reached`, com o intervalo
+  pulado na linha *"… between <sha> and <sha>"*. A registry chamava esse comentário de "Pure
+  metadata"; agora diz que ele nunca é achado, mas é lido para cobertura. Comando de confirmação
+  testado no PR #219.
+- **Codex sem achados** não cria objeto de revisão: o *Reviewed commit* vem no comentário de issue
+  *"Didn't find any major issues"* — registrado na mesma seção.
+- **Espaço, por fusão provada** (o `SKILL.md` estava a 28 caracteres do aviso C1): saíram da Fase
+  1.2 *"No known reviewer → stop with the "no comments" error"* (o Error Handling traz a mesma
+  parada, com a mensagem), da Fase 2 *"(if so, in `references/checklist-template.md`)"* (a abertura
+  da Fase 2 e a linha de References já nomeiam o arquivo e os templates (a)/(b)) e da Fase 5 *", to
+  read when you reach this phase"* (a linha de References diz *read when you reach Phase 5*).
+  Corpo em 19 998 caracteres.
+- **Não aplicada, de propósito:** não escrever o checklist numa rodada em que tudo já foi tratado.
+  Economiza um `Write` e um `rm`; o comportamento atual não está errado, e o espaço não pagava.
+
 ## [2.9.4] — 2026-10-04
 
 ### `coderabbit-pr` 4.3.5: os vereditos do D1, o eval de gatilho e o B5 que era do auditor

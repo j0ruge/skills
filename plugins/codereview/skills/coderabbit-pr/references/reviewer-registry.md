@@ -25,7 +25,8 @@ Posts in **up to three places**:
    - Each finding: `` `LINES`: _CATEGORY_ | _SEVERITY_ `` followed by `**TITLE**`
 3. **Issue comment** (`/issues/{PR}/comments`), marked
    `<!-- This is an auto-generated comment: summarize by coderabbit.ai -->` — walkthrough and run
-   info. Pure metadata, never a finding.
+   info. Never a finding, but read it for coverage: the Free plan below, the rate limit in
+   *Coverage Per Commit*.
 
 **On the Free plan the issue comment is the only thing it posts**: no inline comment, no review
 object, and the body says *"Your organization is on the Free plan … For a comprehensive line-by-line
@@ -109,6 +110,37 @@ gh api "repos/{REPO}/issues/{PR}/comments" --paginate \
 Match against the registry. A reviewer found **only** on the issue endpoint posted nothing to
 extract: it goes straight to Phase 2's zero-findings determination, where its comment tells (a)
 from (b). Only reviewers with inline comments or a review body go through Phase 1.3.
+
+## Coverage Per Commit
+
+A review covers the commit it was made on, not the PR. Phase 2 compares each reviewer's last
+**review with a body** against the head; commits after it went unreviewed by that bot (case b for
+that range), whatever it found on the earlier commit:
+
+```bash
+gh pr view "$PR" --json headRefOid -q .headRefOid
+gh api "repos/$REPO/pulls/$PR/reviews" --paginate \
+  --jq '.[] | select(.body != "") | "\(.user.login)\t\(.commit_id[0:7])"'
+```
+
+The `select(.body != "")` is not optional: a bot's **reply on a thread** creates a review object with
+an empty body on the current head. Measured 2026-10-04 (sdd_agents PR #219): CodeRabbit's last
+review was on `b9e95ba`, its thread reply put an empty-body review on `d8da110`, and an unfiltered
+"last review" read the fix commit as covered.
+
+Codex names the commit in its own text: the "Reviewed commit" line of its review body or, when it
+found nothing and posted no review object, of its issue comment *"Didn't find any major issues"*.
+
+**CodeRabbit skips an incremental review in silence.** At the rate limit it posts no new review:
+it **edits** its walkthrough issue comment (`updated_at` moves, `created_at` does not) to
+`## Review limit reached`, and the skipped range is the *"… between <old sha> and <new sha>"* line.
+On PR #219 that edit was the only trace that `d8da110` went unreviewed by it. Confirm:
+
+```bash
+gh api "repos/$REPO/issues/$PR/comments" --paginate \
+  --jq '.[] | select(.user.login == "coderabbitai[bot]") | .body' \
+  | grep -E 'Review limit reached|and between [0-9a-f]{40} and'
+```
 
 ## Extensibility
 
