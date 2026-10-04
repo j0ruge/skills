@@ -1,11 +1,13 @@
 # Armadilhas medidas do retrofit — o porquê de cada regra
 
 O comando `retrofit-skill` traz cada regra em uma ou duas linhas. Aqui está a história medida
-que a justifica, movida do comando na 0.7.1 sem reescrita. Leia a seção quando quiser contestar
+que a justifica, movida do comando na 0.7.1 sem reescrita (as seções 7 e 8 nasceram aqui, na
+0.7.3). Leia a seção quando quiser contestar
 ou afrouxar a regra correspondente: é o que se perde se ela sair.
 
 Sumário: 1. Symlink, não cópia · 2. Repo atrás do remoto · 3. Outra sessão no mesmo checkout ·
-4. Cheque dos quatro lugares · 5. O `--stat` como último sensor · 6. Orçamento da spec
+4. Cheque dos quatro lugares · 5. O `--stat` como último sensor · 6. Orçamento da spec ·
+7. Windows chamando o WSL · 8. A cópia instalada atrás da fonte
 
 ## 1. `~/.claude/skills/<nome>` costuma ser um symlink, não uma cópia
 
@@ -41,6 +43,14 @@ commitou o trabalho dela com `git commit` e levou o retrofit inteiro dentro de u
 commit com o título dela, já empurrado para a `main`. Os arquivos compartilhados
 (`marketplace.json`, `README.md`) pioram o caso: os dois trabalhos caem no mesmo
 arquivo, e nenhum `git add <arquivo>` separa um do outro.
+
+**Árvore limpa no início não prova nada.** Medido em 04/10/2026, num retrofit da `codereview`: o
+`git status -sb` saiu limpo no começo; entre ele e a primeira escrita, outra sessão gravou cinco
+arquivos do `windows-disk-cleanup` (18:14–18:16) e, minutos depois, `marketplace.json` e
+`README.md`, os mesmos que o retrofit ia bumpar. Quando a descoberta vem depois de editar, o
+conserto é refazer as edições no worktree pelo mesmo script, conferir cada arquivo com `cmp` contra
+a cópia do checkout compartilhado e só então `git restore -- <os seus arquivos>` lá. Nunca
+`checkout -- .`, que levaria junto o trabalho da outra sessão.
 
 ## 4. Cheque dos quatro lugares
 
@@ -95,3 +105,37 @@ chance antes de o erro virar histórico.
 Retrofit só soma texto, e é assim que uma skill passa do orçamento: a auditoria de 2026-09-28
 achou `SKILL.md` com 970 linhas e outro com 110 mil chars (~27k tokens) no marketplace. A régua
 é a spec aberta (https://agentskills.io/specification) e as boas práticas do mesmo site:
+
+**Conte caracteres, não bytes.** O C1 do auditor compara o `len()` do texto com 20 000, e o `wc -c`
+conta bytes: em PT-BR com travessão a diferença passa de 1 %. Medido em 04/10/2026, o `SKILL.md`
+da `codereview` 2.9.2 dá 20 150 bytes e 19 959 caracteres (`wc -m` com `LANG=C.UTF-8`; com
+`LC_ALL=C`, o `-m` volta a contar bytes). Lido pelo `-c`, um arquivo abaixo do teto parece acima.
+
+## 7. Windows chamando o WSL: `/tmp` que some e `cd` que falha calado
+
+Com o harness no Windows e o clone no WSL, cada comando é um `wsl.exe -e bash -lc '…'` novo.
+Medido em 04/10/2026:
+
+- **O `/tmp` não sobrevive entre chamadas.** Sem processo vivo, a distro para por ociosidade, e o
+  systemd recria o `/tmp` quando ela volta. Um worktree em `/tmp/wt-retrofit-codereview` e os
+  baselines de `mktemp -d` sumiram em minutos: o `/tmp` e os `systemd-private-*` nasceram às
+  18:19:14, depois do worktree, que o `git worktree list` passou a mostrar `prunable`. O segundo, em
+  `~/.wt/`, durou a sessão inteira. O scratchpad do harness também não serve: é caminho do Windows,
+  e o git do WSL em `/mnt/c` traz CRLF e 0777.
+- **Baseline perdido se refaz da base, não da árvore editada:** `git archive origin/main
+  plugins/<p> | tar -x -C <dir>` e audite `<dir>`.
+- **A chamada começa no diretório do Windows** (`/mnt/<disco>/<repo-da-sessão>`), não no clone. Um
+  `cd` que falhou deixou o script de versão rodar no repositório da sessão; só não gravou nada
+  porque o primeiro arquivo que ele abria (`plugins/<p>/CHANGELOG.md`) não existia lá, e o
+  `README.md`, que vinha depois, existia. `cd <clone> || exit` em toda chamada.
+- **O clone não é sibling do repositório do Windows.** Procure no WSL:
+  `wsl.exe -e bash -lc 'ls -d ~/repos/skills ~/repos/skills_commands_manager'`.
+
+## 8. A cópia instalada atrás da fonte
+
+As lições saem do que a sessão usou, e a sessão usou a cópia instalada. Medido em 04/10/2026: o
+cache tinha a `codereview` 2.9.1 e a fonte estava na 2.9.5. Das sete lições candidatas, duas já
+estavam na fonte: o selo P1/P2 do Codex (`reviewer-registry.md`) e o atraso do `headRefOid` logo
+depois do push (`thread-resolution.md`, 5.0). E o texto deste comando que a sessão recebeu ainda
+pedia `--no-changelog-required`, que a 0.7.2 tirou. Antes de propor, compare a versão instalada com
+a da fonte e procure cada lição na fonte (`grep -rn`).

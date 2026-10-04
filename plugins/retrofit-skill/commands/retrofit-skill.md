@@ -1,7 +1,7 @@
 ---
 description: Apply non-obvious session lessons to a target skill in two modes — full (marketplace skill: bumps version, updates CHANGELOG/marketplace.json/README, commits and pushes) or lean (local skill in another repo: edits files + CHANGELOG and commits there, no bump or marketplace changes). Triggers — retrofit, skill-maintenance, session-lessons, lean-retrofit, local-skill.
 metadata:
-  version: 0.7.2
+  version: 0.7.3
 ---
 
 A régua deste retrofit é a família `skill-quality-audit`: um baseline antes de
@@ -55,6 +55,7 @@ PARA LOCALIZAR O REPO DO MARKETPLACE (só no modo completo):
 - Primeiro tente `../skills` (sibling do repo atual) e, se não existir, o nome
   antigo `../skills_commands_manager` (o repo foi renomeado em 2026-09-29).
 - Se não existir, procure siblings com nome contendo "skills" ou "commands".
+- Harness no Windows: o clone pode estar no WSL, fora dos siblings (*Armadilhas*, §7).
 - Se ainda não achar, me pergunte o caminho. Não adivinhe.
 - Confirme o caminho encontrado antes de seguir.
 
@@ -102,18 +103,16 @@ echo "SQA=${SQA:-AUSENTE} RS=$RS"
 medido por trás de cada regra. Leia a seção citada antes de afrouxar a regra.
 
 - **Se não achar, é `[SKIP] auditor ausente`,** e isso vai escrito na proposta e
-  no resumo final. SKIP é um gate que não rodou, **nunca** uma aprovação. A versão
-  0.5.0 deste comando apontava para um caminho `~/.hermes/...` que não existia, e
-  o gate nunca rodou sem que nada avisasse.
+  no resumo final. SKIP é um gate que não rodou, **nunca** uma aprovação (o da
+  0.5.0, preso a um caminho que só uma máquina tem, não rodava nas outras, sem
+  aviso: CHANGELOG 0.6.0).
 - **O alvo precisa ter `SKILL.md`.** Um plugin só de comandos (como este
   `retrofit-skill`) também vira SKIP explícito, e o gate dele fica sendo o
   `validate-versions.py`.
 - **Flags:** `FLAGS=(--desc-budget 0)` nos dois modos, porque o Claude Code não
-  corta a description em 60 chars como o Hermes. Desde a `skill-quality-audit`
-  0.4.1 o check B5 acha o CHANGELOG no nível do plugin (`<plugin>/CHANGELOG.md`
-  ao lado do `.claude-plugin/plugin.json`) e responde OK com o caminho, então o
-  `--no-changelog-required` não faz mais falta no marketplace. Sem ele, o B5 volta
-  a pegar o plugin que esqueceu o CHANGELOG. **Use array e `"${FLAGS[@]}"`, não
+  corta a description em 60 chars como o Hermes. O B5 acha o `<plugin>/CHANGELOG.md`
+  desde a `skill-quality-audit` 0.4.1, e `--no-changelog-required` esconderia o
+  plugin que o esqueceu (CHANGELOG 0.7.2). **Use array e `"${FLAGS[@]}"`, não
   string:** o zsh não divide `$FLAGS` em palavras, o script recebe as flags como
   um argumento só e sai com `rc=2`. Isso foi medido no ensaio desta versão.
 - **`rc=2` é uso inválido, não resultado.** Nesse caso o JSON sai vazio. Corrija
@@ -151,21 +150,23 @@ com `git add` sai no commit de **quem commitar primeiro**, e `marketplace.json` 
 caso, edite e commite num worktree próprio, e não toque no checkout compartilhado:
 
 ```bash
-git worktree add -b retrofit-<skill> <scratchpad>/wt origin/main   # edite, valide e commite lá
-git -C <scratchpad>/wt push origin HEAD:main                       # push; se rejeitar, rebase lá
-git worktree remove <scratchpad>/wt && git branch -D retrofit-<skill>
+WT=~/.wt/retrofit-<skill>   # no $HOME do clone, nunca no /tmp do WSL (Armadilhas, §7)
+git worktree add -b retrofit-<skill> "$WT" origin/main   # edite, valide e commite lá
+git -C "$WT" push origin HEAD:main                       # push; se rejeitar, rebase lá
+git worktree remove "$WT" && git branch -D retrofit-<skill>   # regra de não apagar: deixe e diga
 ```
 
-Mesmo com a árvore limpa, só ponha arquivo no índice **no mesmo comando do
-commit**, nunca antes de pedir confirmação.
+**Árvore limpa no início não prova nada:** confira `git status --porcelain` de novo
+logo antes da primeira escrita. E só ponha arquivo no índice **no mesmo comando do
+commit**, nunca antes de pedir confirmação (*Armadilhas*, §3).
 
 **Depois, grave o baseline** de cada skill (diretório com `SKILL.md`) que o
 retrofit vai tocar. Isso é a fase 1 da `skill-quality-audit`:
 
 ```bash
-B=$(mktemp -d); ALVO=<dir-da-skill>
+mkdir -p ~/.wt; B=$(mktemp -d -p ~/.wt); ALVO=<dir-da-skill>   # fora do /tmp (§7)
 python3 "$SQA" "$ALVO" --format json --claims "${FLAGS[@]}" > "$B/antes.json"; echo "rc=$?"
-wc -lc "$ALVO/SKILL.md"
+wc -lm "$ALVO/SKILL.md"   # -m conta chars, como o C1; -c conta bytes (§6)
 ```
 
 Sem o baseline não há como separar a dívida antiga da regressão nova. Uma skill
@@ -176,6 +177,7 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
 
 1. Liste as lições NÃO-ÓBVIAS da sessão: erros corrigidos, comportamentos
    surpreendentes, edge cases, padrões que funcionaram. Ignore trivialidades.
+   Procure cada uma na fonte antes: a cópia instalada pode estar atrás (*Armadilhas*, §8).
 
 2. Filtre pelas que se aplicam ao escopo da skill `$ARGUMENTS`. Se nenhuma
    se aplicar, me diga e pare — não force.

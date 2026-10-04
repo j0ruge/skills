@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.7.3] — 2026-10-04
+
+### Worktree e baseline fora do `/tmp` do WSL, árvore limpa conferida de novo, chars em vez de bytes e a fonte antes da cópia instalada
+
+Lições do retrofit da `codereview` 2.9.6, feito de uma sessão com o harness no Windows e o clone
+do marketplace no WSL, com outra sessão escrevendo no mesmo checkout.
+
+- **Worktree e baseline vão em `~/.wt/`, não no `/tmp`** (*Armadilhas*, §7, nova). Cada comando era
+  um `wsl.exe -e bash -lc` novo; sem processo vivo, a distro parou por ociosidade e o systemd recriou
+  o `/tmp` ao voltar. O worktree em `/tmp/wt-retrofit-codereview` e os baselines de `mktemp -d`
+  sumiram em minutos (`/tmp` e `systemd-private-*` nascidos às 18:19:14, depois do worktree; o `git
+  worktree list` o mostrava `prunable`). O segundo, em `~/.wt/`, durou a sessão inteira. O snippet
+  do worktree e o do baseline passam a usar `~/.wt/`. A §7 diz também como refazer o baseline a partir
+  da base (`git archive origin/main plugins/<p> | tar -x`), sem a árvore editada.
+- **O clone pode estar no WSL, e a chamada começa no diretório do Windows** (§7). Um `cd` que falhou
+  deixou o script de versão rodar no repositório da sessão, e ele só não gravou nada porque o primeiro
+  arquivo não existia lá. A busca do repo ganhou a linha do harness no Windows, e a §7 traz o `cd
+  <clone> || exit` e o `ls -d ~/repos/skills*`.
+- **Árvore limpa no início não prova nada** (§3, ampliada). O `git status -sb` saiu limpo; minutos
+  depois outra sessão gravou cinco arquivos do `windows-disk-cleanup` e, em seguida, `marketplace.json`
+  e `README.md`. O comando manda conferir de novo logo antes da primeira escrita. A §3 traz o conserto
+  quando a descoberta vem depois de editar: refazer no worktree pelo mesmo script, conferir com `cmp` e
+  `git restore` só nos seus arquivos.
+- **O orçamento se mede em caracteres** (§6, ampliada). O baseline usava `wc -lc`, que conta bytes; o
+  C1 do auditor conta o `len()` do texto. O `SKILL.md` da `codereview` 2.9.2 dá 20 150 bytes e 19 959
+  caracteres. Agora é `wc -lm`, que com `LANG=C.UTF-8` dá o mesmo número do C1.
+- **Cada lição se procura na fonte antes de propor** (§8, nova). O cache tinha a `codereview` 2.9.1 e
+  a fonte estava na 2.9.5: duas das sete lições candidatas já estavam lá. E o texto deste comando que a
+  sessão recebeu ainda pedia `--no-changelog-required`, que a 0.7.2 tirou.
+- **Regra de não apagar vence o snippet de limpeza.** Sob uma regra assim (no caso, o `CLAUDE.md` do
+  projeto da sessão), o worktree e o branch ficam, e o resumo diz onde.
+- **Espaço, por fusão provada** (o comando tinha 19 668 caracteres): a frase sobre o gate da 0.5.0
+  vira uma remissão à entrada 0.6.0 deste CHANGELOG, que narra o caso, e fica mais precisa: o
+  caminho do Hermes existe numa das máquinas do autor, e o gate não rodava só nas outras; e o histórico do
+  B5 no item *Flags* fica na regra e no porquê, com remissão à 0.7.2. O comando fica com 19 967
+  caracteres.
+
 ## [0.7.2] — 2026-10-04
 
 ### As flags do auditor deixam de pedir `--no-changelog-required` no modo completo
