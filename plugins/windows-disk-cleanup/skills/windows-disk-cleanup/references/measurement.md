@@ -75,6 +75,10 @@ $b | ForEach-Object { $o = $ia[$_.ProcessId]; if ($o) { [pscustomobject]@{ Name=
 
    A client that writes hundreds of MB while no other process reads much is refilling on its own.
 3. **Windows**: pagefile growth (`Win32_PageFileUsage.AllocatedBaseSize`), updates (`C:\Windows\SoftwareDistribution`), restore points.
+   A system-managed pagefile (`Win32_ComputerSystem.AutomaticManagedPagefile`) grows when the commit charge
+   (`Win32_OperatingSystem`: TotalVirtualMemorySize − FreeVirtualMemory) nears its limit. In one run (2026-10), C: lost
+   2.5 GB during the session while `pagefile.sys` went from 14.3 to 18.9 GB at a commit of 27.4 of 34 GB. Compare it
+   with the baseline before hunting for files.
 
 A log line at level E right after a change is not proof that the change caused it: compare with the same line's
 history in older log files before blaming the change.

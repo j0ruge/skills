@@ -10,6 +10,8 @@
     zipverify   good zip IDENTICAL; zip whose extracted file has one byte changed at the same size NOT-IDENTICAL
     room-check  tiny write OK; write larger than free space REFUSE
     refs-scan   control path finds hits (otherwise the probe is blind)
+    drivefs     on a synthetic Drive DB: a stale Office lock file alone is SAFE (rc 0); a real unsaved change
+                is NOT safe (rc 1) and named
     delete-list dry-run refuses a path outside the allowed root
   Exit code 0 only if every check passes. Fixtures (a few MB) stay in -WorkDir for inspection.
   -WorkDir must be new or empty: a reused one is refused (exit 2).
@@ -68,6 +70,38 @@ Check 'room-check accepts a tiny write and refuses a huge one' ($okSmall -and $o
 $rs = & "$here\refs-scan.ps1" -Path "$WorkDir\tree"
 Check 'refs-scan control is not blind' (-not ($rs -match 'VERDICT: BLIND')) (($rs | Select-Object -First 2) -join ' / ')
 Check 'refs-scan reports a fresh folder as CLEAR' ([bool]($rs -match 'VERDICT: CLEAR')) ''
+
+# drivefs-status on a synthetic DB: a stale Office lock file alone is SAFE (rc 0); a real unsaved change is NOT (rc 1)
+$py = Get-Command python, py -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($py) {
+    @'
+import sqlite3, sys
+db, mode = sys.argv[1], sys.argv[2]
+con = sqlite3.connect(db)
+con.executescript("""create table operations(id integer);
+create table items(stable_id integer, local_title text, is_folder integer, file_size integer);
+create table item_properties(item_stable_id integer, key text, value, value_type integer);
+create table stable_parents(item_stable_id integer, parent_stable_id integer);
+insert into items values (1, 'Meu Drive', 1, 0), (2, '~$aula.pptx', 0, 165);
+insert into stable_parents values (2, 1);
+insert into item_properties values (2, 'dirty-handle', 1, 1), (2, 'do-not-upload', 1, 1), (2, 'local-content-size', 165, 1);""")
+if mode == "real":
+    con.executescript("""insert into items values (3, 'relatorio.docx', 0, 20480);
+insert into stable_parents values (3, 1);
+insert into item_properties values (3, 'dirty-handle', 1, 1), (3, 'local-content-size', 20480, 1);""")
+con.commit()
+'@ | Set-Content -Encoding utf8NoBOM "$WorkDir\mkdrivefs.py"
+    $res = @{}
+    foreach ($mode in 'lock', 'real') {
+        $db = "$WorkDir\drivefs-$mode\acct\metadata_sqlite_db"
+        New-Item -ItemType Directory -Force (Split-Path $db) | Out-Null
+        & $py.Source "$WorkDir\mkdrivefs.py" $db $mode
+        $o = & $py.Source "$here\drivefs-status.py" --db $db 2>&1
+        $res[$mode] = @{ rc = $LASTEXITCODE; out = ($o -join "`n") }
+    }
+    Check 'drivefs-status: a stale Office lock alone is SAFE (rc 0)' (($res.lock.rc -eq 0) -and ($res.lock.out -match 'verdict: SAFE')) "rc=$($res.lock.rc)"
+    Check 'drivefs-status: a real unsaved change is NOT safe (rc 1) and named' (($res.real.rc -eq 1) -and ($res.real.out -match 'verdict: NOT safe') -and ($res.real.out -match 'dirty: relatorio\.docx')) "rc=$($res.real.rc)"
+} else { "SKIP  drivefs-status (python not found)" }
 
 # delete-from-list dry-run refuses outside the root.
 # Use Git Bash explicitly: a bare "bash" from PowerShell is often C:\Windows\System32\bash.exe (WSL), where /c/... does not exist.

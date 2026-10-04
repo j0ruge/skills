@@ -28,8 +28,11 @@ Source: https://knowledge.workspace.google.com/admin/drive/advanced-drive-for-de
 
 1. **Status, read-only, in place**: `python scripts/drivefs-status.py`. It opens the DB with sqlite `mode=ro`
    while Drive runs; do not copy the DB — it grows with the number of items in the account (4.2 GB in one run, 2026-10) and copying it to the drive
-   being cleaned made that drive fuller. Requirements to proceed: `pending operations: 0` and `dirty-handle: 0`.
-   Look inside `lost_and_found` if it reports files there.
+   being cleaned made that drive fuller. Requirement to proceed: the verdict says SAFE (exit code 0), meaning no
+   pending operations and no dirty item other than Office lock files (`~$name`, under 1 KB). Those only record who
+   opened a document, and a stale one stays dirty forever: one run (2026-10) had a lock from 2025-05 that waiting
+   would never clear. The script names every dirty and never-uploaded item. Copy out anything it marks as existing
+   only in the cache, and look inside `lost_and_found` if it reports files there.
 2. **Cap first** (admin terminal). Pick a value at or below 20% of the drive's free space (the documented ceiling); 10 GB = 10485760 KB:
    `reg add "HKLM\Software\Google\DriveFS" /v ContentCacheMaxKbytes /t REG_QWORD /d 10485760 /f`
 3. **Restart Drive** — the user quits from the tray (gear › Quit) and reopens it. Drive reads the key only at

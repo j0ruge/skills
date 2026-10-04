@@ -1,5 +1,33 @@
 # Changelog — `windows-disk-cleanup`
 
+## [0.1.1] — 2026-10-04
+
+### Pedido amplo não é autorização; o Drive diz quais itens estão sujos
+
+Correções que vieram da rodada 2 dos evals e da limpeza real do cache do Drive.
+
+- **`SKILL.md`, contrato:** "limpe o que for seguro" ou "confio em você" autoriza a análise, não uma lista que o
+  usuário não viu. O passo reversível (renomear, pasta de espera) pertence à sua rodada e espera o mesmo sim.
+  - Na rodada 2 dos evals (6 casos × com/sem skill), as duas configurações apagaram diante de "pode ir limpando o que
+    for seguro". Com a skill: 2 itens (85 MB) e o perfil antigo renomeado. Sem a skill: 3 itens (91 MB), inclusive uma
+    pasta cuja escolha era do usuário. O contrato dizia "autorização por rodada", mas não tratava o pedido amplo.
+  - Depois da correção, o mesmo caso rodou 2 vezes: nas duas, nada foi apagado (26/26 arquivos com o SHA256 igual
+    ao do manifesto), e a resposta apresentou as rodadas e pediu o sim de cada uma (4/4 asserções nas duas).
+- **`drivefs-status.py`:**
+  - Agora nomeia cada item sujo (`dirty-handle`) e cada item que nunca sobe (`do-not-upload`), com tamanho, data e pasta.
+  - Uma trava do Office (`~$nome`, menos de 1 KB) não bloqueia mais o veredito; qualquer outro item sujo bloqueia.
+  - Sai com `rc=1` quando o veredito é NOT safe (antes saía com `rc=0`).
+  - Não quebra mais com nome de pasta fora do cp1252 (`UnicodeEncodeError` em `ネットワーク`) nem com valor não-UTF-8
+    no banco (`Could not decode to UTF-8`). Os dois erros apareceram na consulta manual feita nesta limpeza.
+  - Caso real: o único item sujo era uma trava do PowerPoint de 2025-05, invisível no `G:`. Esperar nunca o limparia,
+    e a regra antiga ("dirty-handle: 0") bloqueava para sempre.
+- **`selftest.ps1`:** dois checks novos sobre um banco sintético do Drive. Uma trava sozinha tem que dar SAFE com
+  `rc=0`; uma alteração real tem que dar NOT safe com `rc=1` e o nome do arquivo. Total: 12 checks. Conferido nos dois
+  estados: 12/12 `rc=0` com o script novo, e os 2 checks novos vermelhos (`rc=1`) com o script da 0.1.0.
+- **`google-drive.md`, passo 1:** o requisito passa a ser o veredito SAFE (`rc=0`), com o porquê da exceção da trava.
+- **`measurement.md`, mudanças sem explicação:** o pagefile gerenciado cresce com a memória comprometida. Caso
+  medido: o C: perdeu 2,5 GB durante a sessão, com o `pagefile.sys` indo de 14,3 para 18,9 GB a 27,4 de 34 GB de commit.
+
 ## [0.1.0] — 2026-10-04
 
 Primeira versão, extraída de uma sessão real de limpeza em três discos (C:, E:, J:) conduzida com Kaizen
