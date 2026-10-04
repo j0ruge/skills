@@ -2,6 +2,28 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.3.4] — 2026-10-04
+
+### Sonda que normaliza pela própria amostra é sabotada com a amostra inteira
+
+Lição de uma sessão real (verificador de qualidade de imagem num projeto de pesquisa):
+
+- **Fase 2, item 6, e *Poka-yoke*:** o verificador mede "canal de cor ausente" pela razão entre o
+  canal mais fraco e o mais forte, dividida pela mediana dessa razão na própria fonte de imagens,
+  com um piso de 0,02 abaixo do qual a medida relativa fica vazia. Uma fonte inteira (20.326
+  imagens) perdeu o canal verde: a mediana deu 0,003, a medida relativa ficou vazia em todas as
+  linhas e o sinal disparou 0 vezes. Os testes do verificador só tinham imagem defeituosa no meio
+  de imagens boas, então a sonda passou na sabotagem sem nunca ver o caso que a cega. Quem achou
+  foi um relato de campo, não a sonda. A regra "vermelho no sabotado, verde no bom" não dizia que,
+  quando a referência sai da própria amostra, o sabotado tem de ser a amostra inteira. Agora diz,
+  com o caso no vocabulário.
+- Padrão de falha: sensor que fica cego ao defeito generalizado (silent-blinding), validado só com
+  defeito pontual.
+- **Sem correção verificada.** Naquele projeto o sensor ficou como está, de propósito (é
+  pré-registrado), e o defeito virou resultado a medir. O aviso é melhoria de texto vinda de um caso
+  real e não foi testado em outra sonda: nenhuma sonda foi refeita com o caso "amostra inteira" para
+  mostrar que ele a deixa vermelha.
+
 ## [1.3.3] — 2026-10-04
 
 ### O artefato é o que chega ao destino; a sonda é conferida em estado novo
