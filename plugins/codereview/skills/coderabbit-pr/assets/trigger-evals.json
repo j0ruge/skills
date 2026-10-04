@@ -1,0 +1,19 @@
+[
+  {"query": "o coderabbit deixou 6 comentários no PR 219, verifica cada um contra o código atual e resolve as conversas", "should_trigger": true},
+  {"query": "fix the copilot review comments on PR #45", "should_trigger": true},
+  {"query": "Gemini e CodeRabbit comentaram no #88; faz o checklist por revisor, corrige o que for válido e roda os testes", "should_trigger": true},
+  {"query": "o codex review apontou dois problemas inline no PR 12 do ui24-agent, confere se procedem e corrige", "should_trigger": true},
+  {"query": "resolve os comentários dos bots de revisão no PR aberto desta branch", "should_trigger": true},
+  {"query": "CodeRabbit flagged a zero-width character in config.yaml on PR 301, check the actual bytes and fix it if it's real", "should_trigger": true},
+  {"query": "os revisores automáticos já terminaram no PR 219; conserta tudo numa leva só e fecha as threads", "should_trigger": true},
+  {"query": "address the AI reviewer feedback on pull request 57 and mark the threads as resolved", "should_trigger": true},
+  {"query": "o copilot disse que não conseguiu revisar o PR 90 por cota e o coderabbit deixou 3 achados, trata o que tiver", "should_trigger": true},
+  {"query": "faz um code review da minha branch antes de eu abrir o PR, com nota por critério", "should_trigger": false},
+  {"query": "abre um PR desta branch contra a main com a evidência dos testes no corpo", "should_trigger": false},
+  {"query": "o CI do PR 219 está vermelho no job de lint, descobre por quê e conserta", "should_trigger": false},
+  {"query": "meu colega deixou comentários no PR pedindo para renomear duas funções, responde a ele e ajusta", "should_trigger": false},
+  {"query": "mergeia o PR 219 depois que o sdd health passar", "should_trigger": false},
+  {"query": "configura o CodeRabbit neste repositório com um .coderabbit.yaml que ignore os arquivos .tsv", "should_trigger": false},
+  {"query": "transforma os achados abertos do TODO.md em issues no GitHub", "should_trigger": false},
+  {"query": "escreve as release notes da versão 2.9 a partir dos PRs mergeados desde a última tag", "should_trigger": false}
+]

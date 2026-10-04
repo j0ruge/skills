@@ -1,7 +1,7 @@
 ---
 name: coderabbit-pr
 metadata:
-  version: 4.3.4
+  version: 4.3.5
 description: Resolves AI review comments on a GitHub PR — auto-detects CodeRabbit, Copilot, Gemini, Codex; creates per-reviewer checklists, verifies findings against current code (with byte-exact inspection when reviewers cite invisible/control characters), applies fixes, runs regression tests, resolves GitHub conversations, then cleans up its own checklist files. Triggers — coderabbit, copilot review, gemini review, codex review, fix PR review.
 ---
 
@@ -46,6 +46,7 @@ Read each one at the step that needs it:
 - `references/fix-loop.md` — read at Phase 3.2 before the first logic fix.
 - `references/thread-resolution.md` — read when you reach Phase 5: the GraphQL commands that list, resolve and
   recount the review threads.
+- `assets/trigger-evals.json` — read before changing the `description`: should/should-not trigger cases.
 
 ---
 
@@ -84,7 +85,7 @@ never commits: the user decides when. The one tracking file per reviewer in the 
 - **`gh` CLI not available or not authenticated**: Stop with: "The `gh` CLI is not installed or authenticated. Run `gh auth login` before using this skill."
 - **PR not found**: Stop with: "PR #{n} not found or insufficient permissions."
 - **No known reviewer bot posted anything at all** (on none of the three endpoints of 1.2): Stop with: "No AI review comments found on PR #{n}."
-  A reviewer that posted but yielded zero actionable findings (an approval, an empty summary, "unable to review") is **not** this case: it goes through Phase 2's zero-findings path and is reported, since its case (b) is a coverage gap the user needs to hear about.
+  A reviewer that posted but yielded zero actionable findings (an approval, an empty summary, "unable to review") is **not** this case: it goes through Phase 2's zero-findings path and is reported.
 - **File no longer exists**: Mark as `[x] File removed — not applicable`.
 - **Line not locatable** (heavy modifications since review): Use context clues (function name, surrounding code) to locate. If truly unmappable: `[x] Not locatable in current code — requires manual review`.
 - **Test command not detected**: Ask the user which command to use. Never skip tests silently.
@@ -154,8 +155,8 @@ gh api "repos/$REPO/pulls/$PR/reviews" --paginate --jq '.[] | select(.body != ""
   misfiled as "not locatable".
 - `select(.body != "")` — approvals and review stubs carry an empty body; keeping them produces
   phantom findings.
-- The projection drops the 30-50KB of `diff_hunk`, URLs, reactions and nested user objects **before**
-  they reach any context.
+- The projection drops `diff_hunk`, URLs, reactions and nested user objects (most bytes, per `wc -c`)
+  **before** they reach any context.
 
 **Interpretation — delegate only when the output is genuinely big** (roughly >1500 lines, or 3+
 reviewers each with a long review body): hand *that text* to a cheaper-model agent per reviewer, in
@@ -266,13 +267,13 @@ items without re-applying fixes.
 "after" to compare, and any failure would be pre-existing yet look like this run caused it. Say in
 the report that tests were skipped and why.
 
-If not skipped, follow `references/regression-testing.md`: detect the test command (npm, dotnet,
-cargo, pytest, go, make — or ask), run it after the fixes and compare against the 4.0 baseline. Only
-failures **not in the baseline** are regressions to fix in this PR; pre-existing ones are documented
-in the checklists and go to a follow-up issue. **Never silence failing tests** (`it.skip`,
-`if: false`, `continue-on-error: true`) to make CI green — document and defer. After each layer of
-new-failure fixes, capture a fresh baseline: fail-fast cascades can run deeper than two levels.
-Finally update each "Final Result" table with the counts by status and the test results.
+If not skipped, follow `references/regression-testing.md`: detect the test command, run it after the
+fixes and compare against the 4.0 baseline. Only failures **not in the baseline** are regressions to
+fix in this PR; pre-existing ones are documented in the checklists and go to a follow-up issue.
+**Never silence failing tests** (`it.skip`, `if: false`, `continue-on-error: true`) to make CI green
+— document and defer. After each layer of new-failure fixes, capture a fresh baseline: fail-fast
+cascades can run deeper than two levels. Finally update each "Final Result" table with the counts by
+status and the test results.
 
 ---
 

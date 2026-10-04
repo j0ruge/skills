@@ -2,6 +2,36 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.9.4] — 2026-10-04
+
+### `coderabbit-pr` 4.3.5: os vereditos do D1, o eval de gatilho e o B5 que era do auditor
+
+Os três INFO que sobraram da auditoria da 4.3.4, tratados como tarefa própria (modo reparo da
+`skill-quality-audit`).
+
+- **D1 — veredito nos 80 candidatos** (`audit_skill_quality.py --claims`). 76 são números de seção
+  (*Phase 1.1*, *4.0 baseline*, *5.3*) que o scanner lê como versão: o sensor é o título na própria
+  skill (`#### 1.1`, `## 4.0` da `regression-testing.md`, `## 5.x` da `thread-resolution.md`). O
+  `version:` tem o título do CHANGELOG; os dois *first 100 chars of title* são regra da skill, não
+  fato de terceiro. **Um só era medição sem data:** *"The projection drops the 30-50KB of
+  `diff_hunk`…"*. Medido em 2026-10-04 com `gh api …/pulls/<n>/comments --paginate | wc -c` contra a
+  saída projetada: PR #219 do `sdd_agents`, 51 492 → 12 600 bytes; PR #208, 13 715 → 5 346. O valor
+  depende do PR, a proporção (61% a 76% cortados) não: o texto agora diz *"most bytes, per `wc -c`"*.
+- **F4 — `assets/trigger-evals.json`**, no formato de eval set do `skill-creator` que as skills da
+  `skill-quality-audit` usam: 9 casos que devem disparar (CodeRabbit, Copilot, Gemini, Codex, byte
+  invisível, revisor sem cota) e 8 quase-acertos que não devem (review pré-PR, abrir PR, CI vermelho,
+  comentário de humano, merge, configurar o bot, TODO → issues, release notes). Citado em References,
+  *"read before changing the `description`"*.
+- **Espaço para a citação, por fusão provada:** o parêntese *(npm, dotnet, cargo, pytest, go, make —
+  or ask)* da Fase 4 duplicava a tabela 4.1 da `regression-testing.md`, que é mais completa (tem a
+  prioridade 0, o gate que o projeto declara), e o *ask* já está no Error Handling; a cauda *"since its
+  case (b) is a coverage gap the user needs to hear about"* do Error Handling repetia o caso (b) da
+  Fase 2. Corpo em 19 972 caracteres.
+- **B5 não se conserta na skill:** ela não tem CHANGELOG próprio porque no marketplace ele fica no
+  plugin, e um segundo partiria o histórico. O conserto foi no auditor (`skill-quality-audit` 0.4.1),
+  que agora acha o `<plugin>/CHANGELOG.md` e responde OK. Com ele, esta skill audita sem
+  `--no-changelog-required`: rc 0, nenhum ERRO, AVISO ou F4.
+
 ## [2.9.3] — 2026-10-04
 
 ### `coderabbit-pr` 4.3.4: as duas dívidas da auditoria, fechadas sem mudar o que a skill faz
