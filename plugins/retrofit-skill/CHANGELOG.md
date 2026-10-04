@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.7.2] — 2026-10-04
+
+### As flags do auditor deixam de pedir `--no-changelog-required` no modo completo
+
+A seção *Localizar o auditor* mandava usar `FLAGS=(--desc-budget 0 --no-changelog-required)` no
+modo completo, porque o check B5 só olhava `<skill>/CHANGELOG.md` e acusava um falso erro em toda
+skill de plugin. A `skill-quality-audit` 0.4.1 consertou o B5: ele acha o `<plugin>/CHANGELOG.md` ao
+lado do `.claude-plugin/plugin.json` e responde OK com o caminho. A frase passou a ser falsa, e a
+flag passou a esconder o único caso que o B5 ainda deve pegar: o plugin que esqueceu o CHANGELOG.
+
+Agora é `FLAGS=(--desc-budget 0)` nos dois modos. Conferido em 2026-10-04: sem a flag, nenhuma skill
+de `plugins/*/skills/*/` deste marketplace sai com `[ERRO] B5`; a `coderabbit-pr` sai rc 0 com
+`[OK] B5`; e o aviso do zsh segue valendo com uma flag só (`"$FLAGS"` como string → rc 2; o array →
+rc 0).
+
 ## [0.7.1] — 2026-10-02
 
 ### O comando volta ao orçamento: scripts e reference, sem mudar o fluxo

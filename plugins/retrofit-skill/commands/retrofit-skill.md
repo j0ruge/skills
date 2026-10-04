@@ -1,7 +1,7 @@
 ---
 description: Apply non-obvious session lessons to a target skill in two modes — full (marketplace skill: bumps version, updates CHANGELOG/marketplace.json/README, commits and pushes) or lean (local skill in another repo: edits files + CHANGELOG and commits there, no bump or marketplace changes). Triggers — retrofit, skill-maintenance, session-lessons, lean-retrofit, local-skill.
 metadata:
-  version: 0.7.1
+  version: 0.7.2
 ---
 
 A régua deste retrofit é a família `skill-quality-audit`: um baseline antes de
@@ -108,13 +108,14 @@ medido por trás de cada regra. Leia a seção citada antes de afrouxar a regra.
 - **O alvo precisa ter `SKILL.md`.** Um plugin só de comandos (como este
   `retrofit-skill`) também vira SKIP explícito, e o gate dele fica sendo o
   `validate-versions.py`.
-- **Flags:** `FLAGS=(--desc-budget 0)`, porque o Claude Code não corta a
-  description em 60 chars como o Hermes. No modo completo, use
-  `FLAGS=(--desc-budget 0 --no-changelog-required)`: no marketplace o CHANGELOG
-  versionado fica no nível do plugin, e sem essa flag o check B5 acusa um falso
-  erro. **Use array e `"${FLAGS[@]}"`, não string:** o zsh não divide `$FLAGS`
-  em palavras, o script recebe as flags como um argumento só e sai com `rc=2`.
-  Isso foi medido no ensaio desta versão.
+- **Flags:** `FLAGS=(--desc-budget 0)` nos dois modos, porque o Claude Code não
+  corta a description em 60 chars como o Hermes. Desde a `skill-quality-audit`
+  0.4.1 o check B5 acha o CHANGELOG no nível do plugin (`<plugin>/CHANGELOG.md`
+  ao lado do `.claude-plugin/plugin.json`) e responde OK com o caminho, então o
+  `--no-changelog-required` não faz mais falta no marketplace. Sem ele, o B5 volta
+  a pegar o plugin que esqueceu o CHANGELOG. **Use array e `"${FLAGS[@]}"`, não
+  string:** o zsh não divide `$FLAGS` em palavras, o script recebe as flags como
+  um argumento só e sai com `rc=2`. Isso foi medido no ensaio desta versão.
 - **`rc=2` é uso inválido, não resultado.** Nesse caso o JSON sai vazio. Corrija
   a chamada antes de seguir.
 
