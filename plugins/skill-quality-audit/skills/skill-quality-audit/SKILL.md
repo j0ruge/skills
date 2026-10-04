@@ -4,7 +4,7 @@ description: "Audita Agent Skills: spec, autocontenção, claims e tamanho. Port
 compatibility: Python 3 só com biblioteca padrão (testes OK em 3.11.15 e 3.12.3 em 2026-09-23). Gates externos opcionais, skills-ref (ou uvx) e um gate local audit-skill.sh do autor.
 metadata:
   author: JorUge
-  version: "0.4.0"
+  version: "0.4.1"
   hermes:
     tags:
       - skills

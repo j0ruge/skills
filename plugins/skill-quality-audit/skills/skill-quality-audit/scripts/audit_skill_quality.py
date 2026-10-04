@@ -469,7 +469,16 @@ def check_files(rep: Report, skill_md: str, args):
         rep.add(INFO, "B4", f"{hermes} menção(ões) a ~/.hermes ou $HERMES_HOME: dependência do harness "
                             "Hermes, legítima só para infra compartilhada documentada")
 
-    if not (d / "CHANGELOG.md").is_file():
+    # Num plugin de marketplace (<plugin>/skills/<skill>/ com <plugin>/.claude-plugin/plugin.json) o
+    # CHANGELOG versionado é o do plugin, e um segundo dentro da skill partiria o histórico em dois.
+    # Sem o manifesto, um CHANGELOG solto dois níveis acima não conta.
+    plugin = d.parent.parent
+    plugin_cl = plugin / "CHANGELOG.md"
+    if (d / "CHANGELOG.md").is_file():
+        pass
+    elif (plugin / ".claude-plugin" / "plugin.json").is_file() and plugin_cl.is_file():
+        rep.add(OK, "B5", f"CHANGELOG no nível do plugin: {plugin_cl}")
+    else:
         rep.add(INFO if args.no_changelog_required else ERRO, "B5", "CHANGELOG.md ausente")
     junk = sorted(str(p.relative_to(d)) for p in d.rglob("*")
                   if p.name in ("__pycache__", ".DS_Store") or p.suffix == ".pyc")

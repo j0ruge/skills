@@ -1,5 +1,24 @@
 # Changelog — skill-quality-audit
 
+## [0.4.1] — 2026-10-04
+
+### `skill-quality-audit` 0.4.1: o B5 acha o CHANGELOG do plugin
+
+O B5 só olhava `<skill>/CHANGELOG.md`. Toda skill de plugin de marketplace (`<plugin>/skills/<skill>/`)
+saía com `CHANGELOG.md ausente`, ERRO sem `--no-changelog-required` e INFO com ela, embora o CHANGELOG
+versionado do plugin estivesse em `<plugin>/CHANGELOG.md`. O falso positivo apareceu na auditoria da
+`coderabbit-pr` (plugin `codereview`), e o único jeito de calá-lo pela skill era um segundo CHANGELOG
+dentro dela, que partiria o histórico em dois.
+
+- **Agora o B5 aceita o CHANGELOG do plugin** quando `<plugin>/.claude-plugin/plugin.json` existe ao
+  lado dele, e diz o caminho num OK. Sem o manifesto, um CHANGELOG solto dois níveis acima não conta.
+- **Três testes novos** em `tests/test_audit_skill_quality.py`: o caso do plugin (RED antes:
+  `[ERRO] B5 CHANGELOG.md ausente`) e dois controles negativos (sem manifesto; plugin sem CHANGELOG).
+  Sabotagem: tirar a exigência do manifesto deixa o primeiro controle vermelho, e tirar a do arquivo
+  deixa o segundo. A condição `d.parent.name == "skills"` do primeiro rascunho saiu: nenhum probe a
+  distinguia, e skill em outro subdiretório do plugin continua sendo do plugin.
+- `references/checks.md`: a linha do B5 diz as duas origens.
+
 ## [0.4.0] — 2026-09-29
 
 Entrada no marketplace. O plugin reúne a família de auditoria de skills, que vivia no harness

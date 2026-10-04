@@ -179,6 +179,33 @@ class TestSkillInvalida(Base):
         rc, out = self.run_script(d, "--external", "off", "--no-changelog-required")
         self.assertEqual(rc, 0, out)
 
+    def _plugin(self, manifest=True, changelog=True):
+        """Layout de marketplace: <plugin>/skills/<skill>/, com o CHANGELOG no nível do plugin."""
+        plugin = self.tmp / "plugins" / "meu-plugin"
+        d = make_skill(plugin / "skills", "skill-do-plugin", changelog=False)
+        if manifest:
+            (plugin / ".claude-plugin").mkdir(parents=True)
+            (plugin / ".claude-plugin" / "plugin.json").write_text('{"name": "meu-plugin"}\n', encoding="utf-8")
+        if changelog:
+            (plugin / "CHANGELOG.md").write_text("# Changelog\n\n## [0.1.0] - criacao\n", encoding="utf-8")
+        return d
+
+    def test_changelog_no_nivel_do_plugin_vale(self):
+        rc, out = self.run_script(self._plugin(), "--external", "off")
+        self.assertEqual(rc, 0, out)
+        self.assertNotIn("CHANGELOG.md ausente", out)
+        self.assertIn("B5", out)  # o OK diz onde achou, para o leitor conferir
+
+    def test_changelog_solto_acima_sem_manifesto_nao_vale(self):
+        rc, out = self.run_script(self._plugin(manifest=False), "--external", "off")
+        self.assertEqual(rc, 1, out)
+        self.assertIn("CHANGELOG.md ausente", out)
+
+    def test_plugin_sem_changelog_continua_ausente(self):
+        rc, out = self.run_script(self._plugin(changelog=False), "--external", "off")
+        self.assertEqual(rc, 1, out)
+        self.assertIn("CHANGELOG.md ausente", out)
+
 
 class TestRevisaoAdversarial(Base):
     """Casos vindos da revisão adversarial de 2026-09-23."""
