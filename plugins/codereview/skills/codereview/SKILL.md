@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.9.1
+  version: 2.9.2
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -16,7 +16,7 @@ Read the user input before proceeding (if not empty). Valid inputs:
 - Empty: full review of all changed files
 - Focus area: `security`, `performance`, `types`, `bugs`, `tests`, `docs`, `a11y`, `race-conditions`, `dead-code`
 - File path or glob: review only matching changed files
-- Key-value overrides: `baseDir=app/ fileExtensions=ts,js` (see `references/configuration.md`)
+- Key-value overrides: `baseDir=app/ fileExtensions=ts,js`
 - Focus in prose ("look at the separator"): run `full`, prompts unchanged; answer each named point in
   Phase C and say where it was checked
 
@@ -97,7 +97,7 @@ Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. T
    (`{SKILL_DIR}` = absolute path of this SKILL.md's directory). It prints JSON `{findings:[...], scanners:[...], errors:[...]}`; keep it verbatim as `SECRETS_PRESCAN`, the authoritative source for Phase C's Secrets Detection table and F-grade gate. A crash or non-JSON output means the scan did not run: warn the user and re-run it — an absent payload is never "scan returned clean".
 
 Classify each changed file:
-- EXCLUDED: lock files, node_modules, dist, build, .next, min files, binaries, .claude/
+- EXCLUDED: lock files, node_modules, dist, build, .next, min files, binaries, .claude/ (unless the user names the path)
 - CODE: source files matching {fileExtensions} in {baseDir}, excluding tests and generated; an extensionless executable counts when its shebang runs one of those languages (`bin/tool`, `#!/usr/bin/env bash`)
 - UI_LIB: files in {generatedDirs}
 - TESTS: files matching {testFilePatterns}
@@ -117,7 +117,7 @@ If more than 15 CODE files, prioritize by change size (diff stat lines). Note de
 
 For each CODE file (or group of 2-3 small files sharing imports) — and each changed TESTS file on a test-quality focus (6.12) — **spawn a sonnet agent** to analyze it. Launch all agents **in parallel**, in one message.
 
-Each agent reads its instructions itself, when it starts, from `{SKILL_DIR}/references/per-file-agent.md`, so every agent gets the same contract. Emit only the launch prompt below, placeholders filled — nothing added (no themes, framing or reproduction requests: a finding that needs reproducing comes back marked so and is reproduced after the report), nothing removed. `model: "sonnet"` on every call.
+Each agent reads its instructions itself, when it starts, from `{SKILL_DIR}/references/per-file-agent.md`, so every agent gets the same contract. Emit only the launch prompt below, placeholders filled — nothing added (no themes, framing or reproduction requests: those come back marked `needs reproduction`), nothing removed. `model: "sonnet"` on every call.
 
 ```
 Agent(model: "sonnet", prompt: "
@@ -133,6 +133,7 @@ scope and output format.
 - File: {FILE_PATH} (category: {CATEGORY})   — one line per file in the group
 - Focus area: {FOCUS or 'full'}
 - Skill dir: {SKILL_DIR}
+- Hard rules: {CLAUDE.md prohibitions, verbatim, or none}
 ")
 ```
 
@@ -168,6 +169,7 @@ return template.
 - Focus area: {FOCUS or 'full'}
 - Sweep: {full | pr}   — `full` only when `$ARGUMENTS` carries `sweep=full`
 - Skill dir: {SKILL_DIR}
+- Hard rules: {CLAUDE.md prohibitions, verbatim, or none}
 ")
 ```
 
@@ -241,7 +243,6 @@ on {area})`, one-word rationales), never prose in place of the table.
 - **Line numbers come from the diff or file actually read** — a line the reader can't find discredits
   the whole report.
 - **A clean report is a valid outcome** — if the code is clean, say so rather than inventing findings.
-- **Be fair to generated code** — UI_LIB files get reduced scrutiny (except pass 6.10, which always runs).
 - **Never whitelist a secret finding to reduce noise** — test-file passwords count like production
   ones; GitGuardian agrees. A false-positive re-read costs far less than a leaked credential.
 - **Ground findings in evidence** — quote the problematic snippet when helpful; for secrets, mask the

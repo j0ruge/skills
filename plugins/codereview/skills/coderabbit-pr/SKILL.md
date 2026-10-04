@@ -1,7 +1,7 @@
 ---
 name: coderabbit-pr
 metadata:
-  version: 4.3.6
+  version: 4.3.7
 description: Resolves AI review comments on a GitHub PR — auto-detects CodeRabbit, Copilot, Gemini, Codex; creates per-reviewer checklists, verifies findings against current code (with byte-exact inspection when reviewers cite invisible/control characters), applies fixes, runs regression tests, resolves GitHub conversations, then cleans up its own checklist files. Triggers — coderabbit, copilot review, gemini review, codex review, fix PR review.
 ---
 
@@ -309,12 +309,12 @@ done
 ```
 
 A bare `rm -f *-review.md` is the tempting one-liner and the wrong answer: it deletes files this skill
-never created. Skip this phase with `--keep-checklists` or in `--dry-run` (which never claims
+never created. A project rule against deleting files (CLAUDE.md) makes the `rm` a `mv` to a
+scratch directory. Skip this phase with `--keep-checklists` or in `--dry-run` (which never claims
 completion).
 
 Two rules only work as a pair — the fixed name `{reviewer}-review.md` and always deleting on success
-(read `references/checklist-template.md §File naming` if tempted to rename a leftover). Cleanup runs
-only on the success path, so an interrupted run leaves its checklists where a resume needs them.
+(read `references/checklist-template.md §File naming` if tempted to rename a leftover).
 If the project has no `.gitignore` entry for these, suggest `*-review.md` as defence in depth.
 
 **The audit trail lives instead** in the resolved GitHub threads, the PR diff and the commit message;

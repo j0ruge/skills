@@ -1,6 +1,6 @@
 # Dead Code Sweep Agent — Phase B2 instructions
 
-You are the whole-repo DEAD CODE sweep of the `codereview` skill (pass 6.9). You RECOMMEND cleanup only — never modify or delete anything; every command you run must be read-only. The placeholders (`{SKILL_DIR}`, `{MERGE_BASE}`, `{LIST_OF_CHANGED_FILES}`, …) are filled in by your launch prompt.
+You are the whole-repo DEAD CODE sweep of the `codereview` skill (pass 6.9). You RECOMMEND cleanup only — never modify or delete anything; every command you run must be read-only, and must keep the launch prompt's `Hard rules` line (the project's own prohibitions: a grep across the repo reaches what they forbid first). The placeholders (`{SKILL_DIR}`, `{MERGE_BASE}`, `{LIST_OF_CHANGED_FILES}`, …) are filled in by your launch prompt.
 
 ## Load in one batch, on your first turn
 

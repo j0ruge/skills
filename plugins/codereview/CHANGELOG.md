@@ -2,6 +2,53 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.9.6] — 2026-10-04
+
+### `codereview` 2.9.2 e `coderabbit-pr` 4.3.7: as proibições do projeto no prompt dos agentes, e três casos de uma rodada real com o Codex
+
+Lições de duas fontes no `projeto-final-vdr`: as rodadas 3, 7 e 8 do codereview da D75 (aplicadas
+à mão, sem atrito, e aprovadas pelo autor para este retrofit) e a resolução do PR #3 pelo
+`coderabbit-pr`, com o Codex, em 2026-10-04.
+
+**`codereview` 2.9.2**
+
+- **Os agentes recebem as proibições do projeto.** O prompt de lançamento proibia acrescentar
+  qualquer coisa, e o projeto tinha regras absolutas que os agentes também precisam cumprir (arquivo
+  que nunca se abre, valor que nunca se imprime, pasta só de leitura). As três rodadas passaram uma
+  linha copiada do `CLAUDE.md`, à mão. Agora os templates da Phase B e da B2 têm o placeholder
+  `Hard rules`, e o `per-file-agent.md` e o `sweep-agent.md` dizem que ele vale para todo comando. O
+  "nada acrescentado" continua valendo, porque a linha é placeholder do contrato.
+- **Caminho em `.claude/` que o usuário nomeia não é EXCLUDED.** Um projeto que versiona as próprias
+  skills e agentes em `.claude/` ficava com o `SKILL.md` delas fora da checagem de docs. Nomeado pelo
+  usuário, o arquivo cai na classificação normal (`.md` → DOCS).
+- **Espaço, por fusão provada** (o `SKILL.md` estava a 2 caracteres do aviso C1): saíram o *"(see
+  `references/configuration.md`)"* da entrada de overrides, porque a linha das References roteia o
+  mesmo arquivo na mesma condição; a cauda *"…comes back marked so and is reproduced after the
+  report"*, que fica *"those come back marked `needs reproduction`"* (reproduzir depois do relatório
+  está no `per-file-agent.md` e em `configuration.md` §Re-review rounds); e o gotcha *"Be fair to
+  generated code"*, porque o `per-file-agent.md` já diz UI_LIB só CRITICAL e HIGH e a 6.10 sempre
+  ligada, e os Special Cases repetem o UI_LIB. 19 959 caracteres.
+
+**`coderabbit-pr` 4.3.7**
+
+- **PR só de revisão com a cabeça espelho.** No PR #3 a cabeça `revisao-d75` espelha a `main`,
+  contra uma base anterior ao trabalho. A correção vai na origem e se espelha antes da 5.0 (`git push
+  origin main:revisao-d75`, `b1f1224..4b08c16`). A `pr-branch.md` ganhou esse caso entre "mesmo
+  branch" e "worktree".
+- **A Phase 6 obedece a regra de não apagar.** Em projeto cujo `CLAUDE.md` proíbe apagar arquivo, o
+  `rm` vira `mv` para um diretório de rascunho; foi o que a rodada fez com o `codex-review.md`.
+- **Falha nova fora do baseline: descartar intermitente antes de chamar de regressão.** A
+  `regression-testing.md` 4.2 manda rodar o teste isolado e o módulo, do diretório e com as flags da
+  suíte, e conferir se o módulo importa o que mudou. Medido: um `PermissionError` no `tearDown`
+  (WinError 32) caiu uma vez na suíte inteira e passou 30 de 30 isolado; rodado da raiz sem `-s
+  tests`, o mesmo teste "falhou" 20 de 20 no import.
+- **Espaço, por fusão provada:** *"Cleanup runs only on the success path, so an interrupted run leaves
+  its checklists where a resume needs them"* repete a `checklist-template.md` §File naming, que a
+  mesma frase cita, o gate da 5.3 e a 3.3. 19 984 caracteres.
+- **Não aplicadas, à espera do autor:** testes alterados entrando como código na Phase B de um
+  *re-review the fix*; e o sweep que não viu um `import re` novo e sem uso que o agente por arquivo
+  viu (investigar o `sweep-agent.md` antes).
+
 ## [2.9.5] — 2026-10-04
 
 ### `coderabbit-pr` 4.3.6: a cobertura do revisor é por commit, não pelo PR

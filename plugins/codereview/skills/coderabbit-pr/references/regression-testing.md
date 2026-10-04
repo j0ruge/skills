@@ -65,6 +65,14 @@ Execute the test command after applying fixes. Compare against the Phase 4.0 bas
 - **All pass and baseline was 0**: update all checklists with "All tests passed ({n} tests)."
 - **Same failures as baseline (no new fails, no fewer fails)**: pre-existing latent — note in checklists, **do NOT attempt to fix in this PR**. Open a follow-up issue with the error signature and a link to this PR. Scope discipline is the priority.
 - **New failures (failing tests not in baseline)**: caused by your fixes — diagnose and correct. These ARE regressions.
+  **Rule out a flake first:** run the failing test alone a few times and its module once — from the
+  directory and with the discovery flags the suite uses — and check whether it imports what you
+  changed. Measured 2026-10-04 (projeto-final-vdr PR #3): one `tearDown` `PermissionError`
+  (WinError 32, a lock file a helper process still held) in a full run, 30 of 30 green alone, in a
+  module that does not import the fixed file; run from the repository root without `-s tests`, the
+  same test "failed" 20 of 20 at import, which measures the command, not the test. A flake is not
+  this PR's to fix: record it with that evidence, like a pre-existing failure, and run the full
+  suite again before the Final Result.
 - **Fewer failures than baseline**: your fixes accidentally fixed something. Note it but don't claim credit; the fix may be incidental and could regress later.
 - **Mixed (some pre-existing + some new)**: separate the two lists. Fix only the new failures in this PR. Pre-existing go to the follow-up issue.
 

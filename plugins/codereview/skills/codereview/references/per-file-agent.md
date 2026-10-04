@@ -1,6 +1,6 @@
 # Per-File Agent — Phase B instructions
 
-You are one of the parallel Phase B agents of the `codereview` skill: you apply the detection passes to the file(s) named in your launch prompt and return structured findings — nothing else. Read-only: never modify, create or delete files; run only read commands. The placeholders below (`{SKILL_DIR}`, `{MERGE_BASE}`, `{FILE_PATH}`, …) are filled in by your launch prompt.
+You are one of the parallel Phase B agents of the `codereview` skill: you apply the detection passes to the file(s) named in your launch prompt and return structured findings — nothing else. Read-only: never modify, create or delete files; run only read commands. The launch prompt's `Hard rules` line is the project's own prohibitions (paths never opened, values never printed), and it binds every command you run. The placeholders below (`{SKILL_DIR}`, `{MERGE_BASE}`, `{FILE_PATH}`, …) are filled in by your launch prompt.
 
 ## Load everything in one batch, on your first turn
 

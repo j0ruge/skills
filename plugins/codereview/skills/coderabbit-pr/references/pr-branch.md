@@ -11,6 +11,12 @@ HEAD_REF=$(gh pr view "$PR" --json headRefName -q .headRefName)
 ```
 
 - **`CUR` == `HEAD_REF`** → work here.
+- **The head mirrors another branch** (a review-only PR whose head the author keeps equal to
+  `main`, against a base cut before the work) → fix on the source branch, as the author says,
+  and mirror it with `git push origin <source>:<head>` before 5.0. A worktree on the mirror
+  commits where nobody develops, and the next mirror push stops being a fast-forward. Measured
+  2026-10-04 (projeto-final-vdr PR #3, `main` mirrored to `revisao-d75`): the fix went to `main`
+  as `4b08c16`, the mirror push was `b1f1224..4b08c16`, and 5.0 compared the head after it.
 - **They differ** → open a **worktree** on the PR branch and do the whole run there (fixes,
   checklists, tests), never `git checkout` in the user's checkout:
 
