@@ -39,7 +39,7 @@ symptom — including one that opens a new fail-open next to it. The regression 
    loosened version, then restore the fix. Prove the sabotage actually changed the file
    (`git diff` shows the loosened line) before trusting a "still green" — a sabotage that did not
    apply proves nothing.
-5. **Fast suite** — the project's test command (`references/regression-testing.md`, 4.1) plus, when
+5. **Fast suite** — the project's test command (the one detected for the 4.0 baseline) plus, when
    the repo has one, the cheap half of its mutation catalogue (e.g. `tests/check-mutation.sh
    --anchors` in sdd-style kits): a fix that rots a mutant's anchor fails there in seconds. Compare
    against the 4.0 baseline; a new failure is this fix's regression, fixed before moving on.

@@ -2,6 +2,23 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.9.3] — 2026-10-04
+
+### `coderabbit-pr` 4.3.4: as duas dívidas da auditoria, fechadas sem mudar o que a skill faz
+
+Reparo autorizado das dívidas registradas na 4.3.3, pela `skill-quality-audit` (modo reparo,
+allowlist: as duas linhas abaixo e os arquivos de versão).
+
+- **C2 (AVISO): `fix-loop.md` citava `regression-testing.md`**, cadeia de dois níveis a partir do
+  `SKILL.md`. A citação só nomeava o comando de teste, e quem lê o `fix-loop.md` já o detectou: a
+  Fase 3.2 manda capturar o baseline da 4.0 antes do primeiro conserto. O passo 5 agora diz *"the
+  one detected for the 4.0 baseline"*, sem o salto para outro arquivo; o `SKILL.md` segue roteando
+  o `regression-testing.md` direto.
+- **F1 (INFO): a `pr-branch.md` citada sem dizer quando ler.** A linha da lista de References dizia
+  *"read at Phase 1.1: worktree, …"*, e "at" não é condição. Agora diz *"read at Phase 1.1, before its
+  worktree, active-writer check and sweep"*: é antes desses três passos que a reference serve. Corpo
+  em 19 971 caracteres (+8), abaixo dos 20 000 do aviso do `validate-versions.py`.
+
 ## [2.9.2] — 2026-10-04
 
 ### `coderabbit-pr` 4.3.3: o head que ainda não chegou à API, e a conversa que fica sem o porquê
