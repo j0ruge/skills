@@ -1,5 +1,27 @@
 # Changelog — ticket
 
+## [1.8.0] — 2026-10-04
+
+### Por quê
+
+Fechando o SBM-3 numa sessão sem o MCP atlassian, o fallback da skill era o `acli` — que sai 0
+mesmo quando falha, então nem o comentário nem a transição tinham sensor no próprio comando. O
+REST do Jira devolve código HTTP de verdade (`201` no comentário, `204` na transição) e foi o
+caminho usado, com releitura batendo. E o cartão chegou ao `close` ainda em "Tarefas pendentes" e
+sem responsável — o `close` não olhava isso, e fechar assim deixa o cartão sem dono na sprint.
+
+### O quê
+
+- `references/close.md` step 1: `GET ?fields=status,assignee`; `assignee` nulo → oferecer
+  `--assignee "@me"`; status na categoria `new` → avisar que o cartão nunca foi iniciado.
+- `references/close.md` step 5: fallback sem MCP pelo REST (`POST /issue/<KEY>/comment` com
+  `{"body": <ADF>}`, espera `201`); o `acli comment create` fica como segunda opção.
+- `references/close.md` step 6: transição por REST (`GET /transitions`, escolher o destino com
+  categoria `done`, `POST` por id, espera `204`, releitura); SBM documentado (id `41`, direto de
+  "Tarefas pendentes").
+- `SKILL.md`: só trocas de texto nos steps 1, 5 e 6 do `close` (o arquivo está no teto de ~20 mil chars).
+- Dívida pré-existente, não tratada aqui: `argument-hint` no topo do frontmatter (ERRO G2 / AVISO A4).
+
 ## [1.7.0] — 2026-10-02
 
 ### Por quê

@@ -3,7 +3,7 @@ name: ticket
 description: "Jira ticket lifecycle for JRC Brasil projects, integrated with Git — create issues/sub-issues and branches, close with an auto-generated summary. Per-repo config via `.jira-project`; discovers project-specific transitions instead of assuming. New issues are born in the active sprint with story points and fixVersion, each read back by the sensor that can see it. Triggers — ticket, Jira, criar issue, fechar ticket, sprint, story points, fixVersion, acli."
 argument-hint: "start (open) | split | close | status"
 metadata:
-  version: 1.7.0
+  version: 1.8.0
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -220,7 +220,7 @@ tipo "Subtarefa" (PT-BR); perguntar se quer criar mais sub-issues (loop até o d
 por extenso, para ler antes do primeiro `close`: `references/close.md`.
 
 1. **Detectar issue** pela branch (regex `^(${BRANCH_PREFIX}-\d+)`); sem match, pedir ao dev — mas
-   com o PR já mergeado veja antes a nota do step 10.
+   com o PR já mergeado veja antes a nota do step 10. Confira status e responsável.
 2. **Sub-issues:** `acli jira workitem search --jql "parent = ${PROJECT}-XXX"`; alguma não
    "Finished" → alertar e perguntar se continua.
 3. **Auto-gerar resumo** de `git log ${BASE_BRANCH}..HEAD --oneline`,
@@ -230,16 +230,15 @@ por extenso, para ler antes do primeiro `close`: `references/close.md`.
 4. **Apresentar o rascunho** ao dev e pedir confirmação ou edições.
 5. **Comentar na issue** — preferir `mcp__atlassian__addCommentToJiraIssue(cloudId, issueIdOrKey,
    commentBody: "<markdown>", contentFormat: "markdown")`, que converte para ADF server-side
-   (validado 2026-05-20). O campo é **`commentBody`**, não `body`. Sem MCP: ADF JSON via
-   `acli jira workitem comment create --key "${PROJECT}-XXX" --body-file /tmp/comment.json`
-   (markdown vira texto puro ali). 🔴 **Confirme por REST**, nunca por `acli comment list`:
+   (validado 2026-05-20). O campo é **`commentBody`**, não `body`. Sem MCP: ADF
+   por REST, cujo HTTP é sensor (o `acli` sai 0 em falha). 🔴 **Confirme por REST**, nunca por `acli comment list`:
    `GET .../issue/${PROJECT}-XXX/comment?orderBy=-created&maxResults=1` com o `body` como
    **objeto** (`str` = ADF recusado). Comando pronto em `references/close.md` step 5.
 
 6. **Transicionar até o "done"** descobrindo as transições (`getTransitionsForJiraIssue`; aplicar pelo
    `id` da transição cujo `to.name` é o status final) — **RS:** `Em andamento → Aprovação → Finished`; **SQ:**
    `Em andamento → Concluído` direto (`acli --status "Concluído"`, que casa pelo status de destino,
-   ou MCP id `31`).
+   ou MCP id `31`). Sem MCP: REST por id (close.md step 6).
 7. **Conferir o `fixVersion`** (`GET .../issue/${PROJECT}-XXX?fields=fixVersions` contra
    `git tag --sort=-v:refname | head -3`): coerente → siga; vazio com a versão existente → ofereça
    atribuí-la; vazio e a versão **não existe** no Jira → **pare e pergunte** (criar versão é decisão

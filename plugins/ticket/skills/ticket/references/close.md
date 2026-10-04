@@ -9,6 +9,21 @@
 
    - Extrair `${PROJECT}-XXX` da branch corrente (regex `^(${BRANCH_PREFIX}-\d+)`)
    - Se não encontrar, pedir ao dev
+   - **Conferir status de partida e responsável** — o `close` assume um cartão em andamento e com
+     dono, e nem sempre é:
+
+     ```bash
+     set -a; . ~/.hermes/.env; set +a
+     curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+       "https://jrcbrasil.atlassian.net/rest/api/3/issue/${PROJECT}-XXX?fields=status,assignee"
+     ```
+
+     `assignee` nulo → avisar e oferecer `acli jira workitem edit --key "${PROJECT}-XXX" --assignee "@me"`
+     (com a releitura do A6). Status ainda na categoria `new` ("Tarefas pendentes") → dizer ao dev
+     que o cartão nunca foi iniciado e confirmar que vai direto ao "done"; nem todo projeto tem
+     transição direta (o SBM tem, id `41`; ver o step 6). Medido em 04/10/2026: o SBM-3 foi fechado
+     com o trabalho em produção, ainda em "Tarefas pendentes" e sem responsável — fechar sem
+     olhar deixaria o cartão sem dono no relatório da sprint.
 
 2. **Verificar sub-issues:**
 
@@ -57,9 +72,23 @@
    `MCP error -32602: ... Required at commentBody` só no fim, e a correção é
    reenviar o comentário todo. Medido em 18/09/2026.
 
-   **Fallback (sem MCP atlassian disponível):** montar ADF JSON manual e postar
-   via `acli`. Markdown e Wiki Markup **não** funcionam ali (renderizam como
-   texto puro) — ver `templates.md` §ADF (legado) para a estrutura.
+   **Fallback (sem MCP atlassian disponível):** montar ADF JSON manual — markdown
+   e Wiki Markup **não** funcionam fora do MCP (renderizam como texto puro); ver
+   `templates.md` §ADF (legado) para a estrutura e rode a varredura de marks antes.
+   **Prefira postar pelo REST:** o código HTTP é um sensor de verdade (`201` =
+   gravado; 400 = ADF recusado), ao contrário do `acli`, que sai 0 em falha.
+   Validado em 04/10/2026 (SBM-3, `201` e releitura `dict 9`):
+
+   ```bash
+   set -a; . ~/.hermes/.env; set +a
+   # /tmp/comment.json = {"body": <doc ADF>}  — o doc vai DENTRO de "body"
+   curl -s -o /dev/null -w "%{http_code}\n" -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+     -H "Content-Type: application/json" -X POST --data @/tmp/comment.json \
+     "https://jrcbrasil.atlassian.net/rest/api/3/issue/${PROJECT}-XXX/comment"
+   # espera: 201
+   ```
+
+   Sem `curl`/credencial REST, o `acli` serve:
 
    ⚠️ **O comando é `comment create`, não `comment`.** `acli jira workitem comment`
    é um grupo com subcomandos (`create`/`list`/`update`/`delete`/`visibility`), e
@@ -101,6 +130,21 @@
    - **SQ:** `Em andamento → Concluído` direto (**não há `Aprovação`**) —
      `acli --status "Concluído"` funciona (casa pelo nome do **status de
      destino**); alternativamente, MCP transição **id `31`** ("Itens concluídos").
+   - **SBM** (team-managed): de "Tarefas pendentes" o `GET` listou transição para
+     todos os status; `Concluído` = id `41` ("Itens concluídos"), direto.
+   - **Sem MCP — REST por id** (preferido: `204` é sensor, o `acli` sai 0 em falha;
+     validado em 04/10/2026 no SBM-3):
+
+     ```bash
+     set -a; . ~/.hermes/.env; set +a
+     U="https://jrcbrasil.atlassian.net/rest/api/3/issue/${PROJECT}-XXX/transitions"
+     curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" "$U" | python3 -c "import json,sys; [print(t['id'], t['name'], '->', t['to']['name'], t['to']['statusCategory']['key']) for t in json.load(sys.stdin)['transitions']]"
+     # escolha o id cujo destino tem categoria `done` e aplique:
+     curl -s -o /dev/null -w "%{http_code}\n" -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+       -H "Content-Type: application/json" -X POST --data '{"transition":{"id":"<id>"}}' "$U"
+     # espera: 204 — e releia o status pelo GET do A6
+     ```
+
    - Fallback `acli` (pelo nome do **status de destino**): `acli jira workitem transition --key "${PROJECT}-XXX" --status "<status-destino>"`.
 
 7. **Conferir o `fixVersion` — o ticket saiu em qual release?**
