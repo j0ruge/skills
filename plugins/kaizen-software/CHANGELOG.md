@@ -2,6 +2,26 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.3.3] — 2026-10-04
+
+### O artefato é o que chega ao destino; a sonda é conferida em estado novo
+
+Lições de uma sessão real (publicação de uma skill nova no marketplace, a `windows-disk-cleanup`):
+
+- **Fase 2, item 6, e *Rótulo ≠ artefato*:** o passo de verificação herdado do handoff era
+  "`chmod +x` e conferir com `ls -l`". O `ls -l` mostrava `-rwxr-xr-x` e o `git ls-tree HEAD`
+  mostrava `100644`: o clone tem `core.fileMode=false`, e o git ignora o `chmod`. O check olhava a
+  cópia local, e o que vai para quem clona é o commit. Agora o item 6 diz que o artefato é o que
+  chega ao destino, e o vocabulário traz o caso.
+- **Fase 2, item 6, e *Poka-yoke*:** o selftest da skill rodou numa pasta de uma rodada anterior. O
+  `New-Item HardLink` falhou com "o caminho já existe", e mesmo assim o check do hardlink deu PASS,
+  em cima do link que a rodada velha tinha deixado. A regra "vermelho no sabotado, verde no bom" não
+  dizia que os dois casos precisam ser montados do zero. Agora diz, e o vocabulário sugere fazer o
+  teste recusar diretório de trabalho que não esteja vazio.
+- Evidência: o bit foi gravado com `git update-index --chmod=+x`, e o `git ls-tree` passou a mostrar
+  `100755` antes do push (`9b103fc`). O selftest passou a recusar a pasta reaproveitada (`rc=2`) e
+  deu 10/10 (`rc=0`) numa pasta nova.
+
 ## [1.3.2] — 2026-10-04
 
 ### O Check cobre a prosa derivada; o Gemba inclui o que já foi respondido
