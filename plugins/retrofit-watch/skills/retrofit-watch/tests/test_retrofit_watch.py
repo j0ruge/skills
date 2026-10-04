@@ -3,6 +3,8 @@
 Rodar: python3 -m unittest plugins/retrofit-watch/tests/test_retrofit_watch.py
 Monta um HOME fixture com cache de marketplace, clone do marketplace, repos git de projeto e de
 terceiro, e transcripts JSONL sintéticos no formato real (2.1.283). Só biblioteca padrão + git.
+Rode também no Windows, com o `python3` do PATH (o mesmo do hooks.json): é só lá que aparecem a
+falta do fcntl e o path com `\\`.
 """
 import json
 import os
@@ -19,6 +21,10 @@ sys.path.insert(0, str(SCRIPT.parent))
 import retrofit_watch as rw  # noqa: E402
 
 UNATTENDED = {"CLAUDE_CODE_SESSION_ATTENDED": "0", "CLAUDE_CODE_ENTRYPOINT": "sdk-cli"}
+# O stdio do Python no Windows quando o Claude Code chama o hook por pipe; reproduz em qualquer SO.
+WINDOWS_STDIO = {"PYTHONIOENCODING": "cp1252:surrogateescape"}
+# No Windows, o `shutil.which` só acha binário com extensão do PATHEXT.
+EXE = ".cmd" if os.name == "nt" else ""
 GIT_ENV = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t",
                GIT_COMMITTER_EMAIL="t@t", GIT_CONFIG_NOSYSTEM="1")
 
@@ -93,20 +99,20 @@ class World:
         self.kit_repo = self.tmp / "repos/sdd_agents"
         init_repo(self.kit_repo, "https://github.com/j0ruge/sdd_agents.git")
         (self.kit_repo / "bin").mkdir()
-        (self.kit_repo / "bin/sdd").write_text("#!/bin/sh\n")
-        (self.kit_repo / "bin/sdd").chmod(0o755)
+        (self.kit_repo / f"bin/sdd{EXE}").write_text("#!/bin/sh\n")
+        (self.kit_repo / f"bin/sdd{EXE}").chmod(0o755)
         (self.kit_repo / "TODO.md").write_text("# TODO\n")
         commit_all(self.kit_repo)
         self.bindir = self.tmp / "bin"
         self.bindir.mkdir()
-        os.symlink(self.kit_repo / "bin/sdd", self.bindir / "sdd")
+        os.symlink(self.kit_repo / f"bin/sdd{EXE}", self.bindir / f"sdd{EXE}")
         # kit de terceiro, com o mesmo formato
         third = self.tmp / "repos/outro-kit"
         init_repo(third, "https://github.com/alguem/outro-kit.git")
-        (third / "otk").write_text("#!/bin/sh\n")
-        (third / "otk").chmod(0o755)
+        (third / f"otk{EXE}").write_text("#!/bin/sh\n")
+        (third / f"otk{EXE}").chmod(0o755)
         commit_all(third)
-        os.symlink(third / "otk", self.bindir / "otk")
+        os.symlink(third / f"otk{EXE}", self.bindir / f"otk{EXE}")
         self.transcript = self.tmp / "session.jsonl"
         self.transcript.write_text("")
 
@@ -259,16 +265,19 @@ class StopTest(unittest.TestCase):
         payload = raw if raw is not None else json.dumps({
             "session_id": "s1", "transcript_path": str(self.w.transcript), "cwd": str(self.w.proj),
             "hook_event_name": "Stop" if sub == "stop" else "SessionStart", "permission_mode": mode,
-            "stop_hook_active": active, "last_assistant_message": last, "source": "resume"})
+            "stop_hook_active": active, "last_assistant_message": last, "source": "resume"},
+            ensure_ascii=False)
         full_env = dict(os.environ, HOME=str(self.w.home), CLAUDE_PLUGIN_DATA=str(self.w.data),
                         CLAUDE_CODE_SESSION_ATTENDED="1", CLAUDE_CODE_ENTRYPOINT="cli",
                         PATH=f"{self.w.bindir}{os.pathsep}{os.environ.get('PATH', '')}")
         full_env.pop("RETROFIT_WATCH", None)
         full_env.update(env or {})
-        proc = subprocess.run([sys.executable, str(SCRIPT), sub], input=payload, capture_output=True,
-                              text=True, env=full_env, timeout=20)
-        self.assertEqual(proc.returncode, 0, proc.stderr)
-        out = proc.stdout.strip()
+        # O Claude Code manda o JSON em UTF-8 cru (JSON.stringify não escapa acento) em qualquer SO;
+        # `text=True` usaria a página de código local.
+        proc = subprocess.run([sys.executable, str(SCRIPT), sub], input=payload.encode("utf-8"),
+                              capture_output=True, env=full_env, timeout=20)
+        self.assertEqual(proc.returncode, 0, proc.stderr.decode("utf-8", "replace"))
+        out = proc.stdout.decode("utf-8").strip()
         return json.loads(out) if out else None
 
     def context_of(self, out):
@@ -515,6 +524,21 @@ class StopTest(unittest.TestCase):
         startup = [h for group in hooks["SessionStart"] if "startup" in group.get("matcher", "")
                    for h in group["hooks"]]
         self.assertTrue(any(h["args"][-1] == "pending" for h in startup))
+
+    def test_windows_codepage_stdout_still_delivers_the_retro(self):
+        """O `→` do pedido não existe em cp1252: o erro ia para o errors.log e a retro sumia já contada."""
+        self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), *[tool()] * 6)
+        text = self.context_of(self.run_hook(env=WINDOWS_STDIO))
+        self.assertIn("→ `/retrofit-skill:retrofit-skill codereview`", text)
+        self.assertFalse((self.w.data / "errors.log").exists())
+
+    def test_windows_codepage_stdin_reads_the_payload_as_utf8(self):
+        """Lido em cp1252, `sem lições novas` chegava `sem liÃ§Ãµes novas` e a métrica marcava lição."""
+        self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), *[tool()] * 6)
+        self.assertIsNotNone(self.run_hook())
+        self.run_hook(active=True, last="retro codereview: sem lições novas", env=WINDOWS_STDIO)
+        metrics = (self.w.data / "metrics.jsonl").read_text(encoding="utf-8").strip().splitlines()
+        self.assertEqual(json.loads(metrics[-1])["outcome"], "none")
 
     def test_broken_input_never_breaks_the_session(self):
         self.assertIsNone(self.run_hook(raw="{not json"))

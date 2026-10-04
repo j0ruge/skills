@@ -5,7 +5,7 @@ license: MIT
 compatibility: Claude Code 2.1.163+ (Stop additionalContext); testado na 2.1.283 em 2026-09-30. Hook em Python 3, só biblioteca padrão, e git no PATH.
 metadata:
   author: JorUge
-  version: "0.3.1"
+  version: "0.3.2"
 ---
 
 # retrofit-watch

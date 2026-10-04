@@ -1,5 +1,38 @@
 # Changelog — retrofit-watch
 
+## [0.3.2] — 2026-10-04
+
+### Fixed
+
+- **No Windows o hook quebrava a cada fim de turno: `import fcntl`.** O módulo só existe em Unix,
+  e o Claude Code mostrava `Stop hook error: … ModuleNotFoundError: No module named 'fcntl'` em
+  todo `Stop`, com o `python3` do PATH (pyenv-win, 3.9.13). A trava passa a ser `fcntl.flock` no
+  Unix e `msvcrt.locking` sobre o 1º byte no Windows (`_lock`/`_unlock`), nas duas que existiam:
+  o estado da sessão e a fila.
+- **Trocar só o import não bastava.** Com o hook rodando no Windows sobre um transcript sintético,
+  apareceram três defeitos calados atrás dele, todos de presumir POSIX:
+  - **A skill do marketplace era desclassificada logo depois de carregar.** O `classify_path`
+    compara com `/`, e no Windows o `realpath` devolve `C:\Users\…\cache\chewiesoft-marketplace\…`.
+    O `Skill` vigiava `full:codereview` pelo nome e, uma linha depois, o `Base directory` caía em
+    `None` e zerava o `current`: trabalho 0, retro nunca. `_slashed` normaliza o path, o `home` e
+    as `deny_roots`.
+  - **A retro era contada e não entregue.** O `stdout` do Python no Windows é cp1252, que não tem
+    o `→` do pedido: `UnicodeEncodeError` no `errors.log`, saída vazia, e o estado já tinha somado
+    a revisão. A saída agora é JSON em ASCII (`\u2192`), que passa por qualquer página de código.
+  - **O payload chegava com mojibake.** O `stdin` também é cp1252, e o Claude Code manda UTF-8 cru:
+    `sem lições novas` virava `sem liÃ§Ãµes novas`, e a métrica marcava `lessons`. Agora o hook lê
+    `sys.stdin.buffer` e decodifica UTF-8.
+- **A raiz do repo vinha em dois formatos.** O git do Windows responde `C:/x/y`, e o `TODO.md` do
+  kit é comparado com o `realpath` (`C:\x\y`): a escrita nele não encerrava a retro do kit.
+  `_toplevel` passa a raiz pelo `normpath`.
+- 2 testes novos (44 no total) reproduzem o stdio do Windows em qualquer SO com
+  `PYTHONIOENCODING=cp1252:surrogateescape`. O `run_hook` passa a mandar UTF-8 cru, como o Claude
+  Code: o `text=True` e o `ensure_ascii` da fixture escondiam o mojibake. No Windows, o binário do
+  kit na fixture ganha `.cmd`, porque lá o `shutil.which` só acha extensão do PATHEXT.
+- Suíte verde no Linux (3.12.3) e no Windows (3.9.13). Cinco sabotagens, uma por peça: no Windows
+  todas pegas; no Linux só as duas de encoding, porque trava e path só divergem no Windows. Por
+  isso o docstring da suíte manda rodá-la lá também.
+
 ## [0.3.1] — 2026-10-02
 
 ### Documented

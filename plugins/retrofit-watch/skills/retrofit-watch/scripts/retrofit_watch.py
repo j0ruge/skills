@@ -26,9 +26,8 @@ Sessão desassistida (claude -p, fase do sdd run): nada volta para a sessão; co
 linha em <data>/queue.jsonl (fora de qualquer repo) para a retro numa sessão com o humano.
 Estado em ${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json (offset do transcript e contadores).
 Nunca grava texto do assistente. Qualquer erro interno vai para <data>/errors.log e sai com 0.
-Só biblioteca padrão.
+Só biblioteca padrão. Roda em Linux, macOS e Windows (lá o `python3` do PATH, sem fcntl).
 """
-import fcntl
 import json
 import os
 import re
@@ -38,6 +37,12 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None
+    import msvcrt
 
 MARKETPLACE = "chewiesoft-marketplace"
 DEFAULT_OWNERS = ("j0ruge", "jrc-brasil", "chewiesoft")
@@ -99,7 +104,7 @@ class Context:
     def deny_roots(self):
         roots = [self.home / ".agents", self.home / ".hermes"]
         roots += [Path(os.path.expanduser(r)) for r in self.config.get("deny_roots", [])]
-        return [os.path.realpath(r) for r in roots]
+        return [_slashed(os.path.realpath(r)) for r in roots]
 
     def installed_marketplaces(self, plugin):
         if self._installed is None:
@@ -116,6 +121,11 @@ class Context:
 
 # --- classificação -----------------------------------------------------------------------------
 
+def _slashed(path):
+    """A classificação compara paths com `/`; no Windows o realpath devolve `C:\\Users\\...`."""
+    return path.replace(os.sep, "/")
+
+
 def _git(args, cwd):
     try:
         proc = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True,
@@ -123,6 +133,13 @@ def _git(args, cwd):
         return proc.stdout.strip() if proc.returncode == 0 else None
     except (OSError, subprocess.TimeoutExpired):
         return None
+
+
+def _toplevel(cwd):
+    """Raiz do repo no formato do SO: o git do Windows responde `C:/x`, e o realpath com que ela é
+    comparada (o TODO.md do kit) vem `C:\\x`."""
+    top = _git(["rev-parse", "--show-toplevel"], cwd)
+    return os.path.normpath(top) if top else None
 
 
 def _full(plugin, skill, ctx):
@@ -158,7 +175,7 @@ def classify_kit(kit, ctx):
     exe = shutil.which(kit)
     if not exe:
         return None
-    top = _git(["rev-parse", "--show-toplevel"], os.path.dirname(os.path.realpath(exe)))
+    top = _toplevel(os.path.dirname(os.path.realpath(exe)))
     if not top or not _owned(top, ctx):
         return None
     return {"key": f"kit:{top}", "mode": "kit", "arg": kit, "label": f"kit {kit}", "repo": top}
@@ -173,14 +190,14 @@ def classify_plugin(plugin, ctx):
 
 def classify_path(path, ctx):
     """Dono da skill a partir do path da linha 'Base directory'. None = não vigiar."""
-    real = os.path.realpath(path)
+    real = _slashed(os.path.realpath(path))
     name = os.path.basename(real.rstrip("/"))
     if name in ctx.config.get("include", []):
-        top = _git(["rev-parse", "--show-toplevel"], real)
+        top = _toplevel(real)
         return _lean(name, top)
     if name in ctx.excluded:
         return None
-    home = str(ctx.home)
+    home = _slashed(str(ctx.home))
     cached = re.match(re.escape(home) + r"/\.claude/plugins/(cache|marketplaces)/([^/]+)/(.+)$", real)
     if cached:
         kind, marketplace, rest = cached.groups()
@@ -194,7 +211,7 @@ def classify_path(path, ctx):
         return _full(plugin, name, ctx) if plugin else None
     if any(real == root or real.startswith(root + "/") for root in ctx.deny_roots) or "/.agents/skills/" in real + "/":
         return None
-    top = _git(["rev-parse", "--show-toplevel"], real)
+    top = _toplevel(real)
     if not top:
         return None
     in_plugin = re.search(r"/plugins/([^/]+)/(?:skills|commands)/", real + "/")
@@ -221,6 +238,29 @@ def classify_path(path, ctx):
 
 # --- estado ------------------------------------------------------------------------------------
 
+def _lock(path):
+    """Abre `path` e espera a trava exclusiva: flock no Unix; no Windows, msvcrt sobre o 1º byte (pode
+    passar do fim do arquivo vazio). O LK_LOCK desiste em ~10 s com OSError, que vai ao errors.log."""
+    fh = open(path, "a")
+    if fcntl:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+    else:
+        fh.seek(0)
+        msvcrt.locking(fh.fileno(), msvcrt.LK_LOCK, 1)
+    return fh
+
+
+def _unlock(fh):
+    try:
+        if fcntl:
+            fcntl.flock(fh, fcntl.LOCK_UN)
+        else:
+            fh.seek(0)
+            msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+    finally:
+        fh.close()
+
+
 class State:
     def __init__(self, ctx, session_id):
         safe = re.sub(r"[^A-Za-z0-9_.-]", "_", session_id or "unknown")
@@ -232,8 +272,7 @@ class State:
 
     def __enter__(self):
         self.dir.mkdir(parents=True, exist_ok=True)
-        self._lock = open(self.lock_path, "w")
-        fcntl.flock(self._lock, fcntl.LOCK_EX)
+        self._lock = _lock(self.lock_path)
         try:
             self.data = json.loads(self.path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
@@ -266,8 +305,7 @@ class State:
                 pass
 
     def __exit__(self, *exc):
-        fcntl.flock(self._lock, fcntl.LOCK_UN)
-        self._lock.close()
+        _unlock(self._lock)
         return False
 
 
@@ -519,9 +557,7 @@ def session_mode(ctx):
 
 def _queue_lock(ctx):
     ctx.data_dir.mkdir(parents=True, exist_ok=True)
-    lock = open(ctx.data_dir / "queue.lock", "w")
-    fcntl.flock(lock, fcntl.LOCK_EX)
-    return lock
+    return _lock(ctx.data_dir / "queue.lock")
 
 
 def read_queue(ctx):
@@ -550,7 +586,7 @@ def enqueue(ctx, payload, entries):
         "session": session,
         "transcript": payload.get("transcript_path"),
         "cwd": cwd,
-        "repo": _git(["rev-parse", "--show-toplevel"], cwd) if os.path.isdir(cwd) else None,
+        "repo": _toplevel(cwd) if os.path.isdir(cwd) else None,
         "phase": label if label.startswith("sdd:") else None,
         "skills": [{k: e.get(k) for k in ("label", "mode", "arg", "repo", "work", "friction")} for e in entries],
     }
@@ -559,7 +595,7 @@ def enqueue(ctx, payload, entries):
         with open(ctx.data_dir / QUEUE_FILE, "a", encoding="utf-8") as fh:
             fh.write(json.dumps(item, ensure_ascii=False) + "\n")
     finally:
-        lock.close()
+        _unlock(lock)
 
 
 def drain(ctx, ids):
@@ -571,7 +607,7 @@ def drain(ctx, ids):
             fh.writelines(json.dumps(item, ensure_ascii=False) + "\n" for item in keep)
         os.replace(tmp, ctx.data_dir / QUEUE_FILE)
     finally:
-        lock.close()
+        _unlock(lock)
 
 
 def record_metric(ctx, payload, pending):
@@ -673,7 +709,8 @@ def main(argv):
     ctx = None
     try:
         ctx = Context()
-        raw = sys.stdin.read()
+        # O Claude Code manda UTF-8; no Windows o stdin do Python é cp1252 e `ç` chegaria `Ã§`.
+        raw = sys.stdin.buffer.read().decode("utf-8")
         payload = json.loads(raw) if raw.strip() else {}
         if not isinstance(payload, dict):
             return 0
@@ -682,7 +719,8 @@ def main(argv):
             return 0
         output = handler(payload, ctx)
         if output:
-            sys.stdout.write(json.dumps(output, ensure_ascii=False))
+            # ASCII com \uXXXX: o `→` não existe em cp1252, o stdout do Python no Windows.
+            sys.stdout.write(json.dumps(output))
     except Exception as exc:  # noqa: BLE001 — hook de conveniência nunca derruba a sessão
         try:
             log_dir = ctx.data_dir if ctx else Path.home() / ".claude/plugins/data/retrofit-watch"
