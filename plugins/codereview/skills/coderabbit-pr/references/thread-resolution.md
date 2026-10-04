@@ -25,6 +25,18 @@ Measured on 2026-10-02 (sdd_agents PR #195): followed literally, the run would h
 CodeRabbit thread while the PR head (`3c739aa`) still carried the defect; the fix was pushed as
 `96532c9` first, and only then resolved.
 
+A different head right after **your own** push can be the API lagging, not the push failing. Read
+the remote ref itself before you stop:
+
+```bash
+git ls-remote origin "refs/heads/$(gh pr view "$PR" --json headRefName -q .headRefName)"
+```
+
+If it equals `git rev-parse HEAD`, the push landed: re-run the check a few seconds later instead of
+asking the user to push again. Measured on 2026-10-04 (sdd_agents PR #219): right after `git push`,
+`headRefOid` still answered the pre-push `b9e95ba` while `ls-remote` already had `d8da110`; the next
+query answered `d8da110`.
+
 ## 5.1 List Unresolved Threads
 
 ```bash
@@ -44,6 +56,22 @@ gh api graphql -f query='{
 ## 5.2 Resolve Each Thread
 
 Resolve threads from **all** reviewers (coderabbitai, copilot, gemini, codex, …), not only those processed in Phase 3.
+
+**Reply first where you did not follow the suggestion.** For every item whose verdict was *Not
+applicable* or *Fixed (alternative approach)*, post the reason on its thread before resolving it.
+Resolved in silence, the thread — the audit trail Phase 6 points to — keeps the reviewer's claim
+with no answer, and the bot raises the same finding on the next PR:
+
+```bash
+gh api -X POST "repos/$REPO/pulls/$PR/comments/<ID>/replies" \
+  -f body='<the checklist Status line, in one or two sentences>'
+```
+
+`<ID>` is the inline comment's numeric `ID` from Phase 1.3, not the `PRRT_…` thread id. A finding
+from a review body or outside the diff has no thread to reply to: its reason lives in the commit
+message and the final report. Measured on 2026-10-04 (sdd_agents PR #219): CodeRabbit asked to
+reopen a backlog record the project had decided; the reply with the reason drew *"Retiro a
+recomendação"* and a recorded learning from the bot.
 
 Feed 5.1's output straight into the loop, one thread per line:
 

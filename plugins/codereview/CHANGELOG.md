@@ -2,6 +2,29 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.9.2] — 2026-10-04
+
+### `coderabbit-pr` 4.3.3: o head que ainda não chegou à API, e a conversa que fica sem o porquê
+
+Lições do `/codereview:coderabbit-pr` no PR #219 do `sdd_agents` (quatro achados do CodeRabbit, Copilot
+sem cota, Codex ausente).
+
+- **A 5.0 dava falso negativo logo depois do próprio push.** Com o conserto já empurrado, `gh pr view
+  --json headRefOid` ainda respondeu o sha de antes (`b9e95ba`) enquanto `git ls-remote` já tinha
+  `d8da110`; a consulta seguinte respondeu `d8da110`. Seguida ao pé da letra, a 5.0 parava e pedia ao
+  usuário um push que já tinha acontecido. A reference agora manda ler o ref remoto com `ls-remote`
+  antes de parar e, se ele bate com o `HEAD`, refazer a checagem segundos depois.
+- **A 5.2 responde antes de resolver** quando o veredito foi *Not applicable* ou *Fixed (alternative
+  approach)*. O CodeRabbit pediu para reabrir um registro que o projeto tinha decidido; a resposta com
+  o motivo, postada na conversa antes da mutação, o fez retirar a recomendação e gravar um aprendizado.
+  Resolvida em silêncio, a conversa que a Fase 6 chama de registro de auditoria ficava com a alegação
+  do bot e sem resposta, e o mesmo achado voltaria no próximo PR. O ID da resposta é o numérico da 1.3,
+  não o `PRRT_…`; achado de corpo de revisão ou fora do diff não tem conversa.
+- **Orçamento:** as duas lições moram só na `references/thread-resolution.md`, que a Fase 5 manda ler.
+  O corpo do `SKILL.md` não muda (só o `metadata.version`): ele tem 19 963 caracteres, e o aviso do
+  `validate-versions.py` dispara acima de 20 000. **Dívida que segue:** o C2 (`fix-loop.md` cita `regression-testing.md`) e o F1
+  (`pr-branch.md` citada sem dizer quando ler).
+
 ## [2.9.1] — 2026-10-03
 
 ### `codereview` 2.9.1: a última citação da `configuration.md` diz quando ler
