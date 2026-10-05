@@ -1,7 +1,7 @@
 ---
 description: Promote code to staging (and on to production) through the repo's real CD pipeline. Reads each workflow's `on.push.branches` and `runs-on` instead of assuming — the wrong branch can deploy production, and a hosted job under a billing block never starts. Waits for CI green on the exact commit, promotes by PR merge commit, watches the run, then proves the deploy by the data. Triggers — deploy staging, promote to staging, subir para staging, CD pipeline, cd-staging, promover para produção.
 metadata:
-  version: 2.4.0
+  version: 2.4.1
 ---
 
 ## Deploy to Staging
@@ -87,6 +87,13 @@ pipeline (see Step 4 on workflow changes). If it does not, say so before pushing
 merge would land, the deploy would not, and the environment would keep serving the old image
 while everything looks green.
 
+**Default: self-hosted, and no hosted Actions.** Treat a hosted label in a `cd-*.yml`, or in a gate
+the promotion depends on, as a finding rather than a fact of life. Propose one of two moves: put
+the job on a self-hosted runner, or run the deploy as a script, Ansible or SSH from the operator's
+machine. Never add a new hosted job, and that includes a "light" gate in front of the deploy. If
+the pipeline has to start from a GitHub event, the workflow runs **entirely** on self-hosted.
+Propose the migration; do not perform it inside the promotion.
+
 ### Step 1 — Working tree must be clean
 
 ```bash
@@ -156,9 +163,11 @@ A run that is red with **zero steps** is not red CI — it is the quota block fr
 same block will stop the target pipeline too. Do not read it as "the tests failed"; read the
 annotations.
 
-**When hosted CI cannot run at all**, the gate becomes local. This covers a private repo under a
-billing block, and PR jobs that sit `queued` with no runner assigned. Waiting gets you nowhere, and
-promoting with no gate is worse. Do this instead:
+**The gate of record is local**, in line with the default in Step 0b. Hosted CI, when it exists,
+is informational: its green does not replace the local gate, and its absence does not block it. It
+also covers the cases where waiting gets you nowhere, such as a private repo under a billing block,
+or PR jobs that sit `queued` with no runner assigned. Promoting with no gate at all is never an
+option. Do this:
 
 - Mirror the CI's own `run:` lines (the workflow, or the composite actions it calls such as
   `.github/actions/ci-gate-*`) on a tree identical to the promoted sha. Run one step at a time and

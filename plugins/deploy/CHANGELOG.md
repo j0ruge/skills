@@ -2,6 +2,18 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-10-05 — Self-hosted e gate local como padrão, não como plano B — bump 2.4.0 → [2.4.1]
+
+**O quê:** o Step 0b ganha o padrão "self-hosted, sem Actions hospedado". Um job em label hospedado
+num `cd-*.yml`, ou num gate de que a promoção depende, passa a ser um achado: propor runner
+self-hosted, ou deploy por script/Ansible/SSH. Nunca criar job hospedado novo. O Step 3 deixa de
+apresentar o gate local como saída para "quando o CI hospedado não roda": ele é o gate oficial, e o CI
+hospedado é informativo.
+
+**Por quê:** pedido do usuário logo após a 2.4.0 ("damos preferência para self-host, sem usar
+GitHub Actions"). A 2.4.0 enquadrava o gate local como plano B, o que contradizia a preferência e a
+regra global do usuário sobre Actions em repositório privado.
+
 ## 2026-10-05 — Gate local sem CI hospedado e dump antes da produção — bump 2.3.0 → [2.4.0]
 
 **O quê:** o Step 3 ganha o ramo "o CI hospedado não roda". O gate passa a ser local: espelha as
