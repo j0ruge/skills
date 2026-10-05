@@ -71,10 +71,11 @@ A folder that looks like a user profile (`AppData`, `Desktop`, `Downloads`...) o
 
 Media, games, courses, ROM collections, project archives. Give evidence, never a verdict:
 - Steam: `scripts/steam-games.ps1` (measured folder size, with the manifest's SizeOnDisk beside it because it lags
-  behind patched games; last played, where "never" is common). Uninstall through Steam, then measure
-  `steamapps\common` again: Steam removes only what came from the depot, and what the game created stays behind. It can
-  be personal data (in 2026-10, 85 MTG Arena replays with the account name inside, 5 renamed by hand). Show the leftover,
-  copy what the user keeps (verified by hash), and only then delete the folder.
+  behind patched games; last played, where "never" is common). Uninstall through Steam, then run the script again:
+  its second table lists the folders in `steamapps\common` that no manifest claims. Steam removes only what came from
+  the depot, and what the game created stays behind. It can be personal data (in 2026-10, 85 MTG Arena replays with the
+  account name inside, 5 renamed by hand). Show the leftover, copy what the user keeps (verified by hash), and only then
+  delete the folder.
 - Movies/series: size, date, whether a duplicate in another quality exists.
 - Work folders (`*_aplicado`, project exports): only state facts (e.g. "zip IDENTICAL to the folder next to it").
 

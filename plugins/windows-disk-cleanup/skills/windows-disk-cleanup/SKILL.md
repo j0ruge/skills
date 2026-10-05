@@ -2,7 +2,7 @@
 name: windows-disk-cleanup
 description: "Frees Windows disk space without losing data: inventories drives, proves duplicates by hash (hardlinks discounted), deletes only in user-authorized rounds — manifest and reversible step first, re-measure after. Knows dev caches, Drive cache, old profiles, WSL/Docker disks. Triggers — disk full, free up space, C: full, clean disk, what can I delete."
 metadata:
-  version: 0.1.3
+  version: 0.2.0
 ---
 
 # Windows disk cleanup — measure, prove, delete in rounds, keep it from refilling
@@ -107,7 +107,7 @@ Prefer a mechanism over a reminder:
 | Deleting from a fresh glob or a remembered path | delete from the saved manifest; re-verify each item first |
 | Trusting memory/notes about where things are | look on disk; notes go stale (repos reappear, dumps vanish) |
 | Treating an `E` log line after a change as caused by it | compare with older logs first |
-| Deleting what an uninstaller left behind as junk | it is what the program created (saves, replays, configs): show it, copy what the user keeps, verify by hash, then delete |
+| Deleting what an uninstaller left behind as junk | it is what the program created (saves, replays, configs): show it, copy what the user keeps, verify by hash, then delete (`scripts/steam-games.ps1` lists Steam's) |
 
 ## Output
 

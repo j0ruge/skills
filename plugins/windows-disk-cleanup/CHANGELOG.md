@@ -1,5 +1,25 @@
 # Changelog — `windows-disk-cleanup`
 
+## [0.2.0] — 2026-10-05
+
+### `steam-games.ps1` lista as pastas sem manifesto
+
+A sugestão registrada na 0.1.3, feita a pedido do usuário. Na 0.1.3, a sobra de uma desinstalação só aparecia se alguém
+medisse o `common` de novo. Na rodada real, os replays do MTG Arena só foram achados porque a conta do J: não fechou.
+
+- **`scripts/steam-games.ps1`:** uma segunda tabela lista as pastas de `steamapps\common` que nenhum manifesto reivindica
+  (`Kind = leftover`), com tamanho, número de arquivos e data do arquivo mais novo, e o aviso de que podem ser dado pessoal.
+  O `installdir` é comparado sem diferenciar maiúsculas de minúsculas, como no NTFS. Com `-PassThru`, cada objeto traz `Kind`
+  (`game` ou `leftover`).
+- **`scripts/selftest.ps1`:** dois checks novos, 16 no total. Fixture: pasta sem manifesto com 1 MB, pasta vazia e um jogo
+  cujo `installdir` (`casegame`) difere da pasta (`CaseGame`) só na caixa.
+  - TDD: os dois checks falharam com o script da 0.1.3 (listagem ausente) e passaram com o novo.
+  - Sabotagem medida: com a comparação sensível à caixa, o `CaseGame` vira sobra e o check falha; listando todas as pastas
+    sem olhar os manifestos, o `Fixture` e o `CaseGame` viram sobra e o check falha.
+  - Na máquina real (1,1 s): 7 sobras de desinstalações antigas em duas bibliotecas, todas abaixo de 10 MB; a contagem de
+    arquivos conferiu com uma medição independente.
+- **`references/catalog.md` e `SKILL.md` (Gotchas):** apontam para a tabela de sobras em vez de pedir para medir à mão.
+
 ## [0.1.3] — 2026-10-05
 
 ### A sobra da desinstalação pode ser dado pessoal; a atualização da Steam pode encher outro disco

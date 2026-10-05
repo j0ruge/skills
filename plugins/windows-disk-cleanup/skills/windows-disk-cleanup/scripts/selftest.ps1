@@ -14,7 +14,8 @@
                 is NOT safe (rc 1) and named
     delete-list dry-run refuses a path outside the allowed root
     steam-games GB is the measured folder, not the manifest's SizeOnDisk; a missing folder or a manifest
-                without installdir stays empty (not 0, and not the whole library)
+                without installdir stays empty (not 0, and not the whole library); a folder in common
+                with no manifest is listed as leftover with its size, and an installed game never is
   Exit code 0 only if every check passes. Fixtures (a few MB) stay in -WorkDir for inspection.
   -WorkDir must be new or empty: a reused one is refused (exit 2).
 #>
@@ -124,10 +125,19 @@ $sa = "$WorkDir\steam\steamapps"; New-Item -ItemType Directory -Force "$sa\commo
 '"AppState" { "appid" "1" "name" "Fixture Game" "installdir" "Fixture" "SizeOnDisk" "1024" "LastPlayed" "0" }' | Set-Content "$sa\appmanifest_1.acf"
 '"AppState" { "appid" "2" "name" "Ghost Game" "installdir" "Ghost" "SizeOnDisk" "4096" "LastPlayed" "0" }' | Set-Content "$sa\appmanifest_2.acf"
 '"AppState" { "appid" "3" "name" "No Dir Game" "SizeOnDisk" "4096" "LastPlayed" "0" }' | Set-Content "$sa\appmanifest_3.acf"
+# leftovers: an uninstall left a folder with replays and an empty one; "casegame" vs "CaseGame" is the same folder on Windows
+New-Item -ItemType Directory -Force "$sa\common\CaseGame", "$sa\common\Leftover\Replays", "$sa\common\Empty" | Out-Null
+[IO.File]::WriteAllBytes("$sa\common\CaseGame\game.bin", (New-Object byte[] (1KB)))
+[IO.File]::WriteAllBytes("$sa\common\Leftover\Replays\r1.rply", (New-Object byte[] (1MB)))
+'"AppState" { "appid" "4" "name" "Case Game" "installdir" "casegame" "SizeOnDisk" "1024" "LastPlayed" "0" }' | Set-Content "$sa\appmanifest_4.acf"
 $sg = @(& "$here\steam-games.ps1" -Library "$WorkDir\steam" -PassThru)
 $fx = $sg | Where-Object Game -eq 'Fixture Game'; $gh = $sg | Where-Object Game -eq 'Ghost Game'; $nd = $sg | Where-Object Game -eq 'No Dir Game'
 Check 'steam-games measures the folder, not the manifest SizeOnDisk' (($fx.Bytes -eq 2MB) -and ($fx.ManifestBytes -eq 1024)) "bytes=$($fx.Bytes) manifest=$($fx.ManifestBytes)"
-Check 'steam-games leaves a missing folder and a missing installdir empty' (($sg.Count -eq 3) -and ($null -eq $gh.Bytes) -and ($null -eq $nd.Bytes)) "ghost=$($gh.Bytes) nodir=$($nd.Bytes)"
+Check 'steam-games leaves a missing folder and a missing installdir empty' ((@($sg | Where-Object Kind -ne 'leftover').Count -eq 4) -and ($null -eq $gh.Bytes) -and ($null -eq $nd.Bytes)) "ghost=$($gh.Bytes) nodir=$($nd.Bytes)"
+$lo = @($sg | Where-Object Kind -eq 'leftover')
+$lr = $lo | Where-Object Game -eq 'Leftover'; $le = $lo | Where-Object Game -eq 'Empty'
+Check 'steam-games lists folders without a manifest as leftovers, with size' (($lr.Bytes -eq 1MB) -and ($lr.Files -eq 1) -and ($le.Bytes -eq 0)) "leftover=$($lr.Bytes) empty=$($le.Bytes)"
+Check 'steam-games does not list an installed game as leftover (installdir case ignored)' (($lo.Count -eq 2) -and -not ($lo.Game -match '^(Fixture|CaseGame)$')) "leftovers: $($lo.Game -join ', ')"
 
 "fixtures: $WorkDir"
 if ($fail) { "SELFTEST: $fail check(s) FAILED - do not trust the failing probe"; exit 1 }

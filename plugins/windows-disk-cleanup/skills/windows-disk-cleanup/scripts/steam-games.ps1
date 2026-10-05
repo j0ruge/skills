@@ -8,6 +8,8 @@
   GB is the measured steamapps\common\<installdir> folder. The manifest's SizeOnDisk (ManifestGB) lags behind
   games that patch themselves: in 2026-10 MTG Arena had 11.51 GB in the manifest and 12.24 GB on disk.
   An empty GB means there is no folder to measure (manifest left behind, or no installdir in it).
+  A second table lists the folders in steamapps\common that no manifest claims (Kind = leftover): Steam removes only
+  what came from the depot, so these hold what the game created. In 2026-10 one held 85 of the user's MTG Arena replays.
   -Library replaces the discovered libraries (selftest uses it); -PassThru emits objects instead of the table.
 #>
 param([string[]]$Library, [switch]$PassThru)
@@ -24,19 +26,22 @@ function Get-AcfNumber([string]$text, [string]$key) {
 }
 # HKCU stores "c:/program files (x86)/steam", the .vdf "C:\\Program Files (x86)\\Steam": normalize before de-duplicating
 $libs = $libs | ForEach-Object { ($_ -replace '/', '\').TrimEnd('\').ToLowerInvariant() } | Sort-Object -Unique
-$rows = $libs | ForEach-Object {
+$all = $libs | ForEach-Object {
     $steamapps = Join-Path $_ 'steamapps'
+    $claimed = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)   # NTFS ignores case
     Get-ChildItem $steamapps -Filter 'appmanifest_*.acf' -ErrorAction SilentlyContinue | ForEach-Object {
         $t = Get-Content $_.FullName -Raw
         $lp = Get-AcfNumber $t 'LastPlayed'
         $manifest = Get-AcfNumber $t 'SizeOnDisk'
         # An empty installdir would make the path steamapps\common itself and count every game as this one
         $inst = [regex]::Match($t, '"installdir"\s+"([^"]+)"').Groups[1].Value
+        if ($inst) { [void]$claimed.Add($inst) }
         $dir = Join-Path $steamapps "common\$inst"
         $bytes = if ($inst -and (Test-Path -LiteralPath $dir)) {
             [long](Get-ChildItem -LiteralPath $dir -Recurse -File -Force -ErrorAction SilentlyContinue | Measure-Object Length -Sum).Sum
         } else { $null }
         [pscustomobject]@{
+            Kind          = 'game'
             GB            = if ($null -ne $bytes) { [math]::Round($bytes / 1GB, 2) } else { $null }
             ManifestGB    = [math]::Round($manifest / 1GB, 2)
             Game          = [regex]::Match($t, '"name"\s+"([^"]+)"').Groups[1].Value
@@ -46,5 +51,29 @@ $rows = $libs | ForEach-Object {
             ManifestBytes = $manifest
         }
     }
-} | Sort-Object GB, ManifestGB -Descending
-if ($PassThru) { $rows } else { $rows | Format-Table GB, ManifestGB, Game, LastPlayed, Library -AutoSize }
+    # A folder no manifest claims is what an uninstall left behind: the files the game created, not the depot's
+    Get-ChildItem -LiteralPath (Join-Path $steamapps 'common') -Directory -Force -ErrorAction SilentlyContinue |
+        Where-Object { -not $claimed.Contains($_.Name) } | ForEach-Object {
+            $files = @(Get-ChildItem -LiteralPath $_.FullName -Recurse -File -Force -ErrorAction SilentlyContinue)
+            $bytes = [long]($files | Measure-Object Length -Sum).Sum
+            [pscustomobject]@{
+                Kind    = 'leftover'
+                GB      = [math]::Round($bytes / 1GB, 2)
+                Game    = $_.Name
+                Library = $_.Parent.Parent.Parent.FullName
+                Bytes   = $bytes
+                Files   = $files.Count
+                Newest  = if ($files) { ($files | Sort-Object LastWriteTime -Descending | Select-Object -First 1).LastWriteTime.ToString('yyyy-MM-dd') } else { $null }
+            }
+        }
+}
+$games = $all | Where-Object Kind -eq 'game' | Sort-Object GB, ManifestGB -Descending
+$left = $all | Where-Object Kind -eq 'leftover' | Sort-Object GB -Descending
+if ($PassThru) { $games; $left } else {
+    $games | Format-Table GB, ManifestGB, Game, LastPlayed, Library -AutoSize
+    if ($left) {
+        "Leftovers in steamapps\common (no manifest claims them): what an uninstall left behind. They can be personal"
+        "data (saves, replays) - show the user before deleting."
+        $left | Format-Table GB, Files, Newest, @{ n = 'Folder'; e = { $_.Game } }, Library -AutoSize
+    }
+}
