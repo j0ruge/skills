@@ -1,5 +1,21 @@
 # Changelog: skill-refactoring
 
+## [0.6.0] - 2026-10-05 - prova antes de remover, caracteres e leitura fria
+
+**Motivação:** a passada na `ticket` (1.9.1), pedida pelo JorUge para ver como esta skill se
+comporta. O detalhe das oito lições está no CHANGELOG do plugin.
+
+**O que foi feito:**
+
+- `scripts/repetidos.py` e `tests/test_repetidos.py`: a prova antes de remover (Passo 2).
+- `references/leitura-fria.md`: o teste com agente sem contexto (Passo 6).
+- Passos 1 e 6 medem caracteres (`len()`, como o C1), não bytes; limiares iguais aos do C1.
+- Passo 2: não sobrescrever reference existente; consertar os ponteiros de volta.
+- Passo 4: o molde é de skill de operação; numa skill de fluxo os passos e as armadilhas ficam.
+- Passo 5: as lições da refatoração vão ao CHANGELOG.
+
+**Como reverter:** `git revert` do commit da 0.6.0; o script e a reference são arquivos novos.
+
 ## [0.4.0] - 2026-09-29 - entra no marketplace
 
 **Motivação:** a família de auditoria de skills vira o plugin `skill-quality-audit` do

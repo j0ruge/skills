@@ -3,7 +3,7 @@ name: skill-refactoring
 description: "Enxuga SKILL.md inchado com progressive disclosure. Decide entre extrair para references e scripts ou comprimir por tabelas, preservando a narrativa de execução e os pitfalls, e mede antes e depois. Fase 3 da skill-quality-audit. Triggers — SKILL.md acima de 500 linhas, skill inchada, progressive disclosure, mover para references, comprimir skill."
 metadata:
   author: JorUge
-  version: "0.4.0"
+  version: "0.6.0"
   hermes:
     tags:
       - skills
@@ -21,8 +21,9 @@ metadata:
 ## Quando usar
 
 Uma skill precisa de refatoração quando:
-- SKILL.md tem **+500 linhas** (teto recomendado pela spec Agent Skills) ou **+20K chars**
-  (heurística local, sem limite do sistema por trás)
+- SKILL.md com **+500 linhas** (teto da spec Agent Skills; ERRO no C1 do auditor) ou **+20 mil
+  caracteres** (heurística local; AVISO no C1). Acima de 400 linhas o C1 dá INFO: considere
+  comprimir. Caracteres, não bytes (Passo 1)
 - Mistura workflows operacionais com material de referência (inventário, incidentes, configurações)
 - Tem seções que poderiam ser scripts reutilizáveis
 - A descrição não reflete o que a skill realmente faz
@@ -78,9 +79,14 @@ Teste real com uma skill de instalação de agente de segurança (738 linhas):
 
 ### Passo 1 — Mapear a skill
 ```bash
-wc -l <dir-da-skill>/SKILL.md     # ex.: plugins/<p>/skills/<skill>; no Hermes, "${HERMES_HOME:-$HOME/.hermes}/skills/<cat>/<skill>"
+# ex.: plugins/<p>/skills/<skill>; no Hermes, "${HERMES_HOME:-$HOME/.hermes}/skills/<cat>/<skill>"
+python3 -c 'import sys; t=open(sys.argv[1], encoding="utf-8").read(); print(t.count("\n"), "linhas,", len(t), "caracteres")' <dir-da-skill>/SKILL.md
 cat -n <dir-da-skill>/SKILL.md | grep -n '^##\|^###\|^>\|---\|^$\|^[A-Z]' | head -60
 ```
+
+Caracteres, como o `len()` do C1, e não bytes: o `wc -c` conta bytes, e o acento em UTF-8 ocupa
+dois. Em 05/10/2026 o `SKILL.md` da `ticket` tinha 20.478 bytes e 19.950 caracteres, e o `wc -c`
+fez parecer acima do teto uma skill que estava abaixo.
 
 Identificar:
 - Todas as seções pelo marcador `##`
@@ -93,10 +99,28 @@ Identificar:
 Os Passos 2 a 5 editam a skill: só com pedido explícito de refatoração. Em pedido de auditoria,
 o plano de extração ou compressão vai como proposta no relatório.
 
-Para cada seção candidata:
+**Prova antes de remover.** Só sai do SKILL.md o que já está em outro lugar: o bloco ou a frase
+que uma reference traz por extenso, ou a repetição do próprio SKILL.md. O script aponta os dois:
+
 ```bash
-sed -n 'LINHA_INICIO,LINHA_FIM p' SKILL.md > references/<tema>.md
+python3 scripts/repetidos.py <dir-da-skill>   # BLOCO, FRASE e REPETIDA; --json para outro script
 ```
+
+O resto não sai por extração: é Estratégia B, reescrito no lugar com os comandos e as
+armadilhas. Na `ticket` 1.9.0 (05/10/2026) o script achou os 3 blocos que a passada tirou, e
+nenhuma frase: a passada anterior já tinha levado as repetições.
+
+Para cada seção candidata, num arquivo **novo**: o `>` sobrescreve a reference que já existir
+(com ela, edite-a e acrescente a seção):
+```bash
+[ -e references/<tema>.md ] && echo "references/<tema>.md já existe" \
+  || sed -n 'LINHA_INICIO,LINHA_FIM p' SKILL.md > references/<tema>.md
+```
+
+Depois de mover, conserte quem apontava para o trecho: `grep -rn 'SKILL.md' references/ scripts/`
+lista cada citação de volta, e a que cita uma seção que saiu passa a citar a reference. A passada
+de 01/10 da `ticket` deixou o `templates.md` apontando para um comando que tinha saído do
+SKILL.md, e só a leitura fria do Passo 6 achou.
 
 Nomear arquivos pelo **tema**, não pela sessão:
 | ✅ Certo | ❌ Errado |
@@ -141,37 +165,52 @@ if __name__ == "__main__":
 ```
 
 ### Passo 4 — Condensar SKILL.md
-A SKILL.md refatorada deve conter **apenas**:
+O molde abaixo é o de uma skill que **opera um sistema** (o estudo de caso). A SKILL.md
+refatorada dela deve conter **apenas**:
 1. YAML frontmatter com descrição **ativa** (começar com verbo de ação)
 2. ⚠️ Regras obrigatórias antes de qualquer ação
 3. Acesso rápido (URLs, auth, paths)
 4. Workflows operacionais (passo a passo)
 5. ✨ Seção "Ferramentas" apontando para scripts/
 6. 🗂️ Tabela de referências (arquivo + conteúdo)
-7. Lições críticas (máximo 5 bullet points)
+7. Lições críticas: as que evitam erro antes de abrir uma reference (lição só sai com prova,
+   Passo 2)
 8. Problemas conhecidos / TODO (se relevante)
 9. **NUNCA**: inventários, incidentes, referências completas, docs de API
 
-### Passo 5 — Adicionar lições aprendidas
-Incluir seção ao final com lições da própria sanitização:
+Numa skill de **fluxo** (os passos de um processo, como a `ticket`), os passos e a tabela de
+armadilhas ficam no SKILL.md: ali elas evitam o erro antes de a reference ser lida. Um teto de
+cinco lições cortaria 3 das 8 armadilhas da `ticket` (05/10/2026).
+
+### Passo 5 — Registrar as lições da refatoração
+No CHANGELOG da skill (ou numa reference), e não numa seção nova do SKILL.md: ela faria crescer o
+arquivo que a passada quer encolher. Registre:
 - O que estava errado e por que
 - Decisões técnicas (ex: tamanho do lote, fallback para o banco)
 - Padrões que não devem se repetir
 
+No SKILL.md entra só a armadilha que evita erro no uso, uma linha na tabela.
+
 ### Passo 6 — Verificar
 ```bash
-wc -l <dir-da-skill>/SKILL.md
-# Deve estar < 500 linhas
+python3 -c 'import sys; t=open(sys.argv[1], encoding="utf-8").read(); print(t.count("\n"), "linhas,", len(t), "caracteres")' <dir-da-skill>/SKILL.md
+# < 500 linhas (ERRO do C1 acima) e < 20 mil caracteres (AVISO); acima de 400 linhas é INFO
 python3 -c 'import ast,sys; ast.parse(open(sys.argv[1]).read(), sys.argv[1])' scripts/<script>.py && echo "OK"   # sem gravar __pycache__
 # Verificar todos os scripts
 SQA="$(dirname <dir-desta-skill>)/skill-quality-audit"         # a skill-quality-audit, pasta vizinha
 python3 "$SQA/scripts/audit_skill_quality.py" <dir-da-skill>   # C1 a C3 e B1 a B7 limpos
-# Sem a skill-quality-audit instalada: wc -l acima, e conferir à mão que cada references/ e scripts/ citado existe
+# Sem a skill-quality-audit instalada: a medida acima, e conferir à mão que cada references/ e scripts/ citado existe
 ```
+
+**Leitura fria, depois da auditoria.** Ela vê a forma, não o uso: um agente sem contexto lê só a
+skill e responde 3 a 5 perguntas cujas respostas dependem do que saiu do SKILL.md, citando de
+onde tirou. Leia `references/leitura-fria.md` antes do primeiro teste (o prompt, como escolher
+as perguntas e como ler o resultado). Na `ticket` 1.9.1 achou o ponteiro morto que a auditoria
+deixou passar.
 
 Refatoração é a fase 3 da auditoria completa da skill `skill-quality-audit`: vindo de lá, esta
 skill termina no Passo 6 e devolve o controle (baseline e relatório são de lá). Refatoração
-avulsa: medir antes e depois com `wc -l` e o gate acima.
+avulsa: medir antes e depois (linhas e caracteres), o gate acima e a leitura fria.
 
 > 📄 **Antes de escolher entre extrair e comprimir**, leia o caso real em
 > `references/skill-compression-test-0.md`: extração de funções (falhou) contra compressão
@@ -186,7 +225,7 @@ avulsa: medir antes e depois com `wc -l` e o gate acima.
 | Script com SyntaxError | **NUNCA** pular verificação de lint no passo 6 |
 | Senhas em texto claro em scripts | Credencial só por variável de ambiente ou `.env`, nunca no script nem em argumento |
 | Não documentar padrões de segurança que emergiram durante refatoração | Adicionar pitfalls de segurança na descrição da skill — ex: confirmar antes de bulk, sempre dry-run primeiro |
-| Skills crescem após refatoração (+1.7K chars em 1 mês no estudo de caso) | Monitorar tamanho periodicamente. Re-comprimir quando >15K chars ou >400 linhas (heurística local) |
+| Skills crescem após refatoração (+1.7K chars em 1 mês no estudo de caso) | Monitorar tamanho periodicamente, com os limiares do C1: INFO acima de 400 linhas, AVISO acima de 20 mil caracteres |
 | Esquecer de criar CHANGELOG.md na refatoração | Criar entrada no CHANGELOG com data, motivação e como reverter (quando o repo exige) |
 | Nome de skill muito específico da sessão | Nomear pelo **tema**, não pelo caso concreto |
 

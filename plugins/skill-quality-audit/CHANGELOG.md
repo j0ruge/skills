@@ -1,5 +1,38 @@
 # Changelog — skill-quality-audit
 
+## [0.6.0] — 2026-10-05
+
+### `skill-refactoring` 0.6.0: prova antes de remover, caracteres e leitura fria
+
+A passada da `skill-refactoring` na `ticket` (1.9.1, 05/10/2026) funcionou na escolha entre
+extrair e comprimir, e tropeçou em oito pontos da própria skill:
+
+- **Limiares contraditórios.** "Quando usar" dizia +500 linhas ou +20K chars; a tabela de
+  armadilhas, re-comprimir acima de 15K ou 400 linhas; o C1 do auditor avisa acima de 20000
+  caracteres e informa acima de 400 linhas. Agora a skill usa os do C1, e a linha dos 15K (sem
+  sensor nenhum) foi fundida neles.
+- **Caracteres, não bytes.** O `wc -c` conta bytes: a `ticket` tinha 20.478 bytes e 19.950
+  caracteres, e pareceu acima do teto. Os Passos 1 e 6 medem com o `len()` do Python, como o C1.
+- **Prova antes de remover.** O critério que funcionou, "só sai o que a reference já tem por
+  extenso", vinha do CHANGELOG da `ticket`, não da skill. Agora é o Passo 2, com
+  `scripts/repetidos.py` (blocos INTEIRO ou COBERTO, frases repetidas numa reference ou no
+  próprio `SKILL.md`). Validado na `ticket` 1.9.0: os 3 blocos da passada; na 1.9.1, nada.
+- **O `>` do Passo 2 sobrescrevia** uma reference que já existisse.
+- **Ponteiros.** Nada mandava consertar quem apontava para o trecho movido; a passada de 01/10 da
+  `ticket` deixou um ponteiro morto no `templates.md`. O Passo 2 manda o `grep` de volta.
+- **O molde do Passo 4 é de skill de operação.** O "máximo 5 lições" cortaria 3 das 8
+  armadilhas de uma skill de fluxo como a `ticket`.
+- **O Passo 5 punha as lições num seção nova do `SKILL.md`**, crescendo o arquivo que a passada
+  encolhe. Elas vão ao CHANGELOG.
+- **Leitura fria.** A verificação era só estrutural, embora a própria armadilha da skill mostre
+  um agente perdendo contexto com tudo verde. O Passo 6 roda um agente sem contexto sobre
+  perguntas que dependem do conteúdo movido (`references/leitura-fria.md`); na `ticket` ele
+  achou o ponteiro morto.
+
+`tests/test_repetidos.py`: 7 testes. O do bloco indentado veio do caso real: com as fixtures
+sem indentação os testes passavam, e na `ticket` (blocos dentro de itens de lista) o script não
+achava nada.
+
 ## [0.5.0] — 2026-10-04
 
 ### `skill-quality-audit` 0.5.0: campo de topo do Claude Code é custo aceito em plugin só `claude-code`
