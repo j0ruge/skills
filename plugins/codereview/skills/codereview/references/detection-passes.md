@@ -533,6 +533,14 @@ review (2026-10-03, a Python repo; each confirmed by a mutant that survived):
   records writes, not connections.
 - **A negative-only assertion** (`"None" not in output`) that a reworded regression also satisfies.
   Pair it with the positive marker.
+- **An assertion message that names a defect the assertion does not check** — `"manifest.csv
+  diverges from the build"` on a comparison that only proved the CSV survives a re-write; a stale
+  value passed. A message a fix adds is a claim: sabotage the defect it names and watch it go red
+  (2026-10-05: the message one round added was the next round's MEDIUM).
+
+**A mutant sits on the wrong side of the measured boundary.** A cap of 140 over a real maximum of
+131 is not a mutant of a cap of 200: the test passes because nothing broke. Measure the boundary
+first, then mutate across it (2026-10-05).
 
 **A vacuity claim is `PLAUSIBLE` until a mutant shows it.** The agent sees one test file, and a test
 elsewhere may already kill the mutant: in the same review, one of two "untested" side swaps was caught

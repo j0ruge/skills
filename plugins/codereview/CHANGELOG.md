@@ -2,6 +2,41 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.11.2] — 2026-10-05
+
+### `codereview` 2.11.2: doze rodadas até zero achado, e o que cada uma ensinou
+
+Lições de doze rodadas de `/codereview` sobre ~670 linhas de ferramentas Python de um TCC (um
+conferidor de citações, a guarda de anonimização e o gerador do `.bib`), em 2026-10-05, até a
+rodada 12 sair sem achado. Todas entram em references já roteadas: o `SKILL.md` está a 19 caracteres
+do aviso C1 e não ganha linha (só a versão).
+
+- **Rodadas de correção pedem a menor mudança** (`configuration.md`, §Re-review rounds). A curva
+  foi 8, 16, 13, 15, 9, 4, 5, 2, 4, 4, 1, 0: a escrita atômica pedida na rodada 3 trouxe 4 dos 15
+  achados da 4. Com "um teste, uma docstring ou uma linha antes de função nova" no prompt de quem
+  corrige, caiu de 15 para 9 e para 4. Fechar o achado não é aplicar a sugestão: a que enfraquece o
+  sensor se recusa com medição.
+- **Contagem do CLAUDE.md que o agente chama de velha se confere no arquivo** (mesma seção). Em
+  quatro rodadas um agente acusou "1284 testes" com o arquivo já em 1336, 1352, 1362 e 1363: os
+  agentes citam o valor do início da sessão.
+- **Mutante em Python roda com cache de bytecode isolado** (mesma seção, *Reproduce between
+  rounds*). Um mutante que só move um bloco tem o mesmo tamanho; no mesmo segundo do anterior, o
+  interpretador reaproveitou o `.pyc` dele e o mutante "passou". `PYTHONPYCACHEPREFIX` numa pasta
+  vazia por mutante resolveu, e todos foram refeitos assim.
+- **Artefato de build presente resolve um `needs reproduction`** (`configuration.md`, §Runtime
+  evidence). Um agente sugeriu recompilar para ver se uma opção do biblatex existia; o log da
+  compilação, a declaração no arquivo de estilo e o `pdftotext` do PDF responderam sem escrever nada.
+- **Arquivo nomeado pelo usuário é CODE, qualquer que seja a extensão** (`configuration.md`,
+  §Path-scoped reviews). Um `.tex` no escopo de uma revisão Python não tinha preset; a regra só
+  existia para `.claude/`.
+- **6.12 ganha duas formas** (`detection-passes.md`): a mensagem de asserção que nomeia um defeito
+  que a asserção não confere (a mensagem posta numa rodada foi o MEDIUM da seguinte) e o mutante do
+  lado certo da fronteira (teto 140 sobre um máximo real de 131 não é mutante de um teto de 200).
+- **Não aplicada, não é defeito:** o `metadata.version` 2.9.2 da skill numa pasta 2.9.6. Num plugin
+  com duas skills, o de cada uma acompanha a última versão em que ela mudou: a 2.11.x só mexeu no
+  `coderabbit-pr` e deixou a `codereview` em 2.10.0, e esta a leva a 2.11.2.
+- **Dívida mantida:** os 3 avisos C2 são os contratos dos subagentes, lidos por caminho absoluto.
+
 ## [2.11.1] — 2026-10-05
 
 ### `coderabbit-pr` 4.4.1: o recálculo só no índice deixa a árvore com o valor velho

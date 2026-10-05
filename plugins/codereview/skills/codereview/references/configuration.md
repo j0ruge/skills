@@ -67,12 +67,17 @@ Overrides are applied on top of defaults — only the specified values change; u
 Read this when the user limits the review to paths (`-- dir/ file`, "only the skill folder", "without docs/"). Pass the pathspecs to every Phase A command and to the agent prompts' diff commands.
 
 - **Exclusions go quoted, in long form:** `':(exclude)docs/qa'`. The short `':!docs/qa'` is unsafe in zsh: unquoted, `!` is history expansion; stored in a variable (`P="a :!b"; git diff -- $P`), zsh does not word-split, git receives one bogus pathspec and prints nothing.
+- **A file the user names is CODE, whatever its extension.** The classification lists only
+  `{fileExtensions}`, so a named `.tex`, `.ps1` or config file would get no agent and no line in
+  the report. Measured 2026-10-05: `paper/preambulo.tex`, named in the scope of a Python review,
+  had no preset; reviewed as CODE, its one finding was settled from the build output (see
+  *Runtime evidence*).
 - **Empty output under an explicit path scope is an error, not "No changes detected".** Re-check the pathspecs (`git diff --stat {MERGE_BASE}...HEAD -- <paths>` without exclusions, `git log --oneline -- <paths>`) before stopping. Measured: a 32-commit scope came back as 0 commits from the unquoted form.
 
 ## Re-review rounds
 
 Read this whenever `base=` names the head an earlier round reviewed (SKILL.md, *Re-review the fix*).
-Three things decide whether the rounds converge:
+Five things decide whether the rounds converge:
 
 - **The agents never see the earlier reports.** A finding a previous round dismissed with a written
   reason can come back with no new evidence — measured 2026-10-03: the same unreachable "partial
@@ -85,6 +90,21 @@ Three things decide whether the rounds converge:
 - **Reproduce between rounds, not during one.** A mutant that confirms a `needs reproduction` finding
   (detection-passes.md, 6.12) edits a file: run it after every agent has returned, against the
   related test files, and restore the file before the next launch (`git status --short` empty).
+  In Python, run each mutant with `PYTHONPYCACHEPREFIX` set to a new empty directory: a mutant that
+  only moves a block keeps the file size, and in the same second as the previous one the
+  interpreter reuses that one's `.pyc` (it checks mtime in whole seconds and size). Measured
+  2026-10-05: a mutant "passed" that way and failed once the cache was isolated.
+- **Ask the fixer for the smallest change that closes the finding.** A new mechanism is new surface
+  for the next round. Measured 2026-10-05, twelve rounds over ~670 lines: 8, 16, 13, 15, 9, 4, 5, 2,
+  4, 4, 1, 0 findings; the atomic write one round asked for brought 4 of the next round's 15. With
+  "a test, a docstring or one line before a new function" in the fixer's prompt, the curve fell
+  15 → 9 → 4. Closing the finding is not applying the reviewer's suggestion: a suggestion that
+  weakens the sensor is declined with a measurement (`[0-9]` in an id regex would have let a
+  Unicode-digit id vanish silently instead of failing as unknown).
+- **A count in CLAUDE.md that an agent calls stale is checked in the file.** The agents cite the
+  value from the start of the session: measured 2026-10-05, four rounds flagged "CLAUDE.md says 1284
+  tests" while the file, updated by each round's commit, already said 1336, 1352, 1362 and 1363.
+  `grep` the current file before keeping a docs-drift finding.
 
 ## Runtime evidence
 
@@ -92,6 +112,11 @@ Read this in Phase C when the reviewed code already runs (a cron job, a deployed
 
 - Look for the latest 2–3 run outputs: the scheduler's output dir (e.g. `cron/output/<job>/`), the service log, the job's last status. Read them, don't summarize them from memory.
 - Read the data the code writes or reads too — an audit trail, a telemetry JSONL, a state file — not only its logs: count its events by origin and time window. Measured 2026-10-05: a per-file LOW ("a new client would be miscounted, if it ever wrote events") became MEDIUM when the audit trail showed 6 real events from that client, and the same trail showed two test runs writing to production where the handoff declared one.
+- A build's own outputs count too. When a finding is marked `needs reproduction` and the build has
+  already left its outputs (a PDF, a `.log`, a `.blg`, a bundle), read them before asking for a
+  rebuild. Measured 2026-10-05: a per-file "`extradate` may be an unknown biblatex option" was
+  settled without writing anything: no "Unknown option" in the build log, the style file
+  declares the option, and `pdftotext` of the PDF shows "2006a"/"2006b" in the reference list.
 - Compare each output with what the diff says should happen: a message that contradicts the code's intent, an event firing for the wrong records, a warning that repeats daily. File the mismatch as a finding with the output path and line as evidence.
 - Measured: a review of a daily cron missed, in all per-file agents, an event that re-announced 9 records lost years earlier — it showed only in that morning's output.
 - Never paste client data or credentials from the output into the report: cite the file and summarize.
