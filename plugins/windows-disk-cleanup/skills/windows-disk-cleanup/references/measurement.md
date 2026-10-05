@@ -80,6 +80,10 @@ $b | ForEach-Object { $o = $ia[$_.ProcessId]; if ($o) { [pscustomobject]@{ Name=
    2.5 GB during the session while `pagefile.sys` went from 14.3 to 18.9 GB at a commit of 27.4 of 34 GB. Compare it
    with the baseline before hunting for files. Read the commit through CIM, not `Get-Counter`: counter paths are
    translated, and `\Memory\Committed Bytes` fails with "object not found" on a pt-BR Windows (2026-10).
+4. **A launcher updating something**: Steam assembles an update in `steamapps\downloading`, and that folder can sit on
+   a different drive from the game. In one run (2026-10), a 25 GB update for a game on J: was staged in
+   `C:\Program Files (x86)\Steam\steamapps\downloading` (31 GB): C: fell 22 GB and came back when the update finished.
+   Check `downloading` in every library listed in `libraryfolders.vdf`, and ask the user whether something is updating.
 
 A log line at level E right after a change is not proof that the change caused it: compare with the same line's
 history in older log files before blaming the change.

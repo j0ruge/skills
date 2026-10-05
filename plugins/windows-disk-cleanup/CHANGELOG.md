@@ -1,5 +1,27 @@
 # Changelog — `windows-disk-cleanup`
 
+## [0.1.3] — 2026-10-05
+
+### A sobra da desinstalação pode ser dado pessoal; a atualização da Steam pode encher outro disco
+
+Duas lições do fechamento da rodada 5 da limpeza real (o usuário desinstalou dois jogos pela Steam):
+
+- **`SKILL.md` (Gotchas) e `references/catalog.md` (Steam):** a desinstalação deixou `steamapps\common\MTGA` com 101
+  arquivos e 0,735 GB. Entre eles estavam **85 replays do usuário** (`MTGA_Data\StreamingAssets\Tests\*.rply`, 163 MB),
+  criados em 20 dias de jogo, com o nome da conta no cabeçalho e 5 renomeados à mão. A Steam remove só o que veio do depot;
+  o que o jogo criou fica. O usuário quis ficar com os replays: eles foram copiados com SHA256 conferido (85/85) e só depois
+  a pasta foi apagada. A skill dizia "Uninstall through Steam" e parava ali. Agora manda medir o `common` de novo e mostrar a
+  sobra antes de apagar.
+  - Padrão de falha: tratar o que o desinstalador deixou como lixo e apagar dado pessoal sem olhar.
+- **`SKILL.md` (passo 6) e `references/measurement.md` (Unexplained changes, item 4):** o C: caiu de 78,5 para 55,9 GB
+  livres em pouco mais de uma hora. Uma varredura de arquivos com mais de 50 MB alterados no período achou
+  `C:\Program Files (x86)\Steam\steamapps\downloading\275850` com 31 GB: a Steam montava ali uma atualização de 25,45 GB
+  do No Man's Sky, instalado no J:. Quando a atualização terminou, a pasta zerou e o C: voltou. O usuário já sabia ("o No
+  Man's Sky tá atualizando"). A lista de causas não citava launchers. Agora cita, com o que conferir e a pergunta ao usuário.
+  - Padrão de falha: caçar arquivos no disco errado, quando a causa é uma atualização que o usuário explicaria numa linha.
+- Sugestão fora do escopo, não aplicada: o `steam-games.ps1` poderia listar as pastas de `common` sem manifesto, para
+  a sobra aparecer sem depender de medir de novo.
+
 ## [0.1.2] — 2026-10-04
 
 ### A Steam mede a pasta, não o manifesto
