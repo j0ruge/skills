@@ -1,7 +1,7 @@
 ---
 description: Apply non-obvious session lessons to a target skill in two modes — full (marketplace skill: bumps version, updates CHANGELOG/marketplace.json/README, commits and pushes) or lean (local skill in another repo: edits files + CHANGELOG and commits there, no bump or marketplace changes). Triggers — retrofit, skill-maintenance, session-lessons, lean-retrofit, local-skill.
 metadata:
-  version: 0.7.3
+  version: 0.8.0
 ---
 
 A régua deste retrofit é a família `skill-quality-audit`: um baseline antes de
@@ -255,6 +255,20 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
 
    - Commit: `feat|fix($ARGUMENTS): vX.Y.Z — <resumo>`. **Sem trailer
      `Co-Authored-By`** — ver *Autoria dos commits* abaixo. Push pra origin/main.
+   - **Depois do push, a loja e a sessão.** O push atualiza o GitHub, não a cópia
+     instalada nem a sessão aberta, e a próxima execução roda a versão velha
+     (*Armadilhas*, §8). Puxe a loja e o plugin em cada escopo onde ele está:
+
+     ```bash
+     claude plugin marketplace list                # a loja cujo Source é o origin deste repo
+     claude plugin marketplace update <loja>
+     claude plugin list --json | python3 -c 'import json,sys; [print(p["scope"], p.get("projectPath") or "", p["version"]) for p in json.load(sys.stdin) if p["id"] == sys.argv[1]]' "<plugin>@<loja>"
+     claude plugin update <plugin>@<loja> --scope user   # escopo de projeto: na pasta dele, --scope project
+     ```
+
+     Plugin que não está instalado não tem o que atualizar: diga isso. O agente não
+     roda comando de barra, então termine pedindo ao usuário `/reload-plugins`, que
+     ativa na sessão aberta o plugin atualizado (sem ele, só no próximo reinício).
 
    **Modo enxuto (skill local de outro repo):**
    - Edite os arquivos da skill na pasta local (`SKILL.md`, `references/**`).
@@ -265,6 +279,9 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
    - Commit NO REPO onde a skill vive: `feat|fix($ARGUMENTS): <resumo>`. **Sem
      trailer `Co-Authored-By`** — ver *Autoria dos commits* abaixo. Push só se o
      usuário pedir.
+   - A skill local não passa pela loja: termine pedindo `/reload-skills`, que
+     relê do disco as skills mudadas na sessão. Vale também para a skill do
+     marketplace instalada por symlink em `~/.claude/skills`.
    - NÃO toque em `marketplace.json`, no README do marketplace, nem em versões
      do marketplace.
 

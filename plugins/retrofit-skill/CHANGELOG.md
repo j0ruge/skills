@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.8.0] — 2026-10-05
+
+### Depois do push, a loja e a sessão
+
+O retrofit terminava no push, e o push atualiza o GitHub, não a cópia instalada nem a sessão
+aberta. Em 05/10/2026 três plugins estavam atrás da fonte por isso (`codereview` 2.9.5 contra
+2.10.0, `retrofit-skill` 0.7.2 contra 0.7.3, `skill-quality-audit` 0.4.1 contra 0.5.0), e a sessão
+rodou as versões velhas: o retrofit da `ticket` mediu o orçamento em bytes, com a correção já
+publicada na 0.7.3. A §8 das *Armadilhas* tratava o sintoma (comparar a versão antes de propor);
+o pedido do JorUge fecha a causa.
+
+- **Modo completo:** depois do push, `claude plugin marketplace update <loja>`, a lista dos
+  escopos onde o plugin está instalado (`claude plugin list --json`) e `claude plugin update` em
+  cada um; no fim, pedir ao usuário o `/reload-plugins`, porque o agente não roda comando de
+  barra.
+- **Modo enxuto:** a skill local não passa pela loja; pedir o `/reload-skills`, que também vale
+  para a skill do marketplace instalada por symlink em `~/.claude/skills`.
+- `references/armadilhas-medidas.md` §8: o caso de 05/10 e o texto dos dois comandos de reload,
+  lido do binário do Claude Code.
+
 ## [0.7.3] — 2026-10-04
 
 ### Worktree e baseline fora do `/tmp` do WSL, árvore limpa conferida de novo, chars em vez de bytes e a fonte antes da cópia instalada

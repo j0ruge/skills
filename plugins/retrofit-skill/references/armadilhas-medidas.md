@@ -139,3 +139,14 @@ estavam na fonte: o selo P1/P2 do Codex (`reviewer-registry.md`) e o atraso do `
 depois do push (`thread-resolution.md`, 5.0). E o texto deste comando que a sessão recebeu ainda
 pedia `--no-changelog-required`, que a 0.7.2 tirou. Antes de propor, compare a versão instalada com
 a da fonte e procure cada lição na fonte (`grep -rn`).
+
+A causa é o fim do fluxo, e em 05/10/2026 ela se mostrou de novo: três retrofits com push feito e
+nenhum chegando à máquina. A sessão rodou a `codereview` 2.9.5 com a 2.10.0 publicada, este
+comando na 0.7.2 com a 0.7.3 publicada (a lição "conte caracteres, não bytes" já estava na fonte,
+e o retrofit mediu em bytes de novo) e a `skill-quality-audit` 0.4.0 da cache com a 0.5.0
+publicada. Daí o passo da 0.8.0, a pedido do JorUge: depois do push, `claude plugin marketplace
+update` e `claude plugin update` em cada escopo, e `/reload-plugins` pedido ao usuário, porque o
+agente não roda comando de barra. A CLI responde "Restart to apply changes"; o `/reload-plugins`
+se descreve como "Activate pending plugin changes in the current session", e o `/reload-skills`,
+como "Pick up skills added or changed on disk during this session" (texto do binário do Claude
+Code em 05/10/2026).
