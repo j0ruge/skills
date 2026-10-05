@@ -70,7 +70,8 @@ A folder that looks like a user profile (`AppData`, `Desktop`, `Downloads`...) o
 ## 5. Personal data — the user's decision
 
 Media, games, courses, ROM collections, project archives. Give evidence, never a verdict:
-- Steam: `scripts/steam-games.ps1` (size + last played; "never" is common). Uninstall through Steam.
+- Steam: `scripts/steam-games.ps1` (measured folder size, with the manifest's SizeOnDisk beside it because it lags
+  behind patched games; last played, where "never" is common). Uninstall through Steam.
 - Movies/series: size, date, whether a duplicate in another quality exists.
 - Work folders (`*_aplicado`, project exports): only state facts (e.g. "zip IDENTICAL to the folder next to it").
 

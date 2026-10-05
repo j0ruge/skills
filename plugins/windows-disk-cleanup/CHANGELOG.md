@@ -1,5 +1,28 @@
 # Changelog — `windows-disk-cleanup`
 
+## [0.1.2] — 2026-10-04
+
+### A Steam mede a pasta, não o manifesto
+
+Lição da limpeza real do J: (rodada 5, decisões do usuário item a item):
+
+- **`scripts/steam-games.ps1`:** a coluna `GB` era o `SizeOnDisk` do `appmanifest_*.acf`, e esse número fica para trás
+  em jogo que se atualiza sozinho. Caso medido: o MTG Arena tinha 11,51 GB no manifesto e 12,24 GB na pasta. Agora `GB`
+  é a pasta `steamapps\common\<installdir>` medida, e `ManifestGB` fica ao lado para comparar. Manifesto sem pasta, ou
+  sem `installdir`, fica com o tamanho vazio: sem essa guarda, o caminho vira o próprio `steamapps\common` e um jogo
+  contaria a biblioteca inteira. `-Library` e `-PassThru` existem para o selftest rodar o script num fixture.
+  - A correção ficou no script, e não numa regra escrita, para o agente não precisar lembrar de medir a pasta.
+- **`scripts/selftest.ps1`:** dois checks novos, 14 no total. Fixture: manifesto que diz 1 KB com 2 MB na pasta, um
+  manifesto sem pasta e outro sem `installdir`.
+  - Sabotagem medida: com o script lendo o manifesto como antes, os 2 checks falham. Sem a guarda do `installdir`, o
+    segundo falha (o jogo sem `installdir` mediu os 2 MB da biblioteca). Com o script correto, 14 de 14 passam.
+  - Na máquina real, o MTG apareceu com 12,24 medido e 11,51 no manifesto; os outros 3 jogos batem.
+- **`references/measurement.md`:** diz por que o commit é lido pelo CIM. O `Get-Counter '\Memory\Committed Bytes'`
+  falha num Windows em pt-BR ("O objeto especificado não foi encontrado"), porque os caminhos dos contadores são
+  traduzidos. O método da skill (`Win32_OperatingSystem`) já estava certo e foi conferido na mesma máquina.
+- Padrão de falha: número que a ferramenta guarda sobre o artefato (manifesto, índice, cache) tomado como medida do
+  artefato.
+
 ## [0.1.1] — 2026-10-04
 
 ### Pedido amplo não é autorização; o Drive diz quais itens estão sujos

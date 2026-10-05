@@ -13,6 +13,8 @@
     drivefs     on a synthetic Drive DB: a stale Office lock file alone is SAFE (rc 0); a real unsaved change
                 is NOT safe (rc 1) and named
     delete-list dry-run refuses a path outside the allowed root
+    steam-games GB is the measured folder, not the manifest's SizeOnDisk; a missing folder or a manifest
+                without installdir stays empty (not 0, and not the whole library)
   Exit code 0 only if every check passes. Fixtures (a few MB) stay in -WorkDir for inspection.
   -WorkDir must be new or empty: a reused one is refused (exit 2).
 #>
@@ -115,6 +117,17 @@ if ($bash) {
     $out = & $bash (ToGitBash "$WorkDir\delete-from-list.sh") --dry-run (ToGitBash "$WorkDir\list.txt") "$root/tree" 2>&1
     Check 'delete-from-list refuses a path outside the root (dry-run)' ([bool]($out -match 'would_delete=1 .*refused=1') -and (Test-Path "$WorkDir\tree\visible.txt")) (($out | Select-Object -Last 1))
 } else { "SKIP  delete-from-list (Git Bash not found)" }
+
+# steam-games: the manifest says 1 KB, the folder holds 2 MB; a ghost manifest and one without installdir measure nothing
+$sa = "$WorkDir\steam\steamapps"; New-Item -ItemType Directory -Force "$sa\common\Fixture" | Out-Null
+[IO.File]::WriteAllBytes("$sa\common\Fixture\data.bin", (New-Object byte[] (2MB)))
+'"AppState" { "appid" "1" "name" "Fixture Game" "installdir" "Fixture" "SizeOnDisk" "1024" "LastPlayed" "0" }' | Set-Content "$sa\appmanifest_1.acf"
+'"AppState" { "appid" "2" "name" "Ghost Game" "installdir" "Ghost" "SizeOnDisk" "4096" "LastPlayed" "0" }' | Set-Content "$sa\appmanifest_2.acf"
+'"AppState" { "appid" "3" "name" "No Dir Game" "SizeOnDisk" "4096" "LastPlayed" "0" }' | Set-Content "$sa\appmanifest_3.acf"
+$sg = @(& "$here\steam-games.ps1" -Library "$WorkDir\steam" -PassThru)
+$fx = $sg | Where-Object Game -eq 'Fixture Game'; $gh = $sg | Where-Object Game -eq 'Ghost Game'; $nd = $sg | Where-Object Game -eq 'No Dir Game'
+Check 'steam-games measures the folder, not the manifest SizeOnDisk' (($fx.Bytes -eq 2MB) -and ($fx.ManifestBytes -eq 1024)) "bytes=$($fx.Bytes) manifest=$($fx.ManifestBytes)"
+Check 'steam-games leaves a missing folder and a missing installdir empty' (($sg.Count -eq 3) -and ($null -eq $gh.Bytes) -and ($null -eq $nd.Bytes)) "ghost=$($gh.Bytes) nodir=$($nd.Bytes)"
 
 "fixtures: $WorkDir"
 if ($fail) { "SELFTEST: $fail check(s) FAILED - do not trust the failing probe"; exit 1 }

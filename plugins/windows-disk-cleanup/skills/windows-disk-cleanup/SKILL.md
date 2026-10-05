@@ -2,7 +2,7 @@
 name: windows-disk-cleanup
 description: "Frees Windows disk space without losing data: inventories drives, proves duplicates by hash (hardlinks discounted), deletes only in user-authorized rounds — manifest and reversible step first, re-measure after. Knows dev caches, Drive cache, old profiles, WSL/Docker disks. Triggers — disk full, free up space, C: full, clean disk, what can I delete."
 metadata:
-  version: 0.1.1
+  version: 0.1.2
 ---
 
 # Windows disk cleanup — measure, prove, delete in rounds, keep it from refilling
