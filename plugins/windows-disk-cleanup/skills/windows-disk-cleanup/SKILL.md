@@ -2,7 +2,7 @@
 name: windows-disk-cleanup
 description: "Frees Windows disk space without losing data: inventories drives, proves duplicates by hash (hardlinks discounted), deletes only in user-authorized rounds — manifest and reversible step first, re-measure after. Knows dev caches, Drive cache, old profiles, WSL/Docker disks. Triggers — disk full, free up space, C: full, clean disk, what can I delete."
 metadata:
-  version: 0.2.0
+  version: 0.2.1
 ---
 
 # Windows disk cleanup — measure, prove, delete in rounds, keep it from refilling
@@ -15,6 +15,8 @@ The method is PDCA: measure (Plan), delete one authorized round at a time (Do), 
 
 - **Read-only until authorized.** Analysis, inventories and recommendations need no permission; deleting does.
   Many users say "I will delete it myself" — then deliver commands and a plan, and delete nothing.
+  When they report it done, check it like your own round (path gone, `Get-Volume`): in 2026-10 a user's 79 GB
+  deletion left the folder in place with one game save inside, the only personal data still in it.
 - **Authorization is per round** ("I authorize round 2"). It does not carry over to the next round, to a resumed
   session, or to items added after the user said yes. Record it in the plan.
 - **A broad go-ahead is not a round.** "Clean whatever is safe" or "I trust you" authorizes the analysis, not a list

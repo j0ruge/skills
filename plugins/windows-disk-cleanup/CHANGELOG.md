@@ -1,5 +1,19 @@
 # Changelog — `windows-disk-cleanup`
 
+## [0.2.1] — 2026-10-05
+
+### A exclusão feita pelo usuário também é conferida pelo artefato
+
+Lição do fechamento da limpeza real:
+
+- **`SKILL.md`, contrato:** o usuário avisou "apaguei" sobre o perfil antigo em quarentena (79 GB). O E: subiu de 84 para
+  163,5 GB livres, mas a pasta continuava lá com 2 arquivos: o save do Elden Ring (`ER0000.sl2` e o `.bak`, de 01/2023),
+  numa pasta com o ID padrão de emuladores da Steam, o que indica que não havia cópia na Steam Cloud. Era o único dado
+  pessoal que ainda restava ali. O usuário quis guardar o save: copiado com SHA256 conferido, e só depois a pasta saiu.
+  O contrato dizia que, quando o usuário apaga, o agente entrega comandos e não apaga nada, mas não dizia para conferir
+  depois. O passo 5 do `safe-deletion.md` ("Verify by artifact") cobria só as rodadas executadas pelo agente.
+- Padrão de falha: tomar o relato ("apaguei") como prova e fechar a rodada sem olhar o que sobrou.
+
 ## [0.2.0] — 2026-10-05
 
 ### `steam-games.ps1` lista as pastas sem manifesto
