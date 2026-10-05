@@ -4,7 +4,7 @@ description: "Jira ticket lifecycle for JRC Brasil projects, integrated with Git
 argument-hint: "start (open) | split | close | status"
 compatibility: "Claude Code: o argument-hint acima é campo dele e só é lido no topo. Requer acli e credenciais Jira (JIRA_EMAIL, JIRA_API_TOKEN)."
 metadata:
-  version: 1.10.0
+  version: 1.11.0
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -117,8 +117,8 @@ Analise o argumento passado pelo usuário e execute o comando correspondente:
 8. **Criar branch** `${BRANCH_PREFIX}-XXX_descricao_curta` (snake_case, sem acentos, ~50 chars, do
    summary) da base atualizada (`checkout`, `pull`, `checkout -b`), e medir a base em vez de confiar
    no pull: `git fetch origin -q` e `git rev-list --left-right --count HEAD...origin/${BASE_BRANCH}`
-   → `0	0`. Comandos no `start.md` A8; base que é árvore de serviço no ar → worktree, no mesmo
-   lugar. Não canalize o `pull` para `tail` numa cadeia `&&`: o pipeline sai com o status do último
+   → `0` à direita (à esquerda, só os commits locais esperados). Comandos no `start.md` A8; base
+   que é árvore de serviço no ar → worktree, no mesmo lugar. Não canalize o `pull` para `tail` numa cadeia `&&`: o pipeline sai com o status do último
    comando, e um pull que falhou deixa a branch nascer de base não verificada.
 9. **Output:** ✅ issue · 🌿 branch · 📋 status · 👤 responsável · 🔗 sprint · 🎯 score.
 
@@ -168,6 +168,8 @@ vínculo ao cartão que bloqueiam (`references/workflow.md §Vínculos entre iss
 - A branch parte de `${BASE_BRANCH}` (nunca assumir `develop`); `git status` sujo → avisar antes de
   trocar de branch
 - Descrição de issue nova no template de `references/templates.md` (só sub-fluxo B)
+- Repo com `.sdd/config.sh` e missão aberta: quem abre a issue é a fase TICKET do `sdd run`; à mão,
+  grave o `10-ticket.md` (`references/start.md §Missão sdd`), ou nasce um segundo ticket
 
 ---
 

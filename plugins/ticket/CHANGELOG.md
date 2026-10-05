@@ -1,5 +1,38 @@
 # Changelog — ticket
 
+## [1.11.0] — 2026-10-05
+
+### Por quê
+
+Duas lições do `start` da SQ-155 (05/10/2026, no `sales_quote`), aberta à mão dentro de uma missão
+do kit `sdd`:
+
+1. O repo roda o kit `sdd`, cuja fase TICKET do `sdd run` abre a issue sozinha. O dev pediu o
+   `/ticket open` à mão para ver o ticket antes de executar, e a skill não dizia que o gate daquela
+   fase (`gate_TICKET`, em `bin/sdd` do kit) **não pergunta ao Jira**: ele lê
+   `<missao>/10-ticket.md`. Sem esse arquivo, o `sdd run` seguinte abriria um segundo ticket na
+   mesma sprint. A sessão precisou ler o gate e um `10-ticket.md` anterior para saber o que gravar.
+2. O A8 do `start.md` dizia que `git rev-list --left-right --count HEAD...origin/<base>` "espera
+   `0	0`". Na SQ-155 deu `2	0`, e estava certo: a base local carregava os dois commits da fase
+   PLAN, ainda sem push. Um agente literal leria isso como divergência e pararia, ou "consertaria"
+   com `reset`, apagando os commits da aprovação. O B5, que o `SKILL.md` manda seguir "como no A8",
+   nem trazia a medição.
+
+### O quê
+
+- `start.md`: seção nova **"Missão `sdd`: abrir à mão sem duplicar a fase TICKET"** (com entrada no
+  sumário). A rota padrão é deixar a fase TICKET abrir; à mão, são cinco passos: `10-ticket.md`
+  com os campos que o gate lê, `branch:` real no `00-missao.md`, commit, `sdd note-manual <missao>
+  TICKET` e a conferência `sdd why <missao> TICKET` → `issue <KEY> in the sprint`.
+- `start.md` A8: o comentário do `rev-list` passa a dizer que o `0` da direita é o que prova base
+  atual, e um parágrafo explica o número da esquerda (commits locais esperados, conferidos com
+  `git log --oneline origin/<base>..HEAD`, nunca resolvidos com `reset`). O `0 0` da worktree,
+  criada a partir de `origin/<base>`, continua certo e não mudou.
+- `start.md` B5: o bloco ganha o `fetch` e o `rev-list`, e uma linha remete à leitura do A8 e à
+  worktree para árvore viva.
+- `SKILL.md`: o A8 diz `0` à direita em vez de `0	0`, e as Regras do `start` ganham um bullet que
+  roteia para a seção nova. `SKILL.md` 19.412 → 19.654 chars (289 → 291 linhas).
+
 ## [1.10.0] — 2026-10-05
 
 ### Por quê

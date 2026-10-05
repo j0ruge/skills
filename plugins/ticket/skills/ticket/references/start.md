@@ -12,6 +12,7 @@
 - [Sub-fluxo A: Issue existente](#sub-fluxo-a-issue-existente)
 - [Sub-fluxo B: Nova issue](#sub-fluxo-b-nova-issue)
 - [Registrar cartão SEM começar o trabalho](#registrar-cartão-sem-começar-o-trabalho)
+- [Missão `sdd`: abrir à mão sem duplicar a fase TICKET](#missão-sdd-abrir-à-mão-sem-duplicar-a-fase-ticket)
 
 ## Sub-fluxo A: Issue existente
 
@@ -137,8 +138,17 @@
      git checkout -b ${BRANCH_PREFIX}-XXX_descricao_curta
      # poka-yoke: a branch nasceu MESMO da base atual?
      git fetch origin -q
-     git rev-list --left-right --count HEAD...origin/${BASE_BRANCH}   # espera `0	0`
+     git rev-list --left-right --count HEAD...origin/${BASE_BRANCH}   # direita `0` = não está atrás (leia abaixo)
      ```
+
+   **Leia os dois números, não o par.** O da direita conta os commits da origin
+   que a branch não tem: `0` é o que prova base atual. O da esquerda conta os
+   commits locais que a origin não tem, e pode ser maior que zero de propósito,
+   quando a base local carrega commits que ainda não subiram. É o caso da fase
+   PLAN de uma missão `sdd`, que comita na base antes de a branch nascer: deu
+   `2	0` na SQ-155 (`sales_quote`, 05/10/2026). Confira que são exatamente os
+   esperados com `git log --oneline origin/${BASE_BRANCH}..HEAD`, e nunca
+   "conserte" o lado esquerdo com `reset`, que apaga esses commits.
 
    ⚠️ **Não canalize o `pull` para `tail` dentro de uma cadeia `&&`**: o exit
    status de um pipeline é o do **último** comando, então um pull que falhou
@@ -278,7 +288,12 @@
      git checkout ${BASE_BRANCH}
      git pull origin ${BASE_BRANCH}
      git checkout -b ${BRANCH_PREFIX}-XXX_descricao_curta
+     git fetch origin -q
+     git rev-list --left-right --count HEAD...origin/${BASE_BRANCH}   # direita `0` = não está atrás
      ```
+
+   - Leia o resultado como no A8 (os dois números, não o par) e, se a base for
+     árvore de serviço no ar, crie a branch na worktree do A8.
 
 6. **Transicionar issue:**
 
@@ -319,3 +334,32 @@ bloqueiam (ver `workflow.md` §Vínculos entre issues).
 Pergunte ao dev qual dos dois é o caso quando não estiver claro pelo pedido:
 "abrir para já começar" e "registrar para o time priorizar" produzem cartões
 diferentes.
+
+## Missão `sdd`: abrir à mão sem duplicar a fase TICKET
+
+Num repo com o kit `sdd` (`.sdd/config.sh` com `JIRA_ENABLED=true`) e uma missão
+aberta em `$HANDOFF_DIR/<missao>/`, quem abre a issue é a fase TICKET do
+`sdd run`: a sessão `sdd-ticket` segue este mesmo sub-fluxo B e grava o registro
+que o gate lê. **Rota padrão: deixe para ela.**
+
+O `start` à mão só vale quando o dev quer ver o ticket antes de executar. Nesse
+caso, saiba que o gate da fase (`gate_TICKET`, em `bin/sdd` do kit) **não pergunta
+ao Jira**: ele lê `<missao>/10-ticket.md`. Sem esse arquivo, o `sdd run` abre um
+**segundo** ticket na mesma sprint. Depois do B4 (releitura) e do B5 (branch, com
+a base local à frente pelos commits da fase PLAN, como explica o A8):
+
+1. Escreva `<missao>/10-ticket.md` com o frontmatter `fase: TICKET`,
+   `status: done`, `issue:`, `sprint:` (não vazio: o gate recusa sem sprint),
+   `versao:`, `branch:`, `data:` e `gate:` (o `GET` do B4 em uma linha). O corpo
+   é o handoff da fase: copie a forma de um `10-ticket.md` anterior do repo.
+2. Troque o placeholder `branch: <…>` do `00-missao.md` pelo nome real. O gate
+   recusa quando o `10-ticket.md` declara uma branch e o `00-missao.md` segue com
+   placeholder, ou quando os dois divergem.
+3. Comite os dois na branch nova.
+4. Rode `sdd note-manual <missao> TICKET`, que registra a fase como feita à mão:
+   nota no checkpoint, com commit próprio, e linha `manual` no ledger.
+5. Confira com `sdd why <missao> TICKET`, que deve responder
+   `issue <KEY> in the sprint`.
+
+Medido na SQ-155 (`sales_quote`, 05/10/2026): os cinco passos, e o `sdd why`
+respondeu `issue SQ-155 in the sprint`.
