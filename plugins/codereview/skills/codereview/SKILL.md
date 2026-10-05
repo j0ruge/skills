@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.9.2
+  version: 2.10.0
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -17,8 +17,8 @@ Read the user input before proceeding (if not empty). Valid inputs:
 - Focus area: `security`, `performance`, `types`, `bugs`, `tests`, `docs`, `a11y`, `race-conditions`, `dead-code`
 - File path or glob: review only matching changed files
 - Key-value overrides: `baseDir=app/ fileExtensions=ts,js`
-- Focus in prose ("look at the separator"): run `full`, prompts unchanged; answer each named point in
-  Phase C and say where it was checked
+- Focus in prose ("look at the separator") or a review handoff's risk list (Phase A): run `full`, prompts
+  unchanged; answer each named point in Phase C and say where it was checked
 
 Defaults are `baseDir=src/`, `fileExtensions=ts,tsx`, `frameworkPatterns=react`, tests `**/*.{test,spec}.{ts,tsx}` and `**/test/**`, UI_LIB `src/components/ui/**`, `prisma/**`, `**/generated/**`, CONFIG `*.config.*`, `tsconfig*`, `.env*`, `package.json`.
 
@@ -26,7 +26,7 @@ Defaults are `baseDir=src/`, `fileExtensions=ts,tsx`, `frameworkPatterns=react`,
 
 Perform a comprehensive, automated code review of all changes in the current branch compared to the base branch. Produce a structured Markdown report with severity-rated findings, test coverage assessment, and a final grade.
 
-This skill is **stack-agnostic**. Defaults target TypeScript/React but all values are configurable. Set `frameworkPatterns=dotnet` for C#/.NET projects.
+This skill is **stack-agnostic**. Defaults target TypeScript/React but all values are configurable.
 
 ## References
 
@@ -83,12 +83,12 @@ Regardless of failures, always produce a final report listing all files analyzed
 
 Every step is a fixed command with one right answer, so it runs inline, not in an agent: an agent only adds variation, latency and the chance of a silently dropped field — and without the secrets pre-scan JSON the F-grade gate goes blind. Outputs are small.
 
-Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. Three Bash turns cover steps 1–8 — (1) steps 1–3, base-branch detection as one fallback chain, plus this skill's version for the Cost footprint (`sed -n 's/^  version: //p' {SKILL_DIR}/SKILL.md`); (2) step 4; (3) steps 5–8 as parallel calls in one message — because every extra orchestrator turn is a main-model round-trip over the whole session context:
+Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. Three Bash turns cover steps 1–8 — (1) steps 1–3, base-branch detection as one fallback chain, plus this skill's version for the Cost footprint (`sed -n 's/^  version: //p' {SKILL_DIR}/SKILL.md`), `git ls-files '*handoff*'` and, from a plugin cache, the `installPath` in `~/.claude/plugins/installed_plugins.json`: a `{SKILL_DIR}` outside it is a stale copy, so ask for `/reload-plugins` first; (2) step 4; (3) steps 5–8 as parallel calls in one message — because every extra orchestrator turn is a main-model round-trip over the whole session context:
 
 1. Verify git repo:  `git rev-parse --is-inside-work-tree`
 2. Detect base branch (try: origin HEAD symbolic-ref, then main, then master)
 3. Current branch: `git rev-parse --abbrev-ref HEAD`
-4. Merge base:  `git merge-base {BASE_BRANCH} HEAD`, or the base commit the user names (`base=<sha>`, even in prose)
+4. Merge base:  `git merge-base {BASE_BRANCH} HEAD`, or the base commit the user names (`base=<sha>`, even in prose); an end other than `HEAD` is `head=<sha>` (configuration.md)
 5. Changed files: `git diff {MERGE_BASE}...HEAD --name-only`
 6. Diff stats:  `git diff {MERGE_BASE}...HEAD --stat`
 7. Commit log:  `git log {MERGE_BASE}..HEAD --oneline --no-decorate`
@@ -105,7 +105,7 @@ Classify each changed file:
 - DOCS: *.md, *.txt
 - STYLES: CSS/SCSS/LESS
 
-For each CODE file, check test coverage by probing candidate test file paths — same dir (`{Base}.test.{ext}`, `{Base}.spec.{ext}`), a `__tests__` sibling, then the project test root, then a changed test that imports it — and record it as WITH_TESTS / STALE_TESTS / NO_TESTS. Probe all CODE files in one shell loop (one Bash call that prints `path|status` per file), not one call per file.
+For each CODE file, check test coverage by probing candidate test file paths — same dir (`{Base}.test.{ext}`, `{Base}.spec.{ext}`), a `__tests__` sibling, then the project test root, then a changed test that imports it — and record it as WITH_TESTS / STALE_TESTS / NO_TESTS. Probe all CODE files in one shell loop (one Bash call that prints `path|status` per file), not one call per file, in bash with `nullglob`: zsh aborts an unmatched glob.
 
 Phase A hands Phases B and C: BASE_BRANCH, BRANCH_NAME, MERGE_BASE, DIFF_STAT, COMMIT_LOG, the FILES list (path, category, test_status), COUNTS per category, and SECRETS_PRESCAN.
 
@@ -213,11 +213,8 @@ After all sonnet agents return, the main model:
    and the Code Quality rationale) · **Overall Grade table** · **Recommended Actions** (every bucket,
    `_None._` when empty) · **Cost footprint** line, last.
 
-**The Overall Grade table, the Recommended Actions block and the Cost footprint close every report.**
-They are what the human reads first to triage; a report without them cannot be acted on, however good
-the findings. Render them in full even with little to say — zero findings, a focus-area run, a tight
-context budget: the template gives the exact fallbacks (`A`/`clean`, `—`/`Not analyzed (focused review
-on {area})`, one-word rationales), never prose in place of the table.
+**The Overall Grade table, the Recommended Actions block and the Cost footprint close every report**,
+in full even with little to say: the template's fallbacks, never prose in place of the table.
 
 ### Special Cases
 

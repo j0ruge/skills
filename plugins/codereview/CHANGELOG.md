@@ -2,6 +2,43 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.10.0] — 2026-10-05
+
+### `codereview` 2.10.0: o intervalo que não termina no HEAD, os dados que o código grava, o handoff e a cópia velha
+
+Lições de uma revisão de intervalos já mergeados, em 2026-10-05: `estimates-os_mcp`
+`6309d7b..37930f5` (15 commits) e quatro commits do `~/.hermes`, com JorUge.
+
+- **`head=` fecha o intervalo antes do `HEAD`.** O `base=` fixava só o início, e os prompts dos
+  agentes mandam `{MERGE_BASE}...HEAD`. O intervalo pedido terminava dois commits antes do `HEAD`;
+  os sete agentes revisaram o intervalo certo só porque cada prompt levou o `git diff A..B` escrito
+  à mão. Agora `head=` troca o `HEAD` nos passos 4–8 da Fase A e o diff vai por extenso no prompt,
+  como no modo `worktree` (`configuration.md`).
+- **O laço de sondagem de testes roda em bash.** No zsh, um glob sem correspondência aborta com
+  `no matches found` e exit 1, e a Fase A perdia a tabela de cobertura. Resolvido com `bash -c` e
+  `shopt -s nullglob`.
+- **Evidência de execução inclui os dados que o código grava ou lê.** A §Runtime evidence citava só
+  saída de cron e log de serviço. A trilha de auditoria (`audit/consultas.jsonl`) mostrou 6 eventos
+  reais de um cliente que o agente por arquivo julgou hipotético, e o achado subiu de LOW para
+  MEDIUM; a mesma trilha mostrou duas rodadas de teste gravando em produção onde o handoff dizia uma.
+- **Um handoff de revisão é foco em prosa.** O repo trazia `docs/planos/*handoff-code-review.md` com
+  16 pontos de risco do autor. A Fase A procura (`git ls-files '*handoff*'`) e a Fase C responde
+  ponto a ponto.
+- **A Fase A pega a cópia velha antes de revisar.** A sessão carregou a 2.8.0 do cache com a 2.9.5
+  instalada: aberta antes da atualização, nunca recarregou. É a segunda vez que uma cópia velha roda
+  uma revisão inteira (a primeira está no `report-template.md`, §Cost footprint). Agora um
+  `{SKILL_DIR}` fora do `installPath` do `installed_plugins.json` pede `/reload-plugins` antes.
+- **Espaço, por fusão provada** (o `SKILL.md` estava a 41 caracteres do aviso C1): o parágrafo de
+  fechamento do relatório ficou em duas linhas, porque os três casos e os fallbacks (`A`/`clean`,
+  `—`/`Not analyzed`, justificativa de uma palavra) estão no `report-template.md`, §Overall Grade,
+  que o passo 10 manda ler antes de escrever; e saiu *"Set `frameworkPatterns=dotnet` for C#/.NET
+  projects"*, porque as predefinições .NET estão na `configuration.md`, §Override Syntax, que a
+  linha das References já roteia para stack que não é TS. 19 981 caracteres.
+- **Não aplicada:** o agente por arquivo afirmou "sem consumidor" depois de um grep estreito. O
+  contrato já dizia que a 6.9 não é dele (desde a 2.8.0) e a Fase C descartou a afirmação contra a
+  varredura; não falta regra.
+- **Dívida mantida:** os 3 avisos C2 são os contratos dos subagentes, lidos por caminho absoluto.
+
 ## [2.9.6] — 2026-10-04
 
 ### `codereview` 2.9.2 e `coderabbit-pr` 4.3.7: as proibições do projeto no prompt dos agentes, e três casos de uma rodada real com o Codex
