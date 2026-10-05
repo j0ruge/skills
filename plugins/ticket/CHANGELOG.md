@@ -1,5 +1,35 @@
 # Changelog — ticket
 
+## [1.9.1] — 2026-10-05
+
+### Por quê
+
+Passada da `skill-refactoring`, pedida pelo JorUge depois da 1.9.0. A medida certa mostrou que o
+`SKILL.md` não estava acima do orçamento: 19.950 chars (o auditor conta `len()`), e não os 20.478
+que a 1.9.0 registrou, porque `wc -c` conta bytes e o acento em UTF-8 ocupa dois. A passada
+seguiu mesmo assim, para abrir folga: só sai do `SKILL.md` o que já está repetido, provado por
+comparação com as references.
+
+### O quê
+
+- `SKILL.md` 19.950 → 19.255 chars (315 → 287 linhas). Viram ponteiro de uma linha os três
+  blocos de código que o `start.md` já traz por inteiro: o `curl` de releitura (A6), os comandos
+  de branch (A8) e o JSON do `create --from-json` (B3). A worktree fica no A8, onde se age, e sai
+  da Regra. Saem duas repetições internas: a frase do `commentBody` no close step 5 (está na
+  assinatura e nas Armadilhas) e o erro "branch fora da base" (é a Regra do `git status` sujo); o
+  bootstrap do `.jira-project` fica mais curto, com os mesmos comandos.
+- `templates.md`: o ponteiro "Comando pronto no `SKILL.md §Comando: close` step 5" estava morto
+  desde a 1.6.3, que moveu o comando para o `close.md`; agora aponta para lá.
+- `start.md` A8: serviço de sistema se confere com `systemctl show`, sem `--user`.
+- A 1.9.0 registrou bytes como chars; as duas entradas dela foram corrigidas.
+
+### Verificação
+
+Auditoria limpa antes e depois, e o gate de regressão sem `NOVO`, `SUMIU` nem `CLAIM`. Um agente
+sem contexto leu só a skill e respondeu às cinco perguntas que dependem do que saiu do `SKILL.md`
+(criar issue com sprint e pontos, conferir a gravação, branch numa árvore viva, o `commentBody` e
+o bootstrap), indo às references pelo roteamento.
+
 ## [1.9.0] — 2026-10-05
 
 ### Por quê
@@ -25,8 +55,9 @@ branch rastreando a base (medido num repo descartável: `@{u}` = `origin/main`),
 
 ### Dívida (não consertada aqui)
 
-O `SKILL.md` já estava em 20.306 chars antes deste retrofit, acima do orçamento de cerca de 20
-mil; a lição entrou nas references, e a folga pede uma passada da `skill-refactoring`.
+O `SKILL.md` já estava em 20.306 bytes antes deste retrofit (19.784 chars: a medida desta
+entrada era `wc -c`, corrigida na 1.9.1); a lição entrou nas references, e a folga pede uma
+passada da `skill-refactoring`.
 
 ## [1.8.2] — 2026-10-05
 

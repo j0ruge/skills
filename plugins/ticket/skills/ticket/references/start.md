@@ -150,7 +150,8 @@
    base (uma unit com `WorkingDirectory` nele, um servidor de dev apontado para
    ele), o `checkout` acima troca o código que o próximo restart carrega, e o
    `pull` na base já é deploy. Confira (`systemctl --user show <unit> -p
-   WorkingDirectory`) ou pergunte ao dev, que também pode pedir a worktree. A
+   WorkingDirectory`; serviço de sistema, sem `--user`) ou pergunte ao dev, que também
+   pode pedir a worktree. A
    branch nasce ao lado, e a árvore viva não se mexe:
 
    ```bash

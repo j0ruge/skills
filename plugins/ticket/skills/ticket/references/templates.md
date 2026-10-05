@@ -48,8 +48,7 @@ contentFormat: "markdown")` e reaproveitar como body do PR no GitHub.
 > exibição: um comentário perfeitamente armazenado volta como string crua, e a
 > conclusão natural ("o ADF não foi interpretado") é falsa. Medido em 11/09/2026.
 > O `GET /rest/api/3/issue/<KEY>/comment` devolve o `body` como **objeto** quando
-> o ADF foi aceito — é esse o sensor. Comando pronto no `SKILL.md §Comando: close`
-> step 5.
+> o ADF foi aceito — é esse o sensor. Comando pronto no `close.md` step 5.
 
 O ADF é um JSON com estrutura `{ "version": 1, "type": "doc", "content": [...] }`.
 

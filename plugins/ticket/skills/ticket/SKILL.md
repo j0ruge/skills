@@ -4,7 +4,7 @@ description: "Jira ticket lifecycle for JRC Brasil projects, integrated with Git
 argument-hint: "start (open) | split | close | status"
 compatibility: "Claude Code: o argument-hint acima é campo dele e só é lido no topo. Requer acli e credenciais Jira (JIRA_EMAIL, JIRA_API_TOKEN)."
 metadata:
-  version: 1.9.0
+  version: 1.9.1
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -59,13 +59,14 @@ BASE_BRANCH=develop   # opcional — base de branches/PR; se ausente, detectar (
 | `$BRANCH_PREFIX` | Prefixo da branch (`${BRANCH_PREFIX}-XXX_descricao`); geralmente = `$PROJECT`, pode divergir por convenção do time |
 | `$BASE_BRANCH` | Base de branches e PRs. **Opcional**; se ausente, **detectar** — nunca chutar, nem `main` nem `develop`: `git symbolic-ref --short refs/remotes/origin/HEAD` (`origin/develop` → `develop`) ou `git remote show origin \| sed -n 's/.*HEAD branch: //p'` (falhando, `references/workflow.md §Branch base`) |
 
-**Bootstrap se `.jira-project` não existir:** avisar o dev (projeto inexistente: `references/workflow.md §Projeto novo`); perguntar **project key** (ex.: `SQ`,
-`RS`, `BAT` — sugerir pelo nome do repo + entries `project_jira_*` na auto-memory), **board ID**
-(`mcp__atlassian__searchJiraIssuesUsingJql(jql: "project = $PROJECT", maxResults: 1)` ou
-`acli jira board list`; vários boards → perguntar qual) e **branch prefix** (default = key); criar o
-arquivo com os valores + cabeçalho com a origem (`.gitignore` só se houver dado
-sensível — keys e board IDs não são secretos) e seguir com o comando pedido. Arquivo versionado no repo, não env var
-nem auto-memory: explícito, sobrevive a troca de máquina e à limpeza de memória.
+**Bootstrap se `.jira-project` não existir:** avisar o dev (projeto inexistente: `references/workflow.md
+§Projeto novo`) e perguntar **project key** (sugerir pelo nome do repo e pelas entries
+`project_jira_*` da auto-memory), **board ID** (`acli jira board list`, ou
+`mcp__atlassian__searchJiraIssuesUsingJql` com `project = $PROJECT`; vários → perguntar qual) e
+**branch prefix** (default = key). Criar o arquivo versionado no repo, com cabeçalho de origem
+(keys e board IDs não são secretos; `.gitignore` só com dado sensível), e seguir com o comando
+pedido. Arquivo, e não env var nem auto-memory: é explícito e sobrevive a troca de máquina e à
+limpeza de memória.
 
 ## Roteamento de Comandos
 
@@ -107,29 +108,17 @@ Analise o argumento passado pelo usuário e execute o comando correspondente:
    teste novo) e deixe o dev confirmar — pedir do nada deixa o campo vazio. Gravar com
    `editJiraIssue(..., fields: { "customfield_10016": N })`.
 6. **Releitura obrigatória** depois de mexer em sprint/score — a escrita pode dizer "ok" e não
-   aplicar, e o cartão fica no backlog sem ninguém notar:
-
-   ```bash
-   curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
-     "https://jrcbrasil.atlassian.net/rest/api/3/issue/${PROJECT}-XXX?fields=status,assignee,fixVersions,customfield_10016,customfield_10020"
-   ```
-
-   Não confira por JQL nem pelo exit code do `acli` (ver Armadilhas). Valor que não bateu → **avise o
-   dev explicitamente** ("a sprint não foi aplicada — o cartão continua no backlog").
+   aplicar, e o cartão fica no backlog sem ninguém notar: `GET /issue/${PROJECT}-XXX` com
+   `fields=status,assignee,fixVersions,customfield_10016,customfield_10020` (o `curl` no `start.md`
+   A6). Não confira por JQL nem pelo exit code do `acli` (ver Armadilhas). Valor que não bateu →
+   **avise o dev explicitamente** ("a sprint não foi aplicada — o cartão continua no backlog").
 7. **Transicionar** para "Em andamento" se ainda não estiver:
    `acli jira workitem transition --key "${PROJECT}-XXX" --status "Em andamento"`.
 8. **Criar branch** `${BRANCH_PREFIX}-XXX_descricao_curta` (snake_case, sem acentos, ~50 chars, do
-   summary) a partir da base atualizada, e medir a base em vez de confiar no pull:
-
-   ```bash
-   git checkout ${BASE_BRANCH}
-   git pull origin ${BASE_BRANCH}
-   git checkout -b ${BRANCH_PREFIX}-XXX_descricao_curta
-   git fetch origin -q
-   git rev-list --left-right --count HEAD...origin/${BASE_BRANCH}   # espera `0	0`
-   ```
-
-   Não canalize o `pull` para `tail` numa cadeia `&&`: o pipeline sai com o status do último
+   summary) da base atualizada (`checkout`, `pull`, `checkout -b`), e medir a base em vez de confiar
+   no pull: `git fetch origin -q` e `git rev-list --left-right --count HEAD...origin/${BASE_BRANCH}`
+   → `0	0`. Comandos no `start.md` A8; base que é árvore de serviço no ar → worktree, no mesmo
+   lugar. Não canalize o `pull` para `tail` numa cadeia `&&`: o pipeline sai com o status do último
    comando, e um pull que falhou deixa a branch nascer de base não verificada.
 9. **Output:** ✅ issue · 🌿 branch · 📋 status · 👤 responsável · 🔗 sprint · 🎯 score.
 
@@ -145,26 +134,11 @@ Analise o argumento passado pelo usuário e execute o comando correspondente:
    `id` devolvido, não o nome, vai no `fixVersions` do POST da issue.
 2. **Descobrir a sprint ativa antes de criar** (mesmo comando e regra do A4; mais de uma → perguntar;
    nenhuma → `references/campos.md §Quando não aparece sprint ativa`).
-3. **Criar já com sprint e story points** — `create --from-json` com `additionalAttributes`, que
-   aceita custom fields na criação. Criar e editar depois depende do MCP autenticado; sem ele, o
-   cartão fica órfão no backlog.
-
-   ```bash
-   cat > /tmp/${PROJECT}-new.json <<'JSON'
-   {
-     "projectKey": "SQ",
-     "type": "Tarefa",
-     "summary": "{nome}",
-     "description": { "version": 1, "type": "doc", "content": [
-       { "type": "paragraph", "content": [ { "type": "text", "text": "{descrição}" } ] }
-     ] },
-     "additionalAttributes": { "customfield_10016": 3, "customfield_10020": 405 }
-   }
-   JSON
-   acli jira workitem create --from-json /tmp/${PROJECT}-new.json
-   ```
-
-   Sprint = id **número puro**; omitir a chave que o dev não informou; `description` em **ADF**, não
+3. **Criar já com sprint e story points** — `acli jira workitem create --from-json <arquivo>` com
+   `projectKey`, `type`, `summary`, `description` e `additionalAttributes`
+   (`{"customfield_10016": 3, "customfield_10020": 405}`), que aceita custom fields na criação (o
+   JSON completo no `start.md` B3). Criar e editar depois depende do MCP autenticado; sem ele, o
+   cartão fica órfão no backlog. Sprint = id **número puro**; omitir a chave que o dev não informou; `description` em **ADF**, não
    markdown; capturar a key retornada. `acli` sem `--from-json` → `create` simples + `editJiraIssue`,
    avisando o dev. **Com fixVersion, prefira o REST** (`POST /rest/api/3/issue`, uma chamada grava
    tudo): antes, leia `references/campos.md §Criar a issue numa chamada só` e rode a varredura de marks de
@@ -192,7 +166,7 @@ vínculo ao cartão que bloqueiam (`references/workflow.md §Vínculos entre iss
   dentro da sprint** (`--from-json`), não criada-e-depois-editada
 - **Releia depois de escrever** e só então diga que deu certo (A6 / B4)
 - A branch parte de `${BASE_BRANCH}` (nunca assumir `develop`); `git status` sujo → avisar antes de
-  trocar de branch; base que é árvore de serviço no ar → worktree (`references/start.md` A8)
+  trocar de branch
 - Descrição de issue nova no template de `references/templates.md` (só sub-fluxo B)
 
 ---
@@ -233,7 +207,7 @@ por extenso, para ler antes do primeiro `close`: `references/close.md`.
 4. **Apresentar o rascunho** ao dev e pedir confirmação ou edições.
 5. **Comentar na issue** — preferir `mcp__atlassian__addCommentToJiraIssue(cloudId, issueIdOrKey,
    commentBody: "<markdown>", contentFormat: "markdown")`, que converte para ADF server-side
-   (validado 2026-05-20). O campo é **`commentBody`**, não `body`. Sem MCP: ADF
+   (validado 2026-05-20; o campo é `commentBody`, ver Armadilhas). Sem MCP: ADF
    por REST, cujo HTTP é sensor (o `acli` sai 0 em falha). 🔴 **Confirme por REST**, nunca por `acli comment list`:
    `GET .../issue/${PROJECT}-XXX/comment?orderBy=-created&maxResults=1` com o `body` como
    **objeto** (`str` = ADF recusado). Comando pronto em `references/close.md` step 5.
@@ -308,8 +282,6 @@ sempre a releitura do campo pelo REST.
 - **`acli` falha:** mostrar o erro completo ao dev e sugerir verificar credenciais/conexão.
 - **MCP atlassian ausente ou só com `authenticate`:** antes de supor falta de login, confira o
   endpoint (o HTTP+SSE `/v1/sse` caiu em 30/jun/2026): leia `references/campos.md §Issue existente`.
-- **Branch não está em `${BASE_BRANCH}`** ou **mudanças não commitadas:** avisar antes de criar ou
-  trocar de branch.
-- **Transição falha (`"No allowed transitions found"`):** listar as transições reais com
-  `getTransitionsForJiraIssue` e usar o `id` cujo `to.name` é o destino (leia `references/workflow.md` ao
-  transicionar); `acli --status` casa pelo **nome do status de destino**.
+- **Transição falha (`"No allowed transitions found"`):** como no close step 6, listar as reais e
+  aplicar pelo `id` do destino (`references/workflow.md`); `acli --status` casa pelo **nome do status
+  de destino**.

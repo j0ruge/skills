@@ -4,13 +4,24 @@ Registro por sessão da skill; o changelog **versionado** é `plugins/ticket/CHA
 (a entrada 1.4.0 de 2026-09-03 resume o que está aqui). Cada entrada registra **o que
 mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-05 — passada da `skill-refactoring` (1.9.1)
+
+- 19.950 → 19.255 chars no `SKILL.md`: saem os três blocos de código que o `start.md` já tem por
+  inteiro (A6, A8, B3) e duas repetições internas. O critério é o mesmo de 01/10: só sai o que se
+  prova repetido. Ponteiro morto do `templates.md` (desde a 1.6.3) corrigido.
+- A medida da 1.9.0 era em bytes (`wc -c`): o `SKILL.md` estava em 19.950 chars, abaixo do
+  orçamento. O auditor conta `len()`, e é essa a régua.
+- Um agente sem contexto respondeu, só pela skill, às cinco perguntas que dependem do conteúdo
+  movido.
+
 ## 2026-10-05 — worktree quando a base é árvore de serviço no ar (1.9.0)
 
 - O A8 fazia `checkout` e `pull` na base. No EDS-65 o checkout da `main` era de onde o MCP
   rodava, e o JorUge precisou pedir a worktree no argumento do ticket. O `start.md` A8 ganha a
   worktree com `--no-track` (sem ele a branch rastreia `origin/main`, medido num repo
   descartável) e o `close.md` step 10, a remoção dela sem `pull` na árvore viva. O `SKILL.md` só
-  roteia (cerca de 100 chars): ele já estava em 20.306 chars, dívida para a `skill-refactoring`.
+  roteia (cerca de 100 chars): ele já estava em 20.306 bytes (19.784 chars; corrigido na 1.9.1),
+  dívida para a `skill-refactoring`.
 - `campos.md`: anotar os ids do `POST /issue` no `.jira-project`, como o do EDS faz.
 
 ## 2026-10-01 — refatoração: folga abaixo do orçamento de 20k chars
