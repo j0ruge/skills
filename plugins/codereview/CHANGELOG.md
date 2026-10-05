@@ -2,6 +2,24 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.11.1] — 2026-10-05
+
+### `coderabbit-pr` 4.4.1: o recálculo só no índice deixa a árvore com o valor velho
+
+Lição do `sdd_agents` PR #222 (conserto do achado P2 do Codex, `69eeb4f`), em 2026-10-05, com JorUge.
+
+- **`thread-resolution.md` §5.0.** Quem recalcula um artefato derivado só no índice (ex.:
+  `remap.py --cached`) deixa a árvore de trabalho com o valor antigo: depois do commit, o `git diff`
+  mostra a reversão como edição pendente, e o próximo `git add -A` desfaz o recálculo. Quando a
+  reversão é o diff inteiro do arquivo, `git checkout -- <arquivo>` alinha a árvore antes do commit
+  seguinte. Medido: âncora reescrita 2122 → 2132 só no índice; o checkout deixou a árvore limpa e o
+  `check-todo.sh --check` verde.
+- **Não aplicado, refutado por medição:** o glob `*-review.md` da varredura (Fase 1.1) e da limpeza
+  (Fase 6), sob zsh e sem arquivo que case, imprime `no matches found`, mas o pipeline sai com rc 0 e
+  o `&&` seguinte roda — medido no `zsh -c`, no `bash -c` e no shell do Bash tool, com o diretório
+  vazio e com checklists. O rc 1 visto na sessão era de um `ls *-review.md` do agente, não do comando
+  da skill.
+
 ## [2.11.0] — 2026-10-05
 
 ### `coderabbit-pr` 4.4.0: a cópia velha, as preocupações sem thread, a sabotagem que quebra a sintaxe, o baseline paralelo e os commits por achado

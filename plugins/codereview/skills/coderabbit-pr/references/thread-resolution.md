@@ -25,7 +25,12 @@ no files (every item already fixed / not applicable), the check passes trivially
 by hunk: classify every hunk of `git diff -U3` by finding **before** staging anything (one that
 fits no finding stops the split), stage each group with `git apply --cached -`, and commit. A
 derived artifact the code shifts (line anchors in a doc) is recomputed per commit against the
-index (`git diff --cached`), or the middle commits fail a check the last one passes. Then prove
+index (`git diff --cached`), or the middle commits fail a check the last one passes. A tool that
+rewrites only the index leaves the working tree on the old value: after the commit, `git diff`
+shows the reversal as a pending edit, and the next `git add -A` undoes the recomputation. When
+that reversal is the file's whole diff, `git checkout -- <file>` aligns the tree before the next
+commit. Measured 2026-10-05 (sdd_agents PR #222, `69eeb4f`): an anchor rewritten 2122 → 2132 in
+the index only; the checkout left the tree clean and the anchor check green. Then prove
 the series: `git diff <base> HEAD` must be byte-identical (`cmp`) to the patch the suite passed on —
 a misfiled or lost hunk still leaves a clean tree. Measured 2026-10-05 (sdd_agents PR #222): 14
 hunks in 3 shared files, 4 commits, `cmp` equal.
