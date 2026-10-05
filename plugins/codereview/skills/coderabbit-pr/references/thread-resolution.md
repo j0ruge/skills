@@ -21,6 +21,15 @@ Anything uncommitted, or a different head → stop, show the user the diff and a
 and push (or to authorise you to). Re-run the check after the push. With Phase 3 having changed
 no files (every item already fixed / not applicable), the check passes trivially — resolve.
 
+**Authorised to commit, one commit per finding?** Several findings usually share a file, so split
+by hunk: classify every hunk of `git diff -U3` by finding **before** staging anything (one that
+fits no finding stops the split), stage each group with `git apply --cached -`, and commit. A
+derived artifact the code shifts (line anchors in a doc) is recomputed per commit against the
+index (`git diff --cached`), or the middle commits fail a check the last one passes. Then prove
+the series: `git diff <base> HEAD` must be byte-identical (`cmp`) to the patch the suite passed on —
+a misfiled or lost hunk still leaves a clean tree. Measured 2026-10-05 (sdd_agents PR #222): 14
+hunks in 3 shared files, 4 commits, `cmp` equal.
+
 Measured on 2026-10-02 (sdd_agents PR #195): followed literally, the run would have resolved the
 CodeRabbit thread while the PR head (`3c739aa`) still carried the defect; the fix was pushed as
 `96532c9` first, and only then resolved.

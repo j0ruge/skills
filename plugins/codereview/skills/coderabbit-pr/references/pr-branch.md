@@ -1,7 +1,29 @@
 # PR Branch — Phase 1.1 in full
 
-Read this at Phase 1.1, before touching any file: where the fixes are made, whether another writer
-is still active in the tree, and the sweep of leftover checklists. SKILL.md keeps the decision; this file carries the commands and the why.
+Read this at Phase 1.1, before touching any file: whether this run is the installed copy, where
+the fixes are made, whether another writer is still active in the tree, and the sweep of leftover
+checklists. SKILL.md keeps the decision; this file carries the commands and the why.
+
+## Is this run the installed copy?
+
+When the skill was loaded from a plugin cache (`~/.claude/plugins/cache/…`), the harness names the
+directory it loaded ("Base directory for this skill"). A session opened before a plugin update
+keeps loading the old directory until `/reload-plugins`, and nothing else says so:
+
+```bash
+python3 - "<base directory>" <<'EOF'
+import json, os, sys
+d = json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))
+paths = [e['installPath'] for k, v in d['plugins'].items() if k.startswith('codereview@') for e in v]
+print('current' if any(sys.argv[1].startswith(p + '/') for p in paths) else f'STALE, installed: {paths}')
+EOF
+```
+
+`STALE` → stop and ask for `/reload-plugins`, then run the skill again. A skill loaded from a
+symlink in `~/.claude/skills` or from a project is read from disk: nothing to check. Measured
+2026-10-05 (sdd_agents PR #222): loaded from `…/codereview/2.9.4/` with `installPath`
+`…/codereview/2.10.0`; the run missed the per-commit coverage rule added in between, and its report
+never said that the four fix commits it pushed had been reviewed by no bot.
 
 ## Where the fixes are made
 

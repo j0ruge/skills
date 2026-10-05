@@ -1,7 +1,7 @@
 ---
 name: coderabbit-pr
 metadata:
-  version: 4.3.7
+  version: 4.4.0
 description: Resolves AI review comments on a GitHub PR — auto-detects CodeRabbit, Copilot, Gemini, Codex; creates per-reviewer checklists, verifies findings against current code (with byte-exact inspection when reviewers cite invisible/control characters), applies fixes, runs regression tests, resolves GitHub conversations, then cleans up its own checklist files. Triggers — coderabbit, copilot review, gemini review, codex review, fix PR review.
 ---
 
@@ -32,7 +32,8 @@ It is **project-agnostic** and **reviewer-agnostic**: any repo, any supported AI
 
 Read each one at the step that needs it:
 
-- `references/pr-branch.md` — read at Phase 1.1, before its worktree, active-writer check and sweep.
+- `references/pr-branch.md` — read at Phase 1.1, for the stale-copy check, worktree, writer check
+  and sweep.
 - `references/reviewer-registry.md` — read at Phase 1.2 when a login is not in the table below, and
   at 1.3 when structuring findings: comment structure, severity markers and metadata to discard per
   reviewer, the rule for unknown bots; Phase 2: coverage per commit.

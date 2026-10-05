@@ -31,6 +31,13 @@ Why this matters: when CI is broken by an early-step failure (lint syntax error,
 
 Without a baseline, Phase 4.2 cannot tell "regression caused by my fix" from "pre-existing latent unmasked by my fix" — and the skill ends up trying to fix unrelated bugs, expanding scope uncontrollably.
 
+**A long suite does not have to block the fixes.** Run the baseline in a detached worktree of the
+PR head (`git worktree add --detach <scratch> HEAD`, launched detached from the shell), and write
+the 3.2 probes in the checkout meanwhile: the baseline still measures the head, never a tree being
+edited. Only when the suite shares no state outside the tree (a port, a database, a fixed `/tmp`
+path); remove the worktree after. Measured 2026-10-05 (sdd_agents PR #222): 1839 ok in ~8 min in
+the worktree while the first red probe ran in the checkout.
+
 **Save the baseline as:**
 
 ```

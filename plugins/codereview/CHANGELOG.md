@@ -2,6 +2,40 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.11.0] — 2026-10-05
+
+### `coderabbit-pr` 4.4.0: a cópia velha, as preocupações sem thread, a sabotagem que quebra a sintaxe, o baseline paralelo e os commits por achado
+
+Lições de uma rodada no `sdd_agents` PR #222 (CodeRabbit 5 achados, Codex 2, Copilot sem cota), em
+2026-10-05, com JorUge.
+
+- **A Fase 1.1 pega a cópia velha** (`pr-branch.md`, seção nova no topo). A sessão rodou a 2.9.4 do
+  cache com a 2.10.0 instalada (`installPath` atualizado às 12:52Z): aberta antes da atualização,
+  nunca recarregou. Perdeu a regra de cobertura por commit da 2.9.5, e o relatório final não disse
+  que os quatro commits de conserto que ela mesma empurrou não foram revistos por bot nenhum. É a
+  guarda que a skill `codereview` ganhou na 2.10.0; aqui ela compara o "Base directory for this
+  skill" com o `installPath` do `installed_plugins.json` e pede `/reload-plugins`. O snippet foi
+  medido nesta máquina: `STALE` para o diretório 2.9.4, `current` para o 2.10.0.
+- **As *Retained concerns* da Security Architecture Review do CodeRabbit vão para o relatório**
+  (`reviewer-registry.md`). Ficam no walkthrough, sem thread, e a regra de descartar o walkthrough
+  como metadado as engoliu: uma preocupação média (config relida no meio da corrida) só apareceu na
+  retro.
+- **Sabotagem que quebra a sintaxe não prova nada** (`fix-loop.md`, passo 4). `tbl = 1` → `:` não
+  é awk; o selftest ficou vermelho num probe sem relação. Refeita como `tbl = 0`, ficou vermelho no
+  probe da regra. O passo já cobria a sabotagem que não se aplica; faltava o inverso.
+- **O baseline pode rodar num worktree destacado** (`regression-testing.md`, 4.0), enquanto os
+  probes da 3.2 nascem no checkout: 1839 ok em ~8 min sem bloquear o primeiro conserto. Só quando a
+  suíte não divide estado fora da árvore.
+- **Commit por achado, quando autorizado** (`thread-resolution.md`, 5.0): classificar todo hunk
+  antes de pôr qualquer coisa no índice, `git apply --cached` por grupo, artefato derivado
+  recalculado contra o índice a cada commit, e `cmp` entre `git diff <base> HEAD` e o patch que a
+  suíte aprovou. 14 hunks em 3 arquivos compartilhados viraram 4 commits, `cmp` igual.
+- **Espaço:** o `SKILL.md` só mudou a linha que roteia a `pr-branch.md` (+10 caracteres, 19 994); o
+  resto mora nas references que cada fase já manda ler.
+- **Não aplicadas:** "achado que repete um item de backlog adiado pelo humano é *Not applicable*" —
+  o passo 3.1 já manda checar a decisão documentada; e o remapeamento das âncoras do `TODO.md`, que
+  é do projeto e foi para a memória dele.
+
 ## [2.10.0] — 2026-10-05
 
 ### `codereview` 2.10.0: o intervalo que não termina no HEAD, os dados que o código grava, o handoff e a cópia velha

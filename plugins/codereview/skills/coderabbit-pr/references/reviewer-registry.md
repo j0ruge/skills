@@ -26,7 +26,10 @@ Posts in **up to three places**:
 3. **Issue comment** (`/issues/{PR}/comments`), marked
    `<!-- This is an auto-generated comment: summarize by coderabbit.ai -->` — walkthrough and run
    info. Never a finding, but read it for coverage: the Free plan below, the rate limit in
-   *Coverage Per Commit*.
+   *Coverage Per Commit*. And for its **Security Architecture Review**: the *Retained concerns*
+   there have no thread to resolve, so each one goes into the final report with a verdict (by
+   design, with the doc that says so, or a follow-up). Measured 2026-10-05 (sdd_agents PR #222):
+   one medium concern about a config reloaded mid-run was dropped as metadata.
 
 **On the Free plan the issue comment is the only thing it posts**: no inline comment, no review
 object, and the body says *"Your organization is on the Free plan … For a comprehensive line-by-line
