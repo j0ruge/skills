@@ -2,6 +2,27 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.3.5] — 2026-10-04
+
+### Surpresa antes da hora: primeiro a pergunta a quem tem acesso, depois a investigação
+
+Lição de uma sessão real (limpeza de discos no Windows, com uma pasta em quarentena para exclusão):
+
+- **Fase 3, *Para ações irreversíveis*, item 3 (Jidoka):** a pasta de resgate e parte da pasta em
+  quarentena sumiram horas antes da data marcada para apagar. A sessão parou a sequência, o que estava
+  certo, e foi explicar a surpresa por conta própria: transcripts do agente, histórico do PowerShell e
+  do bash, lixeira, detecções do Defender, logs de outra ferramenta de IA e pastas novas em três discos.
+  Nada apontou o autor, e a exclusão ficou suspensa. Na sessão seguinte, uma pergunta resolveu: o
+  usuário tinha apagado de propósito. O item 3 mandava parar até explicar, mas não dizia por onde
+  começar a explicar. Agora diz: primeiro pergunte a quem tem acesso ao artefato; a investigação por
+  conta própria fica para quando essa pessoa não pode responder.
+- Complementa o Gemba da fase 1 ("releia o que já foi respondido antes de perguntar"). A ordem fica:
+  o que está escrito, depois a pergunta a quem tem acesso, por último a investigação.
+- Padrão de falha: investigar longamente uma mudança que o dono do artefato explicaria numa linha, ou
+  travar a tarefa sem fazer a pergunta.
+- **Correção verificada no caso de origem:** a pergunta respondeu o que a investigação não respondeu.
+  Não foi testada em outro caso.
+
 ## [1.3.4] — 2026-10-04
 
 ### Sonda que normaliza pela própria amostra é sabotada com a amostra inteira
