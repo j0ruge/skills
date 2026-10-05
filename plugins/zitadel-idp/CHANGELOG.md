@@ -1,5 +1,20 @@
 # Changelog — zitadel-idp
 
+## [0.18.1] - 2026-10-05
+
+### Added
+
+- **Ler quem tem cada papel sem PAT** (`references/troubleshooting.md`, seção do quirk 51). A seção já
+  provava pela projeção `project_roles<N>` que um papel existe. Faltava a outra metade do estado: quem
+  o tem. A resposta por API é a busca global de grants (quirk 8), que também pede PAT, e num host em que
+  o deploy apaga o `.env` depois de cada run não há PAT para usar. A receita nova lê
+  `projections.user_grants<N>` em JOIN com `projections.users<N>`, só leitura, com os sufixos
+  descobertos no `information_schema`.
+- **Por quê:** numa instância de produção v4.15.0, em 05/10/2026, a matriz de permissões gerada a partir
+  do catálogo YAML mostrava a coluna `quote.consultor`, e o papel não existia na instância. Um relatório
+  renderizado do YAML imprime colunas para papéis **declarados**, e só a projeção diz quais a instância
+  tem. A linha de roteamento do `SKILL.md` passa a citar o caso.
+
 ## [0.18.0] - 2026-09-28
 
 ### Changed

@@ -955,6 +955,24 @@ docker exec -i <postgres-idp-ctr> psql -U zitadel -d zitadel -c \
 
 The `creation_date` is what makes this decisive rather than merely informative: roles dated at the instance's birth, in a deploy that was supposed to add two, say the bootstrap applied an old list — not that it failed.
 
+**Who holds which role, same path.** The API answer is the global grants search (Quirk 8), and it needs a PAT too. On a host where the deploy wipes its `.env` after each run, there is no PAT to borrow, and the projections answer this question as well — read-only, no token:
+
+```bash
+# Both suffixes change across releases (`user_grants5`, `users14` in v4.15.0) —
+# discover them like the roles table above.
+docker exec -i <postgres-idp-ctr> psql -U zitadel -d zitadel -Atc \
+  "select table_name from information_schema.tables
+    where table_schema='projections' and table_name ~ '^(user_grants|users)[0-9]+$';"
+
+docker exec -i <postgres-idp-ctr> psql -U zitadel -d zitadel -c \
+  "select u.username, g.roles, g.change_date
+     from projections.user_grants5 g
+     join projections.users14 u on u.id = g.user_id and u.instance_id = g.instance_id
+    where g.project_id = '<projectId>' order by 1;"
+```
+
+Compare against these two projections, never against a report rendered from the YAML catalog: such a report prints a column for every **declared** role, whether the instance has it or not. Measured 2026-10-05 on a v4.15.0 production instance: the generated matrix showed a `quote.consultor` column, and `project_roles4` had no such role — the bootstrap that would create it had never reached that environment.
+
 ⚠️ **Do not run this through a templating layer that eats `{{ }}`** (Ansible's `shell` module does, and `docker ps --format '{{.Names}}'` blows up there) — put the SQL in a file, or wrap it in `{% raw %}`.
 
 **Then fix the gate, not just the instance**: a deploy whose product is *state* needs an assertion about that state. The cheapest one is derived from the declaration you already have — every `roles[].key` in the YAML must appear in the bootstrap's own output as `created` or `reuse`. That catches the stale-input case too, which a query against the instance does not (a stale run and a correct run leave the same instance once someone fixes it by hand).

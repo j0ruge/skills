@@ -1,7 +1,7 @@
 ---
 name: zitadel-idp
 metadata:
-  version: 0.18.0
+  version: 0.18.1
 description: "Self-hosted Zitadel v4 OIDC field guide — a numbered quirk catalogue, working docker-compose and an idempotent TypeScript bootstrap. High-friction traps: FirstInstance env placement, JWT/JWKS over self-signed HTTPS, `--tlsMode external` and the console's mixed-content `Failed to fetch`, v2.66→v4, API v1→v2, silent-renew, 401 storms, UI language from the `locale` claim. Triggers — zitadel, oidc self-hosted, JWKS, masterkey, v2.66→v4, tlsMode external, pre-cutover check, locale claim."
 ---
 
@@ -48,7 +48,7 @@ If you are merely calling a pre-existing Zitadel deployment from your code, you 
 | When running a role rename/migration across environments (declare-first, the grant tool, per-environment state) | `references/role-migration.md` |
 | When a Gotchas line below matches and you need its symptom, cause, fix and evidence | `references/quirks.md` |
 | When you hit a confusing error and want a quick lookup | `references/troubleshooting.md` |
-| When proving a bootstrap actually wrote what the YAML declares (no PAT needed) | `references/troubleshooting.md` §"The bootstrap logs `reuse` for everything" |
+| When proving a bootstrap actually wrote what the YAML declares, or reading who holds which role (no PAT needed) | `references/troubleshooting.md` §"The bootstrap logs `reuse` for everything" |
 | When one account loops back to the login screen while others log in fine | `references/troubleshooting.md` §"One account loops back…" |
 | When creating a test/seed user and proving its password works, with no browser | `references/api-cheatsheet.md` §"Seed an admin user" + §"Prove a user's password without a browser" |
 | When driving the SPA's UI language from the user's IdP language (`locale` claim) | `references/spa-recipes.md` §"Recipe — UI language from the IdP" |
