@@ -1,5 +1,33 @@
 # Changelog — ticket
 
+## [1.8.2] — 2026-10-05
+
+### Por quê
+
+Reparo autorizado das duas dívidas que as entradas 1.8.0 e 1.8.1 carregavam: o `argument-hint` no
+topo do frontmatter (A4/G2) e a falta de eval de gatilho (F4).
+
+O `argument-hint` **fica no topo, e deixa de ser dívida.** O Claude Code só lê esse campo ali (é o
+hint do `/ticket` no autocomplete). Movido para `metadata`, o validador fica verde e a dica some. O
+auditor da `skill-quality-audit` (desde a 0.5.0) já o classifica como INFO, custo aceito, porque o
+`plugin.json` declara `platforms: ["claude-code"]`. O teste frio mostra o limite: copiada sozinha,
+fora do plugin, a skill volta a dar AVISO A4. Por isso a decisão agora fica escrita na própria
+skill, no campo `compatibility` da spec, e não só no manifesto.
+
+### O quê
+
+- `SKILL.md` frontmatter: `compatibility` declara Claude Code, explica o `argument-hint` e lista o
+  que a skill exige (acli, credenciais Jira). O `argument-hint` não muda.
+- `assets/trigger-evals.json` (novo): 20 consultas, 10 que devem disparar e 10 quase-acertos de
+  outras skills do marketplace (TODO.md → issues do GitHub, release notes, GitHub Release, review
+  de PR, deploy, sprint planning na agenda, mensagem de commit, card no Trello, issue em repo
+  público, auditoria da própria skill), no formato do otimizador do `skill-creator`.
+- `SKILL.md` §Referências: cita o eval set e quando usá-lo (antes de mudar a `description`). Sem
+  isso o `assets/` ficava órfão (AVISO B1).
+- Auditoria: antes 0 erro, 0 aviso, 6 INFO; depois 0 erro, 0 aviso, 5 INFO (F4 resolvido; A4 e G2
+  seguem INFO por decisão). `SKILL.md` 19.474 → 19.784 chars, abaixo dos 20 mil. O eval set ainda
+  não foi rodado com LLM: existe e é válido, mas a taxa de acerto não está medida.
+
 ## [1.8.1] — 2026-10-05
 
 ### Por quê

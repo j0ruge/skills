@@ -2,8 +2,9 @@
 name: ticket
 description: "Jira ticket lifecycle for JRC Brasil projects, integrated with Git — create issues/sub-issues and branches, close with an auto-generated summary. Per-repo config via `.jira-project`; discovers project-specific transitions instead of assuming. New issues are born in the active sprint with story points and fixVersion, each read back by the sensor that can see it. Triggers — ticket, Jira, criar issue, fechar ticket, sprint, story points, fixVersion, acli."
 argument-hint: "start (open) | split | close | status"
+compatibility: "Claude Code: o argument-hint acima é campo dele e só é lido no topo. Requer acli e credenciais Jira (JIRA_EMAIL, JIRA_API_TOKEN)."
 metadata:
-  version: 1.8.1
+  version: 1.8.2
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -34,6 +35,8 @@ Caminhos relativos a esta skill. Leia cada uma quando o passo pedir:
 - `references/templates.md` — leia **ao montar texto para o Jira** ou ao **enriquecer a descrição** de
   uma issue existente (acrescentar sem apagar o original): descrição de issue nova, resumo
   de fechamento (markdown ou ADF), a varredura que valida o ADF antes do POST, commit de sub-issue.
+- `assets/trigger-evals.json` — use **antes de mudar a `description`**: casos de gatilho (deve e
+  não deve disparar) no formato do otimizador do `skill-creator`.
 
 ## Detecção de Projeto
 

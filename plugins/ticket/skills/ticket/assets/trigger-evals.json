@@ -1,0 +1,82 @@
+[
+  {
+    "query": "abre um ticket no Jira pra corrigir o timeout do login do portal e já cria a branch pra eu começar",
+    "should_trigger": true
+  },
+  {
+    "query": "pega o RS-850 e começa: me atribui, põe em andamento e cria a branch a partir da base do repo",
+    "should_trigger": true
+  },
+  {
+    "query": "terminei o EDS-60, fecha o cartão com um resumo dos commits e passa pra Concluído",
+    "should_trigger": true
+  },
+  {
+    "query": "quebra o EDS-53 em subtarefas: uma pro guard, uma pra auditoria e uma pro catálogo de tabelas",
+    "should_trigger": true
+  },
+  {
+    "query": "qual o status do ticket desta branch? e as subtarefas dele, já foram todas concluídas?",
+    "should_trigger": true
+  },
+  {
+    "query": "registra esses três defeitos que o code review achou como cartões no Jira pro time priorizar, sem criar branch",
+    "should_trigger": true
+  },
+  {
+    "query": "o SQ-160 caiu no backlog sem pontuação, coloca na sprint ativa com 5 story points e confere se gravou",
+    "should_trigger": true
+  },
+  {
+    "query": "cria a fixVersion 0.2.0 no projeto SQ e põe ela no SQ-160 e nas subtarefas",
+    "should_trigger": true
+  },
+  {
+    "query": "o acli imprimiu Failure ao transicionar o RS-844 mas saiu com zero, confere no Jira se o status mudou mesmo",
+    "should_trigger": true
+  },
+  {
+    "query": "esse repo ainda não tem .jira-project; configura pro projeto BAT, board 77, e abre a primeira issue",
+    "should_trigger": true
+  },
+  {
+    "query": "transforma o TODO.md em issues no GitHub e mantém sincronizado quando o arquivo mudar",
+    "should_trigger": false
+  },
+  {
+    "query": "gera as notas de versão da 1.8 pra mandar por e-mail aos usuários, com screenshots",
+    "should_trigger": false
+  },
+  {
+    "query": "cria o GitHub Release da v0.2.0 com as notas desde a última tag",
+    "should_trigger": false
+  },
+  {
+    "query": "resolve os comentários do CodeRabbit e do Copilot no PR 42 e marca as conversas como resolvidas",
+    "should_trigger": false
+  },
+  {
+    "query": "promove a main pra staging pelo pipeline e confere se o deploy subiu",
+    "should_trigger": false
+  },
+  {
+    "query": "marca na agenda a sprint planning de segunda às 10h com o time de desenvolvimento",
+    "should_trigger": false
+  },
+  {
+    "query": "escreve a mensagem de commit no padrão conventional commits para esse diff",
+    "should_trigger": false
+  },
+  {
+    "query": "atualiza o card do relatório de ETA no Trello com a nova data de entrega do navio",
+    "should_trigger": false
+  },
+  {
+    "query": "abre uma issue no repositório público do sqlglot reportando o bug no parser de FETCH",
+    "should_trigger": false
+  },
+  {
+    "query": "audita a skill ticket antes de eu commitar e me diz se tem reference quebrada",
+    "should_trigger": false
+  }
+]
