@@ -4,7 +4,7 @@ description: "Jira ticket lifecycle for JRC Brasil projects, integrated with Git
 argument-hint: "start (open) | split | close | status"
 compatibility: "Claude Code: o argument-hint acima é campo dele e só é lido no topo. Requer acli e credenciais Jira (JIRA_EMAIL, JIRA_API_TOKEN)."
 metadata:
-  version: 1.9.1
+  version: 1.10.0
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -203,12 +203,14 @@ por extenso, para ler antes do primeiro `close`: `references/close.md`.
 3. **Auto-gerar resumo** de `git log ${BASE_BRANCH}..HEAD --oneline`,
    `git diff ${BASE_BRANCH}...HEAD --stat` e `acli jira workitem view ${PROJECT}-XXX`, no template de
    `references/templates.md` (leia ao montar): **Visão Geral** da descrição no Jira, **Solução** dos commit messages,
-   **Teste** dos arquivos de teste modificados (sem eles, pedir ao dev).
+   **Teste** dos arquivos de teste modificados (sem eles, pedir ao dev). Já integrado por
+   rebase + ff, sem branch: commits pela key no corpo (`close.md` step 3).
 4. **Apresentar o rascunho** ao dev e pedir confirmação ou edições.
 5. **Comentar na issue** — preferir `mcp__atlassian__addCommentToJiraIssue(cloudId, issueIdOrKey,
    commentBody: "<markdown>", contentFormat: "markdown")`, que converte para ADF server-side
    (validado 2026-05-20; o campo é `commentBody`, ver Armadilhas). Sem MCP: ADF
-   por REST, cujo HTTP é sensor (o `acli` sai 0 em falha). 🔴 **Confirme por REST**, nunca por `acli comment list`:
+   (`scripts/md2adf.py` converte o markdown e roda a varredura) por REST, cujo HTTP é sensor
+   (o `acli` sai 0 em falha). 🔴 **Confirme por REST**, nunca por `acli comment list`:
    `GET .../issue/${PROJECT}-XXX/comment?orderBy=-created&maxResults=1` com o `body` como
    **objeto** (`str` = ADF recusado). Comando pronto em `references/close.md` step 5.
 

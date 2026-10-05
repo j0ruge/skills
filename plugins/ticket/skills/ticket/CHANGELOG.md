@@ -4,6 +4,15 @@ Registro por sessão da skill; o changelog **versionado** é `plugins/ticket/CHA
 (a entrada 1.4.0 de 2026-09-03 resume o que está aqui). Cada entrada registra **o que
 mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-05 — conversor markdown → ADF e close sem branch (1.10.0)
+
+- `close` do SBM-4 sem MCP atlassian: a sessão teve de escrever o conversor para o ADF. Ele vira
+  `scripts/md2adf.py`, com a varredura de marks e estrutura embutida; a saída para o SBM-4 é igual
+  ao corpo que o Jira aceitou (`201`, `dict 8`).
+- SBM-4 e SBM-5 integrados por rebase + ff, branches apagados: `main..HEAD` vazio e key só no
+  corpo. O step 3 ganha a busca ancorada no início da linha (a sem âncora puxou um commit do
+  SBM-5) e a contagem commit a commit (o `diff` primeira..última somaria o backup intercalado).
+
 ## 2026-10-05 — passada da `skill-refactoring` (1.9.1)
 
 - 19.950 → 19.255 chars no `SKILL.md`: saem os três blocos de código que o `start.md` já tem por

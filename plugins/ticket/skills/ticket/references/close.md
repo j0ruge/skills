@@ -43,6 +43,24 @@
      acli jira workitem view ${PROJECT}-XXX
      ```
 
+   - **Já integrado na base sem squash** (rebase + fast-forward, branch apagada): o
+     `${BASE_BRANCH}..HEAD` sai vazio e a key não está no subject, e sim no corpo (step 8).
+     Ache os commits pela key **ancorada no início da linha** e conte commit a commit:
+
+     ```bash
+     git log --reverse -E --grep "^${PROJECT}-XXX([^0-9]|\$)" --format='%h %s' ${BASE_BRANCH}
+     SHAS=(<os commits do cartão>)   # array: o zsh não divide "$SHAS" em palavras
+     git log --no-walk --name-only --format= "${SHAS[@]}" | sort -u | grep -c .   # arquivos
+     git log --no-walk -p --format= "${SHAS[@]}" -- <dir-de-testes> \
+       | grep -cE '^\+\s*def test_'                                               # testes novos (pytest)
+     ```
+
+     Medido em 05/10/2026 (SBM-4 e SBM-5, no `~/.hermes`): o `--grep` sem âncora trouxe o
+     commit do SBM-5 cujo corpo citava "SBM-4 #2"; a busca na base inteira trouxe também 5
+     commits de HANDOFF posteriores ao fechamento (leia a lista e tire o que é registro, não
+     entrega); e um `git diff <primeira>^ <última>` sobre essa lista crua somaria o commit de
+     backup intercalado (151 arquivos). A contagem por commit bateu com o resumo postado.
+
    - Montar resumo usando template de `templates.md`:
      - **Visão Geral:** Extrair da descrição da issue no Jira
      - **Solução:** Sintetizar a partir dos commit messages
@@ -75,6 +93,18 @@
    **Fallback (sem MCP atlassian disponível):** montar ADF JSON manual — markdown
    e Wiki Markup **não** funcionam fora do MCP (renderizam como texto puro); ver
    `templates.md` §ADF (legado) para a estrutura e rode a varredura de marks antes.
+
+   O caminho curto é converter o mesmo markdown do step 4 com o script da skill, que
+   já roda essa varredura e não grava nada se ela reprovar (rc 1):
+
+   ```bash
+   python3 <dir-da-skill>/scripts/md2adf.py resumo.md /tmp/comment.json   # {"body": <doc ADF>}
+   ```
+
+   Aceita títulos, parágrafos, listas `-` e `1.`, `**negrito**`, `` `code` ``, links,
+   bloco de código e `---`; itálico e tabela saem como texto. Validado em 05/10/2026 no
+   SBM-4: a saída é idêntica ao JSON que o Jira aceitou (`201`, releitura `dict 8`).
+
    **Prefira postar pelo REST:** o código HTTP é um sensor de verdade (`201` =
    gravado; 400 = ADF recusado), ao contrário do `acli`, que sai 0 em falha.
    Validado em 04/10/2026 (SBM-3, `201` e releitura `dict 9`):
@@ -227,7 +257,9 @@
    > ```
    >
    > Confirme com o dev o que encontrou, em vez de assumir: o último commit da
-   > base pode ser de outro cartão se alguém mergeou no meio.
+   > base pode ser de outro cartão se alguém mergeou no meio. Integrado por rebase +
+   > fast-forward (sem squash), a key está no corpo de cada commit, não no subject:
+   > ache-os pela busca do step 3.
 
    > **Worktree (start A8, árvore viva):** não há checkout a voltar, e o `pull` na
    > árvore viva não faz parte do close: atualizar a base dela é deploy, decisão à

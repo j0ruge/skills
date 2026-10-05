@@ -1,5 +1,46 @@
 # Changelog — ticket
 
+## [1.10.0] — 2026-10-05
+
+### Por quê
+
+Duas lições do `close` do SBM-4 (05/10/2026, no `~/.hermes`), feito sem o MCP atlassian e com o
+trabalho já no `main`:
+
+1. O fallback sem MCP mandava montar o ADF à mão e rodar a varredura de marks, mas não trazia o
+   conversor. A sessão teve de escrever um para postar o resumo, e cada fechamento sem MCP
+   repetiria isso, com o risco do 400 mudo que o `templates.md` descreve.
+2. O SBM-4 e o SBM-5 entraram no `main` por rebase + fast-forward, sem PR e sem squash, e os
+   branches já tinham sido apagados. O step 3 só sabia coletar `${BASE_BRANCH}..HEAD`, que sai
+   vazio, e a nota do step 10 procura a key no subject do squash, que não existe nesse caso: a key
+   está no corpo de cada commit.
+
+### O quê
+
+- `scripts/md2adf.py` (novo, só stdlib): converte o mesmo markdown do resumo em
+  `{"body": <doc ADF>}` (ou só o doc, com `--doc`). Cobre os nós da tabela ADF do `templates.md`,
+  menos itálico e tabela, e roda a varredura de marks e estrutura antes de gravar: rc 1 sem gravar
+  quando ela reprova, rc 2 em uso inválido.
+- `close.md` step 5: o fallback ganha o comando do script. `templates.md`: a linha do fallback
+  aponta para ele. `SKILL.md` step 5: o script entra na frase "Sem MCP".
+- `close.md` step 3: receita para o trabalho já integrado sem squash — busca pela key **ancorada
+  no início da linha** (`-E --grep "^KEY([^0-9]|$)"`) e contagem de arquivos e testes **commit a
+  commit** (`git log --no-walk`, com array por causa do zsh). Step 10 e `SKILL.md` step 3 remetem a
+  ela.
+- `SKILL.md` 19.255 → 19.412 chars (287 → 289 linhas).
+
+### Verificação
+
+- A saída do script para o resumo do SBM-4 é igual (JSON comparado) ao corpo que o Jira aceitou
+  (`201`, releitura `dict 8`). O resumo do SBM-5 e o template de fechamento da skill convertem
+  sem erro; um markdown sintético cobre títulos, parágrafo em várias linhas, as duas listas com
+  linha de continuação, link, bloco de código, `---` e CRLF. A varredura reprova mark em string e
+  conteúdo sem nó, com o caminho do nó.
+- Busca medida no `~/.hermes`: o `--grep 'SBM-4'` sem âncora trouxe `1973859`, do SBM-5, cujo corpo
+  cita "SBM-4 #2"; a ancorada na base inteira trouxe ainda 5 commits de HANDOFF posteriores; e um
+  `diff <primeira>^ <última>` sobre essa lista somaria o backup intercalado (151 arquivos). A
+  contagem por commit dá 21 arquivos e 31 testes (SBM-4) e 20 e 14 (SBM-5), os números postados.
+
 ## [1.9.1] — 2026-10-05
 
 ### Por quê

@@ -10,7 +10,8 @@
 > 2. **Fallback — `acli --body-file` com ADF JSON**: o `acli` não converte
 >    markdown nem Wiki Markup (ambos viram texto puro). Quando o MCP atlassian
 >    não estiver disponível, usar a `Referência Rápida: ADF (legado)` + a
->    estrutura JSON do `Template: Resumo de Fechamento (ADF JSON — legado)`.
+>    estrutura JSON do `Template: Resumo de Fechamento (ADF JSON — legado)`, ou
+>    gerar o JSON do próprio markdown com `scripts/md2adf.py` (`close.md` step 5).
 >
 > Sempre que possível, escrever o resumo uma única vez em markdown e
 > reaproveitá-lo no body do PR (GitHub também é markdown).
