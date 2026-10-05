@@ -2,6 +2,21 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-10-05 — Gate local sem CI hospedado e dump antes da produção — bump 2.3.0 → [2.4.0]
+
+**O quê:** o Step 3 ganha o ramo "o CI hospedado não roda". O gate passa a ser local: espelha as
+`run:` do próprio CI, registra um rc por passo, inclui a suíte de integração e publica o resultado pela
+API de Statuses (`local/ci`), nunca `success` sem ter rodado. Em "Promoting to production" entra um
+terceiro item: dump do banco de produção antes do merge, verificado com `pg_restore --list`, copiado
+para fora do host com sha256 igual nas duas cópias e registrado no corpo do PR.
+
+**Por quê:** numa promoção real `staging → main` (0.9.0, 132 commits, 11 migrations), os 4 jobs do
+`ci.yml` do PR ficaram `queued`, sem runner, porque o repositório é privado e estava sob bloqueio de
+cobrança. O Step 3 só dizia "espere o CI verde". Correção verificada: o gate local passou em 16/16 e a
+integração em 279/279, os status `local/ci` e `local/integration` foram publicados no sha, e o merge veio
+depois. O dump foi pedido pelo usuário no meio do fluxo. Correção verificada: `pg_dump -Fc` de 273 KB,
+`pg_restore --list` com 15 tabelas, e o sha256 igual no host e na cópia externa.
+
 ## 2026-10-02 — Nada a promover não é deploy feito — bump 2.2.1 → [2.3.0]
 
 **O quê:** o Step 4 ganha o ramo "zero commits": quando `origin/$TARGET..origin/$SOURCE` está

@@ -1,7 +1,7 @@
 ---
 description: Promote code to staging (and on to production) through the repo's real CD pipeline. Reads each workflow's `on.push.branches` and `runs-on` instead of assuming — the wrong branch can deploy production, and a hosted job under a billing block never starts. Waits for CI green on the exact commit, promotes by PR merge commit, watches the run, then proves the deploy by the data. Triggers — deploy staging, promote to staging, subir para staging, CD pipeline, cd-staging, promover para produção.
 metadata:
-  version: 2.3.0
+  version: 2.4.0
 ---
 
 ## Deploy to Staging
@@ -155,6 +155,26 @@ Red CI stops the promotion.
 A run that is red with **zero steps** is not red CI — it is the quota block from Step 0b, and the
 same block will stop the target pipeline too. Do not read it as "the tests failed"; read the
 annotations.
+
+**When hosted CI cannot run at all**, the gate becomes local. This covers a private repo under a
+billing block, and PR jobs that sit `queued` with no runner assigned. Waiting gets you nowhere, and
+promoting with no gate is worse. Do this instead:
+
+- Mirror the CI's own `run:` lines (the workflow, or the composite actions it calls such as
+  `.github/actions/ci-gate-*`) on a tree identical to the promoted sha. Run one step at a time and
+  record one exit code per step. Never pipe through `| tail`: it hides the exit code.
+- Include the integration suite. It is the part your laptop usually skips and hosted CI used to
+  cover.
+- Publish the result through the Statuses API, which is not Actions and is not billed. Use
+  `state=failure` when a step fails, and never `success` without having run the gate on that sha:
+
+```bash
+gh api -X POST repos/<o>/<r>/statuses/<sha> -f state=success -f context=local/ci \
+  -f description="lint + typecheck + build + tests ok"
+```
+
+Measured on a release PR: all four `ci.yml` jobs stayed `queued` with no runner. The local gate
+went 16/16, integration 279/279, and both statuses went on the sha before the merge.
 
 ### Step 4 — Sensors: what moves, and does it move the pipeline itself?
 
@@ -358,7 +378,7 @@ above holds. Do not exit silently on failure.
 
 Same procedure, one step further along the chain: `SOURCE` becomes the staging
 branch, `TARGET` becomes the branch whose push triggers the production workflow.
-Two differences that matter:
+Three differences that matter:
 
 - **Ask first.** Staging is reversible in practice; production is visible to
   real users. Confirm explicitly, even if the user asked for "deploy" in general
@@ -366,6 +386,14 @@ Two differences that matter:
 - **Workflow changes cross over here.** Edits to `cd-production.yml` that rode
   along in an earlier promotion are inert until this merge — the production
   pipeline that runs is the one in the commit you are pushing now.
+- **Dump the production database before the merge, and verify it.** An image
+  rollback target does not undo a migration. Take `pg_dump -Fc` (or the engine's
+  equivalent) inside the production DB container, then confirm the expected
+  tables are in it with `pg_restore --list`. Copy it off the host and check the
+  sha256 matches on both copies. Put the path and hash in the PR body. If there
+  is no verified dump, the merge does not happen. In one 0.9.0 promotion
+  carrying 11 migrations, the user had to ask for this mid-flow, because the
+  procedure only implied it.
 
 ### Notes
 
