@@ -4,6 +4,15 @@ Registro por sessão da skill; o changelog **versionado** é `plugins/ticket/CHA
 (a entrada 1.4.0 de 2026-09-03 resume o que está aqui). Cada entrada registra **o que
 mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-05 — worktree quando a base é árvore de serviço no ar (1.9.0)
+
+- O A8 fazia `checkout` e `pull` na base. No EDS-65 o checkout da `main` era de onde o MCP
+  rodava, e o JorUge precisou pedir a worktree no argumento do ticket. O `start.md` A8 ganha a
+  worktree com `--no-track` (sem ele a branch rastreia `origin/main`, medido num repo
+  descartável) e o `close.md` step 10, a remoção dela sem `pull` na árvore viva. O `SKILL.md` só
+  roteia (cerca de 100 chars): ele já estava em 20.306 chars, dívida para a `skill-refactoring`.
+- `campos.md`: anotar os ids do `POST /issue` no `.jira-project`, como o do EDS faz.
+
 ## 2026-10-01 — refatoração: folga abaixo do orçamento de 20k chars
 
 - Pedida pelo JorUge depois da 1.6.2, que fechou com 19.999 chars. Pela `skill-refactoring`, só sai

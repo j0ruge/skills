@@ -229,6 +229,20 @@
    > Confirme com o dev o que encontrou, em vez de assumir: o último commit da
    > base pode ser de outro cartão se alguém mergeou no meio.
 
+   > **Worktree (start A8, árvore viva):** não há checkout a voltar, e o `pull` na
+   > árvore viva não faz parte do close: atualizar a base dela é deploy, decisão à
+   > parte com o dev (no EDS-65, `merge --ff-only` e restart do serviço, autorizados
+   > antes). Depois do merge, saia da worktree e remova-a:
+   >
+   > ```bash
+   > git worktree remove ../<repo>-${PROJECT}-XXX   # recusa se houver mudança não commitada
+   > ```
+   >
+   > A recusa é o sensor de que nada ficou para trás: veja o `git -C <worktree>
+   > status` antes de pensar em `--force`. A branch fica, local e no origin. O step 1
+   > detecta a issue de dentro da worktree; removida ela, a key está no subject do
+   > commit, como acima.
+
 11. **Output:**
 
    ```text

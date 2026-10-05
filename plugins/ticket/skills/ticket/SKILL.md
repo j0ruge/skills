@@ -4,7 +4,7 @@ description: "Jira ticket lifecycle for JRC Brasil projects, integrated with Git
 argument-hint: "start (open) | split | close | status"
 compatibility: "Claude Code: o argument-hint acima é campo dele e só é lido no topo. Requer acli e credenciais Jira (JIRA_EMAIL, JIRA_API_TOKEN)."
 metadata:
-  version: 1.8.2
+  version: 1.9.0
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -192,7 +192,7 @@ vínculo ao cartão que bloqueiam (`references/workflow.md §Vínculos entre iss
   dentro da sprint** (`--from-json`), não criada-e-depois-editada
 - **Releia depois de escrever** e só então diga que deu certo (A6 / B4)
 - A branch parte de `${BASE_BRANCH}` (nunca assumir `develop`); `git status` sujo → avisar antes de
-  trocar de branch
+  trocar de branch; base que é árvore de serviço no ar → worktree (`references/start.md` A8)
 - Descrição de issue nova no template de `references/templates.md` (só sub-fluxo B)
 
 ---
@@ -251,7 +251,8 @@ por extenso, para ler antes do primeiro `close`: `references/close.md`.
 9. **Criar PR:** `git push -u origin <branch>` e
    `gh pr create --base ${BASE_BRANCH} --title "${PROJECT}-XXX: {summary}" --body-file "/tmp/${PROJECT}-XXX-pr-body.md"`
    — o body é o mesmo markdown do step 5; PR já existente → mostrar a URL.
-10. **Voltar para `${BASE_BRANCH}`** (`checkout` + `pull`). Fluxo direto na base, sem PR → pular 9-10.
+10. **Voltar para `${BASE_BRANCH}`** (`checkout` + `pull`; em worktree, `git worktree remove` e nada de
+    `pull` na árvore viva: `close.md` step 10). Fluxo direto na base, sem PR → pular 9-10.
     **PR já mergeado → pular 8-10** (é o caso comum): o step 1 não casa a branch, e a key está no
     subject do squash — `git log -1 --format='%s'`; confirme com o dev, pode ser de outro cartão.
 11. **Output:** ✅ issue fechada · 📋 status · 💬 resumo postado · 🔀 PR · 🌿 de volta à base.

@@ -1,5 +1,33 @@
 # Changelog — ticket
 
+## [1.9.0] — 2026-10-05
+
+### Por quê
+
+O `start` A8 fazia `git checkout <base>` e `git pull` antes de criar a branch. Num checkout de
+onde um serviço roda, isso troca o código que o próximo restart carrega, e o `pull` na base já é
+deploy. No EDS-65 (05/10/2026) o `estimates-os_mcp` servia o MCP da `main`, e o JorUge teve de
+pedir a worktree no argumento do `/ticket`. Partir de `origin/<base>` sem `--no-track` deixa a
+branch rastreando a base (medido num repo descartável: `@{u}` = `origin/main`), e um `push` ou
+`pull` sem argumentos aponta para ela.
+
+### O quê
+
+- `references/start.md` A8: a árvore viva vai para worktree (`git worktree add --no-track -b …
+  origin/<base>`), com a medição `0 0` da base, como detectar (`WorkingDirectory` da unit) e o
+  porquê do `--no-track`.
+- `references/close.md` step 10: em worktree, nada de `checkout` nem de `pull` na árvore viva
+  (atualizá-la é deploy, decisão à parte); `git worktree remove` depois do merge, e a recusa dele
+  é o sensor de que nada ficou para trás.
+- `references/campos.md`: anotar os ids do `POST /issue` como comentário datado no
+  `.jira-project`.
+- `SKILL.md`: só o roteamento, na regra da branch e no close step 10.
+
+### Dívida (não consertada aqui)
+
+O `SKILL.md` já estava em 20.306 chars antes deste retrofit, acima do orçamento de cerca de 20
+mil; a lição entrou nas references, e a folga pede uma passada da `skill-refactoring`.
+
 ## [1.8.2] — 2026-10-05
 
 ### Por quê

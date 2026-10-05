@@ -146,6 +146,29 @@
    seguir e a branch nasce de base não verificada, sem nada avisar. Por isso a
    verificação acima mede a base em vez de confiar no pull.
 
+   **Árvore viva: worktree, não checkout.** Quando um serviço roda do checkout da
+   base (uma unit com `WorkingDirectory` nele, um servidor de dev apontado para
+   ele), o `checkout` acima troca o código que o próximo restart carrega, e o
+   `pull` na base já é deploy. Confira (`systemctl --user show <unit> -p
+   WorkingDirectory`) ou pergunte ao dev, que também pode pedir a worktree. A
+   branch nasce ao lado, e a árvore viva não se mexe:
+
+   ```bash
+   WT="../$(basename "$PWD")-${PROJECT}-XXX"
+   git fetch origin
+   git worktree add --no-track -b ${BRANCH_PREFIX}-XXX_descricao_curta "$WT" origin/${BASE_BRANCH}
+   git -C "$WT" rev-list --left-right --count HEAD...origin/${BASE_BRANCH}   # espera `0	0`
+   ```
+
+   O `--no-track` é o que impede a branch de rastrear a base: criada de
+   `origin/${BASE_BRANCH}` sem ele, `git -C "$WT" rev-parse --abbrev-ref '@{u}'`
+   responde `origin/main` (medido em 05/10/2026 num repo descartável), e um
+   `git push` ou `git pull` sem argumentos ali aponta para a base. O close faz
+   `push -u` para a própria branch. Caso real: no EDS-65 (05/10/2026) o
+   `estimates-os_mcp` servia o MCP da `main`; o trabalho foi em
+   `../estimates-os_mcp-EDS-65`, e a `main` só andou no merge autorizado. O close
+   remove a worktree (`close.md` step 10).
+
 9. **Output:** Mostrar resumo final:
 
    ```text

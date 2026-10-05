@@ -232,6 +232,10 @@ Medido em SQ (2026-09-10): projeto `10050`; tipos `10000` Epic · `10009` Histó
 `10018` Tarefa · `10019` Subtarefa · `10020` Bug · `10271` Referência. Confirme
 antes de reusar — tipos são configuração de projeto e mudam.
 
+Anote o que descobriu como comentário datado no `.jira-project`: a próxima criação
+não repete as chamadas, e a data diz quando conferir de novo. O do EDS guarda projeto
+`10005`, `Tarefa` `10030` e a fixVersion `0.1.0` = `10004` (medidos em 05/10/2026).
+
 ### A flag `released` do Jira não diz se a versão foi lançada
 
 O campo é metadado que alguém precisa marcar à mão, então ele atrasa em relação
