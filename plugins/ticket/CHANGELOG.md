@@ -1,5 +1,25 @@
 # Changelog — ticket
 
+## [1.8.1] — 2026-10-05
+
+### Por quê
+
+Abrindo dois cartões com subtarefas no EDS (EDS-53 e EDS-60), as subtarefas criadas com `parent`
+herdaram a sprint da mãe, mas voltaram com `fixVersions: []` no `GET` REST, embora a mãe tivesse
+a versão. A skill não avisava, e o `split` nem menciona o campo: o cartão sairia sem rótulo de
+release sem ninguém notar. O conserto, um `PUT` por subtarefa (`204`) com releitura, funcionou.
+Criar a subtarefa já com o campo, num `POST /issue` com `parent`, funcionou numa chamada só (10
+subtarefas, todas `201`), sem a janela entre o `create` e o `edit --parent` do `acli`.
+
+### O quê
+
+- `references/workflow.md` §Sub-issues: o caminho REST numa chamada (`parent` + id do tipo
+  Subtarefa + `fixVersions`), apontando para `campos.md` §Os dois ids, e o aviso de que a
+  subtarefa herda a sprint mas não a `fixVersion`, com o conserto e a releitura.
+- `SKILL.md`: só a versão. O arquivo está no teto de ~20 mil chars, e a roteadora do
+  `workflow.md` já cita "ao criar sub-issues".
+- Dívida pré-existente, não tratada aqui: `argument-hint` no topo do frontmatter (INFO A4/G2).
+
 ## [1.8.0] — 2026-10-04
 
 ### Por quê

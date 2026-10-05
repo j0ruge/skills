@@ -3,7 +3,7 @@ name: ticket
 description: "Jira ticket lifecycle for JRC Brasil projects, integrated with Git — create issues/sub-issues and branches, close with an auto-generated summary. Per-repo config via `.jira-project`; discovers project-specific transitions instead of assuming. New issues are born in the active sprint with story points and fixVersion, each read back by the sensor that can see it. Triggers — ticket, Jira, criar issue, fechar ticket, sprint, story points, fixVersion, acli."
 argument-hint: "start (open) | split | close | status"
 metadata:
-  version: 1.8.0
+  version: 1.8.1
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira

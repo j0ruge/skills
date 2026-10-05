@@ -197,6 +197,16 @@ curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
 
 - Tipo: `--type "Subtarefa"`
 - Vincular à issue pai: `acli jira workitem edit --key "${PROJECT}-YYY" --parent "${PROJECT}-XXX"`
+- **Numa chamada só, pelo REST** (preferido com fixVersion ou várias subtarefas): `POST /rest/api/3/issue`
+  com `parent: {"key": "${PROJECT}-XXX"}`, `issuetype: {"id": …}` do tipo Subtarefa (ids em
+  `campos.md` §Os dois ids que o `POST /issue` exige), `summary`, `description` em ADF e
+  `fixVersions`. Nasce vinculada: some a janela entre o `create` e o `edit --parent`, em que a
+  subtarefa fica solta, e o `acli` que sai 0 em falha. Medido em 05/10/2026: 10 subtarefas, todas
+  `201`, `parent` conferido na releitura.
+- ⚠️ **A subtarefa herda a sprint da mãe, mas não a `fixVersion`.** Criadas sem o campo, 6
+  subtarefas voltaram com `fixVersions: []` no `GET` enquanto a mãe tinha a versão, e com a sprint
+  já herdada (05/10/2026). Ponha `fixVersions` no próprio `POST`, ou grave depois com
+  `PUT /issue/<KEY>` (`204`), e confira pelo `GET` de `campos.md` §Conferir que gravou.
 - Sub-issues **não** ganham branches próprias — commits vão na branch da issue pai
 - Issue pai só fecha quando **todas** as sub-issues estiverem "Finished"
 - Listar sub-issues: `acli jira workitem search --jql "parent = ${PROJECT}-XXX"`
