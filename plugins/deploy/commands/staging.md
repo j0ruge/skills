@@ -1,7 +1,7 @@
 ---
 description: Promote code to staging (and on to production) through the repo's real CD pipeline. Reads each workflow's `on.push.branches` and `runs-on` instead of assuming — the wrong branch can deploy production, and a hosted job under a billing block never starts. Waits for CI green on the exact commit, promotes by PR merge commit, watches the run, then proves the deploy by the data. Triggers — deploy staging, promote to staging, subir para staging, CD pipeline, cd-staging, promover para produção.
 metadata:
-  version: 2.5.0
+  version: 2.5.1
 ---
 
 ## Deploy to Staging
@@ -234,6 +234,16 @@ working tree — `git merge-tree --write-tree --name-only origin/$TARGET HEAD` l
 exactly the files that will conflict, so you know whether it is two adjacent
 `import` lines or a real disagreement before you start.
 
+**Empty output and a clean `merge-tree` still do not mean GitHub agrees.** A hotfix that went
+straight to the production branch and was merged back into the source can leave source and
+target with **two** merge bases (criss-cross). `merge-tree` resolves that through a virtual base
+and reports nothing; GitHub marks the promotion PR `CONFLICTING / DIRTY` anyway. Measured: a target
+whose tree equalled a source commit, zero commits of its own, two bases, and the PR stuck. The fix
+is the same back-merge with nothing to reconcile: merge the target into the source (PR, merge
+commit), check `git diff <old source> <new source>` is empty so the local gate still covers the
+tree, and publish the status on the new sha. Count the bases before opening the PR:
+`git merge-base --all origin/$TARGET origin/$SOURCE | wc -l` (more than 1 → back-merge first).
+
 One more thing that reconciliation brings in: **the target's debt becomes your
 gate.** CI checks the whole repository, not your diff. When the content merged
 back was itself never gated (a PR merged during a quota block, say), its
@@ -339,6 +349,12 @@ with the build or the commit — `gh run rerun --failed` went green with no code
 would have been the wrong reflex: there is nothing to fix, and a second merge commit on the
 environment branch buys noise instead of a deploy. Same family: `TLS handshake timeout` or
 `unauthorized` on `docker login`, `blob upload unknown`, `502`/`503` from the registry.
+
+A self-hosted runner that shares its host with the environment adds one more: a **test timeout**
+in a gate job. Measured: two repo-wide sweep tests (one takes ~0.2 s locally) hit 7.1 s and 6.2 s
+against the 5 s default on a 4-core host at load ~4.5, and `gh run rerun --failed` went green.
+Check the load (`uptime`) and that the failed step precedes the build, then rerun. The same
+timeout recurring across promotions is the test's budget to fix, not luck to retry.
 
 Before rerunning, answer one question: **did the failed run already change the environment?** Which
 step failed decides it. A failure in build-and-push happens before anything is deployed; a failure

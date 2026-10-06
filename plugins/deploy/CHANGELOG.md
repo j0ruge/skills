@@ -2,6 +2,33 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-10-06 — Dupla base de merge e timeout de teste no runner que divide o host — bump 2.5.0 → [2.5.1]
+
+**O quê:** o Step 4 ganha um parágrafo depois de "How to read the second one": `--no-merges` vazio
+e `merge-tree` limpo não garantem que o GitHub aceite o merge. Um hotfix direto no branch de
+produção, com merge de volta no source, pode deixar source e target com **duas** bases de merge; o
+`merge-tree` resolve por base virtual e não acusa nada, e o PR de promoção sai `CONFLICTING / DIRTY`.
+O sensor novo é `git merge-base --all … | wc -l`, e a saída é o mesmo merge de volta, mesmo sem nada
+a reconciliar, conferindo que a árvore não mudou. O Step 7, em "Some red runs mean run it again",
+ganha o timeout de teste num job de gate quando o runner self-hosted divide o host com o ambiente.
+
+**Por quê:** promoção da 0.9.1 para produção, depois do hotfix #409 ter ido direto para `main` e
+voltado à `develop` pelo #410. (1) O PR `develop → staging` saiu `CONFLICTING / DIRTY` com os dois
+sensores do Step 4 limpos: a `staging` tinha a mesma árvore de um commit da `develop` e nenhum
+commit próprio, e `git merge-tree` saiu com rc=0. `git merge-base --all` devolveu duas bases (o
+bump da 0.9.1 e o merge da promoção anterior). Correção verificada: o merge de volta
+`staging → develop` com merge commit deixou a árvore idêntica (`git diff` vazio) e a base única, e o
+PR passou a `MERGEABLE`. (2) O `ci-gate-backend` do `cd-staging` caiu em duas varreduras do repo,
+com 7,1 s e 6,2 s contra o timeout padrão de 5 s, num host de 4 núcleos com load ~4,5 e 43
+containers; o gate local tinha passado as duas. O passo falho vinha antes do build, o ambiente
+seguia na imagem anterior, e `gh run rerun --failed` passou. A mesma varredura já tinha derrubado a
+1ª tentativa de um `cd-production` na véspera, o que faz dela orçamento de teste a corrigir no
+projeto, e não sorte.
+
+**Fica de fora (dívida anterior):** `commands/staging.md` segue acima de 20 mil chars (23,6 mil
+antes desta versão), e a `cursor_description` do `install.py` continua descrevendo o fluxo anterior
+à 2.0.0.
+
 ## 2026-10-06 — Bump antes do gate, e e2e vermelha depois do deploy não é veredito — bump 2.4.1 → [2.5.0]
 
 **O quê:** entra o Step 2b: se o repositório exige bump de versão na promoção (script de release,
