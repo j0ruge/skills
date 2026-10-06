@@ -2,6 +2,34 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.3.6] — 2026-10-05
+
+### Armadilhas do Check: o que sumiu, o que a sonda não leu, a regra que ninguém pediu
+
+Lições de uma sessão real (ingestão de três monografias num acervo em Markdown, com guarda de
+anonimização no pré-commit):
+
+- **Seção nova `## Armadilhas` no `SKILL.md`**, depois da Fase 3, uma linha por caso. A skill não
+  tinha seção de armadilhas (INFO F2 da auditoria); ela nasce para estas lições.
+- **Validador verde não prova que nada sumiu.** O wrapper de extração imprimiu "OK" e o validador do
+  conversor saiu 0 com 58 de 59 e 88 de 90 páginas: epígrafe e dedicatória, no pé da página, vinham
+  marcadas como rodapé, e o conversor descartava rodapé. A Fase 2 manda verificar pelo artefato, mas
+  não dizia que, numa conversão, isso é contar as unidades nas duas pontas. Padrão de falha: aceitar
+  "validou" como "está tudo lá".
+- **Sonda verde porque não leu o artefato.** A guarda de anonimização no modo "árvore inteira" disse
+  "nenhum achado" sobre 3.671 arquivos rastreados; os três arquivos novos ainda não estavam no índice,
+  e o modo do índice, depois do `git add`, achou 4. A Fase 2 manda sabotar a sonda; faltava conferir
+  que o escopo dela cobre o artefato sob teste. Padrão de falha: o verde de uma sonda que nunca abriu
+  o arquivo novo.
+- **Regra herdada de handoff.** O handoff dizia que os nomes dos autores ficavam fora do repositório;
+  o registro do pedido do usuário não tinha a frase, e quatro documentos anteriores faziam o oposto.
+  Complementa o Gemba da fase 1 e a 1.3.5: o que um agente escreveu se rastreia até o usuário antes de
+  virar instrução. Padrão de falha: obedecer a uma restrição que ninguém pediu, ou perguntar sobre ela
+  como se fosse do usuário.
+- **Correção verificada no caso de origem:** a contagem achou as páginas (corrigidas no conversor,
+  com teste e mutante); o modo do índice achou os 4 casos (conferidos e isentos); a pergunta ao
+  usuário, com o registro original na mão, decidiu os nomes. Não foram testadas em outro caso.
+
 ## [1.3.5] — 2026-10-04
 
 ### Surpresa antes da hora: primeiro a pergunta a quem tem acesso, depois a investigação

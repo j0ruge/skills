@@ -1,7 +1,7 @@
 ---
 name: kaizen-software
 metadata:
-  version: 1.3.5
+  version: 1.3.6
 description: "Metodologia Kaizen (melhoria contínua) para planejar, implementar e manter software — e para ensinar Kaizen ao time. Conduz as três fases pelo ciclo PDCA, verifica pelo artefato e não pelo rótulo da ferramenta, prefere poka-yoke a regra escrita, e mapeia os artefatos Kaizen nos que o projeto já tem (ADR, notas, TODO, CHANGELOG). Gatilhos — Kaizen, PDCA, kaizen log/retrospectiva, 5 porquês, poka-yoke, desperdício/dívida técnica, planejar feature, confirmar antes de apagar/limpar."
 ---
 
@@ -74,6 +74,14 @@ A manutenção é onde o Kaizen mora de verdade — o sistema em produção é o
 4. **Anote os identificadores antes de destruir** (SHAs, caminhos, IDs) na saída da sessão. É a rede de segurança mais barata que existe, e só serve se for escrita antes.
 
 **Retrospectivas:** ao fechar um ciclo de trabalho (sprint, entrega, sessão longa), conduza uma retrospectiva curta com o template em `references/templates.md` e converta os aprendizados em entradas do kaizen log com dono e próximo passo.
+
+## Armadilhas
+
+Casos medidos em sessões reais. Cada um é um jeito de o Check dar verde sem ter olhado.
+
+- **Validador verde não prova que nada sumiu.** Em conversão, ingestão, migração ou exportação, o Check conta as unidades nas duas pontas (páginas, linhas, registros) e compara. Validador de forma não reprova o que foi descartado: o que não saiu não tem forma para estar errada. Caso (2026-10-05): um conversor de PDF para Markdown descartava a página cujo único bloco vinha marcado como rodapé (dedicatória, epígrafe); o wrapper disse "OK" e o validador saiu 0, e só a contagem de marcadores de página contra as páginas do PDF viu as que faltavam.
+- **Sonda verde porque não leu o artefato.** Antes de confiar no verde, confira que o escopo da sonda inclui o que acabou de nascer: varredura "da árvore" que lista só arquivos rastreados (`git ls-files`), só o índice ou só um cache passa sem abrir o arquivo novo. O caso sabotado da Fase 2 prova que a sonda vê o defeito; o escopo prova que ela olhou para o artefato. Caso (2026-10-05): uma guarda de dados sensíveis deu "nenhum achado" sobre os arquivos rastreados; depois do `git add`, achou 4 nos três arquivos novos.
+- **Regra herdada de handoff não é do usuário até ser rastreada.** Handoff, resumo ou nota escrita por agente pode carregar uma restrição que o próprio agente acrescentou. Antes de obedecer ou de perguntar, procure a origem (o pedido registrado, a thread). Se ela não está lá e o precedente diz o contrário, a regra vira pergunta, não instrução. Caso (2026-10-05): "os nomes ficam fora do repositório" estava no handoff e não no registro do pedido, os documentos anteriores faziam o oposto, e o usuário escolheu o precedente.
 
 ## Ensinar Kaizen
 
