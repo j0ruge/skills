@@ -1,7 +1,7 @@
 ---
 description: Promote code to staging (and on to production) through the repo's real CD pipeline. Reads each workflow's `on.push.branches` and `runs-on` instead of assuming — the wrong branch can deploy production, and a hosted job under a billing block never starts. Waits for CI green on the exact commit, promotes by PR merge commit, watches the run, then proves the deploy by the data. Triggers — deploy staging, promote to staging, subir para staging, CD pipeline, cd-staging, promover para produção.
 metadata:
-  version: 2.4.1
+  version: 2.5.0
 ---
 
 ## Deploy to Staging
@@ -126,6 +126,17 @@ runner. Two traps worth knowing:
   `tsc -b --noEmit` there.
 
 Pre-flight is a fast local filter, not the gate. The gate is Step 3.
+
+### Step 2b — Does the promotion carry a version bump? Do it before the gate
+
+Many repos bump the version *as part of* the promotion: it becomes the version the app displays,
+the tracker's fixVersion and the tag that anchors the CHANGELOG. Look for the rule instead of
+assuming there is none: a release script (`release:bump`, `npm version`, `cz bump`), a rule file
+(`grep -rniE 'bump' .claude/rules/ docs/ CONTRIBUTING.md`), earlier release commits
+(`git log --oneline --grep='release' -5 "origin/$SOURCE"`). If the rule exists, bump **first** and put
+the commit where the precedent puts it (straight on `$SOURCE`, or by PR). Only then run Step 3. The
+bump creates the commit you are about to promote, so a gate that ran before it publishes `local/ci`
+on a sha that never ships.
 
 ### Step 3 — Wait for CI green on the exact commit being promoted
 
@@ -379,6 +390,25 @@ curl -s -o /dev/null -w '%{http_code}\n' https://<staging hostname>/
 Measured on one deploy: four migrations stamped 18:49:18, container `Created` 18:49:18,
 API answering `401 Access Token required` — that is a verified deploy. A green run whose
 container is still `Up 5 days` is not.
+
+#### A red e2e after the deploy is not yet a verdict on the deploy
+
+A suite that runs against a shared environment carries its own debt: a test account with the wrong
+role, a runner whose network drops (`net::ERR_NETWORK_CHANGED`). Triage before you call it a
+regression or roll back:
+
+- **Hard vs flaky.** A test is hard-failed only when *no* attempt passed. Comparing every ✘ line
+  counts each flaky first attempt as a failure.
+- **Compare the hard set with the last run on the previous image**, by test **title**, not
+  `file:line`: a spec edited in this promotion shifts its line numbers, and the lookup reads "did not
+  run last time".
+- **Reproduce only what is new**, from the operator's machine against the same environment, with
+  `--retries=0`. A cancelled run never reaches the reporter's summary, which is where the errors
+  are printed; the previous run's summary or the isolated rerun is where you read them.
+
+Measured on one promotion (2026-10-06): 11 hard failures; 8 were already there on the previous image
+(one account still had an admin role, one runner network flake), and the 3 new ones passed in
+isolation in 4–6 s. The deploy was fine; the suite was not.
 
 The work is complete only when the pipeline finishes successfully **and** the proof
 above holds. Do not exit silently on failure.

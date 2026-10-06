@@ -2,6 +2,29 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-10-06 — Bump antes do gate, e e2e vermelha depois do deploy não é veredito — bump 2.4.1 → [2.5.0]
+
+**O quê:** entra o Step 2b: se o repositório exige bump de versão na promoção (script de release,
+arquivo de regra, commits de release anteriores), o bump vem **antes** do gate do Step 3, porque é
+ele que cria o commit promovido. O Step 7 ganha a subseção "A red e2e after the deploy is not yet a
+verdict on the deploy", com três regras: falha dura é a que nenhuma tentativa passou; o conjunto
+duro se compara com a última rodada na imagem anterior pelo **título** do teste, não por
+`file:line`; e só o que é novo se reproduz, isolado, da máquina do operador e com `--retries=0`.
+
+**Por quê:** promoção real da 0.9.1 (`develop → staging`). (1) A regra do repo exigia o bump antes
+do PR, e a ordem do comando punha o gate antes dele, então o `local/ci` iria para um sha que não
+seria promovido. Correção verificada: bump primeiro (`d4052df5`) e o status publicado nesse sha, que
+o PR de promoção levou. (2) A e2e contra staging, disparada depois do deploy, saiu cancelada com 11
+falhas duras. Comparadas com a rodada da imagem anterior, 8 já existiam (conta de teste com papel de
+admin, rede instável do runner), e as 3 novas passaram isoladas em 4 a 6 s. A primeira comparação,
+que contava todo ✘, mostrava 37 "só hoje", e a busca por `file:line` errou num spec que a própria
+promoção deslocou em 24 linhas. Correção verificada: a triagem separou as três causas.
+
+**Fica de fora (dívida anterior, para tarefa própria):** a `cursor_description` do deploy em
+`install.py` ainda descreve o fluxo anterior à 2.0.0 ("Syncs main with develop … and pushes");
+`commands/staging.md` já passava de 20 mil chars antes desta versão; e a linha do README parou de
+registrar versões na 2.3.0.
+
 ## 2026-10-05 — Self-hosted e gate local como padrão, não como plano B — bump 2.4.0 → [2.4.1]
 
 **O quê:** o Step 0b ganha o padrão "self-hosted, sem Actions hospedado". Um job em label hospedado
