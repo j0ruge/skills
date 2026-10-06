@@ -2,6 +2,28 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.12.0] — 2026-10-05
+
+### 6.11 ganha a oitava forma: descarte silencioso numa transformação
+
+- **`references/detection-passes.md` §6.11:** "The seven forms" passa a "The eight forms", com
+  **Silent drop in a transform**: conversor, ingestão, ETL ou exportação que pula registros por tipo
+  sem contar o que descartou, e sem comparação de unidades de saída contra as de entrada. Mais uma
+  linha de calibração: filtro que conta ou registra o descarte, ou cujo descarte um teste prende, não
+  é achado.
+- **Por quê:** numa sessão real (2026-10-05), um conversor de PDF para Markdown descartava toda página
+  cujo único bloco vinha marcado como `footer` (dedicatória, epígrafe), com o wrapper dizendo "OK" e
+  o validador saindo 0; só a contagem de marcadores contra as páginas do PDF viu. Foi o segundo caso
+  no mesmo conversor: no primeiro, tipos de bloco que guardavam o conteúdo em outro campo deixaram
+  2.555 itens de lista fora da saída, também sem aviso. Nenhuma das sete formas cobria: o que se
+  engole aqui é dado, não erro, e o validador olha a forma do que saiu.
+- **Minor, não patch:** a forma nova muda o que a revisão acha.
+- O `SKILL.md` não ganha linha (está a ~20 caracteres do aviso C1), só a versão; a `description` já
+  fala em silent-blinding sensors.
+- **Não entrou:** "sonda cujo escopo não cobre o artefato novo" (a guarda que só varre arquivos
+  rastreados). O código da guarda estava certo e o relatório dela dizia o escopo; o erro foi de quem
+  leu o verde, e a lição foi para a `kaizen-software` 1.3.6.
+
 ## [2.11.2] — 2026-10-05
 
 ### `codereview` 2.11.2: doze rodadas até zero achado, e o que cada uma ensinou

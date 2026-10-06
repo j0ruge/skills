@@ -462,7 +462,7 @@ The unifying test, and the question to ask of any sensor in a diff:
 A sensor that answers "stops reporting" is worse than no sensor, because its presence is read as
 coverage. That is what makes this a review-time finding rather than a style note.
 
-#### The seven forms
+#### The eight forms
 
 | Form | What to grep for | Why it blinds |
 |------|------------------|---------------|
@@ -473,6 +473,7 @@ coverage. That is what makes this a review-time finding rather than a style note
 | **Green by subtraction** | a diff where a check's count drops (fewer warnings, fewer failing tests, lint clean) in the same change that deletes, skips or loosens what the check reads — a removed test, `.skip`/`xit`, a new `eslint-disable`/`# noqa`, a widened ignore glob, a deleted citation or fixture | The sensor turns greener because its input shrank, not because the defect was fixed; the report reads as an improvement |
 | **Optional gate that vanishes** | a gate guarded by `[ -f "$TOOL" ] &&`, `command -v x &&`, `if exists(...)`, "run X if installed", with no `else` that prints SKIP | When the tool or path is missing the gate simply does not run, and a gate that did not run looks exactly like one that passed |
 | **Assertion without a timeout** | `curl`/`fetch`/`http` in an assertion with no `--max-time`/`--connect-timeout`/`AbortSignal` | On a network failure the body is empty, "no forbidden pattern found" counts zero occurrences in nothing, and prints `ok` |
+| **Silent drop in a transform** | a converter, ingest, ETL or export step that skips records by type or category (`if kind in SKIP: continue`, a `filter` on a type set) without counting what it dropped, and no output-vs-input unit count anywhere downstream | The validator checks the shape of what came out, and what never came out has no shape to fail. Measured: a PDF→Markdown converter dropped every page whose only block was typed `footer` (dedications, epigraphs) while its wrapper printed OK and its validator exited 0; only counting page markers against the PDF's page count saw it |
 
 #### Calibration — what is NOT a finding
 
@@ -483,6 +484,7 @@ Flag only when the swallowed/negative/untimed value **decides an alert, a gate, 
 - A retry loop that logs each failure and gives up loudly — not a finding; it reports.
 - Test code asserting a failure path — not a finding.
 - A deleted test/check whose subject was deleted in the same diff (the feature is gone) — not a finding; green by subtraction is when the subject **stays** and only its check goes.
+- A type filter that counts or logs what it dropped, or whose drop is pinned by a test naming the dropped type — not a finding; the drop reports.
 - A **future-drift claim** — "if this copy of the constant drifts, the check goes blind" — made by a
   per-file agent, which by contract does not read the tests. It stays a finding only when no test pins
   that site: Phase C finds the test that would turn red on the drift, and when one exists the site
