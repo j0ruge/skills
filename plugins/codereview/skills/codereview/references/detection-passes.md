@@ -142,6 +142,10 @@ Apply these 5 principles as analysis lenses to all CODE files (reduced rigor for
 - Race conditions from stale closures or unmounted component updates
 - Direct state mutation (modifying state objects/arrays without creating new references)
 - Incorrect equality checks (`==` instead of `===`)
+- A message that asks the user to act ("check the address", "try again") with no path that clears it
+  once the act is done: it keeps stating what stopped being true. A rule tested in one order (edit,
+  then message) asks the other (message, then edit) — MEDIUM (2026-10-06: a "CEP not found, check the
+  address" warning outlived the correction; the new test was red before the fix).
 
 **When `frameworkPatterns=dotnet`:**
 
@@ -535,6 +539,9 @@ review (2026-10-03, a Python repo; each confirmed by a mutant that survived):
   records writes, not connections.
 - **A negative-only assertion** (`"None" not in output`) that a reworded regression also satisfies.
   Pair it with the positive marker.
+- **A guard pinned in one order only** — the test proves the message stays silent when the user edits
+  *before* it appears; the regression lived in editing *after* it (2026-10-06). An order-dependent
+  rule needs both orders.
 - **An assertion message that names a defect the assertion does not check** — `"manifest.csv
   diverges from the build"` on a comparison that only proved the CSV survives a re-write; a stale
   value passed. A message a fix adds is a claim: sabotage the defect it names and watch it go red

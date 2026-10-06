@@ -2,6 +2,32 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.13.0] — 2026-10-06
+
+### A mensagem que pede ação precisa sair quando a ação é feita, e a cópia velha se prova com `diff`
+
+Lições de uma revisão no `sales_quote` (SQ-155), sobre o delta que o pipeline `sdd` não revisou.
+
+- **`references/detection-passes.md` §6.1 (react/node):** item novo, MEDIUM. Uma mensagem que pede ação
+  ("confira o endereço", "tente de novo") e não tem caminho que a retire depois da ação continua
+  afirmando o que deixou de ser verdade. Uma regra testada numa ordem (editar, depois a mensagem) pede a
+  pergunta na outra (a mensagem, depois editar). O achado principal da revisão foi este: um aviso de
+  "CEP não encontrado, confira" que sobrevivia à correção do endereço; o teste novo ficou vermelho
+  antes do conserto.
+- **§6.12:** item novo, "guarda presa numa ordem só". O teste existente provava o silêncio quando a
+  pessoa edita **antes** do aviso, e a regressão estava em editar **depois**.
+- **`SKILL.md` Fase A:** um `{SKILL_DIR}` fora do `installPath` só é cópia velha se o `diff -rq` contra
+  o instalado acusar diferença. Antes, a regra mandava pedir `/reload-plugins` sempre, e a sessão teria
+  parado por nada: o cache 2.11.0 e o instalado 2.11.1 eram idênticos na `codereview`.
+- **`references/report-template.md` §Cost footprint:** duas leituras que não são cópia velha. A cópia
+  idêntica segue e diz isso no rodapé. E o `skill v{X}` é a versão da skill, não a do plugin: num plugin
+  com duas skills, a release que só tocou a vizinha deixa esta para trás de propósito (o plugin 2.11.1
+  trazia a `codereview` 2.10.0, inalterada). A sessão leu isso como defeito e precisou do histórico do
+  git para desfazer o engano.
+- **Dívida pré-existente, não tocada:** os três avisos C2 do baseline (instruções que os subagentes leem
+  por caminho absoluto) e o `SKILL.md` a 5 caracteres do limite de 20 mil do C1 — a próxima lição que
+  entrar nele precisa de `references/` ou de compressão (`skill-refactoring`).
+
 ## [2.12.0] — 2026-10-05
 
 ### 6.11 ganha a oitava forma: descarte silencioso numa transformação

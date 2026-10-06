@@ -217,6 +217,11 @@ The counts come from the agents' trailer lines (`Tool calls: … | Files read in
 
 `skill v{X}` is `metadata.version` of `{SKILL_DIR}/SKILL.md`, read in Phase A. A stale cached copy of this skill once ran a whole review, four rounds of it, with no line saying so — the harness loaded a 2.1-era cache while 2.6.0 was installed, and features the user relied on were simply absent. A footer meant to compare runs has to say which skill produced them.
 
+Two readings that are not a stale copy. A `{SKILL_DIR}` outside the `installPath` whose `diff -rq` against
+it is empty runs the same skill: go on, and say it in the footer (`cache 2.11.0 = installed 2.11.1`). And
+`skill v{X}` names this skill, not the plugin: in a multi-skill plugin a release that touched only the
+sibling skill leaves it behind on purpose (plugin 2.11.1 shipped `codereview` 2.10.0, unchanged).
+
 ---
 
 ## Examples
