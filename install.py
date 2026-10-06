@@ -127,15 +127,9 @@ CURSOR_SKILL_MAP: list[dict[str, Any]] = [
     {
         "plugin": "deploy",
         "cursor_name": "deploy-staging",
-        "display": "Deploy Staging — merge branch to develop and trigger the CD Staging pipeline",
-        "source_type": "command",
-        "source_file": "plugins/deploy/commands/staging.md",
-        "cursor_description": (
-            "Deploy the current branch to the staging environment. Syncs main with develop, "
-            "merges the current feature branch into develop, and pushes to trigger the CD Staging "
-            "pipeline. Use when the user asks to deploy to staging, send to staging, merge to "
-            "staging, trigger the staging pipeline, or push the current branch to develop."
-        ),
+        "display": "Deploy Staging — promote through the repo's real CD pipeline and prove the deploy",
+        "source_type": "skill",
+        "source_dir": "plugins/deploy/skills/staging",
     },
     {
         "plugin": "release",
@@ -390,6 +384,8 @@ def _install_from_skill_dir(entry: dict[str, Any], dest_dir: Path) -> None:
     """
     Copy a skill directory to dest_dir, adapting SKILL.md for Cursor:
     - Strip 'metadata:' block from frontmatter
+    - Set 'name:' to cursor_name, so the name matches the installed folder (the spec
+      requires it); a no-op when the skill is already named after its cursor_name
     - Remove $ARGUMENTS placeholder blocks from the body
     - Copy all reference files unchanged
     """
@@ -400,6 +396,7 @@ def _install_from_skill_dir(entry: dict[str, Any], dest_dir: Path) -> None:
     content = skill_md_src.read_text(encoding="utf-8")
     fm_text, body = _split_frontmatter(content)
     fm_text = _remove_metadata_block(fm_text)
+    fm_text = re.sub(r"(?m)^name:.*$", f"name: {entry['cursor_name']}", fm_text, count=1)
     body = _adapt_body(body)
     (dest_dir / "SKILL.md").write_text(_build_markdown(fm_text, body), encoding="utf-8")
 

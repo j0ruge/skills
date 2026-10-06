@@ -2,6 +2,41 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-10-06 — De comando a skill, com o detalhe medido em references — bump 2.5.1 → [3.0.0]
+
+**O quê:** `commands/staging.md` sai e entra a skill `skills/staging/`. A invocação continua
+`/deploy:staging`, e no Cursor o nome continua `deploy-staging`. O `SKILL.md` guarda o fluxo: a
+introdução, os Passos 0, 1, 2, 2b, 5 e 6, a seção de produção inteira e as armadilhas, agora sob
+`### Gotchas`, todos por extenso. Os Passos 0b, 3, 4 e 7 ficam resumidos, com o comando, a regra e o
+momento de ler a reference. O texto completo desses quatro passos foi para `references/`, recortado
+por intervalo de linhas: `runner-and-billing.md`, `local-gate.md`, `promotion-sensors.md` e
+`red-runs-and-proof.md`. O Passo 4 ganhou uma tabela de leitura dos sensores (0 commits, conteúdo
+só no alvo, mais de uma base de merge, backlog, workflow alterado). No `install.py`, a entrada
+`deploy` passa a `source_type: "skill"`, que copia o `SKILL.md` e as references, e perde a
+`cursor_description`. O teste frio da instalação mostrou que a pasta do Cursor (`deploy-staging`)
+e o `name` da skill (`staging`) divergiriam, contra a spec, e a `deploy` era a única skill nessa
+situação. Por isso o `_install_from_skill_dir` passa a gravar o `cursor_name` no `name` do
+`SKILL.md` gerado. Nas outras skills isso não muda nada, como provado na `cicd` e nas quatro da
+`skill-quality-audit`. No README, a linha da tabela de plataformas e o bloco `<details>` deixam de
+descrever um comando.
+
+**Por quê:** auditoria de 2026-10-06 pedida pelo usuário, que sugeriu a conversão. (1) A
+`cursor_description` do `install.py` ainda dizia "Syncs main with develop, merges the current
+feature branch into develop, and pushes", o fluxo anterior à 2.0.0, que deployava **produção**
+reportando "staging". No Cursor essa frase é a superfície de gatilho, e ela contradizia o corpo.
+Como skill, a description sai do próprio `SKILL.md`, e não há mais uma segunda cópia para
+envelhecer. O bloco `<details>` do README repetia o mesmo texto. (2) O comando tinha 465 linhas e
+24.950 chars (C1 AVISO do `audit_skill_quality.py`, medido numa cópia temporária, porque o auditor
+não mede comando), e todo esse texto entrava no contexto a cada invocação.
+
+**Prova de que nada se perdeu:** das 367 linhas não vazias do comando, 359 existem por extenso no
+`SKILL.md` ou numa reference. As 8 restantes são as trocas deliberadas: a `description` (mesmo
+texto, agora entre aspas), a `version`, cinco "this command" → "this skill" e `### Notes` →
+`### Gotchas`. Os 8 parágrafos "Measured" continuam lá, e os blocos de código foram de 19 para 23.
+
+**Como reverter:** `git revert` deste commit restaura o comando e a entrada `command` do
+`install.py`.
+
 ## 2026-10-06 — Dupla base de merge e timeout de teste no runner que divide o host — bump 2.5.0 → [2.5.1]
 
 **O quê:** o Step 4 ganha um parágrafo depois de "How to read the second one": `--no-merges` vazio

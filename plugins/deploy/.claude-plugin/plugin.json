@@ -4,7 +4,7 @@
   "author": {
     "name": "Chewiesoft"
   },
-  "version": "2.5.1",
+  "version": "3.0.0",
   "category": "development",
   "keywords": [
     "deploy",
@@ -19,5 +19,5 @@
     "claude-code",
     "cursor"
   ],
-  "commands": "./commands"
+  "skills": "./skills"
 }
