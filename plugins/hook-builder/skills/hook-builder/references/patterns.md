@@ -31,8 +31,20 @@ oficiais citados estão em https://github.com/anthropics/claude-plugins-official
 - **Não é fronteira de segurança.** Aspas, pipes, `$()`, interpretadores e wrappers passam por
   filtro de substring. O `if` é best-effort. Para deny rígido, use `permissions.deny`, e o hook
   só complementa.
-- **Falha fecha:** exceção no script sai com exit 2. Timeout **não** bloqueia (a ferramenta
-  segue), então mantenha o gate rápido.
+- **Falha fecha quando o escopo é estreito:** exceção no script sai com exit 2. Com matcher
+  largo (todo `Bash`), uma exceção no parser trava a ferramenta inteira; se o dano evitado é
+  menor que isso, o gate falha **aberto** (exit 0 e registro em log) e bloqueia só na detecção
+  positiva. Timeout **não** bloqueia (a ferramenta segue), então mantenha o gate rápido.
+- **Gate sobre o texto do comando Bash** (medido num gate de `mineru parse -o` em 2026-10-07):
+  - conte o binário só em **posição de comando**: depois de atribuições (`VAR=x`), opções e
+    wrappers (`timeout`, `env`, `xargs`, `uvx`, `nohup`) e de palavras-chave (`do`, `then`,
+    `else`, `{`, `!`). Sem as palavras-chave, `for f in *; do X …; done` escapa;
+  - quebre em comandos simples com `shlex`, tratando a quebra de linha fora de aspas como
+    separador: `shlex.shlex(cmd, posix=True, punctuation_chars="();<>|&\n")` com
+    `lex.whitespace = " \t\r"`. No padrão, o `\n` vira espaço e a 2ª linha cola na 1ª;
+  - remova o corpo dos heredocs antes de tokenizar: texto de documentação que só menciona o
+    comando não pode disparar;
+  - `2> arq` é o log de erro, não a saída do comando.
 
 ## 3. Reação a falha de ferramenta
 

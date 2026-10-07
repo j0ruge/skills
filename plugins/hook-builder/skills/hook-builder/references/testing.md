@@ -35,8 +35,19 @@ python3 scripts/hook_test.py 'python3 hooks/meu_hook.py' assets/fixtures/stop-ac
 - um positivo (o hook age);
 - um negativo (o hook fica calado);
 - `stop_hook_active: true`, se o hook for de Stop;
-- stdin inválido: exit 0 para hook de conveniência, exit 2 para gate;
-- estado ausente ou corrompido.
+- stdin inválido: exit 0 para hook de conveniência, exit 2 para gate fechado, exit 0 para gate
+  que falha aberto (matcher largo, como todo `Bash`);
+- estado ausente ou corrompido;
+- **a string inteira do `command`**, não só o script: rode o `hook_test.py` com o mesmo texto
+  que vai no settings, incluindo o caso "script ausente" (`--env` apontando o path para um
+  lugar que não existe). O `python3 <ausente>` sai 2, e no `PreToolUse` isso bloqueia.
+
+**O teste do caminho de falha grava no log real** do hook. Deixe o diretório do log
+redirecionável por variável de ambiente e use-a no teste.
+
+**Sabotagem:** rode a mesma suíte contra uma cópia do hook que nunca bloqueia (por exemplo,
+`sed 's/return 2$/return 0/'`) e confira que ela fica vermelha. Suíte que passa com o hook
+quebrado não prova nada.
 
 **Fixtures de `assets/fixtures/`:** elas trazem a **forma** real do payload, mas com paths
 genéricos (`<HOME>/my-project`, gravado como `/home` + `/user/my-project`) que não existem no disco. Um hook que usa `cwd` ou

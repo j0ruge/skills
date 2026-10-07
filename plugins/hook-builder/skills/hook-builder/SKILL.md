@@ -5,7 +5,7 @@ license: MIT
 compatibility: Claude Code 2.1.163+ (Stop additionalContext); verificado contra a 2.1.283 em 2026-09-30. Scripts em Python 3, só biblioteca padrão.
 metadata:
   author: JorUge
-  version: "0.1.0"
+  version: "0.1.1"
 ---
 
 # hook-builder
@@ -99,7 +99,10 @@ Parta de `assets/templates/command-hook.py` (ou `.sh`). O template traz as regra
   lembrete nunca derruba a sessão.
 - **Hook de política (gate):** falha sai com exit 2 e fecha. Confira no primeiro disparo que o
   path existe. Um path errado dá exit 127, vira aviso não bloqueante e deixa o gate desligado
-  em silêncio.
+  em silêncio. Se o que falta é o **script** atrás do interpretador (`python3 hook.py`), a saída
+  é exit 2, e no `PreToolUse` isso **bloqueia toda chamada** do matcher: confira o arquivo no
+  próprio comando (`[ -f "$f" ] && python3 "$f"`; senão stderr e exit 0). Gate de matcher largo
+  (todo `Bash`) costuma falhar aberto: leia `references/patterns.md` §2.
 - **Stop e SubagentStop:** saia cedo se `stop_hook_active` for `true`. O teto do harness é de
   8 continuações seguidas (`CLAUDE_CODE_STOP_HOOK_BLOCK_CAP`), e contar com ele é bug.
 - **Estado:** em plugin, fica em `${CLAUDE_PLUGIN_DATA}`, que sobrevive a updates. O
@@ -150,6 +153,7 @@ Threat model, matriz comportamental (loop, dupla execução, segredo, falha) e r
 | Hook de "falha do Bash" nunca dispara | `PostToolUse` só roda em sucesso | `PostToolUseFailure` |
 | `/skill` digitado não é visto | `PreToolUse`/`PostToolUse` com `matcher: Skill` só pega a chamada do modelo | Some o `UserPromptExpansion`, ou leia a linha `Base directory for this skill:` do transcript (em `references/patterns.md`) |
 | Gate não bloqueia | exit 1, timeout ou path errado (127) | exit 2; confira o primeiro disparo no debug log |
+| Todo `Bash` bloqueado de repente | o script do hook sumiu e `python3 <ausente>` saiu 2 | `[ -f "$f" ]` no comando do hook; teste o caso "script ausente" |
 | O Claude "não viu" o aviso | `systemMessage` vai para o usuário | `additionalContext` |
 | Cada turno mostra "Stop hook error" | orientação mandada por `decision:"block"` | `hookSpecificOutput.additionalContext` no Stop |
 | Stop em loop até o teto | sem guarda de `stop_hook_active` e sem estado | guarda + estado por sessão + limite próprio |

@@ -88,7 +88,7 @@ background.
 | Bom | ação permitida e ação fora do matcher | cada uma roda uma vez; permissões normais preservadas |
 | Ruim | ação proibida por rotas alternativas | o efeito nunca ocorre nas rotas cobertas; as descobertas ficam declaradas |
 | Ambíguo | campo ausente, path incerto | `ask`/`deny` configurado; nunca aprovação silenciosa |
-| Falha | exceção, timeout, estado ilegível | a política de falha vale **no runtime real**; o erro não vaza payload |
+| Falha | exceção, timeout, estado ilegível, script ausente | a política de falha vale **no runtime real**; o erro não vaza payload |
 | Segredo | canário sintético no output, header, exceção | o canário não aparece em nenhum destino |
 | Loop | continuação de Stop repetida | chamadas limitadas; término determinístico (`stop_hook_active` + teto próprio) |
 | Dupla execução | disparo duplicado, paralelo, restart | sem efeito duplicado, ou reconciliação explícita |

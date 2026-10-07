@@ -1,5 +1,31 @@
 # Changelog — hook-builder
 
+## [0.1.1] — 2026-10-07
+
+Lições de um gate `PreToolUse`/`Bash` construído com a skill (barra `mineru parse -o` sem
+`--pages`, que no MinerU 4.x converte só as páginas 1–10 com rc=0).
+
+### Fixed
+
+- **"Path errado dá exit 127" estava incompleto.** Vale para o comando ausente. Com o script
+  ausente atrás do interpretador, `python3 /nao/existe.py` sai **2** (medido), e no `PreToolUse`
+  isso bloqueia toda chamada do matcher: um gate de `Bash` com o script movido trava o Bash
+  inteiro. `SKILL.md` (passo 5 e Gotchas) agora diz isso e traz a guarda `[ -f "$f" ]` no
+  comando do hook; a matriz de `safety.md` ganhou "script ausente" no caso Falha.
+
+### Changed
+
+- `references/patterns.md` §2: "falha fecha" passa a valer para gate de escopo estreito. Com
+  matcher largo (todo `Bash`), uma exceção no parser travaria a ferramenta, e o gate falha
+  aberto, bloqueando só na detecção positiva. Novo bloco "Gate sobre o texto do comando Bash":
+  posição de comando (wrappers e palavras-chave; sem `do`, o `for …; do X` escapava, e o teste
+  pegou com 29 de 30), `shlex` com a quebra de linha como separador, corpo de heredoc removido,
+  `2>` fora da saída.
+- `references/testing.md` §2: stdin inválido no gate aberto sai 0; testar a string inteira do
+  `command` com o caso "script ausente"; redirecionar o log nos testes do caminho de falha
+  (sujavam o log real); rodar a suíte contra uma cópia sabotada do hook, que tem de ficar
+  vermelha.
+
 ## [0.1.0] — 2026-09-30
 
 Primeira versão. Uma skill para construir, empacotar e provar hooks do Claude Code contra a
