@@ -2,6 +2,18 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.14.1] — 2026-10-07
+
+### A sonda de docstrings lê o arquivo em `HEAD`
+
+- **`references/report-template.md`:** a sonda da 2.14.0 tirava as linhas do diff commitado
+  (`base...HEAD`) e lia o arquivo do disco. Com uma edição sem commit no arquivo, as posições se
+  desalinhavam: no uso real (SBM-6, 07/10) entrou um `_smtp_send` que o PR não tocou, até a edição ser
+  commitada. Num repo descartável, um PR que acrescentava `nova()` saía como `a` (não tocada), e `nova`
+  sumia. Agora ela lê cada arquivo com `git show HEAD:./<arquivo>`, o mesmo commit onde o diff termina;
+  medido da raiz e de um subdiretório, com o caminho relativo ao diretório atual.
+- **Dívida pré-existente, não tocada:** os três avisos C2 e o `SKILL.md` a 5 caracteres do C1.
+
 ## [2.14.0] — 2026-10-07
 
 ### O scanner externo só vê o diff; decisão registrada encerra o achado; docstrings contadas por visibilidade

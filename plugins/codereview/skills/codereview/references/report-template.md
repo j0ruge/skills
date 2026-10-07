@@ -137,7 +137,7 @@ If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, th
 > A function counts as "documented" if it has a JSDoc/XML doc/docstring that matches its current behavior.
 > If the project specifies a documentation language (e.g., PT-BR), docstrings in the wrong language count as MISSING.
 > Count public and private apart: public is a name without a leading `_` in Python (exported in TS/JS, `public` in C#). The percentage on this line is the public one; give the private count after it (`· private {n}/{m}`). The severity of each gap comes from detection-passes.md 6.5.1, not from the percentage. Measured 2026-10-07: a Python range read 25/47 with private HTML helpers mixed in; split, it was public 18/22 and private 7/25, and the 4 public gaps were the ones 6.5.1 grades.
-> Python probe — every function or class whose span touches an added line:
+> Python probe — every function or class whose span touches an added line. It reads each file at `HEAD`, where the diff ends, with paths relative to the current directory: read from disk, an uncommitted edit to the file shifts its lines and lists the wrong functions (measured 2026-10-07: a function the PR did not touch came in, and the one it added went missing).
 >
 > ```bash
 > python3 - {MERGE_BASE} {changed .py files} <<'EOF'
@@ -148,7 +148,8 @@ If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, th
 >                           capture_output=True, text=True).stdout
 >     added = {n for m in re.finditer(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@", diff, re.M)
 >              for n in range(int(m[1]), int(m[1]) + int(m[2] or 1))}
->     for node in ast.walk(ast.parse(open(f).read())):
+>     src = subprocess.run(["git", "show", f"HEAD:./{f}"], capture_output=True, text=True).stdout
+>     for node in ast.walk(ast.parse(src)):
 >         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) \
 >                 and added & set(range(node.lineno, node.end_lineno + 1)):
 >             kind = "private" if node.name.startswith("_") else "public"

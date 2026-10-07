@@ -313,7 +313,7 @@
     {
       "name": "codereview",
       "source": "./plugins/codereview",
-      "version": "2.14.0",
+      "version": "2.14.1",
       "description": "Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.",
       "category": "quality",
       "keywords": [
