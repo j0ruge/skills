@@ -34,7 +34,9 @@ oficiais citados estão em https://github.com/anthropics/claude-plugins-official
 - **Falha fecha quando o escopo é estreito:** exceção no script sai com exit 2. Com matcher
   largo (todo `Bash`), uma exceção no parser trava a ferramenta inteira; se o dano evitado é
   menor que isso, o gate falha **aberto** (exit 0 e registro em log) e bloqueia só na detecção
-  positiva. Timeout **não** bloqueia (a ferramenta segue), então mantenha o gate rápido.
+  positiva. Timeout **não** bloqueia (a ferramenta segue), então mantenha o gate rápido. Isso
+  vale para o seu script. Desde a 2.1.288 (changelog), quando a falha é do harness (o matching
+  do hook falha ou o input não vira JSON), ele bloqueia a chamada em vez de pular o hook.
 - **Gate sobre o texto do comando Bash** (medido num gate de `mineru parse -o` em 2026-10-07):
   - conte o binário só em **posição de comando**: depois de atribuições (`VAR=x`), opções e
     wrappers (`timeout`, `env`, `xargs`, `uvx`, `nohup`) e de palavras-chave (`do`, `then`,

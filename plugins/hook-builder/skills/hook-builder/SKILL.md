@@ -2,10 +2,10 @@
 name: hook-builder
 description: "Build, package and prove Claude Code hooks against the current official reference: right event and output channel, real payload capture, loop guards, plugin-data state, fixture tests and a live firing check. Triggers — hook, hooks.json, PreToolUse, PostToolUseFailure, Stop hook, UserPromptExpansion, SessionStart, plugin hook."
 license: MIT
-compatibility: Claude Code 2.1.163+ (Stop additionalContext); verificado contra a 2.1.283 em 2026-09-30. Scripts em Python 3, só biblioteca padrão.
+compatibility: Claude Code 2.1.163+ (Stop additionalContext); verificado contra a 2.1.283 em 2026-09-30; tempos, limites e canais reconferidos contra a doc em 2026-10-07 (2.1.291). Scripts em Python 3, só biblioteca padrão.
 metadata:
   author: JorUge
-  version: "0.1.1"
+  version: "0.1.2"
 ---
 
 # hook-builder
@@ -17,7 +17,8 @@ mudo: evento errado, canal de saída errado ou campo inventado. Esta skill exist
 essas três escolhas antes de escrever código e para provar que o hook dispara de verdade.
 
 Fonte de verdade: https://code.claude.com/docs/en/hooks e `/en/hooks-guide` (lidos em
-2026-09-30, Claude Code 2.1.283). Quando algo aqui divergir da doc, vale a doc. Registre a
+2026-09-30, Claude Code 2.1.283; tempos, limites, `if`, exit codes e canais reconferidos contra a doc em 2026-10-07, com a 2.1.291 instalada; versão
+local: `claude --version`). Quando algo aqui divergir da doc, vale a doc. Registre a
 divergência, quando achar uma, em `references/outdated-sources.md`.
 
 ## Quando usar
@@ -48,7 +49,7 @@ divergência, quando achar uma, em `references/outdated-sources.md`.
 | reagir a `/comando` ou `/skill` **digitado** | `UserPromptExpansion` | matcher = nome do comando; o `PreToolUse` do `Skill` não vê esse caminho |
 | contexto no início, retomada ou fork | `SessionStart` | matcher `startup\|resume\|clear\|compact\|fork` |
 | revisar ou continuar no fim do turno | `Stop` | exige guarda de loop (passo 5) |
-| efeito colateral no fim | `SessionEnd` | orçamento de 1,5 s, sem decisão |
+| efeito colateral no fim | `SessionEnd` | orçamento de 1,5 s (um `timeout` maior eleva até 60 s), sem decisão |
 
 São 33 eventos, e a tabela completa, com matcher e o que o exit 2 faz em cada um, está em
 `references/events.md`. Leia quando o evento não estiver acima.
@@ -60,13 +61,13 @@ São 33 eventos, e a tabela completa, com matcher e o que o exit 2 faz em cada u
 | Claude, como informação | `hookSpecificOutput.additionalContext` (texto factual, até 10 mil chars) |
 | Claude, no fim do turno, como orientação | `Stop` + `hookSpecificOutput.additionalContext` (aparece como "Stop hook feedback") |
 | Claude, no fim do turno, como erro a corrigir | `Stop` + `{"decision":"block","reason":…}` (aparece como **hook error**) |
-| Você (usuário) | `systemMessage` (o Claude **não** vê) |
+| Você (usuário) | `systemMessage` (o Claude **não** vê; em hook `async`, vai para o Claude) |
 | Bloquear | exit 2 com stderr, ou o `decision` / `permissionDecision` do evento |
-| Explicar um bloqueio de prompt ou `/comando` | o `reason` do `UserPromptSubmit`/`UserPromptExpansion` vai **só para você**: o prompt nunca chega ao Claude. No `PreToolUse`, `PostToolUse` e `Stop`, o motivo vai para o Claude |
+| Explicar um bloqueio de prompt ou `/comando` | o `reason` do `UserPromptSubmit` vai **só para você**, e o prompt nunca chega ao Claude; no `UserPromptExpansion`, o `reason` aparece para você e a expansão não acontece. No `PreToolUse`, `PostToolUse` e `Stop`, o motivo vai para o Claude |
 | Ninguém (log) | stderr com exit 0 vai só para o debug log |
 
-`suppressOutput` não faz nada. Exit 1 **não bloqueia**: vira aviso não bloqueante e a ação
-segue. Ao escrever o parser ou a saída, leia `references/io-schema.md`.
+`suppressOutput` não faz nada. Exit 1 sem JSON válido no stdout **não bloqueia**: vira aviso não
+bloqueante e a ação segue (com JSON válido, quem decide é o JSON). Ao escrever o parser ou a saída, leia `references/io-schema.md`.
 
 ### 3. Filtre barato antes de rodar código
 
@@ -101,8 +102,8 @@ Parta de `assets/templates/command-hook.py` (ou `.sh`). O template traz as regra
   path existe. Um path errado dá exit 127, vira aviso não bloqueante e deixa o gate desligado
   em silêncio. Se o que falta é o **script** atrás do interpretador (`python3 hook.py`), a saída
   é exit 2, e no `PreToolUse` isso **bloqueia toda chamada** do matcher: confira o arquivo no
-  próprio comando (`[ -f "$f" ] && python3 "$f"`; senão stderr e exit 0). Gate de matcher largo
-  (todo `Bash`) costuma falhar aberto: leia `references/patterns.md` §2.
+  próprio comando (`[ -f "$f" ] && python3 "$f"`; senão stderr e exit 0). Quando o gate vigia
+  todo `Bash`, leia `references/patterns.md` §2 antes de escolher a política de falha.
 - **Stop e SubagentStop:** saia cedo se `stop_hook_active` for `true`. O teto do harness é de
   8 continuações seguidas (`CLAUDE_CODE_STOP_HOOK_BLOCK_CAP`), e contar com ele é bug.
 - **Estado:** em plugin, fica em `${CLAUDE_PLUGIN_DATA}`, que sobrevive a updates. O
@@ -162,7 +163,7 @@ Threat model, matriz comportamental (loop, dupla execução, segredo, falha) e r
 | Estado sumiu depois do update | gravado em `${CLAUDE_PLUGIN_ROOT}` | `${CLAUDE_PLUGIN_DATA}` |
 | Hook com `if` nunca roda | `if` em evento que não é de ferramenta | tirar o `if` e filtrar no script |
 | JSON "sem efeito" | stdout com lixo (`echo` no profile) ou JSON em várias linhas | stdout só com o objeto; em profile, guarde o `echo` com `[[ $- == *i* ]]` |
-| Script lê `$CLAUDE_TOOL_OUTPUT` e nunca age | essa variável não existe | o input vem no stdin |
+| Script lê `$CLAUDE_TOOL_OUTPUT` e nunca age | ela não aparece no ambiente do hook (o `capture_payload.py` grava o real) | o input vem no stdin |
 | Hook dispara em `claude -p` de cron ou CI | o hook não distingue sessão desassistida | gate por sessão assistida (se precisar, leia `references/patterns.md` §7) |
 | Resposta velha depois de `--resume` | o `additionalContext` de eventos do meio da sessão é regravado, não recalculado | recalcule no `SessionStart` (`source: resume`) |
 
@@ -186,3 +187,4 @@ As 11 divergências entre a skill oficial `plugin-dev/hook-development` e a doc 
 | `scripts/lint_hooks.py` | passo 7: validar `hooks.json`/settings e o `plugin.json` |
 | `assets/templates/command-hook.py`, `assets/templates/command-hook.sh`, `assets/templates/hooks.json` | passo 5: ponto de partida do script e da config |
 | `assets/fixtures/pretooluse-bash.json`, `assets/fixtures/posttooluse-bash.json`, `assets/fixtures/posttoolusefailure-bash.json`, `assets/fixtures/userpromptexpansion.json`, `assets/fixtures/sessionstart-resume.json`, `assets/fixtures/stop.json`, `assets/fixtures/stop-active.json` | passo 7: payloads **capturados** na 2.1.283, com paths genéricos |
+| `assets/trigger-evals.json` | ao medir o gatilho da skill: casos que devem e que não devem disparar (hook do git, webhook, `useEffect`, permissões), no formato de eval set do `skill-creator` |

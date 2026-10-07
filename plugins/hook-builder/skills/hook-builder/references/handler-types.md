@@ -1,15 +1,16 @@
 # Tipos de handler: custo, limite e quando usar
 
 Fonte: https://code.claude.com/docs/en/hooks#hook-handler-fields, `#prompt-based-hooks`,
-`#agent-based-hooks` e `#run-hooks-in-the-background` (lido em 2026-09-30, Claude Code 2.1.283).
+`#agent-based-hooks` e `#run-hooks-in-the-background` (lido em 2026-09-30, Claude Code 2.1.283;
+timeouts e limites reconferidos contra a doc em 2026-10-07, com a 2.1.291 instalada).
 
 ## Escolha rápida
 
 | Tipo | Use quando | Custo por disparo | Timeout padrão |
 |---|---|---|---|
 | `command` | a regra é determinística (regex, arquivo, estado, git) | um processo | 600 s (30 s em `UserPromptSubmit`, `Pre/PostModelSwitch`; 10 s em `MessageDisplay`) |
-| `http` | a decisão mora num serviço | uma requisição | 600 s |
-| `mcp_tool` | a decisão é uma ferramenta de um servidor MCP já configurado | uma chamada MCP | 600 s |
+| `http` | a decisão mora num serviço | uma requisição | 600 s (30 s e 10 s nos mesmos eventos do `command`) |
+| `mcp_tool` | a decisão é uma ferramenta de um servidor MCP já configurado | uma chamada MCP | 600 s (30 s e 10 s nos mesmos eventos do `command`) |
 | `prompt` | é preciso **juízo** sobre o input do hook, e o input basta | uma chamada ao modelo de background | 30 s |
 | `agent` | o juízo exige ler arquivo ou rodar teste | até 50 turnos de subagente | 60 s |
 

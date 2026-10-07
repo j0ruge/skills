@@ -1,7 +1,8 @@
 # Eventos de hook: os 33
 
 Fonte: https://code.claude.com/docs/en/hooks#hook-lifecycle, `#matcher-patterns`,
-`#exit-code-2-behavior-per-event` e `#prompt-based-hooks` (lido em 2026-09-30, Claude Code 2.1.283).
+`#exit-code-2-behavior-per-event` e `#prompt-based-hooks` (lido em 2026-09-30, Claude Code 2.1.283; a
+contagem de 33 eventos foi reconferida contra a doc em 2026-10-07, com a 2.1.291 instalada).
 Para ver o que chega de verdade num evento, rode `scripts/capture_payload.py`. Os eventos
 PreToolUse, PostToolUse, PostToolUseFailure, UserPromptSubmit, UserPromptExpansion, SessionStart e
 Stop foram capturados assim em 2026-09-30, e as fixtures estão em `assets/fixtures/`.
@@ -68,7 +69,8 @@ command, http, mcp_tool · `cmd+mcp` = command, mcp_tool.
   `{"skill": "<plugin>:<nome>" | "<nome>", "args": "…"}`. O `PreToolUse` e o `PostToolUse` com
   `matcher: "Skill"` veem essa chamada. O `if` aceita `Skill(nome)`.
 - **Qual forma de nome aparece:**
-  - skill ou comando de **plugin** vem sempre com o prefixo (`codereview:coderabbit-pr`);
+  - skill ou comando de **plugin** vem com o prefixo (`codereview:coderabbit-pr`; a doc de skills
+    chama isso de namespace `plugin-name:skill-name`);
   - skill **pessoal** (`~/.claude/skills/<n>`) ou de **projeto** (`.claude/skills/<n>`) vem com
     o nome puro (`ticket`).
 

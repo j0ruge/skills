@@ -1,5 +1,56 @@
 # Changelog — hook-builder
 
+## [0.1.2] — 2026-10-07
+
+Reparo da dívida que a `skill-quality-audit` apontava desde a 0.1.0: D1 (afirmações factuais sem
+veredito) e F4 (sem evals). Autorizado pelo JorUge.
+
+### Por quê
+
+O Claude Code instalado passou da 2.1.283, contra a qual a skill foi escrita, para a 2.1.291.
+O sensor das afirmações da skill é a doc oficial, então ela foi relida (hooks, hooks-guide,
+changelog e skills) e 18 afirmações de tempo, limite, `if`, exit code e canal foram conferidas
+uma a uma. **Nenhuma mudou.** Quatro estavam imprecisas e algumas omitiam ressalvas.
+
+### Changed
+
+- **Sem fonte, saiu:** a versão "2.1.196+" do `prompt_id` (`io-schema.md`) não está na doc nem
+  no changelog. Fica o "ausente antes do 1º input", confirmado.
+- **`UserPromptExpansion`:** a doc não diz que o `reason` vai só para o usuário. O `SKILL.md`
+  separa os dois eventos: no Submit, só para você e o prompt não chega; no Expansion, o `reason`
+  aparece e a expansão não acontece.
+- **Absolutos viraram o observado:** "skill de plugin vem sempre com o prefixo" (`events.md`)
+  agora cita o namespace `plugin-name:skill-name` da doc de skills; "`$CLAUDE_TOOL_OUTPUT` não
+  existe" (`SKILL.md`, `io-schema.md`) virou "não aparece no ambiente capturado nem na doc".
+- **Ressalvas da doc atual:**
+  - o timeout de 30 s ou 10 s vale também para `http` e `mcp_tool`;
+  - no `SessionEnd`, um `timeout` maior eleva o orçamento até 60 s;
+  - exit 1 com JSON válido deixa o JSON decidir;
+  - em hook `async`, o `systemMessage` vai para o Claude;
+  - desde a 2.1.288, falha do harness no matching bloqueia a chamada (`patterns.md` §2).
+- **Proveniência:** as linhas de fonte do `SKILL.md`, de `events.md`, `handler-types.md` e
+  `io-schema.md` e o `compatibility` dizem o que foi reconferido em 2026-10-07 (2.1.291).
+  `packaging.md` e `testing.md` mantêm 2026-09-30: não foram relidas.
+- **F1** que a 0.1.1 introduziu ("leia `patterns.md` §2" sem dizer quando) corrigido.
+
+### Added
+
+- `assets/trigger-evals.json`: 18 casos de gatilho no formato de eval set do `skill-creator`,
+  10 que devem e 8 que não devem disparar, entre eles os quase-acertos (hook do git, webhook do
+  GitHub e do n8n, `useEffect`, permissões no settings, status line, atalho de teclado).
+  Roteado na tabela de Arquivos. Ainda não foi rodado com LLM.
+
+### Vereditos das outras marcações do D1
+
+As demais marcações do `--claims` ficaram como estão, por três motivos:
+- a linha de fonte da própria reference já dá a URL, a data e a versão;
+- o sensor está num script da skill: o `lint_hooks.py` acusa o `if` fora de evento de
+  ferramenta, e o `capture_payload.py` grava o ambiente real;
+- é regra desta skill e não fato sobre terceiro ("nunca segredo real", "nunca aprovação
+  silenciosa", "texto curto, menos de 600 caracteres").
+
+O D1 é INFO por natureza: conta candidatos, e a contagem não zera.
+
 ## [0.1.1] — 2026-10-07
 
 Lições de um gate `PreToolUse`/`Bash` construído com a skill (barra `mineru parse -o` sem

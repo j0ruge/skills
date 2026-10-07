@@ -1,7 +1,8 @@
 # Entrada e saída de um hook
 
 Fonte: https://code.claude.com/docs/en/hooks#hook-input-and-output, `#json-output`,
-`#decision-control` e a seção de cada evento (lido em 2026-09-30, Claude Code 2.1.283). Os
+`#decision-control` e a seção de cada evento (lido em 2026-09-30, Claude Code 2.1.283; limites,
+canais e campos reconferidos contra a doc em 2026-10-07, com a 2.1.291 instalada). Os
 exemplos marcados **capturado** vieram de `scripts/capture_payload.py` nessa versão.
 
 ## Conteúdo
@@ -21,13 +22,13 @@ exemplos marcados **capturado** vieram de `scripts/capture_payload.py` nessa ver
 | `transcript_path` | JSONL da sessão. **Gravado de forma assíncrona**: pode não ter as últimas linhas do turno |
 | `cwd` | segue `cd` e worktree. `${CLAUDE_PROJECT_DIR}` **não** segue: fica na raiz onde a sessão começou |
 | `hook_event_name` | nome do evento |
-| `prompt_id` | UUID do prompt corrente (2.1.196+). Ausente antes do 1º input |
+| `prompt_id` | UUID do prompt corrente. Ausente antes do 1º input (a versão em que surgiu não está na doc nem no changelog) |
 | `permission_mode` | `default` `plan` `acceptEdits` `auto` `dontAsk` `bypassPermissions`. **Nem todo evento traz**: o SessionStart capturado não trouxe |
 | `scratchpad_dir` | 2.1.257+ |
 | `effort.level` | `low`…`max` |
 | `agent_id`, `agent_type` | só dentro de subagente ou com `--agent`. Use para separar a chamada do subagente da thread principal |
 
-Não existe `$CLAUDE_MODEL` nem `$CLAUDE_TOOL_OUTPUT`. O input chega **só pelo stdin**. O
+`$CLAUDE_MODEL` e `$CLAUDE_TOOL_OUTPUT` não aparecem no ambiente capturado nem na doc. O input chega **só pelo stdin**. O
 processo herda o ambiente do Claude Code (menos `OTEL_*`), mais `CLAUDE_PROJECT_DIR`,
 `CLAUDE_PLUGIN_ROOT` e `CLAUDE_PLUGIN_DATA` quando se aplicam.
 
@@ -71,7 +72,7 @@ Agent, AskUserQuestion, ExitPlanMode) está em `#pretooluse-input`. Para as outr
 | Campo | Efeito |
 |---|---|
 | `continue: false` + `stopReason` | para tudo, acima de qualquer decisão do evento |
-| `systemMessage` | aviso **para o usuário**. O Claude não recebe |
+| `systemMessage` | aviso **para o usuário**. O Claude não recebe, exceto em hook `async` (aí vai para o Claude no próximo turno) |
 | `suppressOutput` | **nenhum** (aceito e ignorado) |
 | `terminalSequence` | OSC 0/1/2/9/99/777 e BEL (notificação, título, sino). `/dev/tty` não está disponível |
 

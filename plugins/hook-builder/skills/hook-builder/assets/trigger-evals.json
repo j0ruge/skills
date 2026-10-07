@@ -1,0 +1,20 @@
+[
+  {"query": "quero que toda vez que o claude rodar um comando bash com rm -rf ele seja barrado antes, monta isso pra mim no claude code", "should_trigger": true},
+  {"query": "fiz um Stop hook que manda o claude revisar os testes e agora ele fica em loop até o fim do turno, o que está errado?", "should_trigger": true},
+  {"query": "meu hook de PostToolUse pra quando o Bash falha nunca dispara, já conferi o matcher", "should_trigger": true},
+  {"query": "preciso injetar o nome da branch e o último SHA no contexto sempre que a sessão do claude code começa ou é retomada", "should_trigger": true},
+  {"query": "empacota esse hook no plugin do marketplace, com hooks/hooks.json, e garante que ele dispara depois do /reload-plugins", "should_trigger": true},
+  {"query": "toda resposta aparece 'Stop hook error' em vermelho, mas eu só queria mandar uma orientação pro claude no fim do turno", "should_trigger": true},
+  {"query": "como eu bloqueio o /deploy digitado no prompt quando a branch não é main?", "should_trigger": true},
+  {"query": "sempre que o claude editar um arquivo .py quero rodar o ruff format em cima, sem eu pedir", "should_trigger": true},
+  {"query": "escrevi um gate PreToolUse em python, como provo que ele bloqueia de verdade numa sessão e não só no teste com pipe?", "should_trigger": true},
+  {"query": "qual campo do stdin traz o exit code do Bash num hook? quero reagir quando o comando falha", "should_trigger": true},
+  {"query": "configura um pre-commit hook do git que roda o eslint antes de cada commit", "should_trigger": false},
+  {"query": "cria um webhook no github que avisa no slack quando abrirem PR", "should_trigger": false},
+  {"query": "esse useEffect do componente React está disparando duas vezes, me ajuda a corrigir o hook", "should_trigger": false},
+  {"query": "libera os comandos npm no settings do claude code pra parar de pedir permissão", "should_trigger": false},
+  {"query": "muda a status line do claude code pra mostrar a branch e o custo da sessão", "should_trigger": false},
+  {"query": "agenda um job diário às 7h que roda o relatório e manda por e-mail", "should_trigger": false},
+  {"query": "o webhook do n8n que recebe os pedidos do site parou de responder", "should_trigger": false},
+  {"query": "troca o atalho de enviar mensagem do claude code para ctrl+enter", "should_trigger": false}
+]
