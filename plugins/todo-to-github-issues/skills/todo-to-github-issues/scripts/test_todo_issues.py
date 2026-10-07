@@ -30,7 +30,8 @@ def as_issues(its, c=ctx, labels=("todo",)):
              "labels": [{"name": x} for x in labels]} for n, i in enumerate(its, 100)]
 
 
-check(f"parsed {len(items)} items (>= 5)", len(items) >= 5)
+check(f"parsed {len(items)} items (>= 5: the cases below delete 4 and must keep one;"
+      " with fewer, pass a bigger real TODO.md)", len(items) >= 5)
 check("keys unique", len({i.key for i in items}) == len(items))
 check("every title closed and non-empty", all(i.title for i in items))
 check("RESOLVED_RE ignores the bare phrase", not t.RESOLVED_RE.search("o ciclo do `RESOLVED by` e x"))

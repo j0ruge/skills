@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.3.2
+  version: 2.3.3
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -47,7 +47,8 @@ python3 $S --apply --close-orphans      # só depois de ler as linhas ORPHAN do 
 Opções: `--file` (padrão `TODO.md`), `--repo OWNER/NAME` (padrão: o repo do arquivo, via `gh`;
 obrigatório num clone cujo `origin` é um caminho local) e `--dump DIR` (grava os corpos
 renderizados em disco, sem rede). Mexeu no script? Rode `python3 scripts/test_todo_issues.py
-<TODO.md de um repo real, já no esqueleto>`, que não usa a rede.
+<TODO.md de um repo real, já no esqueleto, com 5+ itens>`, que não usa a rede. Com menos itens o
+primeiro caso reprova de propósito: o teste apaga 4 itens e precisa que sobre um.
 
 ## Scripts disponíveis
 

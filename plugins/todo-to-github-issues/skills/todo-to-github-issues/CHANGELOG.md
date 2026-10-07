@@ -3,6 +3,19 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-07 — o piso de 5 itens que o teste exigia calado
+
+Publicado como **v2.3.3**.
+
+- Retro da mesma sessão da v2.3.2: rodado contra o `TODO.md` do kit (4 itens depois do chore
+  pós-merge), o `test_todo_issues.py` deu `FAIL parsed 4 items (>= 5)` e rc 1, idêntico sem as
+  mudanças da v2.3.2. A docstring do teste pedia 5+ itens; o `SKILL.md`, que é o que se lê antes de
+  rodar, não.
+- Investigado antes de mexer: o piso protege contra vacuidade. `items[:-4]` com 4 itens é lista
+  vazia, e o caso das órfãs passaria sem item mantido. Baixar o piso seria trocar um vermelho
+  explicado por um verde que não mede. Mudou só onde o mínimo é dito: o `SKILL.md` e a mensagem do
+  caso. Com o `TODO.md` do sales_quote (223 itens), 73 de 73.
+
 ## 2026-10-07 — a regra de âncora que a skill ainda ensinava, e o espelho feito da branch
 
 Publicado como **v2.3.2**.

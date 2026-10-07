@@ -3,6 +3,19 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.3.3] — 2026-10-07
+
+Patch: documentação e a mensagem de um caso de teste. O script não muda.
+
+### Fixed
+
+- **O `test_todo_issues.py` reprovava um `TODO.md` real com menos de 5 itens sem dizer por quê.** O
+  `SKILL.md` pedia só "um `TODO.md` de um repo real, já no esqueleto"; o do kit sdd caiu para 4 itens
+  num chore pós-merge, e o teste deu `FAIL parsed 4 items (>= 5)` sem nenhuma mudança no script. O
+  piso é legítimo e fica: o caso `4 deleted -> 4 orphans` usa `items[:-4]`, e com 4 itens ele passa
+  sem nada mantido, sem medir nada. O `SKILL.md` diz agora o mínimo, e a mensagem do caso diz o
+  motivo e o que fazer.
+
 ## [2.3.2] — 2026-10-07
 
 Patch: documentação e fixtures de teste. O script não muda.
