@@ -3,6 +3,25 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-07 — a regra de âncora que a skill ainda ensinava, e o espelho feito da branch
+
+Publicado como **v2.3.2**.
+
+- Chore pós-merge do lote 5 do kit sdd. A linha 124 do `SKILL.md` descrevia a regra de âncora da
+  ADR 0011 (qualquer símbolo entre crases perto da linha), e o kit mede outra desde a ADR 0015 §2: o
+  símbolo designado `` `arq:N` (`símbolo`) `` logo depois da âncora. A defasagem não era só de
+  prosa: o `test_todo_format.py` estava vermelho em 5 casos, todos "o sensor do kit aceita o
+  fixture". Sondado direto no sensor: a forma antiga dá `designates no symbol`, a nova passa. Com
+  os fixtures corrigidos, 39 `ok` (antes 34). É a mesma classe da v2.0.1: a skill não carrega o
+  sensor, mas os testes e a tabela dela descrevem a regra, e a regra andou.
+- Mudar só a #240 antes do merge: rodado na branch, o plano queria 15 `UPDATE`, 14 deles com o
+  texto da branch (`RESOLVED by` ainda não mergeado). O script não filtra por issue. Saída: corpo do
+  `--dump`, `gh issue edit`, e o plano pós-merge leu a #240 como em dia.
+- O re-sync pós-merge trouxe a #239 e a #236 como `UPDATE (text)` com só a âncora mudada. Causa no
+  `update_kind`: ele tira o alvo do link e deixa os colchetes, e os corpos dessas issues tinham sido
+  escritos à mão com a âncora sem link. Lição de uso, não de código: editar partindo do `--dump`.
+- Visto e não consertado: o `fixed by` cita só o primeiro hash de `RESOLVED by A e B` (#227).
+
 ## 2026-10-04 — a órfã consertada que quase saiu como "not planned"
 
 Publicado como **v2.3.1**.

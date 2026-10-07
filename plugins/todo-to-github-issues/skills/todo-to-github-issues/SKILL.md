@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.3.1
+  version: 2.3.2
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -121,7 +121,7 @@ Resolva-os **com o humano, um grupo por vez**, e nunca em silêncio:
 | `##` sem marcador | narrativa → `docs/`; categoria → `###` dentro da seção aberta; assunto encerrado → uma linha na seção decidida |
 | `[x]` sem hash, ou com hash não mergeado | consertado: citar o commit e rodar de novo; refutado/decidido: uma linha na seção decidida; não mergeado: `- [ ] … RESOLVED by <hash>` até mergear |
 | sem âncora, sem data, sem autor | completar com o humano — o script não inventa `arquivo:linha` nem quem achou |
-| âncora que não aponta arquivo do repo, ou cujo arquivo não contém nenhum símbolo `entre crases` do item perto da linha (ADR 0011 do kit) | reancorar no código atual — `tests/check-todo.sh --anchors TODO.md` do kit lista só essas |
+| âncora que não aponta arquivo do repo (ADR 0011 do kit), sem o símbolo designado logo depois — `` `arq:N` (`símbolo`) ``, fechado pelo `)` — ou cujo símbolo não está perto da linha ancorada (ADR 0015 §2; tamanho mínimo e distância são os do cabeçalho do `check-todo.sh`, nunca uma cópia daqui) | reancorar no código atual, designando o símbolo que a linha contém — `tests/check-todo.sh --anchors TODO.md` do kit lista só essas, e a mensagem diz o que falta (`designates no symbol`) ou onde está o símbolo (`nearest … is at line N`) |
 
 `--fix --write` recusa (rc 6) arquivo versionado com mudança não commitada, para a correção chegar
 como um diff próprio; arquivo não versionado é escrito com aviso. Branch e commit ficam com você.
@@ -200,6 +200,16 @@ python3 $S --file ACHADOS-x.md --apply --link 6=153 --link "Uma obs=155"
   canário já comenta em todas as issues vinculadas.
 - **Traduzir ou resumir o item na issue.** O espelho que se afasta da fonte deixa de ser espelho.
   Corrija o texto no `TODO.md` e sincronize.
+- **Espelhar a partir de uma branch de trabalho.** O script lê o `TODO.md` do diretório atual: numa
+  branch, o `--apply` leva o texto dela (`RESOLVED by` ainda não mergeado, permalink no sha da branch)
+  a toda issue que difere da branch padrão — no kit sdd, em 2026-10-07, 15 `UPDATE` onde só uma issue
+  tinha mudado. Espelhe da branch padrão. Para mudar UMA issue antes do merge, pegue o corpo dela no
+  `--dump`, tire o `# título` que o dump põe no topo e aplique com `gh issue edit N --body-file`; o
+  plano depois do merge a lê como em dia.
+- **Editar o corpo à mão sem o link da âncora.** O `UPDATE (anchor)` (`update_kind`) compara os
+  corpos sem o alvo dos links, mas com os colchetes: uma âncora escrita `` `arq:N` `` no lugar de
+  `` [`arq:N`](…) `` nunca mais é `(anchor)`, e cada linha deslocada volta como `UPDATE (text)` (kit
+  sdd, #239 e #236 em 2026-10-07). Edite partindo do corpo do `--dump`, que já traz o link.
 - **Vírgula no `###` da seção.** O GitHub recusa vírgula em nome de label (422 `Label.name is
   invalid`, sem dizer qual caractere) e a primeira issue nunca sai. O script troca `, ` por ` · `
   na label (o texto da seção no arquivo não muda). O teto de 50 é de **caracteres**, não bytes:

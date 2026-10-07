@@ -53,8 +53,10 @@ def fix(text, repo=None, heading=None, lang="pt-BR"):
 
 def anchor_world(root):
     """Write the files the fixtures' anchors name. Since the kit's ADR 0011 an anchor must name a
-    file of the CHECKED file's repository, and a backticked span of the item's head must occur in
-    it near the anchored line — so a fixture anchored in thin air is refused, not accepted."""
+    file of the CHECKED file's repository; since its ADR 0015 §2 the anchor designates its symbol in
+    parentheses right after it — `path:N` (`symbol`), closed by the `)` — and that symbol must occur
+    near the anchored line (how near is the sensor's to say). A fixture anchored in thin air, or with the symbol loose in
+    the prose after it, is refused (`designates no symbol`), not accepted."""
     for rel, body in (("bin/x", "um_simbolo\ncode span com espaço\n"),
                       ("src/b.py", "import os\n\ndef login_flow():\n    pass\n")):
         os.makedirs(os.path.dirname(os.path.join(root, rel)) or root, exist_ok=True)
@@ -70,7 +72,7 @@ def sensor_rc(text):
     return f.sensor_violations(ROOT, text, BOX)[0]
 
 
-GOOD = ("- [ ] **Um achado bem formado** — `bin/x:1` — `um_simbolo` por que importa.\n"
+GOOD = ("- [ ] **Um achado bem formado** — `bin/x:1` (`um_simbolo`) por que importa.\n"
         "  — descoberto por `sdd-qa` na missão `m` (2026-09-24)\n")
 STANDARD = SEED_PT.replace("<!-- sdd:open -->\n", "<!-- sdd:open -->\n\n### Tema\n\n" + GOOD, 1)
 
@@ -84,7 +86,7 @@ check("the seed itself: --fix changes nothing", new == SEED_PT and not auto)
 # ── the legacy seed ─────────────────────────────────────────────────────────────────────────────
 new, auto, _ = fix(LEGACY)
 check("untouched legacy seed -> replaced by the language's seed", new == SEED_PT and len(auto) == 1)
-legacy_item = LEGACY.replace("## Open\n", "## Open\n\n- [ ] ajustar o fluxo — `src/b.py:3` — `login_flow` quebra o login"
+legacy_item = LEGACY.replace("## Open\n", "## Open\n\n- [ ] ajustar o fluxo — `src/b.py:3` (`login_flow`) quebra o login"
                              " — found by `opus` in mission `m1` (2026-09-18)\n", 1)
 new, auto, manual = fix(legacy_item)
 check("legacy seed + one finding -> NOT replaced wholesale, the finding survives",
@@ -122,7 +124,7 @@ check("a title longer than an issue title is left for the human",
 # items over the cap on a TODO.md the kit's own sensor called clean.
 W = kit.width_cap(ROOT)
 check("the kit's sensor declares the width of a physical line", isinstance(W, int) and W > 0)
-between = STANDARD.replace(GOOD, "- [ ] **Entre** — `bin/x:1` — `um_simbolo` " + "m" * (W - 60) + " fim.\n"
+between = STANDARD.replace(GOOD, "- [ ] **Entre** — `bin/x:1` (`um_simbolo`) " + "m" * (W - 60) + " fim.\n"
                                  "  — descoberto por `sdd-qa` na missão `m` (2026-09-24)\n")
 check("...the fixture line sits between 100 and the kit's width",
       100 < len(next(l for l in between.split("\n") if l.startswith("- [ ] **Entre**"))) <= W)
@@ -140,7 +142,7 @@ ns = type("A", (), {"file": os.path.join(BOX, "nada.md")})()
 check("--audit/--fix refuse a kit whose sensor declares no width (rc 3), never guess one",
       f.run(ns, sensor_dir) == 3)
 words = " ".join(f"palavra{k}" for k in range(90))
-longi = STANDARD.replace(GOOD, f"- [ ] **Longo** — `bin/x:1` — {words} [link](http://x) `code span com espaço` fim.\n"
+longi = STANDARD.replace(GOOD, f"- [ ] **Longo** — `bin/x:1` (`um_simbolo`) {words} [link](http://x) `code span com espaço` fim.\n"
                                "  — descoberto por `x` (2026-09-24)\n")
 new, auto, _ = fix(longi)
 block = new.split("- [ ] **Longo**")[1].split("\n\n")[0]

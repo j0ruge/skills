@@ -3,6 +3,30 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.3.2] — 2026-10-07
+
+Patch: documentação e fixtures de teste. O script não muda.
+
+### Fixed
+
+- **A regra de âncora era a de antes da ADR 0015 §2 do kit sdd.** A linha `MANUAL` do `SKILL.md`
+  dizia que bastava *qualquer* símbolo entre crases do item perto da linha (ADR 0011). Desde o lote 4
+  do kit (2026-10-05, `69eeb4f`) a âncora designa o símbolo entre parênteses logo depois dela,
+  `` `arq:N` (`símbolo`) ``, fechado pelo `)`, e só ele é medido. Os fixtures do
+  `test_todo_format.py` repetiam a forma antiga, e o sensor do kit os recusava com
+  `designates no symbol`: 5 casos vermelhos, que passam a verdes só com o símbolo entre parênteses.
+
+### Added
+
+- Dois itens em *Erros comuns*: espelhar a partir de uma branch de trabalho (o `--apply` leva o
+  texto da branch a toda issue que difere da padrão), com a receita para mudar uma issue só antes do
+  merge; e o corpo editado à mão sem o link da âncora, que nunca mais é `UPDATE (anchor)`.
+
+### Dívida registrada (não consertada aqui)
+
+- Com `RESOLVED by A e B`, o `--close-orphans` cita só o primeiro hash: a #227 do kit sdd fechou como
+  `fixed by 0f5ad85`, e o `92f7d5c` sumiu do comentário. Pede tarefa própria, com teste.
+
 ## [2.3.1] — 2026-10-04
 
 Patch: o contrato do `--close-orphans` não muda (fecha só a órfã cujo último texto trazia
