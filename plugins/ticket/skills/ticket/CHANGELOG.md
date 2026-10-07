@@ -4,6 +4,12 @@ Registro por sessão da skill; o changelog **versionado** é `plugins/ticket/CHA
 (a entrada 1.4.0 de 2026-09-03 resume o que está aqui). Cada entrada registra **o que
 mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-07 — md2adf recusa lista aninhada e crase no negrito (1.11.1)
+
+- `close` do SBM-6 sem MCP: o resumo com subitens por versão saiu como uma lista de 16 itens num
+  nível só, e `**`--para`:**` levaria as crases ao Jira, as duas com rc 0. O conversor passa a
+  recusar as duas (rc 1, nada gravado) e ganha `tests/test_md2adf.py`; o `close.md` diz como agrupar.
+
 ## 2026-10-05 — conversor markdown → ADF e close sem branch (1.10.0)
 
 - `close` do SBM-4 sem MCP atlassian: a sessão teve de escrever o conversor para o ADF. Ele vira

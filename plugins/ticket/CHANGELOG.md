@@ -1,5 +1,31 @@
 # Changelog — ticket
 
+## [1.11.1] — 2026-10-07
+
+### Por quê
+
+O `close` do SBM-6 (07/10/2026, no `~/.hermes`, sem MCP atlassian) passou o resumo pelo
+`scripts/md2adf.py`, que saiu com rc 0 em duas construções que chegariam erradas ao Jira:
+
+1. **Lista aninhada:** os subitens recuados sob cada versão viraram uma `bulletList` de 16 itens
+   num nível só, sem hierarquia. O docstring do script dizia "aninhamento vira um nível só", mas o
+   `close.md`, que é o que o agente lê, não dizia.
+2. **Crase dentro de negrito:** `**`--para`:**` virou o texto "`--para`:" com a marca `strong`, e
+   as crases ficariam à vista no comentário.
+
+O contorno funcionou (um parágrafo em negrito por grupo, cada um com a sua lista; sem crase no
+negrito), mas dependia de alguém notar olhando o JSON.
+
+### O quê
+
+- **`scripts/md2adf.py`:** `recusas()` recusa as duas construções com rc 1 e nada gravado,
+  dizendo a linha (lista aninhada) ou o trecho (negrito com crase) e o que fazer. Fora de bloco de
+  código; continuação recuada de item segue valendo.
+- **`tests/test_md2adf.py` (novo):** 7 testes, só stdlib. Os 3 das recusas ficaram vermelhos antes
+  da correção; os 4 que travam o que já funcionava passaram antes e depois. O resumo real do SBM-6,
+  na forma reestruturada, continua convertendo (15 blocos).
+- **`references/close.md` passo 5:** as duas recusas e a forma de agrupar.
+
 ## [1.11.0] — 2026-10-05
 
 ### Por quê

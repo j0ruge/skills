@@ -105,6 +105,13 @@
    bloco de código e `---`; itálico e tabela saem como texto. Validado em 05/10/2026 no
    SBM-4: a saída é idêntica ao JSON que o Jira aceitou (`201`, releitura `dict 8`).
 
+   Duas construções saem com **rc 1** e nada gravado, porque chegariam erradas ao Jira:
+   **lista aninhada** (os subitens viravam o mesmo nível dos itens) e **crase dentro de
+   negrito** (a crase aparecia literal). Para agrupar itens, escreva um parágrafo em
+   negrito por grupo, cada um com a sua lista. Medido em 07/10/2026 no SBM-6: o resumo
+   com subitens por versão saiu como uma lista de 16 itens num nível só, com rc 0.
+   Testes: `tests/test_md2adf.py`.
+
    **Prefira postar pelo REST:** o código HTTP é um sensor de verdade (`201` =
    gravado; 400 = ADF recusado), ao contrário do `acli`, que sai 0 em falha.
    Validado em 04/10/2026 (SBM-3, `201` e releitura `dict 9`):

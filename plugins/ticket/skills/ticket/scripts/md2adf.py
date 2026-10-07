@@ -11,10 +11,13 @@ Uso:
 
 Markdown aceito (os nós da tabela ADF do templates.md): títulos `#`..`######`,
 parágrafos (linhas seguidas viram um parágrafo), listas `- `/`* ` e `1. `/`1) `
-(aninhamento vira um nível só), `**negrito**`, `` `code` ``, `[texto](url)`,
-bloco de código com ``` e linha `---`. Itálico e tabela não: saem como texto.
+`**negrito**`, `` `code` ``, `[texto](url)`, bloco de código com ``` e linha `---`.
+Itálico e tabela não: saem como texto. Duas construções são recusadas porque
+chegariam erradas ao Jira (medido em 07/10/2026, no fechamento do SBM-6): lista
+aninhada, que virava um nível só, e crase dentro de negrito, que aparecia literal.
 
-Saída: rc 0 gravou; rc 1 a varredura reprovou (nada gravado); rc 2 uso inválido.
+Saída: rc 0 gravou; rc 1 a varredura reprovou ou o markdown tem construção
+recusada (nada gravado); rc 2 uso inválido.
 Só stdlib.
 """
 import json
@@ -27,6 +30,7 @@ BULLET = re.compile(r'\s*[-*] (.*)')
 ORDERED = re.compile(r'\s*\d+[.)] (.*)')
 HEADING = re.compile(r'(#{1,6}) (.*)')
 FENCE = re.compile(r'\s*```(.*)')
+ANINHADO = re.compile(r'\s+([-*]|\d+[.)]) ')
 
 
 def inline(s):
@@ -130,6 +134,31 @@ def _texto(nos):
     return ''.join(partes)
 
 
+def recusas(md, doc):
+    """Construções que o conversor entregaria erradas ao Jira: lista aninhada (o ADF sairia num
+    nível só) e crase dentro de negrito (a crase apareceria literal)."""
+    erros, dentro = [], False
+    for n, line in enumerate(md.replace('\r\n', '\n').split('\n'), 1):
+        if FENCE.match(line):
+            dentro = not dentro
+        elif not dentro and ANINHADO.match(line):
+            erros.append(f'linha {n}: lista aninhada sairia num nível só; '
+                         'use um parágrafo em negrito por grupo, cada um com a sua lista')
+
+    def textos(no):
+        if isinstance(no, dict):
+            if no.get('type') == 'text':
+                yield no
+            for c in no.get('content', []) or []:
+                yield from textos(c)
+
+    for t in textos(doc):
+        if '`' in t['text'] and any(m.get('type') == 'strong' for m in t.get('marks', [])):
+            erros.append(f"negrito com crase ({t['text']!r}): a crase sairia literal; "
+                         'tire a crase ou o negrito')
+    return erros
+
+
 def varredura(doc):
     """A varredura de marks e estrutura do templates.md §Antes de postar."""
     ruim_marks, ruim_estrutura = [], []
@@ -158,7 +187,12 @@ def main(argv):
         print(__doc__.strip().split('\n\n')[1], file=sys.stderr)
         return 2
     with open(args[0], encoding='utf-8') as f:
-        doc = convert(f.read())
+        md = f.read()
+    doc = convert(md)
+    erros = recusas(md, doc)
+    if erros:
+        print('\n'.join(erros), file=sys.stderr)
+        return 1
     ruim_marks, ruim_estrutura = varredura(doc)
     if ruim_marks or ruim_estrutura:
         print(f'marks invalidas: {ruim_marks}', file=sys.stderr)
