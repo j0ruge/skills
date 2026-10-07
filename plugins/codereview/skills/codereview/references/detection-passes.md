@@ -258,6 +258,8 @@ When the diff introduces new API endpoints, data models, configuration, features
 
 **Skip this sub-pass** if the project has no documentation files at all (no README, no OpenAPI, no rules files). Don't penalize projects that haven't started documenting.
 
+**A decision already on record settles what it covers.** When a handoff, ledger, ADR or ruling ("stays out", "next cycle") already decided what a per-file finding raises, Phase C cites that decision instead of raising the severity again: LOW at most, dropped when the decision covers all of it, reopened only by evidence the decision did not weigh. Then read the reviewed project's own docs for the exception: a reference that still states the absolute the decision carved out is the 6.5.2 finding, because the decision usually lives only in the handoff. Measured 2026-10-07: a MEDIUM "`publico()` fails open" was a deferral the handoff recorded ("stays out: the extraction's technical texts"), while the project's visual spec still said no exception text reached the e-mail; the schema-error text did.
+
 **6.5.3 Contract Drift in Tests**
 
 Tests that assert literal-by-literal contracts about exported constants (enums, tuples, schema shapes) silently rot when the exported value gains or loses members and the test is not updated in the same PR. The test keeps passing on every other branch until the drift produces a real conflict — at which point the failure looks "pre-existing / from another feature" and gets dismissed instead of root-caused.
@@ -417,6 +419,8 @@ This pass approximates what a dedicated secret scanner (GitGuardian, gitleaks, t
 | `.env`-shaped assignment | Line matching `^(SECRET_KEY\|DATABASE_URL\|API_KEY\|JWT_SECRET\|PRIVATE_KEY\|CLIENT_SECRET\|AUTH_TOKEN)\s*=\s*\S.+` in a non-`.env.example` / non-`.env.sample` file | Treat `.env.example` / `.env.sample` / `.env.template` as allowed placeholders *only if* the value looks like a placeholder (see exceptions). |
 
 **Why regex AND scanners (when available)**: the skill cannot guarantee `ggshield` or `gitleaks` is installed on the user's machine, so the script ships its own Python regex pass that always runs. When `ggshield` or `gitleaks` IS on `PATH`, the script invokes them too and merges results (dedup by `{file, line, kind}`). The skill is still read-only — the `Bash` invocations are pure scans (`gh`/`grep`/`ggshield secret scan`) with no mutation. Always recommend the user also install `ggshield pre-commit` as a durable defense for future commits.
+
+**The external scanners see only the diff.** The script writes the diff's added lines into a temporary directory, each at its own line number, runs `gitleaks`/`ggshield` there and keeps only findings on an added line; the repo's `.gitleaks.toml` (passed as `--config`) and `.gitleaksignore` (copied in) still apply. Measured 2026-10-07: up to 2.13.0 they scanned the repo directory (`--source <repo> --no-git`), so a git-ignored `.env` outside the PR came back as a finding and forced an F, and on a large repo gitleaks hit its 60 s timeout, leaving the gate regex-only with one line in `errors`. Scoped, the same review ran in 0.1 s with `gitleaks` in `scanners`. Pinned by `tests/test_scan_secrets.py`.
 
 **Exceptions (do not flag):**
 

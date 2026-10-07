@@ -2,6 +2,39 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.14.0] — 2026-10-07
+
+### O scanner externo só vê o diff; decisão registrada encerra o achado; docstrings contadas por visibilidade
+
+Lições de uma revisão do SBM-6 no `~/.hermes` (faixa `47fbe46..HEAD` com pathspec, nota A).
+
+- **`scripts/scan_secrets.py` (correção):** o gitleaks rodava com `--source <repo> --no-git` e o
+  ggshield com `secret scan path <repo>`: os dois varriam a pasta inteira, não o diff, e o que
+  achavam entrava sem filtro na lista que força a nota F. Reprodução: num repo descartável, um PR que
+  só muda `app.py` saía com `('.env', 1, 'github-pat', 'gitleaks')`, com o `.env` ignorado pelo git e
+  fora do PR. No `~/.hermes`, o mesmo varrer-tudo estourava os 60 s e o gate ficava só no regex, com
+  uma linha em `errors`. Agora `materialize_added_lines` grava numa pasta temporária só as linhas
+  acrescentadas, cada uma no seu número; os scanners rodam lá e só fica o achado numa linha
+  acrescentada. O `.gitleaks.toml` (por `--config`) e o `.gitleaksignore` (copiado) do repo continuam
+  valendo. No caso real, a pré-varredura caiu para 0,1 s com `gitleaks` em `scanners`.
+- **`tests/test_scan_secrets.py` (novo):** 8 testes, só stdlib. O do `.env` fora do diff ficou
+  vermelho antes da correção; três mutantes (sem o filtro do gitleaks, sem o do ggshield, varrendo a
+  pasta do repo) derrubam cada um o seu teste. Os que precisam do gitleaks são pulados sem ele no PATH.
+- **Sem medição:** o ggshield não estava instalado na máquina do retrofit. Mudou só o alvo (a pasta
+  do escopo) e o filtro, que tem teste com scanner simulado; as flags são as de antes.
+- **`references/detection-passes.md` §6.10:** parágrafo novo, o escopo dos scanners externos e o caso
+  medido.
+- **§6.5.2:** decisão já registrada (handoff, ledger, ADR, "fica fora") encerra o achado que cobre:
+  a Fase C cita a decisão em vez de subir a severidade, e lê as docs do projeto atrás da exceção. O
+  caso: um MEDIUM "`publico()` falha aberto" era um adiamento escrito no handoff, enquanto a spec
+  visual do projeto ainda dizia que nenhum texto de exceção chegava ao e-mail.
+- **`references/report-template.md`, cobertura de docstrings:** públicas e privadas contadas à parte,
+  a severidade vem da 6.5.1 e não da porcentagem, e uma sonda `ast` para Python. A conta misturada deu
+  25/47; separada, públicas 18/22 e privadas 7/25, e as 4 públicas eram as que a 6.5.1 gradua.
+- **Dívida pré-existente, não tocada:** os três avisos C2 do baseline (os contratos que os subagentes
+  leem por caminho absoluto) e o `SKILL.md` a 5 caracteres do limite de 20 mil do C1; por isso as
+  três lições foram para `references/` e o `SKILL.md` só mudou a versão.
+
 ## [2.13.0] — 2026-10-06
 
 ### A mensagem que pede ação precisa sair quando a ação é feita, e a cópia velha se prova com `diff`

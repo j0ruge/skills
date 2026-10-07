@@ -36,6 +36,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, field, asdict
 from typing import Iterable
 
@@ -392,16 +393,48 @@ def scan_diff(diff_text: str) -> ScanResult:
 
 # ---------------------------------------------------------------------------
 # Scanners externos (ggshield / gitleaks) — opcionais, fundem se presentes.
+# Recebem só as linhas que o diff acrescenta (materialize_added_lines), nunca a
+# pasta do repo: até a 2.13.0 o gitleaks rodava com `--source <repo> --no-git`,
+# e um `.env` ignorado e fora do PR forçava a nota F (medido em 2026-10-07).
 # ---------------------------------------------------------------------------
 
 
-def run_ggshield(repo_root: str, result: ScanResult) -> None:
-    """Roda ggshield se instalado; funde findings."""
+def materialize_added_lines(diff_text: str, dest: str) -> dict[str, set[int]]:
+    """Grava em `dest` só as linhas que o diff acrescenta, cada uma no número de linha dela (o
+    resto do arquivo em branco), e devolve {arquivo: {linhas}}: o escopo dos scanners externos.
+
+    Arquivo e linha que o scanner devolver batem com os do diff. Caminho que sairia de `dest`
+    (`../x`, absoluto) não é gravado."""
+    raiz = os.path.realpath(dest)
+    por_arquivo: dict[str, dict[int, str]] = {}
+    for path, lineno, content in iter_added_lines(diff_text):
+        por_arquivo.setdefault(path, {})[lineno] = content
+    escopo: dict[str, set[int]] = {}
+    for path, linhas in por_arquivo.items():
+        alvo = os.path.realpath(os.path.join(raiz, path))
+        if alvo == raiz or os.path.commonpath([raiz, alvo]) != raiz:
+            continue
+        os.makedirs(os.path.dirname(alvo), exist_ok=True)
+        with open(alvo, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write("\n".join(linhas.get(n, "") for n in range(1, max(linhas) + 1)) + "\n")
+        escopo[path] = set(linhas)
+    return escopo
+
+
+def _scope_path(reported: str, scan_dir: str) -> str:
+    """O caminho que o scanner devolveu, relativo à pasta materializada (como no diff)."""
+    if os.path.isabs(reported):
+        reported = os.path.relpath(os.path.realpath(reported), os.path.realpath(scan_dir))
+    return os.path.normpath(reported)
+
+
+def run_ggshield(scan_dir: str, scope: dict[str, set[int]], result: ScanResult) -> None:
+    """Roda ggshield se instalado, na pasta do escopo; funde só achados em linhas acrescentadas."""
     if not shutil.which("ggshield"):
         return
     try:
         proc = subprocess.run(
-            ["ggshield", "secret", "scan", "path", repo_root, "--json"],
+            ["ggshield", "secret", "scan", "path", scan_dir, "--json"],
             capture_output=True,
             text=True,
             timeout=60,
@@ -414,12 +447,14 @@ def run_ggshield(repo_root: str, result: ScanResult) -> None:
         result.scanners.append("ggshield")
         # Estrutura ggshield JSON: {"entities_with_incidents": [{"filename", "incidents": [...]}]}
         for entity in data.get("entities_with_incidents", []):
-            file_path = entity.get("filename", "<unknown>")
+            file_path = _scope_path(entity.get("filename", "<unknown>"), scan_dir)
             for incident in entity.get("incidents", []):
                 kind = incident.get("type", "ggshield-finding")
                 # ggshield retorna line/match em occurrences
                 for occ in incident.get("occurrences", []):
                     line = occ.get("line_start", 0)
+                    if line not in scope.get(file_path, ()):
+                        continue
                     matches = occ.get("matches", [])
                     snippet_match = matches[0].get("match", "") if matches else ""
                     # Mascara se vier valor real
@@ -441,13 +476,24 @@ def run_ggshield(repo_root: str, result: ScanResult) -> None:
         result.errors.append(f"ggshield: {type(e).__name__}: {e}")
 
 
-def run_gitleaks(repo_root: str, result: ScanResult) -> None:
-    """Roda gitleaks se instalado; funde findings."""
+def run_gitleaks(repo_root: str, scan_dir: str, scope: dict[str, set[int]], result: ScanResult) -> None:
+    """Roda gitleaks se instalado, na pasta do escopo; funde só achados em linhas acrescentadas.
+
+    O `.gitleaks.toml` e o `.gitleaksignore` do repo continuam valendo: o primeiro por
+    `--config`, o segundo copiado para a pasta (as impressões digitais são relativas a ela)."""
     if not shutil.which("gitleaks"):
         return
+    cmd = ["gitleaks", "detect", "--source", ".", "--no-git", "--report-format", "json", "--report-path", "/dev/stdout"]
     try:
+        config = os.path.join(repo_root, ".gitleaks.toml")
+        if os.path.isfile(config):
+            cmd += ["--config", os.path.abspath(config)]
+        ignore = os.path.join(repo_root, ".gitleaksignore")
+        if os.path.isfile(ignore):
+            shutil.copyfile(ignore, os.path.join(scan_dir, ".gitleaksignore"))
         proc = subprocess.run(
-            ["gitleaks", "detect", "--source", repo_root, "--no-git", "--report-format", "json", "--report-path", "/dev/stdout"],
+            cmd,
+            cwd=scan_dir,
             capture_output=True,
             text=True,
             timeout=60,
@@ -463,10 +509,14 @@ def run_gitleaks(repo_root: str, result: ScanResult) -> None:
         data = json.loads(proc.stdout)
         result.scanners.append("gitleaks")
         for finding in data:
+            file_path = _scope_path(finding.get("File", "<unknown>"), scan_dir)
+            line = finding.get("StartLine", 0)
+            if line not in scope.get(file_path, ()):
+                continue
             result.findings.append(
                 Finding(
-                    file=finding.get("File", "<unknown>"),
-                    line=finding.get("StartLine", 0),
+                    file=file_path,
+                    line=line,
                     kind=finding.get("RuleID", "gitleaks-finding"),
                     snippet=f"{finding.get('Description', 'gitleaks')}: ***",
                     severity="CRITICAL",
@@ -510,7 +560,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     p.add_argument(
         "--repo-root",
         default=".",
-        help="Repository root for ggshield/gitleaks invocation. Default: cwd.",
+        help="Repository root: where gitleaks finds .gitleaks.toml and .gitleaksignore. Default: cwd.",
     )
     p.add_argument(
         "--no-external",
@@ -547,8 +597,14 @@ def main(argv: list[str] | None = None) -> int:
     result = scan_diff(diff_text)
 
     if not args.no_external:
-        run_ggshield(args.repo_root, result)
-        run_gitleaks(args.repo_root, result)
+        try:
+            with tempfile.TemporaryDirectory(prefix="codereview-secrets-") as scan_dir:
+                scope = materialize_added_lines(diff_text, scan_dir)
+                if scope:   # sem linha acrescentada, nada a varrer
+                    run_ggshield(scan_dir, scope, result)
+                    run_gitleaks(args.repo_root, scan_dir, scope, result)
+        except OSError as e:   # o regex já rodou; o gate fica sabendo que os externos não
+            result.errors.append(f"external scanners: {type(e).__name__}: {e}")
 
     deduplicate(result)
     print(result.to_json())

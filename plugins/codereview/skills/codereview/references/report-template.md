@@ -2,6 +2,11 @@
 
 This file defines the full Markdown report structure for the codereview skill.
 
+## Contents
+
+- [Report Structure](#report-structure): [Secrets Detection](#-secrets-detection) · [Findings Table](#findings-table) · [Test Coverage](#test-coverage) · [Documentation Sync](#documentation-sync) · [Dead Code & Cleanup](#-dead-code--cleanup) · [Overall Grade](#overall-grade) · [Recommended Actions](#recommended-actions) · [Cost footprint](#cost-footprint)
+- [Grading Scale](#grading-scale) · [Examples](#examples) · [Troubleshooting](#troubleshooting)
+
 ---
 
 ## Report Structure
@@ -131,6 +136,26 @@ If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, th
 > Only count functions/methods/classes that are new or modified in this branch.
 > A function counts as "documented" if it has a JSDoc/XML doc/docstring that matches its current behavior.
 > If the project specifies a documentation language (e.g., PT-BR), docstrings in the wrong language count as MISSING.
+> Count public and private apart: public is a name without a leading `_` in Python (exported in TS/JS, `public` in C#). The percentage on this line is the public one; give the private count after it (`· private {n}/{m}`). The severity of each gap comes from detection-passes.md 6.5.1, not from the percentage. Measured 2026-10-07: a Python range read 25/47 with private HTML helpers mixed in; split, it was public 18/22 and private 7/25, and the 4 public gaps were the ones 6.5.1 grades.
+> Python probe — every function or class whose span touches an added line:
+>
+> ```bash
+> python3 - {MERGE_BASE} {changed .py files} <<'EOF'
+> import ast, re, subprocess, sys
+> base, files = sys.argv[1], sys.argv[2:]
+> for f in files:
+>     diff = subprocess.run(["git", "diff", "-U0", f"{base}...HEAD", "--", f],
+>                           capture_output=True, text=True).stdout
+>     added = {n for m in re.finditer(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@", diff, re.M)
+>              for n in range(int(m[1]), int(m[1]) + int(m[2] or 1))}
+>     for node in ast.walk(ast.parse(open(f).read())):
+>         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) \
+>                 and added & set(range(node.lineno, node.end_lineno + 1)):
+>             kind = "private" if node.name.startswith("_") else "public"
+>             doc = "doc" if ast.get_docstring(node) else "MISSING"
+>             print(f"{f}:{node.lineno} {kind} {doc} {node.name}")
+> EOF
+> ```
 
 ---
 
