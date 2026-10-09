@@ -435,6 +435,41 @@ class StopTest(unittest.TestCase):
                    tool(error=True), tool(error=True), tool(error=True))
         self.assertIsNone(self.run_hook())
 
+    def kit_worktree(self):
+        wt = self.w.tmp / "repos/sdd_agents-missao"
+        git(self.w.kit_repo, "worktree", "add", "-q", "-b", "missao", str(wt))
+        return wt
+
+    def test_kit_retro_names_the_linked_worktrees(self):
+        """Missão do kit roda num worktree ligado, e a sessão do lote 6 tinha o cwd no checkout
+        principal: o pedido nomeia o TODO.md de cada worktree. Sem worktree, nada muda."""
+        self.write(skill_typed("sdd-plan"), tool(error=True))
+        self.assertNotIn("worktree", self.context_of(self.run_hook()))
+        wt = self.kit_worktree()
+        self.write(skill_typed("sdd-plan"), tool(error=True), tool(error=True))
+        text = self.context_of(self.run_hook())
+        self.assertIn(str(self.w.kit_repo / "TODO.md"), text)
+        self.assertIn(str(wt / "TODO.md"), text)
+        self.assertIn("KIT-TOUCHED", text)
+
+    def test_writing_the_todo_of_a_kit_worktree_suppresses_the_next_retro(self):
+        """O registro no TODO.md de um worktree ligado do kit também é o retrofit dele."""
+        wt = self.kit_worktree()
+        self.write(skill_typed("sdd-plan"), tool(error=True))
+        self.context_of(self.run_hook())
+        self.write(tool_with("Edit", {"file_path": str(wt / "TODO.md")}),
+                   tool(error=True), tool(error=True), tool(error=True))
+        self.assertIsNone(self.run_hook())
+
+    def test_writing_the_todo_of_another_repo_does_not_suppress_the_kit_retro(self):
+        """Controle negativo: TODO.md de outro repo nosso não é o do kit, e a retro volta."""
+        self.kit_worktree()
+        self.write(skill_typed("sdd-plan"), tool(error=True))
+        self.context_of(self.run_hook())
+        self.write(tool_with("Edit", {"file_path": str(self.w.proj / "TODO.md")}),
+                   tool(error=True), tool(error=True), tool(error=True))
+        self.assertIn("kit sdd", self.context_of(self.run_hook()))
+
     def test_third_party_kit_and_disabled_kits_are_ignored(self):
         """Binário de repo de terceiro não vira kit; `kits: []` desliga o sdd."""
         self.kit_config(["otk"])

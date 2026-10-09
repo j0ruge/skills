@@ -5,7 +5,7 @@ license: MIT
 compatibility: Claude Code 2.1.163+ (Stop additionalContext); testado na 2.1.283 em 2026-09-30. Hook em Python 3, só biblioteca padrão, e git no PATH.
 metadata:
   author: JorUge
-  version: "0.3.2"
+  version: "0.3.3"
 ---
 
 # retrofit-watch
@@ -33,7 +33,7 @@ continua exigindo a sua confirmação.
    |---|---|---|
    | cache ou clone do `chewiesoft-marketplace` (j0ruge/skills), inclusive por symlink e worktree | full | o **nome do plugin** (`codereview:coderabbit-pr` → `codereview`) |
    | skill rastreada no git de um repo cujo `origin` é de `j0ruge`, `JRC-Brasil` ou `chewiesoft` | lean | o nome da skill |
-   | kit: o binário no `PATH` (por `realpath`, então o symlink de `~/.hermes/bin` vale) cai num repo cujo `origin` é nosso | kit | nenhum: a lição vai para o `TODO.md` do repo do kit |
+   | kit: o binário no `PATH` (por `realpath`, então o symlink de `~/.hermes/bin` vale) cai num repo cujo `origin` é nosso | kit | nenhum: a lição vai para o `TODO.md` do repo do kit, ou o do worktree ligado onde a missão roda |
    | `skills-lock.json`, `.agents/skills`, `~/.agents`, `~/.hermes`, outro marketplace, origin de terceiro, fora do git | ignora | — |
 
    Ficam sempre de fora `retrofit-skill`, `retrofit-watch` e a família `skill-quality-audit`.
@@ -120,6 +120,9 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
   feita depois, com você. A fila mora no diretório de dados do plugin para que nenhum sensor do kit
   a veja (`git status`, `hat_guard_check`, guarda de kit); um arquivo dentro do repo, mesmo
   ignorado, seria um escritor a mais no checkout da fase.
+- **Missão do kit num worktree ligado:** o binário do `PATH` resolve o checkout principal, e o
+  cwd da sessão pode estar nele também. O pedido nomeia os worktrees ligados do kit e aceita o
+  registro no `TODO.md` de qualquer um (seção 7 do `criteria.md`).
 - **O gate de sessão desassistida** usa `CLAUDE_CODE_SESSION_ATTENDED` e
   `CLAUDE_CODE_ENTRYPOINT`, observadas na 2.1.283 mas não documentadas. Se uma versão nova
   mudar isso, o hook passa a pedir retro também em `-p`, o que dá um turno pago à fase. Confira
@@ -137,4 +140,4 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
 |---|---|
 | `references/criteria.md` | ao fazer a retro: critérios, triagem, formato e exemplos |
 | `scripts/retrofit_watch.py` | o hook (`stop`, `baseline`, `pending`) e a fila (`queue [--done ID...]`). O plugin o registra no `hooks/hooks.json` da raiz, que o formato de plugin exige |
-| `tests/test_retrofit_watch.py` | 42 testes: classificação, gatilho, kit e fila (`python3 tests/test_retrofit_watch.py`) |
+| `tests/test_retrofit_watch.py` | os testes: classificação, gatilho, kit e fila (`python3 tests/test_retrofit_watch.py`) |

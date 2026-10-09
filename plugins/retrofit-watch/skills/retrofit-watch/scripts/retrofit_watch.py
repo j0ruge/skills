@@ -14,7 +14,7 @@ Terceiros, skills fora do git e as do Hermes ficam de fora.
 "Kit" = produto nosso que não é skill, reconhecido pelo binário (padrão: `sdd`, o kit de
 ~/repos/sdd_agents). O binário resolvido no PATH aponta o repo; contam como trabalho do kit o
 comando `/<kit>-*`, o subagente `<kit>-*` e o próprio binário no Bash. A lição vai para o
-TODO.md do repo do kit, não para o /retrofit-skill.
+TODO.md do repo do kit (ou o do worktree ligado onde a missão do kit roda), não para o /retrofit-skill.
 
 Controle por ambiente:
   RETROFIT_WATCH=off     desliga
@@ -140,6 +140,22 @@ def _toplevel(cwd):
     comparada (o TODO.md do kit) vem `C:\\x`."""
     top = _git(["rev-parse", "--show-toplevel"], cwd)
     return os.path.normpath(top) if top else None
+
+
+def _common_dir(top):
+    """O `.git` comum: o checkout principal e cada worktree ligado do mesmo repo respondem igual.
+    Relativo ao `top` quando é o principal; nunca `--path-format`, que git velho ecoa de volta."""
+    out = _git(["rev-parse", "--git-common-dir"], top)
+    return os.path.normcase(os.path.realpath(os.path.join(top, out))) if out else None
+
+
+def kit_worktrees(repo):
+    """Os outros worktrees do repo do kit, que existem no disco. A missão do kit roda num deles, e
+    a sessão pode ter o cwd no checkout principal (lote 6 do sdd, 2026-10-08): o cwd não diz qual."""
+    out = _git(["worktree", "list", "--porcelain"], repo) or ""
+    tops = [os.path.normpath(line[len("worktree "):]) for line in out.splitlines() if line.startswith("worktree ")]
+    here = os.path.realpath(repo)
+    return [t for t in tops if os.path.isdir(t) and os.path.realpath(t) != here]
 
 
 def _full(plugin, skill, ctx):
@@ -375,13 +391,24 @@ class Scanner:
             self._watch(info)
 
     def kit_todo_written(self, path):
-        """O registro no TODO.md do kit é o retrofit dele: a retro daquele kit não volta."""
+        """O registro no TODO.md do kit é o retrofit dele: a retro daquele kit não volta. Vale o
+        TODO.md da raiz de qualquer worktree do mesmo repo, onde a missão do kit escreve."""
         real = os.path.realpath(path or "")
+        if os.path.basename(real) != "TODO.md":
+            return
+        top = None
         for key, entry in self.st["skills"].items():
-            if entry["mode"] == "kit" and real == os.path.join(entry["repo"], "TODO.md"):
-                entry["reviews"] = MAX_REVIEWS
-                if key not in self.st["done"]:
-                    self.st["done"].append(key)
+            if entry["mode"] != "kit":
+                continue
+            if real != os.path.join(entry["repo"], "TODO.md"):
+                if top is None:
+                    top = _toplevel(os.path.dirname(real)) or ""
+                if (not top or real != os.path.join(top, "TODO.md")
+                        or _common_dir(top) != _common_dir(entry["repo"])):
+                    continue
+            entry["reviews"] = MAX_REVIEWS
+            if key not in self.st["done"]:
+                self.st["done"].append(key)
 
     def tool_use(self, name, tool_input):
         """Agent `<kit>-*` e o binário do kit no Bash passam a vigiar o kit antes de contar."""
@@ -499,9 +526,16 @@ def describe(entry):
     cmd = f"`/retrofit-skill:retrofit-skill {entry['arg']}`"
     if entry["mode"] == "kit":
         todo = os.path.join(entry["repo"], "TODO.md")
-        return (f"o `{entry['label']}` (repo {os.path.basename(entry['repo'])}; {entry['work']} chamadas, "
+        text = (f"o `{entry['label']}` (repo {os.path.basename(entry['repo'])}; {entry['work']} chamadas, "
                 f"{entry['friction']} sinais de atrito) → registrar como achado em `{todo}`, no formato "
                 "e com a catraca do próprio kit")
+        others = kit_worktrees(entry["repo"])
+        if others:
+            names = ", ".join(f"`{os.path.join(t, 'TODO.md')}`" for t in others)
+            text += (f" — ou, se a sessão trabalhou numa missão do kit num worktree ligado, no TODO.md dele "
+                     f"({names}): o checkout acima é o que o binário do PATH resolve, e escrever nele com "
+                     "uma corrida de alvo em voo a para (KIT-TOUCHED no sdd)")
+        return text
     if entry["mode"] == "full":
         where = "marketplace j0ruge/skills, modo full"
     else:

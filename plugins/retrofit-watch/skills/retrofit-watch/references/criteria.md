@@ -118,7 +118,13 @@ Depois do "sim":
   data e "descoberto por", no máximo 8 linhas, na seção aberta;
 - mova a catraca no mesmo commit (no `sdd_agents`: `todo-findings` em `tests/health-baseline.txt`);
 - valide com o sensor do kit (`tests/check-todo.sh --check TODO.md`) antes de commitar;
-- commite num branch e pergunte antes do push e do PR, como qualquer `chore(todo)` do kit.
+- commite num branch e pergunte antes do push e do PR, como qualquer `chore(todo)` do kit;
+- **missão do kit num worktree ligado: registre no `TODO.md` do worktree, nunca no checkout
+  principal.** O pedido nomeia o principal porque é o repo que o binário do `PATH` resolve, e é
+  nele que os `sdd run` dos alvos leem a guarda de kit: escrever ali com uma corrida em voo a para
+  com `KIT-TOUCHED`. O cwd da sessão não decide (no lote 6 do sdd, em 2026-10-08, ele estava no
+  principal e a missão no worktree); por isso o pedido lista os worktrees ligados, e o registro em
+  qualquer um deles também encerra a retro.
 
 Escrever o `TODO.md` com `Edit` ou `Write` encerra a retro do kit nesta sessão. Escrito por script
 no Bash, o hook não percebe, e pode pedir uma segunda retro se o atrito continuar.

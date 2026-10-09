@@ -1,5 +1,27 @@
 # Changelog — retrofit-watch
 
+## [0.3.3] — 2026-10-09
+
+### Fixed
+
+- **Durante a missão do kit num worktree ligado, a retro mandava registrar no checkout principal.**
+  O caminho do `TODO.md` sai do repo do binário no `PATH`, e o `sdd` resolve o checkout principal
+  do `sdd_agents`, que é onde os `sdd run` dos alvos leem a guarda de kit: escrever ali com uma
+  corrida em voo a para com `KIT-TOUCHED`. A missão do kit roda num worktree ligado (ADR 0016 §2
+  do kit). Medido no lote 6 (sessão de 2026-10-08): o pedido nomeou `…/sdd_agents/TODO.md` duas
+  vezes, com a missão em `…/sdd_agents-lote-6`.
+- **O cwd da sessão não resolve, e por isso não é o sinal.** Naquela sessão o cwd do payload era o
+  checkout principal, e a missão foi trabalhada por caminho absoluto. O pedido passa a listar os
+  worktrees ligados do kit (`kit_worktrees`, via `git worktree list --porcelain`, sem o principal e
+  sem os que sumiram do disco) e diz por que o principal é o lugar errado durante a missão.
+- **Registrar no worktree não encerrava a retro.** O `kit_todo_written` só reconhecia o `TODO.md`
+  do principal. Agora vale o `TODO.md` da raiz de qualquer worktree com o mesmo `.git` comum
+  (`_common_dir`, resolvido contra o toplevel e sem `--path-format`, que git velho ecoa de volta).
+  O git só roda quando o arquivo editado se chama `TODO.md`.
+- Três testes novos, com o `TODO.md` de outro repo nosso como controle negativo. Sabotados à mão,
+  ficam vermelhos ao aceitar qualquer `TODO.md`, ao não listar os worktrees e ao listar também o
+  principal. O `SKILL.md` deixa de escrever o número de testes, que já estava velho (42 contra 44).
+
 ## [0.3.2] — 2026-10-04
 
 ### Fixed
