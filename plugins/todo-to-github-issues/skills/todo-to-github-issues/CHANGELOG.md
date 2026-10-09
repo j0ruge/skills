@@ -3,6 +3,20 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-09 — o espelho parado pelo formato
+
+Publicado como **v2.4.1**.
+
+- Faxina das issues do sales_quote: o `--audit` deu `summary auto=1 manual=206` (175 âncoras sem
+  símbolo — o arquivo é anterior à ADR 0015 §2 do kit), e o plano recusa até a migração. O espelho
+  estava sem sincronizar desde 2026-09-24, com 8 órfãs abertas.
+- Fechadas à mão: `git log --format='%h %ad %s' --date=short -S"<começo do título>" -- TODO.md` deu o
+  commit de remoção de 7 delas, e `gh issue close N --reason completed --comment` citou cada um. A 8ª
+  (#350) ficou aberta: o commit que a removeu não prova o conserto. Os 10 itens consertados que ainda estavam no arquivo saíram por PR
+  (sales_quote #419), com o doc da `Fonte:`, que o contrato de `docs/achados/` daquele repo exige.
+- Fora deste retrofit, sem correção verificada: o `--fix` só apaga `[x]` com `merge-base --is-ancestor`,
+  que nunca vale num repo de squash merge (PRs #405 e #406 do sales_quote). Registrado no `TODO.md` do kit.
+
 ## 2026-10-09 — o backlog que esvaziou de verdade
 
 Publicado como **v2.4.0**.

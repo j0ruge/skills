@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.4.0
+  version: 2.4.1
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -186,6 +186,15 @@ python3 $S --file ACHADOS-x.md --apply --link 6=153 --link "Uma obs=155"
   `RESOLVIDO por` não é lido pelo espelho: `--fix` o converte.
 - **Espelhar antes de acertar o formato.** Num arquivo sem marcador o espelho recusa (rc 4). A
   ordem é `--audit` → `--fix` → `--fix --write` → os `MANUAL` com o humano → commit → plano.
+- **Deixar as órfãs esperando a migração do formato.** Um `TODO.md` anterior a uma regra nova do
+  sensor recusa o plano (rc 4) até ser migrado — no sales_quote, em 2026-10-09, `--audit` deu
+  `manual=206`, quase todas `designates no symbol` (ADR 0015 §2 do kit) — e o espelho para: lá, 8
+  órfãs abertas desde a última sincronização. Feche-as sem esperar: `git log --format='%h %ad %s'
+  --date=short -S"<começo do título>" -- TODO.md` acha o commit que removeu o item; consertado,
+  `gh issue close N --reason completed --comment "<commit ou PR>"`; por decisão, `not planned` com o
+  destino. Item consertado que **ainda** está no arquivo sai por PR, com o que o repo exigir junto
+  (no sales_quote, o doc da `Fonte:`), e a issue fecha depois do merge: fechada antes, o próximo
+  plano a lê `CLOSED`.
 - **Ler o `MANUAL` como tarefa do script.** Tudo ali exige julgamento: o que é decidido, para onde
   vai uma análise, qual heading guarda os achados. Pergunte; não escolha pelo humano.
 - **Fechar órfã sem ler.** `--close-orphans` nunca é o primeiro comando. Primeiro o plano, depois

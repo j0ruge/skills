@@ -3,6 +3,16 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.4.1] — 2026-10-09
+
+Patch: só texto, uma linha nova em *Erros comuns*.
+
+- **Órfãs com o espelho bloqueado pelo formato.** No sales_quote, o `TODO.md` é anterior à regra da
+  âncora com símbolo (ADR 0015 §2 do kit): `--audit` deu `manual=206`, o plano recusa (rc 4) até a
+  migração, e 8 issues cujo item já tinha saído do arquivo seguiam abertas desde 2026-09-24. A linha
+  manda fechá-las à mão, achando a remoção por `git log -S`, sem esperar a migração; e manda não fechar
+  à mão a issue cujo item ainda está no arquivo (o próximo plano a leria `CLOSED`).
+
 ## [2.4.0] — 2026-10-09
 
 Minor: uma opção nova, `--allow-empty`.
