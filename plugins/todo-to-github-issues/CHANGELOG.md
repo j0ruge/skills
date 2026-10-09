@@ -3,6 +3,27 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.4.0] — 2026-10-09
+
+Minor: uma opção nova, `--allow-empty`.
+
+### Added
+
+- **Um backlog esvaziado de propósito não tinha como fechar as últimas issues.** O `TODO.md` do kit
+  sdd chegou a 0 itens abertos (marcador presente, o sensor do kit aceitando e contando 0), e o
+  script respondeu `FAIL 0 items parsed … refusing to plan against an empty file`, com rc 2, antes
+  do plano. O `--close-orphans` nunca chegava às 4 últimas issues (#236, #238, #239, #240), que
+  foram fechadas à mão.
+- **A recusa fica, e a saída é explícita.** Ela só dispara depois do `sensor_gate`, que já barra a
+  falta de marcador (rc 4) e a divergência de contagem (rc 5); um marcador sob um `##` vazio com os
+  itens em outra seção também é recusado pelo sensor (`a finding under an H2 the skeleton does not
+  have`). O que sobra é um parser que perca todo item junto com o sensor, e o custo seria ler o
+  espelho inteiro como órfão. Por isso a decisão é do humano: `empty_gate` recusa sem a flag e
+  nomeia a saída; com `--allow-empty`, o plano lê toda issue espelhada do arquivo como `ORPHAN`, e o
+  `--close-orphans` segue fechando só a que traz `fixed by`.
+- Cinco casos novos no `test_todo_issues.py`, incluindo a chamada da guarda no `main()`, que nenhum
+  caso sem rede executava (apagá-la deixava tudo verde). Com o `TODO.md` do sales_quote: 78 de 78.
+
 ## [2.3.3] — 2026-10-07
 
 Patch: documentação e a mensagem de um caso de teste. O script não muda.

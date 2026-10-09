@@ -399,4 +399,33 @@ with tempfile.TemporaryDirectory() as g:
     check("orphan: a title with a run of spaces is still found, by key — the fix is not lost",
           t.last_text(sctx, iss_s) == (gone_spaced[:7], ["def5678"]))
 
+# --- an emptied backlog ---------------------------------------------------------------------------
+# Measured 2026-10-09 on the sdd kit: its TODO.md reached 0 open items (marker present, the kit's
+# sensor counting 0), the script refused it, and the last 4 mirrored issues were closed by hand.
+# The refusal stays (a parser that lost every item would read the whole mirror as orphans); the
+# way out is explicit, and an empty plan reads every issue mirrored from the file as an ORPHAN.
+import contextlib
+import io
+
+err = io.StringIO()
+with contextlib.redirect_stderr(err):
+    refused = t.empty_gate([], allow_empty=False, path="TODO.md")
+check("empty: refused without --allow-empty (rc 2), and the refusal names the way out",
+      refused == 2 and "--allow-empty" in err.getvalue())
+err = io.StringIO()
+with contextlib.redirect_stderr(err):
+    allowed = t.empty_gate([], allow_empty=True, path="TODO.md")
+check("empty: --allow-empty lets an empty backlog through, silently", allowed == 0 and not err.getvalue())
+check("empty: a file with items never needs the flag", t.empty_gate(items, allow_empty=False, path="TODO.md") == 0)
+mirror = as_issues(items[:3])
+plan0 = t.build_plan([], mirror)
+check("empty: every issue mirrored from the file becomes an ORPHAN, nothing is created or updated",
+      sorted(i["number"] for i in plan0.orphans) == [i["number"] for i in mirror]
+      and not plan0.create and not plan0.update)
+# main() needs gh, so no offline case runs it: deleting the call left every check above green.
+import inspect
+
+check("empty: main() runs the gate, right after the kit's sensor",
+      "sensor_gate(root, a.file, items) or empty_gate(items, a.allow_empty, a.file)" in inspect.getsource(t.main))
+
 sys.exit(1 if fails else 0)

@@ -214,6 +214,21 @@ def sensor_gate(root: str, path: str, items: list[Item]) -> int:
     return 0
 
 
+def empty_gate(items: list[Item], allow_empty: bool, path: str) -> int:
+    """0 to go on. Zero items here already passed `sensor_gate` (marker present, shape accepted, the
+    kit's count 0): a backlog emptied on purpose, or a parser that lost every item. Only the human
+    tells the two apart, by --allow-empty; the plan then reads every issue mirrored from the file
+    as an ORPHAN, and --close-orphans still closes only those whose last text carried RESOLVED by."""
+    if items or allow_empty:
+        return 0
+    print(f"FAIL  0 items parsed from {path} — refusing to plan against an empty file (every existing "
+          "issue would read as an orphan).\n"
+          "      If the backlog really is empty (the kit's sensor accepted the file and counted 0), "
+          "re-run with --allow-empty: read the ORPHAN lines first, then --apply --close-orphans --allow-empty.",
+          file=sys.stderr)
+    return 2
+
+
 def section_label(section: str) -> str | None:
     if not section:
         return None
@@ -523,6 +538,8 @@ def main() -> int:
     ap.add_argument("--apply", action="store_true", help="create and update issues")
     ap.add_argument("--close-orphans", action="store_true",
                     help="with --apply: close open issues whose item left the file")
+    ap.add_argument("--allow-empty", action="store_true",
+                    help="a TODO.md whose open section is empty on purpose: plan it, every mirrored issue an ORPHAN")
     ap.add_argument("--limit", type=int, default=0, help="with --apply: at most N creations (canary)")
     ap.add_argument("--dump", metavar="DIR", help="write every rendered body to DIR, touch nothing")
     ap.add_argument("--format", choices=("auto", "todo", "report"), default="auto",
@@ -558,8 +575,8 @@ def main() -> int:
         text = fh.read()
     fmt = a.format if a.format != "auto" else detect_format(text, a.file)
     if fmt == "report":
-        if a.close_orphans:
-            ap.error("--close-orphans is TODO mode only: a report is a snapshot, nothing leaves it")
+        if a.close_orphans or a.allow_empty:
+            ap.error("--close-orphans/--allow-empty are TODO mode only: a report is a snapshot, nothing leaves it")
         kit.preflight(need_gh=True, need_kit=False)
         import report
         return report.run(a, context(a.file, a.repo))
@@ -571,13 +588,9 @@ def main() -> int:
         items = parse(a.file)
     except NoOpenMarker:
         items = []
-    rc = sensor_gate(root, a.file, items)
+    rc = sensor_gate(root, a.file, items) or empty_gate(items, a.allow_empty, a.file)
     if rc:
         return rc
-    if not items:
-        print(f"FAIL  0 items parsed from {a.file} — refusing to plan against an empty file "
-              "(every existing issue would read as an orphan)", file=sys.stderr)
-        return 2
     ctx = context(a.file, a.repo)
 
     if a.dump:

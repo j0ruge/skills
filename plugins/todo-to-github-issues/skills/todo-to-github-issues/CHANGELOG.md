@@ -3,6 +3,20 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-09 — o backlog que esvaziou de verdade
+
+Publicado como **v2.4.0**.
+
+- Re-sync do kit sdd depois do lote 6 (chore #245, `4f16a6d`): a seção aberta ficou vazia, e o plano
+  recusou com rc 2. As 4 órfãs foram fechadas à mão, com o texto que o `--close-orphans` escreveria,
+  depois do `--is-ancestor` dos consertos e da remoção.
+- Investigado antes de mexer: a recusa vem depois do `sensor_gate`, e o marcador fora do lugar já é
+  recusado pelo sensor (testado num repo descartável). Remover a guarda tiraria a última trava humana
+  antes de um fechamento em massa; a saída virou `--allow-empty`. Provado no próprio kit: sem a flag,
+  rc 2 nomeando a saída; com ela, `create=0 update=0 orphans=0`.
+- O `TODO.md` do kit não serve mais de entrada do `test_todo_issues.py` (0 itens, abaixo do piso de 5):
+  use o do sales_quote.
+
 ## 2026-10-07 — o piso de 5 itens que o teste exigia calado
 
 Publicado como **v2.3.3**.
