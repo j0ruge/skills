@@ -4,7 +4,7 @@ description: "Jira ticket lifecycle for JRC Brasil projects, integrated with Git
 argument-hint: "start (open) | split | close | status"
 compatibility: "Claude Code: o argument-hint acima é campo dele e só é lido no topo. Requer acli e credenciais Jira (JIRA_EMAIL, JIRA_API_TOKEN)."
 metadata:
-  version: 1.11.1
+  version: 1.11.2
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -128,7 +128,8 @@ Analise o argumento passado pelo usuário e execute o comando correspondente:
    Bug; default Tarefa), **story points sempre** ("Quantos pontos? (1, 2, 3, 5, 8, 13)" — ofereça
    sua estimativa se ele não souber; só siga sem score se ele recusar), **sprint** (sem resposta,
    perguntar "Quer adicionar à sprint atual?") e **fixVersion** quando o projeto versiona releases
-   (liste as existentes e proponha a próxima; `acli` e MCP são cegos nesse campo). A próxima
+   (liste as existentes **pelo REST**, que JQL sem erro não prova que existem no projeto, e
+   proponha a próxima; `acli` e MCP são cegos nesse campo). A próxima
    **ainda não existe** no Jira → confirme com o dev (criar versão é decisão de projeto, como no
    close step 7) e crie por REST (`references/campos.md §fixVersion`, linha "Criar versão"); o
    `id` devolvido, não o nome, vai no `fixVersions` do POST da issue.

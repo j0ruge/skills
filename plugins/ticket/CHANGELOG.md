@@ -1,5 +1,27 @@
 # Changelog — ticket
 
+## [1.11.2] — 2026-10-13
+
+### Por quê
+
+No planejamento da LH-5 (`lighthouse_project`, 13/10/2026), a existência da versão `0.3.0` no
+projeto LH foi deduzida de uma JQL: `project = LH AND fixVersion = "0.3.0"` voltou vazia e sem
+erro, enquanto `0.4.0` respondia `o valor '0.4.0' não existe para o campo 'fixversion'`. O agente
+disse ao dev que a versão "existe e está vazia", e o dev escolheu o rótulo sob essa premissa. No
+`start`, o `GET /project/LH/versions` listou só `0.1.0` e `0.2.0`: o JQL valida o nome contra as
+versões de **todos** os projetos do site, e quem tinha `0.3.0` era o SBM (SBM-6). A versão teve de
+ser criada (id 10116), com o dev confirmando.
+
+A tabela do `campos.md` já dizia que o REST é a fonte para listar versões, mas nada avisava que a
+JQL calada parece uma confirmação.
+
+### O quê
+
+- `references/campos.md` §fixVersion: linha nova na tabela ("Saber se a versão existe no
+  projeto": só o `GET …/project/<KEY>/versions`) e um aviso com o caso medido.
+- `SKILL.md`, start B1: "liste as existentes **pelo REST**, que JQL sem erro não prova que existem
+  no projeto".
+
 ## [1.11.1] — 2026-10-07
 
 ### Por quê

@@ -159,6 +159,7 @@ REST.
 | Operação | Caminho | `acli`/MCP servem? |
 |---|---|---|
 | Listar versões do projeto | `GET /rest/api/3/project/<KEY>/versions` | `acli jira project view --json` lê, mas o REST é a fonte |
+| **Saber se a versão existe no projeto** | só o `GET /rest/api/3/project/<KEY>/versions` | ❌ JQL `project = X AND fixVersion = "V"` sem erro **não prova** (abaixo) |
 | Criar versão | `POST /rest/api/3/version` com `{"name","projectId"}` | ❌ não existe |
 | Marcar lançada | `PUT /rest/api/3/version/<ID>` com `{"released":true,"releaseDate":"AAAA-MM-DD"}` | ❌ |
 | Pôr no cartão | `POST /rest/api/3/issue` (criação) ou `PUT /rest/api/3/issue/<KEY>` | ❌ `acli edit` não tem a flag (e **sai 0**) |
@@ -173,6 +174,14 @@ curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -X POST -H 'Content-Type: application/j
 curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
   "$J/issue/SQ-107?fields=fixVersions"                                     # ÚNICO sensor de leitura
 ```
+
+⚠️ **JQL calada não prova que a versão existe no projeto.** O JQL valida o nome da versão contra
+as versões de **todos** os projetos do site, não do projeto do filtro. Medido em 2026-10-13:
+`project = LH AND fixVersion = "0.3.0"` voltou vazio e sem erro, e o `GET /project/LH/versions`
+listava só `0.1.0` e `0.2.0` — o silêncio vinha do SBM, que tem `0.3.0` (SBM-6). O `0.4.0`, que
+nenhum projeto tem, respondeu `o valor '0.4.0' não existe para o campo 'fixversion'`. Concluir
+"existe e está vazia" pela JQL fez o planejamento prometer ao dev um rótulo que teve de ser
+criado no `start`. Existência no projeto = o nome aparece no `GET …/project/<KEY>/versions`.
 
 **Versão que ainda não existe, no `start`:** só crie depois de o dev confirmar o nome — é ato de
 projeto, não de cartão. Use o `id` da resposta (não o `name`) em `fixVersions:[{"id":…}]` do
