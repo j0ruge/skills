@@ -2,7 +2,7 @@
 name: staging
 description: "Promote code to staging (and on to production) through the repo's real CD pipeline. Reads each workflow's `on.push.branches` and `runs-on` instead of assuming — the wrong branch can deploy production, and a hosted job under a billing block never starts. Waits for CI green on the exact commit, promotes by PR merge commit, watches the run, then proves the deploy by the data. Triggers — deploy staging, promote to staging, subir para staging, CD pipeline, cd-staging, promover para produção."
 metadata:
-  version: 3.0.0
+  version: 3.1.0
 ---
 
 ## Deploy to Staging
@@ -33,6 +33,13 @@ for f in .github/workflows/*.y*ml; do
 done
 ```
 
+Then drop the workflows that are not enabled — a `disabled_manually` workflow keeps its `on:`
+block in the file, and that block is dead text:
+
+```bash
+gh workflow list --all          # state per workflow: active / disabled_manually / …
+```
+
 Read the output and write down, explicitly:
 
 | Branch | Workflow it triggers | Environment |
@@ -48,8 +55,11 @@ Two things to settle before moving on:
   this flow, and if `TARGET` turns out to equal it, stop and tell the user —
   what they asked for and what would happen have diverged.
 
-If no workflow listens to a push at all (deploys are manual, or on tags), say so
-and stop. Inventing a push target is how a repo gets deployed sideways.
+If no **enabled** workflow listens to a push, look for the deploy path the repo documents
+(`.claude/rules/`, `docs/deploy/`, an ADR): an agent on the host that watches the environment
+branch, or an operator script. Follow it, and read `references/no-actions-agent.md` for how each
+step below changes. If nothing is documented (deploys are manual, or on tags), say so and stop.
+Inventing a push target is how a repo gets deployed sideways.
 
 A useful confirmation, since workflow headers usually state the intent in prose:
 
@@ -201,7 +211,8 @@ gh run watch <run-id> --exit-status --interval 20
 If no run appears, check the workflow's `paths-ignore` before assuming the worst: a push whose
 files **all** match the ignore list (docs, `.claude/**`, specs) does not trigger the pipeline,
 and that is the intended outcome — nothing to deploy. A promotion that carries code and still
-produces no run is the Step 0b case.
+produces no run is the Step 0b case. With a host agent there is never a run: watch the merge
+commit's statuses instead (`references/no-actions-agent.md`).
 
 ### Step 7 — Report the outcome honestly
 
@@ -261,6 +272,7 @@ Three differences that matter:
 | `references/local-gate.md` | when hosted CI is absent, queued or blocked, or a promotion PR shows `CONFLICTING` |
 | `references/promotion-sensors.md` | when a Step 4 sensor is non-empty, the PR conflicts with nothing to reconcile, or the backlog is long |
 | `references/red-runs-and-proof.md` | when a run is red, or green and the deploy still has to be proved |
+| `references/no-actions-agent.md` | when no enabled workflow listens to a push and the repo deploys through an agent on the host (or a script) |
 
 ### Gotchas
 

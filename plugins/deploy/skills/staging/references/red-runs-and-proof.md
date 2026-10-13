@@ -87,6 +87,11 @@ regression or roll back:
 - **Compare the hard set with the last run on the previous image**, by test **title**, not
   `file:line`: a spec edited in this promotion shifts its line numbers, and the lookup reads "did not
   run last time".
+- **Read the test accounts in the IdP before reading the app.** Role is the known case; the
+  account's **language** is the quiet one. With a UI that follows the IdP locale, an account set
+  to `en` turns every spec written in another language red while the screen is correct
+  (measured 2026-10-13: 3 Portuguese specs red with the UI in English, `preferredLanguage=en` on
+  the account; set back to `pt`, 4/4). Check the account through the IdP's API or console first.
 - **Reproduce only what is new**, from the operator's machine against the same environment, with
   `--retries=0`. A cancelled run never reaches the reporter's summary, which is where the errors
   are printed; the previous run's summary or the isolated rerun is where you read them.

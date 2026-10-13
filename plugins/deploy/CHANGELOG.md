@@ -2,6 +2,31 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-10-13 — Workflow desativado não é pipeline, e o deploy por agente no host — bump 3.0.0 → [3.1.0]
+
+**Por quê:** no `lighthouse_project` os três workflows estão `disabled_manually` e o deploy de
+staging é feito por um agente no host, que observa a branch, roda o gate no servidor e publica
+status no commit. O Step 0 lia o `on:` de cada workflow sem conferir se estava ativo: montaria o
+mapa "staging → cd-staging" e esperaria um run que nunca vem. E, sem workflow escutando push, a
+skill mandava parar, sem o ramo que este repo usa. A pergunta do usuário que motivou o retrofit
+foi "nem a /deploy:staging?": ela não cobria o caso. Medido em 2026-10-13: o 1º deploy pelo
+agente reprovou no build, o conserto foi no executor e o mesmo head foi pedido de novo, sem nova
+promoção; e um e2e vermelho foi o idioma da conta de teste no IdP, não a imagem.
+
+**O quê:**
+
+- `SKILL.md` Step 0: `gh workflow list --all` e descartar os desativados; sem workflow ativo
+  escutando push, seguir o caminho de deploy que o repo documenta (e parar só se não houver
+  nenhum, como antes). Step 6: com agente no host não há run, só status. Tabela de references +1.
+- `references/no-actions-agent.md` nova: como reconhecer o agente, o que muda em cada passo
+  (gate no merge commit, acompanhar por status, uma tentativa por pedido, só a cabeça), o
+  conserto do executor que não viaja com o commit, e o caso medido.
+- `references/red-runs-and-proof.md`: na triagem de e2e, ler as contas de teste no IdP antes da
+  app — o idioma da conta reprova specs com a tela certa.
+
+Dívida pré-existente que a auditoria aponta e este retrofit não toca: INFO F4 (sem evals de gatilho)
+e INFO D1 (afirmações factuais sem sensor/data).
+
 ## 2026-10-06 — De comando a skill, com o detalhe medido em references — bump 2.5.1 → [3.0.0]
 
 **O quê:** `commands/staging.md` sai e entra a skill `skills/staging/`. A invocação continua
