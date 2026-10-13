@@ -2,6 +2,32 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.15.0] — 2026-10-13
+
+### Código dentro de doc vira CODE; o rodapé de custo conta as chamadas pelo harness
+
+Lições de uma revisão do PR #247 do `j0ruge/sdd_agents`: um PR só de docs (plano de missão) cujo
+foco era o código que o plano promete (`awk`, regex, Checks), rodado na 2.14.1.
+
+- **`references/configuration.md`, seção nova "Code inside docs":** o diff tinha 10 arquivos, todos
+  `.md`/`.txt`. A fase A classificou 0 CODE, e pela regra a fase B não lançaria agente nenhum: o
+  relatório daria nota a código que ninguém leu. O que funcionou foi reclassificar o plano como CODE
+  e dividir as 1184 linhas em duas faixas na linha `File:` do prompt de lançamento (`1–505`;
+  `506–632 + 973–1184`), sem mexer no resto do prompt. Os dois agentes sonnet voltaram com
+  achados, e um deles virou o MEDIUM confirmado (`bin/sdd:2978`). A regra irmã já existia: o
+  arquivo que o usuário nomeia é CODE, qualquer que seja a extensão (2.11.2).
+- **`SKILL.md`:** só a linha que diz quando ler o `configuration.md` ganhou a condição "o foco
+  nomeia código num doc". Para caber no orçamento, a lista "(Python, Vue, Node, .NET, shell)" saiu
+  da linha e ficou "presets": a lista continua nos títulos do próprio `configuration.md`
+  (`grep '^# ' references/configuration.md`). O `SKILL.md` fica em 20 000 chars, no limite do C1.
+- **`references/report-template.md` §Cost footprint:** as chamadas de ferramenta de cada agente
+  saíam do trailer que o próprio agente escreve. Medido na mesma sessão, os trailers disseram 6 e
+  9, e o `<usage><tool_uses>` do harness contou 10 e 14, uns 40% abaixo. Um rodapé feito para
+  comparar execuções não pode usar uma estimativa. Agora o número vem do harness quando ele o
+  traz, e o trailer fica como recuo e continua sendo a fonte de "files read in full".
+- **Dívida pré-existente, não tocada:** os três avisos C2 e o `SKILL.md` encostado no C1, que
+  continua sem folga.
+
 ## [2.14.1] — 2026-10-07
 
 ### A sonda de docstrings lê o arquivo em `HEAD`

@@ -74,6 +74,22 @@ Read this when the user limits the review to paths (`-- dir/ file`, "only the sk
   *Runtime evidence*).
 - **Empty output under an explicit path scope is an error, not "No changes detected".** Re-check the pathspecs (`git diff --stat {MERGE_BASE}...HEAD -- <paths>` without exclusions, `git log --oneline -- <paths>`) before stopping. Measured: a 32-commit scope came back as 0 commits from the unquoted form.
 
+## Code inside docs
+
+Read this when the focus names code that lives inside a changed doc: a plan or spec whose fenced
+`awk`/`bash`/regex blocks are what the PR promises to ship. Classified by extension, a docs-only
+diff is all DOCS, Phase B launches no agent, and the report grades code nobody read.
+
+- **The doc that carries the named code is CODE**, the same rule as a file the user names
+  (*Path-scoped reviews*). The other docs in the diff stay DOCS.
+- **A long doc goes to more than one agent**, each with a line range on its `File:` line
+  (`docs/x/01-plano.md (category: CODE, lines 1–505)`); the rest of the launch prompt stays
+  verbatim. The ≤3-file inline shortcut does not apply here: inline, the main model reads the
+  whole doc.
+- Measured 2026-10-13 (`j0ruge/sdd_agents` PR #247, codereview 2.14.1): a 10-file docs-only diff
+  classified 0 CODE; the 1184-line plan, split into two ranges (`1–505`, `506–632 + 973–1184`),
+  gave two sonnet agents with findings, one of them a confirmed MEDIUM.
+
 ## Re-review rounds
 
 Read this whenever `base=` names the head an earlier round reviewed (SKILL.md, *Re-review the fix*).
