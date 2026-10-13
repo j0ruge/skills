@@ -1,7 +1,7 @@
 ---
 name: cicd
 metadata:
-  version: 2.36.0
+  version: 2.37.0
 description: "GitHub Actions / Docker / GHCR pipeline troubleshooting and config, auto-routed by stack (Node/Prisma, Django/gunicorn, Vite). Self-hosted runner runbook — what breaks when you move a billed job onto one, which runner to trust for production — deploy-time proof (rollback with re-smoke, backup gates that check the dump), and Actions minute economics. Triggers — CI/CD, GitHub Actions, job never starts, Actions minutes/quota, GHCR auth, self-hosted runner, deploy queued, rollback/backup gate."
 ---
 
@@ -81,7 +81,7 @@ Frontend:          checkout → install → lint → typecheck → test (Vitest)
 | When you have an error message or symptom and don't know the layer yet (all tags, 74 rows) | `references/symptom-index.md` |
 | When another file cites a lesson by number, or you want every lesson on one theme (109 numbered lessons + theme index) | `references/lessons-learned.md` |
 | When the failure is shared infra: GHCR `unauthorized` / TLS timeout, nginx-proxy network, SSL/ACME certificate (3a/3b/3c), runner via systemd offline, concurrency, monorepo npm (`exec`, ESLint v9, hoisting), deploy keys, `.env` whitespace, composite action, `actionlint` | `references/troubleshooting-shared.md` |
-| When the runner is a container (`FROM myoung34/github-runner`, `infra/docker/runner/`): crashloop, `404 registration`, `registration has been deleted`, `version deprecated`, PAT 401, mute runner, silent `queued`, host paths, missing binaries | `references/self-hosted-runner-docker.md` |
+| When the runner is a container (`FROM myoung34/github-runner`, `infra/docker/runner/`): crashloop, `404 registration`, `registration has been deleted`, `version deprecated`, PAT 401, mute runner, silent `queued`, host paths, missing binaries or `buildx` | `references/self-hosted-runner-docker.md` |
 | Before configuring a new environment's shared infra (runner, GHCR, DNS) | `references/checklist-shared.md` |
 | When a Node/Prisma backend fails, by exit code or message (Zod, Prisma, Jest, Biome, stale migration image, monorepo `tsx` runtime, `--omit=dev`) | `references/troubleshooting-backend.md` |
 | Before a backend deploy (secrets, tests, build) | `references/checklist-backend.md` |
@@ -90,9 +90,9 @@ Frontend:          checkout → install → lint → typecheck → test (Vitest)
 | Before a frontend deploy (VITE_*, Dockerfile, CD) | `references/checklist-frontend.md` |
 | When a cutover/hotfix shows layers disagreeing: build-time vs runtime, operator clone on the host, `--profile run` reconcile, `compose run` orphans poisoning the reverse-proxy pool (split 200/401), PID 1, `${{ }}` in comments, stale `build:` image, DB password in URL, OIDC redirect URIs | `references/cd-pipeline-pitfalls.md` |
 | If the backend is Django/gunicorn (collectstatic/WhiteNoise, ALLOWED_HOSTS healthcheck-400, CSRF/proxy-SSL, migrate one-off, two-origin CORS) | `references/django-backend.md` |
-| When the constraint is the Actions minute quota: measuring per job, self-hosted as lever, `paths-ignore`, cold cache, billing block, manual deploy while the block lasts | `references/ci-cost-minutes.md` |
-| When moving a billed job to self-hosted, or a migrated job now fails: toolchain, service-container network, `container:` and runner version, which runner for the tag `cd-production`, repo debt revealed (root runner, test timeouts), `.env`/snapshot in CI, gate job turned tautological, build without `setup-buildx`/`gha` cache | `references/self-hosted-job-migration.md` |
-| When designing or doubting the part of CD that proves the deploy: immutable rollback tag, re-smoke, gate order, backup proven by the artifact, proving the sensor, `cmd \| tail` dropping the exit code, `vars` repo vs environment, state gates, DB role, self-measuring gates | `references/cd-verification-and-rollback.md` |
+| When the constraint is the Actions minute quota: measuring per job, self-hosted as lever, `paths-ignore`, cold cache, billing block, manual deploy while the block lasts, leaving Actions (environment secrets) | `references/ci-cost-minutes.md` |
+| When moving a billed job to self-hosted, or a migrated job now fails: toolchain, service-container network, `container:` and runner version, which runner for the tag `cd-production`, repo debt revealed (root runner, test timeouts), `.env`/snapshot in CI, gate job turned tautological, build without `setup-buildx`/`gha` cache, Testcontainers behind the socket | `references/self-hosted-job-migration.md` |
+| When designing or doubting the part of CD that proves the deploy: immutable rollback tag, re-smoke, gate order, backup proven by the artifact, proving the sensor, `cmd \| tail` dropping the exit code, `vars` repo vs environment, state gates, DB role, self-measuring gates, `trap ERR` rollback, text-only sensors, a deploy agent's HEALTHCHECK | `references/cd-verification-and-rollback.md` |
 
 The long references open with a "when to read" block that maps key symptoms to sections.
 

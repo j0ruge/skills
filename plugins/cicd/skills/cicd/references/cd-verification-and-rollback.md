@@ -17,17 +17,20 @@ state to fall back on and nobody has yet learned what "normal" looks like.
 
 - [§1. Capture the rollback tag from immutable tags only](#1-capture-the-rollback-tag-from-immutable-tags-only)
 - [§2. A rollback that isn't re-smoked proves nothing](#2-a-rollback-that-isnt-re-smoked-proves-nothing)
+- [§2a. A `trap ERR` rollback: `exit` never fires it, and `set -E` fires it twice](#2a-a-trap-err-rollback-exit-never-fires-it-and-set--e-fires-it-twice)
 - [§3. `if: success()` never runs after a red step — order your gates deliberately](#3-if-success-never-runs-after-a-red-step--order-your-gates-deliberately)
 - [§4. A backup gate must check the artifact, not the container's health](#4-a-backup-gate-must-check-the-artifact-not-the-containers-health)
 - [§5. `prodrigestivill/postgres-backup-local` accepts a CSV list only in `POSTGRES_DB`](#5-prodrigestivillpostgres-backup-local-accepts-a-csv-list-only-in-postgres_db)
 - [§6. Prove the sensor before trusting its silence](#6-prove-the-sensor-before-trusting-its-silence)
 - [§6a. When you prove a sensor by BREAKING the code, the sabotage is the probe — and it can fail to land](#6a-when-you-prove-a-sensor-by-breaking-the-code-the-sabotage-is-the-probe--and-it-can-fail-to-land)
 - [§6b. A text-scanning assertion reads the COMMENT that explains the thing it guards](#6b-a-text-scanning-assertion-reads-the-comment-that-explains-the-thing-it-guards)
+- [§6c. A sensor that reads the script's TEXT stays green with the wrong script](#6c-a-sensor-that-reads-the-scripts-text-stays-green-with-the-wrong-script)
 - [§7. `${{ vars.X }}` resolves at repository level too, not just environment](#7--varsx--resolves-at-repository-level-too-not-just-environment)
 - [§8. `cmd | tail` throws the exit code away — and `PIPESTATUS` does not exist in zsh](#8-cmd--tail-throws-the-exit-code-away--and-pipestatus-does-not-exist-in-zsh)
 - [§9. Passo one-shot cujo produto é ESTADO: o smoke prova que o serviço responde, não que o passo escreveu](#9-passo-one-shot-cujo-produto-é-estado-o-smoke-prova-que-o-serviço-responde-não-que-o-passo-escreveu)
 - [§10. `migrate deploy` green does not say WHICH role the application runs as](#10-migrate-deploy-green-does-not-say-which-role-the-application-runs-as)
 - [§11. A gate that observes shared state through its OWN connection measures itself](#11-a-gate-that-observes-shared-state-through-its-own-connection-measures-itself)
+- [§12. A loop's HEALTHCHECK: `pgrep -f` finds itself, and an unconditional heartbeat lies](#12-a-loops-healthcheck-pgrep--f-finds-itself-and-an-unconditional-heartbeat-lies)
 - [Symptoms → section](#symptoms--section)
 
 ## §1. Capture the rollback tag from immutable tags only
@@ -96,6 +99,39 @@ no down step, so the previous image runs against the newer schema. Additive migr
 survive this; destructive ones don't. That asymmetry is an argument for keeping
 migrations additive in the deploy path, and for documenting the manual `migrate resolve`
 route in your runbook.
+
+---
+
+## §2a. A `trap ERR` rollback: `exit` never fires it, and `set -E` fires it twice
+
+A deploy script outside Actions (a host agent, an operator script) usually arms the
+rollback as `trap rollback ERR` after the build and disarms it after the last proof. Two
+bash rules decide whether it runs, and both fail silently. Measured on 2026-10-13
+(`lighthouse_project`, `infra/__tests__/deploy-comportamento.test.ts`, which runs the real
+`deploy.sh` with `docker`/`dig` stubs on `PATH`):
+
+1. **`exit` does not fire `ERR`.** A proof written as
+   `grep -qx lighthouse <<< "$users" && fail "connected as the DB owner"`, where `fail`
+   does `exit 1`, ended the deploy with rc=1, **zero** `rolling back to` lines and the new
+   image still serving — connected as the owner, with the append-only `REVOKE` decorative.
+   Inside the armed window, fail with `return 1` (or `false`): the nonzero status of the
+   call is what fires the trap.
+2. **With `set -E` the trap is inherited by `$(…)` subshells.** `users="$(compose exec … psql …)"`
+   failing inside the substitution runs `rollback` **in the subshell** (up + smoke, output
+   swallowed by the variable), then the assignment fails in the parent and runs it again:
+   three `up -d` in the stub log. Guard the first line of the handler:
+
+   ```bash
+   rollback() {
+     [[ "$BASHPID" == "$$" ]] || exit 1   # in a subshell: only propagate; the main shell rolls back
+     trap - ERR
+     ...
+   }
+   ```
+
+`set -E` stays: without it the trap does not fire for a failure inside a function at all.
+Prove both with a stub run, never by reading the script — the text looks right in all
+three variants (§6c).
 
 ---
 
@@ -267,6 +303,13 @@ recorded as "the sensor is blind". Re-run with the assertion in place: exit 1,
 until you have seen the defect in the file. Prefer `sed`+`grep` verification or a tool
 that fails loudly (`git apply`) over a silent string replace.
 
+**The replace can also land in the wrong place.** `s.replace(pattern, bad, 1)` edits the
+**first** occurrence, and the first occurrence of a guarded string is often the header
+comment that explains it. The sabotage "landed", the code is intact, and the sensor stays
+green *for the right reason* (measured 2026-10-13: a `local/ci` sabotage hit the script's
+header). Assert the pattern occurs **exactly once** before replacing
+(`assert s.count(old) == 1`), and widen the pattern until it does.
+
 ---
 
 ## §6b. A text-scanning assertion reads the COMMENT that explains the thing it guards
@@ -300,6 +343,35 @@ gets deleted — the sensor quietly removes the documentation it depends on.
 
 **Related**: §6a — there the probe never landed; here it landed and the sensor could not
 see it. Same outcome, opposite cause, identical transcript.
+
+---
+
+## §6c. A sensor that reads the script's TEXT stays green with the wrong script
+
+A contract test that regex-matches a deploy script proves the text is there, not that the
+script does it. An independent review on 2026-10-13 (`lighthouse_project`) found three
+defects behind green text-sensors, each then caught by running the script:
+
+| Text the sensor matched | What the script actually did |
+| --- | --- |
+| the gate greps the build for `chunks larger than` | Vite 7 prints `Some chunks are larger than 500 kB` — the 500 kB ceiling never failed a build, since the original `ci.yml` |
+| the proof of the DB role calls `fail` | `fail` is `exit`, which does not fire the `ERR` rollback (§2a) |
+| the HEALTHCHECK runs `pgrep -f agente.sh` | the pattern matches the healthcheck's own `sh -c` (§12) |
+
+- **A gate that fails on a tool's warning text** is a sensor over that tool's *wording*.
+  Prove the pattern against the real output of the version in use (run the build with the
+  ceiling forced down, e.g. `build.chunkSizeWarningLimit: 1`, and see red) — and re-prove
+  on major upgrades. Match loosely (`chunks (are )?larger than`, case-insensitive).
+- **Run the script with stubs on `PATH`** (`docker`, `dig`, `npm`, `gh` as tiny bash files
+  that log their argv and answer per a `MODE` variable), then assert on rc and output. It
+  costs tens of milliseconds per case, and it is the only layer where `exit` vs `return`
+  shows.
+- Keep a **green control** in every behavioural case: a stub harness that fails everything
+  passes every "must fail" assertion. And `tee /dev/stderr` fails with `ENXIO` when stderr
+  is a socket (Node's `spawnSync` pipes are): the "must fail" case went red for that
+  reason, not the grep, until the control exposed it.
+
+---
 
 ## §7. `${{ vars.X }}` resolves at repository level too, not just environment
 
@@ -372,6 +444,19 @@ grep -E 'EXIT_[A-Z]+=$' exits.txt && echo "the gate measured nothing"
 **Related**: this is §6 applied to the gate command itself — the sensor was silent because
 it never ran, not because the thing it watches is clean. Ask the same question: *would
 this have shown me a positive?* A gate that cannot print a non-zero is not a gate.
+
+**The mirror image — a false RED after success.** An `EXIT` trap that reads a `local`
+variable of the function that set it, under `set -u`:
+
+```bash
+deploy() { local tmp; tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT; ...; }
+```
+
+The trap runs when the **script** exits, after `deploy` returned and `tmp` went out of
+scope: `tmp: unbound variable`, and the script ends **rc=1 after a green deploy**
+(measured 2026-10-13: `PLAY RECAP … failed=0` followed by rc=1). The next operator
+"retries" a deploy that worked. Use a global for anything a trap reads, or clean up inside
+the function.
 
 ---
 
@@ -513,6 +598,35 @@ usually survives the pollution, which is why only half of these gates are ever c
 
 ---
 
+## §12. A loop's HEALTHCHECK: `pgrep -f` finds itself, and an unconditional heartbeat lies
+
+A long-running deploy agent (a container that polls a branch and deploys) replaces the
+runner *and* its watchdog, so its `HEALTHCHECK` is the only liveness signal left. The
+usual one is two checks, and both were blind (measured 2026-10-13, the real healthcheck
+command exec'd in three containers: no agent → rc=1, agent alive → rc=0, stale heartbeat
+→ rc=1, only after the fixes below):
+
+1. **`pgrep -f agent.sh` matches its own shell.** Docker runs `HEALTHCHECK CMD …` as
+   `sh -c "<cmd>"`; `pgrep` excludes itself but not its parent `sh`, whose argv contains
+   the pattern. With no agent process at all: rc=0, "alive". This is §11's class with a
+   *presence* assertion — the case §11 says usually survives. Use the bracket trick,
+   `pgrep -f '[a]gent\.sh'`: the regex no longer matches its own text.
+2. **A heartbeat touched after every iteration** keeps the container `healthy` while every
+   iteration fails (expired token, API down). Touch it only when the iteration **closed
+   without error**; then an hour of failures turns it `unhealthy`.
+
+And the gap no healthcheck closes: **`unhealthy` notifies nobody.** `restart: always`
+ignores it, and the hosted watchdog that used to e-mail is gone. Wire an external monitor
+(Zabbix, an uptime checker) on `docker inspect --format '{{.State.Health.Status}}'`,
+running somewhere else. Also give the slow step (the test gate) a `timeout`: a hung test
+would otherwise hold the loop forever, with no status anywhere.
+
+Prove the pattern by matching it against the healthcheck's own command line in a unit
+test, not by asking the system "is there such a process?" — in production the gate runs
+*inside* the agent, which is alive, so that probe passes for the wrong reason.
+
+---
+
 ## Symptoms → section
 
 | Symptom | Section |
@@ -535,3 +649,10 @@ usually survives the pollution, which is why only half of these gates are ever c
 | App cannot authenticate with a password that works in `psql` | §10, and `cd-pipeline-pitfalls.md` §11 |
 | A sensor stays green after you delete the very line it guards | §6b |
 | A verification step fails on every run, reporting a defect that is not there | §11 |
+| Failed proof after the deploy, rc=1, and no `rolling back` line in the log | §2a |
+| Rollback runs twice / `up -d` appears three times after one failure | §2a |
+| A sabotage "landed" and the sensor stayed green — the edit hit a comment | §6a |
+| Text-matching contract tests green, the script misbehaves when run | §6c |
+| A bundle-size / warning gate has never failed a build | §6c |
+| Deploy green, then the script exits 1 with `unbound variable` | §8 |
+| Agent container `healthy` with the loop dead, or failing every iteration | §12 |

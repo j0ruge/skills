@@ -188,6 +188,28 @@ o mesmo workflow serve para as três sem você saber de antemão qual é.
 mas era `ss: command not found` engolido pelo redirect. Sonda que pode não existir merece
 `command -v` antes, ou a mensagem de erro visível.
 
+### Testcontainers dentro de um container com o socket do host
+
+Mesma geometria, outra porta de entrada: o job (ou um agente de deploy conteinerizado) roda
+`test:integration` com Testcontainers, que sobe o Postgres como container **irmão** pelo
+`docker.sock` montado e então conecta em `localhost:<porta-mapeada>` — o loopback de quem roda
+o teste, onde nada escuta. Sintoma: `P1001` com o container do banco `healthy`.
+
+O Testcontainers tem a alavanca pronta, e ela não pede descobrir gateway em runtime:
+
+```yaml
+environment:
+  TESTCONTAINERS_HOST_OVERRIDE: host.docker.internal
+extra_hosts:
+  - "host.docker.internal:host-gateway"
+```
+
+Medido em 2026-10-13 (kratos, 7 GB de RAM): `node:22-bookworm` com o socket montado rodou
+`npm ci` + a suíte de integração, **12/12** em 110 s, com 4,9 GB livres; depois, o mesmo par
+no agente de deploy deu a integração verde em 31 s dentro do gate. O `host-gateway` resolve
+para o gateway do bridge default (`172.17.0.1`) mesmo com o container numa rede própria. O
+Ryuk (reaper) também precisa do socket: com ele montado, não é preciso desligá-lo.
+
 ---
 
 ## §3. `container:` não é a saída se o runner estiver desatualizado

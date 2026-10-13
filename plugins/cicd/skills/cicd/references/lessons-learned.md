@@ -13,17 +13,19 @@ Tags: `[S]` compartilhado, `[B]` só backend, `[F]` só frontend.
 
 - **GHCR e imagens no registry:** 1, 26, 29, 36, 45, 55, 56, 64, 91
 - **nginx-proxy, DNS e TLS:** 2, 4, 5, 15, 21, 34, a sem número (401 intermitente), 100
-- **Env vars, Zod e secrets:** 3, 12, 13, 14, 66, 95
+- **Env vars, Zod e secrets:** 3, 12, 13, 14, 66, 95, 111
 - **Gatilhos, concorrência e estrutura de workflow:** 6, 8, 16, 28, 43, 44, 57, 76, 81, 82, 83
 - **Backend Node/Prisma e monorepo npm:** 9, 10, 11, 17, 27, 30, 31, 32, 37, 39, 42
 - **Imagem de contêiner (usuário, sinais):** 22, 40, 41
 - **Frontend (Vite, nginx, testes):** 18, 19, 20, 21, 23, 24, 25, 33, 38, 64, 65, 85, 96
 - **Django:** 52, 53, 54
 - **Runner self-hosted conteinerizado (registro, versão, detecção, filesystem):** 35, 46, 47, 48,
-  49, 50, 51, 58, 86, 87, 88, 89, 90, 97, 106, 107, 108, 109
-- **Migrar job cobrado para o self-hosted:** 71, 72, 73, 75, 77, 78, 79, 80, 101, 102, 103, 104
+  49, 50, 51, 58, 86, 87, 88, 89, 90, 97, 106, 107, 108, 109, 115
+- **Migrar job cobrado para o self-hosted:** 71, 72, 73, 75, 77, 78, 79, 80, 101, 102, 103, 104,
+  114
 - **Custo e cota do Actions:** 7, 57, 68, 69, 70, 74, 105
-- **Verificação, rollback, backup e sensores:** 59, 60, 61, 62, 63, 67, 84, 92, 93, 94, 98, 99
+- **Verificação, rollback, backup e sensores:** 59, 60, 61, 62, 63, 67, 84, 92, 93, 94, 98, 99,
+  110, 112, 113, 116, 117
 
 ## Lições
 
@@ -139,3 +141,11 @@ Tags: `[S]` compartilhado, `[B]` só backend, `[F]` só frontend.
 | 107 | `[S]` | Camada C com `MAX_MINORS_ATRASO=3` não teria acusado: o GitHub recusou o runner quando ele estava só **2 minors** atrás | `2.335.1` recusada em 30/09/2026, com `2.337.0` lançada em 26/08 (~5 semanas). A tolerância real não é publicada e é menor que "um trimestre". Default passa a `1`; o número certo é medido a cada recusa observada, não deduzido da cadência. Ver `self-hosted-runner-docker.md` §11 C |
 | 108 | `[S]` | Mesmo compose de runners em dois hosts, `pull` feito só em um: produção atualizada em 02/09, staging emudeceu em 30/09 | "Replicado em cada servidor" vale para o arquivo, não para a operação. Conserto e sensor são **por host, na mesma execução** (Ansible ou loop), com a imagem atual marcada como rollback (`:pre-AAAAMMDD`) antes do `pull`. Ver `self-hosted-runner-docker.md` §8b |
 | 109 | `[S]` | `A session for this runner already exists` / `Conflict. Retrying until reconnected` logo após o `--force-recreate` — parece que o conserto falhou | Transitório: é a sessão do contêiner destruído, viva no Broker; expirou em ~3 min. Recriar de novo reinicia o relógio. A prova do conserto é `runner_name` preenchido no job em fila, não `online`. Desempates do §8b no mesmo incidente: vizinho no mesmo host e versão loga `deprecated` em claro; `SelfUpdate-*.log` diário terminando em `Waiting for Runner.Listener (12)` |
+| 110 | `[S]` | Deploy verde e o script sai **rc=1** com `<var>: unbound variable` — o espelho da lição 84 (falso vermelho em vez de falso verde) | Trap de `EXIT` que lê uma variável `local` da função que a criou, sob `set -u`: o trap roda quando o **script** sai, depois de a função retornar. Medido em 2026-10-13 (`PLAY RECAP … failed=0` e rc=1). Variável global para tudo que um trap lê. Ver `cd-verification-and-rollback.md` §8 |
+| 111 | `[S]` | Sair do Actions de vez e descobrir que os secrets do environment não se leem — e, depois, uma receita que reescreve o arquivo de segredos apaga o token do executor | A API só dá o nome; capture dos containers no ar, prove cada senha por TCP (`psql -h 127.0.0.1`, porque o socket local é `trust`), guarde num arquivo root-only no host com cópia cifrada fora dele, e edite **por chave** (`lineinfile`/`sed` por `^NOME=`), nunca reescrevendo. Medido em 2026-10-13. Ver `ci-cost-minutes.md` §5b |
+| 112 | `[S]` | Rollback por `trap ERR` que não dispara — ou que roda duas vezes | `exit` não dispara `ERR` (a prova do papel reprovou por `exit` e a versão nova ficou no ar como o dono do banco); com `set -E` o trap entra nas subshells de `$(…)` e roda lá e de novo no pai. `return 1` dentro da janela armada, e `[[ $BASHPID == $$ ]] \|\| exit 1` na 1ª linha do handler. Medido em 2026-10-13 com o `deploy.sh` real e dublês no PATH. Ver `cd-verification-and-rollback.md` §2a |
+| 113 | `[S]` | Sabotagem que "entrou" e sensor verde com razão — o `replace(…, 1)` caiu no comentário do cabeçalho | Refinamento da 93: a 1ª ocorrência de uma string guardada costuma ser o comentário que a explica. `assert s.count(old) == 1` antes de sabotar, e alargue o padrão até ele ser único. Ver `cd-verification-and-rollback.md` §6a |
+| 114 | `[S]` | `P1001` no Testcontainers quando os testes rodam DENTRO de um container com o socket do host | O Postgres sobe como container irmão e o teste conecta no próprio loopback. `TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal` + `extra_hosts: host.docker.internal:host-gateway`: 12/12 no kratos em 2026-10-13, com o Ryuk ligado. Ver `self-hosted-job-migration.md` §2 |
+| 115 | `[S]` | `the --chmod option requires BuildKit` no build dentro do executor — o buildx vinha implícito na imagem base antiga e sumiu na troca | O `docker build` sem buildx não diz `command not found`: cai no builder legado com um `DEPRECATED` e segue até a 1ª instrução de BuildKit. Ponha `docker-buildx-plugin` no contrato de ferramental e inventarie o que a imagem base antiga trazia. Medido em 2026-10-13 (1º deploy pelo agente). Ver `self-hosted-runner-docker.md` §13 |
+| 116 | `[S]` | Agente de deploy `healthy` com o laço morto, ou falhando a cada volta | `pgrep -f agent.sh` casa o próprio `sh -c` do HEALTHCHECK (use `'[a]gent\.sh'`), e heartbeat tocado depois de toda volta esconde token vencido (toque só no ciclo que fechou sem erro). E `unhealthy` não avisa ninguém: monitor externo. Medido em 2026-10-13 em três containers. Ver `cd-verification-and-rollback.md` §12 |
+| 117 | `[S]` | Gate de bundle que nunca reprovou, e três defeitos atrás de testes de contrato verdes | O grep procurava `chunks larger than` e o Vite 7 escreve `chunks are larger than`; asserção que lê o TEXTO do script fica verde com o script errado. Prove o grep contra a saída real da versão (teto forçado para baixo) e rode o script com dublês no PATH, sempre com um controle verde. Medido em 2026-10-13. Ver `cd-verification-and-rollback.md` §6c |

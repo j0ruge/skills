@@ -1251,6 +1251,26 @@ const FERRAMENTAS = [
 Sem a segunda metade a lista só cresce, e passa a exigir do Dockerfile coisas que ninguém
 usa mais. Sem a primeira, volta o `command not found`.
 
+### Plugin do CLI também — e o que a imagem base trazia de graça
+
+O contrato acima pega binário que falta, porque binário que falta grita. **Plugin do `docker`
+não grita.** Sem o `docker-buildx-plugin`, o `docker build` não diz `command not found`: ele
+cai no builder legado com um aviso (`DEPRECATED: The legacy builder is deprecated…`) e segue,
+até a primeira instrução que só o BuildKit entende — `COPY --chmod`, `RUN --mount`, o
+`# syntax=` do Dockerfile.
+
+Medido em 2026-10-13, ao trocar o runner do Actions por um agente de deploy com
+`FROM node:22-bookworm`: o gate passou, o build do backend passou, e o do frontend morreu em
+`the --chmod option requires BuildKit` — depois de ~5 min. O Dockerfile do runner antigo
+instalava só `docker-ce-cli` e `docker-compose-plugin`, exatamente como o novo: o buildx vinha
+**implícito** na imagem base (`myoung34/github-runner`), e sumiu calado com ela. O host tinha
+buildx; o container, não.
+
+- Ponha `docker-buildx-plugin` na lista do contrato, ao lado do `docker-ce-cli`.
+- **Ao trocar a imagem base do executor, faça o inventário do que ela trazia**, não do que o
+  seu Dockerfile instala: `docker run --rm <imagem-antiga> sh -c 'ls /usr/libexec/docker/cli-plugins/; docker buildx version'`.
+- Sonda na imagem nova, com o socket montado: um build de duas linhas com `COPY --chmod`.
+
 ## Sintomas → seção
 
 | Sintoma | Vai para |
@@ -1282,3 +1302,4 @@ usa mais. Sem a primeira, volta o `command not found`.
 | `A session for this runner already exists` / `Conflict. Retrying until reconnected` logo após `--force-recreate` | §8b (transitório, ~3 min; a prova é o `runner_name` no job em fila) |
 | Conserto do §8b feito e outro host com o mesmo compose segue mudo | §8b (yokoten por host — o `pull` não se replica) |
 | Revisor afirma que `GET /actions/runners` não devolve `version` (citando a doc) | §11 C (nota) — o schema publicado omite, a resposta viva traz; refute com uma chamada |
+| `the --chmod option requires BuildKit` / `DEPRECATED: The legacy builder` no build dentro do executor | §13 (plugin do CLI — `docker-buildx-plugin` sumiu com a imagem base) |

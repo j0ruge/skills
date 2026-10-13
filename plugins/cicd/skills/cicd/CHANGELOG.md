@@ -2,6 +2,35 @@
 
 Lessons retrofitted into the skill, dated. Each entry describes **what** changed and **why** (the symptom it would have prevented).
 
+## 2026-10-13 — Deploy sem Actions por agente no host: rollback por `trap ERR`, sensor de texto, healthcheck de laço e o buildx implícito — bump 2.36.0 → [2.37.0]
+
+**Por quê:** o `lighthouse_project` trocou o runner do Actions por um agente de deploy no host
+(container que observa a branch, roda o gate e o deploy). Uma revisão independente da branch e o
+1º deploy pelo agente acharam oito lições que a skill não tinha, todas medidas em 2026-10-13: o
+rollback por `trap ERR` não disparava quando a prova do papel reprovava por `exit` (a versão nova
+ficaria no ar como o dono do banco) e rodava duas vezes via `$(…)` com `set -E`; o gate de bundle
+procurava `chunks larger than` e o Vite 7 escreve `chunks are larger than` (nunca reprovou); o
+`pgrep -f` do HEALTHCHECK casava o próprio `sh -c`; e o 1º deploy morreu em `the --chmod option
+requires BuildKit`, porque o buildx vinha implícito na imagem base do runner antigo.
+
+**O quê:**
+
+- `cd-verification-and-rollback.md`: §2a nova (`exit` não dispara `ERR`; `set -E` e a guarda
+  `BASHPID`), §6a ganha a ocorrência única antes de sabotar, §6c nova (sensor que lê o texto do
+  script; grep de aviso provado contra a saída real; dublês no PATH com controle verde), §8 ganha o
+  espelho (trap de `EXIT` com `local` + `set -u` = rc=1 depois do verde), §12 nova (HEALTHCHECK de
+  laço: `[a]gent`, heartbeat só no ciclo bem-sucedido, `unhealthy` não avisa ninguém).
+- `self-hosted-runner-docker.md` §13: plugin do CLI também, e o inventário da imagem base antiga.
+- `self-hosted-job-migration.md` §2: Testcontainers dentro de container com o socket
+  (`TESTCONTAINERS_HOST_OVERRIDE` + `host-gateway`, 12/12).
+- `ci-cost-minutes.md` §5b nova: sair do Actions de vez — os secrets do environment não se leem;
+  capturar dos containers, provar por TCP, arquivo root-only editado por chave.
+- `lessons-learned.md`: lições 110–117 e índice por tema. `symptom-index.md`: +4 linhas.
+  `SKILL.md`: só palavras-chave em quatro linhas da tabela de roteamento.
+
+Dívida pré-existente que a auditoria aponta e este retrofit não toca: INFO F4 (sem evals de gatilho)
+e INFO D1 (afirmações factuais sem sensor/data nas references antigas).
+
 ## 2026-09-30 — O vigia do runner sai do Actions hospedado, e o limiar de versão cai de 3 para 1 — bump 2.35.0 → [2.36.0]
 
 **Por quê:** incidente medido em 30/09/2026 (PR com CI 30+ min em `queued`). O runner de staging

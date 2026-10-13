@@ -29,6 +29,7 @@ já paga e mantém ociosa.
   - [O sósia: workflow inválido produz quase a mesma assinatura](#o-sósia-workflow-inválido-produz-quase-a-mesma-assinatura)
   - [Diagnóstico em uma linha](#diagnóstico-em-uma-linha)
   - [5a. Deploy manual enquanto o bloqueio dura — e os dois falsos verdes do caminho](#5a-deploy-manual-enquanto-o-bloqueio-dura--e-os-dois-falsos-verdes-do-caminho)
+  - [5b. Sair do Actions de vez: os secrets do environment não se leem](#5b-sair-do-actions-de-vez-os-secrets-do-environment-não-se-leem)
 - [6. Checklist rápido](#6-checklist-rápido)
 
 ## 1. O modelo de custo (as três regras que decidem tudo)
@@ -393,6 +394,33 @@ Por que o passo 4 é regra, e não zelo: **os dois falsos verdes desta receita f
 
 Quando o pipeline voltar, o branch de ambiente precisa refletir o que está servindo: promova por PR
 com merge commit mesmo sabendo que o run vai morrer em 3 s, e diga isso no corpo do PR.
+
+### 5b. Sair do Actions de vez: os secrets do environment não se leem
+
+Quando a decisão é **não voltar** ao Actions (deploy por script da estação ou por um agente no
+host), o primeiro bloqueio é dos segredos: a API devolve o **nome** de cada secret do environment,
+nunca o valor (`gh api repos/<o>/<r>/environments/<env>/secrets` traz `name` e datas, e não há rota
+que devolva `value`). O GitHub só os entrega a um job, e se você não vai rodar job, as únicas cópias são
+as que estão **em uso** — os containers no ar.
+
+1. **Capture dos containers no ar**, sem imprimir: `docker exec <c> printenv <VAR>` direto para um
+   arquivo `0600`, e para senha embutida numa URL, extraia por `sed` no próprio host.
+2. **Prove cada senha antes de guardá-la**, por TCP: `psql -h 127.0.0.1 -U <papel> -c 'select current_user'`
+   dentro do container do banco. O socket local costuma ser `trust` e aceita senha errada;
+   `-h 127.0.0.1` força a autenticação. Medido em 2026-10-13: as duas senhas responderam
+   `lighthouse` e `lighthouse_app`, cada uma pelo papel certo.
+3. **Guarde num arquivo root-only no host** (`0600`, fora da cópia do compose, montado `:ro` no
+   executor) e mantenha uma cópia cifrada fora do host (vault do Ansible, cofre de senhas). O
+   executor relê o arquivo a cada uso: rotacionar é trocar uma linha.
+4. **Edite por chave, nunca reescreva o arquivo.** Duas origens (o vault para os segredos da
+   aplicação, um prompt para o token do executor) e uma receita que reescreve o arquivo inteiro
+   apagam a linha da outra, calada. Medido em 2026-10-13, numa revisão: repetir o `copy` do
+   runbook apagaria o `GITHUB_TOKEN` do agente, e o laço seguiria `healthy` (lição 116). Use
+   `lineinfile` por `regexp: '^NOME='`, ou `sed -i` por chave.
+
+O token do executor merece escopo próprio: o PAT clássico que o runner usava (`repo` em **todos**
+os repositórios do dono) fica ao alcance de todo `postinstall` que o gate roda. Prefira
+fine-grained, só do repositório, com `Contents: read` e `Commit statuses: write`.
 
 ## 6. Checklist rápido
 
