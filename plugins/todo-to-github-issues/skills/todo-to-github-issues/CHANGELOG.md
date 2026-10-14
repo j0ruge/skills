@@ -3,6 +3,20 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-13 — a órfã que ainda vive num PR
+
+Publicado como **v2.5.0**.
+
+- Ao registrar um achado no `TODO.md` do kit sdd (PR #250), o plano rodado da branch mostrou
+  `ORPHAN #249  removal not found in history · last text unknown — read it before closing`. A #249 é
+  o espelho do item do PR #248, ainda aberto: criada por `--apply` na branch dele, 45 s depois de o PR
+  abrir. A tabela do plano só oferecia `completed` ou `not planned`, e fechar teria perdido um achado vivo.
+- O conserto procura a chave da órfã sem remoção nas cabeças dos PRs abertos e imprime `PENDING`;
+  o `--close-orphans` nunca a fecha. Ver o changelog versionado para as medidas.
+- Lição de método: uma linha do plano que manda o humano escolher entre duas saídas precisa listar
+  também a terceira, "não é com você agora", quando ela existe. "Desconhecido não é ausente" já valia
+  para o histórico; valia também para os PRs.
+
 ## 2026-10-09 — o espelho parado pelo formato
 
 Publicado como **v2.4.1**.

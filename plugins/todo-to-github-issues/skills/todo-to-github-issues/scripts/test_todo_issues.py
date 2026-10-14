@@ -399,6 +399,60 @@ with tempfile.TemporaryDirectory() as g:
     check("orphan: a title with a run of spaces is still found, by key — the fix is not lost",
           t.last_text(sctx, iss_s) == (gone_spaced[:7], ["def5678"]))
 
+# --- an orphan whose item lives in an open PR: PENDING ---------------------------------------------
+# Measured 2026-10-13 on the sdd kit: #249 was created by --apply from the pushed branch of PR #248,
+# 45 s after the PR opened. From main, and from any other branch, its removal is not in history, so
+# the plan read it "ORPHAN · last text unknown" and the table steered toward closing a live finding.
+# The PR list and the API reader are injected: nothing here touches the network.
+with tempfile.TemporaryDirectory() as g:
+    git("init", "-q")
+    put(top + keep + bottom, "p1: the default branch")
+    base = git("rev-parse", "--abbrev-ref", "HEAD")
+    in_pr = "- [ ] **Item do PR aberto** — `a.sh:8` — texto.\n  — por x (2026-10-13)\n\n"
+    git("checkout", "-q", "-b", "chore/pr")
+    head = put(top + in_pr + keep + bottom, "p2: the PR adds an item")
+    git("checkout", "-q", base)
+    with open(os.path.join(g, "pr.md"), "w", encoding="utf-8") as fh:
+        fh.write(top + in_pr + keep + bottom)
+    pctx = t.Ctx(repo="o/r", root=g, relpath="TODO.md", sha=None, branch=base)
+    iss_p = as_issues([i for i in t.parse(os.path.join(g, "pr.md")) if i.title == "Item do PR aberto"], pctx)[0]
+    iss_lost = dict(as_issues([gone["Item decidido"]], pctx)[0], number=300)
+    pr = {"number": 248, "headRefName": "chore/pr", "headRefOid": head, "isCrossRepository": False}
+    found = t.pending_in_prs(pctx, [iss_p, iss_lost], prs=[pr], fetch=lambda c, oid: None)
+    check("pending: the orphan whose item is in an open PR's local head is found, and only that one",
+          {n: p["number"] for n, p in found.items()} == {iss_p["number"]: 248})
+    remote = dict(pr, number=250, headRefOid="f" * 40)
+    asked = []
+
+    def via_api(c, oid):
+        """Stands in for `gh api …/contents/<file>?ref=<oid>`: the head commit is not in this clone."""
+        asked.append(oid)
+        return top + in_pr + keep + bottom
+
+    found = t.pending_in_prs(pctx, [iss_p], prs=[remote], fetch=via_api)
+    check("pending: a head that is not in this clone is read through the API reader",
+          asked == ["f" * 40] and found.get(iss_p["number"], {}).get("number") == 250)
+    check("pending: an unreadable head (a fork PR, unmeasured) leaves the issue an ORPHAN",
+          t.pending_in_prs(pctx, [iss_p], prs=[remote], fetch=lambda c, oid: None) == {})
+
+import inspect
+
+pr248 = {"number": 248, "headRefName": "chore/pr"}
+check("verdict: a PENDING orphan is never closed by --close-orphans",
+      t.orphan_verdict(None, [], pr248, close=True)[0] == "SKIP")
+check("verdict: the plan names the PR and says to leave the issue open",
+      t.orphan_verdict(None, [], pr248, close=False)[0] == "PENDING"
+      and "#248 (chore/pr)" in t.orphan_verdict(None, [], pr248, close=False)[1]
+      and "leave it open" in t.orphan_verdict(None, [], pr248, close=False)[1])
+check("pending: main() looks the unknown orphans up in the open PRs and hands the PR to the verdict",
+      "pend = pending_in_prs(ctx, unknown) if unknown else {}" in inspect.getsource(t.main)
+      and 'orphan_verdict(rm, fixes, pend.get(iss["number"]), a.close_orphans)' in inspect.getsource(t.main))
+check("verdict: fixed, decided and unknown orphans keep their verbs",
+      [t.orphan_verdict(*c)[0] for c in [("abc1234", ["def5678"], None, True), ("abc1234", [], None, True),
+                                         (None, [], None, True), ("abc1234", ["def5678"], None, False),
+                                         (None, [], None, False)]]
+      == ["CLOSE", "SKIP", "SKIP", "ORPHAN", "ORPHAN"])
+
 # --- an emptied backlog ---------------------------------------------------------------------------
 # Measured 2026-10-09 on the sdd kit: its TODO.md reached 0 open items (marker present, the kit's
 # sensor counting 0), the script refused it, and the last 4 mirrored issues were closed by hand.

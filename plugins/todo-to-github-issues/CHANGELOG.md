@@ -3,6 +3,40 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.5.0] — 2026-10-13
+
+Minor: uma linha nova no plano, `PENDING`, e o `--close-orphans` passa a decidir só pelo veredito.
+
+### Added
+
+- **A issue viva num PR aberto lia como órfã, e a tabela mandava fechá-la.** No kit sdd, a #249 nasceu
+  de um `--apply` na branch do PR #248, 45 s depois de o PR abrir, com o permalink no sha da branch
+  (`17ce3b7`). A partir do `main`, e de qualquer outra branch, a remoção do item não está no
+  histórico: o plano dizia `ORPHAN · removal not found · last text unknown`, e a linha `ORPHAN` da
+  tabela só oferecia `completed` ou `not planned` para um achado que segue aberto no PR.
+- **`pending_in_prs`**: para a órfã sem remoção achada, um `gh pr list` e o arquivo na cabeça de cada
+  PR aberto, pelo git quando o commit está no clone ou pela API de conteúdo (raw) quando não está.
+  Medido em 2026-10-13 no kit: 0,41 s para listar 4 PRs, ~0 s por cabeça local, 0,31 s por cabeça
+  lida pela API, byte a byte igual ao `git show`. Ao vivo, a #249 sai como
+  `PENDING #249  item in open PR #248 (…)` a partir do `main` do kit e de um clone `--single-branch`
+  (a cabeça fora do clone, lida pela API), com o resumo em `orphans=0 … pending=1`.
+- **`orphan_verdict`**: a escolha do verbo de cada órfã saiu do `main()` para uma função pura, e o
+  `--close-orphans` fecha só quando ela diz `CLOSE`. `PENDING` é sempre `SKIP`.
+- Testes sem rede: o PR e o leitor da API são injetados (cabeça local num repo git temporário, cabeça
+  fora do clone, cabeça ilegível), mais o veredito. Cada linha nova foi sabotada uma a uma (9 casos), e
+  todas reprovaram algum teste.
+
+### Limite declarado
+
+- **PR de fork** (`isCrossRepository`): ler a cabeça de outro repositório pela API do repositório-base
+  não foi medido. Se a leitura falha, a issue segue `ORPHAN`, como antes. Se o `gh pr list` falhar,
+  o plano avisa e também segue como antes.
+
+### Mantido
+
+- A regra "espelhe da branch padrão" fica. O `PENDING` só impede que o plano engane quem já criou a
+  issue da branch de um PR; ele não transforma esse caminho em recomendação.
+
 ## [2.4.1] — 2026-10-09
 
 Patch: só texto, uma linha nova em *Erros comuns*.

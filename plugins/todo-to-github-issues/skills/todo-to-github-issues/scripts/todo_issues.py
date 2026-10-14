@@ -32,6 +32,7 @@ import sys
 import tempfile
 import time
 from dataclasses import dataclass, field
+from urllib.parse import quote
 
 import kit
 
@@ -375,8 +376,13 @@ def _parse_at(ctx: Ctx, ref: str) -> dict[str, Item]:
                          capture_output=True, text=True, check=False)
     if old.returncode:
         return {}
+    return _parse_text(old.stdout)
+
+
+def _parse_text(text: str) -> dict[str, Item]:
+    """A TODO.md held in memory, parsed by this same parser and keyed like the mirror."""
     with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as fh:
-        fh.write(old.stdout)
+        fh.write(text)
     try:
         return {it.key: it for it in parse(fh.name)}
     except (NoOpenMarker, SystemExit):
@@ -421,6 +427,78 @@ def last_text(ctx: Ctx, iss: dict, tries: int = 5) -> tuple[str | None, list[str
         if found := removal(sha):
             return found
     return None, []
+
+
+def open_prs(repo: str) -> list[dict]:
+    """The repo's open PRs, with the head commit each one would merge. [] when gh cannot answer:
+    the plan then shows today's ORPHAN line, and says it could not look."""
+    try:
+        return json.loads(sh("gh", "pr", "list", "--repo", repo, "--state", "open", "--limit", "200",
+                             "--json", "number,headRefName,headRefOid,isCrossRepository"))
+    except (RuntimeError, json.JSONDecodeError) as e:
+        print(f"warn  could not list the open PRs, so no orphan is checked against them: {e}",
+              file=sys.stderr)
+        return []
+
+
+def _head_text(ctx: Ctx, oid: str) -> str | None:
+    """The file at a PR head this clone does not hold, read through the contents API (raw). Measured
+    2026-10-13 on the sdd kit: 0.31 s a PR, byte-identical to `git show`. A fork PR's head
+    (isCrossRepository) read through the base repo was NOT measured: when it fails, None, and the
+    issue stays an ORPHAN, as before."""
+    r = subprocess.run(["gh", "api", f"repos/{ctx.repo}/contents/{quote(ctx.relpath)}?ref={oid}",
+                        "-H", "Accept: application/vnd.github.raw"], capture_output=True, text=True, check=False)
+    return r.stdout if r.returncode == 0 else None
+
+
+def _items_at_head(ctx: Ctx, oid: str, fetch) -> dict[str, Item]:
+    """The items at a PR head: from git when the commit is in this clone, else from `fetch`."""
+    local = subprocess.run(["git", "-C", ctx.root, "cat-file", "-e", f"{oid}^{{commit}}"],
+                           capture_output=True, check=False).returncode == 0
+    if local:
+        return _items_at(ctx, oid)
+    text = fetch(ctx, oid)
+    return {} if text is None else _parse_text(text)
+
+
+def pending_in_prs(ctx: Ctx, orphans: list[dict], prs: list[dict] | None = None,
+                   fetch=None) -> dict[int, dict]:
+    """Issue number -> the open PR whose head still carries the orphan's item.
+
+    An issue created by --apply from a pushed PR branch has its item only in that PR until the
+    merge, so from the default branch (or any other) it reads ORPHAN with its removal not found —
+    and the plan steered the human toward closing a live finding (sdd kit #249 from PR #248,
+    2026-10-13). Asked only for the orphans whose removal was not found: one `gh pr list`, then the
+    file at each head. `prs` and `fetch` are injected by the offline tests.
+    """
+    keys = {m.group(1): iss["number"] for iss in orphans if (m := KEY_RE.search(iss.get("body") or ""))}
+    if not keys:
+        return {}
+    fetch = fetch or _head_text
+    found: dict[int, dict] = {}
+    for pr in open_prs(ctx.repo) if prs is None else prs:
+        at = _items_at_head(ctx, pr["headRefOid"], fetch)
+        for key, number in keys.items():
+            if key in at:
+                found.setdefault(number, pr)
+    return found
+
+
+def orphan_verdict(rm: str | None, fixes: list[str], pr: dict | None, close: bool) -> tuple[str, str]:
+    """The plan's verb and reason for one orphan. --close-orphans closes only on CLOSE: a fixed
+    orphan. One that left by decision, one whose removal is unknown and one still alive in an open
+    PR are SKIP — the last must not be closed at all, by script or by hand."""
+    where = f"left the file in {rm}" if rm else "removal not found in history"
+    if fixes:
+        return ("CLOSE" if close else "ORPHAN"), f"{where} · fixed by " + ", ".join(fixes)
+    if rm:
+        return ("SKIP" if close else "ORPHAN"), f"{where} · no RESOLVED by — close by hand"
+    if pr:
+        return ("SKIP" if close else "PENDING"), (f"item in open PR #{pr['number']} ({pr['headRefName']}) · "
+                                                  "leave it open: it mirrors from the default branch after the merge")
+    # Unknown is not "absent": a fixed item whose removal was not found must not be steered to
+    # "not planned" (sdd kit #113, 2026-10-04).
+    return ("SKIP" if close else "ORPHAN"), f"{where} · last text unknown — read it before closing"
 
 
 def build_plan(items: list[Item], issues: list[dict], relpath: str = "TODO.md") -> Plan:
@@ -620,18 +698,15 @@ def main() -> int:
     # one that carried `RESOLVED by` closes as completed, citing the fix. One that left by decision
     # is the human's to close as not planned — --close-orphans used to call it completed too.
     gone = {iss["number"]: last_text(ctx, iss) for iss in plan.orphans}
+    # Only the orphans whose removal is not in this checkout's history are looked up in the open
+    # PRs: an item that left the file here has a known last text, and a run without such orphans
+    # never calls gh for it.
+    unknown = [iss for iss in plan.orphans if gone[iss["number"]][0] is None]
+    pend = pending_in_prs(ctx, unknown) if unknown else {}
     for iss in plan.orphans:
         rm, fixes = gone[iss["number"]]
-        where = f"left the file in {rm}" if rm else "removal not found in history"
-        if fixes:
-            verb, why = ("CLOSE " if a.close_orphans else "ORPHAN"), "fixed by " + ", ".join(fixes)
-        elif rm:
-            verb, why = ("SKIP  " if a.close_orphans else "ORPHAN"), "no RESOLVED by — close by hand"
-        else:
-            # Unknown is not "absent": a fixed item whose removal was not found must not be steered
-            # to "not planned" (sdd kit #113, 2026-10-04).
-            verb, why = ("SKIP  " if a.close_orphans else "ORPHAN"), "last text unknown — read it before closing"
-        print(f"{verb}  #{iss['number']:<4} {where} · {why} — {short(iss['title'], 60)}")
+        verb, why = orphan_verdict(rm, fixes, pend.get(iss["number"]), a.close_orphans)
+        print(f"{verb:<7} #{iss['number']:<4} {why} — {short(iss['title'], 60)}")
     for iss, it, r in plan.renames:
         old = KEY_RE.search(iss["body"]).group(1)
         print(f"RENAME? #{iss['number']} ↔ L{it.start} ({r:.0%} same text) — to keep the issue instead of "
@@ -641,7 +716,8 @@ def main() -> int:
     print(f"summary create={len(plan.create)} update={len(plan.update)} (anchor {kinds.count('anchor')}) "
           f"ok={len(plan.ok)} "
           f"skip={len(plan.skip_resolved)} closed-present={len(plan.closed_present)} "
-          f"orphans={len(plan.orphans)} (fixed {sum(1 for _, f in gone.values() if f)}) "
+          f"orphans={len(plan.orphans) - len(pend)} (fixed {sum(1 for _, f in gone.values() if f)}) "
+          f"pending={len(pend)} "
           f"dup={len(plan.dup_issues)}")
     if not a.apply:
         print("plan only — rerun with --apply (try --limit 1 first)")
@@ -666,22 +742,27 @@ def main() -> int:
                      "--title", issue_title(it), *lab)
         print(f"updated #{iss['number']}")
     if a.close_orphans:
+        # The close is decided by orphan_verdict alone, the function the offline tests measure; the
+        # branches below only word the skip.
         for iss in plan.orphans:
             rm, fixes = gone[iss["number"]]
-            if not fixes and not rm:
+            pr = pend.get(iss["number"])
+            if orphan_verdict(rm, fixes, pr, close=True)[0] == "CLOSE":
+                fx = ", ".join(f"`{h}`" for h in fixes)
+                gh_mut("issue", "close", str(iss["number"]), "--repo", ctx.repo, "--reason", "completed", "--comment",
+                       f"Consertado em {fx}. O item saiu de `{ctx.relpath}` em `{rm}` — neste formato, achado "
+                       f"fechado é apagado do arquivo.")
+                print(f"closed #{iss['number']} (fixed by {', '.join(fixes)})")
+            elif pr:
+                print(f"skipped #{iss['number']} — its item is in open PR #{pr['number']} ({pr['headRefName']}): "
+                      f"leave it open, it mirrors from the default branch after the merge")
+            elif not rm:
                 print(f"skipped #{iss['number']} — its removal is not in this checkout's history (shallow "
                       f"clone? renamed file? unmerged branch?), so its last text is unknown: read it, then "
                       f"close as completed if it carried RESOLVED by, as not planned if it did not")
-                continue
-            if not fixes:
+            else:
                 print(f"skipped #{iss['number']} — no RESOLVED by in its last text: close it by hand, "
                       f"`gh issue close {iss['number']} --reason \"not planned\" --comment \"<para onde foi>\"`")
-                continue
-            fx = ", ".join(f"`{h}`" for h in fixes)
-            gh_mut("issue", "close", str(iss["number"]), "--repo", ctx.repo, "--reason", "completed", "--comment",
-                   f"Consertado em {fx}. O item saiu de `{ctx.relpath}` em `{rm}` — neste formato, achado "
-                   f"fechado é apagado do arquivo.")
-            print(f"closed #{iss['number']} (fixed by {', '.join(fixes)})")
     return 0
 
 
