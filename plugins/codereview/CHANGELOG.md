@@ -2,6 +2,35 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.15.1] — 2026-10-14
+
+### Hash de manifesto não é credencial; a lista de correções do orquestrador também é prosa
+
+Lições de quatro rodadas de `/codereview` sobre a branch RS-925 do `digital_service_report_api`
+(scripts bash de refresh de staging), com `base=` encadeado de rodada em rodada.
+
+- **`references/detection-passes.md`, pass 6.10:** o gitleaks (`generic-api-key`) acusou um valor
+  hexadecimal de 64 caracteres em `src/test/.integrity.json`, o manifesto com o sha256 de cada
+  `*.test.ts`, e o gate forçou F em três rodadas seguidas. Conferido a cada rodada: o valor era
+  exatamente o `sha256sum` do arquivo nomeado pela chave. O parágrafo novo diz como provar, mantém a
+  regra de nunca remover a linha, e aponta o remédio no repositório: um `.gitleaks.toml` com
+  `useDefault = true` e allowlist só do caminho, que o script já passa por `--config`. Medido: com ele,
+  o scan da branch voltou `findings: []` com `gitleaks` em `scanners`, e um canário `ghp_…` em outro
+  arquivo continuou saindo `github-pat`.
+- **`references/configuration.md` §Re-review rounds, bullet novo (agora "Six things"):** duas vezes
+  o achado principal da rodada seguinte nasceu do texto que o próprio orquestrador escreveu na lista
+  de correções. A mensagem "staging nao foi tocado" para código de saída > 3 voltou HIGH (o ssh devolve
+  255 quando a conexão cai depois do comando remoto começar), e "o ponteiro anterior sobrevive a uma
+  falha" voltou MEDIUM (o `rollback` passou a confiar no ponteiro velho). Com "nomeie a propriedade,
+  não o texto" e "o que o usuário faz depois no caminho mudado" no prompt do corretor, a rodada
+  seguinte fechou com 0 HIGH / 0 MEDIUM, depois de reproduzir e refutar as duas MEDIUM alegadas.
+  Curva das quatro rodadas: 1H/11M → 1H/2M → 0H/1M → 0H/0M.
+- **Investigada e descartada:** a suspeita de que o pre-scan de segredos, recortado por caminho na
+  rodada 1, tinha escondido o achado. Rodado no range inteiro do mesmo head sem allowlist, também
+  deu 0: o hash acusado só nasceu quando o arquivo de teste foi criado na correção da rodada 1.
+- **Dívida pré-existente, não tocada:** os três avisos C2, o `SKILL.md` em 20 000 chars (limite do
+  C1) e o F4 (sem evals).
+
 ## [2.15.0] — 2026-10-13
 
 ### Código dentro de doc vira CODE; o rodapé de custo conta as chamadas pelo harness

@@ -422,6 +422,17 @@ This pass approximates what a dedicated secret scanner (GitGuardian, gitleaks, t
 
 **The external scanners see only the diff.** The script writes the diff's added lines into a temporary directory, each at its own line number, runs `gitleaks`/`ggshield` there and keeps only findings on an added line; the repo's `.gitleaks.toml` (passed as `--config`) and `.gitleaksignore` (copied in) still apply. Measured 2026-10-07: up to 2.13.0 they scanned the repo directory (`--source <repo> --no-git`), so a git-ignored `.env` outside the PR came back as a finding and forced an F, and on a large repo gitleaks hit its 60 s timeout, leaving the gate regex-only with one line in `errors`. Scoped, the same review ran in 0.1 s with `gitleaks` in `scanners`. Pinned by `tests/test_scan_secrets.py`.
 
+**A hex digest in a hash manifest is a content hash, not a credential: prove it, keep the row, fix it in the repo.** gitleaks' `generic-api-key` fires on a 64-char hex value. Measured 2026-10-14: `src/test/.integrity.json`, which stores the sha256 of each `*.test.ts`, forced an F in three consecutive rounds of one branch. The row stays (6.10 findings are never removed), with the proof beside it: `sha256sum` of the file the key names equals the flagged value. The durable remedy belongs to the repo, so recommend it rather than write it: a `.gitleaks.toml` that keeps the default rules and allowlists only that path, which the script passes as `--config`:
+
+```toml
+[extend]
+useDefault = true
+[allowlist]
+paths = ['''(^|/)src/test/\.integrity\.json$''']
+```
+
+Before trusting it, plant a canary: a fake `ghp_…` token in another file must still come back `github-pat`. Measured with that config: the branch scan returned `findings: []` with `gitleaks` in `scanners`, and the canary was caught.
+
 **Exceptions (do not flag):**
 
 - Value is a runtime lookup: `process.env.FOO`, `import.meta.env.FOO`, `config.get("foo")`, `Deno.env.get(...)`, `os.environ[...]`, `ConfigurationManager.AppSettings[...]`.

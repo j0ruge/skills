@@ -93,7 +93,7 @@ diff is all DOCS, Phase B launches no agent, and the report grades code nobody r
 ## Re-review rounds
 
 Read this whenever `base=` names the head an earlier round reviewed (SKILL.md, *Re-review the fix*).
-Five things decide whether the rounds converge:
+Six things decide whether the rounds converge:
 
 - **The agents never see the earlier reports.** A finding a previous round dismissed with a written
   reason can come back with no new evidence — measured 2026-10-03: the same unreachable "partial
@@ -117,6 +117,15 @@ Five things decide whether the rounds converge:
   15 → 9 → 4. Closing the finding is not applying the reviewer's suggestion: a suggestion that
   weakens the sensor is declined with a measurement (`[0-9]` in an id regex would have let a
   Unicode-digit id vanish silently instead of failing as unknown).
+- **The fix list the orchestrator writes is prose too.** A user-facing message or a state guarantee
+  spelled out in it is implemented literally and becomes the next round's top finding. Measured
+  2026-10-14, a bash refresh tool over four rounds (1 HIGH/11 MEDIUM → 1/2 → 0/1 → 0/0): "staging
+  nao foi tocado", prescribed for any client exit code above 3, came back HIGH, because ssh also
+  returns 255 when the connection drops after the remote command started; "the previous pointer
+  survives a failed write" came back MEDIUM, because `rollback` then trusted the stale pointer. Name
+  the property ("say only what is known"), not the wording, and ask the fixer what the user does next
+  on the path it changed. The round after that came back 0 HIGH / 0 MEDIUM once its two MEDIUM
+  claims were reproduced and refuted.
 - **A count in CLAUDE.md that an agent calls stale is checked in the file.** The agents cite the
   value from the start of the session: measured 2026-10-05, four rounds flagged "CLAUDE.md says 1284
   tests" while the file, updated by each round's commit, already said 1336, 1352, 1362 and 1363.
