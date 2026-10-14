@@ -156,6 +156,24 @@
    seguir e a branch nasce de base não verificada, sem nada avisar. Por isso a
    verificação acima mede a base em vez de confiar no pull.
 
+   **Branch que já existe com outro nome** (o trabalho, o planejamento por exemplo,
+   começou antes do ticket): não abra uma segunda branch da base. Renomeie a que
+   existe e traga a base por fast-forward, medindo antes e depois:
+
+   ```bash
+   git branch -m <branch-atual> ${BRANCH_PREFIX}-XXX_descricao_curta
+   git fetch origin -q
+   git rev-list --left-right --count HEAD...origin/${BASE_BRANCH}   # ex.: `0	7`
+   git merge --ff-only origin/${BASE_BRANCH}
+   git rev-list --left-right --count HEAD...origin/${BASE_BRANCH}   # espera `0	0`
+   ```
+
+   Esquerda maior que zero (a branch já tem commits próprios): o `--ff-only` recusa
+   sem mexer em nada; pare e pergunte ao dev (rebase, se a branch não foi publicada).
+   Medido em 14/10/2026 no RS-925 (`digital_service_report_api`), pelo reflog:
+   `feature/staging-refresh`, criada de uma base velha, foi renomeada e avançou 7
+   commits por fast-forward (`0	7` → `0	0`); o primeiro commit do ticket veio depois.
+
    **Árvore viva: worktree, não checkout.** Quando um serviço roda do checkout da
    base (uma unit com `WorkingDirectory` nele, um servidor de dev apontado para
    ele), o `checkout` acima troca o código que o próximo restart carrega, e o
@@ -293,7 +311,8 @@
      ```
 
    - Leia o resultado como no A8 (os dois números, não o par) e, se a base for
-     árvore de serviço no ar, crie a branch na worktree do A8.
+     árvore de serviço no ar, crie a branch na worktree do A8. Se o trabalho já
+     tem branch com outro nome, renomeie-a como no A8, em vez de abrir outra.
 
 6. **Transicionar issue:**
 

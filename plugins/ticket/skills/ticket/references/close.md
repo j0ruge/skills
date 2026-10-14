@@ -8,7 +8,7 @@
 ## Sumário
 
 Por step: 1 detectar, status e responsável · 2 sub-issues, contadas pelo REST · 3 resumo,
-conforme a integração (squash, merge commit, rebase + ff) · 4 rascunho ao dev · 5 comentário
+conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) · 4 rascunho ao dev · 5 comentário
 (MCP ou REST) e a releitura · 6 transições por id · 7 `fixVersion` · 8 commit · 9 PR · 10 volta
 à base, PR já mergeado e worktree · 11 output.
 
@@ -77,6 +77,20 @@ conforme a integração (squash, merge commit, rebase + ff) · 4 rascunho ao dev
      Medido em 14/10/2026 na LH-5 (PR #22, merge `00dd775`): 62 commits e 92 arquivos, com
      os handoffs da missão; leia a lista e separe o que é registro do que é entrega.
 
+     **Mais de um PR da mesma branch** (o fix da revisão final num PR novo, por exemplo): os
+     pais de um merge só contam aquele PR. Liste os merges da branch e recorte do primeiro pai
+     do mais antigo até o segundo pai do mais novo:
+
+     ```bash
+     git log --merges --oneline --grep '<nome-da-branch>' ${BASE_BRANCH}   # M1 = o mais antigo, MN = o mais novo
+     git log --no-merges --oneline "$M1^1..$MN^2"
+     git diff --stat "$M1^1" "$MN^2"
+     ```
+
+     Medido em 14/10/2026 no RS-925 (PRs #92 e #93, merges `d4466af` e `6a43598`): os pais
+     só do último merge deram 5 commits e 14 arquivos; o recorte deu 33 commits (28 + 5) e
+     34 arquivos, os números do resumo postado.
+
    - **Já integrado na base sem squash** (rebase + fast-forward, branch apagada): o
      `${BASE_BRANCH}..HEAD` sai vazio e a key não está no subject, e sim no corpo (step 8).
      Ache os commits pela key **ancorada no início da linha** e conte commit a commit:
@@ -100,7 +114,11 @@ conforme a integração (squash, merge commit, rebase + ff) · 4 rascunho ao dev
      - **Solução:** Sintetizar a partir dos commit messages
      - **Teste:** Inferir dos arquivos de teste modificados; se não houver, pedir ao dev
 
-4. **Apresentar rascunho ao dev** — Mostrar o resumo gerado e pedir confirmação ou edições
+4. **Apresentar rascunho ao dev** — Mostrar o resumo gerado e pedir confirmação ou edições.
+   Sem MCP atlassian, escreva o rascunho já no que o `md2adf.py` aceita (step 5: sem lista
+   aninhada, sem crase dentro de negrito), para o dev aprovar o texto que vai ao Jira. Medido em
+   14/10/2026 no RS-925: o rascunho aprovado tinha as duas construções, e 8 trechos foram
+   achatados depois da aprovação.
 
 5. **Comentar na issue — preferir MCP atlassian com markdown:**
 

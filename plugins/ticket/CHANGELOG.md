@@ -1,5 +1,35 @@
 # Changelog — ticket
 
+## [1.12.0] — 2026-10-14
+
+### Por quê
+
+No `close` do RS-925 (`digital_service_report_api`, 14/10/2026) a mesma branch entrou em `develop`
+por **dois** merge commits: o PR #92 (`d4466af`) e o PR #93 (`6a43598`), com o fix da revisão final.
+A receita da 1.11.3 recorta pelos pais de **um** merge: aplicada ao último, `6a43598^1..6a43598^2`
+deu 5 commits e 14 arquivos, só o #93. O resumo postado precisou de `d4466af^1..6a43598^2`: 33
+commits (28 + 5) e 34 arquivos, medidos com `git rev-list --count --no-merges` e `git diff --stat`.
+
+No mesmo `close`, sem MCP atlassian, o rascunho aprovado pelo dev tinha lista aninhada e crase
+dentro de negrito, as duas construções que o `md2adf.py` recusa desde a 1.11.1. Foram 8 trechos
+achatados **depois** da aprovação (rc 0, POST 201, releitura `dict 12`): o dev aprovou um texto e o
+Jira recebeu outro, com o mesmo conteúdo e outra forma.
+
+No `start` da mesma missão, o planejamento tinha começado numa branch `feature/staging-refresh`,
+criada de uma base velha antes de o ticket existir. O A8 só sabia abrir branch nova da base. O que
+funcionou, pelo reflog: renomear a branch, medir `0	7` no `rev-list --left-right`, `merge --ff-only
+origin/develop` (Fast-forward de 7 commits) e medir `0	0`.
+
+### O quê
+
+- `references/close.md`, step 3: **mais de um PR da mesma branch** — listar os merges pela branch
+  (`git log --merges --grep`) e recortar `M1^1..MN^2`; o sumário do arquivo cita o caso.
+- `references/close.md`, step 4: sem MCP, o rascunho nasce no subconjunto que o `md2adf.py` aceita.
+- `references/start.md`, A8: **branch que já existe com outro nome** — `branch -m`, medir, `merge
+  --ff-only`, medir; com commits próprios na branch, o `--ff-only` recusa e a skill manda perguntar.
+  O B5 aponta para o A8.
+- `SKILL.md`: só o `metadata.version`; o texto ficou como estava (19.723 chars, perto do teto de 20 mil).
+
 ## [1.11.3] — 2026-10-14
 
 ### Por quê
