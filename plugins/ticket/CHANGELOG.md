@@ -1,5 +1,31 @@
 # Changelog — ticket
 
+## [1.11.3] — 2026-10-14
+
+### Por quê
+
+No `close` da LH-5 (`lighthouse_project`, 14/10/2026) o PR #22 entrou em `develop` por **merge
+commit** (`--no-ff`, merge `00dd775`), e o step 3 do `close.md` só cobria squash e rebase +
+fast-forward. Os dois pais do merge delimitaram a branch sem busca pela key:
+`git log --no-merges 00dd775^1..00dd775^2` deu 62 commits e `git diff --stat 00dd775^1 00dd775`
+deu 92 arquivos, os números do resumo postado. A busca pela key, que já trouxe commit de outro
+cartão (1.10.0), nem foi necessária.
+
+No mesmo `close`, o step 2 mandava listar as sub-issues pelo `acli jira workitem search`, que sem
+resultado não imprime nada: o silêncio de "nenhuma" é o mesmo de uma busca que falhou. O
+`GET /rest/api/3/search/jql` com `jql=parent = LH-5` devolveu uma contagem explícita, `0`.
+
+### O quê
+
+- `references/close.md`, step 2: a contagem de sub-issues pelo REST, com chave e status; medida só
+  no caso vazio, e o texto diz isso.
+- `references/close.md`, step 3: o caso do merge commit (`$M^1..$M^2`), antes do rebase + ff.
+- `references/close.md`, step 10: integrado por merge commit, a key vem no nome da branch dentro
+  do subject do merge.
+- `references/close.md` passou de 300 linhas: ganhou `## Sumário` no topo, no formato que o C3
+  da auditoria reconhece (um parágrafo em negrito não conta), e `## Passos` antes da lista.
+- `SKILL.md`: só o `metadata.version`; o texto ficou como estava, a ~280 chars do teto de 20 mil.
+
 ## [1.11.2] — 2026-10-13
 
 ### Por quê

@@ -5,6 +5,15 @@
 > templates do resumo e do ADF em `templates.md`, sensor do `fixVersion` em
 > `campos.md` — as três o SKILL.md roteia.
 
+## Sumário
+
+Por step: 1 detectar, status e responsável · 2 sub-issues, contadas pelo REST · 3 resumo,
+conforme a integração (squash, merge commit, rebase + ff) · 4 rascunho ao dev · 5 comentário
+(MCP ou REST) e a releitura · 6 transições por id · 7 `fixVersion` · 8 commit · 9 PR · 10 volta
+à base, PR já mergeado e worktree · 11 output.
+
+## Passos
+
 1. **Detectar issue:**
 
    - Extrair `${PROJECT}-XXX` da branch corrente (regex `^(${BRANCH_PREFIX}-\d+)`)
@@ -33,6 +42,19 @@
 
    - Se houver sub-issues não "Finished", alertar o dev e perguntar se quer continuar
 
+   ⚠️ **Sem sub-issue, o `acli` não imprime nada**, e esse silêncio é o mesmo de uma busca que
+   falhou. Leia "nenhuma" de uma contagem, pelo REST:
+
+   ```bash
+   set -a; . ~/.hermes/.env; set +a
+   curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -G "https://jrcbrasil.atlassian.net/rest/api/3/search/jql" \
+     --data-urlencode "jql=parent = ${PROJECT}-XXX" --data-urlencode "fields=status" \
+     | python3 -c "import json,sys; d=json.load(sys.stdin); i=d.get('issues',[]); print(len(i), d.get('errorMessages','')); [print(x['key'], x['fields']['status']['name']) for x in i]"
+   ```
+
+   Medido em 14/10/2026 só no caso vazio (LH-5: o `acli` mudo, o REST com `0`); a listagem de
+   sub-issues por esse comando ainda não foi exercitada.
+
 3. **Auto-gerar resumo:**
 
    - Coletar dados:
@@ -42,6 +64,18 @@
      git diff ${BASE_BRANCH}...HEAD --stat
      acli jira workitem view ${PROJECT}-XXX
      ```
+
+   - **Integrado por merge commit** (`--no-ff`, o "Merge pull request #NN" do GitHub): os dois
+     pais do merge delimitam a branch, e a busca pela key abaixo não é necessária:
+
+     ```bash
+     M=<sha do merge>                              # git log --merges --oneline -5 ${BASE_BRANCH}
+     git log --no-merges --oneline "$M^1..$M^2"    # só os commits da branch
+     git diff --stat "$M^1" "$M"                   # os arquivos que o merge trouxe
+     ```
+
+     Medido em 14/10/2026 na LH-5 (PR #22, merge `00dd775`): 62 commits e 92 arquivos, com
+     os handoffs da missão; leia a lista e separe o que é registro do que é entrega.
 
    - **Já integrado na base sem squash** (rebase + fast-forward, branch apagada): o
      `${BASE_BRANCH}..HEAD` sai vazio e a key não está no subject, e sim no corpo (step 8).
@@ -266,7 +300,9 @@
    > Confirme com o dev o que encontrou, em vez de assumir: o último commit da
    > base pode ser de outro cartão se alguém mergeou no meio. Integrado por rebase +
    > fast-forward (sem squash), a key está no corpo de cada commit, não no subject:
-   > ache-os pela busca do step 3.
+   > ache-os pela busca do step 3. Integrado por merge commit, a key vem no nome da
+   > branch dentro do subject (`Merge pull request #22 from JRC-Brasil/LH-5_amep-…`),
+   > e os commits saem pelos pais do merge (step 3).
 
    > **Worktree (start A8, árvore viva):** não há checkout a voltar, e o `pull` na
    > árvore viva não faz parte do close: atualizar a base dela é deploy, decisão à
