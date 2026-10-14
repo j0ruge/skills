@@ -2,6 +2,26 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.15.2] — 2026-10-14
+
+### Sonda de "apaga no fim" afirma antes o estado gravado
+
+Lição de um `/codereview:coderabbit-pr` no PR #92 do `digital_service_report_api` (RS-925), em que
+o fix do achado P2 do Codex grava um marcador `QUEBRADO` e o apaga num refresh ou rollback que dá
+certo.
+
+- **`coderabbit-pr/references/fix-loop.md`, passo 1:** uma sonda de algo que o fix grava e depois
+  apaga passa verde antes do fix, porque "sumiu no fim" é verdade quando nunca existiu. O passo 4
+  ("pelo menos uma fica vermelha") não pega: na sabotagem "o `broken()` não grava o marcador", três
+  sondas ficaram vermelhas e a de "um refresh OK apaga o aviso" continuou verde, escondida entre
+  elas. Só a leitura de quais ficaram verdes a achou. Medido: com uma afirmação do marcador no meio
+  do teste, a mesma sabotagem ficou vermelha e o fix continuou verde (`01a7c87`). O parágrafo novo
+  manda afirmar o estado gravado antes da ausência.
+- **Fora do `SKILL.md` de propósito:** ele está em 19 994 chars, a 6 do teto do C1, e a reference
+  já é roteada na Fase 3.2.
+- **Dívida pré-existente, não tocada:** os três avisos C2 e o F4 (sem evals) do `codereview`, e o
+  `coderabbit-pr/SKILL.md` colado no teto de chars.
+
 ## [2.15.1] — 2026-10-14
 
 ### Hash de manifesto não é credencial; a lista de correções do orquestrador também é prosa

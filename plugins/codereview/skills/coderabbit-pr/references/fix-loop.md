@@ -26,6 +26,13 @@ symptom — including one that opens a new fail-open next to it. The regression 
    if the exit code or message it reads is shared with another branch, assert the specific text of
    this branch *and* the absence of the other's marker. Cannot build a failing probe? Then the
    finding is unproven — go back to 3.1 and re-judge it before fixing anything.
+   A probe of something the fix both **sets and later clears** (a marker, a flag, a lock released on
+   success) is green before the fix by construction: "gone at the end" also holds when it never
+   existed. Assert the set state mid-test, then its absence. Step 4's "at least one goes red" does
+   not catch it, because the other probes go red and hide the empty one. Measured 2026-10-14
+   (digital_service_report_api PR #92, `01a7c87`): "a successful refresh clears the QUEBRADO marker"
+   stayed green with the marker write sabotaged while three others went red; one assertion of the
+   marker in the middle made that sabotage red too.
 2. **Fix** — the minimal change, with the editing tool, on the PR's head branch.
 3. **Green** — the probe from step 1 passes. **Still red after the fix? Judge the probe before the
    fix.** A probe that went red at its first assertion (the missing key) never ran the others, so
