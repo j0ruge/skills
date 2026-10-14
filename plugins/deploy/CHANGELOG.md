@@ -2,6 +2,31 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-10-14 — O agente no host não muda com o merge, e o bump que já veio — bump 3.1.0 → [3.2.0]
+
+**Por quê:** na promoção da 0.3.0 do `lighthouse_project` (PR #23, `develop → staging`), o diff do
+Step 4 sobre `infra/deployer/` listou o `Dockerfile` do agente de deploy: o conserto do `buildx`
+(#20) ainda viajava para `staging`. Mesclar não muda nada no host — o agente não vem da árvore do
+sha —, e a skill só tratava disso **depois** de um deploy vermelho, em `no-actions-agent.md`. A
+conferência foi feita à mão antes do merge (`docker exec jrc-staging-lh-deployer docker buildx
+version`), porque o repo documentava; a skill não pedia. No mesmo dia o repo passou a trocar a versão
+quando o desenvolvimento da versão começa (`.claude/rules/devops.md` §3 de lá, commit `3362cd9`), e o
+Step 2b só descrevia o bump na promoção.
+
+**O quê:**
+
+- `SKILL.md` Step 4: um comando a mais no bloco de sensores (`git diff … -- <agent-dir>/`) e uma
+  linha na tabela de leitura: os arquivos do agente no diff não mudam o host com o merge; antes de
+  mesclar, provar que o host já roda aquela versão, ou reconstruir o agente primeiro.
+- `SKILL.md` Step 2b: quando o repo troca a versão no começo do desenvolvimento, `$SOURCE` já traz o
+  número da release, e o passo é conferir esse número, não bumpar.
+- `references/no-actions-agent.md`: linha "4 — sensors" na tabela de passos, e o caso medido de
+  2026-10-14 ao lado do de 2026-10-13.
+
+Dívida pré-existente que a auditoria aponta e este retrofit não toca: INFO F1 (`no-actions-agent.md`
+citado sem dizer quando ler), INFO F4 (sem evals de gatilho) e INFO D1 (afirmações factuais sem
+sensor/data).
+
 ## 2026-10-13 — Workflow desativado não é pipeline, e o deploy por agente no host — bump 3.0.0 → [3.1.0]
 
 **Por quê:** no `lighthouse_project` os três workflows estão `disabled_manually` e o deploy de
