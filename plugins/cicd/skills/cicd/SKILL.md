@@ -1,7 +1,7 @@
 ---
 name: cicd
 metadata:
-  version: 2.37.0
+  version: 2.37.1
 description: "GitHub Actions / Docker / GHCR pipeline troubleshooting and config, auto-routed by stack (Node/Prisma, Django/gunicorn, Vite). Self-hosted runner runbook — what breaks when you move a billed job onto one, which runner to trust for production — deploy-time proof (rollback with re-smoke, backup gates that check the dump), and Actions minute economics. Triggers — CI/CD, GitHub Actions, job never starts, Actions minutes/quota, GHCR auth, self-hosted runner, deploy queued, rollback/backup gate."
 ---
 
@@ -36,9 +36,15 @@ Skill for troubleshooting and configuring CI/CD pipelines. Detects the project t
 
 ## Workflow Overview
 
-Both projects use **3 separate workflows** with identical triggers:
+The two projects this skill was born from use **3 separate workflows** with the triggers below.
+**That is a model, not the rule.** Before reading a run or promoting, read the `on:` block of
+each workflow and drop the disabled ones (`gh workflow list --all`). Measured 2026-10-15 (`git show
+origin/develop:.github/workflows/cd-staging.yml`): one repo deploys staging on a push to `staging`
+and production on a push to `main`, with no tag; another runs no Actions at all, and an agent on
+the host deploys. Pushing the branch this table names can deploy nothing, or deploy production. The
+promotion itself is the `deploy:staging` skill.
 
-| Workflow          | File                | Trigger                  | Runners                                     |
+| Workflow          | File                | Trigger (in the model)   | Runners                                     |
 | ----------------- | ------------------- | ------------------------ | ------------------------------------------- |
 | **CI**            | `ci.yml`            | PR → `develop` or `main` | `ubuntu-latest`                             |
 | **CD Staging**    | `cd-staging.yml`    | Push → `develop`         | `ubuntu-latest` + `self-hosted, staging`    |
@@ -209,8 +215,8 @@ docker exec <container> sh -c "grep -r '<your-domain>' /usr/share/nginx/html/ass
 | File                                  | Description                             |
 | ------------------------------------- | --------------------------------------- |
 | `.github/workflows/ci.yml`            | CI pipeline (lint + test) for PRs       |
-| `.github/workflows/cd-staging.yml`    | CD pipeline for staging (push develop)  |
-| `.github/workflows/cd-production.yml` | CD pipeline for production (tags v\*)   |
+| `.github/workflows/cd-staging.yml`    | CD pipeline for staging (trigger: its `on:`) |
+| `.github/workflows/cd-production.yml` | CD pipeline for production (trigger: its `on:`) |
 | `Dockerfile` or `infra/*/Dockerfile`  | Multi-stage build (path varies by project) |
 | `infra/*/docker-compose.yml`          | Compose with GHCR image (path varies)   |
 | `src/env.ts`                          | Zod validation of env vars              |
@@ -220,8 +226,8 @@ docker exec <container> sh -c "grep -r '<your-domain>' /usr/share/nginx/html/ass
 | File                                  | Description                             |
 | ------------------------------------- | --------------------------------------- |
 | `.github/workflows/ci.yml`            | CI pipeline (lint + typecheck + test)   |
-| `.github/workflows/cd-staging.yml`    | CD pipeline for staging (push develop)  |
-| `.github/workflows/cd-production.yml` | CD pipeline for production (tags v\*)   |
+| `.github/workflows/cd-staging.yml`    | CD pipeline for staging (trigger: its `on:`) |
+| `.github/workflows/cd-production.yml` | CD pipeline for production (trigger: its `on:`) |
 | `infra/<web>/Dockerfile`              | Multi-stage build (node + nginx; path varies by project) |
 | `infra/<web>/docker-compose.yml`      | Compose with GHCR image                 |
 | `infra/<web>/nginx.conf`              | nginx config (SPA try_files)            |

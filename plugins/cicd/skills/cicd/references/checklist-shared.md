@@ -63,6 +63,9 @@ Verify at: `github.com/orgs/<ORG>/packages`
 
 When the repository is new and has never been deployed to staging:
 
+> `develop` below is the model's branch (SKILL.md § Workflow Overview). In a repo whose
+> `cd-staging.yml` listens to another branch (`on: push: branches: [staging]`), read `develop` as that branch.
+
 - [ ] Workflows (`.github/workflows/ci.yml`, `cd-staging.yml`, `cd-production.yml`) are committed and pushed
 - [ ] Branch `develop` exists on the remote: `git ls-remote --heads origin develop`
 - [ ] Workflows are present in the `develop` branch (CD Staging triggers on push to `develop` — if the workflows are not in that branch, the pipeline will not fire)

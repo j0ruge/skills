@@ -2,6 +2,28 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-10-15 — A tabela de gatilhos é o modelo dos projetos de origem, não a regra — bump 2.37.0 → [2.37.1]
+
+**Por quê:** desde a primeira versão (`822a7ac`, 2026-03-13) a "Workflow Overview" dizia que
+"both projects" deployam staging por push na `develop` e produção por tag `v*`, e as tabelas
+"Pipeline Files" e o bootstrap do `checklist-shared.md` repetiam isso como regra. Medido em
+2026-10-15 numa promoção real: o `validade_bateria_estoque` deploya staging por push na `staging` e
+produção por push na `main`, sem tag (`git show origin/develop:.github/workflows/cd-staging.yml`), e
+o `lighthouse_project` não roda Actions nenhum (um agente no host deploya). Um agente que confiasse
+na tabela empurraria a `develop` esperando staging e não deployaria nada, ou, lendo a `main` como
+"só sincronizada", deployaria produção. É o acidente que a skill `deploy:staging` existe para evitar.
+
+**O quê:**
+- `SKILL.md` § Workflow Overview: a abertura diz que a tabela é o modelo dos dois projetos de origem,
+  manda ler o `on:` de cada workflow (e descartar os desativados com `gh workflow list --all`), dá os
+  dois contraexemplos datados e aponta a `deploy:staging`; a coluna vira "Trigger (in the model)".
+  Nenhuma linha da tabela saiu.
+- `SKILL.md` § Pipeline Files: as quatro descrições "(push develop)" e "(tags v\*)" remetem ao `on:`
+  de cada workflow.
+- `references/checklist-shared.md` §5: uma nota diz que a `develop` do bootstrap é a do modelo.
+
+A lição 28 do `lessons-learned.md` é histórica e não mudou.
+
 ## 2026-10-13 — Deploy sem Actions por agente no host: rollback por `trap ERR`, sensor de texto, healthcheck de laço e o buildx implícito — bump 2.36.0 → [2.37.0]
 
 **Por quê:** o `lighthouse_project` trocou o runner do Actions por um agente de deploy no host
