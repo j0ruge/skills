@@ -3,6 +3,19 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.5.2] — 2026-10-15
+
+Patch: a linha `MANUAL` da âncora quebrada manda conferir se o achado ainda vale antes de reancorar.
+
+### Changed
+
+- **Âncora que perdeu o alvo às vezes é achado já consertado.** A célula dizia só "reancorar no
+  código atual". No `digital_service_report_api` (2026-10-15), o sensor recusou o plano com 8 âncoras
+  fora da ADR 0015 §2, e a do item "`tsc --noEmit` como step do CI" (`.github/workflows/ci.yml`) não
+  tinha alvo porque o job `typecheck` já existia (`0a369c9`, PR #56). Reancorado, o primeiro
+  `--apply` abriria uma issue para um achado fechado: o `SKIP` só pega quem traz `RESOLVED by`. O
+  item saiu citando o commit, e o espelho fechou em `create=0 update=0 ok=17`.
+
 ## [2.5.1] — 2026-10-15
 
 Patch: o símbolo designado da âncora volta para a linha **Âncora:** do corpo da issue.

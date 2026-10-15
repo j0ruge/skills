@@ -3,6 +3,19 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-15 — a âncora sem alvo que era achado fechado
+
+Publicado como **v2.5.2**.
+
+- Primeiro espelho do `TODO.md` do `digital_service_report_api`: o plano parou em rc 4 com 8 âncoras
+  fora da ADR 0015 §2, e o `--audit` deu `manual=8`. Ao procurar o alvo da âncora
+  `.github/workflows/ci.yml` do item "`tsc --noEmit` como step do CI", o `grep` achou o job
+  `typecheck` já no arquivo, e `git log -S"typecheck:"` apontou o commit que o trouxe.
+- A célula `MANUAL` mandava só reancorar. Seguida à risca, ela daria âncora nova a um achado
+  fechado, e o `--apply` abriria a issue dele: o `SKIP` só reconhece `RESOLVED by <hash>`, que o
+  item nunca recebeu. O item saiu do arquivo citando o commit; os outros 7 foram reancorados, o
+  sensor aceitou 17 achados e o plano final deu `create=0 update=0 ok=17`.
+
 ## 2026-10-15 — o símbolo longe da âncora
 
 Publicado como **v2.5.1**.
