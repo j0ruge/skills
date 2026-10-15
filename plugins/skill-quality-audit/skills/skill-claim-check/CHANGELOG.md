@@ -1,5 +1,16 @@
 # Changelog: skill-claim-check
 
+## [0.5.0] - 2026-10-15 - sensor para a versão de skill sem CLI
+
+**Motivação:** o D1 acusa `metadata.version` como candidato a claim, e para uma skill sem CLI não
+havia sensor óbvio (nenhum `--version` a consultar).
+
+**O que foi feito:** linha nova na tabela de cheiros: comparar o `metadata.version` com o
+cabeçalho mais recente do `CHANGELOG.md` da própria skill; a versão do plugin pai é independente
+e se confere em `plugin.json` e no CHANGELOG do plugin. Descrição inalterada.
+
+**Como reverter:** `git revert` do commit que traz esta entrada.
+
 ## [0.4.0] - 2026-09-29 - entra no marketplace
 
 **Motivação:** a família de auditoria de skills vira o plugin `skill-quality-audit` do

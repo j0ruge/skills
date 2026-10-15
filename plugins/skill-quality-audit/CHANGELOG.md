@@ -1,5 +1,14 @@
 # Changelog — skill-quality-audit
 
+## [0.7.0] — 2026-10-15
+
+### `skill-claim-check` 0.5.0: sensor para a versão de skill sem CLI
+
+O D1 lista `metadata.version` como candidato a claim, e uma skill sem CLI não tem `--version` para
+consultar. A tabela de cheiros ganhou a linha: comparar o `metadata.version` com o cabeçalho mais
+recente do `CHANGELOG.md` da própria skill; a versão do plugin pai é independente (`plugin.json` e
+CHANGELOG do plugin). Descrição inalterada.
+
 ## [0.6.0] — 2026-10-05
 
 ### `skill-refactoring` 0.6.0: prova antes de remover, caracteres e leitura fria
