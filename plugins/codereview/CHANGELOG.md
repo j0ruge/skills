@@ -2,6 +2,49 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.15.3] — 2026-10-15
+
+### O `Completed` do Codex vale só com o sha do head; a pausa do CodeRabbit é lacuna de cobertura
+
+Lições de um `/codereview:coderabbit-pr` no PR #246 do `sdd_agents` e do laço de revisão do PR #252
+do mesmo repo, no mesmo dia (`coderabbit-pr` 4.4.3).
+
+- **`references/reviewer-registry.md`, Codex:** o laço de espera aceitava qualquer `Completed`. O
+  resumo do Codex é uma linha só, reescrita a cada review, e depois de um push continua dizendo
+  `Completed` para o head anterior. Medido no #252 pelo `userContentEdits` do comentário:
+  `Completed` no `09681f3` das 19:45 às 23:28 UTC, atravessando o push do `796aa93`. Onde o Codex só
+  roda com `@codex review`, o `Completed` velho fica lá até alguém pedir. O comando agora exige o sha
+  curto do head na mesma linha e responde `not on <sha> yet` quando ele não está lá (testado em zsh e
+  bash: `Completed` no head, `not on 09681f3 yet` no sha anterior). O comando antigo saiu por fusão:
+  ele é a primeira metade do novo.
+- **`references/reviewer-registry.md`, *Coverage Per Commit*:** o CodeRabbit com
+  `reviews.auto_review.auto_pause_after_reviewed_commits` edita o walkthrough para `## Reviews
+  paused` e não revisa mais nenhum commit até um `@coderabbitai resume`. A Fase 1.3 descartava o
+  aviso como metadado, com razão, e nada o levava para a Fase 2. Medido no #246: a pausa entrou às
+  23:53:46Z de 10-11, junto com a review do `0a1f313`, e os três commits da branch e o merge
+  seguintes ficaram sem revisor. O grep de cobertura ganhou `Reviews paused`, e a linha de metadados
+  aponta para a seção.
+- **`references/checklist-template.md` e o registry, severidade:** a tabela punha `🟡` em MEDIUM e
+  `Minor` em LOW, e o CodeRabbit escreve sempre o par (`_🟡 Minor_`, `**🟡 Minor**`), então o mesmo
+  marcador tinha duas respostas. `Minor` foi para a linha do `🟡`. Medido no sdd_agents (161
+  comentários inline do CodeRabbit desde 2026-09-01): 115 com severidade, todos `🟠 Major` (30) ou
+  `🟡 Minor` (85), nenhum `🔴` ou `🔵`. As linhas `🔴`, `🔵`, `Low` e `Medium` ficaram: não há prova de
+  que estejam obsoletas.
+- **`references/pr-branch.md`, seção nova "A PR that does not merge":** o #246 estava `CONFLICTING`
+  com todos os achados já corrigidos. Resolver as threads de um PR que não mergeia entrega pela
+  metade, porque o merge da base vira um commit que nenhum revisor viu. A Fase 1.1 lê o `mergeable`;
+  com conflito, `git merge-tree --write-tree --name-only --no-messages` lista os arquivos sem tocar
+  em árvore nenhuma (reproduzido: `ee33e18` × `f0b46fa` → `TODO.md` e `tests/health-baseline.txt`,
+  os dois que o merge `383358e` resolveu), e a lista vai ao usuário junto com a autorização de commit
+  da 5.0.
+- **`SKILL.md`:** só a versão e a linha que roteia o `pr-branch.md` (agora nomeia `conflicts`), de
+  19 994 para 19 993 chars.
+- **Fora de propósito:** a regra "número de documento que sai de uma receita é afirmação sobre a
+  receita" pede o passo 1.5 do `SKILL.md`, que não tem folga. Fica como sugestão: liberar espaço com
+  a `skill-refactoring` numa tarefa própria.
+- **Dívida pré-existente, não tocada:** os três avisos C2 e o F4 (sem evals) do `codereview`, e o
+  `coderabbit-pr/SKILL.md` colado no teto de chars.
+
 ## [2.15.2] — 2026-10-14
 
 ### Sonda de "apaga no fim" afirma antes o estado gravado

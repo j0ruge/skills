@@ -43,9 +43,9 @@ gh api "repos/$REPO/issues/$PR/comments" --paginate \
   --jq '.[] | select(.user.login == "coderabbitai[bot]") | .body' | grep -c 'on the Free plan'
 ```
 
-**Severity markers**: `🔴` Critical, `🟠` Major/HIGH, `🟡` Medium, `🔵` Minor/LOW, `Refactor suggestion` = MEDIUM
+**Severity markers**: `🔴` Critical = CRITICAL, `🟠` Major = HIGH, `🟡` Minor or Medium = MEDIUM, `🔵` Low = LOW, `Refactor suggestion` = MEDIUM — emoji and word come as a pair (`**🟡 Minor**`); mapping in `checklist-template.md`
 
-**Metadata to discard**: walkthrough summaries, "Actionable comments posted" headers, paused review notices, `<!-- fingerprinting:... -->` blocks
+**Metadata to discard**: walkthrough summaries, "Actionable comments posted" headers, paused review notices (not a finding, but a coverage fact: *Coverage Per Commit*), `<!-- fingerprinting:... -->` blocks
 
 ### GitHub Copilot (`copilot-pull-request-reviewer[bot]` / `Copilot`)
 
@@ -85,12 +85,21 @@ Posts in **three places** (measured on a `@codex review` request, 2026-10-01):
 
 **While the summary says `Running`, Codex is pending — case (b), not a pass.** At that moment
 `/pulls/{PR}/comments` holds zero Codex findings, and a wait loop that accepts *any* comment from
-the bot exits on the summary itself. Wait for `Completed` before extracting:
+the bot exits on the summary itself.
+
+**A `Completed` counts only with the head's sha in the same row.** The summary is one row,
+overwritten by each review: after a push it keeps saying `Completed` for the previous head until
+the next review starts, and where Codex runs only on `@codex review`, until someone asks. Measured
+2026-10-14 (sdd_agents PR #252, the comment's `userContentEdits`): `Completed` on `09681f3` from
+19:45 to 23:28 UTC, across the push of `796aa93`; a loop on the bare word would have exited at once.
+Wait for `Completed` on the head before extracting:
 
 ```bash
+H=$(gh pr view "$PR" --json headRefOid -q '.headRefOid[0:7]')
 gh api "repos/$REPO/issues/$PR/comments" --paginate \
   --jq '.[] | select(.body | contains("codex-pull-request-review-summary")) | .body' \
-  | grep -oE 'Running|Completed' | tail -1
+  | grep -F '**Code Review**' | tail -1 | grep -F "\`$H" | grep -oE 'Running|Completed' \
+  || echo "not on $H yet"
 ```
 
 ## Detection Strategy
@@ -137,12 +146,20 @@ found nothing and posted no review object, of its issue comment *"Didn't find an
 **CodeRabbit skips an incremental review in silence.** At the rate limit it posts no new review:
 it **edits** its walkthrough issue comment (`updated_at` moves, `created_at` does not) to
 `## Review limit reached`, and the skipped range is the *"… between <old sha> and <new sha>"* line.
-On PR #219 that edit was the only trace that `d8da110` went unreviewed by it. Confirm:
+On PR #219 that edit was the only trace that `d8da110` went unreviewed by it.
+
+**It also pauses itself after N reviewed commits.** With
+`reviews.auto_review.auto_pause_after_reviewed_commits` set, it edits the same comment to
+`## Reviews paused` and reviews no later commit until someone comments `@coderabbitai resume`.
+Phase 1.3 discards that notice as a finding; here it is the reason every commit after the last
+review is case (b). Measured 2026-10-14 (sdd_agents PR #246): the pause edit landed on 2026-10-11
+at 23:53:46Z, with the review of `0a1f313` (23:53:49Z), and the three branch commits and the merge
+after it were reviewed by no bot. Confirm both:
 
 ```bash
 gh api "repos/$REPO/issues/$PR/comments" --paginate \
   --jq '.[] | select(.user.login == "coderabbitai[bot]") | .body' \
-  | grep -E 'Review limit reached|and between [0-9a-f]{40} and'
+  | grep -E 'Review limit reached|Reviews paused|and between [0-9a-f]{40} and'
 ```
 
 ## Extensibility

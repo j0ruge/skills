@@ -1,8 +1,9 @@
 # PR Branch — Phase 1.1 in full
 
 Read this at Phase 1.1, before touching any file: whether this run is the installed copy, where
-the fixes are made, whether another writer is still active in the tree, and the sweep of leftover
-checklists. SKILL.md keeps the decision; this file carries the commands and the why.
+the fixes are made, whether another writer is still active in the tree, whether the PR merges at
+all, and the sweep of leftover checklists. SKILL.md keeps the decision; this file carries the
+commands and the why.
 
 ## Is this run the installed copy?
 
@@ -94,6 +95,36 @@ pipeline's PR-phase session and the mutation-catalogue run it had launched were 
 Under the "work here" rule a fix to `bin/` would have changed the content the stamp was measuring,
 and an untracked `coderabbit-review.md` in the root would have been charged by the runner's hat guard
 to the running session — stopping the pipeline for a file it never wrote.
+
+## A PR that does not merge
+
+Resolving every thread of a PR that cannot merge delivers half the job: the base gets merged into
+it afterwards, and that resolution is a commit no reviewer saw and no test run of this skill
+covered. Read the mergeability at 1.1:
+
+```bash
+gh pr view "$PR" --json mergeable,mergeStateStatus -q '"\(.mergeable) \(.mergeStateStatus)"'
+```
+
+- **`MERGEABLE`** → nothing to do here.
+- **`CONFLICTING`** → list the conflicting files without touching any tree (git 2.38+; rc 1 means
+  conflicts, and the first output line is a tree id):
+
+  ```bash
+  BASE=$(gh pr view "$PR" --json baseRefName -q .baseRefName)
+  git fetch origin "$BASE"
+  git merge-tree --write-tree --name-only --no-messages HEAD "origin/$BASE" | tail -n +2
+  ```
+
+  Bring the list to the user together with the commit authorization of 5.0: merging the base is a
+  commit on their branch, theirs to decide. When they say yes, merge in the same run, before
+  Phase 4, so the tests compare the merged tree.
+- **`UNKNOWN`** → GitHub is still computing, the normal answer right after a push. Ask again after
+  a few seconds; never read it as clean.
+
+Measured 2026-10-14 (sdd_agents PR #246): `CONFLICTING` with every finding already fixed;
+`merge-tree` on the pre-merge head `ee33e18` against `main` `f0b46fa` listed `TODO.md` and
+`tests/health-baseline.txt`, the two files the merge commit `383358e` then resolved by hand.
 
 ## Sweep leftover checklists
 

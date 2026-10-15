@@ -136,11 +136,16 @@ Within the same severity, group by file path.
 |--------|----------|
 | `🔴` or `Critical` | CRITICAL |
 | `🟠` or `Major` | HIGH |
-| `🟡` or `Medium` | MEDIUM |
-| `🔵` or `Minor` / `Low` | LOW |
+| `🟡` or `Minor` / `Medium` | MEDIUM |
+| `🔵` or `Low` | LOW |
 | `Refactor suggestion` | MEDIUM |
 | `Potential issue` | Depends on paired severity emoji |
 | No marker | MEDIUM (default) |
+
+CodeRabbit writes the emoji and the word as a pair (`_🟡 Minor_`, later `**🟡 Minor**`), and both
+point to the same row. Until 4.4.2 `🟡` sat on MEDIUM and `Minor` on LOW, so one marker had two
+answers. Measured 2026-10-14 on sdd_agents (161 CodeRabbit inline comments since 2026-09-01): 115
+carried a severity, all `🟠 Major` (30) or `🟡 Minor` (85), none `🔴` or `🔵`.
 
 ### Copilot / Codex / Unknown
 
