@@ -6,6 +6,7 @@ kit on this machine; nothing here touches the network.
 """
 import copy
 import os
+import re
 import sys
 import tempfile
 
@@ -167,6 +168,26 @@ check("an old issue without todo-src still reads as (anchor)",
 retitled = copy.deepcopy(issues)
 retitled[ia_n - 100]["title"] += " x"
 check("a live title that differs -> UPDATE (text)", kind_after(shifted, retitled) == "text")
+
+# The designated symbol (`path:N` (`symbol`), ADR 0015 §2 of the kit) sits on the Âncora line. Up to
+# 2.5.0 it opened the next paragraph, `(`preflight-test`) — a forma…` (kit #255 and #249, 2026-10-15).
+ia_body = t.render_body(ia, ctx)
+ia_paras = ia_body.split("\n\n")
+ia_slot = t.SLOT_RE.match(ia.rest[len(ia_tok) + 1:].lstrip())
+check("the anchored item carries a designated symbol (needed by the cases below)", bool(ia_slot))
+check("the designated symbol stays on the Âncora line, and the text starts the next paragraph",
+      bool(ia_slot) and ia_paras[0].endswith(" " + ia_slot.group(0)) and not ia_paras[1].startswith(("(`", "—")))
+one = parsed(SKEL.replace(ITEM.format("um"), "- [ ] **um** — `f:1` (`sym` e mais) — w. — por `x` (2026-09-24)\n")
+             .format(open="Open", dec="Decided"))
+un = next(i for i in one if i.title == "um")
+check("a slot that never closes is no slot: it stays in the text, as the kit reads it",
+      t.render_body(un, ctx).split("\n\n")[:2] == ["**Âncora:** `f:1`", "(`sym` e mais) — w."])
+legacy = copy.deepcopy(issues)
+lb = legacy[ia_n - 100]["body"]
+legacy[ia_n - 100]["body"] = re.sub(r"\A(\*\*Âncora:\*\* [^\n]*?) (\(`[^`]+`\))\n\n", r"\1\n\n\2 — ", lb, count=1)
+check("an issue rendered in the 2.5.0 layout + line shift -> UPDATE (anchor)",
+      legacy[ia_n - 100]["body"] != lb and kind_after(shifted, legacy) == "anchor")
+check("the 2.5.0 layout + a word changed -> UPDATE (text)", kind_after(shifted + " palavra", legacy) == "text")
 
 sec = next(i for i in items if i.section and i.section != items[0].section)
 p = t.build_plan(reparsed(f"# {sec.section}\n", f"# {sec.section} renomeada\n"), issues)

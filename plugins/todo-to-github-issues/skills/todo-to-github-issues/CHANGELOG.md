@@ -3,6 +3,20 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-15 — o símbolo longe da âncora
+
+Publicado como **v2.5.1**.
+
+- Na sincronização do kit sdd depois dos merges dos PRs #252 e #246, o canário (#255) saiu com a
+  âncora num parágrafo e `(`preflight-test`) — …` abrindo o seguinte; a #249 já saía igual. O
+  espelho continuava fiel ao `TODO.md`, mas o leitor via um parêntese solto longe do arquivo que ele
+  designa.
+- O conserto mudava o corpo, e o corpo é o que o `update_kind` compara: a issue antiga leria
+  `UPDATE (text)` no próximo deslocamento de linha. Por isso ele aprendeu o layout antigo junto.
+- Lição de método: mudar o renderizador de um espelho é mudar o lado vivo de uma comparação. Antes de
+  mexer no formato, meça o que o comparador diz sobre os corpos já publicados. O hash não precisou,
+  porque nunca leu o corpo.
+
 ## 2026-10-13 — a órfã que ainda vive num PR
 
 Publicado como **v2.5.0**.

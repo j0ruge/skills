@@ -44,6 +44,9 @@ DATE_TAIL_RE = re.compile(r"\(\d{4}-\d{2}-\d{2}\)\s*$")
 # ABOUT the convention) must not. The token is the kit's, English in every OUTPUT_LANG.
 RESOLVED_RE = re.compile(r"RESOLVED by\**\s+`?([0-9a-f]{7,40})\b")
 ANCHOR_RE = re.compile(r"`([A-Za-z0-9_./-]+):(\d+)(?:-(\d+))?`")
+# The symbol the anchor designates (`path:N` (`symbol`), ADR 0015 §2 of the sdd kit): `(`, one span,
+# `)` at once — the slot check-todo.sh reads. It belongs on the Âncora line, beside the file it names.
+SLOT_RE = re.compile(r"\(`[^`]+`\)")
 KEY_RE = re.compile(r"<!-- todo-key: ([0-9a-f]+) -->")
 HASH_RE = re.compile(r"<!-- todo-hash: ([0-9a-f]+) -->")
 SRC_RE = re.compile(r"<!-- todo-src: (.+?) -->")
@@ -325,6 +328,10 @@ def render_body(it: Item, ctx: Ctx) -> str:
         parts.append(f"**Âncora:** [{token}]({blob(ctx, path, (a, b))})" if exists else f"**Âncora:** {token}")
         if rest.startswith(token):
             rest = rest[len(token):].lstrip()
+            slot = SLOT_RE.match(rest)
+            if slot:
+                parts[-1] += f" {slot.group(0)}"
+                rest = rest[slot.end():].lstrip()
             if rest.startswith("—"):
                 rest = rest[1:].lstrip()
     cut = outside_code_rfind(rest, " — ")
@@ -541,6 +548,8 @@ def prose(body: str) -> str:
 
 
 LINE_REF_RE = re.compile(r"(`[^`\s:]*):\d+(?:-\d+)?`")
+# Up to 2.5.0 the designated symbol opened the paragraph after the Âncora, with the dash after it.
+LEGACY_SLOT_RE = re.compile(r"\A(\*\*Âncora:\*\* [^\n]*)\n\n(\(`[^`]+`\)) *(?:— *)?")
 
 
 def update_kind(it: Item, iss: dict, ctx: Ctx) -> str:
@@ -549,8 +558,11 @@ def update_kind(it: Item, iss: dict, ctx: Ctx) -> str:
     dropping every link target (permalink sha, footer link) and the hidden markers (old issues have no
     `todo-src`): each of those made a synced mirror read as changed, measured 86, 59 and 16 false
     positives of 86. Only a number after `:` inside backticks is normalized — a bare digit is content
-    (`90 → 85`), and title and section (footer) changes stay `text`."""
+    (`90 → 85`), and title and section (footer) changes stay `text`. A body rendered before the
+    symbol moved to the Âncora line is read in today's layout: without that, every such issue came
+    back `text` on its next line shift (125 of 186 items of the sales_quote carry the symbol)."""
     def norm(b: str) -> str:
+        b = LEGACY_SLOT_RE.sub(r"\1 \2\n\n", b.lstrip(), count=1)
         b = re.sub(r"<!--.*?-->", "", b, flags=re.S)
         b = re.sub(r"\]\([^)]*\)", "]", b)
         return LINE_REF_RE.sub(r"\1:N`", b).strip()

@@ -3,6 +3,34 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.5.1] — 2026-10-15
+
+Patch: o símbolo designado da âncora volta para a linha **Âncora:** do corpo da issue.
+
+### Fixed
+
+- **O símbolo que a âncora designa abria o parágrafo seguinte, solto.** Desde a ADR 0015 §2 do kit
+  sdd, todo item ancorado escreve `` `arq:N` (`símbolo`) ``. O `render_body` tirava do texto só o
+  token `` `arq:N` ``, então a issue lia `**Âncora:** [`bin/sdd:6340`](…)`, uma linha em branco e
+  `(`preflight-test`) — a forma só é medida…` (kit #255 e #249, vistas em 2026-10-15). Medido em
+  2026-10-15: 6 de 6 itens do `TODO.md` do kit e 125 de 186 do sales_quote carregam o símbolo.
+- **`SLOT_RE`**: lê o slot pela regra do `check-todo.sh` do kit (`(`, um trecho entre crases, `)`
+  logo depois). O slot vai para a linha da âncora, e o `—` depois dele sai, como já saía depois do
+  token. Um slot que não fecha continua no texto, porque o kit também não o lê como slot.
+- **`update_kind` lê o corpo antigo como o de hoje** (`LEGACY_SLOT_RE`). Sem isso, medido no
+  protótipo, a issue publicada pela 2.5.0 cujo item só deslocou a linha da âncora voltava
+  `UPDATE (text)` em vez de `UPDATE (anchor)`: no sales_quote, onde um PR desloca dezenas de
+  âncoras, cada uma viraria um falso positivo para conferir à mão.
+- Testes sem rede: 5 casos novos (o símbolo na linha da âncora, o slot que não fecha, o corpo da
+  2.5.0 com a linha deslocada e com uma palavra trocada, e o item ancorado com símbolo de que os
+  outros dependem). Cada regra nova foi sabotada uma a uma (5 casos), e todas reprovaram algum teste.
+
+### Mantido
+
+- O `todo-hash` sai do título, da seção e do texto, nunca do corpo renderizado: o conserto não
+  marca nenhuma issue como `UPDATE`. As issues já publicadas ganham o layout novo no próximo
+  `UPDATE` do item delas; nada é reescrito em massa.
+
 ## [2.5.0] — 2026-10-13
 
 Minor: uma linha nova no plano, `PENDING`, e o `--close-orphans` passa a decidir só pelo veredito.

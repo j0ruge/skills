@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.5.0
+  version: 2.5.1
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -178,7 +178,9 @@ python3 $S --file ACHADOS-x.md --apply --link 6=153 --link "Uma obs=155"
   todo `@nome` fora de bloco de código ganha um espaço de largura zero depois da arroba: sem isso,
   `` `@codex review` `` citado num achado fez o conector do Codex responder na issue (crase não
   protege: bot lê o texto cru). Com o arquivo sujo ou com `HEAD` fora do remoto, o script avisa e gera
-  links sem número de linha.
+  links sem número de linha. O símbolo que a âncora designa (`` `arq:N` (`símbolo`) ``) fica na linha
+  **Âncora:**; até a 2.5.0 ele abria o parágrafo seguinte (kit sdd #255, 2026-10-15), e o
+  `update_kind` lê esse corpo antigo como o de hoje, ou cada issue dele voltaria `UPDATE (text)`.
 
 ## Erros comuns
 
