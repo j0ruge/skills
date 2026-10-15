@@ -158,7 +158,7 @@ Other useful claims:
 |-------|---------|
 | `sub` | Stable Zitadel user ID. Use this as your operator's external reference. |
 | `name` | Display name (when scope `profile` is granted). |
-| `email` | Email address (when scope `email` is granted). |
+| `email` | Email address (when scope `email` is granted). Not unique across users — never key authorization on it alone (Quirk 54). |
 | `preferred_username` | Username (often the email). |
 | `urn:zitadel:iam:org:id` | Zitadel **orgId** (numeric). Use to scope queries in your domain. |
 | `urn:zitadel:iam:org:domain:primary` | Org's primary domain (e.g., `jrcbrasil.com`). |

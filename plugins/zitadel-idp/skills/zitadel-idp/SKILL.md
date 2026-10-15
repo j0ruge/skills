@@ -1,7 +1,7 @@
 ---
 name: zitadel-idp
 metadata:
-  version: 0.18.1
+  version: 0.19.0
 description: "Self-hosted Zitadel v4 OIDC field guide — a numbered quirk catalogue, working docker-compose and an idempotent TypeScript bootstrap. High-friction traps: FirstInstance env placement, JWT/JWKS over self-signed HTTPS, `--tlsMode external` and the console's mixed-content `Failed to fetch`, v2.66→v4, API v1→v2, silent-renew, 401 storms, UI language from the `locale` claim. Triggers — zitadel, oidc self-hosted, JWKS, masterkey, v2.66→v4, tlsMode external, pre-cutover check, locale claim."
 ---
 
@@ -110,6 +110,7 @@ These bite first-time Zitadel integrators consistently. One line per quirk; the 
 51. `reuse` for every resource can mean a stale input; prove it with the `creation_date` in `projections.project_roles4`.
 52. Every role quirk ends in the same login loop; prove the running process has the code you are reading, and `403` is the honest status.
 53. The user's language arrives as the `locale` claim (id_token only with `idTokenUserinfoAssertion: true`, `null` when unset).
+54. Email is an attribute, not an identity: two accounts may share one, verified or not; key authorization on `sub`, or require `email_verified`.
 
 ## Migration v2.66 → v4 + API v2
 

@@ -1,5 +1,27 @@
 # Changelog — zitadel-idp
 
+## [0.19.0] - 2026-10-14
+
+### Added
+
+- **Quirk 54: o e-mail é atributo, não identidade** (`references/quirks.md`, uma linha no índice do
+  `SKILL.md` e um aviso na linha `email` da tabela de claims de `references/token-validation.md`). No
+  v4.15.0, duas contas podem ter o mesmo e-mail na instância e na mesma organização, verificado ou não:
+  a única restrição de unicidade de usuário é a do username, e os eventos de troca e de verificação de
+  e-mail não registram nenhuma. A verificação muda o login, não a unicidade (dois e-mails verificados
+  iguais derrubam o login por e-mail das duas contas). O uso defensável do claim é exigir
+  `email_verified`, que volta a `false` quando a própria pessoa troca o e-mail, e preferir `sub`.
+- **Por quê:** no grill da 0.4.0 do `lighthouse_project`, em 14/10/2026, a atribuição área → gerente
+  foi decidida pelo e-mail que o `userinfo` devolve, e a skill não dizia se o Zitadel garante e-mail
+  único. Um consumidor que autoriza pelo claim `email` como se ele fosse identidade dá a permissão a
+  quem conseguir uma conta com aquele endereço.
+- **Evidência:** leitura do código na tag `v4.15.0` (commit `a56d4bf`), com os caminhos conferidos por
+  `gh api repos/zitadel/zitadel/contents/<path>?ref=v4.15.0` e as linhas centrais relidas pelo raw do
+  GitHub, mais a documentação oficial. Nada rodou contra servidor. O quirk lista o que não foi
+  confirmado: a Login v2, o campo de self-service na Console, as configurações de cada instância, e a
+  regra "login por e-mail só entre verificados", que vem do código e não da documentação.
+- **Como reverter:** `git revert` do commit que traz esta entrada.
+
 ## [0.18.1] - 2026-10-05
 
 ### Added
