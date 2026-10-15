@@ -1,6 +1,6 @@
 # Promotion sensors: what moves, and does it move the pipeline? (Step 4 in full)
 
-Read this when any Step 4 sensor is non-empty, when the promotion PR conflicts with nothing to reconcile, when the backlog is long, or before pushing a promotion whose pipeline only publishes a mobile image tag.
+Read this when any Step 4 sensor is non-empty, when the promotion PR conflicts with nothing to reconcile, when the backlog is long, before pushing a promotion whose pipeline only publishes a mobile image tag, or when the promotion carries a migration that adds a constraint.
 
 ### Step 4 — Sensors: what moves, and does it move the pipeline itself?
 
@@ -95,3 +95,46 @@ GitHub uses the workflow file **from the pushed commit**, so a change to the
 staging workflow takes effect in this very run, while a change to the production
 workflow only lands as a file and takes effect on the next promotion to
 production. Say which case you are in, so nobody is surprised either way.
+
+### A migration that adds a constraint: probe the target's rows with the constraint's own expression
+
+`migrate deploy` (or the ORM's equivalent) runs **before** the new app comes up, against the data
+already in the environment — rows that no test suite ever saw. A new `CHECK`, `NOT NULL`, `UNIQUE`
+or foreign key that one existing row violates aborts the migration, and the whole deploy stops
+with it. Probe the environment's database **before** merging the promotion, read-only:
+
+```sql
+BEGIN READ ONLY;
+-- one count per new constraint, the expression copied verbatim from the migration
+SELECT '<table>_<name>_check', count(*) FROM <table> WHERE NOT (<the new CHECK expression>);
+-- context: the distribution of the columns the constraints read
+SELECT <col_a>, (<col_b> IS NULL) AS b_is_null, count(*) FROM <table> GROUP BY 1, 2 ORDER BY 1, 2;
+ROLLBACK;
+```
+
+Every count must be 0. Copy the expression; do not paraphrase it into hand-written queries. A
+query written by hand encodes what you remember about the data; the expression is exactly what the
+database will enforce. Measured: a migration replaced a `CHECK` that was **fail-open** —
+`status <> 'DRAFT' AND code ~ '…'` evaluates to NULL when `code` is NULL, and a `CHECK` that
+evaluates to NULL passes, so a `PLANNED` row without a code could exist — with one that refuses it.
+The two probes written for that promotion (rows outside `DRAFT`/`PLANNED`; `DRAFT` with a code)
+could not see that row. The expression probe does.
+
+`WHERE NOT (<expr>)` also gets NULL right: it skips the rows where the expression is NULL, exactly
+as the `CHECK` lets them through, so the count is the set of rows the database would refuse. The
+same idea for the other kinds:
+
+- `NOT NULL`: `count(*) WHERE <col> IS NULL`.
+- `UNIQUE`: `SELECT <cols>, count(*) … GROUP BY <cols> HAVING count(*) > 1` (NULLs never collide).
+- foreign key: an anti-join, `LEFT JOIN <parent> p ON … WHERE p.<key> IS NULL AND c.<fk> IS NOT NULL`.
+
+**Send the SQL through a script, never as an inline argument.** Read the user and the database from
+the container's own environment (`docker exec <db-container> printenv POSTGRES_USER`, same for
+`POSTGRES_DB`) and feed `psql` a heredoc with a **quoted** delimiter (`<<'SQL'`), inside a script you
+copy to the host (`ansible <host> -m script probe.sh`). Every shell layer between you and `psql`
+expands `$`: in an earlier session of the promotion below, a `$$` in SQL passed through
+`ansible -m shell -a '…'` became the shell's PID.
+
+Measured on 2026-10-15, promoting a release whose migration replaced two `CHECK`s and the audit
+action `CHECK` (PR #31 of the `lighthouse_project`): 0 rows violated each of the three new
+constraints (5 `DRAFT` without a code, 22 `PLANNED` with one), probed before the merge.

@@ -2,6 +2,35 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-10-15 — Migration com constraint nova: sondar a base do ambiente com a expressão do próprio constraint — bump 3.2.0 → [3.3.0]
+
+**Por quê:** a promoção da 0.4.0 do `lighthouse_project` (PR #31, `develop → staging`) carregava uma
+migration que troca dois `CHECK`s de `expenditure_requests` e o `CHECK` de ação da auditoria. Uma
+linha da base de staging que violasse um deles abortaria o `migrate deploy`, que roda antes da
+aplicação, e pararia o deploy inteiro. A skill não pedia sonda nenhuma: o Step 4 diffava os workflows
+e a pasta do agente, não as migrations, e só tratava migration depois do merge (`prisma migrate
+status`, Step 7) ou no dump antes de produção. O repo pedia a sonda, e o handoff a escreveu como duas
+consultas à mão (estado fora de `DRAFT`/`PLANNED`; `DRAFT` com código), que **não** pegariam um
+`PLANNED` sem código: o `CHECK` antigo era fail-open (dá NULL com código NULL, e `CHECK` que dá NULL
+passa), e o novo o recusa. A sonda que valeu avaliou a expressão de cada `CHECK` novo, `count(*)
+WHERE NOT (<expr>)`, em transação `READ ONLY`: 0 violações nos três (5 `DRAFT` sem código, 22
+`PLANNED` com código), medido em 2026-10-15, antes do merge.
+
+**O quê:**
+
+- `SKILL.md` Step 4: um comando a mais no bloco de sensores (`git diff … -- <migrations-dir>/`) e uma
+  linha na tabela de leitura: migration que acrescenta `CHECK`, `NOT NULL`, `UNIQUE` ou FK pede, antes
+  do merge, a sonda da base do ambiente com a expressão do próprio constraint, toda contagem em 0.
+- `references/promotion-sensors.md`: o "Read this when" ganha a migration com constraint, e uma seção
+  nova traz o padrão SQL (`BEGIN READ ONLY … ROLLBACK`), por que copiar a expressão em vez de
+  parafrasear, a semântica do NULL no `WHERE NOT (…)`, o equivalente para `NOT NULL`, `UNIQUE` e FK, e
+  como mandar o SQL por script com heredoc de delimitador entre aspas (o `$$` de um SQL virou PID num
+  `ansible -m shell` na sessão anterior desta promoção).
+
+Dívida pré-existente que a auditoria aponta e este retrofit não toca: INFO F1 (`no-actions-agent.md`
+citado sem dizer quando ler), INFO F4 (sem evals de gatilho) e INFO D1 (afirmações factuais sem
+sensor/data).
+
 ## 2026-10-14 — O agente no host não muda com o merge, e o bump que já veio — bump 3.1.0 → [3.2.0]
 
 **Por quê:** na promoção da 0.3.0 do `lighthouse_project` (PR #23, `develop → staging`), o diff do

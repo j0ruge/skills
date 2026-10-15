@@ -2,7 +2,7 @@
 name: staging
 description: "Promote code to staging (and on to production) through the repo's real CD pipeline. Reads each workflow's `on.push.branches` and `runs-on` instead of assuming — the wrong branch can deploy production, and a hosted job under a billing block never starts. Waits for CI green on the exact commit, promotes by PR merge commit, watches the run, then proves the deploy by the data. Triggers — deploy staging, promote to staging, subir para staging, CD pipeline, cd-staging, promover para produção."
 metadata:
-  version: 3.2.0
+  version: 3.3.0
 ---
 
 ## Deploy to Staging
@@ -158,6 +158,7 @@ git log --no-merges origin/$SOURCE..origin/$TARGET --oneline             # conte
 git merge-base --all origin/$TARGET origin/$SOURCE | wc -l               # merge bases (want 1)
 git diff origin/$TARGET origin/$SOURCE --name-only -- .github/workflows/ # does it move the pipeline?
 git diff origin/$TARGET origin/$SOURCE --name-only -- <agent-dir>/       # host agent: does it touch the executor?
+git diff origin/$TARGET origin/$SOURCE --name-only -- <migrations-dir>/  # does it add a constraint the data may refuse?
 ```
 
 | Reading | What it means | Do |
@@ -168,6 +169,7 @@ git diff origin/$TARGET origin/$SOURCE --name-only -- <agent-dir>/       # host 
 | a long backlog | the next deploy is not incremental | say the number; have the rollback target ready **before** pushing (tag the serving image `pre-<version>` when the pipeline only publishes a mobile tag) |
 | workflow files change | a staging change runs in this very push; a production change waits for the next production promotion | say which case you are in |
 | the host agent's files change | the agent's image and scripts on the host do not change with the merge, unlike the gate and deploy scripts it reads from the sha | before merging, prove the host already runs that version; if not, rebuild the agent first. Read `references/no-actions-agent.md` |
+| a migration adds a CHECK, NOT NULL, UNIQUE or FK | `migrate deploy` runs before the app, on rows no test ever saw; one violating row aborts it and stops the whole deploy | before merging, probe the environment's DB with **the new constraint's own expression** (`count(*) WHERE NOT (<expr>)`) in a `READ ONLY` transaction; every count must be 0. Read `references/promotion-sensors.md` |
 
 Reconciliation also makes **the target's debt your gate**, and a PR fully matched by `paths-ignore`
 merged with no run at all: run the repo-wide lint on `SOURCE` before promoting. When any row above
