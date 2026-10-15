@@ -1,5 +1,16 @@
 # Changelog — skill-quality-audit
 
+## [0.7.1] — 2026-10-15
+
+### `skill-claim-check` 0.5.1: precedência do CHANGELOG da skill
+
+A regra da 0.5.0 não dizia o que fazer quando a skill não tem CHANGELOG próprio (embora o B5 aceite
+o do plugin), nem como tratar divergência entre os dois. Agora define o primeiro cabeçalho do
+CHANGELOG próprio como fonte canônica de `metadata.version`, a subseção nomeada no CHANGELOG do
+plugin como fallback quando o arquivo próprio falta, e a divergência como achado. A versão do
+plugin continua independente. A dívida de changelog da `skill-quality-audit` irmã permanece fora
+deste retrofit.
+
 ## [0.7.0] — 2026-10-15
 
 ### `skill-claim-check` 0.5.0: sensor para a versão de skill sem CLI

@@ -3,7 +3,7 @@ name: skill-claim-check
 description: "Garante que o que uma skill afirma continue verdade. Número, limite, path, flag ou versão ganham sensor, derivação ou data; ausência na doc não prova; skill fora do git é trabalho perdido. Fase 2 da skill-quality-audit. Triggers — editar SKILL.md, escrever reference, documentar limite, skill desatualizada, fato que apodreceu, afirmação sem fonte."
 metadata:
   author: JorUge
-  version: "0.5.0"
+  version: "0.5.1"
   hermes:
     tags:
       - skills
@@ -146,7 +146,7 @@ Em wrappers híbridos, valide cada camada separadamente: `bash -n` só valida o 
 | *"sempre"* / *"nunca"* sobre sistema de terceiro | você não controla o outro lado | diga o que **foi observado**, quando, e como reconferir |
 | Passo a passo sem comando de verificação | quem segue não sabe se deu certo | acrescente o sensor do resultado esperado |
 | Lista fechada que o sistema gera (tabelas, campos) | nasce desatualizada | aponte o comando que lista, não a lista |
-| `metadata.version` de uma skill sem CLI (nada responde `--version`) | o número muda a cada retrofit e a linha do texto não | sensor: compare o `metadata.version` com o cabeçalho mais recente do `CHANGELOG.md` da própria skill. A versão do plugin pai é independente: confira em `plugin.json` e no CHANGELOG do plugin |
+| `metadata.version` de uma skill sem CLI (nada responde `--version`) | o número muda a cada retrofit e a linha do texto não | sensor: se houver `CHANGELOG.md` na skill, use o primeiro cabeçalho de versão (o do topo, não o maior semver); se não houver, use a seção do CHANGELOG do plugin que nomeia explicitamente a skill (fallback aceito pelo B5). Se ambos existirem e divergirem, registre a divergência: o CHANGELOG da skill é canônico para `metadata.version`. A versão do plugin é independente: confira `plugin.json` e o primeiro cabeçalho de versão do CHANGELOG do plugin |
 
 ## Ferramenta
 

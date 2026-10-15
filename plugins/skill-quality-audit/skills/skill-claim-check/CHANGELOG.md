@@ -1,5 +1,19 @@
 # Changelog: skill-claim-check
 
+## [0.5.1] - 2026-10-15 - precedência do sensor de versão
+
+**Motivação:** em plugins, o B5 permite usar o CHANGELOG do plugin quando a skill não tem um
+CHANGELOG próprio. A regra da 0.5.0 só citava o arquivo da skill e não definia o fallback nem o
+desempate quando os dois históricos divergem. Caso verificado: `skill-quality-audit` declara
+`metadata.version: 0.5.0`; seu CHANGELOG próprio começa em 0.4.0; o CHANGELOG do plugin traz uma
+seção `skill-quality-audit 0.5.0`.
+
+**O que foi feito:** o sensor agora usa o primeiro cabeçalho do CHANGELOG próprio; sem esse arquivo,
+usa apenas a seção do plugin que nomeia a skill. Se ambos existem e divergem, registra a divergência,
+sem inferir a versão da skill a partir da versão do plugin. A versão do plugin continua independente.
+
+**Como reverter:** `git revert` do commit que traz esta entrada.
+
 ## [0.5.0] - 2026-10-15 - sensor para a versão de skill sem CLI
 
 **Motivação:** o D1 acusa `metadata.version` como candidato a claim, e para uma skill sem CLI não
