@@ -42,6 +42,7 @@ See `tenant-org-mapping.md` for why this distinction matters.
   - [`mfaInitSkipLifetime: "0s"` — disable the MFA setup re-prompt](#mfainitskiplifetime-0s--disable-the-mfa-setup-re-prompt)
   - [`loginV2.required: false` — use the bundled Login UI v1](#loginv2required-false--use-the-bundled-login-ui-v1)
 - [User grants (assign / revoke project roles)](#user-grants-assign--revoke-project-roles)
+- [Change an existing user's language](#change-an-existing-users-language)
 - [Working bootstrap reference](#working-bootstrap-reference)
 - [Rate limiting and pagination](#rate-limiting-and-pagination)
 - [v3 → v4 breaking changes worth knowing](#v3--v4-breaking-changes-worth-knowing)
@@ -521,6 +522,8 @@ x-zitadel-orgid: ${orgId}
 
 Response: `{ "result": [{ "id": "grantId", "projectId": "...", "roleKeys": ["..."] }] }`.
 
+**Which org goes in `x-zitadel-orgid`: the org that owns the project, not the user's** (Quirk 55). With the user's own org (the `details.resourceOwner` of `POST /v2/users`) a grant on a project owned by another org does not come back, and the empty `result` reads as "no grant". Resolve the project's org first: `POST /admin/v1/orgs/_search`, then `POST /management/v1/projects/_search` with each org id in the header, then `POST /management/v1/projects/{projectId}/roles/_search` (Quirk 49) to recognise the project by one of its role keys. Use that org on the search and on the `PUT`/`POST` below. An empty search is not proof of absence until the header is the project's org.
+
 A user has at most one grant per project per org. Implement assign/revoke as **search-then-update**:
 
 1. Search for an existing grant on `(userId, projectId)`.
@@ -549,6 +552,38 @@ Body for update:
 ```
 
 Why this matters: a naive implementation that POSTs a new grant on every assign produces duplicate grants which Zitadel **rejects** (the second call returns `ALREADY_EXISTS`). Search-then-update is required for idempotency.
+
+---
+
+## Change an existing user's language
+
+The language is account data (Quirk 53): to show someone the other language, change their
+`preferredLanguage` in the IdP. There is no partial update of the profile in v1, so read the
+current profile first and send it back whole, changing only the language:
+
+```http
+# 1) read the profile (v2 search, or GET /v2/users/{userId})
+POST /v2/users
+{ "queries": [{ "emailQuery": { "emailAddress": "${email}", "method": "TEXT_QUERY_METHOD_EQUALS_IGNORE_CASE" } }] }
+# -> result[0].userId, result[0].details.resourceOwner (the user's org),
+#    result[0].human.profile.{givenName, familyName, nickName, displayName, preferredLanguage, gender}
+
+# 2) write it back with the new language
+PUT /management/v1/users/${userId}/profile
+x-zitadel-orgid: ${userOrgId}
+
+{ "firstName": "${givenName}", "lastName": "${familyName}", "nickName": "${nickName}",
+  "displayName": "${displayName}", "preferredLanguage": "pt", "gender": "${gender}" }
+```
+
+- **Short code** (`pt`, `en`), as everywhere else (Quirk 22).
+- Measured 2026-10-15 on a v4 instance: `200`, and the user's next login opened the app in the new
+  language (an e2e suite that clicks labels in that language passed with the account). The app sees it
+  **at the next login** (Quirk 53), not in the open session.
+- **The re-read can lag** (Quirk 56): a `POST /v2/users` right after the `PUT` still returned the old
+  language, and the new one about a minute later. Poll with a deadline before calling the write ignored.
+- When the admin PAT lives only on the IdP host, run the calls **on that host** (a script that reads the
+  token from the host's env file and never prints it), so the token never travels to the workstation.
 
 ---
 

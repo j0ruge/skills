@@ -1,5 +1,35 @@
 # Changelog — zitadel-idp
 
+## [0.20.0] - 2026-10-15
+
+### Added
+
+- **Quirk 55: a busca de grants do v1 responde pela org do header, e o grant de um usuário num projeto
+  mora na org dona do projeto** (`references/quirks.md`, uma linha no índice do `SKILL.md` e um parágrafo
+  em `references/api-cheatsheet.md` §User grants). Com a org do próprio usuário no `x-zitadel-orgid`, a
+  busca devolve `200` com `result` vazio, que se lê como "sem grant", e a união vira um POST de grant
+  novo em vez do PUT no que existe. O conserto é achar antes a org do projeto (orgs → projects → roles,
+  Quirk 49) e usá-la na busca e na escrita.
+- **Quirk 56 (aviso): logo depois de uma escrita, a busca de usuários do v2 pode devolver o valor de
+  antes.** Um `PUT …/profile` respondeu `200`, o `POST /v2/users` no mesmo script ainda leu o idioma
+  antigo e uma nova leitura, cerca de um minuto depois, leu o novo. Fica dito o que não foi medido: se o
+  `GET /v2/users/{id}` lê sem esse atraso.
+- **Receita "Change an existing user's language"** (`references/api-cheatsheet.md`, mais uma linha na
+  tabela de tarefas do `SKILL.md`): ler o perfil e gravá-lo inteiro com `PUT
+  /management/v1/users/{userId}/profile`, trocando só o `preferredLanguage` (código curto, Quirk 22). A
+  Quirk 53 dizia que dar outro idioma a alguém é mudança de dado no IdP, mas não dizia como fazer.
+- **Por quê:** na promoção da 0.4.0 do `lighthouse_project` a staging, em 15/10/2026, foi preciso
+  conceder um papel a duas contas e trocar o idioma de uma terceira pela API do IdP de staging. A
+  primeira sonda leu "nenhum grant" para uma conta que tinha oito papéis, porque o header levava a org
+  do usuário; e a releitura do idioma, logo depois do `200`, mostrou o valor antigo.
+- **Evidência:** chamadas reais contra o IdP de staging em 15/10/2026, com o PAT de IAM_OWNER usado
+  de dentro do host. Os dois grants (união com os papéis existentes) e a troca de idioma foram relidos;
+  o e2e seguinte, que clica rótulos no idioma novo, passou com a conta.
+- **Dívida pré-existente que a auditoria aponta e este retrofit não toca:** INFO F4 (sem evals de
+  gatilho) e INFO D1 (afirmações factuais sem sensor ou data). A linha de plataformas do `README.md`
+  ainda diz "50 gotchas".
+- **Como reverter:** `git revert` do commit que traz esta entrada.
+
 ## [0.19.0] - 2026-10-14
 
 ### Added

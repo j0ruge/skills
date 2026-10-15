@@ -1,7 +1,7 @@
 ---
 name: zitadel-idp
 metadata:
-  version: 0.19.0
+  version: 0.20.0
 description: "Self-hosted Zitadel v4 OIDC field guide — a numbered quirk catalogue, working docker-compose and an idempotent TypeScript bootstrap. High-friction traps: FirstInstance env placement, JWT/JWKS over self-signed HTTPS, `--tlsMode external` and the console's mixed-content `Failed to fetch`, v2.66→v4, API v1→v2, silent-renew, 401 storms, UI language from the `locale` claim. Triggers — zitadel, oidc self-hosted, JWKS, masterkey, v2.66→v4, tlsMode external, pre-cutover check, locale claim."
 ---
 
@@ -52,6 +52,7 @@ If you are merely calling a pre-existing Zitadel deployment from your code, you 
 | When one account loops back to the login screen while others log in fine | `references/troubleshooting.md` §"One account loops back…" |
 | When creating a test/seed user and proving its password works, with no browser | `references/api-cheatsheet.md` §"Seed an admin user" + §"Prove a user's password without a browser" |
 | When driving the SPA's UI language from the user's IdP language (`locale` claim) | `references/spa-recipes.md` §"Recipe — UI language from the IdP" |
+| When changing an existing user's language (`preferredLanguage`) | `references/api-cheatsheet.md` §"Change an existing user's language" |
 
 ## Gotchas — the quirk index
 
@@ -111,6 +112,8 @@ These bite first-time Zitadel integrators consistently. One line per quirk; the 
 52. Every role quirk ends in the same login loop; prove the running process has the code you are reading, and `403` is the honest status.
 53. The user's language arrives as the `locale` claim (id_token only with `idTokenUserinfoAssertion: true`, `null` when unset).
 54. Email is an attribute, not an identity: two accounts may share one, verified or not; key authorization on `sub`, or require `email_verified`.
+55. The v1 grants search obeys `x-zitadel-orgid`: with the user's org it finds nothing for a grant that lives in the org owning the project, and that empty result turns an update (PUT) into a duplicate create (POST).
+56. Right after a profile `PUT` answers `200`, `POST /v2/users` can still return the old value; poll before concluding the write was ignored, and do not repeat it.
 
 ## Migration v2.66 → v4 + API v2
 
