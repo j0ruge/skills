@@ -3,6 +3,21 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-16 — o canário não é uma issue só
+
+Publicado como **v2.6.1**.
+
+- Espelho do kit sdd depois do lote 9: o plano dava `create=5 update=1`, e o canário
+  `--apply --limit 1` respondeu `created …/277` **e** `updated #271`. O `--apply` faz
+  `todo = plan.create[: a.limit]` e logo depois percorre o `plan.update` inteiro, sem corte. O
+  `--help` do `--limit` dizia isso certo ("at most N creations"), mas o passo 2 do `SKILL.md` e a
+  docstring do script, que é a descrição do `--help`, diziam "uma issue" e "one issue". Aqui não
+  houve dano, porque o `UPDATE (text)` do #271 foi conferido no `--dump` antes. Com dezenas de
+  `UPDATE (anchor)` depois de um PR que desloca linhas, um renderizador quebrado estragaria todas
+  no mesmo canário que existe para pegá-lo numa issue só.
+- Corrigido o texto, não o comportamento. O bullet do `--link` no canário foi fundido no novo
+  "Contar com o canário para uma issue só", que cobre os dois modos.
+
 ## 2026-10-16 — o item aberto já resolvido, e o que conferir numa migração
 
 Publicado como **v2.6.0**.

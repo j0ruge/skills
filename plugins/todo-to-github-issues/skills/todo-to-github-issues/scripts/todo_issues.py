@@ -14,7 +14,7 @@ issues whose item left the file (in the sdd convention a closed finding is DELET
 
 Usage:
   python3 todo_issues.py [--file TODO.md] [--repo OWNER/NAME]            # plan, touches nothing
-  python3 todo_issues.py --apply --limit 1                                # canary: one issue
+  python3 todo_issues.py --apply --limit 1                                # canary: one creation (all updates go too)
   python3 todo_issues.py --apply [--close-orphans]                        # the rest
   python3 todo_issues.py --audit                                          # format: what is off
   python3 todo_issues.py --fix [--write]                                  # format: fix the mechanical part

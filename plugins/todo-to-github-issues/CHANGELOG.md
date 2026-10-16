@@ -3,6 +3,21 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.6.1] — 2026-10-16
+
+Patch: a documentação do canário diz o que o `--limit` limita.
+
+### Fixed
+
+- **O canário `--apply --limit 1` não toca uma issue só.** O `--limit` corta só `plan.create`. Todo
+  `UPDATE` do plano é aplicado já no canário, e com `--close-orphans` os fechamentos também. No
+  espelho do kit sdd de 2026-10-16, o mesmo `--limit 1` deu `created …/277` e `updated #271`. O passo
+  2 do `SKILL.md` ("canário: uma issue") e a docstring de `todo_issues.py`, que é a descrição do
+  `--help`, agora dizem "1 criação (os UPDATE saem todos)". O bullet "Passar `--link` no canário" foi
+  fundido num só, "Contar com o canário para uma issue só", que manda ler cada `UPDATE (text)` antes
+  do canário e mantém o caso do `--link` do modo relatório. Sem mudança de comportamento. Fazer o
+  `--limit` limitar também os `UPDATE` fica como sugestão para uma versão própria.
+
 ## [2.6.0] — 2026-10-16
 
 Minor: o `--fix` passa a apagar o item **aberto** já resolvido, e uma reference nova diz o que

@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.6.0
+  version: 2.6.1
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -39,7 +39,7 @@ errado seria pior que não medir. Esta skill **não carrega cópia** do formato 
 ```bash
 S={SKILL_DIR}/scripts/todo_issues.py      # {SKILL_DIR} = o diretório que contém este SKILL.md
 python3 $S                              # 1. PLANO: só lê, não toca no GitHub
-python3 $S --apply --limit 1            # 2. canário: uma issue; abra e confira a renderização
+python3 $S --apply --limit 1            # 2. canário: 1 criação (os UPDATE saem todos); confira a renderização
 python3 $S --apply                      # 3. o resto (~2,5 s por issue, com ritmo contra rate limit)
 python3 $S --apply --close-orphans      # só depois de ler as linhas ORPHAN do plano
 ```
@@ -213,8 +213,9 @@ python3 $S --file ACHADOS-x.md --apply --link 6=153 --link "Uma obs=155"
 - **Ler `removal not found` como "saiu por decisão".** Até a 2.3.0 a remoção era procurada pelo
   texto do título, que o parser normaliza: o kit sdd fechou quase como `not planned` um item
   consertado (#113, título com `` `^  ok    ` ``). Desde a 2.3.1 ela é achada pela chave.
-- **Passar `--link` no canário.** O `--limit` limita criações, não comentários: com `--link`, o
-  canário já comenta em todas as issues vinculadas.
+- **Contar com o canário para uma issue só.** O `--limit` limita só as criações. No espelho, todo
+  `UPDATE` do plano já sai no canário (kit sdd, 2026-10-16: `created #277` e `updated #271` no mesmo
+  `--limit 1`): leia cada `UPDATE (text)` antes dele. No relatório, com `--link`, todo comentário.
 - **Traduzir ou resumir o item na issue.** O espelho que se afasta da fonte deixa de ser espelho.
   Corrija o texto no `TODO.md` e sincronize.
 - **Espelhar a partir de uma branch de trabalho.** O script lê o `TODO.md` do diretório atual: numa
