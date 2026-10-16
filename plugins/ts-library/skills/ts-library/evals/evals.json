@@ -1,0 +1,50 @@
+{
+  "skill_name": "ts-library",
+  "evals": [
+    {
+      "id": 1,
+      "name": "revisar-package-json",
+      "prompt": "Revisa esse package.json da nossa lib interna antes de eu mandar pro outro time instalar. O código é só da empresa, o repo é privado, não temos registro npm nem CI.\n\n```json\n{\n  \"name\": \"@acme/notifier\",\n  \"version\": \"0.0.0\",\n  \"main\": \"./src/index.ts\",\n  \"types\": \"./src/index.ts\",\n  \"type\": \"module\",\n  \"exports\": {\n    \".\": { \"default\": \"./dist/index.js\", \"types\": \"./dist/index.d.ts\" },\n    \"./testing\": \"./src/testing/index.ts\"\n  },\n  \"scripts\": { \"build\": \"tsc\", \"test\": \"vitest run\", \"prepublishOnly\": \"npm run build\" },\n  \"dependencies\": { \"nodemailer\": \"^6.9.0\" }\n}\n```\n\nQuero saber o que está errado e o que mudar, com o porquê de cada item.",
+      "expected_output": "Aponta: types depois de default no exports; ./testing e main/types apontando para .ts (o Node não remove tipos em node_modules); falta files; falta private: true e license UNLICENSED para código proprietário sem registro; versão 0.0.0; prepublishOnly não roda no fluxo sem publish; engines ausente. Sugere publint e attw sobre o tarball e testar o pacote instalado num consumidor vazio.",
+      "files": [],
+      "assertions": [
+        "Diz que a condição `types` precisa vir antes de `default` no `exports`",
+        "Diz que `main`, `types` de topo e/ou `./testing` apontando para `.ts` não funcionam com o pacote instalado em node_modules, e manda apontar para JavaScript compilado em dist",
+        "Recomenda um campo `files` como lista de permissão",
+        "Recomenda `private: true` (contra publicação acidental) e um campo `license` (por exemplo `UNLICENSED`)",
+        "Aponta que `prepublishOnly` não roda sem `npm publish`, então o `dist` pode não existir no tarball do `npm pack`",
+        "Recomenda verificar o pacote empacotado: `publint`, `attw` e/ou instalar o `.tgz` num consumidor vazio"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "plano-de-extracao",
+      "prompt": "No monorepo do sales_quote a gente tem packages/shared/messaging (envio de e-mail, drivers gmail, arquivo e memory, ESM, Node 22, com uma suíte de contrato). Agora o lighthouse_project também vai mandar e-mail e quer usar a mesma lib. Os dois repos são privados na org do GitHub, a org está bloqueada na cota de Actions e a gente não tem registro de pacotes. As imagens docker partem de node:22-alpine e instalam com npm ci --ignore-scripts, e o sales_quote está em produção. Me dá o plano pra transformar essa lib em pacote que os dois instalam: onde ela mora, como versiona, como chega no consumidor, e como provo que o que o consumidor instala é o que eu testei.",
+      "expected_output": "Plano que: mantém o histórico (filter-repo) num repositório próprio ou de libs; escolhe uma distribuição que funciona sem registro, sem Actions e sem git na imagem (tarball versionado com file: e lockfile, ou justifica outra com os custos); private + UNLICENSED; exports para dist com types primeiro; release pela estação com prova (reconstrução ou sha256) e evidência sem Actions; sensor de integridade no consumidor e npm ci com cache vazio; congela a cópia antiga no sales_quote e trata a troca lá como mudança de produção; documentação para agentes no pacote.",
+      "files": [],
+      "assertions": [
+        "Escolhe uma forma de distribuição que funciona sem registro, sem Actions e com imagem alpine sem git e `--ignore-scripts` (por exemplo tarball versionado com `file:`), ou descarta explicitamente a dependência git por esses motivos",
+        "Preserva o histórico da lib na extração (`git filter-repo` ou equivalente)",
+        "Dá uma prova concreta de que o instalado é o testado: sha256/integrity do lockfile e/ou reconstrução da tag comparada com o publicado",
+        "Trata a troca no sales_quote como mudança de produção própria (não de carona) e cuida da cópia antiga no workspace (congelar ou remover em sequência controlada)",
+        "Faz release e evidência sem GitHub Actions (script na estação, status de commit ou equivalente)",
+        "Marca o pacote como `private` e/ou com licença proprietária, ou outra proteção contra publicação acidental"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "atualizar-no-consumidor",
+      "prompt": "Saiu a release object-storage-v1.0.1 no nosso repo de libs (GitHub Release com o .tgz anexado e o sha256 nas notas). No lighthouse a lib está em vendor/jrc-object-storage-1.0.0.tgz, declarada com file: no packages/backend/package.json. Escreve o passo a passo pra atualizar e o que conferir antes de abrir o PR.",
+      "expected_output": "Passo a passo: gh release download do .tgz; conferir o sha256 contra as notas; trocar o file: e rodar npm install para atualizar o lockfile (avisa que copiar o .tgz sem npm install passa na estação por causa do cache do npm e reprova no build com EINTEGRITY); remover o tgz antigo; conferir sha512 do tgz = integrity do lockfile e que o escopo resolve só para file:vendor/; npm ci com cache vazio; rodar a suíte (inclusive a de contrato); ler o CHANGELOG da lib para saber se é patch de verdade; docker build ou prova da imagem.",
+      "files": [],
+      "assertions": [
+        "Baixa o `.tgz` da release (gh release download ou equivalente) e confere o sha256 contra o publicado nas notas",
+        "Atualiza o lockfile com `npm install` (não só copia o arquivo)",
+        "Avisa que o cache do npm pode esconder um tgz trocado e manda provar com cache vazio (`npm ci --cache` vazio ou equivalente) ou conferir o `integrity` do lockfile",
+        "Remove o tgz da versão anterior de `vendor/`",
+        "Roda a suíte do consumidor, incluindo testes que exercitam a lib, antes do PR",
+        "Confere o CHANGELOG ou as notas da lib para validar que a mudança é compatível com um patch"
+      ]
+    }
+  ]
+}

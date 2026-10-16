@@ -761,6 +761,31 @@
       ]
     },
     {
+      "name": "ts-library",
+      "source": "./plugins/ts-library",
+      "version": "0.1.0",
+      "description": "Build and ship a TypeScript/Node library the 2026 way: ESM-only package, sensors on the packed tarball (publint, attw, API report), reproducible release, and vendored-tarball distribution when there is no registry or CI. Triggers — TypeScript library, npm package, extract lib, package.json exports, publint, attw, vendored tarball, library release",
+      "category": "development",
+      "keywords": [
+        "typescript",
+        "library",
+        "npm",
+        "package-json",
+        "exports",
+        "esm",
+        "publint",
+        "attw",
+        "api-extractor",
+        "vendored-tarball",
+        "release",
+        "monorepo"
+      ],
+      "platforms": [
+        "claude-code",
+        "cursor"
+      ]
+    },
+    {
       "name": "cors",
       "source": "./plugins/cors",
       "version": "1.1.0",

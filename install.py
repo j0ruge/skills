@@ -267,6 +267,13 @@ CURSOR_SKILL_MAP: list[dict[str, Any]] = [
         "source_dir": "plugins/kaizen-software/skills/kaizen-software",
     },
     {
+        "plugin": "ts-library",
+        "cursor_name": "ts-library",
+        "display": "TS Library — build and ship a TypeScript/Node library: ESM-only package, packed-tarball sensors, reproducible release, vendored-tarball distribution",
+        "source_type": "skill",
+        "source_dir": "plugins/ts-library/skills/ts-library",
+    },
+    {
         "plugin": "skill-quality-audit",
         "cursor_name": "skill-quality-audit",
         "display": "Skill Quality Audit — read-only audit of Agent Skills (spec, self-containment, claims, size); entry point of the family",
