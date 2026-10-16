@@ -1,5 +1,31 @@
 # Changelog — ticket
 
+## [1.13.0] — 2026-10-16
+
+### Por quê
+
+No `start` do RS-929 (`digital_service_report_api`, 16/10/2026) a issue nasceu pelo `POST /issue` do
+sub-fluxo B com dois campos que a skill não pedia. O primeiro foi `assignee:{accountId}`: o B
+transiciona para "Em andamento", mas nunca perguntava o responsável, e o REST não aceita `@me`. O
+`accountId` veio de `GET /myself`, o comando que o `workflow.md` só mostrava para atribuir outra
+pessoa depois da criação. O segundo foi `parent:{"key":"RS-699"}`, que pôs a Tarefa dentro do épico.
+A seção de vínculos sugeria *vínculo* para "cartão que se relaciona a um épico". A releitura pelo
+`GET` trouxe os dois: responsável gravado e pai RS-699.
+
+O trabalho da mesma missão mora em outro repo, um monorepo de apresentações com decks de vários
+projetos. O bootstrap do `.jira-project` prenderia esse repo a um projeto só. O que funcionou foi
+abrir a issue do repo do projeto e espelhar a branch de mesmo nome no outro, cada uma da sua base
+(`develop` e `main`), as duas medidas `0 0` no `rev-list --left-right`.
+
+### O quê
+
+- `references/start.md`, B1: perguntas de **épico pai** e **responsável** (default: quem abre).
+- `references/start.md`: seção nova **Trabalho em dois repos (um sem `.jira-project`)**, no sumário.
+- `references/campos.md`, §Criar a issue numa chamada só: `parent` e `assignee` no mesmo `POST`.
+- `references/workflow.md`, §Vínculos: pertencer a um épico é `parent` (hierarquia), não vínculo.
+- `SKILL.md`: uma frase no bootstrap roteia para a seção nova (19.723 → 19.836 chars, abaixo do
+  teto de 20 mil; o próximo retrofit deve passar antes pela `skill-refactoring`).
+
 ## [1.12.0] — 2026-10-14
 
 ### Por quê

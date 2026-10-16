@@ -11,6 +11,7 @@
 
 - [Sub-fluxo A: Issue existente](#sub-fluxo-a-issue-existente)
 - [Sub-fluxo B: Nova issue](#sub-fluxo-b-nova-issue)
+- [Trabalho em dois repos (um sem `.jira-project`)](#trabalho-em-dois-repos-um-sem-jira-project)
 - [Registrar cartão SEM começar o trabalho](#registrar-cartão-sem-começar-o-trabalho)
 - [Missão `sdd`: abrir à mão sem duplicar a fase TICKET](#missão-sdd-abrir-à-mão-sem-duplicar-a-fase-ticket)
 
@@ -229,6 +230,13 @@
      `released` no Jira **não é sensor de release** (é metadado marcado à mão,
      que atrasa em relação ao mundo). Quem sabe se lançou é o repo:
      `origin/main` + a versão no `package.json`.
+   - **Épico pai** (opcional): a Tarefa nasce dentro dele com `parent` no próprio
+     `POST`, sem vínculo (`campos.md` §Criar a issue numa chamada só).
+   - **Responsável** (default: quem abre). O B transiciona para "Em andamento", e
+     um cartão em andamento sem dono é o que o `close` encontra depois. Vai no
+     mesmo `POST` como `assignee:{accountId}`: o REST não tem `@me`, então até o
+     próprio dev entra por `accountId` (comando de `/myself` em `workflow.md`
+     §Gotchas do `acli`).
 
 2. **Descobrir a sprint ativa (antes de criar):**
 
@@ -329,6 +337,24 @@
    🔗 Sprint: {sprint}
    🎯 Score: {story points ou "Nenhum"}
    ```
+
+## Trabalho em dois repos (um sem `.jira-project`)
+
+Às vezes a entrega mora num repo que não é do projeto Jira. Um exemplo é o monorepo
+de apresentações, que guarda decks de vários projetos. Ali, o bootstrap de
+`SKILL.md` §Detecção de Projeto prenderia o repo inteiro a um `PROJECT=` só, e
+o próximo deck de outro projeto abriria ticket no lugar errado. Faça assim:
+
+1. Rode o `start` **do repo que tem o `.jira-project`**, que cria a issue e a branch dele.
+2. No outro repo, crie a branch de **mesmo nome** a partir da base desse repo, que pode
+   não ser a mesma (por exemplo, `develop` num e `main` no outro). Meça como no A8:
+   `git fetch origin -q` e depois `git rev-list --left-right --count HEAD...origin/<base>`.
+3. Registre as duas branches onde o trabalho começa (handoff, descrição da issue).
+   O `close` roda no repo do `.jira-project`, e o PR do outro repo é aberto à mão.
+
+Medido no RS-929 (16/10/2026): a issue e a branch foram abertas no
+`digital_service_report_api`, a partir de `develop`. A branch espelhada nasceu em
+`~/repos/apresentacoes`, a partir de `main`, e as duas mediram `0 0`.
 
 ## Registrar cartão SEM começar o trabalho
 

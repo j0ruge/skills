@@ -4,6 +4,15 @@ Registro por sessão da skill; o changelog **versionado** é `plugins/ticket/CHA
 (a entrada 1.4.0 de 2026-09-03 resume o que está aqui). Cada entrada registra **o que
 mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-16 — responsável e épico no POST, trabalho em dois repos (1.13.0)
+
+- `start` do RS-929: o `POST /issue` do B levou `assignee:{accountId}` (de `GET /myself`, já que o
+  REST não tem `@me`) e `parent` com o épico RS-699. A releitura confirmou os dois. O B1 passa a
+  perguntar pelos dois, e o `campos.md` os lista no corpo do `POST`.
+- A entrega morava num monorepo de vários projetos, sem `.jira-project`. A issue foi aberta do repo
+  do projeto, e a branch foi espelhada no outro (`0 0` nos dois). Isso vira seção do `start.md`, e o
+  bootstrap do `SKILL.md` aponta para ela.
+
 ## 2026-10-07 — md2adf recusa lista aninhada e crase no negrito (1.11.1)
 
 - `close` do SBM-6 sem MCP: o resumo com subitens por versão saiu como uma lista de 16 itens num

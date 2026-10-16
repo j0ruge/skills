@@ -210,6 +210,14 @@ curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -X POST -H "Content-Type: application/j
 #           fixVersions:[{id}], customfield_10016: N, customfield_10020: SPRINT_ID }
 ```
 
+Mais dois campos cabem na mesma chamada, e o B1 pergunta pelos dois:
+
+- `parent: {"key": "<EPIC>"}` põe a Tarefa dentro do épico, como hierarquia e não como
+  vínculo. Medido no RS-929 (16/10/2026): a releitura trouxe o pai RS-699.
+- `assignee: {"accountId": "<id>"}` dá dono ao cartão. O REST não aceita `@me`, então o
+  `accountId` vem de `GET /myself` (comando em `workflow.md` §Gotchas do `acli`). Medido
+  no mesmo RS-929: a releitura trouxe o responsável que entrou no `POST`.
+
 `project` e `issuetype` vão por **id**, que o `.jira-project` não guarda —
 duas chamadas os descobrem, uma vez por projeto (subseção seguinte).
 

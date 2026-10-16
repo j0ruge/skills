@@ -217,6 +217,10 @@ Um defeito que bloqueia uma release, um cartão que se relaciona a um épico: o
 vínculo é o que faz isso aparecer no board de quem planeja. Só existe via REST —
 o `acli` não cria nem lê links.
 
+⚠️ **Pertencer a um épico é outra coisa: é hierarquia (`parent`), não vínculo.**
+Na criação, `parent: {"key": "<EPIC>"}` entra no próprio `POST /issue`
+(`campos.md` §Criar a issue numa chamada só). Medido no RS-929, em 16/10/2026.
+
 ```bash
 set -a; . ~/.hermes/.env; set +a
 J=https://jrcbrasil.atlassian.net/rest/api/3

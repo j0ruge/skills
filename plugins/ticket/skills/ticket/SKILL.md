@@ -4,7 +4,7 @@ description: "Jira ticket lifecycle for JRC Brasil projects, integrated with Git
 argument-hint: "start (open) | split | close | status"
 compatibility: "Claude Code: o argument-hint acima é campo dele e só é lido no topo. Requer acli e credenciais Jira (JIRA_EMAIL, JIRA_API_TOKEN)."
 metadata:
-  version: 1.12.0
+  version: 1.13.0
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -66,7 +66,8 @@ BASE_BRANCH=develop   # opcional — base de branches/PR; se ausente, detectar (
 **branch prefix** (default = key). Criar o arquivo versionado no repo, com cabeçalho de origem
 (keys e board IDs não são secretos; `.gitignore` só com dado sensível), e seguir com o comando
 pedido. Arquivo, e não env var nem auto-memory: é explícito e sobrevive a troca de máquina e à
-limpeza de memória.
+limpeza de memória. Repo compartilhado por vários projetos não ganha `.jira-project`:
+`references/start.md §Trabalho em dois repos`.
 
 ## Roteamento de Comandos
 
