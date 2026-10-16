@@ -183,7 +183,7 @@ b,strong{font-weight:600;color:var(--fg)}
 #notesPanel .bar b{color:#fff;font-size:22px}
 #notesPanel p{margin:6px 0;max-width:110ch}
 #help{position:fixed;right:16px;bottom:12px;font:13px var(--sans);color:#b5b1af;opacity:0;transition:opacity .3s;z-index:21;pointer-events:none}
-body:hover #help{opacity:.9}
+body.hint #help{opacity:.9}
 body.presenter{overflow:auto;background:#1c1917;color:#e7e5e4}
 body.presenter #viewport,body.presenter #help{display:none}
 #pview{display:none;padding:32px 40px;font-family:var(--sans);max-width:1200px}
@@ -373,7 +373,7 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
   const fmt = s => pad(Math.floor(s / 60)) + ':' + pad(Math.floor(s % 60));
   const secs = slides.map(s => +(s.querySelector('.notes')?.dataset.t || 0));
   const planAt = i => secs.slice(0, i).reduce((a, b) => a + b, 0);
-  let i = 0, t0 = null, pwin = null;
+  let i = 0, t0 = null, gen = 0, pwin = null, focusAt = 0, hintT;
 
   // PDF: o rodapé some na impressão; seção + classificação + página vão no data-print
   slides.forEach((s, k) => s.dataset.print = (k ? [klass, s.dataset.section].filter(Boolean).join(' · ') + ' · ' : '') + pad(k + 1) + ' / ' + pad(N));
@@ -423,14 +423,25 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
     if (i > 0 && t0 === null) t0 = Date.now();
     try { history.replaceState(null, '', location.pathname + location.search + '#' + (i + 1)); } catch (e) {}
     renderNotes();
-    // file:// não compartilha BroadcastChannel entre janelas: sincronize pela referência direta
-    if (from !== 'peer') {
-      try { if (pwin && !pwin.closed) pwin.postMessage({ deck: i }, '*'); } catch (e) {}
-      try { if (presenter && opener) opener.postMessage({ deck: i }, '*'); } catch (e) {}
-    }
+    if (from !== 'peer') send(state());
   }
+  // file:// não compartilha BroadcastChannel entre janelas: sincronize pela referência direta.
+  // As duas janelas dividem o relógio: vence o reset mais recente (gen) e, no mesmo gen, o início mais antigo.
+  const state = () => ({ deck: i, t0, gen });
+  function send(m) { try { const w = presenter ? opener : pwin; if (w && !w.closed) w.postMessage(m, '*'); } catch (e) {} }
+  function merge(m) {
+    if (typeof m.gen !== 'number') return;
+    if (m.gen > gen || (m.gen === gen && m.t0 != null && (t0 === null || m.t0 < t0))) { gen = m.gen; t0 = m.t0; }
+  }
+  function reset() { gen++; t0 = Date.now(); renderNotes(); send(state()); }
   setInterval(renderNotes, 1000);
-  addEventListener('message', e => { if (e.data && typeof e.data.deck === 'number') show(e.data.deck, 'peer'); });
+  addEventListener('message', e => {
+    const m = e.data; if (!m || typeof m !== 'object') return;
+    merge(m);
+    // o popup dá sinal de vida a cada segundo: depois de um F5 o deck o reconhece e devolve a lâmina uma vez
+    if (m.hello && !presenter) { if (m.ask || e.source !== pwin) { pwin = e.source; send(state()); } renderNotes(); }
+    else if (typeof m.deck === 'number') show(m.deck, 'peer');
+  });
   addEventListener('keydown', e => {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     const k = e.key;
@@ -440,9 +451,17 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
     else if (k === 'n' || k === 'N') { panel.classList.toggle('on'); renderNotes(); }
     else if ((k === 'p' || k === 'P') && !presenter) pwin = open(location.pathname + '?apresentador#' + (i + 1), 'apresentador', 'width=1100,height=760');
     else if (k === 'f' || k === 'F') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
-    else if (k === 'r' || k === 'R') t0 = Date.now();
+    else if (k === 'r' || k === 'R') reset();
   });
-  document.getElementById('viewport').addEventListener('click', e => show(i + (e.clientX > innerWidth / 3 ? 1 : -1)));
+  // O clique que só traz a janela à frente (deck sob o popup numa tela só) não navega, nem o da faixa fora do palco
+  addEventListener('focus', () => { focusAt = performance.now(); });
+  document.getElementById('viewport').addEventListener('click', e => {
+    const r = stage.getBoundingClientRect();
+    if (performance.now() - focusAt < 400 || e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return;
+    show(i + (e.clientX - r.left > r.width / 3 ? 1 : -1));
+  });
+  // A dica de teclas aparece com o mouse e some parada: numa chamada, a janela compartilhada a transmite
+  addEventListener('mousemove', () => { document.body.classList.add('hint'); clearTimeout(hintT); hintT = setTimeout(() => document.body.classList.remove('hint'), 2500); });
   let tx = null;
   addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
   addEventListener('touchend', e => { if (tx === null) return; const d = e.changedTouches[0].clientX - tx; if (Math.abs(d) > 50) show(i + (d < 0 ? 1 : -1)); tx = null; });
@@ -450,7 +469,9 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
     document.body.classList.add('presenter'); document.title = 'Apresentador · ' + document.title;
     document.getElementById('pprev').onclick = () => show(i - 1);
     document.getElementById('pnextb').onclick = () => show(i + 1);
-    document.getElementById('preset').onclick = () => { t0 = Date.now(); renderNotes(); };
+    document.getElementById('preset').onclick = reset;
+    let ask = 1; const hello = () => { send({ hello: 1, ask, t0, gen }); ask = 0; };
+    setInterval(hello, 1000); setTimeout(hello, 0);
   }
   addEventListener('resize', fit); fit();
   show(Math.max(0, (parseInt(location.hash.slice(1), 10) || 1) - 1), 'init');

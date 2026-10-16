@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.1.1"
+  version: "1.2.0"
 ---
 
 # HTML Presentation
@@ -74,7 +74,9 @@ python3 <skill>/scripts/build.py src/<name>.html --out dist --duration <minutes>
 
 Output: `dist/<name>.html` (fonts and images inlined, works offline) and `dist/roteiro-de-fala.md`. The
 build fails on an asset that was not inlined, any external `http(s)` resource, a slide without notes, or a
-time budget over the limit.
+time budget over the limit. It also warns, without failing, when a note read at 150 words per minute needs 5 s
+or more beyond its `data-t` (a number counts as two words, a date as three): the time budget alone let a 65 s
+note that needs ~80 s through (Manutenção Proativa deck, 16/10/2026).
 
 ### 6. Inspect: two rounds at most
 
@@ -86,6 +88,9 @@ It captures every slide at 1920×1080, plus a 1366×768 and a 1280×720 laptop v
 checks that it has one page per slide. It also writes 2×2 contact sheets (`shots/grade-*.png`). Look at every
 sheet and both laptop shots. Fix everything in one batch, rebuild, and look again. Two rounds, then stop
 polishing; the reviewer does the next pass better.
+
+With Playwright installed, also run `node <skill>/scripts/check-presenter.mjs dist/<name>.html`. It drives the
+deck and the presenter window together and fails when the engine copy inside the deck regressed.
 
 ### 7. Independent review
 
@@ -104,7 +109,7 @@ its slide; one of the six fixes in the origin session did.
   deadline.
 
 Presenter keys: `→ ←` navigate · `N` notes panel · `P` presenter window (notes, timer, next slide; put it on
-the laptop while the projector shows the deck) · `F` fullscreen · `R` reset the timer.
+the laptop while the projector shows the deck) · `F` fullscreen · `R` reset the timer in both windows.
 
 ## Gotchas (each one was a real failure)
 
@@ -117,7 +122,18 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
 - **Stale screenshots.** Back-to-back headless runs sometimes write nothing, and the old PNG stays. You
   then review a slide that no longer exists. `shoot.sh` deletes first, retries and checks size.
 - **Presenter window out of sync.** On `file://`, BroadcastChannel does not cross windows. Sync through
-  `window.opener` / `postMessage`.
+  `window.opener` / `postMessage`. The deck holds the popup only in memory: after an F5 the notes stayed on
+  the old slide and the popup's arrows made the projector skip one. Each window also kept its own clock, so
+  `R` reset only one and a reopened popup showed 00:00 minutes into the talk. The template now shares slide,
+  start time and resets, and the popup's hello every second relinks a reloaded deck (Manutenção Proativa
+  deck, 16/10/2026).
+- **Sharing "a window" in a call still shows the key hint and the `N` panel.** Both belong to the deck page;
+  only the popup stays private. The hint now fades 2.5 s after the mouse stops; keep `N` closed while sharing.
+- **A click to focus the deck changed the slide.** With the popup over the deck on one screen, every click
+  navigated, even on the black band beside the stage. The template ignores a click within 400 ms of the
+  window gaining focus and any click outside the stage.
+- **A template fix does not reach existing decks.** Each deck carries its own copy of the engine, often
+  customized. Port the fix by hand, keep the deck's changes, and run `check-presenter.mjs` on the rebuild.
 - **Footer collisions.** The last section label runs into the page number, and two sections starting near
   the end overlap. The template anchors the last label to the right and hides colliding labels except the
   active one. Keep section names to about 12 characters: with five longer names in 22 slides, only the
@@ -157,6 +173,7 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
 | `assets/deck-template.html` | Starting point for every deck: engine, footer, notes, presenter window, print, sample slides per component |
 | `scripts/build.py` | Run on every build: inlines assets, generates the script, enforces the gates |
 | `scripts/shoot.sh` | Every inspection round: screenshots, laptop views, PDF, contact sheets |
+| `scripts/check-presenter.mjs` | Step 6 when Playwright is installed, and after porting an engine fix: presenter window, shared timer, key hint, focus click |
 | `references/layout-and-type.md` | Read when composing slides (step 4): components, scale, mockups, what to refuse |
 | `references/engine.md` | Read only when changing navigation, notes, presenter window or print behavior |
 | `references/review.md` | Read before step 7, when spawning the reviewer: input packet and verdict format |

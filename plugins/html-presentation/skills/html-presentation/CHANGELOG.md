@@ -2,6 +2,17 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-10-16 — Manutenção Proativa de Consumíveis, QA round (v1.2.0)
+- A 4-slide, 3:30 deck for a video call and a room, checked by a `/qa-execution` round (8 charters, 21
+  scenarios) instead of by building a new deck.
+- Lessons added (template, `build.py`, gotchas): shared timer and reset across windows, popup relink after
+  an F5, key hint that fades, focus click that does not navigate, pace warning per note, and the port of
+  engine fixes to existing decks. All six were reproduced on the template, not only on this deck.
+- Instrument lesson: Playwright emulates focus on the pages it drives, so a window `focus` never reaches the
+  page. The real activation click was measured with plain Chrome on Xvfb + openbox, read through raw CDP.
+- Not changed: the deck ignores `hashchange` (a same-tab hash edit does not move it) and the template assumes
+  a cover without a section. Neither hurt a presenter in this round.
+
 ## 2026-10-01 — Church cell group, "A esperança está voltando" (v1.1.1)
 - Source was a 2-page study guide (PDF) for a 20-minute discussion at home, shown on a living-room TV;
   Bible verses quoted in full (NVI). 13 slides, 19:00 of notes, three discussion blocks of 3 min.

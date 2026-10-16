@@ -23,11 +23,12 @@ JS at the bottom of `assets/deck-template.html`.
 | Feature | How |
 |---|---|
 | Fit | `translate(-50%,-50%) scale(min(w/1920, h/1080))` on an absolutely positioned stage |
-| Navigation | Arrows, PageUp/Down, Space, Enter, Home/End, click (left third = back), swipe |
+| Navigation | Arrows, PageUp/Down, Space, Enter, Home/End, click on the stage (left third = back), swipe. A click within 400 ms of the window gaining focus, or outside the stage, does nothing |
 | Deep link | `#N` in the URL; it is kept in sync with `history.replaceState` |
 | Notes panel | `N` toggles a bottom panel with elapsed time and the plan window for the slide |
-| Presenter window | `P` opens `?apresentador#N` in a popup. Sync goes through `postMessage` to `opener`/popup, because BroadcastChannel does not cross `file://` windows. Timer turns red 15 s past the plan |
-| Timer | Starts when leaving the cover; `R` resets |
+| Presenter window | `P` opens `?apresentador#N` in a popup. Sync goes through `postMessage` to `opener`/popup, because BroadcastChannel does not cross `file://` windows. Messages carry `{deck, t0, gen}`. The popup sends `{hello}` every second, and a deck that lost it (F5) relinks and sends its slide back once. Timer turns red 15 s past the plan |
+| Timer | Starts when leaving the cover and is shared by both windows. `R` (either window) or the popup's button bumps `gen`, which wins everywhere; with the same `gen`, the oldest `t0` wins, so a reopened popup or a reloaded deck keeps the time already spoken |
+| Key hint | Shown on mouse move (`body.hint`), hidden 2.5 s after the mouse stops. Never in the popup or in print |
 | Print | One slide per page at 1920×1080 (`@page`). The footer is hidden, and `data-print` (classification · section · NN / TT) is drawn by `::after` |
 | Motion | `.enter` fades 8 px in 450 ms without backwards fill; `prefers-reduced-motion` turns it off |
 
@@ -39,3 +40,12 @@ google-chrome --headless=new --no-pdf-header-footer --virtual-time-budget=4000 \
 ```
 
 `shoot.sh` does this and asserts page count == slide count.
+
+## Regression check
+
+`node scripts/check-presenter.mjs dist/<name>.html` (Playwright, local or global) drives the deck and the
+popup at 1366×657: `R` in each window, a reopened popup, F5 on the deck, the key hint, and clicks on the
+band, after focus, mid-stage and on the left third. It simulates the activation click with a window `focus`
+event, because Playwright emulates focus on the pages it drives and the page never sees the real one. On
+X11 the real activation click delivers `focus` 2–7 ms before `mousedown` (plain Chrome on Xvfb + openbox,
+16/10/2026); on Windows it is still a human check.

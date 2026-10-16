@@ -8,6 +8,9 @@ Usage:
 - Writes <out>/<name>.html and <out>/roteiro-de-fala.md (generated from <aside class="notes" data-t>).
 - Gates (exit 1): an asset left un-inlined, an external http(s) resource, a slide without notes/data-t,
   or a time budget above duration − 30 s (room for questions).
+- Warns (no failure) when a note, read at --wpm words per minute, needs 5 s or more beyond its data-t. A
+  number counts as two words and a date (dd/mm) as three: said aloud they take more than written, and the
+  time gate alone let a note at 157 written / ~187 spoken wpm through (Manutenção Proativa deck, 16/10/2026).
 """
 import argparse, base64, html, pathlib, re, sys
 
@@ -19,12 +22,13 @@ ap.add_argument("src")
 ap.add_argument("--out", default="dist")
 ap.add_argument("--duration", type=float, help="talk length in minutes (checks the notes budget)")
 ap.add_argument("--name", default=None, help="output basename (default: source basename)")
+ap.add_argument("--wpm", type=int, default=150, help="speaking pace used for the note-length warning")
 a = ap.parse_args()
 
 src_path = pathlib.Path(a.src).resolve()
 src = src_path.read_text(encoding="utf-8")
 base = src_path.parent
-errors = []
+errors, warnings = [], []
 
 def inline(m):
     p = base / m.group(2)
@@ -60,14 +64,23 @@ for k, (title, body) in enumerate(slides, 1):
         continue
     t = int(m.group(1))
     lines += [f"## {k:02d} · {html.unescape(title)} · {acc//60:02d}:{acc%60:02d} → {(acc+t)//60:02d}:{(acc+t)%60:02d} ({t}s)", ""]
-    for para in re.findall(r"<p>(.*?)</p>", m.group(2), re.S):
-        lines += [html.unescape(re.sub(r"<[^>]+>", "", re.sub(r"\s+", " ", para)).strip()), ""]
+    text = [html.unescape(re.sub(r"<[^>]+>", "", re.sub(r"\s+", " ", para)).strip())
+            for para in re.findall(r"<p>(.*?)</p>", m.group(2), re.S)]
+    for para in text:
+        lines += [para, ""]
+    spoken = sum(3 if re.fullmatch(r"\d{1,2}/\d{1,2}(/\d{2,4})?\W*", w) else 2 if re.search(r"\d", w) else 1
+                 for w in " ".join(text).split())
+    if spoken * 60 / a.wpm - t >= 5:
+        warnings.append(f"lâmina {k} ({html.unescape(title)}): ~{spoken} palavras faladas pedem "
+                        f"~{spoken * 60 / a.wpm:.0f} s a {a.wpm} ppm, e o data-t dá {t} s; corte a nota ou aumente o data-t")
     acc += t
 lines.append(f"**Total planejado: {acc//60:02d}:{acc%60:02d}**")
 
 if a.duration and acc > a.duration * 60 - 30:
     errors.append(f"notas somam {acc//60:02d}:{acc%60:02d}, acima de {a.duration:g} min − 30 s para perguntas")
 
+for w in warnings:
+    print("aviso de ritmo:", w)
 if errors:
     print("BUILD REPROVADO:", *errors, sep="\n  - ")
     sys.exit(1)

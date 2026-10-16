@@ -3,6 +3,35 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.2.0] — 2026-10-16
+
+### Fixed
+- Presenter window and deck share the clock. Messages carry `{deck, t0, gen}`: `R` in either window (or the
+  popup's button) resets both, and a reopened popup or a reloaded deck keeps the time already spoken. Before,
+  `R` reset only the window where it was pressed, and a reopened popup showed 00:00 minutes into the talk.
+- A reloaded deck relinks the popup by itself. The popup sends a hello every second, and the deck answers
+  once with its slide. Before, after an F5 the popup stopped following the deck, and the popup's arrows made
+  the projector skip a slide.
+- The key hint fades 2.5 s after the mouse stops, instead of staying while the mouse is over the page. In a
+  call, the shared window showed it the whole time on a one-screen laptop.
+- A click that only brings the deck window forward (within 400 ms of focus) and a click outside the stage
+  no longer navigate; the left third is measured on the stage.
+
+### Added
+- `scripts/check-presenter.mjs`: Playwright regression check for the engine (13 checks). It failed 9 of
+  them on the 1.1.1 engine and passes on 1.2.0, headless and headed.
+- `build.py` warns, without failing, when a note read at 150 words per minute (`--wpm`) needs 5 s or more
+  beyond its `data-t`; a number counts as two words and a date as three. On the four existing decks it flags
+  only the slide that needed it.
+- Gotchas: what a shared window shows in a call, the focus click, and engine fixes that must be ported by
+  hand to each deck. `references/engine.md` documents the shared timer and the regression check.
+
+### Why
+A `/qa-execution` round on the Manutenção Proativa deck (RS-929, 16/10/2026) walked the presenter journeys in
+persona and filed six findings against the template's engine and the build gate. Each fix was red before and
+green after on the same check; the activation click was also measured with a real X11 click on plain Chrome,
+since Playwright's focus emulation hides it.
+
 ## [1.1.1] — 2026-10-01
 
 ### Fixed
