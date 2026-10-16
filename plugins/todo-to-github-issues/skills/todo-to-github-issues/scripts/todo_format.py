@@ -142,6 +142,33 @@ class Fixer:
             self.lines[:cut] = self.seed[:new_cut]
             self.auto.append("the legacy seed's preamble was replaced by the current seed's")
 
+    def declared(self, block):
+        """(sha, verdict) of the commits a block declares with `RESOLVED by`: verdict True only when
+        every one reached the default branch, and then sha is the first; otherwise sha is the first
+        that did not, with False (unmerged) or None (unknown). (None, None) when it declares none."""
+        m = HASH_RE.search(block)
+        if not m:
+            return None, None
+        shas, rest = [m.group(1)], block[m.end():]
+        more = MORE_HASH_RE.match(rest)
+        while more:
+            shas.append(more.group(1))
+            rest = rest[more.end():]
+            more = MORE_HASH_RE.match(rest)
+        verdicts = [self.is_ancestor(h) for h in shas]
+        bad = [h for h, v in zip(shas, verdicts) if v is not True]
+        if not bad:
+            return shas[0], True
+        return bad[0], (None if None in verdicts else False)
+
+    def delete_item(self, i, end):
+        """Removes lines[i:end] and the blank line it leaves doubled; returns how many lines went."""
+        before = len(self.lines)
+        del self.lines[i:end]
+        while i < len(self.lines) and i > 0 and not self.lines[i].strip() and not self.lines[i - 1].strip():
+            del self.lines[i]
+        return before - len(self.lines)
+
     def ticked(self):
         i, deleted = 0, 0
         while i < len(self.lines):
@@ -149,24 +176,9 @@ class Fixer:
                 i += 1
                 continue
             end = self.item_end(i)
-            block = " ".join(self.lines[i:end])
-            m = HASH_RE.search(block)
-            shas, sha, verdict = [], None, None
-            if m:
-                shas, rest = [m.group(1)], block[m.end():]
-                more = MORE_HASH_RE.match(rest)
-                while more:
-                    shas.append(more.group(1))
-                    rest = rest[more.end():]
-                    more = MORE_HASH_RE.match(rest)
-                verdicts = [self.is_ancestor(h) for h in shas]
-                bad = [h for h, v in zip(shas, verdicts) if v is not True]
-                sha = bad[0] if bad else shas[0]
-                verdict = True if not bad else (None if None in verdicts else False)
+            sha, verdict = self.declared(" ".join(self.lines[i:end]))
             if verdict is True:
-                del self.lines[i:end]
-                while i < len(self.lines) and i > 0 and not self.lines[i].strip() and not self.lines[i - 1].strip():
-                    del self.lines[i]
+                self.delete_item(i, end)
                 deleted += 1
                 continue
             if sha is None:
@@ -181,6 +193,27 @@ class Fixer:
             i = end
         if deleted:
             self.auto.append(f"{deleted} ticked item(s) deleted — each cites a commit already in {self.ref}")
+
+    def resolved_open(self):
+        """An open item whose `RESOLVED by` commits all reached the default branch is deleted, like
+        a ticked one: the kit keeps it only until the merge, and nothing else ever removes it (the
+        sensor accepts it, the mirror SKIPs it). Unmerged or unknown commits leave it alone."""
+        span = self.open_span()
+        if span is None:
+            return
+        i, stop, deleted = span[0], span[1], 0
+        while i < stop:
+            if not OPEN_ITEM_RE.match(self.lines[i]):
+                i += 1
+                continue
+            end = self.item_end(i)
+            if self.declared(" ".join(self.lines[i:end]))[1] is not True:
+                i = end
+                continue
+            stop -= self.delete_item(i, end)
+            deleted += 1
+        if deleted:
+            self.auto.append(f"{deleted} open item(s) deleted — each declares `RESOLVED by` a commit already in {self.ref}")
 
     def open_marker(self):
         if kit.open_marker_line(self.lines) is not None:
@@ -424,6 +457,7 @@ def fix_text(text, kit_root, repo_root, lang, open_heading):
             f.legacy_preamble(fh.read().split("\n"))
     f.ticked()
     f.open_marker()
+    f.resolved_open()
     f.legacy_resolved()
     f.decided_section()
     f.resolved_token()

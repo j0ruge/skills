@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.5.2
+  version: 2.6.0
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -71,7 +71,7 @@ importa conforme o modo: abra-os só para depurar ou alterar esse modo.
 | `CREATE` | item sem issue | `--apply` cria a issue, com as labels `todo` e `todo: <seção>` |
 | `UPDATE (anchor)` | só mudou o número de linha de uma referência `` `arquivo:N` `` (a âncora ou outra no texto): um PR que desloca linhas do arquivo ancorado gera dezenas | `--apply` sem mais prova: o script comparou o corpo vivo sem permalink, sem marcadores e sem esses números |
 | `UPDATE (text)` | texto, título ou seção mudou de verdade | leia o item antes do `--apply`; é o único `UPDATE` que pede olho |
-| `SKIP` | o corpo traz `RESOLVED by <hash>` e não existe issue | nada: não se abre card para achado já fechado |
+| `SKIP` | o corpo traz `RESOLVED by <hash>` e não existe issue | nada: não se abre card para achado já fechado; com o hash já na branch padrão, o `--fix` apaga o item |
 | `ORPHAN` | a issue está aberta, mas o item saiu do arquivo. A linha diz em que commit ele saiu e, se o último texto trazia `RESOLVED by`, quem o consertou (`fixed by …`) — lido no commit da remoção, nunca no `HEAD` | **`fixed by`:** `--close-orphans` fecha como concluída, citando o conserto e a remoção. **`no RESOLVED by`** (decidido, refutado, adiado, ou consertado sem o marcador): `--close-orphans` pula (`SKIP`); feche à mão, `gh issue close N --reason "not planned" --comment "<para onde foi>"`. **`last text unknown`** (`removal not found`): a chave nunca saiu do histórico deste checkout — clone raso, arquivo renomeado, branch não mergeada (a de um PR aberto sai como `PENDING`). Desconhecido não é ausente: leia o último texto antes de escolher `completed` ou `not planned` |
 | `PENDING` | a remoção não está no histórico, mas o item está na cabeça de um PR aberto: a issue nasceu de um `--apply` na branch do PR. Só a órfã sem remoção é procurada, com um `gh pr list` e o arquivo em cada cabeça (do git local, ou da API de conteúdo) | nada: deixe aberta, e `--close-orphans` a pula. Depois do merge, vira `OK` ou `UPDATE`. Limite: PR de fork (cabeça em outro repositório) não foi medido; se a cabeça não for lida, a issue segue `ORPHAN` |
 | `RENAME?` | par `ORPHAN` + `CREATE` com ≥ 85% do mesmo texto: o título mudou | confirme com o humano; se for o mesmo achado, rode o comando impresso **antes** do `--apply`, e a issue antiga vira `UPDATE` |
@@ -111,7 +111,8 @@ python3 $S --fix --lang pt-BR             # repo sem OUTPUT_LANG em .sdd/config.
   cópia daqui (100) sobreviveu à regra do kit e fez o `--audit` inventar 6 itens acima do teto num
   arquivo que o sensor chamava de limpo;
 - `- [x]` apagado **só** quando todo commit que ele declara (`RESOLVED by`/`RESOLVIDO por|em`)
-  já está na branch padrão, provado por `git merge-base --is-ancestor`.
+  já está na branch padrão, provado por `git merge-base --is-ancestor`; o mesmo vale para o item
+  **aberto** (`- [ ] … RESOLVED by <hash>`), que o sensor aceita e o plano lê `SKIP` para sempre.
 
 `MANUAL` é o resto, agrupado por regra, com a linha (no arquivo **depois** do `AUTO`) e a ação.
 Resolva-os **com o humano, um grupo por vez**, e nunca em silêncio:
@@ -127,7 +128,10 @@ Resolva-os **com o humano, um grupo por vez**, e nunca em silêncio:
 
 `--fix --write` recusa (rc 6) arquivo versionado com mudança não commitada, para a correção chegar
 como um diff próprio; arquivo não versionado é escrito com aviso. Branch e commit ficam com você.
-Mexeu no script? `python3 scripts/test_todo_format.py` (sem rede; precisa do kit e do git).
+Antes de commitar o `--write` de uma migração, leia `references/conferir-o-fix.md`: provar que a
+quebra não mudou palavra, salvar o plano condicional de um item apagado e o sensor do repo que lia
+os headings antigos. Mexeu no script? `python3 scripts/test_todo_format.py` (sem rede; precisa do
+kit e do git).
 
 A cópia que o sensor mede é escrita **ao lado** do arquivo checado (oculta, apagada em seguida), não
 em `/tmp`: desde o ADR 0011 a âncora é resolvida contra o repositório do arquivo, e uma cópia fora

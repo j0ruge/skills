@@ -3,6 +3,23 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-16 — o item aberto já resolvido, e o que conferir numa migração
+
+Publicado como **v2.6.0**.
+
+- Primeiro espelho do `TODO.md` do `lighthouse_project`: o plano parou em rc 4 com 139 violações. O
+  `--fix --write` levou a 55, e os 57 `MANUAL` foram conferidos contra o código por quatro
+  subagentes só de leitura, antes de uma aprovação única do humano. Dez itens abertos tinham
+  `RESOLVED by` com o commit já em `develop`. O `--fix` só apagava `[x]`, e esses passavam no
+  sensor e liam `SKIP` no plano. Três ficaram até a pré-visualização do plano depois da migração
+  (`skip=4`, um deles legítimo, por não mergeado). Daí a regra `resolved_open`.
+- Conferir o `--write` mostrou três armadilhas que nenhum gate da skill vê, agora em
+  `references/conferir-o-fix.md`:
+  - o recorte da seção aberta casando o marcador citado no preâmbulo;
+  - a contingência de um item apagado (o `a7755bc` e a decisão 6);
+  - o `docs.test.ts` do repositório, cego depois que `## Resolved` saiu. Ele foi reescrito sobre os
+    marcadores e visto vermelho em três sabotagens.
+
 ## 2026-10-15 — a âncora sem alvo que era achado fechado
 
 Publicado como **v2.5.2**.

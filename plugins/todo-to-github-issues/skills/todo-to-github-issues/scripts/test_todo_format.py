@@ -194,6 +194,22 @@ check("...and the MANUAL line points at the item in the fixed text",
       any(m.rule == "ticked item" and m.line and new.split("\n")[m.line - 1].startswith("- [x] **sem hash**")
           for m in manual))
 
+# an OPEN box that declares a merged fix: the kit keeps it only until the merge, and nothing else
+# removes it (the sensor accepts it, the mirror SKIPs it) — lighthouse_project, 2026-10-16
+new, auto, _ = fix(ticked_world(f"- [ ] **aberto e feito** — `a:1` — ok. RESOLVED by `{merged}` — por `x` (2026-10-16)"),
+                   repo)
+check("an open item whose RESOLVED by commit is merged -> deleted",
+      "**aberto e feito**" not in new and any("open item" in a for a in auto))
+new, _, _ = fix(ticked_world(f"- [ ] **aberto, quebrado** — `a:1` — ok. RESOLVED by\n  `{merged}`: x — por `x` (2026-10-16)"),
+                repo)
+check("...also when the hash wrapped to the next line", "**aberto, quebrado**" not in new)
+new, _, _ = fix(ticked_world(f"- [ ] **aberto, não mergeado** — `a:1` — ok. RESOLVED by `{unmerged}` — por `x` (2026-10-16)"),
+                repo)
+check("an open item whose RESOLVED by commit has NOT merged -> kept", "**aberto, não mergeado**" in new)
+new, _, _ = fix(ticked_world(f"- [ ] **aberto, cita** — `a:1` — ok, `{merged}` só de passagem — por `x` (2026-10-16)"),
+                repo)
+check("an open item citing a merged hash only in its prose -> kept", "**aberto, cita**" in new)
+
 # ── which heading holds the findings ────────────────────────────────────────────────────────────
 two = "# T\n\n## Open\n\n- [ ] **a** — `x:1` — w. — por `x` (2026-09-24)\n\n## Findings\n\n"
 new, _, manual = fix(two)

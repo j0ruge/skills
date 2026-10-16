@@ -3,6 +3,34 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.6.0] — 2026-10-16
+
+Minor: o `--fix` passa a apagar o item **aberto** já resolvido, e uma reference nova diz o que
+conferir antes de commitar uma migração de formato.
+
+### Added
+
+- **`--fix` apaga o `- [ ] … RESOLVED by <hash>` cujo commit já está na branch padrão**, com a
+  mesma prova do `- [x]` (`git merge-base --is-ancestor` de cada hash declarado; hash não mergeado
+  ou desconhecido não é tocado). O ciclo de vida do kit mantém esse item só até o merge, e nada o
+  tirava depois: o sensor o aceita, o `--audit` dá `clean` e o plano o lê `SKIP` para sempre. Na
+  migração do `TODO.md` do `lighthouse_project` (2026-10-16), 10 itens assim só saíram porque
+  subagentes leram o arquivo item a item, e 3 ficaram mesmo assim (`ae5051e`, `84f0d9c` duas vezes,
+  todos ancestrais de `origin/develop`); a 2.6.0 os acha sozinha. Sem efeito nos `TODO.md` do kit
+  sdd e do `sales_quote` (`--fix` em seco: `auto=0`). Regra `resolved_open` em `todo_format.py`;
+  quatro casos novos em `test_todo_format.py`, os dois de apagar vistos vermelhos antes.
+- **`references/conferir-o-fix.md`**, roteada do `SKILL.md` para antes do commit de um `--write`:
+  provar palavra a palavra que a quebra de linha não mudou o texto (com o marcador ancorado na
+  linha inteira, porque o preâmbulo novo o cita e o recorte solto acusou 364 diferenças onde havia
+  0); achar o plano condicional de um item que sai (o `a7755bc` dizia "se a Direção recusar,
+  `git revert`", e só sobreviveu porque também estava no roadmap); e o sensor do repositório que
+  lia `## Open`/`## Resolved` e ficou verde com uma caixa aberta plantada na seção decidida.
+
+### Changed
+
+- `ticked()` usa os auxiliares novos `declared()` e `delete_item()`, sem mudar de comportamento:
+  os 39 casos anteriores de `test_todo_format.py` e os 90 de `test_todo_issues.py` seguem verdes.
+
 ## [2.5.2] — 2026-10-15
 
 Patch: a linha `MANUAL` da âncora quebrada manda conferir se o achado ainda vale antes de reancorar.
