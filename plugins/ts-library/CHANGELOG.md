@@ -2,6 +2,31 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [0.3.0] — 2026-10-16
+
+### O que a extração real mostrou
+
+A receita de extração da 0.1.0 tinha sido medida num repositório de prova. Na mesma data ela rodou de
+verdade: a `@jrc/object-storage` saiu de `JRC-Brasil/sales_quote` (`a1ad4b74`) para
+`JRC-Brasil/jrc-libs` (`21df76f`). Quatro lições, todas medidas nessa extração, entraram na
+`references/extracao.md`:
+
+- **A regex só pegava `(#N)`.** Duas das quatro referências estavam fora de parênteses ("review do PR
+  #175", "no PR #178"). Com a receita antiga, elas teriam virado links para issues do repositório novo,
+  sem erro nenhum. A regex nova é `(?<![\w/])#([0-9]+)`: pega `#N` em qualquer posição e deixa em paz
+  a referência já qualificada e o `#` de URL (conferido com o `re` do Python, o motor do
+  `--replace-message`). Entrou também como armadilha no `SKILL.md`.
+- **Um clone sem rede.** `git clone --no-local` a partir do checkout local é aceito pelo `filter-repo`
+  como clone novo. O `filter-repo` apaga o `origin`, então o push vai para um remoto acrescentado à
+  mão, e um push de volta à origem fica impossível por engano.
+- **Os checks antes do push.** A receita parava no `git log`. Agora são cinco: a contagem de commits
+  dos dois lados, nenhuma referência solta, o hash da árvore igual ao da origem, a varredura de
+  credencial em cada commit e a lib instalada e testada sozinha a partir de um `git archive`. A
+  varredura achou 28 pares de commit e arquivo, todos marcadores falsos de teste. Daí a regra: o
+  achado se classifica lendo a linha, nunca pela contagem.
+- **O commit de entrada fora da pasta da lib.** Com um `README.md` na raiz, `git log --
+  packages/<lib>` continua contando só os commits da origem, e a contagem serve de check.
+
 ## [0.2.0] — 2026-10-16
 
 ### O que a primeira avaliação mostrou

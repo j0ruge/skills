@@ -4,7 +4,7 @@ description: "Build and ship a TypeScript/Node library the 2026 way: ESM-only pa
 license: MIT
 metadata:
   author: Chewiesoft
-  version: 0.2.0
+  version: 0.3.0
 ---
 
 # Biblioteca TypeScript/Node em 2026
@@ -106,8 +106,8 @@ ponteiro no consumidor.
 
 ### 6. A extração de um workspace
 
-Histórico, cópia congelada, ADRs e a ordem dos passos estão em `references/extracao.md`. Leia antes de
-tirar código de um monorepo que está em produção.
+Histórico, os checks antes do push, cópia congelada, ADRs e a ordem dos passos estão em
+`references/extracao.md`. Leia antes de tirar código de um monorepo que está em produção.
 
 ## Revisão rápida de um `package.json` de lib
 
@@ -151,6 +151,10 @@ Ao revisar, confira cada linha e diga o que ela evita, não só que falta:
 - **`npm pack` é reproduzível**: dois builds seguidos com o mesmo lockfile deram o mesmo sha256
   (**medido**, `tsc` 5.9 e npm 12.0.2). É o que torna possível provar que o publicado é o testado
   reconstruindo a tag.
+- **`(#N)` não é a única forma de citar um PR numa mensagem de commit.** Na extração real, duas
+  de quatro referências eram `PR #175`, sem parênteses. Reescrevendo só `\(#N\)`, elas viram links
+  para issues do repositório novo, sem erro nenhum. A regex que pega as duas formas e os checks antes
+  do push estão em `references/extracao.md` (**medido**, `git filter-repo`, 2026-10-16).
 
 ## O que não fazer, e por quê
 
