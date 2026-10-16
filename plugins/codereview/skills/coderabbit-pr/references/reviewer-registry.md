@@ -123,6 +123,26 @@ Match against the registry. A reviewer found **only** on the issue endpoint post
 extract: it goes straight to Phase 2's zero-findings determination, where its comment tells (a)
 from (b). Only reviewers with inline comments or a review body go through Phase 1.3.
 
+**A reviewer that runs only on request is invisible when nobody asked.** Codex is often set to
+review only on `@codex review`: a PR nobody asked about has **zero** Codex events on all three
+endpoints, so the detection above never lists it, and the report would name only the bots that
+posted. Before reporting a PR as reviewed, check whether Codex is configured for the repo by its
+activity on recent PRs:
+
+```bash
+for n in $(gh pr list --state all --limit 10 --json number -q '.[].number'); do
+  printf '#%s ' "$n"; gh api "repos/$REPO/issues/$n/comments" --paginate \
+    --jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]" or .body == "@codex review")] | length'
+done
+```
+
+Codex on other PRs and nothing on this one → case (b), **never requested**: say so in the report
+and offer to post `@codex review` (a comment on the user's PR is theirs to approve), then wait for
+`Completed` on the head (above). Measured 2026-10-16 (lighthouse_project PRs #32, #33, #36, #37):
+no Codex event on any of the four, Codex present only where `@codex review` had been posted (#29);
+asked, it returned five real findings in about ten minutes, and the report would have named only
+Copilot's quota notice.
+
 ## Coverage Per Commit
 
 A review covers the commit it was made on, not the PR. Phase 2 compares each reviewer's last

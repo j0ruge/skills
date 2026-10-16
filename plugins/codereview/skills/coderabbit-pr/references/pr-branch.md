@@ -2,7 +2,7 @@
 
 Read this at Phase 1.1, before touching any file: whether this run is the installed copy, where
 the fixes are made, whether another writer is still active in the tree, whether the PR merges at
-all, and the sweep of leftover checklists. SKILL.md keeps the decision; this file carries the
+all, how it merges (for findings about commit ancestry), and the sweep of leftover checklists. SKILL.md keeps the decision; this file carries the
 commands and the why.
 
 ## Is this run the installed copy?
@@ -125,6 +125,26 @@ gh pr view "$PR" --json mergeable,mergeStateStatus -q '"\(.mergeable) \(.mergeSt
 Measured 2026-10-14 (sdd_agents PR #246): `CONFLICTING` with every finding already fixed;
 `merge-tree` on the pre-merge head `ee33e18` against `main` `f0b46fa` listed `TODO.md` and
 `tests/health-baseline.txt`, the two files the merge commit `383358e` then resolved by hand.
+
+## A finding that depends on how the PR merges
+
+A finding about commit ancestry ("`<hash>` will never be an ancestor of the base", a `RESOLVED by`
+or a changelog pointing at a commit of this branch) assumes a merge method, and reviewers tend to
+assume **squash**, which rewrites every commit of the PR into one new sha. Before the 3.1 verdict,
+read the method the repo actually uses:
+
+```bash
+BASE=$(gh pr view "$PR" --json baseRefName -q .baseRefName)
+gh api "repos/$REPO" --jq '"squash=\(.allow_squash_merge) merge=\(.allow_merge_commit) rebase=\(.allow_rebase_merge)"'
+git log --oneline --merges -5 "origin/$BASE"     # "Merge pull request #N" = the convention is a merge commit
+```
+
+With a merge-commit convention the branch's commits enter the base unchanged, and the claim does
+not hold: `[x]` — "Not applicable: merged with a merge commit", merge with `gh pr merge --merge`
+(never squash, which would make the finding true after the fact), and prove it right after the
+merge with `git merge-base --is-ancestor <hash> "origin/$BASE"` (rc 0). Measured 2026-10-16
+(lighthouse_project PR #37): Codex flagged `3447edb` as never ancestral to `develop`; the repo
+merges with merge commits, and after `--merge` the check returned rc 0.
 
 ## Sweep leftover checklists
 

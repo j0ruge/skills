@@ -2,6 +2,28 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.15.4] — 2026-10-16
+
+### O Codex que ninguém pediu, e o achado que supõe squash
+
+Lições de um `/codereview:coderabbit-pr` nos PRs #32, #33 e #37 do `lighthouse_project`
+(`coderabbit-pr` 4.4.4).
+
+- **`references/reviewer-registry.md`, *Detection Strategy*:** um revisor que só roda sob pedido
+  some do relatório quando ninguém pediu. Nos PRs #32, #33, #36 e #37 o Codex não tinha **nenhum**
+  evento nos três endpoints, e a Fase 1.2 só lista quem postou: o relatório citaria só o aviso de
+  cota do Copilot. O Codex só aparecia onde houve `@codex review` (#29). Pedido, devolveu cinco
+  achados reais em cerca de dez minutos. A reference traz o comando que mede a atividade do Codex
+  nos PRs recentes (testado no próprio repositório: presente em #29, #32, #33, #36 e #37, ausente
+  nos outros cinco) e manda registrar o caso (b) como "nunca pedido" e oferecer o pedido.
+- **`references/pr-branch.md`, seção nova:** um achado sobre ancestralidade de commit supõe um
+  método de merge. No #37 o Codex afirmou que `3447edb` nunca seria ancestral de `develop`,
+  supondo squash; o repositório mergeia com merge commit, e depois de `gh pr merge --merge` o
+  `git merge-base --is-ancestor` deu rc 0. A seção diz como ler o método (opções de merge na API e
+  `git log --merges`) antes do veredito, e como provar o "não se aplica" depois do merge.
+- **`SKILL.md`:** o caso (b) da Fase 2 passa a citar o Codex "never requested". O arquivo estava a
+  7 caracteres do aviso C1 (20.000), então a frase foi reescrita sem crescer: 19.993 → 19.991.
+
 ## [2.15.3] — 2026-10-15
 
 ### O `Completed` do Codex vale só com o sha do head; a pausa do CodeRabbit é lacuna de cobertura
