@@ -2,6 +2,10 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-10-16 — Manutenção Proativa de Consumíveis, hint residue (v1.2.1)
+- The 1.2.0 retest left one gap: the hint still flashed while the mouse crossed the deck. It is now hidden while
+  the presenter window is open, the case where a shared window reaches an audience.
+
 ## 2026-10-16 — Manutenção Proativa de Consumíveis, QA round (v1.2.0)
 - A 4-slide, 3:30 deck for a video call and a room, checked by a `/qa-execution` round (8 charters, 21
   scenarios) instead of by building a new deck.

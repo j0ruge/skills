@@ -3,6 +3,18 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.2.1] — 2026-10-16
+
+### Fixed
+- The key hint never shows while the presenter window is open. On 1.2.0 it faded 2.5 s after the mouse
+  stopped, but a mouse crossing the deck on its way to the popup still flashed it to the audience of a shared
+  window. Without the popup (rehearsal) it behaves as before. `check-presenter.mjs` gained the check (red on
+  1.2.0, green on 1.2.1) and now has 14.
+
+### Why
+The residue the 1.2.0 QA retest left open on the Manutenção Proativa deck (RS-929): the user chose "hide the hint
+while the presenter window is open" over "only on the cover" and "accept".
+
 ## [1.2.0] — 2026-10-16
 
 ### Fixed

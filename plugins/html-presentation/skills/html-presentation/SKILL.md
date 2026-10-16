@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.2.0"
+  version: "1.2.1"
 ---
 
 # HTML Presentation
@@ -128,7 +128,8 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
   start time and resets, and the popup's hello every second relinks a reloaded deck (Manutenção Proativa
   deck, 16/10/2026).
 - **Sharing "a window" in a call still shows the key hint and the `N` panel.** Both belong to the deck page;
-  only the popup stays private. The hint now fades 2.5 s after the mouse stops; keep `N` closed while sharing.
+  only the popup stays private. The hint now fades 2.5 s after the mouse stops and never shows while the
+  presenter window is open (a mouse crossing the deck flashed it); keep `N` closed while sharing.
 - **A click to focus the deck changed the slide.** With the popup over the deck on one screen, every click
   navigated, even on the black band beside the stage. The template ignores a click within 400 ms of the
   window gaining focus and any click outside the stage.

@@ -28,7 +28,7 @@ JS at the bottom of `assets/deck-template.html`.
 | Notes panel | `N` toggles a bottom panel with elapsed time and the plan window for the slide |
 | Presenter window | `P` opens `?apresentador#N` in a popup. Sync goes through `postMessage` to `opener`/popup, because BroadcastChannel does not cross `file://` windows. Messages carry `{deck, t0, gen}`. The popup sends `{hello}` every second, and a deck that lost it (F5) relinks and sends its slide back once. Timer turns red 15 s past the plan |
 | Timer | Starts when leaving the cover and is shared by both windows. `R` (either window) or the popup's button bumps `gen`, which wins everywhere; with the same `gen`, the oldest `t0` wins, so a reopened popup or a reloaded deck keeps the time already spoken |
-| Key hint | Shown on mouse move (`body.hint`), hidden 2.5 s after the mouse stops. Never in the popup or in print |
+| Key hint | Shown on mouse move (`body.hint`), hidden 2.5 s after the mouse stops. Never while the presenter window is open (`pwin` alive; a hello also clears it), in the popup or in print. Right after an F5 it can show until the first hello (≤ 1 s) |
 | Print | One slide per page at 1920×1080 (`@page`). The footer is hidden, and `data-print` (classification · section · NN / TT) is drawn by `::after` |
 | Motion | `.enter` fades 8 px in 450 ms without backwards fill; `prefers-reduced-motion` turns it off |
 

@@ -72,9 +72,13 @@ if (N >= 4) {
 await page.keyboard.press('n');
 
 const hint = () => page.evaluate(() => +getComputedStyle(document.getElementById('help')).opacity);
-await page.mouse.move(683, 330); await sleep(80); await page.mouse.move(690, 335); await sleep(400);
-const h1 = await hint(); await sleep(3600); const h2 = await hint();
-check('dica de teclas aparece com o mouse e some parada', h1 > 0.5 && h2 === 0, `opacidade ${h1} → ${h2}`);
+const wiggle = async () => { await page.mouse.move(683, 330); await sleep(80); await page.mouse.move(690, 335); await sleep(400); };
+// with the presenter window open the deck is being shown: a shared window would carry the hint to the audience
+await wiggle(); const h0 = await hint();
+check('dica de teclas não aparece com a janela P aberta', h0 === 0, `opacidade ${h0}`);
+await pop.close(); await sleep(300);
+await wiggle(); const h1 = await hint(); await sleep(3600); const h2 = await hint();
+check('sem a janela P, a dica aparece com o mouse e some parada', h1 > 0.5 && h2 === 0, `opacidade ${h1} → ${h2}`);
 
 // clicks start mid-deck: on the cover a click that goes back changes nothing and would pass by accident
 await page.keyboard.press('Home'); await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight'); await sleep(300);
