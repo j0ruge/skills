@@ -2,6 +2,29 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.16.0] — 2026-10-16
+
+### Revisão de vários repositórios, e o sensor que se prova rodando
+
+Lições de um `/codereview:codereview nos repos` na branch `RS-929_apresentacao_manutencao_proativa`
+(repos `digital_service_report_api` e `apresentacoes`, `codereview` 2.15.1).
+
+- **`references/configuration.md`, seção nova *Several repositories*:** o pedido nomeava dois
+  repositórios e a sessão estava num só. A branch do diretório de trabalho tinha 5 `.md`; o código
+  (o sensor de sigilo e o seu teste, o script de medição e o motor HTML do deck) estava na branch de
+  mesmo nome no repo irmão. Revisado só o cwd, o relatório daria "A, nenhum arquivo de código" e
+  não leria o único HIGH. A seção manda uma fase A por repo (base e varredura de segredos de cada
+  um), uma leva só de agentes com o repo escrito no comando de diff, e um relatório com uma coluna de
+  nota por repo.
+- **`references/detection-passes.md`, 6.11 *Severity*:** a fase C fixa o degrau rodando o sensor
+  contra uma cópia da entrada no scratchpad, pelas variáveis que ele já aceita, sem tocar a árvore
+  (por isso não espera os agentes, ao contrário do mutante). Um arquivo de padrões com `(` confirmou
+  o HIGH (`sigilo ok` com um IP plantado); o caminho do arquivo permitido com byte não UTF-8 não
+  reproduziu e caiu para LOW.
+- **`SKILL.md`:** a linha que diz quando ler a `configuration.md` ganha "names more than one repo".
+  O descritor ": override syntax, presets, code in docs" foi fundido com os gatilhos da mesma frase,
+  que já nomeiam os três; o arquivo estava no aviso C1 (20.000) e foi para 19.988.
+
 ## [2.15.4] — 2026-10-16
 
 ### O Codex que ninguém pediu, e o achado que supõe squash

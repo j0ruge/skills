@@ -62,6 +62,22 @@ TESTS they get no per-file agent at all.
 
 Overrides are applied on top of defaults — only the specified values change; unmentioned values keep their defaults.
 
+## Several repositories
+
+Read this when `$ARGUMENTS` names more than one repository ("nos repos", "both repos"), or when the
+handoff the review answers to lists them. The session's working directory is only one of them, and its
+branch can be the smaller part. Measured 2026-10-16 (RS-929): the session ran in the API repo, whose
+branch held 5 `.md` files; the code under review (a shell sensor and its test, a measurement script, an
+HTML deck engine) sat on a same-named branch in a sibling repo. Reviewed from the cwd alone, the report
+grades "A, no CODE files" and never reads the one HIGH.
+
+- **Phase A once per repo**, each with its own base branch (here `origin/develop` and `origin/main`) and
+  its own secrets pre-scan: a clean scan of one repo says nothing about the other.
+- **One Phase B batch** for the CODE files of every repo. Each launch prompt names its repo and writes the
+  diff command out (`git -C <repo> diff <merge-base>...HEAD -- <file>`), since `{REPO}` differs per agent.
+- **One report**: the header lists each repo with branch → base, the head reviewed and its counts; the
+  Overall Grade table gets one grade column per repo. A re-review names, per repo, the head it starts from.
+
 ## Path-scoped reviews
 
 Read this when the user limits the review to paths (`-- dir/ file`, "only the skill folder", "without docs/"). Pass the pathspecs to every Phase A command and to the agent prompts' diff commands.

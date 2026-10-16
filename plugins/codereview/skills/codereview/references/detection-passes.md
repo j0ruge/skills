@@ -521,6 +521,12 @@ The distinction is observability, not syntax: `catch {}` next to a `console.erro
 **Never CRITICAL** — that rung belongs to pass 6.10, and inflating this one makes the report's
 severity ladder stop meaning anything.
 
+Phase C settles the rung by running the sensor when that is cheap: point it at a scratch copy of its
+input through the overrides it already takes (a pattern file, an allow list, an artifact with a planted
+violation). Nothing in the tree changes, so it needs no wait for the agents, unlike a mutant. Measured
+2026-10-16 (RS-929, `check-sigilo.sh`): a pattern file with one `(` confirmed a HIGH — `sigilo ok`, rc 0,
+over a planted IP — while the agent's other path, a non-UTF-8 allow file, did not reproduce and fell to LOW.
+
 A finding here should name the blind spot concretely, not the syntax:
 "if the DB read fails, `active` stays empty and the deactivation warning never fires — the operator
 sees only the success line" beats "avoid `|| true`".
