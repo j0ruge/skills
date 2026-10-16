@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.16.0
+  version: 2.17.0
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -97,7 +97,7 @@ Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. T
    (`{SKILL_DIR}` = absolute path of this SKILL.md's directory). It prints JSON `{findings:[...], scanners:[...], errors:[...]}`; keep it verbatim as `SECRETS_PRESCAN`, the authoritative source for Phase C's Secrets Detection table and F-grade gate. A crash or non-JSON output means the scan did not run: warn the user and re-run it — an absent payload is never "scan returned clean".
 
 Classify each changed file:
-- EXCLUDED: lock files, node_modules, dist, build, .next, min files, binaries, .claude/ (unless the user names the path)
+- EXCLUDED: lock files, node_modules, dist, build, .next, min files, binaries, .claude/ (unless the user names it; rules/ is DOCS)
 - CODE: source files matching {fileExtensions} in {baseDir}, excluding tests and generated; an extensionless executable counts when its shebang runs one of those languages (`bin/tool`, `#!/usr/bin/env bash`)
 - UI_LIB: files in {generatedDirs}
 - TESTS: files matching {testFilePatterns}

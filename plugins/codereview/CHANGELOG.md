@@ -2,6 +2,38 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.17.0] — 2026-10-16
+
+### A âncora que o diff não mostra, a regra que a classificação escondia, e o guarda que respondeu pelo outro
+
+Lições das rodadas 2 a 4 do `/codereview:codereview` na branch `RS-929_apresentacao_manutencao_proativa`
+(repos `digital_service_report_api` e `apresentacoes`, `codereview` 2.16.0), que fecharam em A nos dois.
+
+- **`references/detection-passes.md`, 6.5.2, parágrafo novo *Line anchors into a changed file*:** a
+  rodada 2 do DSR revisava um diff só de docs, correto em si. As 11 linhas novas numa regra empurraram
+  `chaveItem` de 688 para 699, e a âncora `TODO.md:81 → controle-vida-util-consumiveis.md:688` ficou
+  fora do alvo num arquivo que não estava no diff. Só o sensor do próprio repo viu
+  (`check-todo.sh --check TODO.md`, rc 1, "anchor … is off target"). A fase C passa a rodar
+  `git grep -nE '<path>:[0-9]+'` para cada arquivo cujo número de linhas mudou e, quando houver, o
+  sensor de âncoras do repo. Fica MEDIUM quando o sensor fica vermelho e LOW nos outros casos.
+- **`SKILL.md`, classificação:** `.claude/` ia inteiro para EXCLUDED, mas `.claude/rules/**` é doc viva
+  do projeto. A mudança revisada existia para editar `.claude/rules/controle-vida-util-consumiveis.md`,
+  e os 2 LOW da rodada estavam nele: uma linha de cerca de 170 colunas e um "tudo abaixo" que
+  contradizia a nota logo abaixo. Seguida à letra, a classificação revisaria só o `TODO.md` e a nota.
+  Agora: `.claude/ (unless the user names it; rules/ is DOCS)`. São +10 chars, e o arquivo foi a
+  19.998, **2 abaixo do aviso C1**. A próxima lição que tocar no `SKILL.md` vai exigir extração
+  (`skill-refactoring`), não compressão.
+- **`references/detection-passes.md`, 6.12, bullet novo *One case for two guards*:** a correção da
+  rodada 1 trouxe dois guardas (`tr -d '\r'` e `[ -s pat ]`) e um único caso (`padroes-vazios`),
+  descrito no commit como prova do CRLF. Com uma cópia do script sem o `tr`, o caso continuou dando
+  2, porque o guarda de vazio disparava antes. Com os padrões reais em CRLF, a cópia respondeu
+  `sigilo ok … 30 padrões`, rc 0, sobre um IP plantado. Ao caso novo `padroes-crlf`, o script sem o
+  `tr` responde `exit 0, esperado 1` e o real passa, com 13/13 na suíte. Regra: mutar cada guarda
+  sozinho.
+
+Dívida pré-existente, não tocada: os 3 AVISO C2, que vêm dos contratos que os agentes leem por
+caminho absoluto, de propósito.
+
 ## [2.16.0] — 2026-10-16
 
 ### Revisão de vários repositórios, e o sensor que se prova rodando

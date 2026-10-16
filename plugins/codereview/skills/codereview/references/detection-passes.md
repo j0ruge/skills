@@ -260,6 +260,8 @@ When the diff introduces new API endpoints, data models, configuration, features
 
 **A decision already on record settles what it covers.** When a handoff, ledger, ADR or ruling ("stays out", "next cycle") already decided what a per-file finding raises, Phase C cites that decision instead of raising the severity again: LOW at most, dropped when the decision covers all of it, reopened only by evidence the decision did not weigh. Then read the reviewed project's own docs for the exception: a reference that still states the absolute the decision carved out is the 6.5.2 finding, because the decision usually lives only in the handoff. Measured 2026-10-07: a MEDIUM "`publico()` fails open" was a deferral the handoff recorded ("stays out: the extraction's technical texts"), while the project's visual spec still said no exception text reached the e-mail; the schema-error text did.
 
+**Line anchors into a changed file.** A diff that adds or removes lines moves every `path:line` other files cite into it (a TODO entry, a note, an ADR), and those files are not in the diff. In Phase C, for each changed file whose line count changed, run `git grep -nE '<path>:[0-9]+'` and check that each cited line still holds the symbol it names. Run the repo's own anchor sensor when it has one. MEDIUM when that sensor goes red, LOW otherwise. Measured 2026-10-16: 11 lines added to a rule file moved `chaveItem` from 688 to 699. The docs-only diff read clean, and only the repo's `check-todo.sh` (rc 1, "anchor … off target") saw it.
+
 **6.5.3 Contract Drift in Tests**
 
 Tests that assert literal-by-literal contracts about exported constants (enums, tuples, schema shapes) silently rot when the exported value gains or loses members and the test is not updated in the same PR. The test keeps passing on every other branch until the drift produces a real conflict — at which point the failure looks "pre-existing / from another feature" and gets dismissed instead of root-caused.
@@ -567,6 +569,11 @@ review (2026-10-03, a Python repo; each confirmed by a mutant that survived):
   diverges from the build"` on a comparison that only proved the CSV survives a re-write; a stale
   value passed. A message a fix adds is a claim: sabotage the defect it names and watch it go red
   (2026-10-05: the message one round added was the next round's MEDIUM).
+- **One case for two guards** — a fix adds two defenses (strip `\r`, then refuse an empty pattern
+  file) and one test case. The case exits through whichever guard fires first, so removing the other
+  keeps it green. Mutate each guard alone; each needs a case only it decides. 2026-10-16: without the
+  `tr -d '\r'`, a CRLF pattern file printed `sigilo ok` over a planted IP, while the comment-only
+  case still exited 2 through the emptiness guard.
 
 **A mutant sits on the wrong side of the measured boundary.** A cap of 140 over a real maximum of
 131 is not a mutant of a cap of 200: the test passes because nothing broke. Measure the boundary
