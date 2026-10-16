@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.6.1
+  version: 2.6.2
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -48,7 +48,8 @@ Opções: `--file` (padrão `TODO.md`), `--repo OWNER/NAME` (padrão: o repo do 
 obrigatório num clone cujo `origin` é um caminho local), `--dump DIR` (grava os corpos
 renderizados em disco, sem rede) e `--allow-empty` (backlog esvaziado de propósito; *Erros comuns*). Mexeu no script? Rode `python3 scripts/test_todo_issues.py
 <TODO.md de um repo real, já no esqueleto, com 5+ itens>`, que não usa a rede. Com menos itens o
-primeiro caso reprova de propósito: o teste apaga 4 itens e precisa que sobre um.
+primeiro caso reprova de propósito: o teste apaga 4 itens e precisa que sobre um. Casos de
+gatilho (deve e não deve disparar): `assets/trigger-evals.json`, no formato do `skill-creator`.
 
 ## Scripts disponíveis
 
@@ -104,10 +105,10 @@ python3 $S --fix --lang pt-BR             # repo sem OUTPUT_LANG em .sdd/config.
 - a seção decidida acrescentada no fim; um `## Resolved` vazio removido;
 - `RESOLVIDO por <hash>` → `RESOLVED by <hash>`, só dentro da seção aberta;
 - item de uma linha sem negrito: o texto antes do primeiro ` — ` vira o `**título**` (só se
-  couber num título de issue, ≤ 150 caracteres);
-- linha física acima do `WIDTH_CAP` do sensor do kit (hoje 120 caracteres) quebrada nessa largura,
+  couber num título de issue, ≤ `TITLE_MAX` caracteres, `todo_format.py`);
+- linha física acima do `WIDTH_CAP` do sensor do kit (120 caracteres em 2026-10-16) quebrada nessa largura,
   com recuo de 2 espaços, sem mudar uma palavra — o que costuma **revelar** um item acima do teto
-  de 8 linhas que passava por estar numa linha só. A largura é **lida do kit** a cada execução: uma
+  de linhas que passava por estar numa linha só. A largura é **lida do kit** a cada execução: uma
   cópia daqui (100) sobreviveu à regra do kit e fez o `--audit` inventar 6 itens acima do teto num
   arquivo que o sensor chamava de limpo;
 - `- [x]` apagado **só** quando todo commit que ele declara (`RESOLVED by`/`RESOLVIDO por|em`)
@@ -171,7 +172,7 @@ python3 $S --file ACHADOS-x.md --apply --link 6=153 --link "Uma obs=155"
   **renomear o título cria uma issue nova e deixa a antiga órfã**. O plano marca o par como
   `RENAME?` e imprime o comando que copia a chave nova para a issue antiga.
 - **As issues existentes vêm de `gh issue list`, nunca de `--search`.** O índice de busca do
-  GitHub atrasa minutos, e uma segunda rodada logo depois de uma queda criaria duplicatas.
+  GitHub pode atrasar (não medido aqui), e uma segunda rodada logo depois de uma queda criaria duplicatas.
 - **O `todo-hash` cobre título, seção e texto, e deixa os links de fora.** Assim um commit novo em
   `HEAD` não reescreve 98 issues só porque o sha do permalink mudou.
 - **Cada issue sabe de que arquivo veio** (`<!-- todo-src -->`, ou o link do rodapé nas antigas).
@@ -230,7 +231,7 @@ python3 $S --file ACHADOS-x.md --apply --link 6=153 --link "Uma obs=155"
   `` [`arq:N`](…) `` nunca mais é `(anchor)`, e cada linha deslocada volta como `UPDATE (text)` (kit
   sdd, #239 e #236 em 2026-10-07). Edite partindo do corpo do `--dump`, que já traz o link.
 - **Vírgula no `###` da seção.** O GitHub recusa vírgula em nome de label (422 `Label.name is
-  invalid`, sem dizer qual caractere) e a primeira issue nunca sai. O script troca `, ` por ` · `
+  invalid`, sem dizer qual caractere; medido em 2026-09-24, `_label_safe`) e a primeira issue nunca sai. O script troca `, ` por ` · `
   na label (o texto da seção no arquivo não muda). O teto de 50 é de **caracteres**, não bytes:
   acento não encurta nada.
 - **Rodar com o arquivo vazio ou fora do lugar.** O script recusa um arquivo sem nenhum item

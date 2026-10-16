@@ -3,6 +3,42 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-16 — a dívida da auditoria: claims com sensor, eval de gatilho
+
+Publicado como **v2.6.2**. Reparo autorizado pelo humano, na auditoria da `skill-quality-audit`
+0.7.1. O baseline tinha 0 ERRO, 0 AVISO e três INFO: B6, D1 com 22 trechos e F4.
+
+- **F4 (sem evals).** Criado o `assets/trigger-evals.json`, com 10 casos que devem disparar e 9
+  quase-acertos que não devem: issue avulsa, ticket do Jira, TODO no código, release notes,
+  comentários de PR, migração do GitLab, GitHub Project, checklist e issue velha. Ele é roteado do
+  `SKILL.md`, ao lado do teste offline.
+- **D1 (22 trechos).** Cada trecho recebeu um veredito. Seis mudaram o texto, cinco no `SKILL.md`
+  e um na reference:
+  - **derivar:** `≤ 150` passou a `≤ TITLE_MAX` (`todo_format.py`), e "teto de 8 linhas" passou
+    a "teto de linhas", porque o teto é do sensor do kit.
+  - **datar:** o `WIDTH_CAP` de 120 ganhou "em 2026-10-16"; o 422 da vírgula ganhou "medido em
+    2026-09-24, `_label_safe`"; e o 364 da reference ganhou "lighthouse_project, 2026-10-16".
+  - **sem medida:** o atraso do índice de busca do GitHub virou "pode atrasar (não medido aqui)".
+    Nenhum arquivo do repo registra essa medição.
+
+  Os outros 16 ficam como estão. Treze **têm sensor**:
+  - a versão: `validate-versions.py`;
+  - Python ≥ 3.8: `kit.py:MIN_PY`;
+  - os requisitos e o `SDD_HOME`: `kit.py`;
+  - o ORPHAN no commit da remoção: `todo_issues.py:orphan_verdict`;
+  - as ADRs do kit: `docs/adr/` do kit;
+  - `TODO*.md` sempre backlog: `todo_issues.py:detect_format`; a unidade seção: `report.py`;
+  - `UPDATE (anchor)`: `update_kind`;
+  - os marcos 2.2.0, 2.3.x e 2.5.0: cada um tem a sua seção no CHANGELOG versionado.
+
+  Os outros três são **instrução, não fato**: "um grupo por vez", "~6 linhas" e "nunca o primeiro
+  comando".
+- **B6.** O `scripts/__pycache__` foi para a lixeira com `gio trash`. O git o ignora
+  (`.gitignore:1`), então ele nunca chegou ao repo, e cada execução dos scripts o recria.
+- **Tamanho.** O `SKILL.md` passou de 19 757 para 19 948 caracteres (`wc -m`), abaixo do AVISO
+  do C1, que dispara acima de 20 000.
+- **Como reverter:** `git revert` do commit desta versão. O eval set é arquivo novo e sai junto.
+
 ## 2026-10-16 — o canário não é uma issue só
 
 Publicado como **v2.6.1**.

@@ -1,0 +1,21 @@
+[
+  {"query": "sincroniza o TODO.md do kit com as issues do GitHub, mas me mostra só o plano antes de mexer em qualquer issue", "should_trigger": true},
+  {"query": "cada item aberto do TODO.md tem que virar uma issue com label da seção, e rodar de novo não pode duplicar nada", "should_trigger": true},
+  {"query": "mergeei o PR e apaguei três itens consertados do TODO.md; fecha as issues espelho deles citando o commit do conserto", "should_trigger": true},
+  {"query": "o espelho de issues recusou o TODO.md do sales_quote com rc 4, audita o arquivo e me diz o que está fora do padrão do kit sdd", "should_trigger": true},
+  {"query": "o plano do TODO para issues mostrou um RENAME? e um par ORPHAN/CREATE, o que eu faço antes do --apply?", "should_trigger": true},
+  {"query": "tenho um ACHADOS-20261001-sales-quote.md com a tabela de roteamento; leva os achados para o tracker, os resolvidos já fechados", "should_trigger": true},
+  {"query": "quero criar em lote as issues do GitHub a partir do backlog do TODO.md, com gh issue create, sem fazer uma por uma", "should_trigger": true},
+  {"query": "o --fix quer apagar um item aberto que tem RESOLVED by com o commit já na main, isso está certo?", "should_trigger": true},
+  {"query": "Mirror the findings in our TODO.md to GitHub issues and close the ones whose item was deleted after the merge", "should_trigger": true},
+  {"query": "acerta o formato do TODO.md desse repo novo: não tem o marcador sdd:open e as linhas passam da largura do sensor", "should_trigger": true},
+  {"query": "abre uma issue no GitHub para o bug do login, com os passos para reproduzir e o print do erro", "should_trigger": false},
+  {"query": "cria um ticket no Jira para essa tarefa, já no sprint ativo e com story points", "should_trigger": false},
+  {"query": "lista os comentários TODO e FIXME espalhados pelo código fonte do backend", "should_trigger": false},
+  {"query": "gera as release notes da versão 1.4 a partir do histórico do git e do CHANGELOG", "should_trigger": false},
+  {"query": "resolve os comentários do CodeRabbit e do Codex no PR 274 e marca as conversas como resolvidas", "should_trigger": false},
+  {"query": "migra as issues abertas do GitLab para o GitHub mantendo labels e responsáveis", "should_trigger": false},
+  {"query": "organiza as issues abertas do repo num GitHub Project com colunas por prioridade", "should_trigger": false},
+  {"query": "escreve uma checklist em markdown para o deploy de amanhã, com o que conferir antes e depois", "should_trigger": false},
+  {"query": "Close every stale GitHub issue older than 90 days with a polite comment", "should_trigger": false}
+]

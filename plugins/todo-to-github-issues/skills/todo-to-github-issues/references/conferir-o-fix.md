@@ -19,7 +19,8 @@ diff <(git show HEAD:TODO.md | norm) <(norm < TODO.md) | grep -c '^[<>]'    # te
 
 ⚠️ **Ancore o marcador na linha inteira (`^…$`).** O preâmbulo da semente atual cita
 `<!-- sdd:open -->` entre crases, ao explicar o esqueleto. O recorte por `/<!-- sdd:open -->/`
-começa nesse parágrafo, e a comparação acusa 364 linhas de diferença onde há 0. Desde a 2.6.0 o
+começa nesse parágrafo, e a comparação acusa 364 linhas de diferença onde há 0 (medido na
+migração do `lighthouse_project`, 2026-10-16). Desde a 2.6.0 o
 `AUTO` também apaga item aberto já resolvido (`--fix` diz quantos): as palavras dele saem como `<`,
 e só elas podem sair. Confira que cada `<` pertence a um desses itens.
 

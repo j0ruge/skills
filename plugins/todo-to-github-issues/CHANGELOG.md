@@ -3,6 +3,33 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.6.2] — 2026-10-16
+
+Patch: a dívida que a auditoria da `skill-quality-audit` (0.7.1) apontava. Reparo autorizado pelo
+humano.
+
+### Added
+
+- **`assets/trigger-evals.json`** (F4). Eval set de gatilho no formato do `skill-creator`: 10
+  pedidos que devem disparar a skill e 9 quase-acertos que não devem. Os quase-acertos são issue
+  avulsa, Jira, TODO no código, release notes, comentários de PR, migração do GitLab, GitHub
+  Project, checklist e issue velha. O `SKILL.md` o roteia ao lado do teste offline.
+
+### Fixed
+
+- **Os 22 trechos factuais do D1 têm veredito.** Cinco textos mudaram:
+  - `TITLE_MAX` (`todo_format.py`) no lugar do `150` solto;
+  - "teto de linhas" do sensor do kit no lugar de "8 linhas";
+  - `WIDTH_CAP` de 120 datado em 2026-10-16;
+  - o 422 da vírgula em label com a medida de 2026-09-24, que está em `_label_safe`;
+  - o atraso do índice de busca do GitHub marcado como não medido, porque nenhum arquivo do repo
+    registra essa medição.
+
+  O `364` da `references/conferir-o-fix.md` ganhou a origem (`lighthouse_project`, 2026-10-16).
+  Os demais têm sensor no código ou no CHANGELOG, ou são instrução, e a tabela está no CHANGELOG
+  da skill.
+- O `scripts/__pycache__` local, ignorado pelo git (B6), foi para a lixeira.
+
 ## [2.6.1] — 2026-10-16
 
 Patch: a documentação do canário diz o que o `--limit` limita.
