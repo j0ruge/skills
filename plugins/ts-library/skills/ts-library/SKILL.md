@@ -4,7 +4,7 @@ description: "Build and ship a TypeScript/Node library the 2026 way: ESM-only pa
 license: MIT
 metadata:
   author: Chewiesoft
-  version: 0.1.0
+  version: 0.2.0
 ---
 
 # Biblioteca TypeScript/Node em 2026
@@ -22,6 +22,15 @@ Cada afirmação desta skill tem uma de três marcas, e a diferença importa:
 | **medido** | reproduzido em sessão, com o comando ao lado |
 | **fonte** | fato externo com data de leitura; a fonte está em `references/fontes.md` |
 | **desenho** | decidido e ainda não executado de ponta a ponta. Trate como proposta e prove antes de confiar |
+
+Ao repassar um fato **medido** desta skill, diga que a medição é da skill e a data dela. Não escreva
+como se você tivesse medido agora: quem lê decide diferente quando sabe que o número é de outra
+máquina e de outra versão. Se o fato decide algo importante, meça de novo e cite o comando.
+
+**Parta das restrições de quem pede.** O caso medido (repositório privado, sem CI, sem registro, imagem
+`alpine` sem `git`, `npm ci --ignore-scripts`) é exemplo, não premissa. Se o pedido não diz como a lib
+é instalada, pergunte, ou escreva a hipótese como hipótese. Uma recomendação justificada por uma
+restrição que o usuário nunca citou é uma recomendação para outro projeto.
 
 ## Quando usar
 
@@ -128,6 +137,12 @@ Ao revisar, confira cada linha e diga o que ela evita, não só que falta:
   `docker build` e do CI, o mesmo `npm ci` reprova com `EINTEGRITY` (**medido**, npm 12.0.2). Daí o
   sensor que compara o `sha512` do `.tgz` com o `integrity` do lockfile, e daí o caso sabotado rodar
   com `npm ci --cache "$(mktemp -d)"`.
+- **`*.tgz` no `.gitignore` tira o tarball do commit sem aviso.** Num consumidor com `vendor/`, o
+  `git add -A` sai com rc=0 e o commit fica sem o `.tgz`; só o `git add` explícito do arquivo recusa e
+  avisa (**medido**, git, 2026-10-16). Confira no ponto de entrega, e não na cópia local:
+  `git check-ignore -v vendor/*.tgz` vazio, `git ls-files vendor/` com o arquivo, e
+  `git show HEAD:vendor/<arquivo>.tgz | sha256sum` igual ao publicado. Um `*.tgz` no `.dockerignore`
+  tira o arquivo da imagem do mesmo jeito, e aí o `npm ci` do build quebra no servidor.
 - **`declarationMap` e `sourceMap` apontam para o `src` ao lado do `dist`.** Se o `src` não vai no pacote, os mapas
   quebram e o "ir para a definição" cai no `.d.ts`. Ou o `src` vai junto, ou os mapas saem.
 - **TypeScript 7.0 não tem API programática estável até a 7.1** (**fonte**). Ferramenta que usa a API

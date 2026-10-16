@@ -38,6 +38,18 @@ conserto urgente feito na cópia antiga não chega à lib, e vice-versa. Congele
 para lá") e registre a troca no backlog da origem, com dono. Se a origem está em produção, a troca
 segue o processo dela, com staging antes, e nunca de carona noutra mudança.
 
+O README avisa; quem prova que ninguém mexeu é um sensor. Anote o sha da origem no momento da extração
+e, antes de cada release da lib e antes da troca na origem, confira:
+
+```bash
+git -C <origem> fetch -q origin
+git -C <origem> log --oneline <sha-da-extração>..origin/<branch-principal> -- packages/shared/<lib>
+```
+
+A saída tem de vir vazia. Qualquer commit ali é um conserto que a lib ainda não tem, e ele entra na lib
+antes da release. Medido em 2026-10-16 num repositório de prova: um commit na pasta depois do sha base
+aparece na contagem, e uma pasta intocada sai com zero.
+
 ## As decisões
 
 As decisões da lib costumam estar em ADRs da origem, misturadas com o produto de lá. No repositório

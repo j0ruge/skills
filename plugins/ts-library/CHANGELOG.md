@@ -2,6 +2,44 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [0.2.0] — 2026-10-16
+
+### O que a primeira avaliação mostrou
+
+A avaliação da 0.1.0 (três casos, com e sem a skill) deu 100% contra 94%, e o avaliador apontou quatro
+falhas que os critérios não pegavam:
+
+- **Recomendação para outro projeto.** Na revisão de um `package.json` em que o usuário não disse como
+  a lib é instalada, a resposta com a skill justificou a escolha com imagem `alpine` e
+  `npm ci --ignore-scripts`, que vinham do caso medido da skill. O `SKILL.md` agora manda partir das
+  restrições de quem pede, e perguntar, ou escrever a hipótese como hipótese.
+- **Medição atribuída a quem não mediu.** Uma resposta escreveu "medido com o npm 12.0.2" sobre um
+  fato que a skill mediu. Agora, quem repassa um fato *medido* diz que a medição é da skill e a data.
+- **O tarball fora do commit.** A resposta sem a skill conferiu o arquivo commitado, e a com skill não.
+  Medido em 2026-10-16: com `*.tgz` no `.gitignore`, o `git add -A` sai com rc=0 e o commit fica sem o
+  tarball; só o `git add` explícito recusa e avisa. Entrou como armadilha e como passo da atualização
+  (`git check-ignore -v`, `git show HEAD:vendor/… | sha256sum`).
+- **A cópia congelada só com README.** A resposta sem a skill propôs um sensor, e ele entrou na
+  `extracao.md`: `git log <sha-da-extração>..origin/<branch> -- <pasta>` tem de sair vazio antes de
+  cada release (medido num repositório de prova).
+
+E a segunda avaliação achou um defeito no próprio desenho da release:
+
+- **O gate rodava antes do bump.** O número da versão está dentro do `package.json` do tarball, então o
+  gate testava um arquivo e a release publicava outro, com outro sha256. A `distribuicao.md` passou a
+  fazer bump e commit local primeiro, `npm pack` uma vez só, e o gate sobre esse commit e esse `.tgz`.
+  Achado pela execução com a skill no caso do plano de extração.
+
+Na segunda avaliação, a skill ficou com 24 de 25 critérios, contra 22 de 25 sem ela. A reprovação que
+sobrou foi a mesma do primeiro item: a `distribuicao.md` descrevia o `docker build` como algo que
+"costuma partir de `node:*-alpine` … com `--ignore-scripts`", e o modelo leu isso como fato do projeto
+de quem pedia. O trecho virou condição ("vale **se**…"). Entraram também dois cuidados que a resposta
+sem a skill teve e a skill não tinha: procurar script de instalação novo dentro do tarball antes do
+`npm install`, e rodar o gate num `git worktree` limpo, onde um `.tgz` fora do commit não passa.
+
+Os critérios da avaliação foram de 18 para 25, com os que o modelo base tende a errar: afirmação falsa
+sobre o npm, restrição inventada, medição atribuída, arquivo commitado e janela de congelamento.
+
 ## [0.1.0] — 2026-10-16
 
 ### A skill nasce do planejamento de uma lib real

@@ -13,7 +13,9 @@
         "Recomenda um campo `files` como lista de permissão",
         "Recomenda `private: true` (contra publicação acidental) e um campo `license` (por exemplo `UNLICENSED`)",
         "Aponta que `prepublishOnly` não roda sem `npm publish`, então o `dist` pode não existir no tarball do `npm pack`",
-        "Recomenda verificar o pacote empacotado: `publint`, `attw` e/ou instalar o `.tgz` num consumidor vazio"
+        "Recomenda verificar o pacote empacotado: `publint`, `attw` e/ou instalar o `.tgz` num consumidor vazio",
+        "Não apresenta como fato do caso do usuário restrições de ambiente que ele não deu (imagem alpine, --ignore-scripts, servidor de deploy); se as usa, marca como hipótese ou pergunta",
+        "Comprova ao menos um defeito com comando executado e a saída dele (por exemplo o conteúdo do tarball do npm pack), ou diz explicitamente que não executou nada"
       ]
     },
     {
@@ -28,7 +30,9 @@
         "Dá uma prova concreta de que o instalado é o testado: sha256/integrity do lockfile e/ou reconstrução da tag comparada com o publicado",
         "Trata a troca no sales_quote como mudança de produção própria (não de carona) e cuida da cópia antiga no workspace (congelar ou remover em sequência controlada)",
         "Faz release e evidência sem GitHub Actions (script na estação, status de commit ou equivalente)",
-        "Marca o pacote como `private` e/ou com licença proprietária, ou outra proteção contra publicação acidental"
+        "Marca o pacote como `private` e/ou com licença proprietária, ou outra proteção contra publicação acidental",
+        "Propõe uma checagem mecânica da janela de congelamento da cópia antiga (por exemplo git log desde o sha da extração tem de sair vazio), e não só um README",
+        "Avisa que *.tgz no .gitignore ou no .dockerignore tiraria o tarball do commit ou da imagem, e manda conferir"
       ]
     },
     {
@@ -43,7 +47,10 @@
         "Avisa que o cache do npm pode esconder um tgz trocado e manda provar com cache vazio (`npm ci --cache` vazio ou equivalente) ou conferir o `integrity` do lockfile",
         "Remove o tgz da versão anterior de `vendor/`",
         "Roda a suíte do consumidor, incluindo testes que exercitam a lib, antes do PR",
-        "Confere o CHANGELOG ou as notas da lib para validar que a mudança é compatível com um patch"
+        "Confere o CHANGELOG ou as notas da lib para validar que a mudança é compatível com um patch",
+        "Confere o .tgz no ponto de entrega: o arquivo commitado (git show HEAD:… ou git ls-files) e/ou que .gitignore/.dockerignore não o excluem",
+        "Não contém afirmação falsa sobre o npm, como dizer que sobrescrever o .tgz faz o npm ci reprovar sempre, sem ressalvar o cache",
+        "Atribui as medições que cita à fonte (skill, documentação) ou as executa de fato; não escreve 'foi medido' sobre o que não mediu"
       ]
     }
   ]

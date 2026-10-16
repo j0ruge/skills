@@ -763,7 +763,7 @@
     {
       "name": "ts-library",
       "source": "./plugins/ts-library",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "description": "Build and ship a TypeScript/Node library the 2026 way: ESM-only package, sensors on the packed tarball (publint, attw, API report), reproducible release, and vendored-tarball distribution when there is no registry or CI. Triggers — TypeScript library, npm package, extract lib, package.json exports, publint, attw, vendored tarball, library release",
       "category": "development",
       "keywords": [
