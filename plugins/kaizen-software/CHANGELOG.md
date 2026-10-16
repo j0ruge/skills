@@ -2,6 +2,31 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.0] — 2026-10-16
+
+### Validar um plano que já chegou pronto, e a sabotagem que o cache engoliu
+
+Lições de uma sessão real (planejamento da `@jrc/object-storage` como biblioteca da JRC: brainstorm,
+grill de 13 perguntas e, a pedido do usuário, validação Kaizen da missão com checklist):
+
+- **Template novo, § Validação de plano** (`references/templates.md`), roteado pela Fase 1 e pela
+  tabela de artefatos. O usuário pediu "valide se a missão cumpre a skill e gere checklist"; a skill
+  só tinha templates para *escrever* um plano (Plano PDCA), não para *validar* um já decidido, e a
+  validação foi improvisada: tabela dos desperdícios contra o plano, ajustes K1–K6 que voltaram ao
+  plano e um checklist. O template é esse formato, com o checklist tirado dos princípios e armadilhas
+  desta skill. Padrão de falha: cada validação sai num formato, e a que vira só uma nota não muda o
+  plano. Usado uma vez (`lighthouse_project`, `docs/superpowers/specs/2026-10-16-jrc-libs-object-storage-design.md`
+  § 8); não testado em outro caso.
+- **Armadilha nova, "Sabotagem que não chegou à ferramenta".** Para provar que o `npm ci` recusa um
+  tarball trocado em `vendor/`, o caso sabotado deu rc=0 e instalou o conteúdo **antigo**: o npm
+  serviu os bytes do cache global (`~/.npm`) pelo `integrity` do lockfile e nem leu o arquivo. Com
+  `npm ci --cache <diretório vazio>`, o mesmo caso reprovou com `EINTEGRITY`. A Fase 2 e o
+  *Poka-yoke* do `kaizen-conceitos.md` mandam montar os dois casos "do zero", mas os exemplos falam
+  de pasta e fixture; o cache global da ferramenta fica fora da pasta e é estado de rodada anterior
+  do mesmo jeito. Padrão de falha: ler o verde do caso sabotado como "a ferramenta não confere" e
+  descartar o poka-yoke certo. Correção verificada no caso de origem (cache vazio → `EINTEGRITY`,
+  rc=1).
+
 ## [1.3.6] — 2026-10-05
 
 ### Armadilhas do Check: o que sumiu, o que a sonda não leu, a regra que ninguém pediu

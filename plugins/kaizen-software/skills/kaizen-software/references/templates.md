@@ -36,6 +36,49 @@ Salve como `docs/planos/PLANO-<slug-curto>.md` (ou onde o projeto guardar planos
 <Preenchido ao final: o que padronizar, o que ajustar, entrada no kaizen log.>
 ```
 
+## Validação de plano
+
+Use quando o plano já foi decidido (grill, spec, ADR, plano de missão) e o pedido é conferir se ele
+cumpre o Kaizen. Grave como seção do próprio plano ou da spec, não como arquivo novo que ninguém lê.
+O produto não é uma nota: cada achado vira um **ajuste** que volta ao plano, ou uma justificativa
+escrita na tabela de desperdícios.
+
+```markdown
+# Validação Kaizen — <plano>
+
+**Data:** <AAAA-MM-DD> · **Plano:** <link> · **Veredito:** <passa | passa com ajustes | refatiar>
+
+## Desperdícios contra o plano
+| Desperdício | Onde aparece no plano | Contramedida, ou "justificado: <por quê>" |
+|---|---|---|
+| Superprodução | | |
+| Espera | | |
+| Transporte | | |
+| Superprocessamento | | |
+| Estoque | | |
+| Movimentação | | |
+| Defeitos | | |
+| Talento não usado | | |
+| Mura / muri | | |
+
+## Ajustes (voltam ao plano)
+| # | Achado (princípio ou armadilha) | Ajuste no plano |
+|---|---|---|
+| K1 | <ex.: o Check lê o código-fonte, e o consumidor recebe o pacote (rótulo ≠ artefato)> | <ex.: testar o pacote instalado num consumidor vazio> |
+
+## Checklist
+- [ ] Problema em uma frase e métrica de sucesso de cada entrega
+- [ ] Primeira entrega verificável no primeiro incremento
+- [ ] Todo incremento com Check; teste visto vermelho antes; sonda nova com caso sabotado montado do zero, cache da ferramenta incluído
+- [ ] Check no artefato que chega ao destino, não no rótulo nem na cópia local
+- [ ] Poka-yoke antes de regra escrita; a regra que sobrar diz por que nenhum degrau acima coube
+- [ ] Ação irreversível com o passo reversível antes, a confirmação de quem decide e os identificadores anotados
+- [ ] Espera no caminho crítico nomeada, com dono e momento
+- [ ] Estoque com dono: o que fica pronto e parado tem item e responsável
+- [ ] Yokoten: onde mais a decisão vale, e se entra agora ou vira oportunidade
+- [ ] Act: entrada no `KAIZEN_LOG.md` ao fechar, com "Padronizado em" conferido no arquivo
+```
+
 ## Kaizen Log
 
 Arquivo único `KAIZEN_LOG.md` na raiz do projeto, entradas mais recentes no topo.

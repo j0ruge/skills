@@ -1,7 +1,7 @@
 ---
 name: kaizen-software
 metadata:
-  version: 1.3.6
+  version: 1.4.0
 description: "Metodologia Kaizen (melhoria contínua) para planejar, implementar e manter software — e para ensinar Kaizen ao time. Conduz as três fases pelo ciclo PDCA, verifica pelo artefato e não pelo rótulo da ferramenta, prefere poka-yoke a regra escrita, e mapeia os artefatos Kaizen nos que o projeto já tem (ADR, notas, TODO, CHANGELOG). Gatilhos — Kaizen, PDCA, kaizen log/retrospectiva, 5 porquês, poka-yoke, desperdício/dívida técnica, planejar feature, confirmar antes de apagar/limpar."
 ---
 
@@ -35,6 +35,8 @@ Ao planejar uma funcionalidade, mudança ou projeto:
 5. **Escreva o plano no formato PDCA** usando o template em `references/templates.md` (seção "Plano PDCA"). Cada incremento carrega seu próprio critério de verificação (Check).
 
 Sinal de alerta: um plano em que a primeira entrega verificável só aparece na semana 3 não é um plano Kaizen. Refatie. Se nem refatiando dá — a meta exige trocar a base (framework, banco, arquitetura) —, nomeie o que é: **kaikaku**. Ele não dispensa o método: pede um ADR com a alternativa kaizen medida e rejeitada, e o próprio kaikaku fatiado (strangler, feature flag) para que cada passo continue verificável e reversível.
+
+**Plano que chega pronto.** Quando o plano já foi decidido (grill, spec, ADR) e o pedido é validá-lo, use o template § Validação de plano em `references/templates.md`. Cada achado vira um ajuste que volta ao plano, ou uma justificativa escrita, e não uma nota.
 
 ## Fase 2 — IMPLEMENTAÇÃO (Do + Check)
 
@@ -81,6 +83,7 @@ Casos medidos em sessões reais. Cada um é um jeito de o Check dar verde sem te
 
 - **Validador verde não prova que nada sumiu.** Em conversão, ingestão, migração ou exportação, o Check conta as unidades nas duas pontas (páginas, linhas, registros) e compara. Validador de forma não reprova o que foi descartado: o que não saiu não tem forma para estar errada. Caso (2026-10-05): um conversor de PDF para Markdown descartava a página cujo único bloco vinha marcado como rodapé (dedicatória, epígrafe); o wrapper disse "OK" e o validador saiu 0, e só a contagem de marcadores de página contra as páginas do PDF viu as que faltavam.
 - **Sonda verde porque não leu o artefato.** Antes de confiar no verde, confira que o escopo da sonda inclui o que acabou de nascer: varredura "da árvore" que lista só arquivos rastreados (`git ls-files`), só o índice ou só um cache passa sem abrir o arquivo novo. O caso sabotado da Fase 2 prova que a sonda vê o defeito; o escopo prova que ela olhou para o artefato. Caso (2026-10-05): uma guarda de dados sensíveis deu "nenhum achado" sobre os arquivos rastreados; depois do `git add`, achou 4 nos três arquivos novos.
+- **Sabotagem que não chegou à ferramenta.** Antes de ler o veredito de um caso sabotado, confirme que a ferramenta leu o artefato sabotado. O cache global dela (`~/.npm`, o do pip, a camada do Docker) é estado de uma rodada anterior que fica fora da pasta de trabalho, e serve o artefato antigo; o "do zero" do caso sabotado inclui esse cache (`--cache` vazio, `--no-cache`). Caso (2026-10-16): um `.tgz` trocado em `vendor/` passou no `npm ci` com rc=0 e instalou o conteúdo antigo, servido do cache pelo `integrity` do lockfile; com `--cache` vazio, o mesmo `npm ci` reprovou com `EINTEGRITY`. Ler o rc=0 como "o npm não confere tarball local" teria descartado o poka-yoke certo.
 - **Regra herdada de handoff não é do usuário até ser rastreada.** Handoff, resumo ou nota escrita por agente pode carregar uma restrição que o próprio agente acrescentou. Antes de obedecer ou de perguntar, procure a origem (o pedido registrado, a thread). Se ela não está lá e o precedente diz o contrário, a regra vira pergunta, não instrução. Caso (2026-10-05): "os nomes ficam fora do repositório" estava no handoff e não no registro do pedido, os documentos anteriores faziam o oposto, e o usuário escolheu o precedente.
 
 ## Ensinar Kaizen
@@ -104,6 +107,7 @@ As convenções do projeto (CLAUDE.md, regras em `.claude/rules/`, guias interno
 | Situação | Artefato | Template |
 |---|---|---|
 | Planejamento de feature/mudança | Plano PDCA em Markdown | `references/templates.md` § Plano PDCA |
+| Validação de um plano já decidido (grill, spec, ADR) | Desperdícios contra o plano, ajustes e checklist | `references/templates.md` § Validação de plano |
 | Qualquer ciclo concluído | Entrada no `KAIZEN_LOG.md` na raiz do projeto | `references/templates.md` § Kaizen Log |
 | Análise de bug recorrente | Registro de 5 Porquês | `references/templates.md` § 5 Porquês |
 | Fechamento de ciclo | Retrospectiva | `references/templates.md` § Retrospectiva |
