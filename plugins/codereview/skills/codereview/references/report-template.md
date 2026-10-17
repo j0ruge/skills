@@ -137,7 +137,7 @@ If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, th
 > A function counts as "documented" if it has a JSDoc/XML doc/docstring that matches its current behavior.
 > If the project specifies a documentation language (e.g., PT-BR), docstrings in the wrong language count as MISSING.
 > Count public and private apart: public is a name without a leading `_` in Python (exported in TS/JS, `public` in C#). The percentage on this line is the public one; give the private count after it (`· private {n}/{m}`). The severity of each gap comes from detection-passes.md 6.5.1, not from the percentage. Measured 2026-10-07: a Python range read 25/47 with private HTML helpers mixed in; split, it was public 18/22 and private 7/25, and the 4 public gaps were the ones 6.5.1 grades.
-> Python probe — every function or class whose span touches an added line. It reads each file at `HEAD`, where the diff ends, with paths relative to the current directory: read from disk, an uncommitted edit to the file shifts its lines and lists the wrong functions (measured 2026-10-07: a function the PR did not touch came in, and the one it added went missing).
+> Python probe — every function or class whose span touches an added line. It reads each file at `HEAD`, where the diff ends, with paths relative to the current directory: read from disk, an uncommitted edit to the file shifts its lines and lists the wrong functions (measured 2026-10-07: a function the PR did not touch came in, and the one it added went missing). The module counts too (6.5.1 lists modules), on a first line of its own: a script that is all top-level code has no function for the walk to find. Measured 2026-10-17: 4 of 8 changed scripts had no module docstring, and two of them had no function at all, so without the module line the probe would print nothing for them.
 >
 > ```bash
 > python3 - {MERGE_BASE} {changed .py files} <<'EOF'
@@ -149,7 +149,9 @@ If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, th
 >     added = {n for m in re.finditer(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@", diff, re.M)
 >              for n in range(int(m[1]), int(m[1]) + int(m[2] or 1))}
 >     src = subprocess.run(["git", "show", f"HEAD:./{f}"], capture_output=True, text=True).stdout
->     for node in ast.walk(ast.parse(src)):
+>     tree = ast.parse(src)
+>     print(f"{f}:1 public {'doc' if ast.get_docstring(tree) else 'MISSING'} <module>")
+>     for node in ast.walk(tree):
 >         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) \
 >                 and added & set(range(node.lineno, node.end_lineno + 1)):
 >             kind = "private" if node.name.startswith("_") else "public"
@@ -310,7 +312,7 @@ Non-security detection passes are skipped; the report marks them as "Not analyze
 
 ## Troubleshooting
 
-- **"Error: not a git repository"** — Run the command from inside the project directory where `.git` is present.
+- **"Error: not a git repository"** — Run the command from inside the project directory where `.git` is present. A folder that never had a repo is reviewed from a git dir in the scratchpad (configuration.md, *Folder without git*).
 - **"Cannot review base branch against itself"** — Checkout a feature branch before running; the command cannot diff the base branch against itself.
 - **"Error: detached HEAD state"** — Attach HEAD to a branch with `git checkout <branch-name>` before running.
 - **Report shows 0 changed files** — Ensure at least one commit exists on the current branch that is not yet on the base branch (`git log main..HEAD` should be non-empty).

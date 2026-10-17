@@ -2,6 +2,45 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.18.0] — 2026-10-17
+
+### A pasta sem git, o módulo que o probe não via e os testes que nenhum agente lê
+
+Lições das três rodadas do `/codereview:codereview` (2.17.0) numa pasta de scripts Python e shell com
+um deck HTML (Windows sob WSL), que fecharam em A em todas as linhas da nota.
+
+- **`references/configuration.md`, seção nova *Folder without git*; `SKILL.md`, *Error Handling* e a
+  rota do `configuration.md`; `report-template.md`, Troubleshooting:** a pasta nunca teve repositório,
+  e o passo 1 do Phase A deu `fatal: not a git repository (or any parent up to mount point /mnt)`, rc
+  128. O *Error Handling* mandava parar, e o Troubleshooting só dizia para rodar onde houver `.git`. O
+  que funcionou nas três rodadas: `GIT_DIR=<scratchpad>/review.git GIT_WORK_TREE=<pasta>`, `git init -b
+  main` com `core.fileMode false` (o `/mnt/c` entrega tudo como 777), `core.autocrlf false` e `user.*`
+  local, commit-raiz vazio como base, arquivos autorais adicionados pelo nome e o prefixo em todo
+  comando git, inclusive no prompt de cada agente, com o diff escrito por extenso como no modo
+  `worktree`. Foram 6, 6 e 5 agentes sonnet, todos rodaram o diff com prefixo, e nada foi escrito na
+  pasta.
+- **`references/report-template.md`, probe Python de docstrings:** o probe percorria só funções e
+  classes, mas o 6.5.1 conta módulos. O probe da rodada 1, com a linha do módulo, achou 4 de 8 scripts
+  sem docstring de módulo, parte do HIGH de Documentation. Dois deles não tinham nenhuma função e não
+  teriam linha nenhuma no probe do template. Agora ele imprime `{f}:1 public doc|MISSING <module>`
+  antes das funções.
+- **`references/configuration.md`, *Re-review rounds*, bullet novo *The tests a fix adds get no
+  agent*:** numa revisão completa o Phase B só manda TESTS para agente com o foco `tests`. A rodada 2
+  trazia 14 arquivos de teste novos (788 linhas) e nenhum agente; a rodada 3, 8 arquivos (+72/−1). O
+  que sustentou as duas notas A de Test Coverage foram 24 + 12 mutantes, um por guarda novo, todos
+  mortos. O "Six things decide" da abertura passou a "These decide", porque a contagem deixaria de
+  bater.
+- **`SKILL.md`, orçamento:** estava a 19.998 chars, como a 2.17.0 avisou. A enumeração do bullet
+  *Measure, don't guess* ("the report's last line says which version … whether the sweep ran") saiu
+  por já estar no `report-template.md`: a linha do Cost footprint lista esses campos, e a nota abaixo
+  dela manda parear com `/cost`. O bullet aponta para lá. Com as duas rotas novas, o arquivo fica em
+  19.990 chars.
+- **Ficou de fora:** o probe de testes do Phase A não acha o teste de um script com hífen
+  (`preparar-ambiente.sh` → `test_preparar_ambiente.py`, já que o `unittest` não importa módulo com
+  hífen). A correção não foi verificada e cairia no `SKILL.md`, que está no teto. Dívida
+  pré-existente, que não muda aqui: os 3 AVISOs C2 (references lidas pelos agentes por caminho
+  absoluto, de propósito).
+
 ## [2.17.0] — 2026-10-16
 
 ### A âncora que o diff não mostra, a regra que a classificação escondia, e o guarda que respondeu pelo outro

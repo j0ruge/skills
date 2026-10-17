@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.17.0
+  version: 2.18.0
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -34,7 +34,8 @@ The agents read their own contract by absolute path (`{SKILL_DIR}/references/…
 reads a file only at the step that needs it:
 
 - `references/configuration.md` — only when `$ARGUMENTS` carries `key=value` overrides or names
-  more than one repo, the stack is not TypeScript/React or the focus names code in a doc.
+  more than one repo, the folder has no repo, the stack is not TypeScript/React or the focus
+  names code in a doc.
 - `references/per-file-agent.md` — read it yourself only if Phase B runs inline (≤3 CODE files):
   the Phase B agent contract (batch loading, scope, focus mapping, return format).
 - `references/sweep-agent.md` — read it yourself when the sweep runs inline or the agent under-reports
@@ -68,7 +69,8 @@ reads a file only at the step that needs it:
 
 ## Error Handling
 
-- **Git command failures**: include the exact failing command and stop immediately.
+- **Git command failures**: include the exact failing command and stop immediately. A folder with
+  no repo at all: configuration.md, *Folder without git*.
 - **File read failures**: skip the file and record it as `Could not analyze: {filename} ({reason})`.
 - **Context / token exhaustion**: finish analyzing files already processed, note truncation, proceed to report.
 - **Timeout**: prioritize CRITICAL/HIGH checks on remaining files, skip MEDIUM/LOW.
@@ -230,8 +232,7 @@ in full even with little to say: the template's fallbacks, never prose in place 
 
 - **Context efficiency**: agents hold file content and diffs, so the main model sees only findings;
   cap analysis at 15 full file reads across all agents.
-- **Measure, don't guess** — the report's last line says which version of this skill ran, how many
-  agents ran, on which model, how many tool calls each made and whether the sweep ran. Compare it with
+- **Measure, don't guess** — compare the report's Cost footprint line (report-template.md) with
   `/cost` (or the harness's per-session cost log) before and after any change to this skill; a change
   without that pair of numbers is a guess.
 - **Re-review the fix, not the branch** — after fixing a report, the next round runs with

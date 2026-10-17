@@ -78,6 +78,27 @@ grades "A, no CODE files" and never reads the one HIGH.
 - **One report**: the header lists each repo with branch → base, the head reviewed and its counts; the
   Overall Grade table gets one grade column per repo. A re-review names, per repo, the head it starts from.
 
+## Folder without git
+
+Read this when Phase A step 1 fails with `not a git repository` on the folder the user asked to
+review: scripts that never had a repo. Stopping there reviews nothing, and `git init` inside the
+folder writes a `.git` the user did not ask for. Build the range in the scratchpad instead. It is the
+review's one write, and it stays outside the folder.
+
+- **The git dir in the scratchpad, the folder as work tree:** `export GIT_DIR=<scratchpad>/review.git
+  GIT_WORK_TREE=<folder>`, then `git init -q -b main` and a local `git config`: `core.fileMode false`
+  (`/mnt/c` reports every file as 0777), `core.autocrlf false`, `user.name` and `user.email`. An empty
+  root commit (`git commit --allow-empty`) is `{MERGE_BASE}`; a commit of the authored files, added by
+  name so build outputs and downloaded material stay out, is `HEAD`.
+- **Every git command carries the prefix:** Phase A, the secrets pre-scan, the docstring probe. The
+  agents' shells do not inherit the orchestrator's exports, so the launch prompt's `Repository:` line
+  says the folder has no `.git` and gives the prefix, and the diff command is written out with it, as
+  in `worktree` mode.
+- **A re-review round commits the fixes** to the same git dir and runs with `base=<previous head>`.
+- Measured 2026-10-17 (codereview 2.17.0, Python and shell scripts plus an HTML deck in a Windows
+  folder under WSL): three rounds of 6, 6 and 5 sonnet agents, each running its prefixed diff, and
+  nothing written inside the folder.
+
 ## Path-scoped reviews
 
 Read this when the user limits the review to paths (`-- dir/ file`, "only the skill folder", "without docs/"). Pass the pathspecs to every Phase A command and to the agent prompts' diff commands.
@@ -109,7 +130,7 @@ diff is all DOCS, Phase B launches no agent, and the report grades code nobody r
 ## Re-review rounds
 
 Read this whenever `base=` names the head an earlier round reviewed (SKILL.md, *Re-review the fix*).
-Six things decide whether the rounds converge:
+These decide whether the rounds converge:
 
 - **The agents never see the earlier reports.** A finding a previous round dismissed with a written
   reason can come back with no new evidence — measured 2026-10-03: the same unreachable "partial
@@ -146,6 +167,12 @@ Six things decide whether the rounds converge:
   value from the start of the session: measured 2026-10-05, four rounds flagged "CLAUDE.md says 1284
   tests" while the file, updated by each round's commit, already said 1336, 1352, 1362 and 1363.
   `grep` the current file before keeping a docs-drift finding.
+- **The tests a fix adds get no agent.** On a full review Phase B sends TESTS only on a test-quality
+  focus, so the round after a fix grades Test Coverage on test files nobody read. Back that grade with
+  one mutant per guard the fix added, run against its tests (*Reproduce between rounds*; 6.12, *One
+  case for two guards*), and give the mutant count in the Test Coverage row. Measured 2026-10-17: round
+  2 diffed 14 new test files (788 lines) and launched no agent for them; the 24 mutants run after round
+  1's fixes and the 12 after round 2's, all killed, were what the two A grades stood on.
 
 ## Runtime evidence
 
