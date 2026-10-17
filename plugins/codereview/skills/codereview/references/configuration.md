@@ -135,7 +135,9 @@ These decide whether the rounds converge:
 - **The agents never see the earlier reports.** A finding a previous round dismissed with a written
   reason can come back with no new evidence — measured 2026-10-03: the same unreachable "partial
   batch" finding in rounds 2 and 3. Answer it by citing that verdict; it does not count against the
-  stop rule. New evidence (a case the earlier reason did not cover) reopens it.
+  stop rule. New evidence (a case the earlier reason did not cover) reopens it. Only a verdict written
+  per part can be cited: a part of a multi-part finding dropped without one comes back as new
+  (report-template.md, *Findings Table*).
 - **While agents or a background test run read the tree, it is theirs.** Compare with another ref by
   `git show <ref>:<file>` or `git diff <ref> -- <file>`, never `checkout` or `stash`: a one-second
   `git checkout main` mid-round (2026-10-03, to check whether a lint warning was pre-existing) voided

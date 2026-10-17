@@ -60,6 +60,15 @@ When Status is `BLOCKED`:
 
 Order by: CRITICAL first, then HIGH, MEDIUM, LOW. Within same severity, group by file.
 
+**A finding with several parts gets a verdict per part.** A per-file agent often bundles parts under
+one number ("six untested branches"). When Phase C keeps some and drops others, each dropped part is
+named under the table with its reason (downgraded, equivalent mutant, on record), and the fix list
+names the kept ones. A part that vanishes without a verdict leaves the next round nothing to cite
+(configuration.md, *Re-review rounds*), so it comes back as new. Measured 2026-10-17 (a .NET rules
+engine, three rounds): round 1's combat agent listed six untested branches; the calibration kept four,
+dropped one with its reason (an equivalent mutant) and said nothing of the sixth (an attacker leaving
+combat, 506.4); round 2 raised it again, its two mutants survived, and the PR took one round more.
+
 If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, then as many LOW findings as fit within the 50-finding cap. Add: "_{n} additional LOW findings omitted. Run with specific file path to see all._"
 
 ---

@@ -2,6 +2,33 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.18.2] — 2026-10-17
+
+### Veredito por parte: a parte de um achado que some em silêncio volta na rodada seguinte
+
+Lição das rodadas do PR #5 do dotp-remake (motor de regras .NET/C#; 3 rodadas, B → B → A).
+
+- **`references/report-template.md`, *Findings Table*:** na rodada 1, o agente de combate listou seis
+  ramos sem teste num único achado MEDIUM (509.1h, 506.4 em `Combat.cs:38/69/75`, 704.5f, empate,
+  recusa de atacante, poder 0). A calibração da Phase C manteve quatro, descartou um com motivo
+  (704.5f, mutante equivalente) e não disse nada do sexto (atacante que sai do combate, 506.4). A
+  lista de correções saiu só com os mantidos; a rodada 2 levantou o 506.4 de novo, os mutantes de
+  `Combat.cs:38` e `:75` sobreviveram, e o PR custou uma rodada a mais. Agora cada parte descartada
+  vai nomeada sob a tabela com o motivo, e a lista de correções nomeia as mantidas. O arquivo é lido
+  no passo 10 de toda rodada, a primeira inclusive.
+- **`references/configuration.md`, *Re-review rounds*:** o bullet que manda responder a um achado
+  repetido citando o veredito anterior ganhou a outra metade: só um veredito escrito por parte pode
+  ser citado; parte descartada sem ele conta como achado novo.
+- O `SKILL.md` não mudou além da versão: ele está em 19.990 chars, no teto de ~20 mil da spec.
+
+Avaliadas e não aplicadas: mutantes equivalentes (já em 6.12, "measure the boundary first");
+Codex como comentário de issue, cota do Copilot e CodeRabbit Free (cobertos pelo `coderabbit-pr`);
+`echo ======` no zsh (erro do orquestrador, não instrução da skill); mandar os testes de uma rodada de
+correção a agentes com foco `tests` (evidência de uma sessão; a skill já sustenta a nota com mutantes).
+
+Dívida pré-existente, inalterada: 3 avisos C2 (cadeia de references a mais de um nível — os contratos
+dos agentes são lidos por caminho absoluto, por desenho).
+
 ## [2.18.1] — 2026-10-17
 
 ### Read-only também é o HEAD: o agente de sweep que rodou `git checkout`
