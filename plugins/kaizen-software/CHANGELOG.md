@@ -2,6 +2,28 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.1] — 2026-10-17
+
+### O render como unidade do Check, e Kaizen fora do código
+
+Lições de uma sessão real (aula de Escola Bíblica montada como deck HTML para projetor, sem git nem testes,
+organizada com esta skill):
+
+- **Armadilha "Validador verde não prova que nada sumiu" estendida para asset visual.** Para "limpar" o SVG do
+  logo extraído do PDF do manual de marca, removi os `<path>` sem `fill`; isso esvaziou os `<clipPath>` que
+  desenhavam o logo. O build do deck saiu "ok", o logo sumiu de todas as lâminas e só a screenshot mostrou.
+  A armadilha falava de conversão de texto e de contar unidades; em asset visual a unidade é o render.
+  Padrão de falha: transformar um asset e confiar no gate de forma. Correção verificada no caso de origem:
+  logo refeito a partir dos vetores (`get_drawings`), render de teste e segunda rodada de screenshots.
+- **Item novo em "Respeite as convenções do projeto": projeto que não é software.** A skill fala em teste,
+  commit e CI; num deck de aula foi preciso traduzir na hora: Check = artefato renderizado (screenshots,
+  PDF) + revisor independente; poka-yoke = script que recusa a entrada errada (`contraste.py` sai 1 com par
+  de cor abaixo do mínimo; `lacunas.py` acusa trecho pulado pelo Whisper, vermelho no caso real: uma
+  citação bíblica de 11 s sumida); sem git, o registro vai para o plano e o `KAIZEN_LOG.md`. Antes de
+  aplicar, conferido que nenhuma outra skill do marketplace cobre esse mapeamento (a `html-presentation`
+  cobre a verificação do deck, não o Kaizen). Padrão de falha: largar o Check e o poka-yoke porque o
+  projeto não tem teste nem CI. Usado uma vez; não testado em documento ou mídia.
+
 ## [1.4.0] — 2026-10-16
 
 ### Validar um plano que já chegou pronto, e a sabotagem que o cache engoliu
