@@ -2,6 +2,33 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.18.1] — 2026-10-17
+
+### Read-only também é o HEAD: o agente de sweep que rodou `git checkout`
+
+Lição de uma rodada de re-revisão (`base=6db2ab6`, fim em `3391a14`) num repositório .NET/C#
+(dotp-remake), com a `main` já mergeada na mesma árvore do fim do range.
+
+- **`references/sweep-agent.md` e `references/per-file-agent.md`, frase de abertura:** o agente de
+  sweep, para fazer grep na árvore do commit revisado, rodou `git checkout --detach 3391a14` e tirou o
+  checkout do usuário da `main`. Ele próprio relatou o checkout e voltou à `main`; a árvore ficou
+  limpa, mas o HEAD de quem orquestra foi movido no meio da rodada. Os dois contratos diziam só
+  "read-only" (sem escrever arquivos), e o agente não leu mover o HEAD como escrita. A proibição de
+  `checkout`/`stash` já existia, mas em `configuration.md` (*Re-review rounds*), que o orquestrador
+  lê e os agentes não. Agora a frase de abertura dos dois contratos diz que read-only cobre o HEAD e
+  o índice, e dá o jeito certo de ler outro commit: `git show <ref>:<file>` ou `git grep <pattern> <ref>`.
+  Na rodada seguinte, com a proibição escrita no prompt, os 3 agentes a cumpriram — uma rodada, indício
+  e não prova.
+
+Avaliadas e não aplicadas, por já estarem cobertas na fonte: "6.11 never touch the grade gate"
+(`detection-passes.md`, 6.11: "not a grade gate: it never forces an F"); `testFilePatterns` em .NET
+(`configuration.md`: o exemplo `**/*.Tests/**/*.cs` e os testes que são o produto). Não aplicada por
+não ser claramente melhor: seguir com os agentes no `installPath` quando o cache está atrás e só os
+arquivos do orquestrador diferem — o `/reload-plugins` que a skill pede continua sendo o caminho.
+
+Dívida pré-existente, inalterada: 3 avisos C2 (cadeia de references a mais de um nível — os contratos
+dos agentes são lidos por caminho absoluto, por desenho).
+
 ## [2.18.0] — 2026-10-17
 
 ### A pasta sem git, o módulo que o probe não via e os testes que nenhum agente lê
