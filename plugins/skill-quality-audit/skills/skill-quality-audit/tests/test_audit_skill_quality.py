@@ -503,6 +503,45 @@ class TestCamposClaudeCodeNoTopo(Base):
         self.assertIn(("A4", "INFO"), f)   # argument-hint é custo aceito
 
 
+class TestC2ContratoDeSubagente(Base):
+    """C2: reference que cita outra pela raiz da skill ({SKILL_DIR}/references/...) é contrato de subagente."""
+
+    def c2(self, guia):
+        md = VALID_SKILL_MD.format(name="skill-c2") + \
+            "Leia `references/outra.md` e `references/terceira.md` quando o agente pedir.\n"
+        files = {"references/guia.md": guia, "references/outra.md": "# Outra\n",
+                 "references/terceira.md": "# Terceira\n",
+                 "scripts/ferramenta.py": "#!/usr/bin/env python3\nimport argparse\n"}
+        d = make_skill(self.tmp / "skills", "skill-c2", skill_md=md, files=files)
+        rc, out = self.run_script(d, "--external", "off", "--format", "json")
+        return [(f["level"], f["msg"]) for f in json.loads(out)["skills"][0]["findings"] if f["id"] == "C2"]
+
+    def test_citacao_pela_raiz_e_info(self):
+        for raiz in ("{SKILL_DIR}", "${CLAUDE_SKILL_DIR}", "$SKILL_DIR"):
+            with self.subTest(raiz=raiz):
+                self.tearDown(); self.setUp()
+                c2 = self.c2(f"# Guia\n\n1. `Read {raiz}/references/outra.md` antes de começar.\n")
+                self.assertEqual([lv for lv, _ in c2], ["INFO"], c2)
+                self.assertIn("contrato de subagente", c2[0][1])
+
+    def test_citacao_relativa_segue_aviso(self):
+        c2 = self.c2("# Guia\n\nVeja `references/outra.md`.\n")
+        self.assertEqual([lv for lv, _ in c2], ["AVISO"], c2)
+
+    def test_mistura_separa_os_dois(self):
+        c2 = self.c2("# Guia\n\n`Read {SKILL_DIR}/references/outra.md`; veja também `references/terceira.md`.\n")
+        self.assertEqual(sorted(lv for lv, _ in c2), ["AVISO", "INFO"], c2)
+        aviso = next(m for lv, m in c2 if lv == "AVISO")
+        info = next(m for lv, m in c2 if lv == "INFO")
+        self.assertIn("terceira.md", aviso)
+        self.assertNotIn("outra.md", aviso)
+        self.assertIn("outra.md", info)
+
+    def test_mesmo_arquivo_tambem_citado_relativo_segue_aviso(self):
+        c2 = self.c2("# Guia\n\n`Read {SKILL_DIR}/references/outra.md`; detalhe em `references/outra.md`.\n")
+        self.assertEqual([lv for lv, _ in c2], ["AVISO"], c2)
+
+
 class TestPlaceholdersEModulos(Base):
     def test_script_citado_por_placeholder_de_raiz_nao_e_orfao(self):
         md = VALID_SKILL_MD.format(name="skill-ph") + \

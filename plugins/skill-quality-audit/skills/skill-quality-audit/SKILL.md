@@ -4,7 +4,7 @@ description: "Audita Agent Skills: spec, autocontenção, claims e tamanho. Port
 compatibility: Python 3 só com biblioteca padrão (testes OK em 3.11.15 e 3.12.3 em 2026-09-23). Gates externos opcionais, skills-ref (ou uvx) e um gate local audit-skill.sh do autor.
 metadata:
   author: JorUge
-  version: "0.5.0"
+  version: "0.6.0"
   hermes:
     tags:
       - skills
@@ -146,6 +146,6 @@ leia as fontes, os fatos observados e as decisões locais em `references/fontes-
 | Mover `platforms` ou `required_credential_files` para `metadata` porque o `skills-ref` reprova | O Hermes só os lê no topo; movido, o filtro por SO e as credenciais somem. É o A4 INFO |
 | Mover `argument-hint` (ou outro campo da tabela do Claude Code) para `metadata` | Em `metadata` o Claude Code não o lê: o autocomplete perde a dica. Plugin só `claude-code` = A4/G2 INFO |
 | Ler `$HERMES_HOME/scripts/<script>.sh` como `scripts/` da skill | É infra do harness; só variável com SKILL no nome (`{SKILL_DIR}`) é a raiz da skill |
-| "Corrigir" C2 em reference que é contrato de subagente (`{SKILL_DIR}/references/<arquivo>.md`) | O caminho absoluto é o que faz o subagente ler; manter e justificar no relatório |
+| "Corrigir" C2 em reference que é contrato de subagente (`{SKILL_DIR}/references/<arquivo>.md`) | O caminho absoluto é o que faz o subagente ler; manter. Citado só pela raiz, o C2 já sai INFO |
 | Aceitar `[SKIP] G2` como se a spec tivesse sido validada | Com `uvx` no PATH o G2 roda o validador oficial com versão fixada; sem ele, dizer que não rodou |
 | Apagar `__pycache__` com `rm` | Se o git ignora, é INFO e não vai para o repositório; se precisar limpar, `gio trash` (o `trash` pode não existir) |

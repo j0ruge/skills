@@ -1,5 +1,18 @@
 # Changelog — skill-quality-audit
 
+## [0.8.0] — 2026-10-18
+
+### `skill-quality-audit` 0.6.0: C2 de contrato de subagente vira INFO
+
+A tabela *Erros comuns* da `skill-quality-audit` já mandava manter o C2 de reference que é contrato
+de subagente, mas o script seguia dando AVISO: na `codereview`, os 3 C2 eram as citações
+`{SKILL_DIR}/references/...` que os agentes leem por caminho absoluto. Agora a citação pela raiz da
+skill (`RE_ROOT_REF`: `{SKILL_DIR}/`, `${CLAUDE_SKILL_DIR}/`, `$SKILL_DIR/`) é INFO "contrato de
+subagente", e o arquivo também citado na forma relativa segue AVISO. Quatro testes novos (51 no
+total), dois RED antes do código e três sabotagens vermelhas. Nas 30 skills do marketplace, a única
+diferença entre o script antigo e o novo são esses 3 C2. O CHANGELOG próprio da skill ganha as
+entradas 0.5.0 e 0.4.1, que só existiam aqui (o `metadata.version` divergia do primeiro cabeçalho).
+
 ## [0.7.1] — 2026-10-15
 
 ### `skill-claim-check` 0.5.1: precedência do CHANGELOG da skill

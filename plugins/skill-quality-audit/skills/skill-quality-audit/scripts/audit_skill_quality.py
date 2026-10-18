@@ -70,6 +70,10 @@ CLAIM_PATTERNS = [
 
 # --- Citação de arquivos próprios: mesma âncora do audit-skill.sh --------------
 RE_REF = re.compile(r"(?<![\w/~.-])(?:\./)?references/((?:[A-Za-z0-9._-]+/)*[A-Za-z0-9._-]+\.md)(?![A-Za-z0-9._-])")
+# Citação pela raiz da skill numa variável com SKILL no nome ({SKILL_DIR}/, ${CLAUDE_SKILL_DIR}/, $SKILL_DIR/):
+# a forma do contrato que um subagente lê por caminho absoluto, sem resolver nome relativo.
+RE_ROOT_REF = re.compile(r"(?<![\w/~.-])(?:\$?\{[A-Za-z0-9_]*SKILL[A-Za-z0-9_]*\}|\$[A-Za-z0-9_]*SKILL[A-Za-z0-9_]*)"
+                         r"/references/((?:[A-Za-z0-9._-]+/)*[A-Za-z0-9._-]+\.md)(?![A-Za-z0-9._-])")
 RE_ASSET = re.compile(r"(?<![\w/~.-])(?:\./)?assets/((?:[A-Za-z0-9._-]+/)*[A-Za-z0-9._-]+\.[A-Za-z0-9]+)(?![A-Za-z0-9._-])")
 RE_SCR = re.compile(r"(?<![\w/~.-])(?:\./)?scripts/([A-Za-z0-9._-]+\.[A-Za-z0-9]+)(?![A-Za-z0-9._-])")
 RE_ESCAPE = re.compile(r"\S*(?<!\.)\.\./\S*")
@@ -550,9 +554,13 @@ def check_disclosure(rep: Report, skill_md: str, refs_text: dict):
     if len(skill_md) > WARN_CHARS:
         rep.add(AVISO, "C1", f"SKILL.md com {len(skill_md)} chars > {WARN_CHARS} (heurística local)")
     for name, text in refs_text.items():
-        chained = sorted(set(RE_REF.findall(own_prefix_normalizer(rep.name)(text))) - {name})
-        if chained:
-            rep.add(AVISO, "C2", f"references/{name} cita {chained}: cadeia com mais de 1 nível a partir do SKILL.md")
+        relative = set(RE_REF.findall(own_prefix_normalizer(rep.name)(RE_ROOT_REF.sub("", text)))) - {name}
+        contract = set(RE_ROOT_REF.findall(text)) - relative - {name}
+        if relative:
+            rep.add(AVISO, "C2", f"references/{name} cita {sorted(relative)}: cadeia com mais de 1 nível a partir do SKILL.md")
+        if contract:
+            rep.add(INFO, "C2", f"references/{name} cita {sorted(contract)} pela raiz da skill ({{SKILL_DIR}}/references/): "
+                                "contrato de subagente, que lê por caminho absoluto; cadeia de 2 níveis por desenho")
         n = len(text.splitlines())
         head = "\n".join(text.splitlines()[:40])
         if n > REF_TOC_LINES and not RE_TOC.search(head) and head.count("](#") < 3:

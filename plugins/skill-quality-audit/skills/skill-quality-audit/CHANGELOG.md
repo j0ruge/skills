@@ -1,5 +1,38 @@
 # Changelog: skill-quality-audit
 
+## [0.6.0] - 2026-10-18 - C2 de contrato de subagente vira INFO
+
+**Motivação:** a tabela *Erros comuns* já mandava não "corrigir" C2 em reference que é contrato
+de subagente, mas o script seguia dando AVISO. Na `codereview` (marketplace, 2.20.0), os 3 C2 eram
+exatamente esse caso, as citações `{SKILL_DIR}/references/...` de `per-file-agent.md`,
+`sweep-agent.md` e `detection-passes.md`, que os agentes Sonnet leem sozinhos; o aviso que nunca
+devia ser seguido virava ruído em toda auditoria dela.
+
+**O que foi feito:**
+
+- **C2:** a citação pela raiz da skill numa variável com SKILL no nome (`{SKILL_DIR}/`,
+  `${CLAUDE_SKILL_DIR}/`, `$SKILL_DIR/`; `RE_ROOT_REF`) sai do AVISO e vira INFO "contrato de
+  subagente". Um arquivo citado também na forma relativa (`references/x.md`) segue AVISO.
+- **Quatro testes novos** (`TestC2ContratoDeSubagente`, 51 no total), dois RED antes do código; três
+  sabotagens (não tirar a raiz do relativo, não descontar o relativo do contrato, contrato como
+  AVISO) deixam testes vermelhos.
+- **Medido nas 30 skills do marketplace** (script do `HEAD` contra o novo, `--external off`): 101
+  achados nos dois; a única diferença são os 3 C2 da `codereview`, de AVISO para INFO.
+- `references/checks.md` (linha do C2) e a linha do C2 em *Erros comuns* do `SKILL.md`.
+- **Dívida de changelog fechada:** o `metadata.version` dizia 0.5.0 e o primeiro cabeçalho daqui
+  era 0.4.0 (divergência pela regra da `skill-claim-check` 0.5.1). As entradas 0.5.0 e 0.4.1 abaixo
+  apontam para o CHANGELOG do plugin, onde o texto está.
+
+**Como reverter:** `git revert` do commit que traz esta entrada.
+
+## [0.5.0] - 2026-10-04 - campo de topo do Claude Code é custo aceito em plugin só `claude-code`
+
+Registrada só no CHANGELOG do plugin (`plugins/skill-quality-audit/CHANGELOG.md`, seção 0.5.0).
+
+## [0.4.1] - 2026-10-04 - o B5 acha o CHANGELOG do plugin
+
+Registrada só no CHANGELOG do plugin (`plugins/skill-quality-audit/CHANGELOG.md`, seção 0.4.1).
+
 ## [0.4.0] - 2026-09-29 - entra no marketplace com as irmãs
 
 **Motivação:** a família vira o plugin `skill-quality-audit` do marketplace, que passa a ser a

@@ -34,7 +34,7 @@ que passou. Sensor de todos: o próprio script (`--format json` para comparar an
 | ID | Nível | Prova | Não prova | Fonte da regra |
 |---|---|---|---|---|
 | C1 | ERRO/AVISO/INFO | ERRO acima de 500 linhas; INFO acima de 400; AVISO acima de 20.000 chars | que o corpo é só workflow default | spec (500); 400 e 20.000: heurística de `skill-refactoring` |
-| C2 | AVISO | reference que cita outra reference (cadeia com mais de 1 nível) | que a divisão entre arquivos é boa | spec ("one level deep") |
+| C2 | AVISO/INFO | AVISO: reference que cita outra reference (cadeia com mais de 1 nível); INFO quando toda citação daquele arquivo passa pela raiz da skill (`{SKILL_DIR}/references/…`, `${CLAUDE_SKILL_DIR}/…`, `$SKILL_DIR/…`): contrato de subagente, que lê por caminho absoluto | que a divisão entre arquivos é boa; que o leitor é mesmo um subagente | spec ("one level deep"); a exceção, esta skill (*Erros comuns*) |
 | C3 | AVISO | reference com mais de 300 linhas tem sumário nas primeiras 40 | que o sumário está certo | `skill-creator` |
 
 ## F. Boas práticas de autoria (agentskills.io)
