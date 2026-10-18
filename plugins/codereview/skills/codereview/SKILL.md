@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.18.2
+  version: 2.18.3
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -113,7 +113,7 @@ Phase A hands Phases B and C: BASE_BRANCH, BRANCH_NAME, MERGE_BASE, DIFF_STAT, C
 
 If CHANGED_FILES empty, dirty `git status --porcelain` → `worktree` mode (`references/configuration.md`). Both empty → output "No changes detected between this branch and `{BASE_BRANCH}`." and stop — unless the user scoped paths: then empty is a pathspec error (read configuration.md §Path-scoped reviews).
 
-If more than 15 CODE files, prioritize by change size (diff stat lines). Note deprioritized files.
+More than 15 CODE files: order the groups by change size (diff stat lines); every file still gets an agent, none is cut.
 
 ### Phase B: Per-File Analysis (sonnet agents, parallel)
 
@@ -224,14 +224,13 @@ in full even with little to say: the template's fallbacks, never prose in place 
 - **Focus area specified**: Only the matching detection passes were applied by sonnet agents. Mark non-analyzed sections as "Not analyzed (focused review on {area})".
 - **File path/glob specified**: Only matching files were analyzed. Report shows only those files.
 - **UI_LIB files**: Sonnet agents only flagged CRITICAL/HIGH. Note "(UI_LIB — reduced rigor)" in findings.
-- **More than 50 findings**: Show all CRITICAL/HIGH/MEDIUM first, then LOW up to 50 total. Add overflow count.
+- **More than 50 findings**: Show all CRITICAL/HIGH/MEDIUM first, then LOW up to 50 total; the rest go to a scratchpad file (report-template.md).
 
 ---
 
 ## Operating Principles and Gotchas
 
-- **Context efficiency**: agents hold file content and diffs, so the main model sees only findings;
-  cap analysis at 15 full file reads across all agents.
+- **Context efficiency**: agents hold file content and diffs, so the main model sees only findings.
 - **Measure, don't guess** — compare the report's Cost footprint line (report-template.md) with
   `/cost` (or the harness's per-session cost log) before and after any change to this skill; a change
   without that pair of numbers is a guess.

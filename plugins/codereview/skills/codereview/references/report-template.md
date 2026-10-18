@@ -69,7 +69,7 @@ engine, three rounds): round 1's combat agent listed six untested branches; the 
 dropped one with its reason (an equivalent mutant) and said nothing of the sixth (an attacker leaving
 combat, 506.4); round 2 raised it again, its two mutants survived, and the PR took one round more.
 
-If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, then as many LOW findings as fit within the 50-finding cap. Add: "_{n} additional LOW findings omitted. Run with specific file path to see all._"
+If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, then as many LOW findings as fit within the 50-finding cap. Write every LOW the cap cut to a file in the scratchpad, one line per finding (`file:line — finding`), and add: "_{n} additional LOW findings omitted; full list in `{absolute path}`._" A flow that lists the deferred LOWs in the PR body takes them from that file: re-running per file path to see them costs a review. Measured 2026-10-17 (a .NET rules engine, PR #6): round 1 had 65 LOW, and the 18 the cap cut reached the PR body only through that file.
 
 ---
 

@@ -2,6 +2,40 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.18.3] — 2026-10-17
+
+### PR grande sem corte, LOW além do teto num arquivo, mutante que não compila e `__pycache__` dos agentes
+
+Lições do PR #6 do dotp-remake (motor de regras .NET/C# + um script Python; 3 rodadas, B → B → A;
+rodada 1 com 42 arquivos CODE em 15 agentes sonnet).
+
+- **`SKILL.md`, Phase A e *Operating Principles*:** "more than 15 CODE files → prioritize by change
+  size, note deprioritized" e "cap analysis at 15 full file reads across all agents" não diziam se era
+  para cortar arquivos, e o teto de 15 leituras só cabe cortando. Agrupados 3 por agente, os 42 CODE
+  leram 55 arquivos inteiros; o MEDIUM de cobertura da rodada (`CoreConstants.cs`, +61 linhas) estava em
+  17º por diff stat e cairia num corte dos 15 maiores. Agora o tamanho só ordena os grupos e todo
+  arquivo recebe agente. A frase do teto saiu: foi fundida na regra da Phase A e é desmentida pela
+  medição acima.
+- **`references/report-template.md`, *Findings Table* (e `SKILL.md`, *More than 50 findings*):** os
+  LOW cortados pelo teto de 50 só tinham "rode de novo por arquivo". Rodada 1: 65 LOW, 18 cortados; o
+  corpo do PR lista todos os adiados, e eles só chegaram lá por um arquivo do scratchpad. Agora o corte
+  vai para esse arquivo, citado pelo caminho absoluto na linha de overflow.
+- **`references/configuration.md`, *Re-review rounds*:** bullet novo, "A mutant that does not build is
+  not a kill". Um regex sobre uma linha C# partiu uma string interpolada no `;` (CS1002) e um `throw;`
+  deixou `catch (… e)` sem uso (CS0168, erro com warnings como erros); o filtro `Passed!|Failed!` não
+  imprimiu nada para os três mutantes. Reescritos por troca exata de texto, reprovaram 1, 2 e 1 testes.
+- **`references/configuration.md`, mesmo bloco:** `PYTHONPYCACHEPREFIX` virou `-X pycache_prefix=<dir>`.
+  Sob `-I` (que ignora toda variável `PYTHON*`) a variável é descartada em silêncio: medido
+  `sys.pycache_prefix = None` e o `.pyc` ao lado do fonte; com `-X`, 18 `.pyc` no prefixo e nada no fonte.
+- **`references/sweep-agent.md` e `references/per-file-agent.md`:** checagem de sintaxe Python por
+  `ast.parse`, nunca `py_compile`. A varredura da rodada 3 rodou `python3 -I -m py_compile` e deixou
+  `?? scripts/__pycache__/` no repositório numa revisão read-only; `PYTHONDONTWRITEBYTECODE=1` não
+  impede o `py_compile` (medido). `ast.parse` não escreve nada e sai com rc 1 num `SyntaxError`.
+- O `SKILL.md` fica em 19.991 chars (era 19.990): as linhas novas foram compensadas pela frase do teto.
+
+Dívida pré-existente, inalterada: 3 avisos C2 (contratos dos agentes lidos por caminho absoluto, por
+desenho).
+
 ## [2.18.2] — 2026-10-17
 
 ### Veredito por parte: a parte de um achado que some em silêncio volta na rodada seguinte

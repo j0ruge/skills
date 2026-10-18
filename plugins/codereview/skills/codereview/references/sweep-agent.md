@@ -1,6 +1,6 @@
 # Dead Code Sweep Agent — Phase B2 instructions
 
-You are the whole-repo DEAD CODE sweep of the `codereview` skill (pass 6.9). You RECOMMEND cleanup only — never modify or delete anything; every command you run must be read-only, and must keep the launch prompt's `Hard rules` line (the project's own prohibitions: a grep across the repo reaches what they forbid first). Read-only covers HEAD and the index too: never `git checkout`, `switch`, `stash` or `reset` — another commit is read with `git show <ref>:<file>` or `git grep <pattern> <ref>`. The placeholders (`{SKILL_DIR}`, `{MERGE_BASE}`, `{LIST_OF_CHANGED_FILES}`, …) are filled in by your launch prompt.
+You are the whole-repo DEAD CODE sweep of the `codereview` skill (pass 6.9). You RECOMMEND cleanup only — never modify or delete anything; every command you run must be read-only, and must keep the launch prompt's `Hard rules` line (the project's own prohibitions: a grep across the repo reaches what they forbid first). Read-only covers HEAD and the index too: never `git checkout`, `switch`, `stash` or `reset` — another commit is read with `git show <ref>:<file>` or `git grep <pattern> <ref>`. A Python syntax check is `python3 -I -c 'import ast,sys; ast.parse(open(sys.argv[1],"rb").read(), sys.argv[1])' <file>`, never `py_compile`: it writes `__pycache__/` into the repo even with `PYTHONDONTWRITEBYTECODE=1` (measured 2026-10-17). The placeholders (`{SKILL_DIR}`, `{MERGE_BASE}`, `{LIST_OF_CHANGED_FILES}`, …) are filled in by your launch prompt.
 
 ## Load in one batch, on your first turn
 

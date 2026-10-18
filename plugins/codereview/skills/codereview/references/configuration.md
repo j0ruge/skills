@@ -145,10 +145,20 @@ These decide whether the rounds converge:
 - **Reproduce between rounds, not during one.** A mutant that confirms a `needs reproduction` finding
   (detection-passes.md, 6.12) edits a file: run it after every agent has returned, against the
   related test files, and restore the file before the next launch (`git status --short` empty).
-  In Python, run each mutant with `PYTHONPYCACHEPREFIX` set to a new empty directory: a mutant that
+  In Python, run each mutant with `-X pycache_prefix=<new empty dir>`: a mutant that
   only moves a block keeps the file size, and in the same second as the previous one the
   interpreter reuses that one's `.pyc` (it checks mtime in whole seconds and size). Measured
-  2026-10-05: a mutant "passed" that way and failed once the cache was isolated.
+  2026-10-05: a mutant "passed" that way and failed once the cache was isolated. Not the
+  `PYTHONPYCACHEPREFIX` variable: `-I` ignores every `PYTHON*` variable, so it is dropped in silence
+  (measured 2026-10-17: `sys.pycache_prefix` was `None` and the `.pyc` landed next to the source).
+- **A mutant that does not build is not a kill.** A broken build exits non-zero like a red test, and
+  a filter on the runner's summary line (`Passed!|Failed!`) prints nothing for either. Write the
+  mutant as an exact text replacement that must change the file, keep every symbol it leaves in use,
+  and filter compiler errors too (`error CS`, `error TS`, `SyntaxError`). Measured 2026-10-17 (.NET,
+  warnings as errors): a regex over a C# line split an interpolated string at its `;` (CS1002), and
+  `throw;` left `catch (… e)` unused (CS0168); the filter printed nothing for the three mutants.
+  Rewritten (`throw new InvalidDataException(e.Message, e)` for the last), they turned 1, 2 and 1
+  tests red.
 - **Ask the fixer for the smallest change that closes the finding.** A new mechanism is new surface
   for the next round. Measured 2026-10-05, twelve rounds over ~670 lines: 8, 16, 13, 15, 9, 4, 5, 2,
   4, 4, 1, 0 findings; the atomic write one round asked for brought 4 of the next round's 15. With
