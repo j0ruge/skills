@@ -102,6 +102,22 @@ gh api "repos/$REPO/issues/$PR/comments" --paginate \
   || echo "not on $H yet"
 ```
 
+**The same comment carries the state as JSON**, in a `<!-- codex-review-state:v1 {…} -->` marker:
+`code_review.status` (`running` → `completed`), the full `code_review.commit_sha`, and
+`code_review.has_any_findings` (`null` while running). It also tells whether that review found
+anything, which the table does not:
+
+```bash
+gh api "repos/$REPO/issues/$PR/comments" --paginate --jq '.[] | select(.user.login == "chatgpt-codex-connector[bot]")
+  | .body | capture("codex-review-state:v1 (?<j>\\{.*\\}) -->") | .j | fromjson | .code_review
+  | "\(.status) \(.commit_sha) findings=\(.has_any_findings)"' | tail -1
+```
+
+`completed`, a `commit_sha` equal to `headRefOid` and `findings=false` is case (a). With no findings
+Codex posts no review object and no inline comment: the summary and a 👍 reaction on the PR are all
+there is. Measured 2026-10-18 (dotp-remake PR #7): `running` at 03:20 UTC, `completed` on the head
+with `findings=false`, the `+1` at 03:21, and zero Codex reviews on `/pulls/7/reviews`.
+
 ## Detection Strategy
 
 To detect which reviewers are present on a PR, query the three endpoints and collect unique `user.login` values that match any known bot login from the registry above.

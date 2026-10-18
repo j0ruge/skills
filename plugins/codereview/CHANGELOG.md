@@ -2,6 +2,26 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.18.5] — 2026-10-18
+
+### `coderabbit-pr` segue com a cópia em cache igual à instalada e lê o estado do Codex pelo marcador
+
+coderabbit-pr 4.4.5; `codereview` fica em 2.18.4 (não mudou). Lições do PR #7 do dotp-remake.
+
+- **`references/pr-branch.md`, *Is this run the installed copy?*:** `STALE` mandava parar e pedir
+  `/reload-plugins` mesmo quando a pasta desta skill é igual nas duas cópias. Na sessão, a skill veio
+  do cache 2.18.3 com a 2.18.4 instalada, e o `diff -rq` das duas pastas `coderabbit-pr` deu vazio:
+  a 2.18.4 só tinha mudado o `codereview`. Agora um `diff -rq … && echo same` decide antes da parada,
+  como o `report-template.md` do `codereview` já fazia no rodapé. A prova é o código de saída: na
+  mesma sessão um `diff` reescrito por hook disse "Files are identical" de dois arquivos diferentes.
+- **`references/reviewer-registry.md`, Codex:** o resumo do Codex traz um marcador
+  `codex-review-state:v1` com `status`, `commit_sha` completo e `has_any_findings`. O comando novo
+  lê os três de uma vez, e `completed` no head com `findings=false` é o caso (a). Sem achados o Codex
+  não posta review object nem comentário inline (no PR #7: 0 reviews do bot, só o resumo e um 👍).
+- **Não entrou:** apontar os agentes do `codereview` para o `installPath` quando a cópia carregada é
+  velha. Funcionou uma vez, mas a diferença entre as cópias (o destino dos LOW além do teto) não foi
+  exercitada, e o `SKILL.md` está em 19.990 chars.
+
 ## [2.18.4] — 2026-10-17
 
 ### Os LOW além do teto ficam no relatório: a skill não escreve arquivo

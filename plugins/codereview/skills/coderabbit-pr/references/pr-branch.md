@@ -26,6 +26,20 @@ symlink in `~/.claude/skills` or from a project is read from disk: nothing to ch
 `…/codereview/2.10.0`; the run missed the per-commit coverage rule added in between, and its report
 never said that the four fix commits it pushed had been reviewed by no bot.
 
+**`STALE` with this skill's folder unchanged runs the same skill.** A plugin release that touched
+only the sibling `codereview` leaves this folder byte-identical. Compare it before stopping, and take
+the exit status as the answer, not the printed output, which a shell hook may rewrite:
+
+```bash
+diff -rq "<base directory>" "<installPath>/skills/coderabbit-pr" && echo same
+```
+
+`same` → go on, and say it in the closing report (`cache 2.18.3 = installed 2.18.4`). Anything
+else → stop as above. Measured 2026-10-18 (dotp-remake PR #7): loaded from `…/codereview/2.18.3/`
+with 2.18.4 installed, the two `coderabbit-pr` folders compared `same`, and the run closed with
+`unresolved: 0`. In the same session a hook-rewritten `diff` of two files that differed printed
+"Files are identical".
+
 ## Where the fixes are made
 
 ```bash
