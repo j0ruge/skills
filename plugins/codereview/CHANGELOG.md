@@ -2,6 +2,34 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.20.0] — 2026-10-18
+
+### Cobertura de testes sem os arquivos só de comentário, e a sonda por nome de tipo
+
+Lições da rodada 7 do `/codereview` do PR A da fatia 3.1 do dotp-remake (motor de regras em .NET,
+`dbefae4..3f1f721`), que rodou a cópia 2.18.6.
+
+- **`references/report-template.md`, *Test Coverage*:** status novo `DOC_ONLY`, para o arquivo CODE
+  cujo diff só muda comentário ou docstring (toda linha `+`/`-` do `git diff -U0` é comentário).
+  Ele sai do numerador e do denominador, e o `Total_CODE` passa a descontá-lo; a fase C decide,
+  porque a sonda da fase A só vê se o teste existe e se mudou. Na rodada, 6 dos 15 arquivos CODE só
+  mudaram XML doc (zero linhas fora de `///`, `//` e `*`): a fórmula deu 67% (10/15), com quatro
+  deles como `STALE_TESTS` e dois como `WITH_TESTS` só porque um teste da mesma suíte mudou por um
+  renome. Sem eles, 8/9 (89%).
+- **`references/configuration.md`, depois dos exemplos de C#/.NET:** onde o import aponta namespace
+  e não arquivo (`using` do C#, `import` de pacote do Java e do Kotlin, Go), a sonda `{Base}Tests.cs`
+  e o "teste alterado que o importa" quase não acham nada; a sonda passa a ser pelo tipo
+  (`git grep -lw <Tipo> -- <pastas de teste>`). Na rodada, pelo nome do arquivo foram 6 de 15, pelo
+  tipo mais 7, e sobraram 2 (um testado só pela suíte de outro tipo, um sem teste); o PR anterior do
+  mesmo repo mediu 27 de 41 pelo tipo e quase nenhum pelo nome do arquivo.
+- **Investigado e descartado:** o hook `rtk` reescreve `cd X && git diff ... --unified=0 | cmd`
+  (acrescenta `--stat`, volta o contexto de 3 linhas e um trailer `... (more changes truncated)`),
+  mas o `iter_added_lines` do `scan_secrets.py` viu as mesmas (arquivo, linha, conteúdo) que no diff
+  cru: 450/450 no intervalo da rodada e 6729/6729 no PR inteiro. O pré-scan não fica cego; nada
+  muda na skill.
+- **`SKILL.md`:** só a versão muda; segue em 19.990 chars, no teto do C1. Dívida pré-existente
+  (não tocada): os 3 avisos C2 dos contratos que os agentes leem por caminho absoluto.
+
 ## [2.19.0] — 2026-10-18
 
 ### O pre-scan de secrets diz quanto leu, e o `coderabbit-pr` conserta PR já mergeado

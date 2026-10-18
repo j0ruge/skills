@@ -115,15 +115,17 @@ If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, th
 | src/hooks/useCalc.ts | NO_TESTS | — | New file, needs tests |
 | src/utils/format.ts | STALE_TESTS | src/test/format.test.tsx | Test not updated |
 | src/services/approve.ts | WITH_TESTS (indirect) | src/test/services.test.ts | No test of its own name; a changed test imports it |
+| src/utils/labels.ts | DOC_ONLY | — | Only comments/docstrings changed; no test due |
 
 **Coverage of changed CODE files**: {WITH_TESTS}/{Total_CODE} files have up-to-date tests ({percentage}%)
 
 > **Formula**: `percentage = Total_CODE > 0 ? round((WITH_TESTS / Total_CODE) * 100) : N/A`
 >
 > - `WITH_TESTS` — count of CODE files whose test file exists **and** was updated alongside the production change in this branch.
-> - `Total_CODE` — total number of files classified as CODE in the changed-files list.
+> - `Total_CODE` — total number of files classified as CODE in the changed-files list, minus the `DOC_ONLY` ones.
 > - `STALE_TESTS` files are **excluded** from the numerator (they have a test file but it was not updated, so coverage is considered incomplete).
 > - Files classified as TESTS, CONFIG, or UI_LIB are not counted in either numerator or denominator.
+> - `DOC_ONLY` — a CODE file whose diff changes only comments or docstrings: every `+`/`-` line of `git diff -U0 {MERGE_BASE}...HEAD -- <file>` is a comment in its language (`//`, `///`, `/* */`, `#`, a docstring). No test was due, so it counts in neither numerator nor denominator; list it with this status. Decide it here, in Phase C: Phase A's probe only sees whether a test exists and whether it changed. Measured 2026-10-18 (a .NET rules engine, the 7th round of a PR): 6 of 15 CODE files changed only XML doc; the formula read 67% (10/15), with four of them as `STALE_TESTS` and two as `WITH_TESTS` only because a test of the same suite changed for another reason. Without them it was 8/9 (89%).
 > - `WITH_TESTS (indirect)` — no test file carries the CODE file's name, but a test changed in this range imports it. It counts in the numerator. Probing by name alone misses use cases tested through one shared suite: on a 31-file range (measured 2026-10-01) it found 5 files with tests, and the import probe found 15.
 > - The import probe does not see transitive coverage (a component exercised only through its parent's test). Judge it in Phase C and say so in Notes, instead of leaving `NO_TESTS` unqualified.
 

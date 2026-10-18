@@ -60,6 +60,16 @@ is about — a test change carries as much risk as the runner's. Keep them out o
 (the shell preset counts only `*.bats` as TESTS) so Phase B reviews them as CODE; classified as
 TESTS they get no per-file agent at all.
 
+Where an import names a namespace and not a file (C#'s `using`, a Java or Kotlin `import` of a
+package, Go), Phase A's probe misses most tests: `{Base}Tests.cs` finds only a test named after the
+file, and "a changed test that imports it" never matches. Probe by the type instead: for each public
+type the CODE file declares, `git grep -lw <Type> -- <test dirs>`; a hit in a test changed in the
+range is `WITH_TESTS (indirect)`, a hit only in unchanged tests is `STALE_TESTS`. Measured
+2026-10-18 (a .NET rules engine, 15 CODE files): `{Base}Tests.cs` found 6, the type name found a
+test for 7 more, and the last 2 had none (one exercised only through another type's suite, one with
+no test at all). The PR before it, on the same repo, had measured 27 of 41 files by type name and
+almost none by file name.
+
 Overrides are applied on top of defaults — only the specified values change; unmentioned values keep their defaults.
 
 ## Several repositories
