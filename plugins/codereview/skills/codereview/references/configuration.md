@@ -186,6 +186,29 @@ These decide whether the rounds converge:
   the property ("say only what is known"), not the wording, and ask the fixer what the user does next
   on the path it changed. The round after that came back 0 HIGH / 0 MEDIUM once its two MEDIUM
   claims were reproduced and refuted.
+- **A fix that writes "measured" measures the exact line it writes.** A claim measured on half of a
+  recipe vouches for the other half by proximity, and the next round reads the half nobody ran.
+  Measured 2026-10-16, rounds over a plan reviewed as CODE: round 2 timed the wait
+  (`timeout 590 tail --pid`) and wrote "measured" next to the one-liner the plan prescribed,
+  `l=$(mktemp) && nohup … &`; round 3 came back HIGH on that line, because `&` sends the whole `&&`
+  list to the background, `l` is set only in that subshell, and the log read `log=[]`
+  (`bash -c 'l=$(mktemp) && true & wait; echo "l=[$l]"'` prints `l=[]`). Paste the line as it stands
+  in the text, run it, and quote its output next to the claim.
+- **Reflow prose by script, never by hand.** A fix that grows a wrapped paragraph invites a hand
+  reflow, and a hand reflow joins two lines or drops a word that the next round reports. Measured
+  2026-10-16: three hand reflows between rounds each left joined lines, and each came back as a LOW;
+  the script below closed it, and was reused on 2026-10-17 for a shell header past 100 columns. It
+  keeps every backtick span whole and fails unless the words before and after match:
+
+  ```python
+  import re, textwrap
+  def reflow(par: str, first: str = "- ", rest: str = "  ", width: int = 100) -> str:
+      glued = re.sub(r"`[^`]*`", lambda m: m[0].replace(" ", "\u00a0"), " ".join(par.split()))
+      out = textwrap.fill(glued, width, initial_indent=first, subsequent_indent=rest,
+                          break_long_words=False, break_on_hyphens=False).replace("\u00a0", " ")
+      assert out.split() == first.split() + par.split(), "the reflow changed the words"
+      return out
+  ```
 - **A count in CLAUDE.md that an agent calls stale is checked in the file.** The agents cite the
   value from the start of the session: measured 2026-10-05, four rounds flagged "CLAUDE.md says 1284
   tests" while the file, updated by each round's commit, already said 1336, 1352, 1362 and 1363.

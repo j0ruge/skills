@@ -15,7 +15,12 @@ Exit code:
     0  sempre (achou ou não — gate é decisão do Phase C, ver SKILL.md)
 
 Saída:
-    JSON em stdout: { "findings": [...], "scanners": [...], "errors": [...] }
+    JSON em stdout: { "findings": [...], "scanners": [...], "errors": [...],
+                      "scanned": {"files": N, "added_lines": M} }
+
+    `scanned.files` conta os cabeçalhos `diff --git` (sem eles, os `+++`): é o
+    número que a Fase C compara com CHANGED_FILES. Entrada vazia vira um erro
+    `empty input:`, porque 0 achados sobre nada não é PASS.
 
     findings[i] = {
         "file":     "packages/idp/test/integration/operators.int.test.ts",
@@ -195,6 +200,7 @@ class ScanResult:
     findings: list[Finding] = field(default_factory=list)
     scanners: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    scanned: dict[str, int] = field(default_factory=lambda: {"files": 0, "added_lines": 0})
 
     def to_json(self) -> str:
         return json.dumps(
@@ -202,6 +208,7 @@ class ScanResult:
                 "findings": [asdict(f) for f in self.findings],
                 "scanners": self.scanners,
                 "errors": self.errors,
+                "scanned": self.scanned,
             },
             ensure_ascii=False,
             indent=2,
@@ -314,9 +321,23 @@ def iter_added_lines(diff_text: str) -> Iterable[tuple[str, int, str]]:
 # ---------------------------------------------------------------------------
 
 
+EMPTY_INPUT_ERROR = (
+    "empty input: no diff reached the scanner, so 0 findings is not a PASS; "
+    "re-run Phase A step 8 on the reviewed range"
+)
+
+
 def scan_diff(diff_text: str) -> ScanResult:
     result = ScanResult()
     result.scanners.append("regex")
+
+    # Um pipe que não entregou nada (o `-- $P` que o zsh não divide, um `--base` cujo
+    # `git diff` falhou) dava 0 achados e `errors: []`, e o relatório lia PASS.
+    if not diff_text.strip():
+        result.errors.append(EMPTY_INPUT_ERROR)
+    raws = diff_text.splitlines()
+    result.scanned["files"] = sum(1 for raw in raws if raw.startswith("diff --git ")) or sum(
+        1 for raw in raws if _FILE_HEADER_RE.match(raw) or _DEV_NULL_RE.match(raw))
 
     # Agregação por (file, kind) para detectar systemic leaks (3+ no mesmo file
     # ou 5+ no PR inteiro → escala para CRITICAL).
@@ -324,6 +345,7 @@ def scan_diff(diff_text: str) -> ScanResult:
     per_kind_counts: dict[str, int] = {}
 
     for path, lineno, content in iter_added_lines(diff_text):
+        result.scanned["added_lines"] += 1
         # Generic Password / Env Assignment / Bearer / etc.
         for kind, pattern, sev_default in PATTERNS:
             for match in pattern.finditer(content):

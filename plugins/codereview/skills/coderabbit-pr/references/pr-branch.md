@@ -1,9 +1,9 @@
 # PR Branch — Phase 1.1 in full
 
-Read this at Phase 1.1, before touching any file: whether this run is the installed copy, where
-the fixes are made, whether another writer is still active in the tree, whether the PR merges at
-all, how it merges (for findings about commit ancestry), and the sweep of leftover checklists. SKILL.md keeps the decision; this file carries the
-commands and the why.
+Read this at Phase 1.1, before touching any file: whether this run is the installed copy, where the
+fixes are made, whether another writer is still active in the tree, whether the PR is merged
+already, whether it merges at all, how it merges (for findings about commit ancestry), and the sweep
+of leftover checklists. SKILL.md keeps the decision; this file carries the commands and the why.
 
 ## Is this run the installed copy?
 
@@ -47,6 +47,7 @@ CUR=$(git branch --show-current)
 HEAD_REF=$(gh pr view "$PR" --json headRefName -q .headRefName)
 ```
 
+- **The PR is already merged** → a new branch from the base, not the head (*A PR already merged*).
 - **`CUR` == `HEAD_REF`** → work here.
 - **The head mirrors another branch** (a review-only PR whose head the author keeps equal to
   `main`, against a base cut before the work) → fix on the source branch, as the author says,
@@ -109,6 +110,36 @@ pipeline's PR-phase session and the mutation-catalogue run it had launched were 
 Under the "work here" rule a fix to `bin/` would have changed the content the stamp was measuring,
 and an untracked `coderabbit-review.md` in the root would have been charged by the runner's hat guard
 to the running session — stopping the pipeline for a file it never wrote.
+
+## A PR already merged
+
+Findings can arrive after the merge, or the user can merge first and fix in a follow-up. The head
+branch then takes no fix that reaches a PR, and 5.0's `headRefOid` == `HEAD` would compare a frozen
+head. Read the state at 1.1:
+
+```bash
+gh pr view "$PR" --json state,mergeCommit,baseRefName -q '"\(.state) \(.mergeCommit.oid // "-") \(.baseRefName)"'
+```
+
+`MERGED` →
+
+1. Fix on a new branch cut from the base, in a worktree (*Where the fixes are made*):
+
+   ```bash
+   BASE=$(gh pr view "$PR" --json baseRefName -q .baseRefName)
+   WT="../$(basename "$(git rev-parse --show-toplevel)")-pr$PR-fix"
+   git fetch origin "$BASE" && git worktree add --no-track -b <fix-branch> "$WT" "origin/$BASE"
+   ```
+
+2. The follow-up PR is the user's call, like any commit (5.0). 5.0 then checks **that** PR's head.
+3. Before 5.2, reply on each thread of the merged PR with where the fix went, so the resolved
+   thread points at it:
+   `gh api -X POST "repos/$REPO/pulls/$PR/comments/<comment id>/replies" -f body="Fixed in #<n>"`.
+4. 5.1–5.3 run on the merged PR, whose threads are the open ones: `unresolved: 0` there is the gate.
+
+Measured 2026-10-17 (jrc-libs PR #3): Codex's two P1 arrived at 23:10 UTC, and the user chose to
+merge first, at 23:36 (`650f4cb`). The fixes went to a branch cut from `main`, as PR #4; each thread
+of #3 got a reply linking #4, and the 5.3 count on #3 read `total: 2 unresolved: 0`.
 
 ## A PR that does not merge
 

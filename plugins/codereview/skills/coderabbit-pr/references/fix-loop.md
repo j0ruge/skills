@@ -50,6 +50,14 @@ symptom — including one that opens a new fail-open next to it. The regression 
    it must be the probe of the rule you loosened. Measured 2026-10-05 (sdd_agents PR #222):
    `tbl = 1` → `:` is not awk, and the selftest went red at an unrelated probe; redone as
    `tbl = 0`, it went red at the probe of the rule.
+   **A window no probe can stop in** is the one exit: the sabotage only reorders effects inside a
+   gap no deterministic test reaches, such as two assignments in a row in one shell process, which
+   only a signal lands between. Write the invariant down instead, in three places: a comment on the
+   lines it protects, the commit message, and the closing report, each naming the sabotage that
+   stayed green and why no test reaches it. "The test was hard to write" is not such a reason.
+   Measured 2026-10-17 (jrc-libs PR #4, `release.sh`): 19 of 20 sabotages went red; the green one
+   moved `publica=1` after `armado=0`, right after the push, a gap that only a Ctrl-C lands in. The
+   comment sits in the exit trap that reads both flags, and commit `fc202d0` says "Não tem sensor".
 5. **Fast suite** — the project's test command (the one detected for the 4.0 baseline) plus, when
    the repo has one, the cheap half of its mutation catalogue (e.g. `tests/check-mutation.sh
    --anchors` in sdd-style kits): a fix that rots a mutant's anchor fails there in seconds. Compare

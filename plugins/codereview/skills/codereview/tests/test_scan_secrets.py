@@ -64,10 +64,10 @@ class RepoComPR(unittest.TestCase):
         git(self.repo, "add", "-A")
         git(self.repo, "commit", "-qm", "pr")
 
-    def scan(self) -> dict:
+    def scan(self, *opcoes: str) -> dict:
         """Como a Fase A manda: o diff no stdin, a partir da raiz do repo."""
         diff = git(self.repo, "diff", "HEAD~1...HEAD", "--unified=0")
-        out = subprocess.run([sys.executable, str(SCRIPT)], input=diff, cwd=self.repo,
+        out = subprocess.run([sys.executable, str(SCRIPT), *opcoes], input=diff, cwd=self.repo,
                              capture_output=True, text=True, check=True)
         return json.loads(out.stdout)
 
@@ -104,6 +104,42 @@ class TestGitleaksVeSoODiff(RepoComPR):
             "[extend]\nuseDefault = true\n\n[allowlist]\npaths = ['''sub/cfg\\.py''']\n")
         self.pr_com_token_na_linha_3()
         self.assertEqual(self.do_gitleaks(self.scan()), [])
+
+
+class TestQuantoLeu(RepoComPR):
+    """O scan diz quanto leu, e a entrada vazia não passa por limpa.
+
+    Até a 2.18.6, `printf '' | scan_secrets.sh` saía com 0 achados, `errors: []` e rc 0, e o
+    relatório leria PASS. Um pathspec que o zsh não divide (`-- $P`) entrega o diff vazio sem
+    erro nenhum (medido em 2026-10-18).
+    """
+
+    def rodar_stdin(self, entrada: str) -> dict:
+        out = subprocess.run([sys.executable, str(SCRIPT), "--no-external"], input=entrada,
+                             capture_output=True, text=True, check=True)
+        return json.loads(out.stdout)
+
+    def test_entrada_vazia_e_erro(self):
+        res = self.rodar_stdin("")
+        self.assertEqual(res["scanned"], {"files": 0, "added_lines": 0})
+        self.assertEqual(len(res["errors"]), 1)
+        self.assertTrue(res["errors"][0].startswith("empty input:"), res["errors"])
+
+    def test_entrada_so_com_espacos_tambem(self):
+        self.assertTrue(self.rodar_stdin("\n \n")["errors"][0].startswith("empty input:"))
+
+    def test_conta_cada_arquivo_do_diff_e_as_linhas_acrescentadas(self):
+        (self.repo / "app.py").write_text("")   # só remoção: arquivo do diff sem linha `+`
+        (self.repo / "novo.py").write_text("a = 1\nb = 2\n")
+        (self.repo / "logo.bin").write_bytes(b"\x00\x01")   # binário: `diff --git` sem `+++`
+        self.commit_pr()
+        res = self.scan("--no-external")
+        self.assertEqual(res["scanned"], {"files": 3, "added_lines": 2})
+        self.assertEqual(res["errors"], [])
+
+    def test_diff_sem_cabecalho_git_conta_pelo_mais_mais_mais(self):
+        diff = "+++ b/a.py\n@@ -0,0 +1,2 @@\n+x\n+y\n+++ /dev/null\n@@ -1 +0,0 @@\n-z\n"
+        self.assertEqual(scan_secrets.scan_diff(diff).scanned, {"files": 2, "added_lines": 2})
 
 
 class TestMaterializar(unittest.TestCase):

@@ -20,6 +20,16 @@ git status --porcelain                                  # must not list the file
 Anything uncommitted, or a different head → stop, show the user the diff and ask them to commit
 and push (or to authorise you to). Re-run the check after the push. With Phase 3 having changed
 no files (every item already fixed / not applicable), the check passes trivially — resolve.
+A merged PR has no head to carry them: check the follow-up PR's (pr-branch.md, *A PR already
+merged*).
+
+**A pre-push that refuses a dirty tree refuses the checklist too.** The `{reviewer}-review.md`
+files sit untracked in the root (`?? codex-review.md`), and a hook that rejects untracked files
+stops the push this step asks for. Before that push, move them out of the tree to a scratch
+directory and keep them there; Phase 6 deletes them there. Never `--no-verify`. The `.gitignore`
+entry Phase 6 suggests would also clear it, but it is a commit to the user's repo, theirs to make.
+Measured 2026-10-17 (jrc-libs PR #4): the hook has a case "deve recusar, sem rodar o gate, o push
+com arquivo não rastreado", and the push went through once the checklist left the root.
 
 **Authorised to commit, one commit per finding?** Several findings usually share a file, so split
 by hunk: classify every hunk of `git diff -U3` by finding **before** staging anything (one that

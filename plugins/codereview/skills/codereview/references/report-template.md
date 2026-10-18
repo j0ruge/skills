@@ -41,7 +41,11 @@ Always render this section, even when clean (this tells the user the pass ran). 
 | 1 | server/test/auth.test.ts | 30 | Generic Password | `password: "***"` | HIGH | 1) env var  2) rotate  3) rewrite history |
 | 2 | server/src/server.ts | 49 | Generic Password | `secret: "***"` | CRITICAL | 1) env var  2) rotate  3) rewrite history |
 
-**Status**: `PASS` (0 rows) / `BLOCKED` (≥1 row).
+**Scanned**: {scanned.files} files, {scanned.added_lines} added lines (CHANGED_FILES: {n}).
+
+**Status**: `PASS` (0 rows) / `BLOCKED` (≥1 row) / `NOT RUN` (`errors` carries `empty input`, or `scanned.files` is below the CHANGED_FILES count).
+
+`NOT RUN` is never the final status: 0 rows over a diff the scanner never read is not a pass. Re-run Phase A step 8 over the same range and pathspecs as step 5, and grade only once the two counts match. `scanned.files` counts the `diff --git` headers, so a binary file, a mode change and a pure rename count too, as in `--name-only`. Measured 2026-10-18: `printf '' | scan_secrets.sh` gave `findings: []`, `errors: []` and rc 0 up to 2.18.6; on two ranges of one repo, `scanned.files` equalled `git diff --name-only | wc -l` (62 and 9 files).
 
 When Status is `BLOCKED`:
 - Overall grade is forced to **F** regardless of anything else in the report.

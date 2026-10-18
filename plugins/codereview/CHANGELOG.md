@@ -2,6 +2,57 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.19.0] — 2026-10-18
+
+### O pre-scan de secrets diz quanto leu, e o `coderabbit-pr` conserta PR já mergeado
+
+`coderabbit-pr` 4.5.0. Lições da missão de release do jrc-libs (2026-10-16 a 2026-10-18): rodadas
+de `/codereview` sobre um plano e sobre o `release.sh`, e o `/coderabbit-pr` dos dois P1 do Codex
+no PR #3, já mergeado.
+
+- **`scripts/scan_secrets.py`:** `printf '' | scan_secrets.sh` saía com `findings: []`,
+  `errors: []` e rc 0, e o relatório leria PASS sobre um diff que ninguém leu. Num quase-acidente,
+  o `-- $P` que o zsh não divide deu `--name-only` vazio. Agora o JSON traz
+  `scanned: {files, added_lines}` (`files` conta os cabeçalhos `diff --git`, e sem eles os `+++`), e
+  a entrada vazia ou só de espaços põe em `errors` um `empty input: …` que diz para refazer o passo
+  8. Um `--base` cujo `git diff` falha também cai nesse erro, porque devolvia `""` em silêncio. 4
+  testes novos (12 no total); as 7 sabotagens das linhas novas ficaram vermelhas, e a que contava só
+  os `+++` pediu um arquivo binário no caso do git. Em dois intervalos do jrc-libs, `scanned.files`
+  deu igual ao `--name-only` (62 e 9).
+- **`references/report-template.md`, *Secrets Detection*:** linha `Scanned:` e o status `NOT RUN`
+  (erro `empty input`, ou `scanned.files` abaixo do CHANGED_FILES). `NOT RUN` nunca é o status
+  final: refaz-se o passo 8 com o mesmo range e os mesmos pathspecs do passo 5.
+- **`references/configuration.md`, *Re-review rounds*:** dois bullets. *A fix that writes
+  "measured" measures the exact line it writes*: na rodada 2 de um plano revisado como CODE, o
+  "medido" cobria só a espera (`timeout 590 tail --pid`), e a rodada 3 voltou HIGH no one-liner
+  `l=$(mktemp) && nohup … &`, cujo `&` manda a lista `&&` inteira para o fundo. *Reflow prose by
+  script, never by hand*: três reflows à mão emendaram linhas, e cada um voltou como LOW. O script
+  que resolveu (mantém inteiro o trecho entre crases e falha se as palavras mudarem) vai no bullet,
+  testado a partir do próprio texto da reference.
+- **`coderabbit-pr`, `references/pr-branch.md`:** seção nova *A PR already merged*. Com `MERGED` na
+  1.1, o conserto vai para um worktree num branch novo saído da base (`--no-track`, para um
+  `git push` sem argumento não ir para a base), a 5.0 confere o head do PR novo, cada thread do PR
+  mergeado recebe uma resposta com o link antes da 5.2, e a 5.3 conta no PR mergeado. No PR #3, os
+  P1 chegaram às 23:10 UTC e o usuário mergeou primeiro, às 23:36 (`650f4cb`); o conserto saiu no
+  #4, e a contagem deu `total: 2 unresolved: 0`. *Where the fixes are made* ganha o bullet que
+  aponta para a seção.
+- **`coderabbit-pr`, `references/fix-loop.md`, passo 4:** a saída para a janela que nenhum teste
+  alcança, como duas atribuições seguidas num processo shell, que só um sinal acerta. Nesse caso, a
+  invariante vai num comentário nas linhas, no commit e no relatório final. No `release.sh` do PR
+  #4, 19 de 20 sabotagens ficaram vermelhas, e a verde passava `publica=1` para depois de
+  `armado=0`.
+- **`coderabbit-pr`, `references/thread-resolution.md`, 5.0:** um pre-push que recusa árvore suja
+  recusa também o checklist não rastreado na raiz (`?? codex-review.md`). Antes do push, o checklist
+  sai para um diretório de rascunho, nunca com `--no-verify`. A 5.0 também aponta para o PR
+  mergeado.
+- **`SKILL.md` (os dois):** só a versão muda, porque estão em 19.990 e 19.991 chars, no teto do C1.
+- **Não entrou:** "a cópia velha mesmo depois do `/reload-plugins`", que o transcript refutou (a
+  regra atual está certa), e o custo da Fase B rodando no contexto principal numa sessão longa, que
+  não foi medido.
+
+Dívida pré-existente, não tocada: 3 AVISO C2 no `codereview` (os contratos dos agentes, lidos por
+caminho absoluto).
+
 ## [2.18.6] — 2026-10-18
 
 ### Projeto inteiro num repo de um commit, rodadas sem commit, docstring rebaixada pelo agente e âncora de mutante repetida
