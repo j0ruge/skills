@@ -255,7 +255,7 @@ These decide whether the rounds converge:
   length, and every token that differs is a `NAME` changed by a pair of the map, counted per pair.
   Measured 2026-10-18 (ui24_agent): a `cli.py` with one `\u2028` in a string literal gives 5633
   lines to `splitlines()` and 5632 to the AST, and round 4's tokenize renamer stopped with
-  `StopIteration` until the lines came from `StringIO`; round 10 renamed 55 locals in 7 files this
+  `StopIteration` until the lines came from `StringIO`; round 10 renamed 54 locals in 7 files this
   way (182 occurrences, every one a `NAME` of the map) and the suite stayed green.
 - **A count in CLAUDE.md that an agent calls stale is checked in the file.** The agents cite the
   value from the start of the session: measured 2026-10-05, four rounds flagged "CLAUDE.md says 1284

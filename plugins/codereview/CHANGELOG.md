@@ -2,6 +2,14 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.21.1] — 2026-10-18
+
+- **`references/configuration.md`, *Re-review rounds*:** o renome da rodada 10 trocou **54**
+  pares (função, nome), não 55. O número da 2.21.0 foi somado de cabeça, e a soma pelo mapa do
+  renomeador dá 54 (25 funções, 34 nomes distintos, 7 arquivos). É o caso da regra *a fix that
+  writes "measured" measures the exact line it writes*, na própria lição. Corrigido também na
+  entrada da 2.21.0.
+
 ## [2.21.0] — 2026-10-18
 
 ### A cópia velha que só difere na versão, e o renome por posição de sintaxe
@@ -24,7 +32,7 @@ com a cópia 2.18.4 carregada na sessão e a 2.19.0 instalada.
   `str.splitlines()` também quebra em `\x0c`, `\x85` e `\u2028`; o `col_offset` conta bytes UTF-8; e
   o diff é provado token a token. Medido: um `cli.py` com um `\u2028` num literal dá 5633 linhas ao
   `splitlines()` e 5632 ao AST, e o renomeador da rodada 4 parou com `StopIteration`; a rodada 10
-  renomeou 55 locais em 7 arquivos (182 ocorrências) e a suíte seguiu verde.
+  renomeou 54 locais em 7 arquivos (182 ocorrências) e a suíte seguiu verde.
 - **Dívida pré-existente (não tocada):** os 3 avisos C2 dos contratos que os agentes leem por
   caminho absoluto.
 - **Fora do escopo, sugestão:** a `coderabbit-pr` (`references/pr-branch.md`, fase 1.1) segue só
