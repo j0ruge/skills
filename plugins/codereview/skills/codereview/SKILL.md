@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.18.3
+  version: 2.18.4
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -224,7 +224,7 @@ in full even with little to say: the template's fallbacks, never prose in place 
 - **Focus area specified**: Only the matching detection passes were applied by sonnet agents. Mark non-analyzed sections as "Not analyzed (focused review on {area})".
 - **File path/glob specified**: Only matching files were analyzed. Report shows only those files.
 - **UI_LIB files**: Sonnet agents only flagged CRITICAL/HIGH. Note "(UI_LIB — reduced rigor)" in findings.
-- **More than 50 findings**: Show all CRITICAL/HIGH/MEDIUM first, then LOW up to 50 total; the rest go to a scratchpad file (report-template.md).
+- **More than 50 findings**: Show all CRITICAL/HIGH/MEDIUM first, then LOW up to 50 total; the rest one line each below it (report-template.md).
 
 ---
 

@@ -2,6 +2,21 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.18.4] — 2026-10-17
+
+### Os LOW além do teto ficam no relatório: a skill não escreve arquivo
+
+Achado do Codex (P2) na segunda análise da 2.18.3 (j0ruge/skills PR #4): o overflow dos LOW além
+do teto de 50 mandava criar um arquivo no scratchpad, e `SKILL.md` *Operating Constraints* proíbe
+criar arquivos e diz que o relatório na conversa é a única saída. A lição da 2.18.3 continua (os
+LOW cortados precisam de destino, porque o corpo do PR lista todos os adiados), mas o destino passa
+a ser o próprio relatório.
+
+- **`references/report-template.md`, *Findings Table*:** sob a tabela, uma linha por LOW cortado
+  (`file:line — finding`); sem arquivo e sem caminho absoluto.
+- **`SKILL.md`, *More than 50 findings*:** "the rest go to a scratchpad file" virou "the rest one
+  line each below it"; o `SKILL.md` fica em 19.990 chars.
+
 ## [2.18.3] — 2026-10-17
 
 ### PR grande sem corte, LOW além do teto num arquivo, mutante que não compila e `__pycache__` dos agentes
