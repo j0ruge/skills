@@ -1,0 +1,19 @@
+[
+  {"query": "faz um code review da minha branch antes de eu abrir o PR, com nota por critério", "should_trigger": true},
+  {"query": "review this branch against main before I open the pull request and grade it", "should_trigger": true},
+  {"query": "roda uma nova rodada do codereview só sobre o fix, base=3f1f721", "should_trigger": true},
+  {"query": "antes do push, procura segredo hardcoded e código morto no que mudou nesta branch", "should_trigger": true},
+  {"query": "check the changed components for accessibility gaps and race conditions before the PR", "should_trigger": true},
+  {"query": "revisa os commits de a1b2c3d a f4e5d6c sobre 9a8b7c6 e me dá os achados por severidade", "should_trigger": true},
+  {"query": "quero saber se algum sensor desta mudança engole erro em silêncio antes de mandar para revisão", "should_trigger": true},
+  {"query": "pre-PR review of the src/ changes, focus on bugs", "should_trigger": true},
+  {"query": "o projeto todo é um repo de um commit só; revisa tudo e me dá a nota", "should_trigger": true},
+  {"query": "o CodeRabbit deixou 6 comentários no PR 219, confere cada um e resolve as conversas", "should_trigger": false},
+  {"query": "o teste de integração do pagamento está falhando no CI, descobre por quê", "should_trigger": false},
+  {"query": "abre o PR desta branch contra a main com @codex review no comentário", "should_trigger": false},
+  {"query": "explica o que o arquivo src/engine/combat.ts faz e como ele chama o resto", "should_trigger": false},
+  {"query": "refatora esta função para tirar os três níveis de if aninhado", "should_trigger": false},
+  {"query": "audita a skill codereview: spec, claims e tamanho do SKILL.md", "should_trigger": false},
+  {"query": "mergeia o PR 8 na main depois que o Codex aprovar", "should_trigger": false},
+  {"query": "escreve os testes unitários que faltam para o ManaCost.Parse", "should_trigger": false}
+]

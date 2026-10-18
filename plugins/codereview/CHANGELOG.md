@@ -2,6 +2,35 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.21.2] — 2026-10-18
+
+### Casos de gatilho, claims datados e os C2 que a auditoria já entende
+
+Tratamento da dívida que a `skill-quality-audit` apontava na `codereview`, com autorização de reparo
+do dono.
+
+- **F4, `assets/trigger-evals.json`:** a `codereview` não tinha casos de gatilho (o `coderabbit-pr`
+  tinha). Entram 17, no formato dele: 9 que devem disparar (revisão pré-PR, rodada `base=<sha>`,
+  segredos e código morto, foco em bugs, repo de um commit) e 8 que não (comentários de bot no PR,
+  CI vermelho, abrir PR, explicar arquivo, refatorar, auditar skill, merge, escrever testes). O
+  `SKILL.md` o cita em *References* ("read before changing the `description`"), porque asset não
+  citado é AVISO B1 de órfão. Para caber no teto do C1, o parágrafo *Read-only* foi reescrito no
+  lugar sem perder conteúdo (Estratégia B da `skill-refactoring`; o `repetidos.py` não achou texto
+  repetido a retirar com prova).
+- **D1, 113 claims (`--claims`), um veredito cada:** 97 não são afirmação (número de pass ou seção,
+  como `6.10` e `§6.9`, e os títulos 1.1 a 4.2 do catálogo TOCTOU), 11 já estavam datados, 1 tem
+  sensor (`metadata.version`: `validate-versions.py` e o primeiro cabeçalho deste CHANGELOG) e 4
+  ganharam data. O `SKILL.md` dizia que um agente sem `model: "sonnet"` cobra "2.5× to 5×" o preço
+  do Sonnet; nos preços de 2026-10 o Opus 5.5 custa 2× o Sonnet 5.5 ($4/$20 contra $2/$10 por MTok),
+  e passa a dizer isso. No `report-template.md`, o incidente do cache 2.1 com a 2.6.0 instalada
+  ganha a data (2026-10-03, entrada 2.8.0) e as duas leituras que não são cópia velha também
+  (2026-10-06, entrada 2.13.0). O D1 segue como INFO: ele conta candidatos, e a contagem não zera.
+- **C2:** os 3 avisos (`per-file-agent.md`, `sweep-agent.md` e `detection-passes.md` citam outras
+  references por `{SKILL_DIR}/references/`) saem INFO desde a `skill-quality-audit` 0.8.0, que
+  reconhece o contrato de subagente. Nada mudou aqui; a auditoria da `codereview` fica com 0 aviso.
+- **`SKILL.md`:** 19.999 chars, no limite do C1 (AVISO acima de 20.000). A próxima lição que precisar
+  de linha nele pede extração para `references/` antes.
+
 ## [2.21.1] — 2026-10-18
 
 - **`references/configuration.md`, *Re-review rounds*:** o renome da rodada 10 trocou **54**

@@ -258,12 +258,13 @@ _Cost footprint: skill v{X}, {N} per-file agents ({model}), sweep {yes/no} ({mod
 
 Agent tool calls come from the harness when it reports them: the `<usage>` block of the agent's result or task notification (`<tool_uses>14</tool_uses>`). The agents' trailer lines (`Tool calls: … | Files read in full: …` on per-file agents, `TOOL_CALLS:` on the sweep) are the fallback for tool calls and the source of files read in full. The agent's own count runs low: measured 2026-10-13, the trailers said 6 and 9 where the harness counted 10 and 14. Orchestrator Bash calls come from its own Phase A. Pair the line with `/cost` before and after the run to measure a change to this skill.
 
-`skill v{X}` is `metadata.version` of `{SKILL_DIR}/SKILL.md`, read in Phase A. A stale cached copy of this skill once ran a whole review, four rounds of it, with no line saying so — the harness loaded a 2.1-era cache while 2.6.0 was installed, and features the user relied on were simply absent. A footer meant to compare runs has to say which skill produced them.
+`skill v{X}` is `metadata.version` of `{SKILL_DIR}/SKILL.md`, read in Phase A. A stale cached copy of this skill once ran a whole review (2026-10-03), four rounds of it, with no line saying so — the harness loaded a 2.1-era cache while 2.6.0 was installed, and features the user relied on were simply absent. A footer meant to compare runs has to say which skill produced them.
 
-Two readings that are not a stale copy. A `{SKILL_DIR}` outside the `installPath` whose `diff -rq` against
-it is empty runs the same skill: go on, and say it in the footer (`cache 2.11.0 = installed 2.11.1`). And
-`skill v{X}` names this skill, not the plugin: in a multi-skill plugin a release that touched only the
-sibling skill leaves it behind on purpose (plugin 2.11.1 shipped `codereview` 2.10.0, unchanged).
+Two readings that are not a stale copy (both measured 2026-10-06). A `{SKILL_DIR}` outside the
+`installPath` whose `diff -rq` against it is empty runs the same skill: go on, and say it in the
+footer (`cache 2.11.0 = installed 2.11.1`). And `skill v{X}` names this skill, not the plugin: in a
+multi-skill plugin a release that touched only the sibling skill leaves it behind on purpose (plugin
+2.11.1 shipped `codereview` 2.10.0, unchanged).
 
 ---
 

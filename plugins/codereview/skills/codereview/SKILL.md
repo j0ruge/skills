@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.21.1
+  version: 2.21.2
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -46,6 +46,7 @@ reads a file only at the step that needs it:
 - `references/toctou-patterns.md` — the TOCTOU catalog with code examples. Agents load it only for
   check-then-act shapes; read it in Phase C when a race spans files (check in one, act in another).
 - `references/report-template.md` — read at Phase C step 10, before writing the report.
+- `assets/trigger-evals.json` — read before changing the `description`.
 
 ---
 
@@ -59,13 +60,13 @@ reads a file only at the step that needs it:
 
 **≤3 CODE files** → skip routing and run Phase B inline too; the agent overhead isn't worth it.
 
-**The `model` field makes the routing real.** An Agent call without it inherits the main model and bills the same per-file analysis at 2.5× to 5× Sonnet's rate. Pass `model: "sonnet"` on every Phase B and B2 call, and read the model back in the report's Cost footprint line.
+**The `model` field makes the routing real.** An Agent call without it inherits the main model and bills the same per-file analysis at 2× Sonnet's rate on Opus 5.5 (2026-10 prices). Pass `model: "sonnet"` on every Phase B and B2 call, and read the model back in the report's Cost footprint line.
 
 ---
 
 ## Operating Constraints
 
-**Read-only.** This skill identifies issues and suggests fixes in the report; it does not apply them. Don't modify, create, or delete files, and don't run destructive commands — everything it runs (git, grep, the secrets script, dead-code tooling) is a pure read. The only output is the structured report in the conversation.
+**Read-only.** The report in the conversation is the only output; it suggests fixes, never applies them. Don't modify, create, or delete files or run destructive commands — everything it runs (git, grep, the secrets script, dead-code tooling) is a pure read.
 
 ## Error Handling
 
