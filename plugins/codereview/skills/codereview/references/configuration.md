@@ -151,8 +151,8 @@ These decide whether the rounds converge:
   2026-10-05: a mutant "passed" that way and failed once the cache was isolated. Not the
   `PYTHONPYCACHEPREFIX` variable: `-I` ignores every `PYTHON*` variable, so it is dropped in silence
   (measured 2026-10-17: `sys.pycache_prefix` was `None` and the `.pyc` landed next to the source).
-- **A mutant that does not build is not a kill.** A broken build exits non-zero like a red test, and
-  a filter on the runner's summary line (`Passed!|Failed!`) prints nothing for either. Write the
+- **A mutant that does not build is not a kill.** A broken build exits non-zero like a red test, but
+  prints neither of the runner's summary lines (`Passed!|Failed!`), so a filter on them stays mute. Write the
   mutant as an exact text replacement that must change the file, keep every symbol it leaves in use,
   and filter compiler errors too (`error CS`, `error TS`, `SyntaxError`). Measured 2026-10-17 (.NET,
   warnings as errors): a regex over a C# line split an interpolated string at its `;` (CS1002), and
