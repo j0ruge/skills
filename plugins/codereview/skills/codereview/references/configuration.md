@@ -72,6 +72,31 @@ almost none by file name.
 
 Overrides are applied on top of defaults — only the specified values change; unmentioned values keep their defaults.
 
+## Stale copy
+
+Read this when Phase A finds `{SKILL_DIR}` outside the `installPath` that
+`~/.claude/plugins/installed_plugins.json` records: the session loaded the skill before a
+`claude plugin update`.
+
+- Compare the two `SKILL.md`, not the folders:
+  `diff {SKILL_DIR}/SKILL.md <installPath>/skills/codereview/SKILL.md`. A `diff -rq` of the two
+  skill folders differs on every release of this skill, because the `version:` line of `SKILL.md`
+  moves with it, so it cannot tell a stale instruction from a newer reference.
+- Only the `version:` line differs: set `{SKILL_DIR}` to the installed skill folder and go on. The
+  instructions in context are the installed ones, and the rest (the agents' contracts,
+  `detection-passes.md`, `scan_secrets.sh`) is read by absolute path from `{SKILL_DIR}`. Take the
+  Cost footprint's version from the installed `SKILL.md`, since Phase A read it before the switch,
+  and say there which copy the session had loaded.
+- Any other line differs: the instructions in context are not the installed ones. Stop and ask for
+  `/reload-plugins`.
+- Measured 2026-10-18 (ui24_agent, rounds 4 to 10): the session had loaded 2.18.4 with 2.19.0
+  installed, and the 2.18.4 folder carried an `.orphaned_at` file. The folders differed in the
+  references and in `scan_secrets.py` (2.19.0 added `scanned`), the two `SKILL.md` only in the
+  version line. With `{SKILL_DIR}` at the installed folder the agents read the 2.19.0 contracts and
+  the pre-scan reported `scanned`; the old rule (any `diff -rq` difference means `/reload-plugins`)
+  would have stopped round 4 in Phase A. A later update left the same session at 2.18.4 against
+  2.20.0, again one line apart.
+
 ## Several repositories
 
 Read this when `$ARGUMENTS` names more than one repository ("nos repos", "both repos"), or when the
@@ -219,6 +244,19 @@ These decide whether the rounds converge:
       assert out.split() == first.split() + par.split(), "the reflow changed the words"
       return out
   ```
+- **Rename identifiers by syntax position, never by `sed`.** A naming finding is the fix that
+  touches the most lines, and a text substitution also rewrites strings, comments, attributes
+  (`x.name`) and keyword arguments (`f(name=…)`). Rename the `ast.Name` and `ast.arg` nodes of the
+  function that binds the name (the `NAME` tokens, for a name unique in the module), and refuse a
+  new name the function already uses. Read the source with `io.StringIO(src).readlines()`:
+  `str.splitlines()` also breaks on `\x0c`, `\x85`, `\u2028` and other separators that are not line
+  ends for Python, so its line numbers drift from the AST's and tokenize's. `col_offset` counts
+  UTF-8 bytes: replace in the encoded line. Then prove the diff: the two token streams have the same
+  length, and every token that differs is a `NAME` changed by a pair of the map, counted per pair.
+  Measured 2026-10-18 (ui24_agent): a `cli.py` with one `\u2028` in a string literal gives 5633
+  lines to `splitlines()` and 5632 to the AST, and round 4's tokenize renamer stopped with
+  `StopIteration` until the lines came from `StringIO`; round 10 renamed 55 locals in 7 files this
+  way (182 occurrences, every one a `NAME` of the map) and the suite stayed green.
 - **A count in CLAUDE.md that an agent calls stale is checked in the file.** The agents cite the
   value from the start of the session: measured 2026-10-05, four rounds flagged "CLAUDE.md says 1284
   tests" while the file, updated by each round's commit, already said 1336, 1352, 1362 and 1363.

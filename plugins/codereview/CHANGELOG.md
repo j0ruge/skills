@@ -2,6 +2,35 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.21.0] — 2026-10-18
+
+### A cópia velha que só difere na versão, e o renome por posição de sintaxe
+
+Lições das rodadas 4 a 10 do `/codereview` da S9 do ui24_agent (Python, `e1a6f69..`), que rodaram
+com a cópia 2.18.4 carregada na sessão e a 2.19.0 instalada.
+
+- **`SKILL.md`, fase A:** a cópia fora do `installPath` deixa de parar a revisão por qualquer
+  diferença do `diff -rq` e manda para a seção nova *Stale copy* de `references/configuration.md`.
+  Lá a comparação é entre os dois `SKILL.md`: se só a linha `version:` difere, o `{SKILL_DIR}` passa
+  a ser a pasta instalada e a revisão segue, porque as instruções em contexto são as mesmas e o
+  resto (os contratos dos agentes, o `scan_secrets.sh`) é lido por caminho absoluto. Outra linha
+  diferente continua pedindo `/reload-plugins`. O `diff -rq` das pastas da skill difere em toda
+  release dela, porque a linha `version:` muda junto, e a regra da 2.13.0 teria parado a rodada 4 na
+  fase A. Medido: a 2.18.4 contra a 2.19.0, e depois contra a 2.20.0, só a linha da versão. O
+  `SKILL.md` cai de 19.990 para 19.973 chars.
+- **`references/configuration.md`, *Re-review rounds*:** renomear identificador entre rodadas por
+  posição de sintaxe (`ast.Name` e `ast.arg` da função, ou os tokens `NAME` para um nome único no
+  módulo), nunca por `sed`. O fonte é lido com `io.StringIO(src).readlines()`, porque
+  `str.splitlines()` também quebra em `\x0c`, `\x85` e `\u2028`; o `col_offset` conta bytes UTF-8; e
+  o diff é provado token a token. Medido: um `cli.py` com um `\u2028` num literal dá 5633 linhas ao
+  `splitlines()` e 5632 ao AST, e o renomeador da rodada 4 parou com `StopIteration`; a rodada 10
+  renomeou 55 locais em 7 arquivos (182 ocorrências) e a suíte seguiu verde.
+- **Dívida pré-existente (não tocada):** os 3 avisos C2 dos contratos que os agentes leem por
+  caminho absoluto.
+- **Fora do escopo, sugestão:** a `coderabbit-pr` (`references/pr-branch.md`, fase 1.1) segue só
+  quando a pasta dela é igual à instalada; a comparação pelo `SKILL.md` valeria lá também, mas não
+  foi medida nela.
+
 ## [2.20.0] — 2026-10-18
 
 ### Cobertura de testes sem os arquivos só de comentário, e a sonda por nome de tipo
