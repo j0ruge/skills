@@ -240,6 +240,7 @@ For every **new or modified** function, method, class, or exported constant in t
 - Internal/private function without doc comment → **LOW** (nice to have)
 - Test callback (`describe`, `it`, `test`) without doc comment → **MEDIUM** if the project's CLAUDE.md or conventions explicitly require it, **LOW** otherwise
 - Modified function where the doc comment no longer matches the behavior (e.g., doc says "returns X" but code now returns Y) → **HIGH** (actively misleading)
+- The per-file agent files these severities as they stand; a downgrade for a project convention is Phase C's call (SKILL.md, step 4), made from the docstring probe in report-template.md. Measured 2026-10-18: all 5 per-file agents of a Python range filed its 43 public gaps as LOW, one writing "the rubric would grade … HIGH; I downgraded it"; the probe read public 15/58, the gap the Documentation row was graded on.
 
 **6.5.2 Project Documentation Sync**
 

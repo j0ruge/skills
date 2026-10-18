@@ -16,7 +16,7 @@
 | `styleFilePatterns` | `["**/*.css", "**/*.scss", "**/*.less"]` | Globs matched as STYLES files. |
 | `base` | — | Commit to diff against, replacing `git merge-base {BASE_BRANCH} HEAD` as `{MERGE_BASE}` in Phase A and in every agent prompt. Use it when the user names the base of a commit range, in prose too ("os commits de X a Y, sobre Z" → `base=Z`): the merge-base would review the whole branch. Also the way to re-review only the fixes after a report: `base=<the head the previous round reviewed>`. The range ends at `HEAD` unless `head=` names another end. Such a round follows *Re-review rounds* below. |
 | `head` | `HEAD` | Commit the range ends at, when the user names an end that is not `HEAD`, in prose too ("revise `A..B`", a range already merged with commits after `B`). It replaces `HEAD` in every Phase A command (steps 4–8), and in agent prompts the diff command is written out in full (`git diff {MERGE_BASE}..{head} -- {FILE_PATH}`), as in `worktree` mode. Without it, whatever was committed after the end enters the review unannounced. Measured 2026-10-05: a 15-commit range ended two commits before `HEAD`; the seven agents reviewed the right range only because each prompt carried the `A..B` diff written out. The report header names both ends. |
-| `worktree` | auto | Review uncommitted work instead of `{MERGE_BASE}...HEAD`. Turns on by itself when the committed diff is empty but `git status --porcelain` is not — typically on the base branch itself, where `git merge-base` returns `HEAD` and the normal Phase A would stop with "No changes detected" over pending work. Changed files = `git diff HEAD --name-only` plus `git ls-files --others --exclude-standard`; per-file diff = `git diff HEAD -- <file>`, or `git diff --no-index /dev/null <file>` for an untracked file (rc 1 is normal there). **The secrets pre-scan needs both sources**: pipe `git diff HEAD --unified=0` and the `--no-index` diff of every untracked file into `scan_secrets.sh` — `git diff HEAD` alone never shows new files. Exclude runtime state the user did not author (`*.db`, caches) from CODE. Commit log: none. In agent prompts write the diff command out in full: `{MERGE_BASE}...HEAD` would be empty. The report header says `working tree vs HEAD {sha}`. |
+| `worktree` | auto | Review uncommitted work instead of `{MERGE_BASE}...HEAD`. Turns on by itself when the committed diff is empty but `git status --porcelain` is not — typically on the base branch itself, where `git merge-base` returns `HEAD` and the normal Phase A would stop with "No changes detected" over pending work. Changed files = `git diff HEAD --name-only` plus `git ls-files --others --exclude-standard`; per-file diff = `git diff HEAD -- <file>`, or `git diff --no-index /dev/null <file>` for an untracked file (rc 1 is normal there). **The secrets pre-scan needs both sources**: pipe `git diff HEAD --unified=0` and the `--no-index` diff of every untracked file into `scan_secrets.sh` — `git diff HEAD` alone never shows new files. Exclude runtime state the user did not author (`*.db`, caches) from CODE. Commit log: none. In agent prompts write the diff command out in full: `{MERGE_BASE}...HEAD` would be empty. The report header says `working tree vs HEAD {sha}`. A repo whose whole history is one commit, asked for as a whole ("o projeto todo", "all of it"), is not this mode: worktree reviews only what is pending. Use `base=4b825dc642cb6eb9a060e54bf8d69288fbee4904`, git's empty tree, with the two-dot `git diff <tree> HEAD` written out in every prompt: three-dot needs a commit on both sides (`fatal: Invalid symmetric difference expression`). Measured 2026-10-18: worktree mode would have graded a `TODO.md` and 60 transcripts; the empty-tree range sent the 12 non-empty CODE files to 5 agents. |
 | `sweep` | `pr` | Scope of the dead-code sweep (pass 6.9). `pr` = Bucket A only (symbols this PR introduced or orphaned); `full` = also run Bucket B (repo-wide tooling over code the PR did not touch, capped). Focus `dead-code` implies `full`. |
 
 > **Note:** The array values in the table above are in JSON format for clarity only. When overriding, use comma-separated values without brackets (see Override Syntax below).
@@ -142,6 +142,15 @@ These decide whether the rounds converge:
   `git show <ref>:<file>` or `git diff <ref> -- <file>`, never `checkout` or `stash`: a one-second
   `git checkout main` mid-round (2026-10-03, to check whether a lint warning was pre-existing) voided
   a full suite run and forced every finding to be re-checked against the branch.
+- **Rounds over uncommitted fixes need a snapshot of what each round reviewed.** `base=<head>`
+  assumes a commit per round; when nobody asked for commits there is no such ref, and `git diff HEAD`
+  hands every round all the earlier rounds' fixes again. When a round launches, take
+  `S=$(git stash create)` (empty output = clean tree: use `HEAD`): a commit object of the working
+  tree that leaves the tree, the index and the stash list untouched. The next round writes
+  `git diff $S -- <file>` out in each prompt, the sweep's too. Untracked files stay out of it, so a
+  file new since `HEAD` diffs whole. Measured 2026-10-18 (Python, rounds 3 and 4 over uncommitted
+  fixes): scratchpad copies of the reviewed files and `diff -u <copy> <file>` in the prompts did the
+  same job; `git stash create` was checked afterwards in a scratch repo.
 - **Reproduce between rounds, not during one.** A mutant that confirms a `needs reproduction` finding
   (detection-passes.md, 6.12) edits a file: run it after every agent has returned, against the
   related test files, and restore the file before the next launch (`git status --short` empty).
@@ -153,12 +162,14 @@ These decide whether the rounds converge:
   (measured 2026-10-17: `sys.pycache_prefix` was `None` and the `.pyc` landed next to the source).
 - **A mutant that does not build is not a kill.** A broken build exits non-zero like a red test, but
   prints neither of the runner's summary lines (`Passed!|Failed!`), so a filter on them stays mute. Write the
-  mutant as an exact text replacement that must change the file, keep every symbol it leaves in use,
+  mutant as an exact text replacement that occurs once and must change the file, keep every symbol it leaves in use,
   and filter compiler errors too (`error CS`, `error TS`, `SyntaxError`). Measured 2026-10-17 (.NET,
   warnings as errors): a regex over a C# line split an interpolated string at its `;` (CS1002), and
   `throw;` left `catch (… e)` unused (CS0168); the filter printed nothing for the three mutants.
   Rewritten (`throw new InvalidDataException(e.Message, e)` for the last), they turned 1, 2 and 1
-  tests red.
+  tests red. Assert "once" and "changes" before writing: a later round's fix moves or repeats the
+  anchor (measured 2026-10-18: `except FileNotFoundError:` appeared twice after one, and the assert
+  stopped the run before any file was touched).
 - **Ask the fixer for the smallest change that closes the finding.** A new mechanism is new surface
   for the next round. Measured 2026-10-05, twelve rounds over ~670 lines: 8, 16, 13, 15, 9, 4, 5, 2,
   4, 4, 1, 0 findings; the atomic write one round asked for brought 4 of the next round's 15. With

@@ -2,6 +2,37 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.18.6] — 2026-10-18
+
+### Projeto inteiro num repo de um commit, rodadas sem commit, docstring rebaixada pelo agente e âncora de mutante repetida
+
+Lições de uma revisão "até tudo A" do magic_tutor (Python: monitor ao vivo do MTG Arena e scripts;
+repo com um commit só no `main`; 5 rodadas, B → A, com 26, 7, 4, 2 e 0 achados; as correções
+ficaram sem commit, como o usuário queria).
+
+- **`references/configuration.md`, linha `worktree`:** no `main` de um repo de um commit só, o
+  `worktree` automático revisaria só o pendente (um `TODO.md` e 60 transcrições) e daria "A, sem
+  CODE". Pedido o projeto inteiro, o range é a árvore vazia do git (`4b825dc…`) com o diff de dois
+  pontos escrito por extenso; o de três pontos falha (`fatal: Invalid symmetric difference
+  expression`).
+- **`references/configuration.md`, *Re-review rounds*:** `base=<head anterior>` supõe um commit por
+  rodada, e sem commit não há ref do que a rodada revisou. Bullet novo: `S=$(git stash create)`
+  quando a rodada é lançada, e a seguinte escreve `git diff $S -- <file>` nos prompts. As rodadas 3 e
+  4 fizeram o mesmo com cópias no scratchpad e `diff -u`; o `stash create` foi conferido depois num
+  repo descartável (árvore, índice e lista de stash intactos; não rastreados ficam de fora).
+- **`references/detection-passes.md`, 6.5.1:** os 5 agentes por arquivo registraram como LOW as 43
+  lacunas públicas de docstring (um escreveu "the rubric would grade … HIGH; I downgraded it"), e o
+  probe deu público 15/58. O agente mantém a severidade da 6.5.1; rebaixar por convenção do projeto
+  é decisão da fase C, tomada a partir do probe.
+- **`references/configuration.md`, mutante que não compila:** "exact text replacement that must
+  change the file" ganhou "occurs once". Depois de uma correção, `except FileNotFoundError:` passou a
+  aparecer duas vezes no arquivo, e o assert de unicidade parou o script antes de gravar.
+- **`SKILL.md`:** só a versão muda (2.18.4 → 2.18.6, junto com o plugin; a 2.18.5 tocou só o
+  `coderabbit-pr`). Continua em 19.990 chars, no teto: as lições foram para as references.
+
+Dívida pré-existente, não tocada: 3 AVISO C2 (os contratos dos agentes, lidos por caminho
+absoluto) e INFO F4 (sem evals).
+
 ## [2.18.5] — 2026-10-18
 
 ### `coderabbit-pr` segue com a cópia em cache igual à instalada e lê o estado do Codex pelo marcador
