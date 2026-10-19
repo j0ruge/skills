@@ -2,6 +2,48 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.24.0] — 2026-10-19
+
+### Base velha, branch já mergeada, worktree isolada, e o código que a rodada de fix escreveu vai para agente
+
+Lições de uma sessão no magic_tutor: a revisão do PR #17, que já estava mergeado, e mais 5 rodadas
+de fix até o grade A, numa sessão isolada em worktree. O `SKILL.md` muda uma frase e a versão, e
+passa de 19.993 para 19.995 chars. Todo o resto vai para as references.
+
+- **`configuration.md`, seção nova *Base and batching*.** O passo 2 do Phase A aponta para ela.
+  - Sem `origin/HEAD`, a cadeia parava no `main` local, que estava 24 commits atrás. O range saía
+    com 22 commits e dois PRs já mergeados.
+  - A branch já mergeada dava diff vazio contra o `origin/main`. O range do PR é
+    `git merge-base <merge>^1 HEAD`, com o merge achado por
+    `git log --merges --ancestry-path HEAD..origin/main`. Medido: deu exatamente os 9 commits.
+  - Uma sessão isolada em worktree recusa a cadeia de git, o heredoc da sonda de docstrings e um
+    argumento calculado em runtime. A saída é uma chamada simples por comando, `/usr/bin/git` e
+    scripts no scratchpad.
+  - A justificativa do lote ("every extra orchestrator turn is a main-model round-trip…") saiu do
+    `SKILL.md` e foi **movida** para essa seção: o espaço pagou o ponteiro sem passar do teto de
+    20 mil chars.
+- **`grep` por caminho absoluto** (`configuration.md`, `per-file-agent.md`, `sweep-agent.md`). Pelo
+  hook do rtk, o `grep` mostrou só as linhas `def` e `[+32 more]`, enquanto o `/usr/bin/grep`
+  mostrou as quatro linhas que a checagem cross-file precisava. No sweep, uma referência escondida
+  vira código morto.
+- **`configuration.md`, *Re-review rounds*: o código que a rodada de fix escreveu vai para um
+  agente**, como já fazia o doc da sessão. Com ≤3 CODE, o atalho inline punha o orquestrador para
+  dar nota ao próprio fix. Nas rodadas 2 a 4, o agente achou o único MEDIUM de cada uma, e um
+  teste escrito antes ficou vermelho em cada caso.
+- **`configuration.md`, *Runtime evidence*: operação de arquivo num destino montado se reproduz no
+  destino real**, com um arquivo descartável que é apagado em seguida, entre rodadas e com a pasta
+  nomeada no relatório. Um LOW `needs reproduction` sobre `os.utime` virou HIGH: o `/mnt/g` (drvfs,
+  arquivos do root) respondeu `PermissionError [Errno 1]`, e toda cópia para o Drive falhava desde
+  o commit.
+- **`configuration.md`, mutante que não compila.** O filtro ganhou `IndentationError` e o resumo
+  `1 error` do pytest (erro de coleta, sem `failed`). Um mutante que apagou a única linha de um
+  `if` foi contado como morto até a troca por `pass`.
+- **`report-template.md`**: a sonda de docstrings em heredoc é recusada numa worktree isolada; o
+  script vai para o scratchpad.
+
+Dívida que já existia e não foi mexida aqui: 3 INFO C2 (os contratos dos subagentes, lidos por
+caminho absoluto de propósito) e os claims D1 que a auditoria lista em toda execução.
+
 ## [2.23.2] — 2026-10-19
 
 ### A prova da sabotagem conta o texto no arquivo, não no `git diff`

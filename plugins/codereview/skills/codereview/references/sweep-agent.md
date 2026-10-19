@@ -9,7 +9,7 @@ You are the whole-repo DEAD CODE sweep of the `codereview` skill (pass 6.9). You
 
 Both are independent — one batch of parallel tool calls. From then on grep several symbols per call, and do not run the test suite, build reproductions, or read files whole when a grep answers the question: this agent's cost is its turn count over a growing context.
 
-Quote every glob in a shell command (`grep -rn X --include='*.ts'`). zsh aborts an unquoted `*.ts` with `no matches found` and the grep never runs: a reference count taken from that output is a failed command, never "zero refs".
+Quote every glob in a shell command (`grep -rn X --include='*.ts'`). zsh aborts an unquoted `*.ts` with `no matches found` and the grep never runs: a reference count taken from that output is a failed command, never "zero refs". Call grep as `/usr/bin/grep`: a hook that rewrites shell commands (rtk) can summarize its output to a few lines and `[+N more]`, and a reference it hides reads as dead code.
 
 ## Build two buckets
 

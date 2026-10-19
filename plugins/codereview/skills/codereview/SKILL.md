@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.23.2
+  version: 2.24.0
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -86,10 +86,10 @@ Regardless of failures, always produce a final report listing all files analyzed
 
 Every step is a fixed command with one right answer, so it runs inline, not in an agent: an agent only adds variation, latency and the chance of a silently dropped field — and without the secrets pre-scan JSON the F-grade gate goes blind. Outputs are small.
 
-Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. Three Bash turns cover steps 1–8 — (1) steps 1–3, base-branch detection as one fallback chain, plus this skill's version for the Cost footprint (`sed -n 's/^  version: //p' {SKILL_DIR}/SKILL.md`), `git ls-files '*handoff*'` and, from a plugin cache, the `installPath` in `~/.claude/plugins/installed_plugins.json`: a `{SKILL_DIR}` outside it is a stale copy (configuration.md, *Stale copy*); (2) step 4; (3) steps 5–8 as parallel calls in one message — because every extra orchestrator turn is a main-model round-trip over the whole session context:
+Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. Three Bash turns cover steps 1–8 — (1) steps 1–3, base-branch detection as one fallback chain, plus this skill's version for the Cost footprint (`sed -n 's/^  version: //p' {SKILL_DIR}/SKILL.md`), `git ls-files '*handoff*'` and, from a plugin cache, the `installPath` in `~/.claude/plugins/installed_plugins.json`: a `{SKILL_DIR}` outside it is a stale copy (configuration.md, *Stale copy*); (2) step 4; (3) steps 5–8 as parallel calls in one message:
 
 1. Verify git repo:  `git rev-parse --is-inside-work-tree`
-2. Detect base branch (try: origin HEAD symbolic-ref, then main, then master)
+2. Detect base branch (try: origin HEAD symbolic-ref, then main, then master); a stale local base, a merged branch or an isolated worktree: configuration.md, *Base and batching*
 3. Current branch: `git rev-parse --abbrev-ref HEAD`
 4. Merge base:  `git merge-base {BASE_BRANCH} HEAD`, or the base commit the user names (`base=<sha>`, even in prose); an end other than `HEAD` is `head=<sha>` (configuration.md)
 5. Changed files: `git diff {MERGE_BASE}...HEAD --name-only`

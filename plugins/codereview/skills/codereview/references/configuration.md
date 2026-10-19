@@ -6,7 +6,8 @@
 
 - [Default Values](#default-values) · [Override Syntax](#override-syntax) (presets per stack, the
   C# probe by type and by registration literal)
-- [Stale copy](#stale-copy) · [Docs this session wrote](#docs-this-session-wrote)
+- [Base and batching](#base-and-batching) (a stale local base, a branch already merged, an isolated
+  worktree) · [Stale copy](#stale-copy) · [Docs this session wrote](#docs-this-session-wrote)
 - [Several repositories](#several-repositories) · [Folder without git](#folder-without-git) ·
   [Path-scoped reviews](#path-scoped-reviews) · [Code inside docs](#code-inside-docs)
 - [Re-review rounds](#re-review-rounds) · [Runtime evidence](#runtime-evidence)
@@ -91,6 +92,37 @@ test files, quoted 2. For 4 of the 14 the only hit was the registry listing, whi
 tests load fixture cards.
 
 Overrides are applied on top of defaults — only the specified values change; unmentioned values keep their defaults.
+
+## Base and batching
+
+Read this in Phase A when step 2 lands on a local branch while `origin/<base>` exists, when a merge
+base equals `HEAD`, or when the session runs isolated in a worktree.
+
+- **Batching is the default.** Steps 1–3 run as one chain and steps 5–8 as parallel calls in one
+  message, because every extra orchestrator turn is a main-model round-trip over the whole session
+  context.
+- **A local base can be stale.** Without `origin/HEAD`, step 2 stops at the local `main`, which may
+  sit merged PRs behind. When `git rev-list --count main..origin/main` is above 0, the base is
+  `origin/main`. Measured 2026-10-19 (magic_tutor): the local `main` was 24 commits behind, and its
+  merge base gave a 22-commit range holding two PRs already merged.
+- **A branch already merged diffs empty against `origin/<base>`** (its merge base is `HEAD`). When
+  the user asks for that branch's code ("o código novo"), the range is what its PR brought:
+  `git log --merges --ancestry-path --format=%h HEAD..origin/main` lists the merges after it, the last
+  line is the one that brought it in, and `git merge-base <that merge>^1 HEAD` is `base=`. The header
+  names both ends, and the fixes go on a new branch. Measured 2026-10-19: merge `2e14ab8`, base
+  `2074fd5`, exactly the branch's 9 commits.
+- **An isolated worktree session refuses the chain.** Its guard rejects any command it cannot prove
+  stays in the worktree: a `$(git …) || …` chain ("names git in a form too complex to verify"), a
+  `python3 - <<EOF` heredoc (the docstring probe), an argument computed at runtime
+  (`python -X pycache_prefix=$S/pyc`). Run each git command plainly, as parallel calls in one
+  message; call it as `/usr/bin/git` where a hook rewrites `git` (the rtk hook's `rtk git` is
+  refused too); write scripts to the scratchpad and spell their paths out. Measured 2026-10-19
+  (Claude Code, magic_tutor): the chain, the heredoc and the `$S` argument were refused, and the
+  split calls ran.
+- **The same hook can summarize `grep`.** Where its output decides a finding (a cross-file check,
+  a reference count), call `/usr/bin/grep`: through the rtk hook,
+  `grep -n "glob\|st_mtime" monitor/replays.py` printed the `def` lines and `[+32 more]`, while
+  `/usr/bin/grep` showed the four lines the check needed (measured 2026-10-19).
 
 ## Stale copy
 
@@ -274,7 +306,10 @@ These decide whether the rounds converge:
 - **A mutant that does not build is not a kill.** A broken build exits non-zero like a red test, but
   prints neither of the runner's summary lines (`Passed!|Failed!`), so a filter on them stays mute. Write the
   mutant as an exact text replacement that occurs once and must change the file, keep every symbol it leaves in use,
-  and filter compiler errors too (`error CS`, `error TS`, `SyntaxError`). Measured 2026-10-17 (.NET,
+  and filter compiler errors too (`error CS`, `error TS`, `SyntaxError`, `IndentationError`). pytest
+  sums up a module that fails to import as `1 error in 0.25s`, with no `failed`: that is a broken
+  build, and a mutant that deletes a block's only statement leaves one (write `pass` in its place).
+  Measured 2026-10-19: such a mutant was first counted killed. Measured 2026-10-17 (.NET,
   warnings as errors): a regex over a C# line split an interpolated string at its `;` (CS1002), and
   `throw;` left `catch (… e)` unused (CS0168); the filter printed nothing for the three mutants.
   Rewritten (`throw new InvalidDataException(e.Message, e)` for the last), they turned 1, 2 and 1
@@ -343,6 +378,12 @@ These decide whether the rounds converge:
   case for two guards*), and give the mutant count in the Test Coverage row. Measured 2026-10-17: round
   2 diffed 14 new test files (788 lines) and launched no agent for them; the 24 mutants run after round
   1's fixes and the 12 after round 2's, all killed, were what the two A grades stood on.
+- **The code a fix round wrote goes to an agent, as a doc does** (*Docs this session wrote*). With
+  ≤3 CODE files the inline shortcut has the orchestrator grade its own fix: send those files to
+  Phase B agents, launch prompt unchanged. Measured 2026-10-19 (magic_tutor, rounds 2–4 over a
+  two-file Python fix): the agent found each round's only MEDIUM — a cached JSON body without `log`
+  that crashed every later run, a `break` that left the older items unreachable — and a test written
+  first went red on each.
 
 ## Runtime evidence
 
@@ -355,6 +396,14 @@ Read this in Phase C when the reviewed code already runs (a cron job, a deployed
   rebuild. Measured 2026-10-05: a per-file "`extradate` may be an unknown biblatex option" was
   settled without writing anything: no "Unknown option" in the build log, the style file
   declares the option, and `pdftotext` of the PDF shows "2006a"/"2006b" in the reference list.
+- A file operation on a mounted destination (drvfs `/mnt/<x>`, a network or cloud-sync folder)
+  does what that mount allows, not what the test's `tmp_path` does. When a finding rests on one
+  (`utime`, `chmod`, a rename, a lock), run it on a throwaway file in the real destination folder,
+  then delete the file. It is a write outside the scratchpad: do it between rounds, and name the
+  folder in the report. Measured 2026-10-19 (magic_tutor): a LOW `needs reproduction` on `os.utime`
+  in the Google Drive copy became HIGH. `/mnt/g` answered `PermissionError [Errno 1]` (drvfs files
+  owned by root), while `/mnt/j` and ext4 accepted it, so every copy to the Drive had failed since
+  the commit.
 - Compare each output with what the diff says should happen: a message that contradicts the code's intent, an event firing for the wrong records, a warning that repeats daily. File the mismatch as a finding with the output path and line as evidence.
 - Measured: a review of a daily cron missed, in all per-file agents, an event that re-announced 9 records lost years earlier — it showed only in that morning's output.
 - Never paste client data or credentials from the output into the report: cite the file and summarize.
