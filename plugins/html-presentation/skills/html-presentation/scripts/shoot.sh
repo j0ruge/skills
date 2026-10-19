@@ -10,27 +10,41 @@
 #   1366×768 and 1280×720     — the stage must fit a laptop shared on a call, not only 1920×1080
 #   fallbacks (WSL)           — no Chrome, pdfinfo or montage on PATH: Playwright's cached Chromium, a /Type /Page
 #                               count, and Pillow grades; the contact sheets used to vanish without a word
+#   taller window + crop      — --headless=new gives ~87 px of --window-size to the browser UI, so the stage came out
+#                               at 0.92 with dark bands; the real viewport is measured once and the PNG cropped back
 set -uo pipefail
 [ -f "${1:-}" ] || { echo "uso: shoot.sh <deck.html> [shots] [pdf]"; exit 2; }
 HTML=$(readlink -f "$1"); SHOTS=${2:-shots}; PDF=${3:-"${HTML%.html}.pdf"}
 # Sem Chrome no PATH (WSL), serve o Chromium que o Playwright já baixou
 CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser \
-  || ls -d "$HOME"/.cache/ms-playwright/chromium-*/chrome-linux/chrome 2>/dev/null | sort -V | tail -1)
+  || ls -d "$HOME"/.cache/ms-playwright/chromium-*/chrome-linux*/chrome 2>/dev/null | sort -V | tail -1)
 [ -n "$CHROME" ] || { echo "Chrome/Chromium não encontrado"; exit 2; }
 N=$(grep -o '<section class="slide' "$HTML" | wc -l)
 mkdir -p "$SHOTS"; rm -f "$SHOTS"/*.png
 fail=0
-shot() { # size file slide
+# Viewport real de uma janela 1920×1080: DH é a altura que a barra do navegador leva
+printf '<p id=v></p><script>v.textContent="vh"+innerHeight</script>' > "$SHOTS/.viewport.html"
+VH=$("$CHROME" --headless=new --disable-gpu --window-size=1920,1080 --dump-dom "file://$(readlink -f "$SHOTS")/.viewport.html" \
+  2>/dev/null | grep -o 'vh[0-9]*' | tr -dc 0-9)
+rm -f "$SHOTS/.viewport.html"; DH=$((1080 - ${VH:-1080})); [ "$DH" -gt 0 ] || DH=0
+crop() { # file width height: tira as DH linhas a mais, com Pillow ou ImageMagick
+  [ "$DH" -gt 0 ] || return 0
+  if python3 -c 'import PIL' 2>/dev/null; then
+    python3 -c 'import sys; from PIL import Image; f, w, h = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]); Image.open(f).crop((0, 0, w, h)).save(f)' "$1" "$2" "$3"
+  elif command -v convert >/dev/null; then convert "$1" -crop "${2}x${3}+0+0" +repage "$1"
+  elif [ -z "${avisou:-}" ]; then echo "aviso: sem Pillow nem ImageMagick, as capturas ficam com $DH px a mais embaixo"; avisou=1; fi
+}
+shot() { # width height file slide
   for _ in 1 2 3; do
     "$CHROME" --headless=new --disable-gpu --hide-scrollbars --force-prefers-reduced-motion \
-      --virtual-time-budget=3000 --window-size="$1" --screenshot="$2" "file://$HTML#$3" >/dev/null 2>&1
-    [ -s "$2" ] && return 0
+      --virtual-time-budget=3000 --window-size="$1,$(($2 + DH))" --screenshot="$3" "file://$HTML#$4" >/dev/null 2>&1
+    [ -s "$3" ] && { crop "$3" "$1" "$2"; return 0; }
   done
-  echo "FALHOU: $2"; fail=1
+  echo "FALHOU: $3"; fail=1
 }
-for n in $(seq 1 "$N"); do shot 1920,1080 "$SHOTS/s$(printf %02d "$n").png" "$n"; done
-shot 1366,768 "$SHOTS/laptop-1366.png" 2
-shot 1280,720 "$SHOTS/laptop-1280.png" 3
+for n in $(seq 1 "$N"); do shot 1920 1080 "$SHOTS/s$(printf %02d "$n").png" "$n"; done
+shot 1366 768 "$SHOTS/laptop-1366.png" 2
+shot 1280 720 "$SHOTS/laptop-1280.png" 3
 "$CHROME" --headless=new --disable-gpu --no-pdf-header-footer --virtual-time-budget=4000 \
   --print-to-pdf="$PDF" "file://$HTML" >/dev/null 2>&1
 # Sem pdfinfo, conta os objetos /Type /Page: o PDF do Chrome não usa object streams (conferido contra pypdf, 19/10/2026)

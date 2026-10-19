@@ -32,7 +32,8 @@ JS at the bottom of `assets/deck-template.html`.
 | Key hint | Shown on mouse move (`body.hint`), hidden 2.5 s after the mouse stops. Never while the presenter window is open (`pwin` alive; a hello also clears it), in the popup or in print. Right after an F5 it can show until the first hello (≤ 1 s) |
 | Steps | On a slide with `data-steps="N"`, arrows, click, swipe and the popup's buttons reveal the next step before changing slide, and going back lands on the slide fully revealed. A block not yet revealed gets `.later` (transparent, its space kept, so nothing jumps); `data-at` on the section carries the step for custom styling. Messages carry `{deck, step, t0, gen}`, and the popup shows "etapa s/N" and what the next click does. The hash stays `#N`, because `check-presenter` reads it; `#N.s` opens on step s, for screenshots |
 | Print | One slide per page at 1920×1080 (`@page`). The footer is hidden, and `data-print` (classification · section · NN / TT) is drawn by `::after`. Every step prints revealed |
-| Motion | `.enter` fades 8 px in 450 ms without backwards fill; `prefers-reduced-motion` turns it off |
+| Footer labels | One label per section on the progress line, the last one anchored right. Two labels closer than 24 px get `.tight`, and only the active one shows. Measured after the first `show()` (the page number narrows the line) and again on `document.fonts.ready` (a self-hosted font changes the widths) |
+| Motion | `.enter` fades 8 px in 450 ms without backwards fill; `prefers-reduced-motion` turns it off, and every transition with it, because `shoot.sh` captures that way |
 
 ## Export
 
@@ -49,7 +50,8 @@ google-chrome --headless=new --no-pdf-header-footer --virtual-time-budget=4000 \
 popup at 1366×657: `R` in each window, a reopened popup, F5 on the deck, the key hint, and clicks on the
 band, after focus, mid-stage and on the left third. On a deck with `data-steps` it also checks that the
 popup's arrow reveals the step on the deck, that the arrow changes slide only after the last step, and that
-going back lands revealed (it prints "pulado" otherwise). It simulates the activation click with a window `focus`
+going back lands revealed (it prints "pulado" otherwise). A last tab with reduced motion, as `shoot.sh` opens the
+deck, checks that no transition still runs and that the hidden footer labels are the colliding ones. It simulates the activation click with a window `focus`
 event, because Playwright emulates focus on the pages it drives and the page never sees the real one. On
 X11 the real activation click delivers `focus` 2–7 ms before `mousedown` (plain Chrome on Xvfb + openbox,
 16/10/2026); on Windows it is still a human check.

@@ -46,7 +46,9 @@ body{background:var(--dark);color:var(--fg);font-family:var(--sans);overflow:hid
 /* O conteúdo é visível por padrão: sem fill-mode "both", senão o screenshot e o PDF pegam o texto esmaecido. */
 .slide.active .enter{animation:enter .45s var(--ease)}
 @keyframes enter{from{opacity:.001;transform:translateY(8px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){.slide.active .enter{animation:none}}
+/* Movimento reduzido desliga também as transições: o shoot.sh captura com ele, e um rótulo do rodapé que ainda
+   esmaecia saía por cima do vizinho na captura */
+@media (prefers-reduced-motion:reduce){.slide.active .enter{animation:none}*,*::before,*::after{transition:none!important}}
 /* Revelação por etapas: <section data-steps="N"> e blocos com data-step="1..N". O bloco ainda não revelado fica
    transparente, mas ocupa o lugar (nada pula); data-at na seção dá a etapa atual, para estilo próprio. Curta,
    porque a compressão de uma chamada borra fade longo. */
@@ -399,10 +401,15 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
   // mostram só a marca, exceto o da seção ativa. offsetLeft/Width são px do palco, antes do scale().
   if (secEls.length) { const last = secEls[secEls.length - 1][1]; last.style.left = '100%'; last.classList.add('end'); }
   const box = el => el.classList.contains('end') ? [el.offsetLeft - el.offsetWidth, el.offsetLeft] : [el.offsetLeft, el.offsetLeft + el.offsetWidth];
-  for (let a = 0; a < secEls.length - 1; a++) {
-    const [, ra] = box(secEls[a][1]), [lb] = box(secEls[a + 1][1]);
-    if (ra + 24 > lb) { secEls[a][1].classList.add('tight'); secEls[a + 1][1].classList.add('tight'); }
-  }
+  // Mede só depois do primeiro show(): o número em #pageno (coluna auto do grid) estreita a faixa e aproxima os
+  // rótulos; e mede de novo quando a fonte carrega, que muda a largura deles
+  const tighten = () => {
+    secEls.forEach(([, el]) => el.classList.remove('tight'));
+    for (let a = 0; a < secEls.length - 1; a++) {
+      const [, ra] = box(secEls[a][1]), [lb] = box(secEls[a + 1][1]);
+      if (ra + 24 > lb) { secEls[a][1].classList.add('tight'); secEls[a + 1][1].classList.add('tight'); }
+    }
+  };
 
   const fit = () => { const s = Math.min(innerWidth / 1920, innerHeight / 1080); stage.style.transform = `translate(-50%, -50%) scale(${s})`; };
   const notesHTML = k => slides[k].querySelector('.notes')?.innerHTML || '';
@@ -500,6 +507,7 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
   // #N abre a lâmina N; #N.s abre já na etapa s (capturas). O hash gravado continua #N: o check-presenter o lê.
   const [hk, hs] = location.hash.slice(1).split('.');
   show(Math.max(0, (parseInt(hk, 10) || 1) - 1), 'init', parseInt(hs, 10) || 0);
+  tighten(); document.fonts?.ready.then(tighten);
 })();
 </script>
 </body>

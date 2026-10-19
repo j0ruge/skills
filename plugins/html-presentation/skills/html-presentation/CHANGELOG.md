@@ -2,6 +2,14 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-10-19 — the 1.3.0 debt: footer labels and headless shots (v1.3.1)
+- No new deck: the two items the 1.3.0 entry left open, reproduced on the template sample and checked on the Farel
+  deck.
+- Lessons added: reduced motion turns off transitions (the "overlap" was a fade caught mid-way), the footer measure
+  after the first slide and on `fonts.ready`, the `--headless=new` viewport 87 px short (measured, compensated,
+  cropped), the `chrome-linux64` glob, and two `check-presenter` checks.
+- Not changed: the occasional timeout on the reopened popup in `check-presenter` (it predates this version).
+
 ## 2026-10-19 — Guilherme Farel, História Eclesiástica II (v1.3.0)
 - A 12-slide, 8:25 seminar deck for a 10-minute slot over Zoom, in the project's IAP identity, following the
   professor's 7 required items; independent review SHIP WITH FIXES (3 material, all text, applied).

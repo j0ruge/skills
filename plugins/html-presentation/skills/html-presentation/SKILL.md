@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.3.0"
+  version: "1.3.1"
 ---
 
 # HTML Presentation
@@ -100,7 +100,8 @@ polishing; the reviewer does the next pass better.
 
 On WSL without Chrome, `pdfinfo` or ImageMagick on the PATH, `shoot.sh` uses Playwright's cached Chromium, counts
 the PDF pages itself and draws the sheets with Pillow. A slide with `data-steps` is shot at step 0: capture each
-step too with the same Chrome line and `deck.html#N.s`, and pass those shots to the reviewer.
+step too with the same Chrome line and `deck.html#N.s` (window taller by the measured bar, PNG cropped back, as
+in `shoot.sh`), and pass those shots to the reviewer.
 
 With Playwright installed, also run `node <skill>/scripts/check-presenter.mjs dist/<name>.html`. It drives the
 deck and the presenter window together and fails when the engine copy inside the deck regressed; a deck with
@@ -134,9 +135,15 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
   `left:50%;top:50%;transform:translate(-50%,-50%) scale(s)`, as the template does.
 - **Faded screenshots and PDFs.** An entrance animation with `fill-mode: both` makes headless captures
   catch the title at 30% opacity. Content must be visible by default, and capture with
-  `--force-prefers-reduced-motion`.
+  `--force-prefers-reduced-motion`. That flag only reaches what `prefers-reduced-motion` turns off, so the
+  template turns off every transition there: a footer label still fading out was shot over its neighbor and
+  read as a collision (template sample, 19/10/2026).
 - **Stale screenshots.** Back-to-back headless runs sometimes write nothing, and the old PNG stays. You
   then review a slide that no longer exists. `shoot.sh` deletes first, retries and checks size.
+- **Stage shrunk, with dark bands, in the shots.** In `--headless=new` (the full Chrome), `--window-size` is the
+  outer window and 87 px go to the browser bar: a 1920×1080 window gave a 1920×993 viewport, and the stage
+  came out at ~0.92 (Chromium 130 and 145, 19/10/2026). `shoot.sh` measures the real viewport, opens a taller
+  window and crops the PNG back with Pillow or ImageMagick; without either, it warns.
 - **Presenter window out of sync.** On `file://`, BroadcastChannel does not cross windows. Sync through
   `window.opener` / `postMessage`. The deck holds the popup only in memory: after an F5 the notes stayed on
   the old slide and the popup's arrows made the projector skip one. Each window also kept its own clock, so
@@ -154,7 +161,9 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
 - **Footer collisions.** The last section label runs into the page number, and two sections starting near
   the end overlap. The template anchors the last label to the right and hides colliding labels except the
   active one. Keep section names to about 12 characters: with five longer names in 22 slides, only the
-  active label showed on every slide (IACS deck, 30/09/2026).
+  active label showed on every slide (IACS deck, 30/09/2026). The template measures after the first slide is
+  shown and again when the fonts load: before that, the empty page number left the line 85 px wider and a
+  self-hosted font was still loading (19/10/2026). `check-presenter.mjs` checks that the hidden labels collide.
 - **Empty stage.** A narrow `max-width` on titles makes 3-line headings and leaves the bottom third blank. If
   a slide looks sparse, raise the type before adding content.
 - **The builder's review misses content loss.** In the origin session the fresh reviewer found 6 material
@@ -190,7 +199,7 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
 | `assets/deck-template.html` | Starting point for every deck: engine, footer, notes, presenter window, print, sample slides per component |
 | `scripts/build.py` | Run on every build: inlines assets, generates the script, enforces the gates |
 | `scripts/shoot.sh` | Every inspection round: screenshots, laptop views, PDF, contact sheets |
-| `scripts/check-presenter.mjs` | Step 6 when Playwright is installed, and after porting an engine fix: presenter window, shared timer, key hint, focus click, steps |
+| `scripts/check-presenter.mjs` | Step 6 when Playwright is installed, and after porting an engine fix: presenter window, shared timer, key hint, focus click, steps, footer labels, reduced motion |
 | `references/layout-and-type.md` | Read when composing slides (step 4): components, scale, mockups, what to refuse |
 | `references/engine.md` | Read only when changing navigation, notes, presenter window or print behavior |
 | `references/review.md` | Read before step 7, when spawning the reviewer: input packet and verdict format |

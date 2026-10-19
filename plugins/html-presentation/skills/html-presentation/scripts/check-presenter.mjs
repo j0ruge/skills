@@ -7,7 +7,8 @@
 // laptop minus the browser frame), and exits 1 when a check fails. Each check is a failure seen in a real
 // rehearsal (Manutenção Proativa deck, 16/10/2026). The activation click is simulated with a window
 // `focus` event: Playwright emulates focus, so the page never sees the real one (references/engine.md).
-// A deck with data-steps also gets the step checks; one without prints "pulado".
+// A deck with data-steps also gets the step checks; one without prints "pulado". The last tab opens with reduced
+// motion, as shoot.sh does: no transition may still run there, and the hidden footer labels must be the colliding ones.
 // Without a global Playwright: npm i --prefix <dir> playwright@<version whose chromium-NNNN is already in
 // ~/.cache/ms-playwright>, then NODE_PATH=<dir>/node_modules node check-presenter.mjs … (no browser download).
 import { createRequire } from 'node:module';
@@ -126,6 +127,25 @@ if (stepped >= 0) {
   } else console.log('pulado  voltar revelado (a lâmina com etapas é a última)');
   await pop.close();
 } else console.log('pulado  etapas (nenhuma lâmina com data-steps)');
+
+// Rodapé e capturas, numa aba com movimento reduzido, como o shoot.sh abre o deck. Uma transição que ainda corre
+// sai na captura como um rótulo meio apagado sobre o vizinho; e o .tight medido antes do #pageno e da fonte
+// esconde o rótulo errado. As caixas são medidas no palco: px da tela divididos pela escala.
+const rm = await ctx.newPage(); await rm.emulateMedia({ reducedMotion: 'reduce' });
+await rm.goto(url + '#2'); await rm.evaluate(() => document.fonts.ready); await sleep(300);
+const moving = await rm.evaluate(() => [...document.querySelectorAll('*')]
+  .filter(e => getComputedStyle(e).transitionDuration.split(',').some(d => parseFloat(d) > 0))
+  .map(e => e.id || e.getAttribute('class') || e.tagName));
+check('movimento reduzido desliga as transições', !moving.length, `${moving.length} ainda com transição: ${[...new Set(moving)].slice(0, 3).join(', ')}`);
+const tight = await rm.evaluate(() => {
+  const k = document.getElementById('stage').getBoundingClientRect().width / 1920;
+  const s = [...document.querySelectorAll('#horizon .sec')].map(e => ({ e, r: e.getBoundingClientRect() })), want = s.map(() => false);
+  for (let a = 0; a < s.length - 1; a++) if ((s[a].r.right - s[a + 1].r.left) / k + 24 > 0) want[a] = want[a + 1] = true;
+  return s.filter((x, a) => x.e.classList.contains('tight') !== want[a]).map(x => x.e.textContent);
+});
+if (await rm.locator('#horizon .sec').count() > 1) check('rodapé: rótulos escondidos são os que colidem', !tight.length, `errado: ${tight.join(', ')}`);
+else console.log('pulado  rótulos do rodapé (menos de duas seções)');
+await rm.close();
 
 check('nenhum erro de script nas duas janelas', !errors.length, errors.slice(0, 3).join(' | '));
 await browser.close();

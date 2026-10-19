@@ -3,6 +3,40 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.3.1] — 2026-10-19
+
+### Fixed
+- The stage fills the screenshots. In `--headless=new`, `--window-size` is the outer window and 87 px go to the
+  browser bar (a 1920×1080 window gave a 1920×993 viewport on Chromium 130 and 145), so every shot showed the stage
+  at ~0.92 with dark bands. `shoot.sh` measures the real viewport once, opens each window that much taller and crops
+  the PNG back (Pillow or ImageMagick; one warning without either). On the template sample and the Farel deck the
+  dark border went from 100% to 0% in every slide and laptop shot.
+- `shoot.sh` finds Playwright's newer Chromium builds, which live in `chrome-linux64/`; the `chrome-linux/` glob only
+  found `chromium-1140`.
+- Reduced motion turns off every transition, not only the `.enter` animation. `shoot.sh` captures with
+  `--force-prefers-reduced-motion`, and "[CONCLUSÃO]" was shot mid-fade over "[PARTE 3]": the text pixels in its
+  strip went from 402 to 0 with the transition off.
+- Footer labels are measured after the first slide is shown and again on `document.fonts.ready`, as a project deck
+  already did. Before, the page number was still empty (line 1366 px wide instead of 1281) and a self-hosted font
+  still loading (fallback widths 117 px instead of 105–109).
+
+### Added
+- `check-presenter.mjs`: two checks in a tab with reduced motion, as `shoot.sh` opens the deck: no transition still
+  running, and the hidden footer labels are the colliding ones. Red on the 1.3.0 template (the transition check on
+  the sample; both on a test deck whose first section label sits 11 px from the next), green on 1.3.1 (16 checks on
+  the sample, that test deck and a self-hosted-font variant).
+
+### Why
+The debt 1.3.0 left open. Its diagnosis was half right: the overlap seen on the sample was a transition caught
+mid-way, not the font; the font and the page number were real but latent errors, since the sample's labels collide
+by a wide margin.
+
+### Known debt (not changed here)
+- `check-presenter.mjs` sometimes times out waiting for the reopened popup: 1 run in 3 on the Farel deck, with the
+  1.3.0 check as well. Rerun once before reading it as a regression.
+- Existing decks keep their own engine: the Farel deck fails the new reduced-motion check (75 elements still
+  transition) until the rule is ported.
+
 ## [1.3.0] — 2026-10-19
 
 ### Added
