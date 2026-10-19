@@ -7,6 +7,9 @@
 // laptop minus the browser frame), and exits 1 when a check fails. Each check is a failure seen in a real
 // rehearsal (Manutenção Proativa deck, 16/10/2026). The activation click is simulated with a window
 // `focus` event: Playwright emulates focus, so the page never sees the real one (references/engine.md).
+// A deck with data-steps also gets the step checks; one without prints "pulado".
+// Without a global Playwright: npm i --prefix <dir> playwright@<version whose chromium-NNNN is already in
+// ~/.cache/ms-playwright>, then NODE_PATH=<dir>/node_modules node check-presenter.mjs … (no browser download).
 import { createRequire } from 'node:module';
 import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -17,7 +20,7 @@ if (!file) { console.error('uso: node check-presenter.mjs dist/<deck>.html [--he
 let pw;
 try { pw = createRequire(import.meta.url)('playwright'); } catch {
   try { pw = createRequire(execSync('npm root -g').toString().trim() + '/')('playwright'); } catch {
-    console.error('check-presenter: precisa do Playwright (npm i -g playwright)'); process.exit(2);
+    console.error('check-presenter: precisa do Playwright (npm i -g playwright, ou npm i --prefix <pasta> playwright e NODE_PATH=<pasta>/node_modules)'); process.exit(2);
   }
 }
 const headless = !process.argv.includes('--headed');
@@ -98,6 +101,31 @@ else console.log('pulado  clique fora do palco (o palco ocupa a largura toda)');
 await click('clique que só traz a janela à frente não navega', cx, cy, 0, () => page.evaluate(() => dispatchEvent(new FocusEvent('focus'))));
 await click('clique comum no palco ainda avança', cx, cy, 1);
 await click('clique no terço esquerdo do palco volta', box[0] + box[2] / 6, cy, -1);
+
+// Etapas (data-steps): a seta do popup revela no deck, a seta só troca de lâmina depois da última etapa, e quem
+// volta chega com a lâmina revelada. O hash continua #N, por isso a etapa é lida no data-at da lâmina ativa.
+const stepped = await page.evaluate(() => [...document.querySelectorAll('.slide')].findIndex(s => +s.dataset.steps > 0));
+if (stepped >= 0) {
+  const total = await page.evaluate(k => +document.querySelectorAll('.slide')[k].dataset.steps, stepped);
+  const at = () => page.evaluate(() => [+location.hash.slice(1), document.querySelector('.slide.active').dataset.at ?? '-']);
+  await page.goto(url + '#' + (stepped + 1)); await page.reload(); await page.waitForLoadState('load'); await sleep(600);
+  [pop] = await Promise.all([page.waitForEvent('popup'), page.keyboard.press('p')]); await sleep(1200);
+  await pop.keyboard.press('ArrowRight'); await sleep(400);
+  let [d, a] = await at();
+  check('etapas: a seta do popup revela a etapa 1 no deck', d === stepped + 1 && a === '1', `lâmina ${d}, etapa ${a}`);
+  for (let k = 1; k < total; k++) { await page.keyboard.press('ArrowRight'); await sleep(250); }
+  [d, a] = await at();
+  const fim = d === stepped + 1 && a === String(total);
+  await page.keyboard.press('ArrowRight'); await sleep(400);
+  const [d2] = await at();
+  check('etapas: a seta só troca de lâmina depois da última etapa', fim && d2 === Math.min(N, stepped + 2), `etapa ${a} na lâmina ${d}, depois lâmina ${d2}`);
+  if (d2 > stepped + 1) {
+    await pop.keyboard.press('ArrowLeft'); await sleep(400);
+    [d, a] = await at();
+    check('etapas: voltar pelo popup chega com a lâmina revelada', d === stepped + 1 && a === String(total), `lâmina ${d}, etapa ${a}`);
+  } else console.log('pulado  voltar revelado (a lâmina com etapas é a última)');
+  await pop.close();
+} else console.log('pulado  etapas (nenhuma lâmina com data-steps)');
 
 check('nenhum erro de script nas duas janelas', !errors.length, errors.slice(0, 3).join(' | '));
 await browser.close();

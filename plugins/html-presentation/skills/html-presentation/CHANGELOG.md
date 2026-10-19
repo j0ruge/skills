@@ -2,6 +2,15 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-10-19 — Guilherme Farel, História Eclesiástica II (v1.3.0)
+- A 12-slide, 8:25 seminar deck for a 10-minute slot over Zoom, in the project's IAP identity, following the
+  professor's 7 required items; independent review SHIP WITH FIXES (3 material, all text, applied).
+- Lessons added: reveal by clicks (template, engine reference, three `check-presenter` checks), a local
+  Playwright through `NODE_PATH`, `shoot.sh` fallbacks for WSL, asking when a requirements file does not fit the
+  subject, and the direction contract in impeccable's surface brief.
+- Not changed: the user's explicit request for a numbered label above each title won over the "Refuse kicker"
+  rule; it mapped each slide to a graded item.
+
 ## 2026-10-16 — Manutenção Proativa de Consumíveis, hint residue (v1.2.1)
 - The 1.2.0 retest left one gap: the hint still flashed while the mouse crossed the deck. It is now hidden while
   the presenter window is open, the case where a shared window reaches an audience.

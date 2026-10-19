@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.2.1"
+  version: "1.3.0"
 ---
 
 # HTML Presentation
@@ -31,6 +31,11 @@ Ask only what changes the work, in one batch: who presents; duration; how it is 
 call, both); whether the deck doubles as reading material for people who miss it (then every slide must
 explain itself without narration); the closing call to action (contact, deadline); source language → talk
 language. If the user already said it, don't ask again.
+
+A requirements file that does not fit the subject (guidelines for another course, a second `DESIGN.md` in the
+package) means the wrong file came along: ask which one governs before planning, even when the prompt says not
+to ask. In the Farel deck (19/10/2026) the prompt patched "the guidelines talk about Church Fathers" over the
+wrong course's guidelines, and the package's own `DESIGN.md` lost to the project's.
 
 ### 2. Read the whole source
 
@@ -62,7 +67,11 @@ Copy `assets/deck-template.html` to `src/<name>.html` in the project. Then:
 - App type scales are too small for a room. Keep the template's projection scale (title 76, lead 36, body
   29–31, labels ≥ 19 on the 1920 stage) and record it as a "deck scale exception" section in the
   project's `DESIGN.md`, the way a design system records a login-screen exception.
-- Fill the direction-contract comment at the top of `<body>`.
+- Fill the direction-contract comment at the top of `<body>`. If the project also uses the `impeccable` skill,
+  write the contract in its surface brief (`impeccable surface-brief write`) and drop the comment: impeccable
+  forbids the contract in a served file, and `build.py` keeps comments in `dist/`.
+- To reveal a slide by clicks, put `data-steps="N"` on the `<section>` and `data-step="1..N"` on its blocks
+  (`references/engine.md`). Use it where the reveal is the content, not as decoration.
 
 Read `references/layout-and-type.md` when composing slides: component catalog, what to avoid, mockups.
 
@@ -89,8 +98,15 @@ checks that it has one page per slide. It also writes 2×2 contact sheets (`shot
 sheet and both laptop shots. Fix everything in one batch, rebuild, and look again. Two rounds, then stop
 polishing; the reviewer does the next pass better.
 
+On WSL without Chrome, `pdfinfo` or ImageMagick on the PATH, `shoot.sh` uses Playwright's cached Chromium, counts
+the PDF pages itself and draws the sheets with Pillow. A slide with `data-steps` is shot at step 0: capture each
+step too with the same Chrome line and `deck.html#N.s`, and pass those shots to the reviewer.
+
 With Playwright installed, also run `node <skill>/scripts/check-presenter.mjs dist/<name>.html`. It drives the
-deck and the presenter window together and fails when the engine copy inside the deck regressed.
+deck and the presenter window together and fails when the engine copy inside the deck regressed; a deck with
+`data-steps` also gets the step checks. Without a global install, `npm i --prefix <dir> playwright@<version>`
+(the one whose `chromium-NNNN` is already in `~/.cache/ms-playwright`, so nothing downloads) and run it with
+`NODE_PATH=<dir>/node_modules`.
 
 ### 7. Independent review
 
@@ -174,7 +190,7 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
 | `assets/deck-template.html` | Starting point for every deck: engine, footer, notes, presenter window, print, sample slides per component |
 | `scripts/build.py` | Run on every build: inlines assets, generates the script, enforces the gates |
 | `scripts/shoot.sh` | Every inspection round: screenshots, laptop views, PDF, contact sheets |
-| `scripts/check-presenter.mjs` | Step 6 when Playwright is installed, and after porting an engine fix: presenter window, shared timer, key hint, focus click |
+| `scripts/check-presenter.mjs` | Step 6 when Playwright is installed, and after porting an engine fix: presenter window, shared timer, key hint, focus click, steps |
 | `references/layout-and-type.md` | Read when composing slides (step 4): components, scale, mockups, what to refuse |
 | `references/engine.md` | Read only when changing navigation, notes, presenter window or print behavior |
 | `references/review.md` | Read before step 7, when spawning the reviewer: input packet and verdict format |

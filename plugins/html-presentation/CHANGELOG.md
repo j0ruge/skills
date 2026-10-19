@@ -3,6 +3,36 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.3.0] — 2026-10-19
+
+### Added
+- Reveal by clicks: `data-steps="N"` on a `<section>` and `data-step="1..N"` on its blocks. Arrows, click, swipe
+  and the popup's buttons reveal the next step before changing slide; going back lands fully revealed. Messages
+  carry `{deck, step, t0, gen}` and the popup shows "etapa s/N". Unrevealed blocks get `.later` (transparent,
+  space kept); the PDF prints every step revealed. The hash stays `#N`, because `check-presenter.mjs` reads it;
+  `#N.s` opens on a step, for screenshots.
+- `check-presenter.mjs`: three step checks when the deck has `data-steps` ("pulado" otherwise). Red on the 1.2.1
+  engine (3 failures), green on 1.3.0 (17 checks) on the template and on the Farel deck. Its error and header
+  explain a local Playwright with `NODE_PATH`.
+- `shoot.sh` on WSL without Chrome, `pdfinfo` or ImageMagick: Playwright's cached Chromium, a `/Type /Page`
+  count, and Pillow contact sheets (or a warning). Before, the sheets the inspection step asks for vanished
+  without a word. Checked with the default PATH: 8 slides, 8 pages, 2 sheets.
+- `SKILL.md`: a requirements file that does not fit the subject (another course's guidelines, a second
+  `DESIGN.md`) means ask which governs; with the `impeccable` skill, the direction contract goes in its surface
+  brief, not in a comment that `build.py` ships to `dist/`.
+
+### Why
+A 10-minute HE II seminar deck on Guilherme Farel (19/10/2026), presented over Zoom. Its key moment, an acrostic
+hidden in the 1535 Olivétan Bible colophon, needed a two-step reveal the template did not have. The prompt carried
+the wrong course's guidelines and a package `DESIGN.md` the user overruled. Playwright was not installed globally,
+and WSL had no Chrome, `pdfinfo` or `montage`.
+
+### Known debt (not changed here)
+- On the template's own sample, the footer labels "[PARTE 3]" and "[CONCLUSÃO]" still overlap: the `.tight`
+  measure runs before the font loads. A project deck already re-measures on `document.fonts.ready`.
+- Headless screenshots show the stage at ~0.93 with dark bands (the headless window reserves height). Not yet
+  measured; the reviewer packet should say so.
+
 ## [1.2.1] — 2026-10-16
 
 ### Fixed

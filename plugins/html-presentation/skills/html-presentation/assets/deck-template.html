@@ -47,6 +47,11 @@ body{background:var(--dark);color:var(--fg);font-family:var(--sans);overflow:hid
 .slide.active .enter{animation:enter .45s var(--ease)}
 @keyframes enter{from{opacity:.001;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.slide.active .enter{animation:none}}
+/* Revelação por etapas: <section data-steps="N"> e blocos com data-step="1..N". O bloco ainda não revelado fica
+   transparente, mas ocupa o lugar (nada pula); data-at na seção dá a etapa atual, para estilo próprio. Curta,
+   porque a compressão de uma chamada borra fade longo. */
+[data-step]{transition:opacity .18s}
+.slide .later{opacity:0}
 
 /* ── Escala de projeção: medida para o fundo da sala e para o Meet ───── */
 h1,h2,h3{font-weight:700;letter-spacing:-.02em;color:var(--fg);text-wrap:balance}
@@ -211,6 +216,7 @@ body.presenter #pview{display:block}
   .slide{position:relative;display:flex!important;width:1920px;height:1080px;break-after:page;background:var(--bg);overflow:hidden}
   .slide::before{content:"";position:absolute;inset:0 0 auto 0;height:5px;background:var(--brand)}
   .slide .enter{animation:none!important}
+  .slide .later{opacity:1!important}  /* o PDF sai com todas as etapas reveladas */
   .slide::after{content:attr(data-print);position:absolute;right:128px;bottom:52px;font:500 20px var(--mono);color:var(--fg3)}
 }
 </style>
@@ -229,7 +235,8 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
 <!-- ═══ Lâminas de exemplo: um componente por lâmina. Apague as que não usar. ═══
      Cada <section> precisa de data-section (parte da fala, vazio na capa), data-title
      e uma <aside class="notes" data-t="segundos">. A soma de data-t fica em
-     duração − 30 s, para caber pergunta. -->
+     duração − 30 s, para caber pergunta. Revelar por cliques: data-steps="N" na
+     <section> e data-step="1..N" nos blocos; a seta revela antes de trocar de lâmina. -->
 
 <section class="slide cover" data-section="" data-title="Capa">
   <div class="top enter"><span class="brandmark">[Organização]</span><span class="mono">[REF-0000]</span></div>
@@ -372,8 +379,10 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
   const pad = n => String(n).padStart(2, '0');
   const fmt = s => pad(Math.floor(s / 60)) + ':' + pad(Math.floor(s % 60));
   const secs = slides.map(s => +(s.querySelector('.notes')?.dataset.t || 0));
+  // Lâminas com revelação por etapas (data-steps); st é a etapa atual da lâmina i
+  const steps = slides.map(s => Math.max(0, parseInt(s.dataset.steps, 10) || 0));
   const planAt = i => secs.slice(0, i).reduce((a, b) => a + b, 0);
-  let i = 0, t0 = null, gen = 0, pwin = null, focusAt = 0, hintT;
+  let i = 0, st = 0, t0 = null, gen = 0, pwin = null, focusAt = 0, hintT;
 
   // PDF: o rodapé some na impressão; seção + classificação + página vão no data-print
   slides.forEach((s, k) => s.dataset.print = (k ? [klass, s.dataset.section].filter(Boolean).join(' · ') + ' · ' : '') + pad(k + 1) + ' / ' + pad(N));
@@ -397,15 +406,17 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
 
   const fit = () => { const s = Math.min(innerWidth / 1920, innerHeight / 1080); stage.style.transform = `translate(-50%, -50%) scale(${s})`; };
   const notesHTML = k => slides[k].querySelector('.notes')?.innerHTML || '';
+  const stepTxt = () => steps[i] ? ` · etapa ${st}/${steps[i]}` : '';
   const panel = document.getElementById('notesPanel');
 
   function renderNotes() {
     const el = t0 ? (Date.now() - t0) / 1000 : 0, plan = planAt(i);
-    if (panel.classList.contains('on')) panel.innerHTML = `<div class="bar"><b>${pad(i + 1)} · ${slides[i].dataset.title}</b><span>decorrido ${fmt(el)}</span><span>plano ${fmt(plan)}–${fmt(plan + secs[i])}</span><span>total ${fmt(planAt(N))}</span></div>` + notesHTML(i);
+    if (panel.classList.contains('on')) panel.innerHTML = `<div class="bar"><b>${pad(i + 1)} · ${slides[i].dataset.title}${stepTxt()}</b><span>decorrido ${fmt(el)}</span><span>plano ${fmt(plan)}–${fmt(plan + secs[i])}</span><span>total ${fmt(planAt(N))}</span></div>` + notesHTML(i);
     if (presenter) {
-      document.getElementById('ptitle').textContent = `${pad(i + 1)} / ${pad(N)} · ${slides[i].dataset.title}`;
+      document.getElementById('ptitle').textContent = `${pad(i + 1)} / ${pad(N)} · ${slides[i].dataset.title}${stepTxt()}`;
       document.getElementById('pnotes').innerHTML = notesHTML(i);
-      document.getElementById('pnext').innerHTML = i < N - 1 ? `Próxima: <b>${slides[i + 1].dataset.title}</b>` : 'Última lâmina';
+      document.getElementById('pnext').innerHTML = st < steps[i] ? `Próximo clique: <b>etapa ${st + 1} desta lâmina</b>`
+        : i < N - 1 ? `Próxima: <b>${slides[i + 1].dataset.title}</b>` : 'Última lâmina';
       const pp = document.getElementById('pplan');
       pp.innerHTML = `plano desta lâmina <b>${fmt(plan)}–${fmt(plan + secs[i])}</b> · total ${fmt(planAt(N))}`;
       pp.classList.toggle('late', el > plan + secs[i] + 15);
@@ -413,9 +424,15 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
     }
   }
 
-  function show(k, from) {
+  // s: etapa de chegada (0 = início; 'end' = toda revelada, para quem volta de trás)
+  function show(k, from, s = 0) {
     i = Math.max(0, Math.min(N - 1, k));
-    slides.forEach((s, j) => s.classList.toggle('active', j === i));
+    st = s === 'end' ? steps[i] : Math.max(0, Math.min(steps[i], Number.isInteger(s) ? s : 0));
+    slides.forEach((x, j) => x.classList.toggle('active', j === i));
+    if (steps[i]) {
+      slides[i].dataset.at = st;
+      slides[i].querySelectorAll('[data-step]').forEach(el => el.classList.toggle('later', +el.dataset.step > st));
+    }
     stage.classList.toggle('cover-mode', i === 0);
     fill.style.width = (i === 0 ? 0 : (i - 1) / span * 100) + '%';
     secEls.forEach(([n, el]) => el.classList.toggle('on', n === slides[i].dataset.section));
@@ -427,7 +444,9 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
   }
   // file:// não compartilha BroadcastChannel entre janelas: sincronize pela referência direta.
   // As duas janelas dividem o relógio: vence o reset mais recente (gen) e, no mesmo gen, o início mais antigo.
-  const state = () => ({ deck: i, t0, gen });
+  const next = () => st < steps[i] ? show(i, null, st + 1) : show(i + 1);
+  const prev = () => st > 0 ? show(i, null, st - 1) : show(i - 1, null, 'end');
+  const state = () => ({ deck: i, step: st, t0, gen });
   function send(m) { try { const w = presenter ? opener : pwin; if (w && !w.closed) w.postMessage(m, '*'); } catch (e) {} }
   function merge(m) {
     if (typeof m.gen !== 'number') return;
@@ -440,13 +459,13 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
     merge(m);
     // o popup dá sinal de vida a cada segundo: depois de um F5 o deck o reconhece e devolve a lâmina uma vez
     if (m.hello && !presenter) { if (m.ask || e.source !== pwin) { pwin = e.source; send(state()); } document.body.classList.remove('hint'); renderNotes(); }
-    else if (typeof m.deck === 'number') show(m.deck, 'peer');
+    else if (typeof m.deck === 'number') show(m.deck, 'peer', Number.isInteger(m.step) ? m.step : 0);
   });
   addEventListener('keydown', e => {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     const k = e.key;
-    if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(k)) { e.preventDefault(); show(i + 1); }
-    else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); show(i - 1); }
+    if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(k)) { e.preventDefault(); next(); }
+    else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); prev(); }
     else if (k === 'Home') show(0); else if (k === 'End') show(N - 1);
     else if (k === 'n' || k === 'N') { panel.classList.toggle('on'); renderNotes(); }
     else if ((k === 'p' || k === 'P') && !presenter) pwin = open(location.pathname + '?apresentador#' + (i + 1), 'apresentador', 'width=1100,height=760');
@@ -458,7 +477,7 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
   document.getElementById('viewport').addEventListener('click', e => {
     const r = stage.getBoundingClientRect();
     if (performance.now() - focusAt < 400 || e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return;
-    show(i + (e.clientX - r.left > r.width / 3 ? 1 : -1));
+    e.clientX - r.left > r.width / 3 ? next() : prev();
   });
   // A dica de teclas aparece com o mouse e some parada, e nunca com a janela P aberta: numa chamada, a janela
   // compartilhada a transmitiria para a plateia
@@ -468,17 +487,19 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
   });
   let tx = null;
   addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
-  addEventListener('touchend', e => { if (tx === null) return; const d = e.changedTouches[0].clientX - tx; if (Math.abs(d) > 50) show(i + (d < 0 ? 1 : -1)); tx = null; });
+  addEventListener('touchend', e => { if (tx === null) return; const d = e.changedTouches[0].clientX - tx; if (Math.abs(d) > 50) d < 0 ? next() : prev(); tx = null; });
   if (presenter) {
     document.body.classList.add('presenter'); document.title = 'Apresentador · ' + document.title;
-    document.getElementById('pprev').onclick = () => show(i - 1);
-    document.getElementById('pnextb').onclick = () => show(i + 1);
+    document.getElementById('pprev').onclick = prev;
+    document.getElementById('pnextb').onclick = next;
     document.getElementById('preset').onclick = reset;
     let ask = 1; const hello = () => { send({ hello: 1, ask, t0, gen }); ask = 0; };
     setInterval(hello, 1000); setTimeout(hello, 0);
   }
   addEventListener('resize', fit); fit();
-  show(Math.max(0, (parseInt(location.hash.slice(1), 10) || 1) - 1), 'init');
+  // #N abre a lâmina N; #N.s abre já na etapa s (capturas). O hash gravado continua #N: o check-presenter o lê.
+  const [hk, hs] = location.hash.slice(1).split('.');
+  show(Math.max(0, (parseInt(hk, 10) || 1) - 1), 'init', parseInt(hs, 10) || 0);
 })();
 </script>
 </body>
