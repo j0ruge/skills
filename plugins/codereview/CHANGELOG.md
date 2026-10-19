@@ -2,6 +2,38 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.23.1] — 2026-10-19
+
+### `diff` pelo caminho absoluto, lista de caminhos fora de variável, sonda no worktree e mutantes numa cópia
+
+Lições da revisão das mudanças não commitadas do `magic_tutor` (coach do monitor ao vivo), em modo
+`worktree` e três rodadas até a nota A. Só as references mudam; o `SKILL.md` muda só a versão e
+continua com 19.993 chars.
+
+- **`/usr/bin/diff` na checagem de cópia velha** (`configuration.md`, *Stale copy*). O `diff` passou
+  pelo hook do `rtk` e respondeu `[ok] Files are identical`, rc 0, para os `SKILL.md` 2.21.2 e
+  2.23.0, que diferem em quatro trechos; o `/usr/bin/diff -q` respondeu `differ`, rc 1. Lido como
+  igual, a revisão teria rodado as instruções da 2.21.2, sem agente para os docs escritos na sessão;
+  na rodada 1 esses agentes trouxeram 5 achados, 3 mantidos.
+- **Lista de caminhos nunca numa variável sem aspas no zsh** (`configuration.md`, *Path-scoped
+  reviews*). A regra já existia dentro do item das exclusões; ganha item próprio, com a consequência
+  medida: `git diff HEAD --stat -- $F` não imprimiu nada, e o mesmo `$F` entregou um diff vazio ao
+  pré-scan de segredos, que só não passou calado pelo erro `empty input`. A sessão chegou a culpar o
+  `rtk` por isso; o `git diff` pelo `rtk`, com os caminhos escritos, funcionou no pipe.
+- **Sonda de docstrings no modo `worktree`** (`report-template.md`). A sonda lê `HEAD` e compara
+  `{MERGE_BASE}...HEAD`; no `worktree` a base é o próprio `HEAD`, então ela não vê linha nova. Lá, o
+  diff é `git diff -U0 HEAD -- <file>` e o arquivo é lido do disco; assim a sonda listou o módulo,
+  a classe e as duas funções tocadas.
+- **Mutantes numa cópia** (`configuration.md`, *Reproduce between rounds*). Com os testes que
+  precisam só de poucos arquivos, o módulo e os testes copiados para a scratchpad recebem os
+  mutantes enquanto os agentes ainda leem a árvore, que não muda: 9 mutantes, todos mortos, e o
+  `git status` igual ao de antes. Um deles (M8) sobreviveu na primeira passada e ganhou o teste que
+  faltava.
+- **`git stash create` medido numa revisão de verdade** (mesmo item). O retrato tirado antes das
+  correções foi a base das rodadas 2 e 3, e o `git stash list` continuou vazio; antes a skill só
+  dizia que ele tinha sido conferido num repo de rascunho.
+- **Dívida que continua:** o `SKILL.md` segue a 7 chars do aviso do C1 (20.000).
+
 ## [2.23.0] — 2026-10-19
 
 ### Doc de pipeline vai para agente e stale copy segue o texto instalado

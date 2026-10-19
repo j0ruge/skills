@@ -99,9 +99,13 @@ Read this when Phase A finds `{SKILL_DIR}` outside the `installPath` that
 `claude plugin update`.
 
 - Compare the two `SKILL.md`, not the folders:
-  `diff {SKILL_DIR}/SKILL.md <installPath>/skills/codereview/SKILL.md`. A `diff -rq` of the two
-  skill folders differs on every release of this skill, because the `version:` line of `SKILL.md`
-  moves with it, so it cannot tell a stale instruction from a newer reference.
+  `/usr/bin/diff {SKILL_DIR}/SKILL.md <installPath>/skills/codereview/SKILL.md`. A `diff -rq` of the
+  two skill folders differs on every release of this skill, because the `version:` line of
+  `SKILL.md` moves with it, so it cannot tell a stale instruction from a newer reference.
+- Call `diff` by its absolute path. A hook that rewrites shell commands can answer for it: measured
+  2026-10-19, `diff` through the `rtk` hook printed `[ok] Files are identical`, rc 0, for the 2.21.2
+  and 2.23.0 `SKILL.md`, four hunks apart, while `/usr/bin/diff -q` printed `differ`, rc 1. Read as
+  identical, the review would have run the 2.21.2 instructions.
 - Only the `version:` line differs: set `{SKILL_DIR}` to the installed skill folder and go on. The
   instructions in context are the installed ones, and the rest (the agents' contracts,
   `detection-passes.md`, `scan_secrets.sh`) is read by absolute path from `{SKILL_DIR}`. Take the
@@ -200,7 +204,12 @@ review's one write, and it stays outside the folder.
 
 Read this when the user limits the review to paths (`-- dir/ file`, "only the skill folder", "without docs/"). Pass the pathspecs to every Phase A command and to the agent prompts' diff commands.
 
-- **Exclusions go quoted, in long form:** `':(exclude)docs/qa'`. The short `':!docs/qa'` is unsafe in zsh: unquoted, `!` is history expansion; stored in a variable (`P="a :!b"; git diff -- $P`), zsh does not word-split, git receives one bogus pathspec and prints nothing.
+- **Exclusions go quoted, in long form:** `':(exclude)docs/qa'`. The short `':!docs/qa'` is unsafe in zsh: unquoted, `!` is history expansion.
+- **A path list never goes through an unquoted variable in zsh.** zsh does not word-split: stored
+  in a variable (`P="a :!b"; git diff -- $P`), the list reaches git as one bogus pathspec and git
+  prints nothing. Write the paths out, or split them with `${=P}`. Measured 2026-10-19 (four files
+  named in the scope): `git diff HEAD --stat -- $F` printed nothing, and the same `$F` handed the
+  secrets pre-scan an empty diff; only its `empty input` error said so.
 - **A file the user names is CODE, whatever its extension.** The classification lists only
   `{fileExtensions}`, so a named `.tex`, `.ps1` or config file would get no agent and no line in
   the report. Measured 2026-10-05: `paper/preambulo.tex`, named in the scope of a Python review,
@@ -247,10 +256,15 @@ These decide whether the rounds converge:
   `git diff $S -- <file>` out in each prompt, the sweep's too. Untracked files stay out of it, so a
   file new since `HEAD` diffs whole. Measured 2026-10-18 (Python, rounds 3 and 4 over uncommitted
   fixes): scratchpad copies of the reviewed files and `diff -u <copy> <file>` in the prompts did the
-  same job; `git stash create` was checked afterwards in a scratch repo.
+  same job. Measured 2026-10-19 (Python, rounds 2 and 3 over uncommitted fixes): one `git stash
+  create` taken before the fixes was the base of both rounds, and `git stash list` stayed empty.
 - **Reproduce between rounds, not during one.** A mutant that confirms a `needs reproduction` finding
   (detection-passes.md, 6.12) edits a file: run it after every agent has returned, against the
   related test files, and restore the file before the next launch (`git status --short` empty).
+  When the related tests need only a few files, mutate a copy instead: the module and its tests
+  copied to the scratchpad take the mutants while agents still read the tree, which never changes.
+  Measured 2026-10-19: 9 mutants of a Python module on such a copy, all killed, and `git status`
+  as before.
   In Python, run each mutant with `-X pycache_prefix=<new empty dir>`: a mutant that
   only moves a block keeps the file size, and in the same second as the previous one the
   interpreter reuses that one's `.pyc` (it checks mtime in whole seconds and size). Measured
