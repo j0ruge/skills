@@ -2,6 +2,27 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.23.2] — 2026-10-19
+
+### A prova da sabotagem conta o texto no arquivo, não no `git diff`
+
+`coderabbit-pr` 4.5.1. Lição do `/coderabbit-pr` do PR #8 do magic_tutor (três rodadas do Codex,
+fix-loop com sabotagem em cada achado). Só a reference muda; os dois `SKILL.md` mudam só a versão,
+com o mesmo número de chars (19.991 e 19.993).
+
+- **`fix-loop.md`, passo 4.** A prova de que a sabotagem entrou no arquivo era ver a linha no
+  `git diff`. Na segunda sabotagem da sessão (`tm_year < 2026` virou `< 2027` por `sed`),
+  `git diff tests/test_replays.py | grep '^+.*2027'` não imprimiu nada, embora os dois testes
+  tivessem ficado vermelhos. Num repositório de rascunho com o mesmo arquivo: `git diff` e
+  `rtk proxy git diff` mostraram a linha; `rtk git diff` saiu com rc 1, porque indenta cada linha
+  mudada (`  +…`); `grep -c 'tm_year < 2027'` no arquivo contou 1. O hook do `rtk` troca o comando
+  em umas chamadas e não em outras (na primeira sabotagem da sessão o `grep '^+'` achou a linha),
+  então quem chama não sabe qual saída vai receber. Agora o passo manda contar com
+  `grep -cF '<texto>' <arquivo>`.
+  - **Por quê:** uma conferência vazia lida como "não entrou" refaz uma sabotagem que já valia; o
+    caso pior é o contrário, uma conferência que não olha nada deixando passar a sabotagem que
+    não entrou.
+
 ## [2.23.1] — 2026-10-19
 
 ### `diff` pelo caminho absoluto, lista de caminhos fora de variável, sonda no worktree e mutantes numa cópia

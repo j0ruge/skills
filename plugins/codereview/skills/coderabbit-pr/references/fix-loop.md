@@ -43,9 +43,13 @@ symptom — including one that opens a new fail-open next to it. The regression 
 4. **Sabotage the fix.** Loosen or revert the line(s) the fix added — the guard becomes a no-op, the
    anchored regex becomes "anywhere", the strict comparison becomes lax — and run the probes again.
    At least one must go red. If none does, the fix has no sensor: write the probe that catches the
-   loosened version, then restore the fix. Prove the sabotage actually changed the file
-   (`git diff` shows the loosened line) before trusting a "still green" — a sabotage that did not
-   apply proves nothing. The other way round, a sabotage that breaks the syntax proves nothing
+   loosened version, then restore the fix. Prove the sabotage actually changed the file before
+   trusting a "still green" — a sabotage that did not apply proves nothing. Count the loosened text
+   in the file itself (`grep -cF '<loosened text>' <file>`), not with `git diff | grep '^+'`: a shell
+   hook can swap in `rtk git diff`, which indents every changed line (`  +…`), so the grep finds
+   nothing on a file that did change. Measured 2026-10-19 (magic_tutor PR #8): on the same file,
+   `git diff` and `rtk proxy git diff` piped to `grep '^+.*2027'` printed the line, `rtk git diff`
+   printed nothing (rc 1), and `grep -c` counted 1. The other way round, a sabotage that breaks the syntax proves nothing
    either: the program dies at whatever runs first. Loosen into valid code, and read the red —
    it must be the probe of the rule you loosened. Measured 2026-10-05 (sdd_agents PR #222):
    `tbl = 1` → `:` is not awk, and the selftest went red at an unrelated probe; redone as
