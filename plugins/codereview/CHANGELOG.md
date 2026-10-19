@@ -2,6 +2,45 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.25.0] — 2026-10-19
+
+### A série fecha numa rodada sobre o HEAD final, a linha anterior à branch não é da rodada, e o texto no código converge quando é verdade em todo caminho
+
+Lições da série de rodadas de fix do importador do Untapped no magic_tutor (branch
+`fix/importador-untapped`, 12 rodadas, com o LOW por rodada caindo de 9 para 2 até o grade A). O
+`SKILL.md` muda só a versão e fica com os mesmos 19.995 chars. Todo o resto vai para as references.
+
+- **`configuration.md`, *Re-review rounds*, quatro bullets novos:**
+  - *A text finding in code converges when the sentence is true on every path, or leaves.* Junta
+    duas lições. A cauda de LOW da doc fechou quando a frase incluiu o caso sem aviso (um log sem
+    hora deixa o arquivo com a hora da gravação, calado), e a rodada seguinte da doc deu *No
+    findings*. Um aviso que dizia "ficaram com a hora da gravação" era falso no caminho em que a
+    pasta guardou outra data (o ext4 corta o ano 3000 em 2446). Ele só deixou de voltar quando passou
+    a dizer apenas que a data não é a do fim. A skill dizia isso só para a doc e para a lista de fix
+    do orquestrador.
+  - *The clean round covers the head it read, and nothing committed after it.* A rodada sobre um
+    commit de duas linhas de comentário trouxe um LOW num comentário que a branch tinha escrito duas
+    rodadas antes (a resolução de 2 s atribuída ao exFAT), e as duas rodadas anteriores o tinham lido
+    sem apontar.
+  - *A line older than the branch is not the round's.* O agente por arquivo lê o arquivo inteiro.
+    Por isso a rodada sobre aquele comentário também trouxe um `--log` digitado errado em
+    `arquivar.py:229`, código de `5a941e7d`, que é ancestral da base da branch
+    (`git merge-base --is-ancestor`, rc 0). Fora do dead code (Bucket B), a skill não tinha regra
+    de "pre-existing", e um achado desses segurava a regra de parada. Agora o Phase C faz o
+    `git blame` e o `--is-ancestor`, rotula o achado, e o usuário decide se ele entra.
+  - *A doc that describes what the series changed belongs to every round.* O passo 7 lê só a doc em
+    CHANGED_FILES da rodada. O `docs/monitor.md` teve a rodada limpa antes de a releitura da data e
+    o aviso dela existirem, e três rodadas passaram sem ele. Foi escrever a frase que faltava que
+    expôs o texto falso do aviso.
+- **`detection-passes.md`, 6.12, um bullet novo:** *An ordering guard tested in the order the
+  directory already gives.* O `os.listdir.__doc__` diz "The list is in arbitrary order". No ext4,
+  o glob listou `nova` antes de `antiga`. O teste espera `antiga`, então o mutante sem `sorted()`
+  fica vermelho. Com nomes que o sistema de arquivos já lista na ordem certa, o teste passaria sem
+  a ordenação.
+
+Dívida que já existia e não foi mexida aqui: 3 INFO C2 (os contratos dos subagentes, lidos por
+caminho absoluto de propósito) e os claims D1 que a auditoria lista em toda execução.
+
 ## [2.24.0] — 2026-10-19
 
 ### Base velha, branch já mergeada, worktree isolada, e o código que a rodada de fix escreveu vai para agente

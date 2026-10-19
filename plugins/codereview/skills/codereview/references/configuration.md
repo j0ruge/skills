@@ -332,6 +332,15 @@ These decide whether the rounds converge:
   the property ("say only what is known"), not the wording, and ask the fixer what the user does next
   on the path it changed. The round after that came back 0 HIGH / 0 MEDIUM once its two MEDIUM
   claims were reproduced and refuted.
+- **A text finding in code converges when the sentence is true on every path, or leaves.** A
+  warning, a comment or a docstring is a claim, as a doc sentence is: fix it by saying what holds on
+  each path that reaches it, the silent one included, or delete it. A rewording that is true on the
+  path the finding named comes back on the next path. Measured 2026-10-19 (magic_tutor, twelve
+  rounds whose LOW count fell from 9 to 2): the doc tail closed when the sentence named the case
+  with no warning (a log with no time leaves the file at its time of writing, silently), and the
+  next doc round came back with no findings; a warning that said the files kept "the time of
+  writing" was false on the path where the folder had stored another date (ext4 clamps the year 3000
+  to 2446) until it said only that they did not get the end time.
 - **A fix that writes "measured" measures the exact line it writes.** A claim measured on half of a
   recipe vouches for the other half by proximity, and the next round reads the half nobody ran.
   Measured 2026-10-16, rounds over a plan reviewed as CODE: round 2 timed the wait
@@ -384,6 +393,29 @@ These decide whether the rounds converge:
   two-file Python fix): the agent found each round's only MEDIUM — a cached JSON body without `log`
   that crashed every later run, a `break` that left the older items unreachable — and a test written
   first went red on each.
+- **The clean round covers the head it read, and nothing committed after it.** The fix for the last
+  LOW, be it a docstring, a comment or one reworded message, is a new head: the series closes on a
+  round over it, with the code agent and the sweep (the bullet above), not on the round before it.
+  Measured 2026-10-19 (magic_tutor): the round over a two-line comment commit came back with a LOW
+  in a comment the branch had written two rounds before (a 2 s resolution claimed for exFAT), which
+  both earlier rounds had read without raising.
+- **A line older than the branch is not the round's.** The per-file agent reads the whole file, so a
+  round over a two-line fix also reports code the branch never touched. In Phase C, blame the
+  finding's lines (`git blame -L <a>,<b> -- <file>`) and test that commit against the branch's base
+  (`git merge-base --is-ancestor <sha> <branch base>`; rc 0 means it is older). Report it labeled
+  `pre-existing (not introduced by this branch)`: it does not count against the stop rule, and the
+  user decides whether it is fixed here or goes to the tracker. A line outside the round's diff that
+  the branch wrote is the branch's own and counts. Measured 2026-10-19 (magic_tutor): the
+  comment-commit round above also raised a mistyped `--log` that read as "nothing new" at
+  `arquivar.py:229`, written by `5a941e7d`, an ancestor of the branch base (`--is-ancestor`: rc 0).
+- **A doc that describes what the series changed belongs to every round.** Step 7 reads the docs in
+  the round's CHANGED_FILES, and a re-review range holds only the last fix, so a doc whose clean
+  round came before the series added a warning is never read again. In each round, grep the docs for
+  every user-visible message or path the series added or changed since that doc's last clean round;
+  a doc you then edit goes to an agent (*Docs this session wrote*). Measured 2026-10-19
+  (magic_tutor): `docs/monitor.md` had its clean round before the date re-read and its warning
+  existed, three rounds passed without it, and writing the missing sentence exposed the warning text
+  that was false on one path (*A text finding in code converges*, above).
 
 ## Runtime evidence
 

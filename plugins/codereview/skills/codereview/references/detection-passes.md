@@ -566,6 +566,12 @@ review (2026-10-03, a Python repo; each confirmed by a mutant that survived):
 - **A guard pinned in one order only** — the test proves the message stays silent when the user edits
   *before* it appears; the regression lived in editing *after* it (2026-10-06). An order-dependent
   rule needs both orders.
+- **An ordering guard tested in the order the directory already gives** — `sorted()` over a glob,
+  with a fixture the filesystem happens to list in the expected order, stays green without the sort:
+  a directory listing comes back in arbitrary order (`os.listdir.__doc__`), and the order differs
+  between filesystems. Name the entries so the listing runs against the expected order, and keep the
+  mutant that drops the sort. 2026-10-19: on ext4 the glob listed `nova` before `antiga`; the test
+  expects `antiga`, so the mutant without `sorted()` goes red.
 - **An assertion message that names a defect the assertion does not check** — `"manifest.csv
   diverges from the build"` on a comparison that only proved the CSV survives a re-write; a stale
   value passed. A message a fix adds is a claim: sabotage the defect it names and watch it go red
