@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.6.2
+  version: 2.7.0
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -120,7 +120,7 @@ Resolva-os **com o humano, um grupo por vez**, e nunca em silêncio:
 
 | MANUAL | O que fazer |
 |---|---|
-| nenhum/mais de um `##` candidato | perguntar qual guarda os achados e rodar `--open-heading` |
+| nenhum/mais de um `##` candidato | perguntar qual guarda os achados e rodar `--open-heading`; cada `##` já é um item: `references/migrar-a-mao.md` |
 | item acima do teto | a análise vai para `docs/` (ou o handoff da missão) e o item aponta para lá; fica ~6 linhas |
 | `##` sem marcador | narrativa → `docs/`; categoria → `###` dentro da seção aberta; assunto encerrado → uma linha na seção decidida |
 | `[x]` sem hash, ou com hash não mergeado | consertado: citar o commit e rodar de novo; refutado/decidido: uma linha na seção decidida; não mergeado: `- [ ] … RESOLVED by <hash>` até mergear |
@@ -131,8 +131,7 @@ Resolva-os **com o humano, um grupo por vez**, e nunca em silêncio:
 como um diff próprio; arquivo não versionado é escrito com aviso. Branch e commit ficam com você.
 Antes de commitar o `--write` de uma migração, leia `references/conferir-o-fix.md`: provar que a
 quebra não mudou palavra, salvar o plano condicional de um item apagado e o sensor do repo que lia
-os headings antigos. Mexeu no script? `python3 scripts/test_todo_format.py` (sem rede; precisa do
-kit e do git).
+os headings antigos.
 
 A cópia que o sensor mede é escrita **ao lado** do arquivo checado (oculta, apagada em seguida), não
 em `/tmp`: desde o ADR 0011 a âncora é resolvida contra o repositório do arquivo, e uma cópia fora
@@ -222,7 +221,7 @@ python3 $S --file ACHADOS-x.md --apply --link 6=153 --link "Uma obs=155"
 - **Espelhar a partir de uma branch de trabalho.** O script lê o `TODO.md` do diretório atual: numa
   branch, o `--apply` leva o texto dela (`RESOLVED by` ainda não mergeado, permalink no sha da
   branch) a toda issue que difere da branch padrão — no kit sdd, em 2026-10-07, 15 `UPDATE` onde só
-  uma issue tinha mudado. Espelhe da branch padrão. Quem já criou a issue da branch de um PR
+  uma issue tinha mudado. Espelhe da branch padrão, ou de um `HEAD` contido nela e sem diff para ela. Quem já criou a issue da branch de um PR
   publicado a vê como `PENDING` até o merge, não como órfã (kit sdd #249, do PR #248, 2026-10-13).
   Para mudar UMA issue antes do merge, pegue o corpo dela no `--dump`, tire o `# título` que o dump
   põe no topo e aplique com `gh issue edit N --body-file`; o plano depois do merge a lê como em dia.

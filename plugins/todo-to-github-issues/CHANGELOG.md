@@ -3,6 +3,40 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.7.0] — 2026-10-19
+
+Minor: três lições da migração e do espelho do `TODO.md` do `magic_tutor` (PR #9 de lá).
+
+### Added
+
+- **`references/migrar-a-mao.md`.** Esta reference cobre o arquivo em que cada `##` é um achado
+  (`## 1. Título`). Nesse caso, o `--audit` dá `no open marker … (candidates: none)`, e o
+  `--open-heading` não serve. O passo a passo:
+  - um rascunho não rastreado dentro do repo, medido pelo `check-todo.sh --check`/`--anchors` do
+    kit;
+  - o plano com `--file`;
+  - só então o humano aprova a troca do `TODO.md`.
+
+  A reference também traz a numeração antiga que o repo cita. É roteada da linha "nenhum/mais de
+  um `##` candidato" da tabela MANUAL.
+
+### Changed
+
+- **Espelhar da branch padrão vale também para um `HEAD` contido nela e sem diff para ela.** Numa
+  sessão isolada numa worktree, a cópia principal do repo não pode ser usada. Depois do merge, o
+  `HEAD` do PR serve. Isso foi medido no `magic_tutor`, em 2026-10-19:
+  - `git merge-base --is-ancestor HEAD origin/main` deu rc 0;
+  - `git diff --stat HEAD origin/main` saiu vazio;
+  - o plano saiu com `permalinks at ffb2c0f`;
+  - foram criadas 6 issues (#10–#15), e o plano seguinte deu `create=0 update=0`.
+
+### Removed
+
+- Do `SKILL.md` saiu a frase "Mexeu no script? `python3 scripts/test_todo_format.py` (sem rede;
+  precisa do kit e do git)." Ela repetia a linha do `test_todo_format.py` na tabela *Scripts
+  disponíveis*, e a remoção abre espaço para os ponteiros acima. Com ela, o `SKILL.md` fica abaixo
+  dos 20 mil chars do C1.
+
 ## [2.6.2] — 2026-10-16
 
 Patch: a dívida que a auditoria da `skill-quality-audit` (0.7.1) apontava. Reparo autorizado pelo

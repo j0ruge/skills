@@ -3,6 +3,38 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-19 — migrar à mão, a numeração citada e espelhar da worktree
+
+Publicado como **v2.7.0**. São três lições da migração do `TODO.md` do `magic_tutor`: 6 itens no
+formato `## N. Título`, migrados e espelhados no PR #9 de lá.
+
+- **Cada `##` era um achado.** O `--audit` deu `no open marker … (candidates: none)`, e nenhuma das
+  duas saídas sugeridas servia. Não havia `##` para o `--open-heading`. Um `## Open` acima do
+  primeiro achado deixaria a seção vazia, porque o próximo `##` a fecha.
+  - **O que resolveu:** um rascunho não rastreado na raiz do repo. Fora dele, toda âncora falharia
+    (ADR 0011 do kit). O sensor do kit deu `ok 6 finding(s) … every anchor on target`, e o
+    `--anchors` deu `0 off target`. O plano com `--file` deu `create=6`. Só com o OK do humano o
+    rascunho trocou o `TODO.md`, e o `--audit` deu `auto=0 manual=0`.
+  - **Agora:** `references/migrar-a-mao.md` §1, roteada da tabela MANUAL.
+- **A numeração antiga era citada pelo repo.** O `git grep -nE 'TODO\.md`? ?#[0-9]'` achou 18
+  linhas: o `CLAUDE.md`, uma `SKILL.md`, CHANGELOGs, `docs/` e uma mensagem no código. Nenhum
+  sensor lê essas citações.
+  - **O que resolveu:** manter o `N.` no título. O template deixa o título livre, o sensor aceitou
+    e a issue saiu "1. Ver a dica…".
+  - **Agora:** a reference §2 traz as duas saídas. A outra é citar a issue, como o kit faz nos
+    planos dele.
+- **Espelhar da worktree depois do merge.** A sessão estava isolada numa worktree e não podia usar
+  a cópia principal do repo. "Espelhe da branch padrão" travaria aí.
+  - **O que resolveu:** `git merge-base --is-ancestor HEAD origin/main` deu rc 0, e
+    `git diff --stat HEAD origin/main` saiu vazio. O plano deu `permalinks at ffb2c0f`, foram
+    criadas 6 issues (#10–#15), e o plano seguinte deu `create=0 update=0`.
+  - **Agora:** uma frase em *Erros comuns*.
+- **O orçamento:** o `SKILL.md` tinha 19.948 chars, para um C1 que avisa acima de 20 mil. O
+  `repetidos.py` não achou nada repetido. Por isso saiu a frase do `test_todo_format.py`, que repetia
+  a linha dele na tabela *Scripts disponíveis*.
+- **O alinhamento com o kit sdd** (`6366972`): a reference aponta para o template e para o
+  `check-todo.sh` do `$SDD_HOME` e não copia tetos, largura nem distância de âncora.
+
 ## 2026-10-16 — a dívida da auditoria: claims com sensor, eval de gatilho
 
 Publicado como **v2.6.2**. Reparo autorizado pelo humano, na auditoria da `skill-quality-audit`
