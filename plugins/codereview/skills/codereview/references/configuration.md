@@ -111,7 +111,11 @@ Read this when Phase A finds `{SKILL_DIR}` outside the `installPath` that
   None changes a step (a command, a phase, a gate, a threshold, an agent's contract or launch
   prompt) — they reword, re-date a figure in a rationale, or point at a file this review never
   reads: set `{SKILL_DIR}` to the installed folder, go on, and list the hunks in the Cost footprint.
-  A hunk that changes a step: stop and ask for `/reload-plugins`.
+  A hunk that changes a step: follow the installed text, not the loaded one. The hunk and every
+  section it points to, read from the installed folder, are that text (the lines around it are
+  equal); with hunks in several phases, Read the installed `SKILL.md` whole. Go on from there, list
+  the hunks in the Cost footprint, and say in the closing report that `/reload-plugins` makes the
+  next run load the installed copy.
 - Measured 2026-10-18 (ui24_agent, rounds 4 to 10): the session had loaded 2.18.4 with 2.19.0
   installed, and the 2.18.4 folder carried an `.orphaned_at` file. The folders differed in the
   references and in `scan_secrets.py` (2.19.0 added `scanned`), the two `SKILL.md` only in the
@@ -125,12 +129,20 @@ Read this when Phase A finds `{SKILL_DIR}` outside the `installPath` that
   reworded, and the stale-copy pointer now naming this section. No step among them: the review went
   on from the installed folder and closed at grade A; the version-only rule would have stopped it
   in round 1.
+- Measured 2026-10-19 (the same engine, PR #10, round 2): loaded 2.20.0 with 2.22.0 installed,
+  seven hunks apart besides the version, one of them a step (Phase B sends each DOCS file this
+  session wrote to an agent). Applied from the installed `SKILL.md` hunk and *Docs this session
+  wrote*, that step gave the round its only MEDIUM; the rule that stopped on a step hunk would have
+  halted the round in Phase A and waited for the user.
 
 ## Docs this session wrote
 
-Read this when a changed DOCS file was written by this session, by you, and makes factual claims
-(paths, counts, names, versions, licenses, what a source can or cannot answer). Phase C step 7 is
-yours, so on that file it is a self-review.
+Read this when a changed DOCS file was written by this session, by you or by a pipeline you run or
+follow (a headless phase such as the `sdd run` DOCS phase, a writer agent you launched), and makes
+factual claims (paths, counts, names, versions, licenses, what a source can or cannot answer).
+Phase C step 7 is yours, so on your own file it is a self-review; on the pipeline's, nobody else
+reads it: its own review ran before that phase, and step 7 checks the doc against the diff, not
+against code the range leaves out.
 
 - Send it to a Phase B agent in the same batch, launch prompt unchanged, with category
   `DOCS (written this session; evidence: <path or none>)` — also when Phase B otherwise runs inline
@@ -141,6 +153,11 @@ yours, so on that file it is a self-review.
 - Measured 2026-10-18 (a .NET rules engine, rounds 2 to 7): the orchestrator had written a
   knowledge doc and a handoff; the agent launched by hand for them found every MEDIUM of rounds 2
   to 6 (2, 2, 1, 1, 1), and round 7 closed at grade A.
+- Measured 2026-10-19 (the same engine, PR #10, round 2 over the kit's REVIEW): the kit's DOCS
+  phase had rewritten a table cell of a knowledge doc and added a pointer to it, after the kit's
+  own review. Sent to an agent as written this session, the doc gave the round's only MEDIUM: the
+  cell left out a form the parser accepts (`FE_NUM_COLOURS` with `OP_GREATER_THAN`) and ended by
+  calling any other operator an error, against a code file the range did not touch.
 
 ## Several repositories
 

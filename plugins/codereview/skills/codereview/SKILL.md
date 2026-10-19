@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.22.0
+  version: 2.23.0
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -118,7 +118,7 @@ More than 15 CODE files: order the groups by change size (diff stat lines); ever
 
 ### Phase B: Per-File Analysis (sonnet agents, parallel)
 
-For each CODE file (or group of 2-3 small files sharing imports), each changed TESTS file on a test-quality focus (6.12) and each DOCS file this session wrote (configuration.md, *Docs this session wrote*), **spawn a sonnet agent** to analyze it. Launch all agents **in parallel**, in one message.
+For each CODE file (or group of 2-3 small files sharing imports), each changed TESTS file on a test-quality focus (6.12) and each DOCS file this session or its pipeline wrote (configuration.md, *Docs this session wrote*), **spawn a sonnet agent** to analyze it. Launch all agents **in parallel**, in one message.
 
 Each agent reads its instructions itself, when it starts, from `{SKILL_DIR}/references/per-file-agent.md`, so every agent gets the same contract. Emit only the launch prompt below, placeholders filled — nothing added (no themes, framing or reproduction requests: those come back marked `needs reproduction`), nothing removed. `model: "sonnet"` on every call.
 

@@ -2,6 +2,33 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.23.0] — 2026-10-19
+
+### Doc de pipeline vai para agente e stale copy segue o texto instalado
+
+Duas lições do PR #10 do dotp-remake (a fatia 3.2a, entregue pelo `sdd run` do kit `sdd_agents` e
+revisada em mais duas rodadas até a nota A).
+
+- **Doc escrito por um pipeline da sessão também vai para agente** (`SKILL.md`, Fase B;
+  `configuration.md`, *Docs this session wrote*). A 2.22.0 mandava para agente só o doc que o
+  orquestrador escreveu. O doc escrito pela fase DOCS do `sdd run` ficava no passo 7 da Fase C, e
+  ninguém o lia contra o código: a REVIEW do kit roda antes da DOCS, e o passo 7 confere o doc contra
+  o diff. Na rodada 2 do PR #10, o agente que recebeu esse doc deu o único MEDIUM da rodada. A fase
+  DOCS tinha reescrito a célula do `Add` e posto um ponteiro para ela, e a célula deixava de fora a
+  forma `FE_NUM_COLOURS` com `OP_GREATER_THAN`, que o parser aceita num arquivo fora da faixa. Agora
+  o doc de um pipeline que a sessão roda ou acompanha conta como escrito na sessão. O `SKILL.md` ganha
+  16 chars (19.977 → 19.993).
+- **Trecho que muda um passo segue o texto instalado** (`configuration.md`, *Stale copy*). A 2.22.0
+  parava e pedia `/reload-plugins` diante de um trecho de passo. Na sessão, a 2.20.0 carregada
+  diferia da 2.22.0 instalada em sete trechos além da versão, um deles de passo: a Fase B com agente
+  para o doc escrito na sessão. Lido da pasta instalada, junto com a seção que ele cita, esse passo
+  foi seguido, e foi ele que deu o MEDIUM acima. A regra antiga teria parado a rodada na Fase A.
+  Agora o trecho e as seções que ele cita, lidos da pasta instalada, são o texto a seguir; com
+  trechos em várias fases, ler o `SKILL.md` instalado inteiro. O `/reload-plugins` sai do caminho
+  da rodada e vira recomendação no relatório final, para a próxima execução.
+- **Dívida para uma tarefa própria:** o `SKILL.md` fica a 7 chars do aviso do C1 (20.000). O próximo
+  retrofit não cabe sem uma passada da `skill-refactoring` (extrair ou comprimir).
+
 ## [2.22.0] — 2026-10-19
 
 ### Doc escrito pela sessão vai para agente, sonda por literal de registro e stale copy que lê o diff
