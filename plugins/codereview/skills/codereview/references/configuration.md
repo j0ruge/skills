@@ -2,6 +2,15 @@
 
 > **Defaults target TypeScript/React projects. Override any value to adapt the skill to a different stack (Vue, Angular, Python, Go, Node-only, etc.).**
 
+## Contents
+
+- [Default Values](#default-values) · [Override Syntax](#override-syntax) (presets per stack, the
+  C# probe by type and by registration literal)
+- [Stale copy](#stale-copy) · [Docs this session wrote](#docs-this-session-wrote)
+- [Several repositories](#several-repositories) · [Folder without git](#folder-without-git) ·
+  [Path-scoped reviews](#path-scoped-reviews) · [Code inside docs](#code-inside-docs)
+- [Re-review rounds](#re-review-rounds) · [Runtime evidence](#runtime-evidence)
+
 ## Default Values
 
 | Variable | Default | Description |
@@ -70,6 +79,17 @@ test for 7 more, and the last 2 had none (one exercised only through another typ
 no test at all). The PR before it, on the same repo, had measured 27 of 41 files by type name and
 almost none by file name.
 
+A type the tests never name — registered under a string in a catalog, a container or a plugin
+table — leaves that probe nothing to find. With no hit by type, probe the literal it registers
+under (`Id => "first-strike"`, a `const string`), in quotes, over the changed tests: a hit is
+`WITH_TESTS (indirect)`. In quotes, because the bare word matches prose and fixtures. A hit only in
+a test that lists the registry proves the registration, not the behavior; Phase C says which.
+Measured 2026-10-19 (the same engine, 14 `internal sealed` keyword classes, 37 changed test files):
+no test named a type — the `-w` hits were card text in fixture XML, an unrelated `d.Defender` and
+an invalid-id literal — and the quoted id hit 14 of 14, all in keyword tests; `reach` bare matched 6
+test files, quoted 2. For 4 of the 14 the only hit was the registry listing, while their behavior
+tests load fixture cards.
+
 Overrides are applied on top of defaults — only the specified values change; unmentioned values keep their defaults.
 
 ## Stale copy
@@ -87,8 +107,11 @@ Read this when Phase A finds `{SKILL_DIR}` outside the `installPath` that
   `detection-passes.md`, `scan_secrets.sh`) is read by absolute path from `{SKILL_DIR}`. Take the
   Cost footprint's version from the installed `SKILL.md`, since Phase A read it before the switch,
   and say there which copy the session had loaded.
-- Any other line differs: the instructions in context are not the installed ones. Stop and ask for
-  `/reload-plugins`.
+- Any other line differs: the instructions in context are not the installed ones. Read each hunk.
+  None changes a step (a command, a phase, a gate, a threshold, an agent's contract or launch
+  prompt) — they reword, re-date a figure in a rationale, or point at a file this review never
+  reads: set `{SKILL_DIR}` to the installed folder, go on, and list the hunks in the Cost footprint.
+  A hunk that changes a step: stop and ask for `/reload-plugins`.
 - Measured 2026-10-18 (ui24_agent, rounds 4 to 10): the session had loaded 2.18.4 with 2.19.0
   installed, and the 2.18.4 folder carried an `.orphaned_at` file. The folders differed in the
   references and in `scan_secrets.py` (2.19.0 added `scanned`), the two `SKILL.md` only in the
@@ -96,6 +119,28 @@ Read this when Phase A finds `{SKILL_DIR}` outside the `installPath` that
   the pre-scan reported `scanned`; the old rule (any `diff -rq` difference means `/reload-plugins`)
   would have stopped round 4 in Phase A. A later update left the same session at 2.18.4 against
   2.20.0, again one line apart.
+- Measured 2026-10-18 (a .NET rules engine, rounds 1 to 7): loaded 2.20.0 with 2.21.2 installed,
+  the two `SKILL.md` four hunks apart besides the version — a pointer to `assets/trigger-evals.json`
+  (read only when changing the description), the cost note's ratio, the read-only sentence
+  reworded, and the stale-copy pointer now naming this section. No step among them: the review went
+  on from the installed folder and closed at grade A; the version-only rule would have stopped it
+  in round 1.
+
+## Docs this session wrote
+
+Read this when a changed DOCS file was written by this session, by you, and makes factual claims
+(paths, counts, names, versions, licenses, what a source can or cannot answer). Phase C step 7 is
+yours, so on that file it is a self-review.
+
+- Send it to a Phase B agent in the same batch, launch prompt unchanged, with category
+  `DOCS (written this session; evidence: <path or none>)` — also when Phase B otherwise runs inline
+  (≤3 CODE files). The agent's contract says what a DOCS file gets.
+- Rounds that keep finding the next claim in the same doc: recommend removing the claim, not adding
+  evidence. In the series below every added word became the next round's finding (rounds 3 to 6),
+  and it closed when the fixes took text out.
+- Measured 2026-10-18 (a .NET rules engine, rounds 2 to 7): the orchestrator had written a
+  knowledge doc and a handoff; the agent launched by hand for them found every MEDIUM of rounds 2
+  to 6 (2, 2, 1, 1, 1), and round 7 closed at grade A.
 
 ## Several repositories
 

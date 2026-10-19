@@ -2,6 +2,41 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.22.0] — 2026-10-19
+
+### Doc escrito pela sessão vai para agente, sonda por literal de registro e stale copy que lê o diff
+
+Três lições do PR #9 do dotp-remake (7 rodadas até a nota A).
+
+- **Doc escrito pela própria sessão vai para um agente da Fase B** (`SKILL.md`, Fase B;
+  `configuration.md`, *Docs this session wrote*; `per-file-agent.md`). A Fase B só mandava CODE (e
+  TESTS no foco de testes) para agente, e o DOCS ficava no passo 7 da Fase C, feito pelo
+  orquestrador. Quando foi ele quem escreveu o doc, aquilo era autorrevisão. Na sessão, o agente
+  lançado à mão para o doc de conhecimento e o handoff que o orquestrador escreveu achou todos os
+  MEDIUM das rodadas 2 a 6 (2, 2, 1, 1, 1). Agora o doc com afirmações factuais escrito na sessão vai
+  para o agente com o prompt padrão e a categoria `DOCS (written this session; evidence: <path>)`,
+  também quando a Fase B rodaria inline. O contrato do agente ganha a linha do DOCS (6.5 no centro,
+  cada afirmação contra a evidência), e o prompt de lançamento continua sem texto extra. Junto, a
+  lição de convergência: numa série que acha a próxima frase do mesmo doc, recomendar tirar a
+  afirmação, não acrescentar evidência (cada palavra nova virou achado nas rodadas 3 a 6).
+- **Sonda de teste pelo literal de registro** (`configuration.md`, depois do parágrafo de C#). Um
+  tipo que os testes nunca nomeiam (registrado por string num catálogo) escapava da sonda por tipo.
+  Medido no PR B do dotp-remake (14 classes `internal sealed` de palavra-chave, 37 testes alterados):
+  nenhum teste nomeia o tipo, e os acertos do `-w` eram texto de carta nas fixtures, um
+  `d.Defender` sem relação e um literal de id inválido. O id entre aspas achou 14 de 14, todos em
+  testes de palavra-chave; sem aspas, `reach` casa 6 arquivos contra 2. Em 4 dos 14 o único acerto é
+  a lista do registro, o que prova o registro e não o comportamento, e a Fase C diz qual dos dois.
+- **Stale copy lê o diff antes de parar** (`configuration.md`, *Stale copy*). A regra parava em
+  qualquer linha além do `version:`. Na sessão, a 2.20.0 carregada diferia da 2.21.2 instalada em
+  quatro trechos, nenhum de passo (ponteiro para `assets/`, razão da nota de custo, frase do só
+  leitura reescrita, ponteiro do stale copy), e a revisão seguiu com a pasta instalada até a nota A.
+  Agora o trecho que muda um passo (comando, fase, portão, limite, contrato ou prompt de agente)
+  ainda para; os outros vão listados no Cost footprint.
+- **`SKILL.md` no teto do C1:** a rota nova da Fase B coube fundindo os dois parênteses da lista de
+  *References* que repetiam os prompts de lançamento do próprio `SKILL.md` ("it carries your
+  instructions, scope and output format"; "it carries the two buckets, the guardrails and the
+  return template"). 19.999 → 19.977 chars.
+
 ## [2.21.2] — 2026-10-18
 
 ### Casos de gatilho, claims datados e os C2 que a auditoria já entende
