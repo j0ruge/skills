@@ -2,6 +2,15 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-10-19 — Guilherme Farel, questions after reading (v1.4.0)
+- The presenter read the 12-slide deck and sent a list of questions (terms, people, a French poem). Answered from checked
+  sources; the answers became hover tips (glossary + translations), notes and two reference slides; a fresh review
+  gave SHIP WITH FIXES (7 material, all applied). The user asked for the tip feature in the skill.
+- Lessons added: hover tips in the template (single-source glossary, inside the stage, gone in print), the build
+  gate for a tip without entry (a check that read comments failed on the CSS example key), the tip check in
+  `check-presenter`, and the cause of the reopened-popup timeout (a race in the check, not the deck).
+- Not changed: the description (the feature does not change when the skill should trigger).
+
 ## 2026-10-19 — the 1.3.0 debt: footer labels and headless shots (v1.3.1)
 - No new deck: the two items the 1.3.0 entry left open, reproduced on the template sample and checked on the Farel
   deck.

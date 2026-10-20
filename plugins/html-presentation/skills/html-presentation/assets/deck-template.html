@@ -182,6 +182,18 @@ b,strong{font-weight:600;color:var(--fg)}
 .contact .addr{font-family:var(--mono);font-size:42px;font-weight:600;color:#fff}
 .contact .dl{border-top:1px solid var(--dark-accent);padding-top:24px;font-size:25px}
 
+/* ── Dica ao passar o mouse ───────────────────────────────────────────
+   data-tip="…" mostra uma tradução (rótulo opcional em data-tip-label); data-g="chave" mostra o verbete
+   <p id="g-chave"> do bloco oculto #glossario, fonte única para todas as lâminas (o build reprova data-g sem
+   verbete). A caixa mora dentro do palco: escala com ele e não passa da borda. Some no PDF, então nada
+   essencial fica só nela. Cores do próprio deck: superfície escura e sublinhado pontilhado discreto. */
+[data-tip],[data-g]{cursor:help;text-decoration-line:underline;text-decoration-style:dotted;text-decoration-color:var(--fg3);text-decoration-thickness:2px;text-underline-offset:7px}
+.contact [data-tip],.contact [data-g]{text-decoration-color:var(--dark-fg)}
+#tip{position:absolute;left:0;top:0;z-index:6;max-width:780px;padding:22px 28px;border-radius:16px;border:2px solid var(--dark-accent);background:var(--dark);color:#fff;font-size:27px;line-height:1.42;text-wrap:pretty;pointer-events:none;opacity:0;transition:opacity .15s}
+#tip.on{opacity:1}
+#tip b{color:#fff;font-weight:600}
+#tip .o{display:block;margin-bottom:8px;font-size:20px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dark-fg)}
+
 /* ── Notas (N) e janela do apresentador (P) ─────────────────────────── */
 .notes{display:none}
 #notesPanel{position:fixed;left:0;right:0;bottom:0;max-height:42vh;overflow:auto;background:#1c1917;color:#e7e5e4;font-family:var(--sans);font-size:17px;line-height:1.55;padding:18px 28px 22px;display:none;z-index:20;border-top:3px solid var(--brand)}
@@ -214,7 +226,8 @@ body.presenter #pview{display:block}
   html,body{height:auto;overflow:visible;background:var(--bg)}
   #viewport{position:static;overflow:visible}
   #stage{transform:none!important;position:static;box-shadow:none;height:auto;overflow:visible;background:none}
-  #stage::before,#footer,#notesPanel,#help{display:none!important}
+  #stage::before,#footer,#notesPanel,#help,#tip{display:none!important}
+  [data-tip],[data-g]{text-decoration-line:none!important}
   .slide{position:relative;display:flex!important;width:1920px;height:1080px;break-after:page;background:var(--bg);overflow:hidden}
   .slide::before{content:"";position:absolute;inset:0 0 auto 0;height:5px;background:var(--brand)}
   .slide .enter{animation:none!important}
@@ -238,7 +251,8 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
      Cada <section> precisa de data-section (parte da fala, vazio na capa), data-title
      e uma <aside class="notes" data-t="segundos">. A soma de data-t fica em
      duração − 30 s, para caber pergunta. Revelar por cliques: data-steps="N" na
-     <section> e data-step="1..N" nos blocos; a seta revela antes de trocar de lâmina. -->
+     <section> e data-step="1..N" nos blocos; a seta revela antes de trocar de lâmina.
+     Dica ao passar o mouse: data-tip="tradução", ou data-g="chave" com o verbete no #glossario. -->
 
 <section class="slide cover" data-section="" data-title="Capa">
   <div class="top enter"><span class="brandmark">[Organização]</span><span class="mono">[REF-0000]</span></div>
@@ -259,10 +273,10 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
 <section class="slide" data-section="[Parte 1]" data-title="[Conceito]">
   <div class="head enter">
     <h2 class="t-title">[Afirmação completa, não rótulo]</h2>
-    <p class="t-lead">[Uma ou duas frases que se explicam sem narração. <b>O ponto-chave em negrito.</b>]</p>
+    <p class="t-lead">[Uma ou duas frases que se explicam sem narração, com um <span data-g="exemplo">termo do glossário</span>. <b>O ponto-chave em negrito.</b>]</p>
   </div>
   <div class="items enter">
-    <div class="item"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg><h3>[Item]</h3><p>[Exemplo concreto]</p></div>
+    <div class="item"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg><h3>[Item]</h3><p><span data-tip="[Tradução do texto em outra língua]">[Exemplo concreto]</span></p></div>
     <div class="item"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg><h3>[Item]</h3><p>[Exemplo concreto]</p></div>
     <div class="item"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3 21 20H3z"/></svg><h3>[Item]</h3><p>[Exemplo concreto]</p></div>
     <div class="item"><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg><h3>[Item]</h3><p>[Exemplo concreto]</p></div>
@@ -362,6 +376,12 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
   <div id="horizon"><div class="track"></div><div class="fill"></div></div>
   <div id="pageno"></div>
 </footer>
+<div id="tip" aria-hidden="true"></div>
+<!-- Glossário: fonte única das dicas data-g. Um <p id="g-chave"> por termo, definido em uma ou duas frases com fonte
+     conferida; o mesmo verbete serve a todas as lâminas que citam o termo. Não é lâmina: o PDF não o mostra. -->
+<div id="glossario" hidden>
+  <p id="g-exemplo"><b>[Termo]:</b> [definição em uma ou duas frases, com fonte conferida]</p>
+</div>
 </div></div>
 
 <div id="notesPanel" role="region" aria-label="Notas do apresentador"></div>
@@ -431,8 +451,25 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
     }
   }
 
+  // Dica ao passar o mouse, em px do palco (tela ÷ escala) e presa dentro dele: abaixo do termo, ou acima se não couber.
+  // Fecha a dica de teclas: numa chamada, ela iria para a plateia junto com a dica.
+  const tip = document.getElementById('tip');
+  const hideTip = () => tip.classList.remove('on');
+  stage.addEventListener('mouseover', e => {
+    const el = e.target.closest('[data-tip],[data-g]');
+    if (!el) return hideTip();
+    if (el.dataset.g) tip.innerHTML = document.getElementById('g-' + el.dataset.g)?.innerHTML || '';
+    else { const o = document.createElement('span'); o.className = 'o'; o.textContent = el.dataset.tipLabel || 'Tradução'; tip.replaceChildren(o, el.dataset.tip); }
+    const r0 = stage.getBoundingClientRect(), z = r0.width / 1920, r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+    const x = Math.min(Math.max(64, (r.left - r0.left) / z), 1920 - 64 - w), below = (r.bottom - r0.top) / z + 14;
+    tip.style.transform = `translate(${x}px, ${below + h <= 1056 ? below : Math.max(24, (r.top - r0.top) / z - 14 - h)}px)`;
+    tip.classList.add('on'); document.body.classList.remove('hint'); clearTimeout(hintT);
+  });
+  stage.addEventListener('mouseout', e => { if (!e.relatedTarget?.closest?.('[data-tip],[data-g]')) hideTip(); });
+
   // s: etapa de chegada (0 = início; 'end' = toda revelada, para quem volta de trás)
   function show(k, from, s = 0) {
+    hideTip();
     i = Math.max(0, Math.min(N - 1, k));
     st = s === 'end' ? steps[i] : Math.max(0, Math.min(steps[i], Number.isInteger(s) ? s : 0));
     slides.forEach((x, j) => x.classList.toggle('active', j === i));
@@ -488,8 +525,8 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
   });
   // A dica de teclas aparece com o mouse e some parada, e nunca com a janela P aberta: numa chamada, a janela
   // compartilhada a transmitiria para a plateia
-  addEventListener('mousemove', () => {
-    if (pwin && !pwin.closed) return;
+  addEventListener('mousemove', e => {
+    if ((pwin && !pwin.closed) || e.target.closest?.('[data-tip],[data-g]')) return;
     document.body.classList.add('hint'); clearTimeout(hintT); hintT = setTimeout(() => document.body.classList.remove('hint'), 2500);
   });
   let tx = null;

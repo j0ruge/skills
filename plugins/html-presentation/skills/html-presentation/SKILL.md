@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.3.1"
+  version: "1.4.0"
 ---
 
 # HTML Presentation
@@ -72,6 +72,9 @@ Copy `assets/deck-template.html` to `src/<name>.html` in the project. Then:
   forbids the contract in a served file, and `build.py` keeps comments in `dist/`.
 - To reveal a slide by clicks, put `data-steps="N"` on the `<section>` and `data-step="1..N"` on its blocks
   (`references/engine.md`). Use it where the reveal is the content, not as decoration.
+- For text in another language or a term the audience may not know, add a hover tip: `data-tip` (translation) or
+  `data-g` (an entry in the hidden `#glossario`, one source for every slide). Read the "Hover tip" component in
+  `references/layout-and-type.md` before writing the entries.
 
 Read `references/layout-and-type.md` when composing slides: component catalog, what to avoid, mockups.
 
@@ -83,7 +86,7 @@ python3 <skill>/scripts/build.py src/<name>.html --out dist --duration <minutes>
 
 Output: `dist/<name>.html` (fonts and images inlined, works offline) and `dist/roteiro-de-fala.md`. The
 build fails on an asset that was not inlined, any external `http(s)` resource, a slide without notes, or a
-time budget over the limit. It also warns, without failing, when a note read at 150 words per minute needs 5 s
+time budget over the limit, and on a hover tip `data-g` without its glossary entry. It also warns, without failing, when a note read at 150 words per minute needs 5 s
 or more beyond its `data-t` (a number counts as two words, a date as three): the time budget alone let a 65 s
 note that needs ~80 s through (Manutenção Proativa deck, 16/10/2026).
 
@@ -156,6 +159,9 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
 - **A click to focus the deck changed the slide.** With the popup over the deck on one screen, every click
   navigated, even on the black band beside the stage. The template ignores a click within 400 ms of the
   window gaining focus and any click outside the stage.
+- **Reopened popup timed out in `check-presenter`.** Pressing `P` right after closing the presenter window reached
+  the window still closing, and no popup opened: the Farel deck failed 3 of 3 runs, and passed 18/18 with 300 ms
+  of wait after `close()` (19/10/2026). The check now waits; if it times out again, suspect that race first.
 - **A template fix does not reach existing decks.** Each deck carries its own copy of the engine, often
   customized. Port the fix by hand, keep the deck's changes, and run `check-presenter.mjs` on the rebuild.
 - **Footer collisions.** The last section label runs into the page number, and two sections starting near
@@ -199,7 +205,7 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
 | `assets/deck-template.html` | Starting point for every deck: engine, footer, notes, presenter window, print, sample slides per component |
 | `scripts/build.py` | Run on every build: inlines assets, generates the script, enforces the gates |
 | `scripts/shoot.sh` | Every inspection round: screenshots, laptop views, PDF, contact sheets |
-| `scripts/check-presenter.mjs` | Step 6 when Playwright is installed, and after porting an engine fix: presenter window, shared timer, key hint, focus click, steps, footer labels, reduced motion |
+| `scripts/check-presenter.mjs` | Step 6 when Playwright is installed, and after porting an engine fix: presenter window, shared timer, key hint, focus click, steps, hover tips, footer labels, reduced motion |
 | `references/layout-and-type.md` | Read when composing slides (step 4): components, scale, mockups, what to refuse |
 | `references/engine.md` | Read only when changing navigation, notes, presenter window or print behavior |
 | `references/review.md` | Read before step 7, when spawning the reviewer: input packet and verdict format |

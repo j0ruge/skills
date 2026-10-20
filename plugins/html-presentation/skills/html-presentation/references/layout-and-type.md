@@ -36,6 +36,13 @@ The slide padding is 112 / 128 / 150. The bottom 150 px belong to the footer, so
   project's visual grammar, with invented neutral names. They beat screenshots: translatable, sharp when
   projected, no real data. Put numbered pins on the *edges* of the mockup (position the card
   `relative`) so they never cover text, and mark the mockup illustrative in its `aria-label`.
+- **Hover tip** (`data-tip`, `data-g` + `#glossario`): text in another language (titles, a poem, a colophon) and
+  terms the audience may not know. The questions the presenter asks after reading the deck are the list: in the
+  Farel deck (19/10/2026) they became the glossary entries, and the slides stayed as clean as before. Write each
+  entry in one or two sentences from a checked source; a long explanation belongs in the notes. Never put
+  something essential only in a tip: the PDF does not show it. On a block of verse, drop the underline and
+  highlight the line on hover instead (`--brand-soft` with a 2 px border), or the dotted lines compete with the
+  text.
 - **Close** (`.close`): 3 principles + a dark contact panel with the address in mono and the deadline.
 - **Agenda** (`.agenda`, for talks of about 30 minutes or more): one row per `data-section`. Fill the minutes
   from the notes instead of typing them, or they drift after the first timing change. Inside the template's

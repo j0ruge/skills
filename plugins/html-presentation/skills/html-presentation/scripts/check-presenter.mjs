@@ -7,8 +7,10 @@
 // laptop minus the browser frame), and exits 1 when a check fails. Each check is a failure seen in a real
 // rehearsal (Manutenção Proativa deck, 16/10/2026). The activation click is simulated with a window
 // `focus` event: Playwright emulates focus, so the page never sees the real one (references/engine.md).
-// A deck with data-steps also gets the step checks; one without prints "pulado". The last tab opens with reduced
-// motion, as shoot.sh does: no transition may still run there, and the hidden footer labels must be the colliding ones.
+// A deck with data-steps also gets the step checks; one without prints "pulado". So does a deck with hover tips
+// (data-tip / data-g): the tip must open with text, inside the stage, and close when the mouse leaves. The last
+// tab opens with reduced motion, as shoot.sh does: no transition may still run there, and the hidden footer
+// labels must be the colliding ones.
 // Without a global Playwright: npm i --prefix <dir> playwright@<version whose chromium-NNNN is already in
 // ~/.cache/ms-playwright>, then NODE_PATH=<dir>/node_modules node check-presenter.mjs … (no browser download).
 import { createRequire } from 'node:module';
@@ -53,7 +55,9 @@ await sleep(3200); await pop.keyboard.press('r'); await sleep(300);
 a = await popClock(pop); b = await deckClock();
 check('R no popup zera as duas janelas', a === '00:00' && b === '00:00', `popup ${a}, deck ${b}`);
 
-await sleep(3200); await pop.close();
+// P logo depois do close() caía na janela que ainda fechava, e o popup não abria: o deck do Farel falhou 3 de 3, e
+// passou com 300 ms de espera (19/10/2026). Era o "timeout ocasional" que a 1.3.1 deixou em aberto.
+await sleep(3200); await pop.close(); await sleep(300);
 [pop] = await Promise.all([page.waitForEvent('popup'), page.keyboard.press('p')]); await sleep(800);
 a = await popClock(pop); b = await deckClock();
 check('popup reaberto mostra o tempo já falado', secs(a) >= 3 && Math.abs(secs(a) - secs(b)) <= 1, `popup ${a}, deck ${b}`);
@@ -127,6 +131,21 @@ if (stepped >= 0) {
   } else console.log('pulado  voltar revelado (a lâmina com etapas é a última)');
   await pop.close();
 } else console.log('pulado  etapas (nenhuma lâmina com data-steps)');
+
+// Dica ao passar o mouse (data-tip / data-g): abre com texto, dentro do palco, e fecha quando o mouse sai. A caixa é
+// medida na tela; o (2, 2) cai na faixa fora do palco a 1366×657.
+const tipAt = await page.evaluate(() => { const el = document.querySelector('.slide [data-tip], .slide [data-g]'); return el ? [...document.querySelectorAll('.slide')].indexOf(el.closest('.slide')) : -1; });
+if (tipAt >= 0) {
+  await page.goto(url + '#' + (tipAt + 1)); await page.reload(); await page.waitForLoadState('load'); await sleep(600);
+  await page.locator('.slide.active [data-tip], .slide.active [data-g]').first().hover(); await sleep(300);
+  const t = await page.evaluate(() => {
+    const t = document.getElementById('tip'), s = document.getElementById('stage').getBoundingClientRect(), r = t.getBoundingClientRect();
+    return { on: t.classList.contains('on'), texto: t.textContent.trim().length, dentro: r.left >= s.left - 1 && r.right <= s.right + 1 && r.top >= s.top - 1 && r.bottom <= s.bottom + 1 };
+  });
+  check('dica: abre com texto, dentro do palco', t.on && t.texto > 0 && t.dentro, JSON.stringify(t));
+  await page.mouse.move(2, 2); await sleep(300);
+  check('dica: fecha quando o mouse sai do termo', await page.evaluate(() => !document.getElementById('tip').classList.contains('on')), 'continua aberta');
+} else console.log('pulado  dica ao passar o mouse (nenhum data-tip/data-g)');
 
 // Rodapé e capturas, numa aba com movimento reduzido, como o shoot.sh abre o deck. Uma transição que ainda corre
 // sai na captura como um rótulo meio apagado sobre o vizinho; e o .tight medido antes do #pageno e da fonte

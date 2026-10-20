@@ -7,7 +7,8 @@ Usage:
 - Inlines every url(assets/...) and src="assets/..." as a data URI (deck works offline, one file).
 - Writes <out>/<name>.html and <out>/roteiro-de-fala.md (generated from <aside class="notes" data-t>).
 - Gates (exit 1): an asset left un-inlined, an external http(s) resource, a slide without notes/data-t,
-  or a time budget above duration − 30 s (room for questions).
+  a hover tip data-g="key" without its glossary entry id="g-key" (the box would open empty), or a time budget
+  above duration − 30 s (room for questions). An entry no data-g uses is only a warning.
 - Warns (no failure) when a note, read at --wpm words per minute, needs 5 s or more beyond its data-t. A
   number counts as two words and a date (dd/mm) as three: said aloud they take more than written, and the
   time gate alone let a note at 157 written / ~187 spoken wpm through (Manutenção Proativa deck, 16/10/2026).
@@ -51,6 +52,15 @@ ext = [x for t in ext for x in t if x]
 if ext:
     errors.append(f"recurso externo (o deck precisa funcionar offline): {ext[:3]}")
 
+# Hover tips: every data-g="key" needs its <p id="g-key"> in #glossario, the single source. Comments don't count:
+# the template's CSS comment shows data-g="chave" as an example, and a check that read comments failed on the
+# example key of the Farel deck (19/10/2026)
+src_live = re.sub(COMMENT, "", src, flags=re.S)
+keys, entries = set(re.findall(r'data-g="([^"]+)"', src_live)), set(re.findall(r'id="g-([^"]+)"', src_live))
+if keys - entries:
+    errors.append(f"dica sem verbete no #glossario: {sorted(keys - entries)}")
+unused = sorted(entries - keys)
+
 # Speaker script from the notes: the HTML is the single source of truth
 slides = re.findall(r'<section class="slide[^"]*"[^>]*data-title="([^"]+)"[^>]*>(.*?)</section>', src, re.S)
 lines = ["# Roteiro de fala", "",
@@ -81,6 +91,8 @@ if a.duration and acc > a.duration * 60 - 30:
 
 for w in warnings:
     print("aviso de ritmo:", w)
+if unused:
+    print("aviso de glossário: verbete sem data-g que o use:", ", ".join("g-" + k for k in unused))
 if errors:
     print("BUILD REPROVADO:", *errors, sep="\n  - ")
     sys.exit(1)

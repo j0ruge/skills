@@ -3,6 +3,28 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.4.0] — 2026-10-19
+
+### Added
+- Hover tips in the template. `data-tip="…"` shows a translation (label in `data-tip-label`); `data-g="key"` shows
+  the entry `<p id="g-key">` of a hidden `#glossario` block, so one definition serves every slide that names the
+  term. The box lives inside the stage (it scales with it and is clamped to it), uses the deck's own tokens
+  (`--dark`, `--dark-fg`, `--dark-accent`, a dotted `--fg3` underline), closes on every slide change, hides the key
+  hint while open, and disappears in print. Why: in the Farel deck the presenter's questions after reading the
+  slides (who Beza was, what a colophon is, what the French titles mean) became 20 glossary entries, and the slides stayed as
+  clean as before; translations of a 10-line poem were shown line by line during the talk.
+- `build.py` fails on a `data-g` with no glossary entry (the box would open empty) and warns on an entry nothing
+  uses. Comments don't count: the template's CSS comment cites an example key.
+- `check-presenter.mjs`: on a deck with tips, the first tip must open with text inside the stage and close when the
+  mouse leaves (prints "pulado" otherwise).
+- `references/layout-and-type.md` (when to use a tip, and when not: nothing essential only in a tip, the PDF hides
+  it) and `references/engine.md` (contract and behavior).
+
+### Fixed
+- The "occasional timeout" on the reopened popup that 1.3.1 left open is a race in `check-presenter`: `P` pressed
+  right after `close()` reached the window still closing, and no popup opened. The Farel deck failed 3 of 3 runs,
+  also with the tip code removed, and passed 18/18 with 300 ms of wait; the check now waits.
+
 ## [1.3.1] — 2026-10-19
 
 ### Fixed
