@@ -383,7 +383,7 @@
     {
       "name": "release",
       "source": "./plugins/release",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "description": "Create a GitHub Release with categorized English notes from git history, on any stack. Follows the repo's tag series (`v1.2.0`, `<package>-v1.2.0`), covers a first release, and edits the notes of an already-published version instead of tagging it twice. Triggers — release, release notes, GitHub Release, gh release, changelog, semver, monorepo.",
       "category": "development",
       "keywords": [

@@ -4,7 +4,7 @@ description: "Create a GitHub Release with categorized English notes from git hi
 disable-model-invocation: true
 compatibility: "Claude Code and Cursor read disable-model-invocation only at the top: the skill runs only as /release:release (/release in Cursor), never from context, because it publishes a GitHub Release. Requires git and an authenticated gh CLI."
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 ## User Input
@@ -23,15 +23,14 @@ Interpret the input:
 
 ## Objective
 
-Create a complete **GitHub Release** with detailed release notes in **English**, covering all changes since the last existing release tag in the repository.
+Create or update a **GitHub Release** with detailed release notes in **English**, covering the changes since the previous release of the same tag series (the whole history for a first release).
 
 ---
 
 ## Constraints
 
-- **DO NOT** modify project files. This skill is read-only + release creation, or editing the notes of an existing release.
-- **DO NOT** push code or commits.
-- **DO NOT** fabricate information — everything must come from git data.
+- The project stays as it is: no file edited, no commit pushed. The only write is the GitHub Release, created or with its notes edited.
+- Everything in the note comes from git data.
 
 ---
 
@@ -41,7 +40,7 @@ Create a complete **GitHub Release** with detailed release notes in **English**,
 
 Extract from `$ARGUMENTS`:
 - `$NEW_VERSION` — the semantic version (if provided)
-- `$PATH_FILTER` — the `--path` value (if provided). This will be appended as `-- <path>` to git log and git diff commands throughout.
+- `$PATH_FILTER` — the `--path` value (if provided). Step 3 appends it as `-- <path>`; step 5 prefixes the manifest paths with it.
 
 If `$NEW_VERSION` is not provided, ask the user before proceeding.
 
@@ -102,16 +101,13 @@ else LOG_RANGE="$END"; DIFF_FROM=$(git hash-object -t tree /dev/null); fi   # fi
 git rev-list --count --no-merges "$LOG_RANGE"
 ```
 
-Zero commits → nothing to release: say so and stop. Measured 2026-10-20 (a monorepo whose
-`release.sh` had just published `object-storage-v1.0.0`): the old
-`git tag -l --sort=-version:refname | head -1` returned that very tag, with 0 commits after it, and
-step 7 would have created a second tag `v1.0.0` on the same commit, a release without the artifact
-that would have become "Latest". The block above gives the whole history up to the tag (75 commits);
-`--match` keeps `v[0-9]*` apart from `api-v…`.
+Zero commits → nothing to release: say so and stop. When another tool already published the
+version, `END` is its tag and the notes describe that release; with no earlier tag in the series, the
+range is the whole history. `--match` keeps `v[0-9]*` apart from `api-v…`.
 
 ### 3. Collect git data
 
-Execute **in parallel**. If `$PATH_FILTER` is set, append `-- $PATH_FILTER` to git log and git diff commands:
+Execute **in parallel**. If `$PATH_FILTER` is set, append `-- $PATH_FILTER` to the git log and git diff commands below:
 
 ```bash
 # Commits since the last release (excluding merges)
@@ -123,7 +119,7 @@ git diff --stat "$DIFF_FROM" "$END" [-- $PATH_FILTER]
 # Merged PRs (merge commits)
 git log "$LOG_RANGE" --merges --oneline [-- $PATH_FILTER]
 
-# Contributors — resolve GitHub usernames via org membership + commit email cross-reference
+# Contributors — resolve GitHub usernames through the commits API
 # Why this is complex: git author names often differ from GitHub usernames
 # (e.g., "JorUge" in git vs "@j0ruge" on GitHub). Email search fails when
 # emails are not public. The most reliable method is checking commit authorship
@@ -137,9 +133,9 @@ REPO_NAME=$(gh repo view --json name --jq '.name' 2>/dev/null)
 # Step 2: For each commit in the range, resolve the GitHub username via the commits API
 # The GitHub API returns the linked GitHub account for each commit, which is
 # the authoritative source (it uses the email-to-account mapping GitHub maintains)
-# Pipe into `while read`, never `for sha in $COMMIT_SHAS`: zsh does not word-split an unquoted
-# variable, so that loop ran ONCE with every sha joined by newlines, and `2>/dev/null` hid the
-# error — 0 contributors, rc 0 (measured 2026-10-20; bash split it and found the login).
+# Pipe into `while read`, not a `for` over a variable: zsh does not word-split an unquoted
+# variable, so the loop would run once with every sha joined, and `2>/dev/null` would hide the
+# error (0 contributors, rc 0).
 git log "$LOG_RANGE" --format="%H" --no-merges [-- $PATH_FILTER] | while read -r sha; do
   gh api "/repos/$REPO_OWNER/$REPO_NAME/commits/$sha" --jq '.author.login // empty' 2>/dev/null
 done | grep -v '^$' | sort | uniq | sed 's/^/@/'
@@ -168,23 +164,28 @@ For each **feature** (`feat:`), group by source PR/branch when possible, creatin
 
 ### 5. Identify added/removed dependencies
 
-Auto-detect the package ecosystem and diff the appropriate files:
+Auto-detect the package ecosystem and diff the appropriate files. With `$PATH_FILTER`, the
+manifests are the ones inside it: prefix each path, never append a second `-- $PATH_FILTER`. Git
+reads everything after the first `--` as pathspecs and adds them up, so the second one lists the
+whole directory instead of filtering the manifest.
 
 ```bash
+P=${PATH_FILTER:+${PATH_FILTER%/}/}   # "" without --path, "<dir>/" with it
+
 # C#/.NET — PackageReference in .csproj files
-git diff "$DIFF_FROM" "$END" -- '*.csproj' Directory.Build.props Directory.Packages.props [-- $PATH_FILTER]
+git diff "$DIFF_FROM" "$END" -- "${P}*.csproj" "${P}Directory.Build.props" "${P}Directory.Packages.props"
 
 # Node.js — package.json
-git diff "$DIFF_FROM" "$END" -- package.json [-- $PATH_FILTER]
+git diff "$DIFF_FROM" "$END" -- "${P}package.json"
 
 # Python — pyproject.toml, requirements.txt
-git diff "$DIFF_FROM" "$END" -- pyproject.toml requirements.txt setup.py [-- $PATH_FILTER]
+git diff "$DIFF_FROM" "$END" -- "${P}pyproject.toml" "${P}requirements.txt" "${P}setup.py"
 
 # Go — go.mod
-git diff "$DIFF_FROM" "$END" -- go.mod [-- $PATH_FILTER]
+git diff "$DIFF_FROM" "$END" -- "${P}go.mod"
 
 # Rust — Cargo.toml
-git diff "$DIFF_FROM" "$END" -- Cargo.toml [-- $PATH_FILTER]
+git diff "$DIFF_FROM" "$END" -- "${P}Cargo.toml"
 ```
 
 Only run the command(s) matching the detected ecosystem. Analyze the diff to list added, removed, and updated dependencies.
@@ -267,7 +268,7 @@ Use **exactly** this format (adapt sections according to the collected data — 
 
 ---
 
-**Contributors:** @resolved-github-usernames (from gh api email lookup, NOT git author names)
+**Contributors:** @resolved-github-usernames (from the commits API in step 3, never git author names)
 ````
 
 ### 7. Create or edit the Release
@@ -285,6 +286,7 @@ example) into the new note, show the note and ask. Then:
 
 ```bash
 gh release view "$TAG" --json body -q .body          # before: what the new note must keep
+NOTES_FILE=$(mktemp) && printf '%s\n' "$RELEASE_NOTES" > "$NOTES_FILE"   # outside the repo
 gh release edit "$TAG" --notes-file "$NOTES_FILE"
 gh release view "$TAG" --json body,assets            # after: body equal to the file (gh adds one final newline), assets unchanged
 ```
@@ -307,5 +309,5 @@ Display the full release note in the conversation along with the URL of the crea
 4. **Group by feature** — commits related to the same PR/feature should be grouped, not listed individually.
 5. **Omit empty sections** — if there are no bug fixes, do not include the 🐛 section.
 6. **Consistent format** — follow the template above exactly, including emojis in headers.
-7. **Contributors must be verified GitHub usernames** — NEVER guess or fabricate usernames. NEVER use git author names as GitHub usernames (they are often different — e.g., git name `JorUge` vs GitHub `@j0ruge`). The resolution strategy is: (1) search by email via `gh api`, (2) cross-reference against org members via `gh api /orgs/{owner}/members`, (3) if neither works, omit the contributor rather than guessing. The same person may have multiple git author names but only ONE GitHub username. Never list the same person twice. Exclude bot accounts (e.g., `noreply@anthropic.com`).
+7. **Contributors must be verified GitHub usernames** — NEVER guess or fabricate usernames. NEVER use git author names as GitHub usernames (they are often different — e.g., git name `JorUge` vs GitHub `@j0ruge`). Resolve them with the commits API in step 3, which maps each commit's email to its GitHub account; a commit it does not resolve is left out rather than guessed. The same person may have multiple git author names but only ONE GitHub username. Never list the same person twice. Exclude bot accounts (e.g., `noreply@anthropic.com`).
 8. **Path filter** — when `--path` is used, only include commits and file changes that touch that directory. The release title should reflect the component name, not the whole repo.

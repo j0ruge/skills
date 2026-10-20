@@ -1,5 +1,41 @@
 # Changelog — release
 
+## [2.0.1] — 2026-10-20
+
+### Fixed
+
+- **O passo 5 com `--path` listava o diretório inteiro.** O `[-- $PATH_FILTER]` vinha depois de um
+  `-- <manifesto>` que já estava no comando. O git lê tudo depois do primeiro `--` como pathspec e
+  soma os caminhos, então o segundo não filtrava. Medido em 2026-10-20:
+  `git diff --stat A B -- package.json -- scripts` listou 16 arquivos de `scripts/`. Agora o
+  passo 5 prefixa cada manifesto (`P=${PATH_FILTER:+${PATH_FILTER%/}/}`, `-- "${P}package.json"`).
+  Medido no zsh e no bash, com e sem barra no fim do `--path`, saiu só o `package.json` do pacote.
+- **Três trechos descreviam o método de contribuidores abandonado.** São a regra 7, a nota do
+  template e o comentário do bloco do passo 3. Eles falavam em busca por e-mail e membros da org, mas
+  o passo 3 usa a API de commits desde o `ed7ce32`, cuja mensagem diz que aquela abordagem falhava.
+  O fallback por membros da org que a 1.3.0 cita nunca foi comando, e não volta como prosa.
+- **O objetivo ainda mandava cobrir "desde a última tag do repositório",** a leitura que a 1.4.0
+  corrigiu no passo 2. Agora diz "desde a release anterior da mesma série de tags (a história
+  inteira na primeira)".
+- **O `$NOTES_FILE` do passo 7 nunca era definido.** Agora é um `mktemp` fora do repo, que respeita
+  a restrição de não mexer em arquivo do projeto.
+
+### Changed
+
+Prompt-audit (`/claude-api prompt-audit`, alvo Opus 5.5 e Fable 5.1). O relatório e o diff ficam
+fora do repo, em `~/.claude/handoff/prompt-audit-2026-09-03/prompt-audit/release.{md,diff}`.
+
+- Os três `**DO NOT**` em caixa alta viram duas restrições ditas em tom normal, sem perder nenhuma.
+- A narrativa do passo 2 e o comentário do laço de contribuidores deixam o passado e a data ("the
+  old …", "ran ONCE", "measured 2026-10-20") e ficam só com a razão. A evidência está na entrada 1.4.0
+  abaixo.
+- As frases sobre `$PATH_FILTER` (parse dos argumentos e passo 3) dizem que o passo 3 o acrescenta e
+  o passo 5 o usa como prefixo.
+
+Ficaram de fora, como flags do relatório sem medição: o `NEVER` da regra 7, que tem razão e uma falha
+demonstrada na 1.1.0, o "Execute **in parallel**" e o "gh 2.85 has no isLatest". Também ficou de
+fora o ruído `no matches found` do `ls *.csproj` no zsh do passo 1, em que o fallback funciona.
+
 ## [2.0.0] — 2026-10-20
 
 ### Changed
