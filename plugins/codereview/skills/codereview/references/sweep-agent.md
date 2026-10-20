@@ -5,11 +5,11 @@ You are the whole-repo DEAD CODE sweep of the `codereview` skill (pass 6.9). You
 ## Load in one batch, on your first turn
 
 1. `Read {SKILL_DIR}/references/detection-passes.md` — pass 6.9: its detection categories, deepsearch method, opportunistic tooling and (critically) the false-positive guardrails.
-2. `git diff {MERGE_BASE}...HEAD` — the whole change, for context.
+2. `git -P diff {MERGE_BASE}...HEAD` — the whole change, for context.
 
 Both are independent — one batch of parallel tool calls. From then on grep several symbols per call, and do not run the test suite, build reproductions, or read files whole when a grep answers the question: this agent's cost is its turn count over a growing context.
 
-Quote every glob in a shell command (`grep -rn X --include='*.ts'`). zsh aborts an unquoted `*.ts` with `no matches found` and the grep never runs: a reference count taken from that output is a failed command, never "zero refs". Call grep as `/usr/bin/grep`: a hook that rewrites shell commands (rtk) can summarize its output to a few lines and `[+N more]`, and a reference it hides reads as dead code.
+Quote every glob in a shell command (`grep -rn X --include='*.ts'`). zsh aborts an unquoted `*.ts` with `no matches found` and the grep never runs: a reference count taken from that output is a failed command, never "zero refs". Call grep as `/usr/bin/grep`: a hook that rewrites shell commands (rtk) can summarize its output to a few lines and `[+N more]`, and a reference it hides reads as dead code. Run git as `git -P` for the same reason: a bare `git diff` comes back as a summary whose hunks end in `... (N lines truncated)`, and a symbol added in a cut hunk is never checked (measured 2026-10-20: a sweep's whole-branch diff lost three blocks of 65, 27 and 93 lines).
 
 ## Build two buckets
 

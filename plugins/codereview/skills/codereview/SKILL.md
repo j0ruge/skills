@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.26.1
+  version: 2.26.2
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -125,7 +125,7 @@ Each agent reads its instructions itself, when it starts, from `{SKILL_DIR}/refe
 ```
 Agent(model: "sonnet", prompt: "
 Start with ONE batch of parallel tool calls: Read {SKILL_DIR}/references/per-file-agent.md,
-Read {SKILL_DIR}/references/detection-passes.md, run `git diff {MERGE_BASE}...HEAD -- {FILE_PATH}`,
+Read {SKILL_DIR}/references/detection-passes.md, run `git -P diff {MERGE_BASE}...HEAD -- {FILE_PATH}`,
 and Read {FILE_PATH}. Then follow per-file-agent.md exactly — it carries your instructions,
 scope and output format.
 
@@ -160,7 +160,7 @@ Spawn **one dedicated agent** for pass 6.9 (Dead Code & Unused Symbols), **in th
 ```
 Agent(model: "sonnet", prompt: "
 Start with ONE batch of parallel tool calls: Read {SKILL_DIR}/references/sweep-agent.md,
-Read {SKILL_DIR}/references/detection-passes.md (pass 6.9), and run `git diff {MERGE_BASE}...HEAD`.
+Read {SKILL_DIR}/references/detection-passes.md (pass 6.9), and run `git -P diff {MERGE_BASE}...HEAD`.
 Then follow sweep-agent.md exactly — it carries the two buckets, the guardrails and the
 return template.
 

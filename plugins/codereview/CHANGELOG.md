@@ -2,6 +2,40 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.26.2] — 2026-10-20
+
+### Todo diff de agente sai como `git -P diff`, e o agente não julga um doc pela própria atribuição (codereview 2.26.2)
+
+- **O quê:**
+  1. Os dois prompts de lançamento do `SKILL.md` (Fase B e B2), o passo 2 de
+     `references/per-file-agent.md` e de `references/sweep-agent.md` e os diffs que
+     `references/configuration.md` manda escrever por extenso num prompt (`head=`, `worktree`,
+     vários repos, a árvore vazia, o snapshot `git stash create`) passam de `git diff` para
+     `git -P diff`. O bullet do `/usr/bin/grep` nos dois contratos ganha o caso do git, com o sensor:
+     um diff que mostra `--- Changes ---` ou `lines truncated` foi reescrito, e roda de novo como
+     `/usr/bin/git -P diff`. *Base and batching* ganhou o bullet irmão do de `grep`.
+  2. `references/per-file-agent.md`, *What to apply*: o modelo, a atribuição de commit e a data no
+     prompt do agente são dele (roda em Sonnet), não da sessão. Um modelo ou trailer
+     `Co-Authored-By` num doc se confere no repo (`git log --format=%B`, o CLAUDE.md) ou fica como
+     está.
+- **Por quê:**
+  1. Na revisão do kit-bitlocker (rodadas 1 e 2, duas sessões), o hook rtk 0.42.3 reescreveu o
+     `git diff` simples de cada agente para `rtk git diff`, que tira as linhas de contexto e corta
+     hunks em `... (N lines truncated)`: 10 diffs perderam de 21 a 210 linhas (o do `Sistema.psm1`,
+     210; o diff inteiro do sweep, blocos de 65, 27 e 93). `rtk rewrite` sai com rc 1, sem
+     reescrita, para `git -P diff`, `git -P -C <repo> diff`, `--no-index` e `$S`, e reescreve
+     `--no-pager`, `command git`, `env git` e `cd … && git`. Pelo hook real, `git -P diff` saiu cru.
+     `-P` é flag do git, sem caminho de máquina, e custou 3 caracteres por prompt.
+  2. Na rodada 2, o agente do plano acusou como errado o `Co-Authored-By: Claude Opus 5.5` do plano,
+     porque o próprio lembrete dele dizia Sonnet 5.5. A atribuição da sessão e os 16 commits do
+     branch diziam Opus 5.5; a Fase C refutou o achado.
+- **Fora daqui, sem correção verificada:** em 9 de 9 agentes das Fases B e B2, nas duas sessões, o
+  primeiro lote (contrato, `detection-passes.md` de 53 KB, diff, arquivo) foi repetido inteiro no
+  segundo turno, depois de anexos do harness, e o primeiro diff não tinha falhado. A causa não está
+  no prompt da skill; fica para investigar à parte.
+- **Onde:** o `SKILL.md` foi de 19.993 para 19.999 caracteres (o AVISO do C1 é acima de 20.000);
+  o resto da lição está nas references.
+
 ## [2.26.1] — 2026-10-20
 
 ### O achado que pede o inverso da correção revisada ganha veredito, não edição (codereview 2.26.1)

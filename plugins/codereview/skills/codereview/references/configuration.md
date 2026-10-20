@@ -25,8 +25,8 @@
 | `configFilePatterns` | `["*.config.*", "tsconfig*", ".env*", "package.json"]` | Globs matched as CONFIG files. |
 | `styleFilePatterns` | `["**/*.css", "**/*.scss", "**/*.less"]` | Globs matched as STYLES files. |
 | `base` | — | Commit to diff against, replacing `git merge-base {BASE_BRANCH} HEAD` as `{MERGE_BASE}` in Phase A and in every agent prompt. Use it when the user names the base of a commit range, in prose too ("os commits de X a Y, sobre Z" → `base=Z`): the merge-base would review the whole branch. Also the way to re-review only the fixes after a report: `base=<the head the previous round reviewed>`. The range ends at `HEAD` unless `head=` names another end. Such a round follows *Re-review rounds* below. |
-| `head` | `HEAD` | Commit the range ends at, when the user names an end that is not `HEAD`, in prose too ("revise `A..B`", a range already merged with commits after `B`). It replaces `HEAD` in every Phase A command (steps 4–8), and in agent prompts the diff command is written out in full (`git diff {MERGE_BASE}..{head} -- {FILE_PATH}`), as in `worktree` mode. Without it, whatever was committed after the end enters the review unannounced. Measured 2026-10-05: a 15-commit range ended two commits before `HEAD`; the seven agents reviewed the right range only because each prompt carried the `A..B` diff written out. The report header names both ends. |
-| `worktree` | auto | Review uncommitted work instead of `{MERGE_BASE}...HEAD`. Turns on by itself when the committed diff is empty but `git status --porcelain` is not — typically on the base branch itself, where `git merge-base` returns `HEAD` and the normal Phase A would stop with "No changes detected" over pending work. Changed files = `git diff HEAD --name-only` plus `git ls-files --others --exclude-standard`; per-file diff = `git diff HEAD -- <file>`, or `git diff --no-index /dev/null <file>` for an untracked file (rc 1 is normal there). **The secrets pre-scan needs both sources**: pipe `git diff HEAD --unified=0` and the `--no-index` diff of every untracked file into `scan_secrets.sh` — `git diff HEAD` alone never shows new files. Exclude runtime state the user did not author (`*.db`, caches) from CODE. Commit log: none. In agent prompts write the diff command out in full: `{MERGE_BASE}...HEAD` would be empty. The report header says `working tree vs HEAD {sha}`. A repo whose whole history is one commit, asked for as a whole ("o projeto todo", "all of it"), is not this mode: worktree reviews only what is pending. Use `base=4b825dc642cb6eb9a060e54bf8d69288fbee4904`, git's empty tree, with the two-dot `git diff <tree> HEAD` written out in every prompt: three-dot needs a commit on both sides (`fatal: Invalid symmetric difference expression`). Measured 2026-10-18: worktree mode would have graded a `TODO.md` and 60 transcripts; the empty-tree range sent the 12 non-empty CODE files to 5 agents. |
+| `head` | `HEAD` | Commit the range ends at, when the user names an end that is not `HEAD`, in prose too ("revise `A..B`", a range already merged with commits after `B`). It replaces `HEAD` in every Phase A command (steps 4–8), and in agent prompts the diff command is written out in full (`git -P diff {MERGE_BASE}..{head} -- {FILE_PATH}`), as in `worktree` mode. Without it, whatever was committed after the end enters the review unannounced. Measured 2026-10-05: a 15-commit range ended two commits before `HEAD`; the seven agents reviewed the right range only because each prompt carried the `A..B` diff written out. The report header names both ends. |
+| `worktree` | auto | Review uncommitted work instead of `{MERGE_BASE}...HEAD`. Turns on by itself when the committed diff is empty but `git status --porcelain` is not — typically on the base branch itself, where `git merge-base` returns `HEAD` and the normal Phase A would stop with "No changes detected" over pending work. Changed files = `git diff HEAD --name-only` plus `git ls-files --others --exclude-standard`; per-file diff = `git -P diff HEAD -- <file>`, or `git -P diff --no-index /dev/null <file>` for an untracked file (rc 1 is normal there). **The secrets pre-scan needs both sources**: pipe `git diff HEAD --unified=0` and the `--no-index` diff of every untracked file into `scan_secrets.sh` — `git diff HEAD` alone never shows new files. Exclude runtime state the user did not author (`*.db`, caches) from CODE. Commit log: none. In agent prompts write the diff command out in full: `{MERGE_BASE}...HEAD` would be empty. The report header says `working tree vs HEAD {sha}`. A repo whose whole history is one commit, asked for as a whole ("o projeto todo", "all of it"), is not this mode: worktree reviews only what is pending. Use `base=4b825dc642cb6eb9a060e54bf8d69288fbee4904`, git's empty tree, with the two-dot `git -P diff <tree> HEAD` written out in every prompt: three-dot needs a commit on both sides (`fatal: Invalid symmetric difference expression`). Measured 2026-10-18: worktree mode would have graded a `TODO.md` and 60 transcripts; the empty-tree range sent the 12 non-empty CODE files to 5 agents. |
 | `sweep` | `pr` | Scope of the dead-code sweep (pass 6.9). `pr` = Bucket A only (symbols this PR introduced or orphaned); `full` = also run Bucket B (repo-wide tooling over code the PR did not touch, capped). Focus `dead-code` implies `full`. |
 
 > **Note:** The array values in the table above are in JSON format for clarity only. When overriding, use comma-separated values without brackets (see Override Syntax below).
@@ -123,6 +123,11 @@ base equals `HEAD`, or when the session runs isolated in a worktree.
   a reference count), call `/usr/bin/grep`: through the rtk hook,
   `grep -n "glob\|st_mtime" monitor/replays.py` printed the `def` lines and `[+32 more]`, while
   `/usr/bin/grep` showed the four lines the check needed (measured 2026-10-19).
+- **And it shortens `git diff`.** A bare `git diff` becomes `rtk git diff`, which drops the
+  context lines and cuts hunks to `... (N lines truncated)`; `git -P diff` is left alone, so every
+  diff a launch prompt writes out is `git -P diff`. Measured 2026-10-20 (rtk 0.42.3, two rounds of
+  one branch): 10 agent diffs lost 21 to 210 lines each, and `rtk rewrite 'git -P diff A...HEAD'`
+  exits 1, its answer for a command it leaves alone.
 
 ## Stale copy
 
@@ -242,7 +247,7 @@ grades "A, no CODE files" and never reads the one HIGH.
 - **Phase A once per repo**, each with its own base branch (here `origin/develop` and `origin/main`) and
   its own secrets pre-scan: a clean scan of one repo says nothing about the other.
 - **One Phase B batch** for the CODE files of every repo. Each launch prompt names its repo and writes the
-  diff command out (`git -C <repo> diff <merge-base>...HEAD -- <file>`), since `{REPO}` differs per agent.
+  diff command out (`git -P -C <repo> diff <merge-base>...HEAD -- <file>`), since `{REPO}` differs per agent.
 - **One report**: the header lists each repo with branch → base, the head reviewed and its counts; the
   Overall Grade table gets one grade column per repo. A re-review names, per repo, the head it starts from.
 
@@ -348,7 +353,7 @@ These decide whether the rounds converge:
   hands every round all the earlier rounds' fixes again. When a round launches, take
   `S=$(git stash create)` (empty output = clean tree: use `HEAD`): a commit object of the working
   tree that leaves the tree, the index and the stash list untouched. The next round writes
-  `git diff $S -- <file>` out in each prompt, the sweep's too. Untracked files stay out of it, so a
+  `git -P diff $S -- <file>` out in each prompt, the sweep's too. Untracked files stay out of it, so a
   file new since `HEAD` diffs whole. Measured 2026-10-18 (Python, rounds 3 and 4 over uncommitted
   fixes): scratchpad copies of the reviewed files and `diff -u <copy> <file>` in the prompts did the
   same job. Measured 2026-10-19 (Python, rounds 2 and 3 over uncommitted fixes): one `git stash

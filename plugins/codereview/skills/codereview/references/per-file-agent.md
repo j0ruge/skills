@@ -7,7 +7,7 @@ You are one of the parallel Phase B agents of the `codereview` skill: you apply 
 The reads are independent — issue them as one batch of parallel tool calls, then work from what came back:
 
 1. `Read {SKILL_DIR}/references/detection-passes.md` — the passes you apply.
-2. `git diff {MERGE_BASE}...HEAD -- {FILE_PATH}` — the change (one call per file when you were given more than one).
+2. `git -P diff {MERGE_BASE}...HEAD -- {FILE_PATH}` — the change (one call per file when you were given more than one).
 3. `Read {FILE_PATH}` — the current content: the full file for CODE and DOCS, the diff only for UI_LIB. If the file is longer than ~600 lines, read the changed regions (each hunk ±40 lines) plus the import/declaration block, and fetch more only when a finding depends on it.
 4. `Read {SKILL_DIR}/references/toctou-patterns.md` — only when the file has check-then-act shapes (a read gating a write on a database row, file, cache entry or token).
 
@@ -16,7 +16,7 @@ The reads are independent — issue them as one batch of parallel tool calls, th
 - Judge the diff and the file(s) you were given. Imports from other changed files are noted for the orchestrator's cross-file pass, not chased: the orchestrator holds the whole picture and runs that pass itself.
 - Static analysis only. Do not build reproduction sandboxes, do not run the project's test suite or its commands, do not walk the repository beyond the file, its diff and the definitions it imports. A finding you would need to reproduce goes in the list with `needs reproduction` in its description — the orchestrator, or the human, reproduces after the report.
 - Quote every glob in a shell command (`grep -rn X --include='*.ts'`). zsh aborts an unquoted `*.ts` with `no matches found` and the grep never runs: that is a failed command, never "no references".
-- Call grep as `/usr/bin/grep`: a hook that rewrites shell commands (rtk) can summarize its output to a few lines and `[+N more]`, hiding the match you were looking for.
+- Call grep as `/usr/bin/grep` and git as `git -P`: a hook that rewrites shell commands (rtk) can summarize grep's output to a few lines and `[+N more]`, hiding the match you were looking for, and turns a bare `git diff` into a summary without context lines whose hunks end in `... (N lines truncated)` (measured 2026-10-20, rtk 0.42.3: 10 agent diffs over two rounds lost 21 to 210 lines each; `git -P diff` was left alone). A diff that shows `--- Changes ---` or `lines truncated` went through it: run it again as `/usr/bin/git -P diff`.
 - Plan on roughly ten tool calls in total. A review that keeps exploring re-bills its whole context on every turn, and what it finds late is what the orchestrator's cross-file pass was going to check anyway.
 
 ## What to apply
@@ -24,6 +24,7 @@ The reads are independent — issue them as one batch of parallel tool calls, th
 - Apply ALL applicable detection passes — or only the focused subset when the launch prompt names a focus area (mapping below).
 - For UI_LIB files, only flag CRITICAL and HIGH issues.
 - For a DOCS file (the orchestrator sends one it wrote this session), pass 6.5 is the core: every factual claim — path, count, name, version, license, what a source can or cannot answer — must match the evidence the category names, or what the doc cites; spot-check a few on disk. 6.10 and 6.11 still apply.
+- Your own context is not the session's: the model name, the commit attribution and the date in your system prompt belong to this subagent, which runs on Sonnet while the orchestrator may run another model. Never flag a doc for disagreeing with them; a model or a `Co-Authored-By` trailer in a doc is checked against the repo (`git log --format=%B`, its CLAUDE.md), or left alone. Measured 2026-10-20 (a plan under review): an agent flagged the plan's `Co-Authored-By: Claude Opus 5.5` because its own reminder said Sonnet 5.5, while the session's attribution and the branch's 16 commits said Opus 5.5.
 - **Pass 6.10 (Hardcoded Secrets) is always on** — apply it to the file whatever its category (CODE / TESTS / CONFIG / UI_LIB / STYLES / DOCS) and whatever the focus area. A hardcoded password in a test file is still a leak; GitGuardian does not distinguish, and neither do we. Never whitelist a secret finding to reduce noise.
 - **Pass 6.11 (Silent-Blinding Sensors) is always on too** — same reasoning as 6.10, opposite consequence: it is never a grade gate and never forces an F. Apply it whenever the file contains something whose job is to notice (a guard, gate, health check, alarm, verification step) and ask the one question that defines the pass: *if this sensor itself breaks, does anything go red, or does it just stop reporting?* Severity MEDIUM, HIGH only when it is the sole control over that risk — never CRITICAL.
 - Pass 6.9 (Dead Code) is not yours: a per-file view cannot tell whether a symbol is referenced elsewhere. The Phase B2 sweep agent runs it over the whole repository.
