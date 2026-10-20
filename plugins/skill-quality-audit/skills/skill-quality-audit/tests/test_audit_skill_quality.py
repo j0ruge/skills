@@ -502,6 +502,33 @@ class TestCamposClaudeCodeNoTopo(Base):
         self.assertIn(("A4", "AVISO"), f)  # version continua AVISO
         self.assertIn(("A4", "INFO"), f)   # argument-hint é custo aceito
 
+    def test_campo_que_claude_code_e_cursor_leem_em_plugin_dos_dois_e_info(self):
+        """O caso da `release` 2.0.0: o Cursor também lê `disable-model-invocation` no topo."""
+        d = self._skill("disable-model-invocation: true\n", platforms=["claude-code", "cursor"])
+        self._fake_ref(self.UNEXPECTED.format(d=d, campos="disable-model-invocation"))
+        rc, f = self._achados(d)
+        self.assertIn(("A4", "INFO"), f)
+        self.assertNotIn(("A4", "AVISO"), f)
+        self.assertIn(("G2", "INFO"), f)
+        self.assertNotIn(("G2", "ERRO"), f)
+        self.assertEqual(rc, 0)
+
+    def test_campo_que_so_uma_plataforma_le_segue_aviso_ao_lado_do_aceito(self):
+        """Aceito é o que TODA plataforma declarada lê: o Cursor ignora `argument-hint`."""
+        d = self._skill('disable-model-invocation: true\nargument-hint: "x"\n', platforms=["claude-code", "cursor"])
+        self._fake_ref(self.UNEXPECTED.format(d=d, campos="argument-hint, disable-model-invocation"))
+        rc, f = self._achados(d)
+        self.assertIn(("A4", "AVISO"), f)   # argument-hint
+        self.assertIn(("A4", "INFO"), f)    # disable-model-invocation
+        self.assertIn(("G2", "ERRO"), f)
+
+    def test_plataforma_sem_lista_conhecida_nao_aceita_campo(self):
+        d = self._skill("disable-model-invocation: true\n", platforms=["claude-code", "windsurf"])
+        self._fake_ref(self.UNEXPECTED.format(d=d, campos="disable-model-invocation"))
+        rc, f = self._achados(d)
+        self.assertIn(("A4", "AVISO"), f)
+        self.assertIn(("G2", "ERRO"), f)
+
 
 class TestC2ContratoDeSubagente(Base):
     """C2: reference que cita outra pela raiz da skill ({SKILL_DIR}/references/...) é contrato de subagente."""

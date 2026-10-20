@@ -49,12 +49,15 @@ from pathlib import Path
 
 VALID_PLATFORMS = {'claude-code', 'cursor'}
 
-# Campos de topo do Claude Code fora da spec (code.claude.com/docs/en/skills, "Frontmatter
-# reference"): so funcionam no topo. Em plugin com platforms == ['claude-code'] sao custo aceito,
-# como no A4 da skill-quality-audit (CLAUDE_CODE_TOP_FIELDS); manter as duas listas iguais.
+# Campos de topo fora da spec que cada plataforma le (so funcionam no topo): Claude Code
+# (code.claude.com/docs/en/skills, "Frontmatter reference") e Cursor (cursor.com/docs/context/skills,
+# baixada em 2026-10-20). Custo aceito so quando TODAS as platforms do plugin leem o campo, como no
+# A4 da skill-quality-audit (TOP_FIELDS_BY_PLATFORM); manter as listas iguais as de la.
 CLAUDE_CODE_TOP_FIELDS = {'when_to_use', 'argument-hint', 'arguments', 'disable-model-invocation',
                           'user-invocable', 'disallowed-tools', 'model', 'effort', 'context', 'agent',
                           'background', 'hooks', 'paths', 'shell'}
+CURSOR_TOP_FIELDS = {'paths', 'disable-model-invocation', 'icon', 'color'}
+TOP_FIELDS_BY_PLATFORM = {'claude-code': CLAUDE_CODE_TOP_FIELDS, 'cursor': CURSOR_TOP_FIELDS}
 
 # Tetos vindos do CLAUDE.md deste repo ("Skill description guidelines"): alvo 350, cap
 # duro 500. Nao sao numeros inventados aqui -- a politica ja estava escrita e nada a
@@ -262,14 +265,15 @@ def _check_skill_spec(repo_root: Path) -> 'tuple[list[str], list[str]]':
         aceitos = set()
         try:
             manifest = json.loads((skill_md.parents[2] / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
-            if isinstance(manifest, dict) and manifest.get('platforms') == ['claude-code']:
-                aceitos = CLAUDE_CODE_TOP_FIELDS
+            plats = manifest.get('platforms') if isinstance(manifest, dict) else None
+            if isinstance(plats, list) and plats and all(p in TOP_FIELDS_BY_PLATFORM for p in plats):
+                aceitos = set.intersection(*(TOP_FIELDS_BY_PLATFORM[p] for p in plats))
         except (OSError, ValueError):
             pass
         extra = sorted(set(data) - SPEC_FIELDS - aceitos)
         if extra:
             warnings.append(f'  {rel}: campos de topo fora da spec {extra} (skills-ref reprova; '
-                            f'mantenha so se o Claude Code usa, e diga por que no CHANGELOG)')
+                            f'mantenha so se todas as platforms do plugin o leem, e diga por que no CHANGELOG)')
         n_lines = len(text.splitlines())
         if n_lines > SPEC_MAX_LINES:
             errors.append(f'  {rel}: SKILL.md com {n_lines} linhas > {SPEC_MAX_LINES} (spec): mover detalhe para references/')

@@ -1,5 +1,30 @@
 # Changelog: skill-quality-audit
 
+## [0.7.0] - 2026-10-20 - campo de topo aceito quando toda plataforma do plugin o lê
+
+**Motivação:** a `release` 2.0.0 (Claude Code e Cursor) põe `disable-model-invocation: true` no
+topo, para só rodar chamada pelo nome. O Claude Code e o Cursor leem esse campo só ali (doc do
+Cursor: "only included when explicitly invoked via `/skill-name`"). Mesmo assim ela saía com ERRO
+G2 e AVISO A4: desde a 0.5.0, campo do Claude Code só era custo aceito em plugin `["claude-code"]`.
+
+**O que foi feito:**
+
+- **A4 e G2:** o aceito é a interseção das listas das plataformas do `plugin.json`
+  (`TOP_FIELDS_BY_PLATFORM`; `CURSOR_TOP_FIELDS` é `paths`, `disable-model-invocation`, `icon`,
+  `color`). Para Claude Code + Cursor, isso dá `disable-model-invocation` e `paths`. O
+  `argument-hint` segue AVISO ali, porque o Cursor o ignora. Plataforma sem lista conhecida não
+  aceita nada. Só `claude-code` continua como antes. A mensagem INFO do A4 diz as plataformas.
+- **Três testes novos** (54 no total), dois RED antes do código. Quatro sabotagens deixam testes
+  vermelhos: união em vez de interseção, plataforma desconhecida ignorada, Cursor sem o campo e G2
+  sem a lista.
+- **Medido nas 31 skills do marketplace** (script do `HEAD` contra o novo): a única diferença é a
+  `release`, que vai de A4 AVISO + G2 ERRO para A4 INFO + G2 INFO.
+- O `scripts/validate-versions.py` do marketplace usa a mesma regra e as mesmas listas.
+- `references/checks.md` (linha do A4), `references/fontes-e-decisoes.md` (a doc do Cursor nas
+  fontes e a decisão 13) e a linha de *Erros comuns* do `SKILL.md`.
+
+**Como reverter:** `git revert` do commit que traz esta entrada.
+
 ## [0.6.0] - 2026-10-18 - C2 de contrato de subagente vira INFO
 
 **Motivação:** a tabela *Erros comuns* já mandava não "corrigir" C2 em reference que é contrato

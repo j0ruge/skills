@@ -10,6 +10,7 @@ instruções. Nenhum trecho foi copiado integralmente; abaixo, só o que foi ext
 | Spec Agent Skills | https://agentskills.io/specification | página baixada em 2026-09-23 |
 | `skills-ref` (validador de referência) | https://github.com/agentskills/agentskills/tree/main/skills-ref | `validator.py` no commit `547831f3a2` (2025-12-18) |
 | `skill-creator` oficial | https://raw.githubusercontent.com/anthropics/skills/main/skills/skill-creator/SKILL.md | commit `b0cbd3df15` (2026-03-06) |
+| Skills do Cursor (frontmatter) | https://cursor.com/docs/context/skills | página baixada em 2026-10-20 |
 | Configuração de modelo do Claude Code | https://code.claude.com/docs/en/model-config | página baixada em 2026-09-23 |
 | strictyaml, flow style | https://hitchdev.com/strictyaml/why/flow-style-removed/ | página baixada em 2026-09-23 |
 
@@ -96,6 +97,14 @@ Nessa data entraram as páginas de autoria, que viraram os checks F1 a F4:
 12. **E1 sem `metadata` é INFO.** O instalador do marketplace para o Cursor remove o bloco
     `metadata` do frontmatter, e com ele o `related_skills`. A irmã continua ligada pelo corpo e
     pela vizinhança de pastas; um AVISO ali seria falso alarme e reprovaria `--family --strict`.
+13. **Campo de topo fora da spec: aceito quando TODA plataforma do plugin o lê (2026-10-20).** Até a
+    0.6.0 só o plugin `["claude-code"]` aceitava os campos do Claude Code. A `release` 2.0.0 (Claude
+    Code e Cursor) usa `disable-model-invocation`, que a doc do Cursor também lê no topo ("only
+    included when explicitly invoked via `/skill-name`"), e saía com ERRO G2. Agora o aceito é a
+    interseção das listas das plataformas declaradas (`TOP_FIELDS_BY_PLATFORM`): para Claude Code +
+    Cursor, `disable-model-invocation` e `paths`. `argument-hint` nesse plugin segue AVISO, porque o
+    Cursor o ignora. Plataforma sem lista conhecida não aceita nada. O upload para claude.ai/API não é
+    plataforma de plugin: quem o usa não declara o campo.
 
 ## Limitações
 

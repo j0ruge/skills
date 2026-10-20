@@ -1,5 +1,18 @@
 # Changelog — skill-quality-audit
 
+## [0.9.0] — 2026-10-20
+
+### `skill-quality-audit` 0.7.0: campo de topo aceito quando toda plataforma do plugin o lê
+
+A `release` 2.0.0, que vai ao Claude Code e ao Cursor, usa `disable-model-invocation` no topo. Os
+dois leem esse campo, mas ela saía com ERRO G2 e AVISO A4, porque só o plugin `["claude-code"]`
+aceitava campos do Claude Code. Agora o aceito é a interseção das listas de cada plataforma do
+`plugin.json` (`TOP_FIELDS_BY_PLATFORM`, com a do Cursor tirada da doc dele em 2026-10-20). Para
+Claude Code + Cursor, isso dá `disable-model-invocation` e `paths`; o `argument-hint` segue AVISO
+ali, porque o Cursor o ignora. O `scripts/validate-versions.py` do marketplace usa a mesma regra.
+Três testes novos (54), dois RED antes do código, e quatro sabotagens vermelhas. Nas 31 skills do
+marketplace, a única diferença entre o script antigo e o novo é a `release`, que sai sem erro.
+
 ## [0.8.0] — 2026-10-18
 
 ### `skill-quality-audit` 0.6.0: C2 de contrato de subagente vira INFO

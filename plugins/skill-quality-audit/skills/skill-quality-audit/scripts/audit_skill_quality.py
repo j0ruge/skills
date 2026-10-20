@@ -34,12 +34,16 @@ SPEC_FIELDS = {"name", "description", "license", "allowed-tools", "metadata", "c
 SKILLS_REF_PIN = "skills-ref==0.1.1"
 HERMES_TOP_FIELDS = {"platforms", "required_credential_files", "required_environment_variables", "prerequisites"}
 # Campos da tabela "Frontmatter reference" do Claude Code (code.claude.com/docs/en/skills) fora da spec:
-# só têm efeito no topo (em `metadata` o Claude Code não os lê). Custo aceito (INFO) apenas em skill
-# de plugin cujo plugin.json declara `platforms: ["claude-code"]`; fora disso o upload para
-# claude.ai/API falha e eles seguem AVISO. Reconferir a lista contra a tabela da doc.
+# só têm efeito no topo (em `metadata` o Claude Code não os lê). Reconferir a lista contra a tabela da doc.
 CLAUDE_CODE_TOP_FIELDS = {"when_to_use", "argument-hint", "arguments", "disable-model-invocation",
                           "user-invocable", "disallowed-tools", "model", "effort", "context", "agent",
                           "background", "hooks", "paths", "shell"}
+# Os que o Cursor lê no topo, fora da spec (cursor.com/docs/context/skills, baixada em 2026-10-20;
+# `globs` fica fora: a doc o dá como legado de `paths`).
+CURSOR_TOP_FIELDS = {"paths", "disable-model-invocation", "icon", "color"}
+# Custo aceito (INFO) só em skill de plugin cujas `platforms` do plugin.json TODAS leem o campo no
+# topo; fora disso (sem manifesto, upload para claude.ai/API, plataforma que o ignora) segue AVISO.
+TOP_FIELDS_BY_PLATFORM = {"claude-code": CLAUDE_CODE_TOP_FIELDS, "cursor": CURSOR_TOP_FIELDS}
 RE_UNEXPECTED = re.compile(r"^\s*-\s*Unexpected fields in frontmatter: (.+?)\. Only \[")
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 MAX_NAME, MAX_DESC, MAX_COMPAT = 64, 1024, 500
@@ -341,18 +345,27 @@ def find_skill(name: str, roots):
     return None
 
 
-def plugin_so_claude_code(d: Path) -> bool:
-    """Skill de plugin (<plugin>/skills/<skill>/, manifesto em <plugin>/.claude-plugin/plugin.json)
-    cujo `platforms` é exatamente ["claude-code"]. Manifesto ausente ou ilegível = False."""
+def plataformas_do_plugin(d: Path) -> list:
+    """`platforms` do manifesto de uma skill de plugin (<plugin>/skills/<skill>/, manifesto em
+    <plugin>/.claude-plugin/plugin.json). Manifesto ausente, ilegível ou sem a lista = []."""
     try:
         data = json.loads((d.parent.parent / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return False
-    return isinstance(data, dict) and data.get("platforms") == ["claude-code"]
+        return []
+    plats = data.get("platforms") if isinstance(data, dict) else None
+    return plats if isinstance(plats, list) else []
+
+
+def campos_lidos_por_todas(plats: list) -> set:
+    """Os campos de topo fora da spec que TODA plataforma declarada lê: o que uma delas ignora não
+    faz nada lá e segue AVISO. Plataforma sem lista conhecida = nenhum."""
+    if not plats or any(p not in TOP_FIELDS_BY_PLATFORM for p in plats):
+        return set()
+    return set.intersection(*(TOP_FIELDS_BY_PLATFORM[p] for p in plats))
 
 
 def campos_de_topo_aceitos(d: Path) -> set:
-    return HERMES_TOP_FIELDS | (CLAUDE_CODE_TOP_FIELDS if plugin_so_claude_code(d) else set())
+    return HERMES_TOP_FIELDS | campos_lidos_por_todas(plataformas_do_plugin(d))
 
 
 def check_frontmatter(rep: Report, fm: FM, args, roots):
@@ -391,8 +404,9 @@ def check_frontmatter(rep: Report, fm: FM, args, roots):
                             "(skills-ref reprova; custo aceito)")
     cc = sorted(set(d) & (aceitos - HERMES_TOP_FIELDS))
     if cc:
-        rep.add(INFO, "A4", f"campos de topo fora da spec {cc} ficam: o Claude Code só os lê no topo e o "
-                            "plugin declara só claude-code (skills-ref reprova; custo aceito)")
+        rep.add(INFO, "A4", f"campos de topo fora da spec {cc} ficam: o plugin declara "
+                            f"{plataformas_do_plugin(rep.path)} e todas só os leem no topo "
+                            "(skills-ref reprova; custo aceito)")
     for key in fm.flow:
         rep.add(ERRO, "A5", f"'{key}' em flow style ([...] ou {{...}}): strictyaml/skills-ref rejeita; usar lista em bloco")
     compat = d.get("compatibility")
