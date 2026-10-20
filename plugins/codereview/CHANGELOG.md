@@ -2,6 +2,21 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.25.1] — 2026-10-19
+
+### Uma sabotagem interrompida fica no arquivo (coderabbit-pr 4.5.2)
+
+- **O quê:** o passo 4 do `references/fix-loop.md` (*Sabotage the fix*) ganhou um parágrafo. Depois de
+  qualquer interrupção, recontar o texto afrouxado de cada sabotagem (`grep -cF`): toda contagem tem de
+  dar 0 antes de confiar na suíte.
+- **Por quê:** no PR #21 do magic_tutor, a sessão caiu durante a última de uma série de 5 sabotagens da
+  narração do oponente. A restauração roda depois das sondas e não rodou, e o `monitor/replays.py` ficou com
+  `"jogo": 0`. Com a correção ainda sem commit, o `git status` já mostrava o arquivo mudado e não
+  separava a correção da sabotagem. Só a contagem do texto afrouxado achou a linha.
+- **Não entrou:** responder na thread com o caminho que inclui o número do PR. O
+  `references/thread-resolution.md` já traz `repos/$REPO/pulls/$PR/comments/<ID>/replies`; o 404 da
+  sessão veio de ler a reference só até a 5.1.
+
 ## [2.25.0] — 2026-10-19
 
 ### A série fecha numa rodada sobre o HEAD final, a linha anterior à branch não é da rodada, e o texto no código converge quando é verdade em todo caminho

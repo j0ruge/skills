@@ -54,6 +54,12 @@ symptom — including one that opens a new fail-open next to it. The regression 
    it must be the probe of the rule you loosened. Measured 2026-10-05 (sdd_agents PR #222):
    `tbl = 1` → `:` is not awk, and the selftest went red at an unrelated probe; redone as
    `tbl = 0`, it went red at the probe of the rule.
+   **An interrupted run leaves the sabotage in the file.** The restore runs after the probes, so a run
+   killed in between skips it, and with the fix still uncommitted the tree already shows a diff:
+   `git status` cannot tell the fix from the sabotage. After any interruption, count each loosened
+   text again (`grep -cF`): every count must be 0 before the suite is trusted. Measured 2026-10-19
+   (magic_tutor PR #21): the session ended during the last of a run of five sabotages, `"jogo": 0`
+   stayed in `monitor/replays.py`, and the count found it.
    **A window no probe can stop in** is the one exit: the sabotage only reorders effects inside a
    gap no deterministic test reaches, such as two assignments in a row in one shell process, which
    only a signal lands between. Write the invariant down instead, in three places: a comment on the
