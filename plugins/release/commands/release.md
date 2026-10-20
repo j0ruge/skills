@@ -1,7 +1,7 @@
 ---
 description: Automatically generates release notes from the last release and creates a new GitHub Release via gh CLI. Works with any stack (C#/.NET, Node.js, Go, Rust, Python, etc.). Supports --path filter for monorepo component releases. Contributor resolution via org membership cross-reference.
 metadata:
-  version: 1.3.0
+  version: 1.4.0
 ---
 
 ## User Input
@@ -26,7 +26,7 @@ Create a complete **GitHub Release** with detailed release notes in **English**,
 
 ## Constraints
 
-- **DO NOT** modify project files. This command is read-only + release creation.
+- **DO NOT** modify project files. This command is read-only + release creation, or editing the notes of an existing release.
 - **DO NOT** push code or commits.
 - **DO NOT** fabricate information — everything must come from git data.
 
@@ -75,16 +75,36 @@ fi
 PROJECT_NAME=${PROJECT_NAME:-$(basename "$(git rev-parse --show-toplevel)")}
 ```
 
-### 2. Detect the last release
+### 2. Detect the tag series and the last release
 
 ```bash
-# Last release tag (sorted by semantic version)
-git tag -l --sort=-version:refname | head -1
+git tag -l | sed -E 's/[0-9]+\.[0-9]+\.[0-9]+.*$//' | sort | uniq -c   # prefixes in use: v, <package>-v, …
+gh release list --limit 5   # what is published; the "Latest" column (gh 2.85 has no isLatest in --json)
 ```
 
-If there are no tags, inform the user and abort.
+- **The new tag follows the repo's series, not a fixed `v`.** One prefix → `TAG_PREFIX` is it. Several
+  (a monorepo with one series per package: `api-v0.2.0`, `web-v1.4.0`) → the one matching `--path`, or
+  ask. No tags → `v`. A package series names the project too: `$PROJECT_NAME` comes from that
+  package's manifest (e.g. `packages/<pkg>/package.json`), not the root's.
+- **`$TAG` already exists** → another tool (a release script that attaches the artifact) published
+  this version. Never create a second tag for it: the notes cover the range ending at `$TAG`, and
+  step 7 edits that release.
 
-Store the result as `$LAST_TAG`.
+```bash
+TAG="$TAG_PREFIX$NEW_VERSION"
+git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && END="$TAG" || END=HEAD
+LAST_TAG=$(git describe --tags --abbrev=0 --match "${TAG_PREFIX}[0-9]*" --exclude "$TAG" "$END" 2>/dev/null)
+if [ -n "$LAST_TAG" ]; then LOG_RANGE="$LAST_TAG..$END"; DIFF_FROM="$LAST_TAG"
+else LOG_RANGE="$END"; DIFF_FROM=$(git hash-object -t tree /dev/null); fi   # first release: whole history
+git rev-list --count --no-merges "$LOG_RANGE"
+```
+
+Zero commits → nothing to release: say so and stop. Measured 2026-10-20 (a monorepo whose
+`release.sh` had just published `object-storage-v1.0.0`): the old
+`git tag -l --sort=-version:refname | head -1` returned that very tag, with 0 commits after it, and
+step 7 would have created a second tag `v1.0.0` on the same commit, a release without the artifact
+that would have become "Latest". The block above gives the whole history up to the tag (75 commits);
+`--match` keeps `v[0-9]*` apart from `api-v…`.
 
 ### 3. Collect git data
 
@@ -92,13 +112,13 @@ Execute **in parallel**. If `$PATH_FILTER` is set, append `-- $PATH_FILTER` to g
 
 ```bash
 # Commits since the last release (excluding merges)
-git log $LAST_TAG..HEAD --format="%h %s%n%b" --no-merges [-- $PATH_FILTER]
+git log "$LOG_RANGE" --format="%h %s%n%b" --no-merges [-- $PATH_FILTER]
 
 # Changed file statistics
-git diff --stat $LAST_TAG..HEAD [-- $PATH_FILTER]
+git diff --stat "$DIFF_FROM" "$END" [-- $PATH_FILTER]
 
 # Merged PRs (merge commits)
-git log $LAST_TAG..HEAD --merges --oneline [-- $PATH_FILTER]
+git log "$LOG_RANGE" --merges --oneline [-- $PATH_FILTER]
 
 # Contributors — resolve GitHub usernames via org membership + commit email cross-reference
 # Why this is complex: git author names often differ from GitHub usernames
@@ -111,18 +131,18 @@ git log $LAST_TAG..HEAD --merges --oneline [-- $PATH_FILTER]
 REPO_OWNER=$(gh repo view --json owner --jq '.owner.login' 2>/dev/null)
 REPO_NAME=$(gh repo view --json name --jq '.name' 2>/dev/null)
 
-# Step 2: Get commit SHAs since last tag
-COMMIT_SHAS=$(git log $LAST_TAG..HEAD --format="%H" --no-merges [-- $PATH_FILTER])
-
-# Step 3: For each commit, resolve the GitHub username via the commits API
+# Step 2: For each commit in the range, resolve the GitHub username via the commits API
 # The GitHub API returns the linked GitHub account for each commit, which is
 # the authoritative source (it uses the email-to-account mapping GitHub maintains)
-for sha in $COMMIT_SHAS; do
+# Pipe into `while read`, never `for sha in $COMMIT_SHAS`: zsh does not word-split an unquoted
+# variable, so that loop ran ONCE with every sha joined by newlines, and `2>/dev/null` hid the
+# error — 0 contributors, rc 0 (measured 2026-10-20; bash split it and found the login).
+git log "$LOG_RANGE" --format="%H" --no-merges [-- $PATH_FILTER] | while read -r sha; do
   gh api "/repos/$REPO_OWNER/$REPO_NAME/commits/$sha" --jq '.author.login // empty' 2>/dev/null
 done | grep -v '^$' | sort | uniq | sed 's/^/@/'
 
 # Total files and lines
-git diff --shortstat $LAST_TAG..HEAD [-- $PATH_FILTER]
+git diff --shortstat "$DIFF_FROM" "$END" [-- $PATH_FILTER]
 ```
 
 ### 4. Analyze and categorize commits
@@ -149,19 +169,19 @@ Auto-detect the package ecosystem and diff the appropriate files:
 
 ```bash
 # C#/.NET — PackageReference in .csproj files
-git diff $LAST_TAG..HEAD -- '*.csproj' Directory.Build.props Directory.Packages.props [-- $PATH_FILTER]
+git diff "$DIFF_FROM" "$END" -- '*.csproj' Directory.Build.props Directory.Packages.props [-- $PATH_FILTER]
 
 # Node.js — package.json
-git diff $LAST_TAG..HEAD -- package.json [-- $PATH_FILTER]
+git diff "$DIFF_FROM" "$END" -- package.json [-- $PATH_FILTER]
 
 # Python — pyproject.toml, requirements.txt
-git diff $LAST_TAG..HEAD -- pyproject.toml requirements.txt setup.py [-- $PATH_FILTER]
+git diff "$DIFF_FROM" "$END" -- pyproject.toml requirements.txt setup.py [-- $PATH_FILTER]
 
 # Go — go.mod
-git diff $LAST_TAG..HEAD -- go.mod [-- $PATH_FILTER]
+git diff "$DIFF_FROM" "$END" -- go.mod [-- $PATH_FILTER]
 
 # Rust — Cargo.toml
-git diff $LAST_TAG..HEAD -- Cargo.toml [-- $PATH_FILTER]
+git diff "$DIFF_FROM" "$END" -- Cargo.toml [-- $PATH_FILTER]
 ```
 
 Only run the command(s) matching the detected ecosystem. Analyze the diff to list added, removed, and updated dependencies.
@@ -176,7 +196,7 @@ Use **exactly** this format (adapt sections according to the collected data — 
 # 🚀 $PROJECT_NAME v$NEW_VERSION
 
 **Release Date:** $TODAY_DATE
-**Full Changelog:** $LAST_TAG...v$NEW_VERSION
+**Full Changelog:** $LAST_TAG...$TAG (first release: https://github.com/$REPO_OWNER/$REPO_NAME/commits/$TAG)
 **$N files changed** — $INSERTIONS insertions(+), $DELETIONS deletions(-)
 
 ---
@@ -247,17 +267,32 @@ Use **exactly** this format (adapt sections according to the collected data — 
 **Contributors:** @resolved-github-usernames (from gh api email lookup, NOT git author names)
 ````
 
-### 7. Create the Release
+### 7. Create or edit the Release
 
-Immediately after composing the release note, create the GitHub Release **without asking for confirmation**:
+**A new tag** — immediately after composing the release note, create the GitHub Release **without
+asking for confirmation**:
 
 ```bash
-gh release create v$NEW_VERSION --target $(git branch --show-current) --title "v$NEW_VERSION" --notes "$RELEASE_NOTES"
+gh release create $TAG --target $(git branch --show-current) --title "$TAG" --notes "$RELEASE_NOTES"
 ```
+
+**`$TAG` already published** (step 2) — editing replaces the text of a release people already read:
+read the current body first, carry what it holds (a checksum line the release script wrote, for
+example) into the new note, show the note and ask. Then:
+
+```bash
+gh release view "$TAG" --json body -q .body          # before: what the new note must keep
+gh release edit "$TAG" --notes-file "$NOTES_FILE"
+gh release view "$TAG" --json body,assets            # after: body equal to the file (gh adds one final newline), assets unchanged
+```
+
+**The project reserves releases to a human** (its `CLAUDE.md` or `AGENTS.md` says so, e.g. "an
+agent session runs only `--dry-run`") → that rule wins over "without asking": show the note and the
+command, and run it on the user's go-ahead.
 
 ### 8. Display result
 
-Display the full release note in the conversation along with the URL of the created release.
+Display the full release note in the conversation along with the URL of the created or edited release.
 
 ---
 
