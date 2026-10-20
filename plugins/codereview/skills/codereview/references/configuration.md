@@ -322,6 +322,23 @@ These decide whether the rounds converge:
   stop rule. New evidence (a case the earlier reason did not cover) reopens it. Only a verdict written
   per part can be cited: a part of a multi-part finding dropped without one comes back as new
   (report-template.md, *Findings Table*).
+- **A finding that asks for the inverse of the fix under review gets a verdict, not an edit.** The
+  sibling of the bullet above: the agent reads the text the fix left, not the finding that shaped
+  it. A re-review range is the previous round's fix, so in Phase C, before accepting a finding, read
+  the range's diff over its lines: a suggestion that puts back what a `-` line removed, or takes out
+  what a `+` line added, undoes what the last round accepted. Editing again makes the text oscillate
+  between the two forms, and each round finds the defect of the form it left. Decide between them by
+  what the sensor or the case proves, write that verdict under the Findings Table, and add it where
+  the next round's orchestrator reads (a handoff's verdict table), for that round to cite; it does
+  not count against the stop rule. Removing a claim, as *Docs this session wrote* advises, is one
+  such fix: the next round may ask for it back. Measured 2026-10-20 (lighthouse_project, the plan in
+  *Code inside docs*): round 29's fix (`1ae5181`) required `COPY vendor/ vendor/` "exactly and
+  without options", a clause only a `COPY --from=…` case proved; round 30 (`base=8c788d6`) gave it a
+  LOW, and its fix (`5734ee4`) dropped the clause; round 31 (`base=1ae5181`) gave a LOW asking to
+  put it back, since `--chown` and `--link` were now undefined. A verdict closed it: the two-stage
+  case already fixes that `--from` does not count, and the other options do not change where the
+  `COPY` reads from, so whatever the executor writes passes right or fails loud. The series stopped
+  there, with A in every row.
 - **While agents or a background test run read the tree, it is theirs.** Compare with another ref by
   `git show <ref>:<file>` or `git diff <ref> -- <file>`, never `checkout` or `stash`: a one-second
   `git checkout main` mid-round (2026-10-03, to check whether a lint warning was pre-existing) voided

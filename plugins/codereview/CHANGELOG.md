@@ -2,6 +2,33 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.26.1] — 2026-10-20
+
+### O achado que pede o inverso da correção revisada ganha veredito, não edição (codereview 2.26.1)
+
+- **O quê:** `references/configuration.md`, *Re-review rounds*, ganhou um bullet logo depois de
+  "The agents never see the earlier reports", o caso irmão dele. A faixa de uma re-revisão é a
+  correção da rodada anterior. Na Fase C, antes de aceitar um achado, o orquestrador lê o diff da
+  faixa sobre aquelas linhas: uma sugestão que devolve o que uma linha `-` tirou, ou tira o que uma
+  linha `+` pôs, desfaz o que a última rodada aceitou. Nesse caso não se edita de novo. O
+  orquestrador escreve o veredito que decide entre as duas formas pelo que o sensor ou o caso de
+  fato prova, põe-no sob a *Findings Table* e onde o orquestrador da rodada seguinte o lê (a tabela
+  de vereditos de um handoff), e ele não conta contra a regra de parada. O bullet também avisa que
+  tirar uma afirmação, como *Docs this session wrote* recomenda, é uma dessas correções.
+- **Por quê:** na revisão do plano da `@jrc/object-storage` (lighthouse_project, branch
+  `docs/plano-object-storage-lib`, o plano revisado como CODE), a correção da rodada 29 (`1ae5181`)
+  exigiu `COPY vendor/ vendor/` "exatamente e sem opções", cláusula que só o caso `COPY --from=…`
+  provava. A rodada 30 (`base=8c788d6`) deu LOW nela, e a correção (`5734ee4`) tirou a cláusula. A
+  rodada 31 (`base=1ae5181`) deu LOW pedindo para pô-la de volta, porque `--chown` e `--link`
+  ficavam indefinidos. Fechou por um veredito escrito, não por outra edição: o caso de dois estágios
+  já fixa que o `--from` não conta, e as outras opções não mudam a origem do `COPY`, então qualquer
+  escolha do executor passa certo ou reprova alto. O veredito entrou na tabela "Vereditos já dados"
+  do handoff (lighthouse_project `a567958`), e a série parou ali, com A em todas as linhas. O bullet
+  irmão só cobria o achado **descartado** que volta; este é o achado que desfaz uma correção
+  **aceita**, e aceitá-lo de novo faria o texto oscilar entre as duas formas.
+- **Onde:** só na reference. O `SKILL.md` está em 19.993 caracteres, no teto de ~20 mil da spec,
+  e só o `metadata.version` mudou nele.
+
 ## [2.26.0] — 2026-10-20
 
 ### A cópia carregada mais nova que o `installPath`, o código que um doc carrega e a faixa que leva as seções que a regem (codereview 2.26.0)
