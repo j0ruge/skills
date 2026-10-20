@@ -1,5 +1,47 @@
 # Changelog — release
 
+## [2.0.0] — 2026-10-20
+
+### Changed
+
+- **De comando a skill.** `commands/release.md` vira `skills/release/SKILL.md` (por `git mv`; o
+  corpo é o da 1.4.0, salvo "This command" → "This skill"). A invocação continua
+  `/release:release`, e no Cursor o nome continua `release`. O `plugin.json` troca `commands` por
+  `skills`. O motivo é a régua: um plugin só de comandos fica fora do auditor da
+  `skill-quality-audit` (o retrofit da 1.4.0 rodou com `[SKIP]`), e agora ele mede esta skill como
+  mede as outras.
+- **`disable-model-invocation: true`, decisão do dono.** Comando não dispara sozinho, mas skill
+  dispara pela description, e o passo 7 cria tag e release sem perguntar. Com o campo, a skill só
+  roda chamada pelo nome, como o comando de antes. O campo fica no topo do frontmatter porque o
+  Claude Code e o Cursor só o leem ali (a doc do Cursor: "When `true`, the skill is only included
+  when explicitly invoked via `/skill-name`"). **Exceção declarada:** o mesmo campo dá ERRO G2
+  (`skills-ref==0.1.1 validate`: "Unexpected fields in frontmatter") e AVISO A4 na
+  `skill-quality-audit`, e um WARNING no `validate-versions`. Os dois só aceitam o campo como custo
+  quando o plugin declara apenas `claude-code`, por causa do upload para claude.ai e para a API, que
+  seguem o `skills-ref`. Este plugin vai ao Claude Code e ao Cursor, que leem o campo, e o
+  marketplace não publica no claude.ai. Ensinar isso ao auditor fica como tarefa separada. O
+  `compatibility` explica o campo.
+- **Description nova, a mesma nos três lugares** (`SKILL.md`, `plugin.json`, `marketplace.json`),
+  com 345 chars e `Triggers —`, e dizendo o que a 1.4.0 trouxe (série de tags, primeira release,
+  edição da versão já publicada). A `cursor_description` do `install.py` sai, porque a entrada
+  passa a `source_type: "skill"` e copia o `SKILL.md`. Ela ainda descrevia a 1.3.0.
+- **README.** A tabela de plataformas diz "Skill (runs only when invoked)". O bloco do `release`
+  diz como ele é invocado. No modo Cursor, o exemplo "Cria a release 2.1.0 com notas de versao"
+  sai da lista de pedidos por contexto, porque com o campo ele não dispara mais, e vira uma frase
+  com a invocação pelo nome.
+
+Teste frio: o `_install_from_skill_dir` gera um `release/SKILL.md` só, com o frontmatter em YAML
+válido (`name`, `description`, `disable-model-invocation`, `compatibility`, sem `metadata`). No
+corpo, o bloco `$ARGUMENTS` sai, como na adaptação do comando.
+
+Dívida que a auditoria aponta e esta versão não toca (INFO):
+
+- **F2:** sem seção de gotchas. As lições da 1.4.0 estão nos passos 2, 3 e 7.
+- **F4:** sem evals. Com o campo, não há gatilho a medir, mas o comportamento segue sem caso de
+  teste.
+- **D1:** 7 trechos marcados. São a versão e a description, exemplos de entrada e o caso medido, que
+  já está datado.
+
 ## [1.4.0] — 2026-10-20
 
 ### Fixed

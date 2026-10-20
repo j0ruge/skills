@@ -1,10 +1,25 @@
 {
   "name": "release",
-  "description": "Automated GitHub Release creation with categorized release notes from git history. Multi-stack (C#/.NET, Node.js, Go, Rust, Python) with --path filter for monorepo component releases. Contributor resolution via org membership cross-reference.",
-  "author": { "name": "Chewiesoft" },
-  "version": "1.4.0",
+  "description": "Create a GitHub Release with categorized English notes from git history, on any stack. Follows the repo's tag series (`v1.2.0`, `<package>-v1.2.0`), covers a first release, and edits the notes of an already-published version instead of tagging it twice. Triggers — release, release notes, GitHub Release, gh release, changelog, semver, monorepo.",
+  "author": {
+    "name": "Chewiesoft"
+  },
+  "version": "2.0.0",
   "category": "development",
-  "keywords": ["release", "release-notes", "github-release", "changelog", "git-tag", "semver", "gh-cli", "dotnet", "monorepo"],
-  "platforms": ["claude-code", "cursor"],
-  "commands": "./commands"
+  "keywords": [
+    "release",
+    "release-notes",
+    "github-release",
+    "changelog",
+    "git-tag",
+    "semver",
+    "gh-cli",
+    "dotnet",
+    "monorepo"
+  ],
+  "platforms": [
+    "claude-code",
+    "cursor"
+  ],
+  "skills": "./skills"
 }

@@ -134,17 +134,9 @@ CURSOR_SKILL_MAP: list[dict[str, Any]] = [
     {
         "plugin": "release",
         "cursor_name": "release",
-        "display": "Release — generate categorized release notes and create a GitHub Release",
-        "source_type": "command",
-        "source_file": "plugins/release/commands/release.md",
-        "cursor_description": (
-            "Create a GitHub Release with categorized release notes from git history. "
-            "Analyzes all commits since the last release tag and creates the release via the gh CLI. "
-            "Works with any stack (Node.js, C#/.NET, Go, Rust, Python). "
-            "Use when the user asks to create a release, generate release notes, publish a new version, "
-            "tag a release, or run a release. Reads the target semantic version from the user's message "
-            "(e.g. '2.0.0') or asks if not provided. Supports --path for monorepo component releases."
-        ),
+        "display": "Release — categorized release notes and a GitHub Release, run only as /release",
+        "source_type": "skill",
+        "source_dir": "plugins/release/skills/release",
     },
     {
         "plugin": "ddd",

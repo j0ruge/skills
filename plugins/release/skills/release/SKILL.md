@@ -1,7 +1,10 @@
 ---
-description: Automatically generates release notes from the last release and creates a new GitHub Release via gh CLI. Works with any stack (C#/.NET, Node.js, Go, Rust, Python, etc.). Supports --path filter for monorepo component releases. Contributor resolution via org membership cross-reference.
+name: release
+description: "Create a GitHub Release with categorized English notes from git history, on any stack. Follows the repo's tag series (`v1.2.0`, `<package>-v1.2.0`), covers a first release, and edits the notes of an already-published version instead of tagging it twice. Triggers — release, release notes, GitHub Release, gh release, changelog, semver, monorepo."
+disable-model-invocation: true
+compatibility: "Claude Code and Cursor read disable-model-invocation only at the top: the skill runs only as /release:release (/release in Cursor), never from context, because it publishes a GitHub Release. Requires git and an authenticated gh CLI."
 metadata:
-  version: 1.4.0
+  version: 2.0.0
 ---
 
 ## User Input
@@ -26,7 +29,7 @@ Create a complete **GitHub Release** with detailed release notes in **English**,
 
 ## Constraints
 
-- **DO NOT** modify project files. This command is read-only + release creation, or editing the notes of an existing release.
+- **DO NOT** modify project files. This skill is read-only + release creation, or editing the notes of an existing release.
 - **DO NOT** push code or commits.
 - **DO NOT** fabricate information — everything must come from git data.
 
