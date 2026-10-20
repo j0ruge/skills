@@ -2,6 +2,24 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.26.3] — 2026-10-20
+
+### O `commit_id` de um comentário inline segue o head; o commit revisado é o `original_commit_id` (coderabbit-pr 4.5.3)
+
+- **O quê:** `skills/coderabbit-pr/references/reviewer-registry.md`, *Coverage Per Commit*, ganhou um
+  parágrafo: depois de um push, o comentário inline ainda ancorado responde o head novo como
+  `commit_id`; o commit que o revisor viu é o `original_commit_id` (e o `commit_id` do objeto de review,
+  que não se move). A cobertura se lê nas reviews, e o retrato de um achado inline (Fase 3.1, passo
+  1.5) no `original_commit_id`.
+- **Por quê:** no PR #13 do dotp-remake (2026-10-20), o P2 do Codex postado às 21:19Z sobre `ed3729c`
+  respondeu `commit_id` `85f7475`, a correção empurrada perto das 21:42Z, com `original_commit_id`
+  `ed3729c` (`gh api repos/j0ruge/dotp-remake/pulls/comments/4330439724`); o objeto de review ficou em
+  `ed3729c`. Lido pelo `commit_id`, o achado antigo parecia levantado de novo no head corrigido. A
+  sessão não errou por isso (conferiu o `created_at` e o estado do Codex), e nenhuma reference citava
+  o `original_commit_id`.
+- **Onde:** só na reference. O `SKILL.md` muda só o `metadata.version`: está em 19.991 caracteres, a 9
+  do AVISO do C1, e a *Phase 2* já manda ler o registry para a cobertura por commit.
+
 ## [2.26.2] — 2026-10-20
 
 ### Todo diff de agente sai como `git -P diff`, e o agente não julga um doc pela própria atribuição (codereview 2.26.2)

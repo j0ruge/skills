@@ -176,6 +176,15 @@ an empty body on the current head. Measured 2026-10-04 (sdd_agents PR #219): Cod
 review was on `b9e95ba`, its thread reply put an empty-body review on `d8da110`, and an unfiltered
 "last review" read the fix commit as covered.
 
+**An inline comment's `commit_id` is not the commit it was written on.** Once a push moves the head,
+an inline comment whose line still anchors reports the new head as `commit_id`; the commit the
+reviewer saw is `original_commit_id`, and the `commit_id` of its review object, which does not move.
+Read coverage from the reviews, and the snapshot an inline finding describes (Phase 3.1 step 1.5)
+from `original_commit_id`: by `commit_id`, an old finding reads as raised again on the fix. Measured
+2026-10-20 (dotp-remake PR #13, `gh api repos/j0ruge/dotp-remake/pulls/comments/4330439724`): Codex's
+P2 on `ed3729c`, posted 21:19Z, answered `commit_id` `85f7475`, the fix pushed about 21:42Z, with
+`original_commit_id` `ed3729c`; its review object stayed on `ed3729c`.
+
 Codex names the commit in its own text: the "Reviewed commit" line of its review body or, when it
 found nothing and posted no review object, of its issue comment *"Didn't find any major issues"*.
 
