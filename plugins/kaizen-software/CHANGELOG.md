@@ -2,6 +2,34 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.2] — 2026-10-20
+
+### Sonda que não rodou e número que não veio da fonte
+
+Lições de uma sessão real (kit para criptografar estações com BitLocker medindo o desempenho antes e depois,
+planejado com esta skill e com o material destinado à diretoria):
+
+- **Armadilha "Sonda verde porque não leu o artefato" estendida: a sonda precisa ter rodado.** O workflow do
+  GitHub Actions que barra chave de recuperação no repositório não executou no push que criou o repo:
+  `gh run list` voltou vazio. Ausência de vermelho foi lida, por um instante, como verde. Só o push seguinte
+  (com `workflow_dispatch` acrescentado) gerou execução, conferida com `gh run watch` → `success`. A causa
+  provável (repo criado pelo push antes de o workflow ser registrado) **não foi verificada**; a lição verificada
+  é conferir que existe execução, não só que nenhuma falhou.
+- **Armadilha nova "Número de pesquisa vem da fonte, não do resumo".** A pesquisa sobre o impacto do BitLocker
+  veio de um agente que leu cobertura secundária. Reabrir as 26 fontes corrigiu 6 itens: a cópia de 50 GB e o
+  PCMark 10 (−11% e −20%) eram comparados com a criptografia por hardware (OPAL), não com "sem criptografia"
+  (−13% e −19%); e "forçar XTS-AES-128 desliga o BitLocker acelerado por hardware" era falso (só AES-CBC ou a
+  política FIPS desligam). A regra da Fase 2 ("número copiado para prosa sai de um comando") cobria artefato
+  local, não fonte externa resumida por terceiros — e era esse número que ia para a diretoria. A família é a de
+  "Regra herdada de handoff": o resumo é o rótulo, a fonte é o artefato.
+
+### Dívida pré-existente (não tratada aqui)
+
+- `SKILL.md` com ~18,9 mil chars, perto do teto de ~20 mil da spec. O próximo retrofit deve antes passar pela
+  `skill-refactoring` (candidato: mover *Armadilhas* para `references/armadilhas.md`, roteada do `SKILL.md`).
+- Auditoria: F1 (`kaizen-conceitos.md` e `templates.md` citadas sem dizer quando ler), F4 (sem evals), D1
+  (afirmações factuais sem sensor) — já existiam no baseline.
+
 ## [1.4.1] — 2026-10-17
 
 ### O render como unidade do Check, e Kaizen fora do código
