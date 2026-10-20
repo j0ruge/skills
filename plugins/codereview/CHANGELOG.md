@@ -2,6 +2,23 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.25.2] — 2026-10-20
+
+### "Nenhum teste cobre isso" se confere nos testes (codereview 2.25.2)
+
+- **O quê:** a seção *Findings Table* do `references/report-template.md`, que a Fase C lê no passo 10
+  antes de escrever o relatório, ganhou um parágrafo. Antes de dizer que a entrada de um achado não tem
+  teste, ou que a correção precisa de um caso novo, procurar essa entrada nos testes. Um teste que já a
+  usa e exige a saída errada é a forma 6.12 (*a test that pins the shape the code produces*), e vai na
+  ação do achado e nas Notes da cobertura como teste que a correção muda.
+- **Por quê:** no `/codereview` do magic_tutor sobre `9d0eda3..a569b03`, o relatório disse que nenhum dos
+  14 testes novos punha uma mágica entre dois gatilhos iguais. O
+  `test_gatilho_repetido_do_oponente_vira_uma_linha` tinha um Shock entre eles e exigia o `(×3)` errado, e
+  a correção (magic_tutor `466f154`, PR #23) teve de reescrevê-lo. Numa revisão completa, nenhum arquivo
+  de teste vai para um agente, e a 6.12 só roda com o foco `tests`: a afirmação saiu sem sensor.
+- **Onde:** só na reference. O `SKILL.md` está em 19.995 caracteres, no teto de ~20 mil da spec, e só o
+  `metadata.version` mudou nele.
+
 ## [2.25.1] — 2026-10-19
 
 ### Uma sabotagem interrompida fica no arquivo (coderabbit-pr 4.5.2)

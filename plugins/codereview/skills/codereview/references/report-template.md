@@ -73,6 +73,16 @@ engine, three rounds): round 1's combat agent listed six untested branches; the 
 dropped one with its reason (an equivalent mutant) and said nothing of the sixth (an attacker leaving
 combat, 506.4); round 2 raised it again, its two mutants survived, and the PR took one round more.
 
+**"No test covers it" is a claim about the tests: search them before writing it.** When a finding
+says its input is untested, or that its fix needs a new case, grep the test files for that input
+first (`/usr/bin/grep -n` on the names, ids or calls the input is built from). A test that already
+feeds that input and asserts the defective output is the 6.12 shape *a test that pins the shape the
+code produces*, and a full review sends no TESTS file to an agent. The finding's Suggested Action
+and the Test Coverage Notes name it as a test the fix changes, not as a missing case. Measured
+2026-10-20 (magic_tutor, `9d0eda3..a569b03`): the report said none of the 14 new tests put a spell
+between two equal triggers; `test_gatilho_repetido_do_oponente_vira_uma_linha` had a Shock between
+them and asserted the merged `(×3)`, and the fix had to rewrite it.
+
 If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, then as many LOW findings as fit within the 50-finding cap. Below the table, list every LOW the cap cut, one line per finding (`file:line — finding`), under "_{n} additional LOW findings, one line each:_". The list stays in the report, the skill's only output (it writes no file, SKILL.md *Operating Constraints*): a flow that lists the deferred LOWs in the PR body takes them from there, and re-running per file path to see them costs a review. Measured 2026-10-17 (a .NET rules engine, PR #6): round 1 had 65 LOW, and the 18 the cap cut were missing from the report.
 
 ---
