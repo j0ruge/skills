@@ -2,6 +2,54 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.26.0] — 2026-10-20
+
+### A cópia carregada mais nova que o `installPath`, o código que um doc carrega e a faixa que leva as seções que a regem (codereview 2.26.0)
+
+- **O quê:**
+  1. `references/configuration.md`, *Stale copy*: a seção compara primeiro as duas versões
+     (`sort -V`) e passa a ter dois ramos. O da cópia mais velha é o texto de antes, inteiro. O novo,
+     *Loaded copy newer than the installPath*, manda seguir com a cópia carregada e nunca trocá-la
+     pela do `installPath`; confere pelo rc de um `/usr/bin/diff -rq` contra o clone do marketplace
+     (`installLocation` do `known_marketplaces.json`) que ela é a publicada; e põe as duas versões no
+     Cost footprint. O `.orphaned_at` na pasta carregada não muda nada. No `SKILL.md`, o Phase A diz
+     "older or newer" em vez de "is a stale copy", e o `report-template.md` ganhou o terceiro caso do
+     rodapé (`loaded 2.25.2 = marketplace, installed 2.19.0`).
+  2. *Code inside docs*: vale também sem foco, quando o diff tem 0 CODE e um doc traz comandos que um
+     passo posterior executa (os Checks de um plano, as receitas de uma spec, as condições de um
+     handoff); "the doc that carries the named code" virou "the code"; e a linha `File:` de cada
+     agente de faixa nomeia as seções do doc que regem a faixa.
+  3. *Re-review rounds*: corrigir uma decisão emendada pede `grep -n` do id dela no doc, e todas as
+     citações mudam no mesmo commit.
+  4. `SKILL.md`: a rota do `configuration.md` diz "a doc holds code a step runs", e a sonda de testes
+     encurta e cita o `==` sozinho, que o zsh aborta com `= not found`.
+- **Por quê:**
+  - Cópia mais nova: em 2026-10-20 a sessão carregou a 2.25.2 com o `installPath` na 2.19.0, gravado
+    em 2026-10-18 pelo último `claude plugin update codereview`. Outra sessão rodou
+    `claude plugin marketplace update` e depois `claude plugin update` só de outro plugin: a 2.25.2
+    entrou no cache no mesmo segundo que versões novas de três outros plugins, e só o nomeado foi ao
+    registro. O `/reload-plugins` da sessão de revisão carregou a 2.25.2; um `claude` aberto uma hora
+    depois carregou a 2.19.0 e gravou `.orphaned_at` na 2.25.2 um segundo depois de subir. A 2.25.2
+    batia com o clone do marketplace (rc 0); a 2.19.0 diferia dele no `SKILL.md` e em cinco
+    references. A regra antiga, seguida ao pé da letra, rodaria a revisão na 2.19.0, doze releases
+    atrás.
+  - Código em doc: na revisão do plano da `@jrc/object-storage` (lighthouse_project, sem foco, 0
+    CODE), o plano revisado como CODE deu à rodada 1 os seus dois MEDIUM, os dois em Checks: a
+    sabotagem `*.tgz` deu 34/0 em vez de 33/1, e o piso de um Check já estava verde no HEAD.
+  - Faixa: o agente das linhas 354–645 do mesmo plano apontou como lacuna a docstring no I3 e no I4,
+    que o § Contexto, nas linhas 105–106, já exigia para todo arquivo novo. Acima de ~600 linhas o
+    agente lê só as regiões alteradas (`per-file-agent.md`).
+  - Decisão emendada: a correção da P10 deixou mais três lugares que a citavam.
+- **Não aplicado:** "frase que volta rodada após rodada se tira". A lição já está em *Docs this
+  session wrote* ("recommend removing the claim, not adding evidence") e em *A text finding in code
+  converges* ("or delete it"), e a sessão não trouxe medida nova para somar a elas.
+- **Onde:** o `SKILL.md` foi de 247 linhas e 19.995 caracteres para 247 e 19.993; o detalhe ficou no
+  `configuration.md`. Dívida que já existia e segue igual: os três C2 de contrato de subagente e o D1.
+- **Sugestão, fora do escopo:** o `coderabbit-pr` (`references/pr-branch.md`, *Is this run the
+  installed copy?*) manda parar e pedir `/reload-plugins` em todo `STALE`. Com a cópia carregada mais
+  nova que o `installPath`, foi um `/reload-plugins` que a carregou (medido em 2026-10-20), e pedir
+  outro deve carregar a mesma de novo (não medido).
+
 ## [2.25.2] — 2026-10-20
 
 ### "Nenhum teste cobre isso" se confere nos testes (codereview 2.25.2)

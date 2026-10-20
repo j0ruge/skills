@@ -274,7 +274,9 @@ Two readings that are not a stale copy (both measured 2026-10-06). A `{SKILL_DIR
 `installPath` whose `diff -rq` against it is empty runs the same skill: go on, and say it in the
 footer (`cache 2.11.0 = installed 2.11.1`). And `skill v{X}` names this skill, not the plugin: in a
 multi-skill plugin a release that touched only the sibling skill leaves it behind on purpose (plugin
-2.11.1 shipped `codereview` 2.10.0, unchanged).
+2.11.1 shipped `codereview` 2.10.0, unchanged). A third, measured 2026-10-20: a `{SKILL_DIR}`
+newer than the `installPath` runs the newer skill (configuration.md, *Stale copy*), and the footer
+names both (`loaded 2.25.2 = marketplace, installed 2.19.0`).
 
 ---
 

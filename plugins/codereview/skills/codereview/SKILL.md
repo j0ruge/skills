@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.25.2
+  version: 2.26.0
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -34,8 +34,8 @@ The agents read their own contract by absolute path (`{SKILL_DIR}/references/…
 reads a file only at the step that needs it:
 
 - `references/configuration.md` — only when `$ARGUMENTS` carries `key=value` overrides or names
-  more than one repo, the folder has no repo, the stack is not TypeScript/React or the focus
-  names code in a doc.
+  more than one repo, the folder has no repo, the stack is not TypeScript/React or a doc holds
+  code a step runs.
 - `references/per-file-agent.md` — read it yourself only if Phase B runs inline (≤3 CODE files):
   the Phase B agent contract.
 - `references/sweep-agent.md` — read it yourself when the sweep runs inline or the agent under-reports
@@ -86,7 +86,7 @@ Regardless of failures, always produce a final report listing all files analyzed
 
 Every step is a fixed command with one right answer, so it runs inline, not in an agent: an agent only adds variation, latency and the chance of a silently dropped field — and without the secrets pre-scan JSON the F-grade gate goes blind. Outputs are small.
 
-Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. Three Bash turns cover steps 1–8 — (1) steps 1–3, base-branch detection as one fallback chain, plus this skill's version for the Cost footprint (`sed -n 's/^  version: //p' {SKILL_DIR}/SKILL.md`), `git ls-files '*handoff*'` and, from a plugin cache, the `installPath` in `~/.claude/plugins/installed_plugins.json`: a `{SKILL_DIR}` outside it is a stale copy (configuration.md, *Stale copy*); (2) step 4; (3) steps 5–8 as parallel calls in one message:
+Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. Three Bash turns cover steps 1–8 — (1) steps 1–3, base-branch detection as one fallback chain, plus this skill's version for the Cost footprint (`sed -n 's/^  version: //p' {SKILL_DIR}/SKILL.md`), `git ls-files '*handoff*'` and, from a plugin cache, the `installPath` in `~/.claude/plugins/installed_plugins.json`: a `{SKILL_DIR}` outside it, older or newer: configuration.md, *Stale copy*; (2) step 4; (3) steps 5–8 as parallel calls in one message:
 
 1. Verify git repo:  `git rev-parse --is-inside-work-tree`
 2. Detect base branch (try: origin HEAD symbolic-ref, then main, then master); a stale local base, a merged branch or an isolated worktree: configuration.md, *Base and batching*
@@ -108,7 +108,7 @@ Classify each changed file:
 - DOCS: *.md, *.txt
 - STYLES: CSS/SCSS/LESS
 
-For each CODE file, check test coverage by probing candidate test file paths — same dir (`{Base}.test.{ext}`, `{Base}.spec.{ext}`), a `__tests__` sibling, then the project test root, then a changed test that imports it — and record it as WITH_TESTS / STALE_TESTS / NO_TESTS. Probe all CODE files in one shell loop (one Bash call that prints `path|status` per file), not one call per file, in bash with `nullglob`: zsh aborts an unmatched glob.
+For each CODE file, check test coverage by probing candidate test file paths — same dir (`{Base}.test.{ext}`, `{Base}.spec.{ext}`), a `__tests__` sibling, then the project test root, then a changed test that imports it — and record it as WITH_TESTS / STALE_TESTS / NO_TESTS. Probe all CODE files in one shell loop (one Bash call, `path|status` per file), in bash with `nullglob`: zsh aborts an unmatched glob, and a bare `==` as `= not found`.
 
 Phase A hands Phases B and C: BASE_BRANCH, BRANCH_NAME, MERGE_BASE, DIFF_STAT, COMMIT_LOG, the FILES list (path, category, test_status), COUNTS per category, and SECRETS_PRESCAN.
 

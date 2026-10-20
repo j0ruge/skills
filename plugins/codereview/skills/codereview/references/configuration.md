@@ -127,7 +127,11 @@ base equals `HEAD`, or when the session runs isolated in a worktree.
 ## Stale copy
 
 Read this when Phase A finds `{SKILL_DIR}` outside the `installPath` that
-`~/.claude/plugins/installed_plugins.json` records: the session loaded the skill before a
+`~/.claude/plugins/installed_plugins.json` records. The copy outside can be older or newer, so
+compare the two versions first, the one Phase A read and that record's `version`
+(`printf '%s\n' <loaded> <installed> | sort -V | tail -1` prints the newer).
+
+**Loaded copy older than the installPath:** the session loaded the skill before a
 `claude plugin update`.
 
 - Compare the two `SKILL.md`, not the folders:
@@ -170,6 +174,37 @@ Read this when Phase A finds `{SKILL_DIR}` outside the `installPath` that
   session wrote to an agent). Applied from the installed `SKILL.md` hunk and *Docs this session
   wrote*, that step gave the round its only MEDIUM; the rule that stopped on a step hunk would have
   halted the round in Phase A and waited for the user.
+
+**Loaded copy newer than the installPath:** `claude plugin marketplace update` caches the
+marketplace's current version of every installed plugin, but only a `claude plugin update` that
+names the plugin writes it in `installed_plugins.json`. `/reload-plugins` then loads the cached
+version, while a session started fresh loads the `installPath`.
+
+- Do not switch to the `installPath`. It is the older text, and the rules above would trade the
+  instructions in context for it.
+- Check that the loaded copy is the one the marketplace publishes, by the exit status:
+  `/usr/bin/diff -rq -x .git -x .in_use -x .orphaned_at -x __pycache__ {SKILL_DIR}/../.. <installLocation>/plugins/codereview`,
+  with the `installLocation` that `~/.claude/plugins/known_marketplaces.json` records for the
+  marketplace named in the cache path. rc 0: go on with `{SKILL_DIR}`, put both versions in the
+  Cost footprint (`loaded 2.25.2 = marketplace, installed 2.19.0`), and say in the closing report
+  that `claude plugin update codereview@<marketplace>` aligns the record; running it is the user's
+  call. An `.orphaned_at` in the loaded folder changes nothing: it says only that the record does
+  not name that folder.
+- rc 1: read the clone's `version:` line. Newer than the loaded copy: the marketplace moved past
+  both, so go on with `{SKILL_DIR}`, the newer of the two on disk, and put the three versions in the
+  Cost footprint. The same version with other files: the cached copy was edited, so list the files
+  and ask the user before going on.
+- Measured 2026-10-20 (lighthouse_project, a plan review): loaded 2.25.2 with 2.19.0 installed,
+  recorded on 2026-10-18 by the last `claude plugin update codereview`. That afternoon another
+  session ran `claude plugin marketplace update`, then `claude plugin update` for another plugin:
+  2.25.2 entered the cache in the same second as new versions of three other plugins, and only the
+  named one reached the record. Afterwards each of the 17 plugins installed from that marketplace
+  had its current version cached, and three of them, this one included, were not in the record.
+  `/reload-plugins` in the reviewing session loaded 2.25.2; a `claude` started 55 minutes later
+  loaded 2.19.0 and wrote `.orphaned_at` in the 2.25.2 folder one second after it started. The
+  2.25.2 folder matched the marketplace clone (rc 0); 2.19.0 differed from it in `SKILL.md` and five
+  references the agents and Phase C read. Followed to the letter, the older-copy rule would have run
+  the review on 2.19.0, twelve releases back.
 
 ## Docs this session wrote
 
@@ -252,18 +287,29 @@ Read this when the user limits the review to paths (`-- dir/ file`, "only the sk
 ## Code inside docs
 
 Read this when the focus names code that lives inside a changed doc: a plan or spec whose fenced
-`awk`/`bash`/regex blocks are what the PR promises to ship. Classified by extension, a docs-only
-diff is all DOCS, Phase B launches no agent, and the report grades code nobody read.
+`awk`/`bash`/regex blocks are what the PR promises to ship. Also with no focus, when the diff has
+0 CODE and a doc carries commands a later step runs: the Checks of a plan, the recipes of a spec,
+the conditions of a handoff. Classified by extension, a docs-only diff is all DOCS, Phase B
+launches no agent, and the report grades code nobody read.
 
-- **The doc that carries the named code is CODE**, the same rule as a file the user names
+- **The doc that carries the code is CODE**, the same rule as a file the user names
   (*Path-scoped reviews*). The other docs in the diff stay DOCS.
 - **A long doc goes to more than one agent**, each with a line range on its `File:` line
   (`docs/x/01-plano.md (category: CODE, lines 1–505)`); the rest of the launch prompt stays
   verbatim. The ≤3-file inline shortcut does not apply here: inline, the main model reads the
   whole doc.
+- **The range names the sections that bind it** (`lines 354–645; also 105–106, § Contexto`). Past
+  ~600 lines the agent reads only the changed regions (per-file-agent.md), so a rule written
+  outside its range comes back as a gap. Measured 2026-10-20: the agent of lines 354–645 of a plan
+  reported the docstring rule missing in I3 and I4, which § Contexto, lines 105–106, already set
+  for every new file.
 - Measured 2026-10-13 (`j0ruge/sdd_agents` PR #247, codereview 2.14.1): a 10-file docs-only diff
   classified 0 CODE; the 1184-line plan, split into two ranges (`1–505`, `506–632 + 973–1184`),
   gave two sonnet agents with findings, one of them a confirmed MEDIUM.
+- Measured 2026-10-20 (lighthouse_project, the plan of a TypeScript library, no focus, 0 CODE):
+  reviewed as CODE, the plan gave round 1 its two MEDIUMs, both in Checks a later step runs. The
+  `*.tgz` sabotage a Check should catch read 34/0 instead of 33/1, and a Check's floor was already
+  met at HEAD, green before the increment it gates.
 
 ## Re-review rounds
 
@@ -416,6 +462,11 @@ These decide whether the rounds converge:
   (magic_tutor): `docs/monitor.md` had its clean round before the date re-read and its warning
   existed, three rounds passed without it, and writing the missing sentence exposed the warning text
   that was false on one path (*A text finding in code converges*, above).
+- **A fix to an amended decision greps every place that cites it.** A plan names a decision
+  (`P10`) in each section that applies it, and a fix that rewrites it where the finding pointed
+  leaves the other citations on the old text, for a later round to find. `grep -n` the decision's
+  id over the doc before the fix is done, and fix every hit in the same commit. Measured 2026-10-20
+  (the plan in *Code inside docs*): the fix to the amended P10 left three more places citing it.
 
 ## Runtime evidence
 
