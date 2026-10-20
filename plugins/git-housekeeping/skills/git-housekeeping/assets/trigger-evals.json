@@ -1,0 +1,22 @@
+[
+  {"query": "limpa as branches que já foram mergeadas aqui no repo, local e no github", "should_trigger": true},
+  {"query": "tenho umas 40 branches velhas no origin desse projeto, da pra apagar as que ja entraram na main sem perder nada?", "should_trigger": true},
+  {"query": "o git branch -d tá recusando apagar as branches que eu mergeei por squash no github, como limpo isso com segurança?", "should_trigger": true},
+  {"query": "my ~/.wt folder is full of old worktrees from branches that were merged weeks ago, can you clean them up?", "should_trigger": true},
+  {"query": "apaga as branches locais que já foram mergeadas", "should_trigger": true},
+  {"query": "quais repos em ~/repos tem mais branch e worktree velho pra limpar? só quero saber", "should_trigger": true},
+  {"query": "o git branch -a ta uma bagunça, metade é coisa que já foi pra main, faz uma faxina", "should_trigger": true},
+  {"query": "after the release I want to prune every feature branch that's already merged into main, both local and on GitHub", "should_trigger": true},
+  {"query": "tem worktree registrado apontando pra pasta que nem existe mais e branch sobrando de PR fechado, arruma isso", "should_trigger": true},
+  {"query": "faz a faxina de branches desse repo mas não mexe na staging nem na production", "should_trigger": true},
+  {"query": "cria uma branch nova feat/login a partir da main e abre o PR", "should_trigger": false},
+  {"query": "o merge da feat/relatorio na main deu conflito no package-lock, me ajuda a resolver", "should_trigger": false},
+  {"query": "o repo tá com 3 GB por causa de um binário antigo no histórico, como reescrevo o histórico pra tirar?", "should_trigger": false},
+  {"query": "desfaz o último commit que eu dei push na main", "should_trigger": false},
+  {"query": "roda git gc agressivo pra compactar o .git desse repo", "should_trigger": false},
+  {"query": "configura o GitHub pra apagar a branch sozinho depois que o PR é mergeado", "should_trigger": false},
+  {"query": "meu disco C: tá cheio, o que posso apagar?", "should_trigger": false},
+  {"query": "faz rebase da minha branch na main e resolve os conflitos", "should_trigger": false},
+  {"query": "lista os PRs abertos que estão esperando review há mais de uma semana", "should_trigger": false},
+  {"query": "apaga a tag v1.2.0 que eu criei errado no remoto", "should_trigger": false}
+]

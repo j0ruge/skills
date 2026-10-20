@@ -1,0 +1,24 @@
+{
+  "name": "git-housekeeping",
+  "description": "Safely deletes merged git branches, local and remote, and their worktrees. A read-only scan proves each merge by merge commit or by the merged PR's head sha; only the approved plan is deleted, with sha leases and two confirmations. Triggers — merged branches, branch cleanup, delete merged branches, stale worktrees, git housekeeping, prune branches.",
+  "author": {
+    "name": "Chewiesoft"
+  },
+  "version": "0.1.0",
+  "category": "development",
+  "keywords": [
+    "git",
+    "branches",
+    "merged-branches",
+    "worktree",
+    "squash-merge",
+    "force-with-lease",
+    "cleanup",
+    "housekeeping"
+  ],
+  "platforms": [
+    "claude-code",
+    "cursor"
+  ],
+  "skills": "./skills"
+}

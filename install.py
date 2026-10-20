@@ -266,6 +266,13 @@ CURSOR_SKILL_MAP: list[dict[str, Any]] = [
         "source_dir": "plugins/ts-library/skills/ts-library",
     },
     {
+        "plugin": "git-housekeeping",
+        "cursor_name": "git-housekeeping",
+        "display": "Git Housekeeping — delete merged git branches (local and remote) and their worktrees, with the merge proved and two confirmations",
+        "source_type": "skill",
+        "source_dir": "plugins/git-housekeeping/skills/git-housekeeping",
+    },
+    {
         "plugin": "skill-quality-audit",
         "cursor_name": "skill-quality-audit",
         "display": "Skill Quality Audit — read-only audit of Agent Skills (spec, self-containment, claims, size); entry point of the family",
