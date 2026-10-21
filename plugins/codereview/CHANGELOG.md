@@ -2,6 +2,27 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.26.6] — 2026-10-21
+
+### O número colado num exemplo nomeado se remede agrupado por ele, e o nome se procura no diff inteiro
+
+- **O quê:** `skills/codereview/references/configuration.md`, seção *Docs this session wrote*, ganhou uma regra e
+  a medição dela. Uma frase como "o ETB de X, 67 dos 619 pedidos" diz que X fez os 67, e um total que bate com o
+  script de medição não confere isso. O agente só consegue inferir lendo o script. No passo 7 da Fase C, o
+  orquestrador roda o script de novo agrupado pela entidade que a frase nomeia, e procura esse nome no diff do
+  intervalo, porque o mesmo par pode estar num arquivo que nenhum agente leu. A frase só fica se o grupo tiver o
+  número. Senão, o número vai para a categoria e o nome fica como exemplo.
+- **Por quê:** na revisão de `073fa08..3ea5c0e` do magic_tutor (2026-10-21), os totais batiam com o script
+  (619, 129, 53, 76, 67). O agente de DOCS levantou o "67 dos 619" atribuído ao ETB de uma carta no
+  `KAIZEN_LOG.md`, mas por inferência e marcado `needs reproduction`. Agrupados pela carta de origem, os 76
+  gatilhos da própria carta vinham de 15 cartas (21, 11, 10, 6, 6, …), e a carta nomeada tinha 12 pedidos de
+  alvo no total. A busca pelo nome achou o mesmo par num comentário de teste ("74 vezes nos replays"), num
+  arquivo TESTS que nenhum agente lê numa revisão completa.
+- **Onde:** só na reference. O `SKILL.md` muda só o `metadata.version` (2.26.2 → 2.26.6, mesmo comprimento) e
+  segue no teto do C1, por isso a lição não entrou nele.
+- **Dívida pré-existente, não mexida:** os 3 INFO C2 (contratos de subagente lidos por caminho absoluto, por
+  desenho), o INFO D1 e o SKIP G1 (`audit-skill.sh` do Hermes ausente nesta máquina).
+
 ## [2.26.5] — 2026-10-20
 
 ### O número que a doc mediu com a regra velha se mede de novo pelo método original; e o antes/depois em dados reais compara a saída inteira, com prova de qual versão rodou (coderabbit-pr 4.5.5)

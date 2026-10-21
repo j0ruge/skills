@@ -234,6 +234,17 @@ against code the range leaves out.
   own review. Sent to an agent as written this session, the doc gave the round's only MEDIUM: the
   cell left out a form the parser accepts (`FE_NUM_COLOURS` with `OP_GREATER_THAN`) and ended by
   calling any other operator an error, against a code file the range did not touch.
+- **A count next to a named example reads as that example's count.** "the ETB of X, 67 of the 619
+  requests" says X made the 67, and a total that matches the measuring script does not check it.
+  The agent can only infer from reading the script: in step 7, re-run it grouped by the entity the
+  sentence names, and grep the range's diff for that name, since the same pairing can sit in a file
+  no agent read. The sentence stays only if the group holds the number; otherwise the count goes on
+  the category and the name stays an example ("a trigger of the card itself, e.g. X: 76 of 619").
+- Measured 2026-10-21 (magic_tutor, a two-commit range): the totals matched the script (619, 129,
+  53, 76, 67), and the DOCS agent raised the log entry's "67 of 619" on one card as an inference,
+  `needs reproduction`. Grouped by source card, the 76 came from 15 cards (21, 11, 10, 6, 6, …) and
+  the named card had 12 target requests in all; the name grep found the same pairing in a test
+  comment ("74 times in the replays"), a TESTS file no agent reads on a full review.
 
 ## Several repositories
 
