@@ -2,6 +2,42 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.3] — 2026-10-20
+
+### Vocabulário válido não prova sentido igual
+
+Lição de uma sessão real (TCC sobre classificação de telas de RADAR e ECDIS gravadas em VDR, rotulagem humana
+já começada quando o campo corrigiu a taxonomia):
+
+- **Armadilha nova "Vocabulário válido não prova sentido igual".** O código `radar_overlay` continuou na lista
+  de classes, mas mudou de definição: deixou de ser o RADAR com carta e passou a ser a tela do ECDIS com o radar
+  sobreposto, porque é o termo do campo. A ferramenta de rotulagem só conferia se o valor estava no vocabulário.
+  Rótulos gravados pela definição antiga passariam com o sentido errado, e a exportação declararia o guia novo.
+  Correção verificada:
+  - o rótulo passou a carregar o guia sob o qual foi gravado (uma marca de versão ao lado do arquivo);
+  - a ferramenta recusa misturar guias;
+  - um modo de arquivamento renomeia o que é de outro guia, sem apagar.
+
+  O caso sabotado ("rótulo antigo só com classes que continuam válidas") falhou nos cinco modos antes do código.
+  No dado real, a ferramenta saiu 2 até o arquivamento das 22 linhas antigas.
+
+### Analisada e não aplicada
+
+- "Contradição na fonte resolvida por convenção, sem perguntar a quem opera" (o mesmo erro de domínio apareceu
+  duas vezes no material e as duas foram resolvidas como "convenção deste trabalho"). A skill já cobre a
+  família: Jidoka ("'deve ser normal' não é explicação… perguntar a quem tem acesso ao artefato") e a armadilha
+  do handoff (regra sem origem vira pergunta). Não há correção verificável, porque é regra de conduta. Ficou
+  no `CLAUDE.md` do projeto.
+
+### Dívida pré-existente (não tratada aqui)
+
+- `SKILL.md` com 19.404 caracteres (era 18.893), abaixo do teto de ~20 mil. **Correção da nota da 1.4.2:**
+  pela `skill-refactoring`, numa skill de fluxo as armadilhas ficam no `SKILL.md`, onde evitam o erro antes de
+  a reference ser lida. O próximo retrofit que passar do teto deve comprimir (Estratégia B: listas e blocos em
+  tabela), e não extrair *Armadilhas* para `references/`.
+- Auditoria sem mudança: F1 (`kaizen-conceitos.md` e `templates.md` citadas sem dizer quando ler), F4 (sem
+  evals), D1 (afirmações sem sensor) e G1 (gate do Hermes ausente nesta máquina).
+
 ## [1.4.2] — 2026-10-20
 
 ### Sonda que não rodou e número que não veio da fonte

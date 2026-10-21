@@ -1,7 +1,7 @@
 ---
 name: kaizen-software
 metadata:
-  version: 1.4.2
+  version: 1.4.3
 description: "Metodologia Kaizen (melhoria contínua) para planejar, implementar e manter software — e para ensinar Kaizen ao time. Conduz as três fases pelo ciclo PDCA, verifica pelo artefato e não pelo rótulo da ferramenta, prefere poka-yoke a regra escrita, e mapeia os artefatos Kaizen nos que o projeto já tem (ADR, notas, TODO, CHANGELOG). Gatilhos — Kaizen, PDCA, kaizen log/retrospectiva, 5 porquês, poka-yoke, desperdício/dívida técnica, planejar feature, confirmar antes de apagar/limpar."
 ---
 
@@ -86,6 +86,7 @@ Casos medidos em sessões reais. Cada um é um jeito de o Check dar verde sem te
 - **Sabotagem que não chegou à ferramenta.** Antes de ler o veredito de um caso sabotado, confirme que a ferramenta leu o artefato sabotado. O cache global dela (`~/.npm`, o do pip, a camada do Docker) é estado de uma rodada anterior que fica fora da pasta de trabalho, e serve o artefato antigo; o "do zero" do caso sabotado inclui esse cache (`--cache` vazio, `--no-cache`). Caso (2026-10-16): um `.tgz` trocado em `vendor/` passou no `npm ci` com rc=0 e instalou o conteúdo antigo, servido do cache pelo `integrity` do lockfile; com `--cache` vazio, o mesmo `npm ci` reprovou com `EINTEGRITY`. Ler o rc=0 como "o npm não confere tarball local" teria descartado o poka-yoke certo.
 - **Regra herdada de handoff não é do usuário até ser rastreada.** Handoff, resumo ou nota escrita por agente pode carregar uma restrição que o próprio agente acrescentou. Antes de obedecer ou de perguntar, procure a origem (o pedido registrado, a thread). Se ela não está lá e o precedente diz o contrário, a regra vira pergunta, não instrução. Caso (2026-10-05): "os nomes ficam fora do repositório" estava no handoff e não no registro do pedido, os documentos anteriores faziam o oposto, e o usuário escolheu o precedente.
 - **Número de pesquisa vem da fonte, não do resumo.** Resumo de agente e matéria de segunda mão trocam a base de comparação. Antes de o número ir para quem decide, reabra a fonte primária e marque-o como conferido. Caso (2026-10-20): reabrir 26 itens de uma pesquisa sobre BitLocker corrigiu 6 (−11% e −20% eram contra OPAL, não contra "sem criptografia").
+- **Vocabulário válido não prova sentido igual.** Código, enum ou rótulo que muda de definição e continua na lista aceita deixa o dado antigo passar na validação com o sentido errado. O poka-yoke amarra o dado à versão da definição e recusa misturar versões; o caso sabotado é dado antigo só com valores ainda válidos. Caso (2026-10-20): `radar_overlay` mudou de sentido; antes da marca de versão, os rótulos v1 passavam nos cinco modos da ferramenta, e depois ela parou (rc=2) no dado real até o arquivamento.
 
 ## Ensinar Kaizen
 
