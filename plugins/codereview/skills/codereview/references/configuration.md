@@ -8,8 +8,9 @@
   C# probe by type and by registration literal)
 - [Base and batching](#base-and-batching) (a stale local base, a branch already merged, an isolated
   worktree) · [Stale copy](#stale-copy) · [Docs this session wrote](#docs-this-session-wrote)
-- [Several repositories](#several-repositories) · [Folder without git](#folder-without-git) ·
-  [Path-scoped reviews](#path-scoped-reviews) · [Code inside docs](#code-inside-docs)
+- [Several repositories](#several-repositories) (or one that is not the cwd) ·
+  [Folder without git](#folder-without-git) · [Path-scoped reviews](#path-scoped-reviews) ·
+  [Code inside docs](#code-inside-docs)
 - [Re-review rounds](#re-review-rounds) · [Runtime evidence](#runtime-evidence)
 
 ## Default Values
@@ -248,8 +249,9 @@ against code the range leaves out.
 
 ## Several repositories
 
-Read this when `$ARGUMENTS` names more than one repository ("nos repos", "both repos"), or when the
-handoff the review answers to lists them. The session's working directory is only one of them, and its
+Read this when `$ARGUMENTS` names more than one repository ("nos repos", "both repos") or one that is
+not the session's working directory (a worktree, another clone), or when the handoff the review
+answers to lists them. The session's working directory is only one of them, and its
 branch can be the smaller part. Measured 2026-10-16 (RS-929): the session ran in the API repo, whose
 branch held 5 `.md` files; the code under review (a shell sensor and its test, a measurement script, an
 HTML deck engine) sat on a same-named branch in a sibling repo. Reviewed from the cwd alone, the report
@@ -259,6 +261,16 @@ grades "A, no CODE files" and never reads the one HIGH.
   its own secrets pre-scan: a clean scan of one repo says nothing about the other.
 - **One Phase B batch** for the CODE files of every repo. Each launch prompt names its repo and writes the
   diff command out (`git -P -C <repo> diff <merge-base>...HEAD -- <file>`), since `{REPO}` differs per agent.
+- **One repo that is not the cwd is this case too.** The orchestrator's shell returns to the session's
+  directory after every Bash call, so a `cd` does not carry over: start each call with `cd <repo> &&`
+  or write `git -C <repo>`. Each launch prompt writes the diff out as above, gives absolute paths, and
+  its `Repository:` line says the default directory is another checkout. Keep the `-P` next to the
+  `-C`: rtk 0.42.3 rewrites `git -C <repo> diff …` (`rtk rewrite` rc 0, to `rtk git -C <repo> diff …`)
+  and leaves `git -P -C <repo> diff …` alone (rc 1). Measured 2026-10-21 (lighthouse_project, a plan
+  reviewed in a worktree): every Bash call came back with `Shell cwd was reset`, and the session's
+  checkout sat at the merge base, where `git diff --stat b466869...HEAD` prints nothing. The 7 agents
+  got `git -C <worktree> diff` without the `-P`, and the review held only because each read its file
+  by absolute path.
 - **One report**: the header lists each repo with branch → base, the head reviewed and its counts; the
   Overall Grade table gets one grade column per repo. A re-review names, per repo, the head it starts from.
 

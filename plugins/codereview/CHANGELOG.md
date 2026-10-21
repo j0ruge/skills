@@ -2,6 +2,27 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.26.8] — 2026-10-21
+
+### Um repositório que não é o cwd da sessão também escreve o `-C` em cada comando
+
+- **O quê:** `skills/codereview/references/configuration.md`, seção *Several repositories*, passa a valer
+  também para um repositório só que não é o diretório de trabalho da sessão (um worktree, outro clone), e
+  ganhou um bullet: cada chamada de Bash começa com `cd <repo> &&` ou usa `git -C <repo>`, cada prompt
+  escreve `git -P -C <repo> diff …` com caminhos absolutos, e a linha `Repository:` diz que o checkout
+  padrão é outro. O roteador do `SKILL.md` troca "names more than one repo" por "names a repo besides the
+  cwd", que cobre os dois casos; o sumário do `configuration.md` cita o caso novo.
+- **Por quê:** na revisão do plano da peça C do lighthouse_project (2026-10-21, codereview 2.26.0), o
+  pedido nomeava o worktree `lighthouse_project-peca-c`, e a sessão rodava no checkout principal, em
+  `develop`, no próprio merge base: o `git diff b466869...HEAD` do prompt de lançamento, rodado dali, sai
+  vazio, e o `cd` do orquestrador não persiste (cada Bash voltou com `Shell cwd was reset`). Só o caso de
+  vários repositórios mandava o `-C`. Os prompts da rodada levaram `git -C <worktree> diff` sem o `-P`, e
+  o `rtk rewrite` (0.42.3) dessa forma sai rc 0, para `rtk git -C … diff`, que encurta o diff; com o `-P`,
+  em qualquer ordem, sai rc 1. A rodada se sustentou porque cada agente leu o seu arquivo pelo caminho
+  absoluto.
+- **Onde:** no `SKILL.md`, a troca no roteador tem o mesmo número de caracteres (−4 em "carries" → "has",
+  +4 na frase do repositório): ele segue em 19 999, abaixo do aviso do C1, que dispara acima de 20 000.
+
 ## [2.26.7] — 2026-10-21
 
 ### Um regex de formato não é credencial: a linha fica com a prova, e o remédio é renomear a constante
