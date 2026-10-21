@@ -2,6 +2,29 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.26.5] — 2026-10-20
+
+### O número que a doc mediu com a regra velha se mede de novo pelo método original; e o antes/depois em dados reais compara a saída inteira, com prova de qual versão rodou (coderabbit-pr 4.5.5)
+
+- **O quê:** `skills/coderabbit-pr/references/fix-loop.md` ganhou a seção *Numbers the docs measured under the
+  old rule*, e o passo 2 do loop aponta para ela. Um conserto que muda uma regra (classificador, filtro,
+  casamento) deixa velhos os números que a doc mediu com ela. Mede-se de novo com o script ou o método que
+  produziu o número, e o denominador tem de voltar igual antes de trocar a parte. `references/regression-testing.md`
+  ganhou, no fim do 4.2, *Beyond the suite: real inputs*. Quando o repo tem entradas reais (logs, replays),
+  contagem igual antes e depois não prova saída igual. Roda-se o head numa worktree destacada (a do 4.0) e o
+  conserto no checkout, e compara-se a saída inteira. Antes de confiar num diff vazio, prova-se que cada lado
+  carregou o próprio código, com um marcador que só o conserto tem.
+- **Por quê:** no PR #33 do magic_tutor (2026-10-20, `3ea5c0e`), a doc dizia "35 dos 619 pedidos … eram desse
+  tipo". Um script novo de remedição contou `491` pedidos, porque lia um campo que a própria regra consertada
+  limpa. Refeito pelo método do `fonte_do_alvo.py` original, o total voltou a `619`, e o número passou de 53 a
+  129. Na mesma sessão, a medição de cancelamentos deu os mesmos números antes e depois, e a sessão comparou a
+  narração inteira dos 88 replays. O cheque de qual `replays.py` cada lado importou, por uma palavra que o
+  arquivo velho já tinha (`objetos`), deu `True` nos dois lados. Por uma que só o conserto trouxe
+  (`abilityGrpId`), deu `False`/`True`, e o diff então saiu `[]`.
+- **Onde:** só nas references. O `SKILL.md` muda só o `metadata.version`: segue com 19.991 caracteres, a 9 do
+  AVISO do C1, e já manda ler o `fix-loop.md` antes do primeiro conserto de lógica e o `regression-testing.md`
+  na Fase 4.
+
 ## [2.26.4] — 2026-10-20
 
 ### O achado que o backlog já carrega sai do backlog no mesmo commit, com cada citação viva dele (coderabbit-pr 4.5.4)

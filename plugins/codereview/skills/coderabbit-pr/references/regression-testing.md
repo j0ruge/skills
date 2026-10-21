@@ -87,6 +87,16 @@ Execute the test command after applying fixes. Compare against the Phase 4.0 bas
 
 **Cascade-aware rerun**: if your fixes uncovered new failures (the "new failures" branch above), rerun the baseline after addressing them — fail-fast cascades can have more than 2 levels (bug 1 masks bug 2 masks bug 3), and the second bug surfaced is not necessarily the last. After each layer of fixes, capture a fresh baseline before declaring victory.
 
+**Beyond the suite: real inputs.** When the repo holds real inputs (recorded logs, replays), a
+summary that stays equal before and after the fix (a count, a total) does not show the output stayed
+equal. Run the head from a detached worktree (4.0) and the fix from the checkout over the same inputs,
+and diff the whole output. Before trusting an empty diff, prove each side loaded its own code with a
+token only the fix contains: a token both versions share passes on both sides, and the "identical"
+run compared the head with itself. Measured 2026-10-20 (magic_tutor PR #33): the cancellation counts
+matched; the check of which `replays.py` each side imported, by a word the old file already had
+(`objetos`), printed `True` twice; by one only the fix added (`abilityGrpId`), `False`/`True`; the
+narration of the 88 replays then diffed `[]`.
+
 ## 4.3 Update Final Status
 
 Update the "Final Result" table in each `{reviewer}-review.md` with:

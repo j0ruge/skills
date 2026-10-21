@@ -34,7 +34,9 @@ symptom — including one that opens a new fail-open next to it. The regression 
    stayed green with the marker write sabotaged while three others went red; one assertion of the
    marker in the middle made that sabotage red too.
 2. **Fix** — the minimal change, with the editing tool, on the PR's head branch. A finding the
-   backlog already carries is also retired in this commit (*A finding already in the backlog*).
+   backlog already carries is also retired in this commit (*A finding already in the backlog*), and a
+   figure the docs measured with the old rule is measured again (*Numbers the docs measured under the
+   old rule*).
 3. **Green** — the probe from step 1 passes. **Still red after the fix? Judge the probe before the
    fix.** A probe that went red at its first assertion (the missing key) never ran the others, so
    their expectations are unproven: check each against the fixture and the code that existed before
@@ -95,6 +97,16 @@ next issue mirror reopens it. Measured 2026-10-20 (magic_tutor PR #33): Codex's 
 `docs/monitor.md`, twice in `KAIZEN_LOG.md`, in the PR body and in a ⛔ text the DOCS phase had
 proposed. `55e17a5` deleted the item and rewrote those, `57ccb0b` applied the proposed text
 without the sentence, and `check-todo.sh --anchors` read `0 off target`.
+
+## Numbers the docs measured under the old rule
+
+A fix that changes a rule (a classifier, a filter, a matcher) leaves every figure the docs measured
+with that rule stale. Re-run the measurement that produced the figure, the same script or its
+method, with the fix in place, and check that the denominator comes back unchanged before replacing
+the part: a probe written for the occasion measures another population, and its numbers look current
+while comparing with nothing. Measured 2026-10-20 (magic_tutor PR #33, `3ea5c0e`): a fresh script
+counted `491` target prompts because it read a field the fixed rule itself clears; redone with the
+original `fonte_do_alvo.py` method the total came back to `619`, and the figure moved from 53 to 129.
 
 ## Stop rule
 
