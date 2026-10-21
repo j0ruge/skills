@@ -2,6 +2,26 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.26.7] — 2026-10-21
+
+### Um regex de formato não é credencial: a linha fica com a prova, e o remédio é renomear a constante
+
+- **O quê:** `skills/codereview/references/detection-passes.md`, passe 6.10, ganhou um parágrafo ao lado do caso
+  do hash hex. O `Generic Password` olha o nome: uma palavra-chave (`password`, `senha`, `secret`…) no fim do
+  identificador, depois `:` ou `=` e um valor entre aspas. Uma constante que guarda o padrão que a senha precisa
+  seguir volta CRITICAL. A linha fica, com a prova ao lado: o valor é só âncoras, classes e quantificadores, sem
+  literal de credencial. O remédio é um nome fora da lista de palavras-chave, não um allowlist por caminho, que
+  esconderia também um segredo real no mesmo arquivo. O parágrafo diz como montar o canário (a palavra-chave no
+  fim do nome) e que o veredito do gitleaks/ggshield sobre a linha não foi medido.
+- **Por quê:** na rodada 7 do kit-bitlocker (2026-10-21, codereview 2.26.2, `521bec8..14c5dd4`),
+  `$script:PadraoSenha = '<regex>'`, a checagem de formato da senha de recuperação do BitLocker, forçou nota F
+  numa rodada sem segredo. A skill só documentava o caso análogo do hash hex. Medido no `scripts/scan_secrets.py`
+  com diffs de uma linha: o nome antigo deu `Generic Password`, `$script:PadraoRecuperacao` deu `findings: []`, e o
+  canário `$script:NovaSenha = 'Hunter2Secreta'` continuou `Generic Password`. `$script:SenhaPadrao = '…'` não casa,
+  então um canário montado assim não prova nada. Gitleaks e ggshield não estavam instalados.
+- **Onde:** só na reference. O `SKILL.md` muda só o `metadata.version` (2.26.6 → 2.26.7, mesmo comprimento) e
+  segue no teto do C1, por isso a lição não entrou nele.
+
 ## [2.26.6] — 2026-10-21
 
 ### O número colado num exemplo nomeado se remede agrupado por ele, e o nome se procura no diff inteiro
