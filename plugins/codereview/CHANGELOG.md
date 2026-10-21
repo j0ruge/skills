@@ -2,6 +2,24 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.26.4] — 2026-10-20
+
+### O achado que o backlog já carrega sai do backlog no mesmo commit, com cada citação viva dele (coderabbit-pr 4.5.4)
+
+- **O quê:** `skills/coderabbit-pr/references/fix-loop.md` ganhou a seção *A finding already in the backlog*,
+  e o passo 2 do loop aponta para ela. Antes do conserto, procurar o achado no `TODO.md` e nas issues abertas;
+  quando ele é um item, o commit do conserto retira o item (pela regra do projeto: apagado, ou `RESOLVED by`) e
+  reescreve as citações vivas do `#N` que ainda o dão como atual: o parágrafo da doc, a entrada do changelog ou
+  do KAIZEN, o corpo do PR, um texto proposto ainda não aplicado. Elas se acham pelo número e pelo símbolo,
+  fora dos artefatos congelados das fases passadas.
+- **Por quê:** no PR #33 do magic_tutor (2026-10-20), o 1º P2 do Codex era o `TODO.md` #17, um resíduo que a
+  rodada de revisão da missão tinha estacionado. Depois do conserto, o #17 seguia citado como defeito aberto em
+  `docs/monitor.md`, duas vezes no `KAIZEN_LOG.md`, no corpo do PR e num texto ⛔ da fase DOCS. A sessão achou
+  as citações por `grep` porque procurou; nenhuma reference mandava. `55e17a5` apagou o item e reescreveu as
+  citações, `57ccb0b` aplicou o texto proposto sem a frase, e o `check-todo.sh --anchors` deu `0 off target`.
+- **Onde:** só na reference. O `SKILL.md` muda só o `metadata.version`: está em 19.991 caracteres, a 9 do AVISO
+  do C1, e já manda ler o `fix-loop.md` antes do primeiro conserto de lógica.
+
 ## [2.26.3] — 2026-10-20
 
 ### O `commit_id` de um comentário inline segue o head; o commit revisado é o `original_commit_id` (coderabbit-pr 4.5.3)

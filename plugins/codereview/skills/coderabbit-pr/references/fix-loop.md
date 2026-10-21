@@ -33,7 +33,8 @@ symptom — including one that opens a new fail-open next to it. The regression 
    (digital_service_report_api PR #92, `01a7c87`): "a successful refresh clears the QUEBRADO marker"
    stayed green with the marker write sabotaged while three others went red; one assertion of the
    marker in the middle made that sabotage red too.
-2. **Fix** — the minimal change, with the editing tool, on the PR's head branch.
+2. **Fix** — the minimal change, with the editing tool, on the PR's head branch. A finding the
+   backlog already carries is also retired in this commit (*A finding already in the backlog*).
 3. **Green** — the probe from step 1 passes. **Still red after the fix? Judge the probe before the
    fix.** A probe that went red at its first assertion (the missing key) never ran the others, so
    their expectations are unproven: check each against the fixture and the code that existed before
@@ -77,6 +78,23 @@ symptom — including one that opens a new fail-open next to it. The regression 
 Shell and `awk` tooling deserve the loop most: portability bugs (zsh not splitting `$var`, `mawk`
 being byte-oriented, `pipefail` turning `grep -q` into exit 141 on large input) pass every probe
 written with ASCII input on the author's shell.
+
+## A finding already in the backlog
+
+A pipeline often parks a residue it chose not to fix (a `TODO.md` item, numbered `#N` in an
+sdd-style file, or an open issue), and a bot then raises the same defect on the PR. Before the
+fix, search the backlog for the finding's symbol and file (`grep -n '<symbol>' TODO.md`,
+`gh issue list --search '<symbol>'`). When it is that item, the fix commit also retires it, by the
+project's own rule (deleted, or marked `RESOLVED by`), and rewrites every live citation of `#N`
+that still calls the defect current: the doc paragraph that lists it as a known exception, the
+changelog or KAIZEN entry, the PR body, a proposed text still waiting to be applied. Find them by
+the number and by the symbol, outside the frozen artifacts of past phases (handoffs, review
+rounds). Left alone, the PR ships the fix with its own docs saying the bug is still there, and the
+next issue mirror reopens it. Measured 2026-10-20 (magic_tutor PR #33): Codex's first P2 was
+`TODO.md` #17, a residue the mission's review round had parked; the number was cited in
+`docs/monitor.md`, twice in `KAIZEN_LOG.md`, in the PR body and in a ⛔ text the DOCS phase had
+proposed. `55e17a5` deleted the item and rewrote those, `57ccb0b` applied the proposed text
+without the sentence, and `check-todo.sh --anchors` read `0 off target`.
 
 ## Stop rule
 
