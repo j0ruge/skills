@@ -20,25 +20,51 @@ print('current' if any(sys.argv[1].startswith(p + '/') for p in paths) else f'ST
 EOF
 ```
 
-`STALE` → stop and ask for `/reload-plugins`, then run the skill again. A skill loaded from a
-symlink in `~/.claude/skills` or from a project is read from disk: nothing to check. Measured
-2026-10-05 (sdd_agents PR #222): loaded from `…/codereview/2.9.4/` with `installPath`
-`…/codereview/2.10.0`; the run missed the per-commit coverage rule added in between, and its report
-never said that the four fix commits it pushed had been reviewed by no bot.
+`STALE` → the steps in context may be older than the installed ones: run from the installed copy
+(below). A skill loaded from a symlink in `~/.claude/skills` or from a project is read from disk:
+nothing to check. Measured 2026-10-05 (sdd_agents PR #222): loaded from `…/codereview/2.9.4/` with
+`installPath` `…/codereview/2.10.0`; the run missed the per-commit coverage rule added in between,
+and its report never said that the four fix commits it pushed had been reviewed by no bot.
 
 **`STALE` with this skill's folder unchanged runs the same skill.** A plugin release that touched
-only the sibling `codereview` leaves this folder byte-identical. Compare it before stopping, and take
-the exit status as the answer, not the printed output, which a shell hook may rewrite:
+only the sibling `codereview` leaves this folder byte-identical. Compare it first, with `diff` by
+its absolute path and the exit status as the answer: a shell hook may rewrite a bare `diff`, its
+output and its exit status alike:
 
 ```bash
-diff -rq "<base directory>" "<installPath>/skills/coderabbit-pr" && echo same
+/usr/bin/diff -rq "<base directory>" "<installPath>/skills/coderabbit-pr" && echo same
 ```
 
 `same` → go on, and say it in the closing report (`cache 2.18.3 = installed 2.18.4`). Anything
-else → stop as above. Measured 2026-10-18 (dotp-remake PR #7): loaded from `…/codereview/2.18.3/`
-with 2.18.4 installed, the two `coderabbit-pr` folders compared `same`, and the run closed with
-`unresolved: 0`. In the same session a hook-rewritten `diff` of two files that differed printed
-"Files are identical".
+else → *Run from the installed copy*. Measured 2026-10-18 (dotp-remake PR #7): loaded from
+`…/codereview/2.18.3/` with 2.18.4 installed, the two `coderabbit-pr` folders compared `same`, and
+the run closed with `unresolved: 0`. In the same session a hook-rewritten `diff` of two files that
+differed printed "Files are identical"; the sibling `codereview` measured the same rewrite exiting 0
+(2026-10-19, its *Stale copy* section).
+
+### Run from the installed copy
+
+`/reload-plugins` is a slash command, which the agent cannot run, and stopping for it hands the run
+back to the user. The installed copy is on disk: read it from there. From here on, the skill folder
+is `<installPath>/skills/coderabbit-pr`, and every reference SKILL.md routes to, and every script,
+comes from it. Then compare the two `SKILL.md`:
+
+```bash
+/usr/bin/diff "<base directory>/SKILL.md" "<installPath>/skills/coderabbit-pr/SKILL.md"
+```
+
+- **Only the `version:` line differs** → the steps in context are the installed ones; go on.
+- **Any other line differs** → Read the installed `SKILL.md` whole and follow it, not the text
+  loaded in context.
+
+In the closing report, name both versions (`loaded 4.5.2, ran from installed 4.5.5`) and say that
+`/reload-plugins` makes the next run load the installed copy. Measured 2026-10-21
+(lighthouse_project PR #107): loaded from `…/codereview/2.26.0/` with 2.26.8 installed; the two
+`SKILL.md` differed only in `version:` (4.5.2 → 4.5.5), while `fix-loop.md`,
+`regression-testing.md` and `reviewer-registry.md` differed, and only the installed `fix-loop.md`
+had *A finding already in the backlog*. The run followed the references of the installed folder
+and closed with `total: 1 unresolved: 0`; the rule that stopped on any difference would have
+halted it at 1.1.
 
 ## Where the fixes are made
 

@@ -2,6 +2,49 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.26.9] — 2026-10-21
+
+### A cópia desatualizada roda da instalada, o conserto do Check de um plano se prova com o JSON do runner feito à mão, e um `local/ci` verde no head é o baseline (coderabbit-pr 4.5.6)
+
+- **O quê:**
+  - `skills/coderabbit-pr/references/pr-branch.md`: o `STALE` com a pasta diferente deixa de parar pedindo
+    `/reload-plugins`. A seção nova *Run from the installed copy* põe a pasta da skill no `installPath`
+    (references e scripts saem dali) e compara os dois `SKILL.md`: se só a linha `version:` difere, segue;
+    se outra linha difere, lê o `SKILL.md` instalado inteiro e segue por ele. O relatório final nomeia as
+    duas versões. O `diff -rq` da comparação das pastas passa a ser chamado por `/usr/bin/diff`, porque é
+    dele que a regra nova depende, e a `codereview` mediu o `diff` reescrito pelo hook saindo com rc 0
+    para arquivos diferentes (`configuration.md`, *Stale copy*, medido em 2026-10-19). A reference cita a
+    seção sem o nome do arquivo, porque o nome contaria como cadeia de references de mais de um nível (C2).
+  - `skills/coderabbit-pr/references/fix-loop.md`: a seção nova *A fix to a plan's Check*, e uma frase na
+    abertura dizendo que um comando que um passo posterior roda é código onde quer que esteja. O passo a
+    passo é copiar o comando do Check para o scratchpad, escrever fixtures no formato do JSON do runner
+    (uma que deve passar e uma por cláusula quebrada), ver o Check velho aceitar a fixture do achado e o
+    novo recusá-la, sabotar cada cláusula numa cópia e pôr no Check o título de cada caso que o conserto
+    acrescenta ao plano.
+  - `skills/coderabbit-pr/references/regression-testing.md`, 4.0: um status de commit que já mediu o head
+    (`local/ci`, pela API de Statuses) serve de baseline quando a árvore está no `headRefOid` sem mudança
+    local, o estado é `success` e a descrição nomeia o comando do 4.1 ou um que o contém. O 4.2 roda o mesmo
+    comando, e uma falha sob um status verde é rodada de novo no head antes de virar regressão.
+- **Por quê:** na sessão do `/coderabbit-pr` do PR #107 do lighthouse_project (2026-10-21):
+  - a sessão tinha carregado o 2.26.0, com o 2.26.8 instalado. Os dois `SKILL.md` diferiam só no
+    `version:` (4.5.2 → 4.5.5), mas `fix-loop.md`, `regression-testing.md` e `reviewer-registry.md`
+    diferiam, e só o `fix-loop.md` instalado tinha *A finding already in the backlog*. Pela regra antiga a
+    rodada parava na 1.1. A sessão seguiu lendo as references da pasta instalada e fechou com
+    `total: 1 unresolved: 0`;
+  - o P1 do Codex (o executável que também é PDF) foi consertado no plano em `8ab1942`, que acrescentou
+    dois casos ao I5, subiu o piso do Check de 16 para 18 e o ancorou no título de um deles. A rodada do
+    `/codereview` sobre o conserto deu MEDIUM porque o outro caso, o poliglota, não estava preso. Com o
+    título no Check (`fa1dc78`), a fixture com 18 casos e os três títulos deu `true`, a sem o título do
+    poliglota deu `false`, e a cópia sem essa âncora voltou a dar `true`;
+  - o P1 chegou no `68abf95`, que tinha `local/ci=success` (`infra/gate/gate.sh --sem-ci: 15/15`) havia
+    17 minutos, publicado pelo gate que o CLAUDE.md do repo declara. Rodar a suíte de novo só repetiria
+    o zero.
+- **Onde:** só nas references. O `SKILL.md` da `coderabbit-pr` muda só o `metadata.version` (4.5.5 → 4.5.6,
+  mesmo comprimento), segue com 19 991 caracteres e já manda ler o `pr-branch.md` na 1.1, o
+  `regression-testing.md` antes do primeiro conserto e o `fix-loop.md` antes do primeiro conserto de lógica.
+  O `SKILL.md` da `codereview` não muda: a lição dela sobre a cópia desatualizada já estava no
+  `configuration.md`.
+
 ## [2.26.8] — 2026-10-21
 
 ### Um repositório que não é o cwd da sessão também escreve o `-C` em cada comando

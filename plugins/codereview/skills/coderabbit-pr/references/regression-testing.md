@@ -38,6 +38,28 @@ edited. Only when the suite shares no state outside the tree (a port, a database
 path); remove the worktree after. Measured 2026-10-05 (sdd_agents PR #222): 1839 ok in ~8 min in
 the worktree while the first red probe ran in the checkout.
 
+**A commit status that already measured the head is the baseline.** A project without GitHub
+Actions may publish its local gate as a commit status (a `local/ci` context, by the Statuses API).
+Read the head's statuses before running anything. The combined `status` endpoint keeps the latest
+of each context; the `statuses` list keeps every post, an older `success` included:
+
+```bash
+HEAD_SHA=$(gh pr view "$PR" --json headRefOid -q .headRefOid)
+gh api "repos/$REPO/commits/$HEAD_SHA/status" --jq '.statuses[] | "\(.context) \(.state) \(.description) \(.updated_at)"'
+```
+
+It is the baseline only when all three hold: the tree you fix is at `HEAD_SHA` with no local change
+(`git rev-parse HEAD`, `git status --porcelain`); the state is `success`; and the description names
+the command 4.1 picks, or one that contains it (a declared gate that runs the suite and more). Then
+`baseline_fail: 0` with an empty list, `baseline_pass` as the description counts it, and a line in
+each checklist naming the context, the description and the date. 4.2 then runs that same command,
+so both sides compare one gate. `failure` or `pending` names no failing test: run the suite. A
+status is someone's statement, not a run you watched: a failure in 4.2 under a green status is
+re-run on the head (the detached worktree above) before it is called a regression. Measured
+2026-10-21 (lighthouse_project PR #107): Codex's P1 arrived on `68abf95`, which had carried
+`local/ci=success` (`infra/gate/gate.sh --sem-ci: 15/15, 0 reprovados`) for 17 minutes, the gate the
+repo's CLAUDE.md declares; the fix head `8ab1942` got the same gate, 15/15.
+
 **Save the baseline as:**
 
 ```

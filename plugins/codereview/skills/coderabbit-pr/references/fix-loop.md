@@ -2,7 +2,9 @@
 
 Read this at Phase 3.2, before the first **logic** fix: a finding whose fix changes what the code
 decides — a branch, a guard, a parser, a regex, a return value, an exit code. Prose, naming,
-comments and pure formatting are **mechanical** and stay batched (SKILL.md 3.2).
+comments and pure formatting are **mechanical** and stay batched (SKILL.md 3.2). A command a later
+step runs is code wherever it lives: a fix to a plan's Check is a logic fix (*A fix to a plan's
+Check*).
 
 ## Why the loop exists
 
@@ -107,6 +109,34 @@ the part: a probe written for the occasion measures another population, and its 
 while comparing with nothing. Measured 2026-10-20 (magic_tutor PR #33, `3ea5c0e`): a fresh script
 counted `491` target prompts because it read a field the fixed rule itself clears; redone with the
 original `fonte_do_alvo.py` method the total came back to `619`, and the figure moved from 53 to 129.
+
+## A fix to a plan's Check
+
+A plan that a pipeline executes later (an sdd `01-plano.md` and its `checkpoint.md` row) carries a
+**Check**: a command the runner evaluates against output that does not exist yet, such as a
+`node -e` over the test runner's JSON report. The loop above still applies, with the runner's
+output built by hand as the probe:
+
+1. Copy the command the Check evaluates (the `node -e '…'`, the `awk`, the `jq`) to a scratch file,
+   verbatim.
+2. Write fixtures in the shape the runner emits — for vitest's `--reporter=json`, `numFailedTests`,
+   `numPassedTests` and `testResults[].assertionResults[]` with `title` and `status`: one that must
+   pass (every case the plan names, at the floor count), and one per clause with only that clause's
+   condition broken (a title missing, one case short, a failure).
+3. Red and green: the old Check accepts the fixture the finding describes; the new one refuses it
+   and still accepts the good one.
+4. Sabotage each clause in a **copy** of the Check, never in the plan: drop it or loosen it, and
+   the fixture it guards must pass again. A clause whose removal changes nothing has no sensor.
+5. Every case the fix adds to the plan gets its title in the Check. A floor count (`>= 18`) passes
+   with any 18 cases, including an implementation that skips the new one.
+
+The fixtures and copies stay in the scratchpad: say in the commit and the checklist that the proof
+was by hand, with no artifact in the repo. Measured 2026-10-21 (lighthouse_project PR #107): Codex's
+P1 (an executable that is also a PDF passed the PDF window) was fixed in the plan in `8ab1942`,
+which added two cases to I5, raised the Check's floor from 16 to 18 and anchored it on one title;
+the `/codereview` round over the fix rated MEDIUM that the other case, the polyglot, was not pinned.
+With its title in the Check (`fa1dc78`), the fixture with 18 cases and the three titles printed
+`true`, the one without the polyglot title `false`, and the copy without that anchor `true` again.
 
 ## Stop rule
 
