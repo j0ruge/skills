@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.7.0
+  version: 2.8.0
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -72,6 +72,7 @@ importa conforme o modo: abra-os só para depurar ou alterar esse modo.
 | `CREATE` | item sem issue | `--apply` cria a issue, com as labels `todo` e `todo: <seção>` |
 | `UPDATE (anchor)` | só mudou o número de linha de uma referência `` `arquivo:N` `` (a âncora ou outra no texto): um PR que desloca linhas do arquivo ancorado gera dezenas | `--apply` sem mais prova: o script comparou o corpo vivo sem permalink, sem marcadores e sem esses números |
 | `UPDATE (text)` | texto, título ou seção mudou de verdade | leia o item antes do `--apply`; é o único `UPDATE` que pede olho |
+| `REF?` | um `#N` solto num corpo que esta rodada escreve (`CREATE`, `UPDATE (text)`), com o destino que o GitHub dará ao link | confira; se o texto quis dizer outra coisa, corrija a fonte (`dono/repo#N`, "item N") antes do `--apply` |
 | `SKIP` | o corpo traz `RESOLVED by <hash>` e não existe issue | nada: não se abre card para achado já fechado; com o hash já na branch padrão, o `--fix` apaga o item |
 | `ORPHAN` | a issue está aberta, mas o item saiu do arquivo. A linha diz em que commit ele saiu e, se o último texto trazia `RESOLVED by`, quem o consertou (`fixed by …`) — lido no commit da remoção, nunca no `HEAD` | **`fixed by`:** `--close-orphans` fecha como concluída, citando o conserto e a remoção. **`no RESOLVED by`** (decidido, refutado, adiado, ou consertado sem o marcador): `--close-orphans` pula (`SKIP`); feche à mão, `gh issue close N --reason "not planned" --comment "<para onde foi>"`. **`last text unknown`** (`removal not found`): a chave nunca saiu do histórico deste checkout — clone raso, arquivo renomeado, branch não mergeada (a de um PR aberto sai como `PENDING`). Desconhecido não é ausente: leia o último texto antes de escolher `completed` ou `not planned` |
 | `PENDING` | a remoção não está no histórico, mas o item está na cabeça de um PR aberto: a issue nasceu de um `--apply` na branch do PR. Só a órfã sem remoção é procurada, com um `gh pr list` e o arquivo em cada cabeça (do git local, ou da API de conteúdo) | nada: deixe aberta, e `--close-orphans` a pula. Depois do merge, vira `OK` ou `UPDATE`. Limite: PR de fork (cabeça em outro repositório) não foi medido; se a cabeça não for lida, a issue segue `ORPHAN` |
@@ -139,30 +140,10 @@ dele fazia toda âncora falhar — o `--audit` do sales_quote acusava 188 viola�
 
 ## Relatório de achados (`ACHADOS-*.md`)
 
-Um arquivo com seções `### N. <título>` entra no **modo relatório** sozinho (`--format` força) —
-menos um `TODO*.md`, que é sempre o backlog: sem o marcador ele vai para a recusa do sensor, e um
-com marcador continua backlog mesmo com uma categoria `### 1. …`.
-Relatório é fotografia datada, não backlog: quase tudo nele já fechou, e o que segue aberto foi
-roteado a algum lugar que já tem issue. Por isso a unidade é a **seção**, nunca as linhas
-`- [ ]` de dentro dela, e o status sai da **tabela de roteamento** (primeira tabela cuja coluna 1
-é `#`, com uma coluna `Desfecho`/`Status` e, se houver, `Evidência`).
-
-| Linha do plano | Significa | O que fazer |
-|---|---|---|
-| `CREATE closed` | o desfecho começa com `RESOLVIDO`/`RESOLVED`/`FIXED` | `--apply` cria a issue **e a fecha** como concluída, com desfecho e commits no topo |
-| `LINK?` | achado aberto e sem destino | descubra a issue que já o acompanha (em geral, o espelho do `TODO.md`) e passe `--link N=<issue>`; só use `--open-unlinked` se não houver nenhuma |
-| `COMMENT` | `--link` dado | `--apply` comenta **uma vez** na issue, com o texto em `<details>` |
-| `CLOSE` | resolvido no relatório, issue aberta | `--apply` fecha (é o que sobra de uma queda entre criar e fechar) |
-
-Seção sem número (uma "observação") entra por `--link "<começo do título>=<issue>"`; o prefixo
-tem de casar com exatamente um cabeçalho. `--close-orphans` não existe neste modo: nada sai de um
-relatório.
-
-```bash
-python3 $S --file ACHADOS-x.md                                     # plano
-python3 $S --file ACHADOS-x.md --apply --limit 1                   # canário, SEM --link
-python3 $S --file ACHADOS-x.md --apply --link 6=153 --link "Uma obs=155"
-```
+Um arquivo com seções `### N. <título>` entra no **modo relatório** sozinho (`--format` força); um
+`TODO*.md` é sempre o backlog. Antes do primeiro plano de um relatório, leia
+`references/modo-relatorio.md`: a unidade é a seção, o status sai da tabela de roteamento, e o plano
+tem linhas próprias (`CREATE closed`, `LINK?`, `COMMENT`, `CLOSE`).
 
 ## Identidade: por que o script faz assim
 
@@ -218,6 +199,10 @@ python3 $S --file ACHADOS-x.md --apply --link 6=153 --link "Uma obs=155"
   `--limit 1`): leia cada `UPDATE (text)` antes dele. No relatório, com `--link`, todo comentário.
 - **Traduzir ou resumir o item na issue.** O espelho que se afasta da fonte deixa de ser espelho.
   Corrija o texto no `TODO.md` e sincronize.
+- **Deixar um `#N` solto no item.** Na issue, o GitHub liga todo `#N` fora de crase ao `#N` **deste**
+  repo, queira o texto o item N do arquivo ou o PR de outro repo: "Liga com o #1" (o item 1) virou
+  link para o PR #1 do magic_tutor (2026-10-20). Cada `REF?` do plano mostra o destino; o conserto é
+  na fonte, com `dono/repo#N` ou "item N".
 - **Espelhar a partir de uma branch de trabalho.** O script lê o `TODO.md` do diretório atual: numa
   branch, o `--apply` leva o texto dela (`RESOLVED by` ainda não mergeado, permalink no sha da
   branch) a toda issue que difere da branch padrão — no kit sdd, em 2026-10-07, 15 `UPDATE` onde só

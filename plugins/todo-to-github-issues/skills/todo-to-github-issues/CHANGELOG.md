@@ -3,6 +3,24 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-20 — o `#N` solto que o GitHub liga ao número errado
+
+Publicado como **v2.8.0**. Saiu do espelho do `TODO.md` do `magic_tutor` depois dos PRs #32 e #33
+de lá, que criou as issues #34 a #39.
+
+- **"Liga com o #1" virou link para o PR #1.** O item 19 citava o item 1 do arquivo (a issue #10). Na
+  issue #34, o GitHub ligou o `#1` ao PR #1 ("revisão de código até nota A…"), conferido no HTML
+  renderizado. O plano mostrou `CREATE` sem nenhum aviso, e a skill já protegia o `@nome` (`defang`),
+  mas não o `#N`.
+- **Reescrever não serve.** Nas seções abertas do `magic_tutor` e do kit sdd havia 8 `#N` soltos.
+  Quatro estavam certos (`#11`, `#246`, `#247`, `#254`) e quatro apontavam para outro lugar: o item
+  1, um PR do `lighthouse_project` e dois do `sales_quote`. Esses dois ainda saem como texto puro, e
+  vão virar link errado quando o kit chegar ao #405. Por isso a saída é uma linha `REF?` com o
+  destino, e o conserto é na fonte: o `magic_tutor` abriu o PR #40 com "item 1 (#10)".
+- **Conferido num plano real.** Na branch do PR #40, o plano mostrou
+  `REF?    L12   #10 → issue #10: 1. Ver a dica de bloqueio chegar a tempo…`. Na `main`, sem corpo
+  a escrever, não saiu nenhuma linha `REF?`.
+
 ## 2026-10-19 — migrar à mão, a numeração citada e espelhar da worktree
 
 Publicado como **v2.7.0**. São três lições da migração do `TODO.md` do `magic_tutor`: 6 itens no

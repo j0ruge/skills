@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import functools
 import hashlib
 import json
 import os
@@ -301,6 +302,53 @@ def defang(md: str) -> str:
     (`@codex review` in a finding made the Codex connector reply on the issue). A zero-width space
     after the @ keeps the text as it reads and takes the mention away."""
     return MENTION_RE.sub("@\u200b", md)
+
+
+CODE_RE = re.compile(r"(`+).+?\1", re.S)  # a code span, and with re.S a fenced block too
+BARE_REF_RE = re.compile(r"(?<![\w&])#(\d+)\b")
+REF_HINT = 'outro sentido? escreva dono/repo#{n} ou "item {n}" no arquivo'
+
+
+def bare_refs(md: str) -> list[int]:
+    """Every `#N` GitHub will autolink to THIS repo's issue or PR N, once each, in order. Code spans
+    and fenced blocks are not autolinked; `owner/repo#N`, `repo#N`, `&#N;` and `file#L12` are not
+    bare. The text may mean something else (an item of the file, another repo's PR): measured
+    2026-10-20, "Liga com o #1" (item 1) rendered as a link to PR #1 of magic_tutor."""
+    seen: list[int] = []
+    for m in BARE_REF_RE.finditer(CODE_RE.sub(" ", md)):
+        if int(m.group(1)) not in seen:
+            seen.append(int(m.group(1)))
+    return seen
+
+
+def _fetch_number(repo: str, n: int) -> dict | None:
+    r = subprocess.run(["gh", "api", f"repos/{repo}/issues/{n}"], capture_output=True, text=True, check=False)
+    if r.returncode == 0:
+        return json.loads(r.stdout)
+    if "Not Found" in r.stdout + r.stderr:
+        return None
+    raise RuntimeError(r.stderr.strip() or f"gh api rc={r.returncode}")
+
+
+def ref_target(repo: str, n: int, issues: list[dict], fetch=None) -> str:
+    """What a bare `#n` links to: an issue the plan already listed, else one `gh api` call, which
+    answers for a PR too. A number the repo does not have renders as text today, and as a link to
+    whatever gets that number later."""
+    hit = next((i for i in issues if i.get("number") == n), None)
+    if hit is None:
+        try:
+            hit = (fetch or (lambda k: _fetch_number(repo, k)))(n)
+        except Exception as e:  # a lookup that fails must not hide the reference
+            return f"#{n}: não consegui ler ({short(str(e), 60)})"
+    if not hit:
+        return f"nenhum #{n} neste repo: hoje sai texto, e vira link quando o repo chegar lá"
+    return f"{'PR' if 'pull_request' in hit else 'issue'} #{n}: {short(hit.get('title', ''), 70)}"
+
+
+def ref_lines(written: list[Item], ctx: Ctx, target) -> list[str]:
+    """The plan's `REF?` lines for the bodies this run writes: each bare `#N` with its target."""
+    return [f"REF?    L{it.start:<4} #{n} → {target(n)} — " + REF_HINT.format(n=n)
+            for it in written for n in bare_refs(render_body(it, ctx))]
 
 
 REL_LINK_RE = re.compile(r"\]\((?!https?://|mailto:|#|/)([^)\s]+)\)")
@@ -691,7 +739,8 @@ def main() -> int:
         print(f"dumped {len(items)} bodies to {a.dump}")
         return 0
 
-    plan = build_plan(items, fetch_issues(ctx.repo), ctx.relpath)
+    issues = fetch_issues(ctx.repo)
+    plan = build_plan(items, issues, ctx.relpath)
     guess_renames(plan, ctx)
     print(f"repo {ctx.repo} · file {ctx.relpath} · {len(items)} items · permalinks at "
           f"{ctx.sha[:7] if ctx.sha else ctx.branch}")
@@ -702,6 +751,13 @@ def main() -> int:
     kinds = [update_kind(it, iss, ctx) for it, iss in plan.update]
     for (it, iss), kind in zip(plan.update, kinds):
         print(f"UPDATE  #{iss['number']:<4} L{it.start:<4} ({kind:<6}) {short(it.title)}")
+    # A bare #N links to THIS repo's #N whatever the text meant, so the plan names each target and
+    # the source is fixed by hand. Only for the bodies this run writes: an (anchor) update carries
+    # the text already mirrored, and listing it would repeat the same lines on every plan.
+    written = plan.create + [it for (it, _), k in zip(plan.update, kinds) if k == "text"]
+    target = functools.lru_cache(maxsize=None)(lambda n: ref_target(ctx.repo, n, issues))
+    for line in ref_lines(written, ctx, target):
+        print(line)
     for it in plan.skip_resolved:
         print(f"SKIP    L{it.start:<4} RESOLVED by, no issue to mirror — {short(it.title, 60)}")
     for it, iss in plan.closed_present:

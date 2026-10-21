@@ -3,6 +3,40 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.8.0] — 2026-10-20
+
+Minor: o plano ganha a linha `REF?`, porque um `#N` solto no item vira, na issue, link para o `#N`
+deste repo.
+
+### Added
+
+- **Linha `REF?` no plano.** Para cada corpo que a rodada escreve (`CREATE` e `UPDATE (text)`), o
+  plano lista os `#N` soltos e o que o GitHub vai ligar a cada um: issue, PR ou "nenhum #N neste
+  repo". O título sai da lista de issues que o plano já carrega; só o que falta custa um
+  `gh api repos/{repo}/issues/{n}`, que também responde por PR. O espelho continua literal: o script
+  não reescreve nenhum `#N`, e o conserto é na fonte (`dono/repo#N` ou "item N").
+  - `scripts/todo_issues.py`: `bare_refs`, `ref_target`, `ref_lines` e `_fetch_number`. Ficam de fora
+    os `#N` em crase ou em bloco de código, e os colados a letra ou a `&` (`dono/repo#N`, `repo#N`,
+    `&#N;`). Um `#N` seguido de letra, como `arquivo#L12`, também não conta. O 404 do `gh` lê como
+    "nenhum #N", e qualquer outra falha aparece na linha, sem derrubar o plano.
+  - `scripts/test_todo_issues.py`: 10 casos sem rede, com as formas medidas. As 12 sabotagens das
+    regras novas ficaram vermelhas, cada uma no teste da sua regra.
+- **`references/modo-relatorio.md`.** A seção *Relatório de achados* saiu do `SKILL.md` palavra por
+  palavra (`cmp` igual), com uma nota sobre o `$S`. No lugar ficou um roteador que diz quando ler.
+
+### Why
+
+- Em 2026-10-20, a issue #34 do `magic_tutor` (espelho do item 19) trazia "Liga com o #1". O #1 era o
+  item 1 do arquivo, mas o HTML renderizado tinha `href=".../pull/1"`, um PR sem relação. O plano
+  mostrou `CREATE` sem aviso. Medidos os `#N` soltos das seções abertas do `magic_tutor` e do kit
+  sdd, 4 de 8 apontavam para outro lugar (um item, PRs de outros repos) e 4 estavam certos. Por isso
+  o plano avisa, e não reescreve.
+- O `REF?` sai só para `CREATE` e `UPDATE (text)`: um `UPDATE (anchor)` leva o texto já espelhado, e
+  repetir as mesmas linhas a cada plano viraria ruído.
+- O `SKILL.md` estava em 19.960 caracteres, a 40 do AVISO do C1. A linha nova só coube com a seção
+  do modo relatório movida para uma reference (Estratégia A da `skill-refactoring`), e o arquivo
+  ficou com 19.188.
+
 ## [2.7.0] — 2026-10-19
 
 Minor: três lições da migração e do espelho do `TODO.md` do `magic_tutor` (PR #9 de lá).

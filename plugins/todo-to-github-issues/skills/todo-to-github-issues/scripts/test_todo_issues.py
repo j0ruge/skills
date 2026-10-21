@@ -304,6 +304,52 @@ check("defang: applied on the report path",
       "@\u200bcodex" in r.unwrap(["pediu `@codex review`"], rctx))
 check("defang: applied on the TODO path", all("@codex" not in t.render_body(i, ctx) for i in items))
 
+# --- bare #N references ---------------------------------------------------------------------------
+# Measured 2026-10-20 (magic_tutor issue #34): the item said "Liga com o #1", meaning item 1 of the
+# file (issue #10), and GitHub rendered the #1 as a link to PR #1. Half of the bare #N measured that
+# day (magic_tutor and the sdd kit) were right, so the plan names each target and never rewrites.
+check("refs: a bare #N in prose, in parentheses and after 'PR' is found, each once",
+      t.bare_refs("Liga com o #1. Ver (#10) e o PR #29, de novo #1") == [1, 10, 29])
+check("refs: qualified, glued, entity, fragment and code are not",
+      t.bare_refs("`dono/repo#10` e sales_quote#484, &#123;, TODO.md#L12, `#7` e\n```\n#3\n```\nfim") == [])
+fake = {29: {"number": 29, "title": "chore(todo): catraca", "pull_request": {}}}
+check("refs: an issue the plan already listed is named without the network",
+      t.ref_target("o/r", 10, [{"number": 10, "title": "1. Ver a dica"}], fetch=lambda n: 1 / 0)
+      == "issue #10: 1. Ver a dica")
+check("refs: a PR is named as a PR", t.ref_target("o/r", 29, [], fetch=fake.get) == "PR #29: chore(todo): catraca")
+check("refs: a number the repo does not have says so", "nenhum #405" in t.ref_target("o/r", 405, [], fetch=fake.get))
+def offline(n):
+    raise RuntimeError("error connecting to api.github.com")  # what _fetch_number raises
+
+
+check("refs: a lookup that fails names the number and the error, and the plan goes on",
+      t.ref_target("o/r", 7, [], fetch=offline) == "#7: não consegui ler (error connecting to api.github.com)")
+real_run = t.subprocess.run
+answers = iter([(1, "", "gh: Not Found (HTTP 404)"), (1, "", "error connecting to api.github.com")])
+t.subprocess.run = lambda *a, **k: type("R", (), dict(zip(("returncode", "stdout", "stderr"), next(answers))))()
+try:
+    missing = t._fetch_number("o/r", 405)
+    try:
+        t._fetch_number("o/r", 406)
+        offline = "no error"
+    except RuntimeError as e:
+        offline = str(e)
+finally:
+    t.subprocess.run = real_run
+check("refs: gh's 404 reads as 'no such number', any other failure is an error, never 'no such number'",
+      missing is None and "api.github.com" in offline)
+it_ref = copy.deepcopy(items[0])
+it_ref.rest += " Liga com o #1."
+ref_out = t.ref_lines([it_ref], ctx, lambda n: f"PR #{n}: x")
+check("refs: the plan line names the item's line, the number and its target, and how to fix the source",
+      any(l.startswith(f"REF?    L{it_ref.start:<4} #1 → PR #1: x") and "dono/repo#1" in l for l in ref_out))
+check("refs: an item with no bare #N prints nothing",
+      t.ref_lines([i for i in items if not t.bare_refs(t.render_body(i, ctx))][:1], ctx, lambda n: 1 / 0) == [])
+import inspect
+
+check("refs: main() names the targets of the bodies it writes — CREATE and UPDATE (text), not (anchor)",
+      "ref_lines(written," in inspect.getsource(t.main) and 'k == "text"' in inspect.getsource(t.main))
+
 stem = "R"
 extra = r.extra_findings({"Uma obs": 9}, spans, rlines, set(by))
 check("--link by heading prefix picks the unnumbered section", len(extra) == 1 and extra[0].lines == ["corpo da observação"])
