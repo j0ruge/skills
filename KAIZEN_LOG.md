@@ -6,6 +6,24 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-10-22 — Hash tipado preserva a varredura do manifesto
+
+- **Tipo:** padronização de correção verificada.
+- **Antes:** §6.10 de codereview reconhecia checksums sinalizados como credenciais,
+  mas oferecia apenas allowlist do arquivo como remédio durável.
+- **Depois:** codereview 2.26.10 oferece primeiro um registro com `sha256` quando
+  o schema puder mudar, preservando a alternativa anterior para schema imutável.
+- **Check:** 15 testes passaram, incluindo três fixtures independentes com
+  gitleaks real: alerta original, hash tipado limpo e canário detectado no mesmo
+  manifesto. SQA antes/depois sem erros/avisos; gate sem `NOVO` ou `SUMIU`.
+- **Padronizado em:** `plugins/codereview/skills/codereview/references/detection-passes.md`
+  §6.10 e `tests/test_scan_secrets.py:TestTypedHashManifest` da mesma skill.
+- **Yokoten:** a referência exige conferir todos os hashes na revisão fixada,
+  atualizar produtor e consumidores e repetir os mesmos scanners/regras. Nenhuma
+  exceção de scanner foi adicionada. Versões e descrição conferidas nos espelhos.
+
+---
+
 ## 2026-10-22 — Revisão impede perda de recursos e desvio do gate
 
 - **Tipo:** correção de causa raiz e padronização.

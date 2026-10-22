@@ -14,6 +14,7 @@ scanner simulado e valem sem ele.
 O token de teste é gerado na hora: nenhum literal com cara de credencial fica
 neste arquivo.
 """
+import hashlib
 import json
 import secrets
 import shutil
@@ -104,6 +105,54 @@ class TestGitleaksVeSoODiff(RepoComPR):
             "[extend]\nuseDefault = true\n\n[allowlist]\npaths = ['''sub/cfg\\.py''']\n")
         self.pr_com_token_na_linha_3()
         self.assertEqual(self.do_gitleaks(self.scan()), [])
+
+
+@unittest.skipUnless(TEM_GITLEAKS, "gitleaks fora do PATH")
+class TestTypedHashManifest(RepoComPR):
+    """O hash tipado evita falso positivo sem excluir o próprio manifesto do scan."""
+
+    def _manifest(self, typed: bool, canary: bool = False) -> Path:
+        """Monta os dados do zero; o eventual canário só existe no repo descartável."""
+        source = self.repo / "artifacts/api-index.json"
+        source.parent.mkdir()
+        source.write_text(json.dumps({"kind": "fixture"}) + "\n")
+        digest = hashlib.sha256(source.read_bytes()).hexdigest()
+        record = {"sha256": digest} if typed else digest
+        data = {"artifacts/api-index.json": record}
+        if canary:
+            data["probe"] = token_falso()
+        manifest = self.repo / "hashes.json"
+        manifest.write_text(json.dumps(data, indent=2) + "\n")
+        return manifest
+
+    def test_original_hash_reproduces_false_positive(self):
+        manifest = self._manifest(typed=False)
+        digest = json.loads(manifest.read_text())["artifacts/api-index.json"]
+        self.assertEqual(digest, hashlib.sha256(
+            (self.repo / "artifacts/api-index.json").read_bytes()).hexdigest())
+        self.commit_pr()
+        result = self.scan()
+        self.assertEqual(result["errors"], [])
+        self.assertIn("gitleaks", result["scanners"])
+        self.assertEqual([(f["file"], f["kind"]) for f in result["findings"]
+                          if f["source"] == "gitleaks"], [("hashes.json", "generic-api-key")])
+
+    def test_typed_hash_passes_without_allowlist(self):
+        self._manifest(typed=True)
+        self.commit_pr()
+        result = self.scan()
+        self.assertEqual(result["errors"], [])
+        self.assertIn("gitleaks", result["scanners"])
+        self.assertEqual(result["findings"], [])
+
+    def test_canary_in_same_typed_manifest_is_still_detected(self):
+        self._manifest(typed=True, canary=True)
+        self.commit_pr()
+        result = self.scan()
+        self.assertEqual(result["errors"], [])
+        self.assertIn("gitleaks", result["scanners"])
+        self.assertEqual([(f["file"], f["kind"]) for f in result["findings"]
+                          if f["source"] == "gitleaks"], [("hashes.json", "github-pat")])
 
 
 class TestQuantoLeu(RepoComPR):

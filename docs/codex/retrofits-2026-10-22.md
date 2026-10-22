@@ -79,3 +79,48 @@ O workspace ignorado mantém os mesmos controles em
 Desktop/macOS/Windows, versão mínima e revisão independente da implementação
 continuam pendentes conforme o handoff. Nenhuma instalação pessoal, push, merge
 ou publicação remota foi feita nesta etapa.
+
+## Retrofit posterior à revisão — codereview 2.26.10
+
+Após a revisão da missão, o usuário autorizou incorporar a lição comprovada dos
+hashes. Não foi retomada a suspeita anterior sobre delegação. O plugin continua
+`partial` e excluído do catálogo Codex; os 25 pacotes publicados não mudaram.
+
+§6.10 agora oferece um registro JSON com campo `sha256` antes da allowlist,
+quando o contrato do manifesto puder mudar. Exige conferir todos os digests na
+revisão fixada, preservar caminhos e valores, atualizar produtor e consumidores
+e repetir o scan completo. O achado permanece até a nova prova limpa. O fallback
+de configuração para schema imutável, a régua de grade F e read-only continuam.
+
+Três fixtures independentes de `TestTypedHashManifest` comprovam o alerta
+`generic-api-key` no formato original, ausência de findings no formato tipado e
+detecção `github-pat` de um canário gerado em execução no mesmo manifesto. As
+asserções exigem gitleaks em `scanners` e `errors: []`; não houve skip neste host.
+Os 15 testes do scanner passaram. Nenhum valor de canário foi versionado.
+
+Baseline e resultado SQA: zero erros/avisos, com `--external off` nos dois lados;
+gate sem `NOVO` ou `SUMIU`. SKILL.md permaneceu em 247 linhas, com 20.000
+caracteres após acrescentar um caractere ao número de versão. Descrição mantida
+em 477 caracteres; os espelhos de versão foram atualizados para 2.26.10.
+
+Auditoria de prompts nativa e teste de aplicação independente não encontraram
+achados novos. O guia histórico de prompt audit continuava ausente, sem alegação
+de executar o comando Claude ou benchmark de modelos. A divergência anterior
+entre §6.10 e o contrato per-file sobre DOCS ficou registrada no CHANGELOG, fora
+desta correção. Evidências de auditoria em
+`/home/joruge/.wt/retrofit-codereview-hash-na3q03qc/`.
+
+Comandos de verificação:
+
+```bash
+python3 -m unittest discover -s plugins/codereview/skills/codereview/tests -p 'test_*.py' -v
+python3 plugins/skill-quality-audit/skills/skill-quality-audit/scripts/audit_skill_quality.py plugins/codereview/skills/codereview --external off --format json --claims --desc-budget 0
+python3 /home/joruge/.agents/skills/retrofit-skill/scripts/check_release_sync.py codereview
+python3 scripts/codex-adapters.py --check
+python3 scripts/codex-marketplace.py --check
+python3 scripts/validate-versions.py
+git diff --check
+```
+
+Este incremento foi mantido na branch local da missão. A autorização de retrofit
+não foi usada para publicar os commits da loja ou atualizar perfis pessoais.

@@ -142,7 +142,8 @@ como leitura, com dados e caches próprios e temporários.
 ### Resultado da revisão
 
 - Base `cff1494`; candidato inicial revisado `bad6ebd`; correções `7df2ea7`.
-  O HEAD posterior contém apenas fechamento documental/evidências.
+  O fechamento `af278f1` contém apenas documentação/evidências. Depois dele,
+  codereview recebeu o retrofit 2.26.10, descrito abaixo.
 - Dois defeitos no adaptador e duas causas de desvio do gate foram reproduzidos
   e corrigidos. Cinco regressões novas ficaram RED antes e GREEN depois.
 - Quatro `main()` receberam docstrings; dois trechos desatualizados do README
@@ -156,3 +157,13 @@ como leitura, com dados e caches próprios e temporários.
   desktop/macOS/Windows ou versão mínima. Integração/publicação continuam fora
   desta autorização. Uma nova retomada não deve repetir a revisão encerrada;
   deve partir desses limites e do escopo que o usuário solicitar.
+
+### Retrofit autorizado após a revisão
+
+Codereview 2.26.10 incorpora em §6.10 a alternativa de hash tipado antes da
+allowlist, com prova dos bytes e canário no mesmo manifesto. Três casos novos e
+os 15 testes do scanner passaram; auditoria antes/depois sem erros ou avisos.
+O pacote continua excluído do catálogo Codex; os 25 pacotes / 289 arquivos da
+prova em `7df2ea7` não mudaram. Detalhes, limites e comandos em
+[retrofits-2026-10-22.md](../codex/retrofits-2026-10-22.md#retrofit-posterior-à-revisão--codereview-22610).
+O incremento permanece local, sem publicação da missão ou atualização pessoal.

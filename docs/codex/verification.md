@@ -183,7 +183,7 @@ o retrofit posterior de CORS e a revisão abaixo têm evidências próprias.
 
 Revisão completa de `cff1494` até `bad6ebd`, incluindo o retrofit CORS 1.1.2;
 correções verificadas em `7df2ea752184401c820b5fe7e82d952daf3533e1`.
-O fechamento posterior altera somente documentação/evidências. Foram analisados
+O fechamento `af278f1` altera somente documentação/evidências. Foram analisados
 os seis arquivos de código alterados, seus testes, metadados, documentos e a
 coerência entre geradores, instalador, auditor, hook e pacote instalado.
 
@@ -253,6 +253,11 @@ Detection PASS. Elas qualificam a revisão; não convertem os limites de ambient
 em resultados aprovados. R01 continua `partial`; desktop/macOS/Windows continuam
 `not_checked`, e versão mínima não estabelecida. Não houve push, merge,
 publicação ou instalação no perfil pessoal.
+
+O [retrofit posterior](retrofits-2026-10-22.md#retrofit-posterior-à-revisão--codereview-22610)
+incorporou a lição dos hashes em codereview 2.26.10. Esse pacote continua excluído
+do catálogo Codex; o conjunto publicado e a prova dos 289 arquivos em `7df2ea7`
+permanecem válidos. Esse incremento tem verificações próprias e não promove R01.
 
 ## Fontes e limites
 
