@@ -6,6 +6,35 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-10-22 — Revisão impede perda de recursos e desvio do gate
+
+- **Tipo:** correção de causa raiz e padronização.
+- **Antes:** targets equivalentes podiam sobrescrever templates; o overlay podia
+  omitir skills descobertas pelo diretório padrão. O hook podia aceitar commit
+  sem validar quando o detector falhava ou Git colocava aspas no nome do arquivo.
+- **Depois:** targets são comparados como caminhos; o overlay preserva `./skills`;
+  o hook consome nomes delimitados por NUL, usa seleção Bash e falha se Git falhar.
+- **Causa raiz:** a validação comparava representações textuais em vez dos
+  caminhos resolvidos; dois consumidores divergiam no default de skills; o status
+  da pipeline do detector confundia erro com ausência de arquivos relevantes.
+- **Check:** cinco regressões novas falharam antes e passaram depois. A suíte
+  geral passou em 49 testes, sem skips; os 55 testes do auditor também passaram.
+  Geradores, validador e `git diff --check` passaram. A revisão das correções não
+  encontrou novos defeitos. Evidência Git após o commit será registrada em
+  `docs/codex/verification.md`.
+- **Padronizado em:** `scripts/codex-adapters.py`, `scripts/pre-commit`,
+  `tests/test_codex_adapters.py` e `tests/test_codex_validation.py`.
+- **Evidência tipada:** os 289 hashes foram conferidos contra a revisão registrada
+  antes de receberem o campo `sha256`. Isso removeu três alertas indevidos de
+  gitleaks sobre nomes de arquivos com `api`/`token`, sem mudar digest, scanner,
+  regra ou whitelist; a mesma representação é emitida pelo teste de distribuição.
+- **Yokoten:** defaults conferidos entre gerador e adaptador; filtro cobre todos
+  os caminhos de distribuição, inclusive nomes não ASCII. A sonda de docstrings
+  levou à documentação dos quatro `main()` tocados. README corrigido em dois
+  trechos que ainda descreviam o menu e a implementação antigos.
+
+---
+
 ## 2026-10-22 — Retrofit confirmado sem presumir falha por nome de ferramenta
 
 - **Tipo:** correção de causa raiz e verificação de hipótese.

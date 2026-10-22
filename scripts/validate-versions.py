@@ -345,6 +345,7 @@ def _check_cursor_frontmatter(repo_root: Path) -> 'tuple[list[str], list[str]]':
 
 
 def main():
+    """Valida metadados, frontmatter e distribuição; aplica conciliações com --fix."""
     try:
         import yaml
     except ImportError:

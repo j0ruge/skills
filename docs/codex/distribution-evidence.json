@@ -947,415 +947,993 @@
       "ansible-docker-backup-restore": {
         "version": "1.3.4",
         "hashes": {
-          ".claude-plugin/plugin.json": "0af5e5785c14a5d0ea8b7dc8ce40bacfbb872e79d8b42d2804b55b7c6c619540",
-          "CHANGELOG.md": "c142aa4223dfcb8e886722d5253f6575a0155503383ac4c8a883f2ad44cd4091",
-          "skills/ansible-docker-backup-restore/CHANGELOG.md": "b1dced77c5bef69650df7c3ef9af33db594fa54cedf8bef6726a504aa6cd5032",
-          "skills/ansible-docker-backup-restore/SKILL.md": "73868a343993f8674013c5cbb52bc91f61bf959885f64dba20613a939d78528e",
-          "skills/ansible-docker-backup-restore/assets/backup-volumes.sh": "c4cf4227140340f54211b877029eb6d6c093f621401cad33d4c103890201a76e",
-          "skills/ansible-docker-backup-restore/assets/restore-defaults.yml": "2af11463e5c2ff1db45e9b6477eb5908a945f98f398d9b3b0e3bb8456e55ae48",
-          "skills/ansible-docker-backup-restore/assets/restore-volume-guard.yml": "501ae37b03fc1bd827afbb45039808cbf08e1b14925cecb88f134043c1c4957d",
-          "skills/ansible-docker-backup-restore/references/ambiente-e-armadilhas-ansible.md": "0d9209b5cc9c502668e769b821592b9f9d08fbc8e21b7f5d0f89ac1dcd84d34f",
-          "skills/ansible-docker-backup-restore/references/backup-pipeline-e-falha-silenciosa.md": "0a406ac84dedc447f2bcefd13976a6b6a19e60e2e594f82190d9f365d8f98202",
-          "skills/ansible-docker-backup-restore/references/levantamento-e-escopo.md": "eceadee9b7e5f589e8d3409a4fee93b0683c550e3ed184bca46bdd1110224e8c",
-          "skills/ansible-docker-backup-restore/references/provas-que-nao-mentem.md": "fdedbcb1729967bd17d6f89470bf9c963e48e4b04c300c6625119237076f7b95",
-          "skills/ansible-docker-backup-restore/references/proxy-reverso-e-tls.md": "f0a3a9626c9c568aea5a8fefa9fab83cc1730220f4a804dfabb7754edcb2aaf3",
-          "skills/ansible-docker-backup-restore/references/restore-bancos.md": "a6a4d746cb5cc3338e2ce06b6b84001db4c0394a43d00dfc292fdce58e6bd554",
-          "skills/ansible-docker-backup-restore/references/restore-volumes-e-guarda.md": "a14c33a76250bba300776d10f7b4428d828bbbbda42440650586d2f5fe994591",
-          "skills/ansible-docker-backup-restore/scripts/check-backup-freshness.sh": "a1348afe4a372b1d5caa64a903582d3b7d9cb1a96e3a29ef62d63ff949db380d"
+          ".claude-plugin/plugin.json": {
+            "sha256": "0af5e5785c14a5d0ea8b7dc8ce40bacfbb872e79d8b42d2804b55b7c6c619540"
+          },
+          "CHANGELOG.md": {
+            "sha256": "c142aa4223dfcb8e886722d5253f6575a0155503383ac4c8a883f2ad44cd4091"
+          },
+          "skills/ansible-docker-backup-restore/CHANGELOG.md": {
+            "sha256": "b1dced77c5bef69650df7c3ef9af33db594fa54cedf8bef6726a504aa6cd5032"
+          },
+          "skills/ansible-docker-backup-restore/SKILL.md": {
+            "sha256": "73868a343993f8674013c5cbb52bc91f61bf959885f64dba20613a939d78528e"
+          },
+          "skills/ansible-docker-backup-restore/assets/backup-volumes.sh": {
+            "sha256": "c4cf4227140340f54211b877029eb6d6c093f621401cad33d4c103890201a76e"
+          },
+          "skills/ansible-docker-backup-restore/assets/restore-defaults.yml": {
+            "sha256": "2af11463e5c2ff1db45e9b6477eb5908a945f98f398d9b3b0e3bb8456e55ae48"
+          },
+          "skills/ansible-docker-backup-restore/assets/restore-volume-guard.yml": {
+            "sha256": "501ae37b03fc1bd827afbb45039808cbf08e1b14925cecb88f134043c1c4957d"
+          },
+          "skills/ansible-docker-backup-restore/references/ambiente-e-armadilhas-ansible.md": {
+            "sha256": "0d9209b5cc9c502668e769b821592b9f9d08fbc8e21b7f5d0f89ac1dcd84d34f"
+          },
+          "skills/ansible-docker-backup-restore/references/backup-pipeline-e-falha-silenciosa.md": {
+            "sha256": "0a406ac84dedc447f2bcefd13976a6b6a19e60e2e594f82190d9f365d8f98202"
+          },
+          "skills/ansible-docker-backup-restore/references/levantamento-e-escopo.md": {
+            "sha256": "eceadee9b7e5f589e8d3409a4fee93b0683c550e3ed184bca46bdd1110224e8c"
+          },
+          "skills/ansible-docker-backup-restore/references/provas-que-nao-mentem.md": {
+            "sha256": "fdedbcb1729967bd17d6f89470bf9c963e48e4b04c300c6625119237076f7b95"
+          },
+          "skills/ansible-docker-backup-restore/references/proxy-reverso-e-tls.md": {
+            "sha256": "f0a3a9626c9c568aea5a8fefa9fab83cc1730220f4a804dfabb7754edcb2aaf3"
+          },
+          "skills/ansible-docker-backup-restore/references/restore-bancos.md": {
+            "sha256": "a6a4d746cb5cc3338e2ce06b6b84001db4c0394a43d00dfc292fdce58e6bd554"
+          },
+          "skills/ansible-docker-backup-restore/references/restore-volumes-e-guarda.md": {
+            "sha256": "a14c33a76250bba300776d10f7b4428d828bbbbda42440650586d2f5fe994591"
+          },
+          "skills/ansible-docker-backup-restore/scripts/check-backup-freshness.sh": {
+            "sha256": "a1348afe4a372b1d5caa64a903582d3b7d9cb1a96e3a29ef62d63ff949db380d"
+          }
         }
       },
       "cicd": {
         "version": "2.38.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "628806166f7b38110ad95ec1d3c0825457cf319550787dd66f3127e2b1ebb21e",
-          "CHANGELOG.md": "3112109b81c7955ae259036b9660df69650232a01ee6521e204a4e5a6f10f9d6",
-          "skills/cicd/CHANGELOG.md": "4b0e5af01092614e6f771e28d32cf8fb0518298bd43b55b78d46ee738b9ab1ad",
-          "skills/cicd/SKILL.md": "fdaea5ffd3ef114ed4c943733f450858d5b62abc270ee4955032c6137163c3b2",
-          "skills/cicd/references/cd-pipeline-pitfalls.md": "1078e7232831d1c9ae7888fc133c5a850fc5584de83e7662d6171071e10e5fc5",
-          "skills/cicd/references/cd-verification-and-rollback.md": "5e2ae4d9e10b03eca66c6b20c945cf436cbedf76218f1b4b13a68058772ba9b3",
-          "skills/cicd/references/checklist-backend.md": "6949c66915808e547f69a44df797b54376f5e6040cc1a2fb5638d3413483fb4d",
-          "skills/cicd/references/checklist-frontend.md": "989acf2c4278d7b4eeaa51be1f1f3f0f5953a5f0ec1b899d85fa878967f18eb4",
-          "skills/cicd/references/checklist-shared.md": "b6fbe512a406b66db6676ff430b03187bdee57662d9cecf14f9a0948ec7d38b0",
-          "skills/cicd/references/ci-cost-minutes.md": "754e8896c9229e0ca4b46774fbfd28b276d24f8064386471f7f87c28fd2ec1f2",
-          "skills/cicd/references/django-backend.md": "6ab934bbca9e25105af2e45103d1207d6eef326acc10ead148ec23ff4deba810",
-          "skills/cicd/references/lessons-learned.md": "cec98adab606ff0d438b9c29ad2148456c2432d69fa58580f9bf868b9cebcb6c",
-          "skills/cicd/references/self-hosted-job-migration.md": "6d27c0cc77442e9a81b84f78a2e12dd645eaf02c686670b3c00b6f159ddbd2a2",
-          "skills/cicd/references/self-hosted-runner-docker.md": "a8622622367ada606c9372480ef9b74a6e57d6294816ce23b2c7b2ea8555f80e",
-          "skills/cicd/references/symptom-index.md": "01a7910c6629a3b075e2fa2e03a15446e896878da0ba11df5dc698662c198772",
-          "skills/cicd/references/test-fixes-backend.md": "ad6ac7ffa43da9585d3736da0986160161829508f0e48c41ae9f543cf2337067",
-          "skills/cicd/references/troubleshooting-backend.md": "02539c0ffb1d15f64eacad82d096cad4b81a0a3031f730977d1f74e12100cdc3",
-          "skills/cicd/references/troubleshooting-frontend.md": "61825f8bd95c55eedeebe8cd03e2e72504cadc1f144356f5720c4380b6128a6a",
-          "skills/cicd/references/troubleshooting-shared.md": "d019279c6caee6ec42ee3386abbd981111fc56c37d6d773f1ee25a98e67efdba"
+          ".claude-plugin/plugin.json": {
+            "sha256": "628806166f7b38110ad95ec1d3c0825457cf319550787dd66f3127e2b1ebb21e"
+          },
+          "CHANGELOG.md": {
+            "sha256": "3112109b81c7955ae259036b9660df69650232a01ee6521e204a4e5a6f10f9d6"
+          },
+          "skills/cicd/CHANGELOG.md": {
+            "sha256": "4b0e5af01092614e6f771e28d32cf8fb0518298bd43b55b78d46ee738b9ab1ad"
+          },
+          "skills/cicd/SKILL.md": {
+            "sha256": "fdaea5ffd3ef114ed4c943733f450858d5b62abc270ee4955032c6137163c3b2"
+          },
+          "skills/cicd/references/cd-pipeline-pitfalls.md": {
+            "sha256": "1078e7232831d1c9ae7888fc133c5a850fc5584de83e7662d6171071e10e5fc5"
+          },
+          "skills/cicd/references/cd-verification-and-rollback.md": {
+            "sha256": "5e2ae4d9e10b03eca66c6b20c945cf436cbedf76218f1b4b13a68058772ba9b3"
+          },
+          "skills/cicd/references/checklist-backend.md": {
+            "sha256": "6949c66915808e547f69a44df797b54376f5e6040cc1a2fb5638d3413483fb4d"
+          },
+          "skills/cicd/references/checklist-frontend.md": {
+            "sha256": "989acf2c4278d7b4eeaa51be1f1f3f0f5953a5f0ec1b899d85fa878967f18eb4"
+          },
+          "skills/cicd/references/checklist-shared.md": {
+            "sha256": "b6fbe512a406b66db6676ff430b03187bdee57662d9cecf14f9a0948ec7d38b0"
+          },
+          "skills/cicd/references/ci-cost-minutes.md": {
+            "sha256": "754e8896c9229e0ca4b46774fbfd28b276d24f8064386471f7f87c28fd2ec1f2"
+          },
+          "skills/cicd/references/django-backend.md": {
+            "sha256": "6ab934bbca9e25105af2e45103d1207d6eef326acc10ead148ec23ff4deba810"
+          },
+          "skills/cicd/references/lessons-learned.md": {
+            "sha256": "cec98adab606ff0d438b9c29ad2148456c2432d69fa58580f9bf868b9cebcb6c"
+          },
+          "skills/cicd/references/self-hosted-job-migration.md": {
+            "sha256": "6d27c0cc77442e9a81b84f78a2e12dd645eaf02c686670b3c00b6f159ddbd2a2"
+          },
+          "skills/cicd/references/self-hosted-runner-docker.md": {
+            "sha256": "a8622622367ada606c9372480ef9b74a6e57d6294816ce23b2c7b2ea8555f80e"
+          },
+          "skills/cicd/references/symptom-index.md": {
+            "sha256": "01a7910c6629a3b075e2fa2e03a15446e896878da0ba11df5dc698662c198772"
+          },
+          "skills/cicd/references/test-fixes-backend.md": {
+            "sha256": "ad6ac7ffa43da9585d3736da0986160161829508f0e48c41ae9f543cf2337067"
+          },
+          "skills/cicd/references/troubleshooting-backend.md": {
+            "sha256": "02539c0ffb1d15f64eacad82d096cad4b81a0a3031f730977d1f74e12100cdc3"
+          },
+          "skills/cicd/references/troubleshooting-frontend.md": {
+            "sha256": "61825f8bd95c55eedeebe8cd03e2e72504cadc1f144356f5720c4380b6128a6a"
+          },
+          "skills/cicd/references/troubleshooting-shared.md": {
+            "sha256": "d019279c6caee6ec42ee3386abbd981111fc56c37d6d773f1ee25a98e67efdba"
+          }
         }
       },
       "cors": {
         "version": "1.1.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "b6941620daf3c992f8fac5cb2ded86723b6d1051face80e01c533487ca0c4647",
-          "CHANGELOG.md": "bbb5188b93abcc44e7e6192e348e19d4b6e0ab15e8e25386d81caeea5470132d",
-          "skills/cors/CHANGELOG.md": "784d70148829cecf896d6f2a7389207e0c7e1206ef4e3ffbb4b47828b3949019",
-          "skills/cors/SKILL.md": "d0059d4409dd795958cb181101f30ce5bf7492f1c07fd45ff995e4d3fac80311",
-          "skills/cors/references/casos-limite.md": "2075bc70131fde1a1db1e8bd22d91fd4fcf47d01adb8dbd528e35ea4a98d0db4",
-          "skills/cors/references/configuracao.md": "be3540b22468c68d95d99ba481028530d3f0cd1f26471399e8dfa3153a4aa83f",
-          "skills/cors/references/diagnostico.md": "ed515de45b538efc5c3df0fe606ce9569ef322080731240da21e87ed35bcd69b",
-          "skills/cors/references/seguranca.md": "cf87e53480df3658bedaa10c8691d8b564013a086d715155b33d5752c154b847"
+          ".claude-plugin/plugin.json": {
+            "sha256": "b6941620daf3c992f8fac5cb2ded86723b6d1051face80e01c533487ca0c4647"
+          },
+          "CHANGELOG.md": {
+            "sha256": "bbb5188b93abcc44e7e6192e348e19d4b6e0ab15e8e25386d81caeea5470132d"
+          },
+          "skills/cors/CHANGELOG.md": {
+            "sha256": "784d70148829cecf896d6f2a7389207e0c7e1206ef4e3ffbb4b47828b3949019"
+          },
+          "skills/cors/SKILL.md": {
+            "sha256": "d0059d4409dd795958cb181101f30ce5bf7492f1c07fd45ff995e4d3fac80311"
+          },
+          "skills/cors/references/casos-limite.md": {
+            "sha256": "2075bc70131fde1a1db1e8bd22d91fd4fcf47d01adb8dbd528e35ea4a98d0db4"
+          },
+          "skills/cors/references/configuracao.md": {
+            "sha256": "be3540b22468c68d95d99ba481028530d3f0cd1f26471399e8dfa3153a4aa83f"
+          },
+          "skills/cors/references/diagnostico.md": {
+            "sha256": "ed515de45b538efc5c3df0fe606ce9569ef322080731240da21e87ed35bcd69b"
+          },
+          "skills/cors/references/seguranca.md": {
+            "sha256": "cf87e53480df3658bedaa10c8691d8b564013a086d715155b33d5752c154b847"
+          }
         }
       },
       "criar-prd": {
         "version": "0.1.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "d749f16090fbb4779c5612b790bf56aaaf71c1bf3349021a8225391329a047e4",
-          ".codex-plugin/plugin.json": "bb094b595f8ffc2049a451da16b2d806883580f1cfd5fef5cfb2320843e1c3e0",
-          "CHANGELOG.md": "f5e7ac9a0e876c196b1316e1ceb87a391e232c4a0a159942354cec5507c21086",
-          "codex-adapter.json": "7c96215f09273661250a5736a5823bf4a1292b34e667abc97b8a9f8c1104f711",
-          "codex-skills/criar-prd/SKILL.md": "179657106d2fd4daccab0f955164be79c7ecff6e32dc5927ced0f0d5e4b73d4d",
-          "codex-skills/criar-prd/assets/prd-template.md": "3c423739850e5b376edde9341c9a3a347ea21ef3ca1fd7746bb151459d6c8e6e",
-          "commands/criar-prd.md": "35da7e48e9b3bb47573915b70562f8b0c45173110bab4bfcc07e14ed951f74f3",
-          "templates/prd-template.md": "3c423739850e5b376edde9341c9a3a347ea21ef3ca1fd7746bb151459d6c8e6e"
+          ".claude-plugin/plugin.json": {
+            "sha256": "d749f16090fbb4779c5612b790bf56aaaf71c1bf3349021a8225391329a047e4"
+          },
+          ".codex-plugin/plugin.json": {
+            "sha256": "bb094b595f8ffc2049a451da16b2d806883580f1cfd5fef5cfb2320843e1c3e0"
+          },
+          "CHANGELOG.md": {
+            "sha256": "f5e7ac9a0e876c196b1316e1ceb87a391e232c4a0a159942354cec5507c21086"
+          },
+          "codex-adapter.json": {
+            "sha256": "7c96215f09273661250a5736a5823bf4a1292b34e667abc97b8a9f8c1104f711"
+          },
+          "codex-skills/criar-prd/SKILL.md": {
+            "sha256": "179657106d2fd4daccab0f955164be79c7ecff6e32dc5927ced0f0d5e4b73d4d"
+          },
+          "codex-skills/criar-prd/assets/prd-template.md": {
+            "sha256": "3c423739850e5b376edde9341c9a3a347ea21ef3ca1fd7746bb151459d6c8e6e"
+          },
+          "commands/criar-prd.md": {
+            "sha256": "35da7e48e9b3bb47573915b70562f8b0c45173110bab4bfcc07e14ed951f74f3"
+          },
+          "templates/prd-template.md": {
+            "sha256": "3c423739850e5b376edde9341c9a3a347ea21ef3ca1fd7746bb151459d6c8e6e"
+          }
         }
       },
       "criar-task": {
         "version": "0.1.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "c9cab019098765e330e55a126cab3a2b66ca8ba31f918fb95687e65a4bd83e7e",
-          ".codex-plugin/plugin.json": "6f57624d6bdff07410af86728aa623c0328e3e4f03d49f85d0ad9751de0ef0f4",
-          "CHANGELOG.md": "1a66bd93fd76d3e36823e1f74b1e3e61f2596d0779b786851c603d5fb6dd6d4f",
-          "codex-adapter.json": "3cc67cd8aab10f2e94ca08f0b9a8a73a7bd81b76d93ecc9371302feb41139a1d",
-          "codex-skills/criar-task/SKILL.md": "1b52aabf3d1be285e6cc293d0383ad409cbbf9f210968b24ce259eef105aee79",
-          "codex-skills/criar-task/assets/task-template.md": "31ec0955e52c1aa342ef9aedf5f4c2c6311c67d82d81ed9fe5c49bc9a019566a",
-          "codex-skills/criar-task/assets/tasks-template.md": "aff6ec7f575d533e9a075d8768d47e162eb900ae05f21abc97255c86a15ce2eb",
-          "commands/criar-task.md": "ef922814c2bad50d4712c18263f08bc40968f11b44868d1592b7b3ec9cfe71cc",
-          "templates/task-template.md": "31ec0955e52c1aa342ef9aedf5f4c2c6311c67d82d81ed9fe5c49bc9a019566a",
-          "templates/tasks-template.md": "aff6ec7f575d533e9a075d8768d47e162eb900ae05f21abc97255c86a15ce2eb"
+          ".claude-plugin/plugin.json": {
+            "sha256": "c9cab019098765e330e55a126cab3a2b66ca8ba31f918fb95687e65a4bd83e7e"
+          },
+          ".codex-plugin/plugin.json": {
+            "sha256": "6f57624d6bdff07410af86728aa623c0328e3e4f03d49f85d0ad9751de0ef0f4"
+          },
+          "CHANGELOG.md": {
+            "sha256": "1a66bd93fd76d3e36823e1f74b1e3e61f2596d0779b786851c603d5fb6dd6d4f"
+          },
+          "codex-adapter.json": {
+            "sha256": "3cc67cd8aab10f2e94ca08f0b9a8a73a7bd81b76d93ecc9371302feb41139a1d"
+          },
+          "codex-skills/criar-task/SKILL.md": {
+            "sha256": "1b52aabf3d1be285e6cc293d0383ad409cbbf9f210968b24ce259eef105aee79"
+          },
+          "codex-skills/criar-task/assets/task-template.md": {
+            "sha256": "31ec0955e52c1aa342ef9aedf5f4c2c6311c67d82d81ed9fe5c49bc9a019566a"
+          },
+          "codex-skills/criar-task/assets/tasks-template.md": {
+            "sha256": "aff6ec7f575d533e9a075d8768d47e162eb900ae05f21abc97255c86a15ce2eb"
+          },
+          "commands/criar-task.md": {
+            "sha256": "ef922814c2bad50d4712c18263f08bc40968f11b44868d1592b7b3ec9cfe71cc"
+          },
+          "templates/task-template.md": {
+            "sha256": "31ec0955e52c1aa342ef9aedf5f4c2c6311c67d82d81ed9fe5c49bc9a019566a"
+          },
+          "templates/tasks-template.md": {
+            "sha256": "aff6ec7f575d533e9a075d8768d47e162eb900ae05f21abc97255c86a15ce2eb"
+          }
         }
       },
       "criar-techspec": {
         "version": "0.1.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "ee5f3010769bb8f9c9e81cb6567493d18d85ea57ec2ecdf22c89e944231156a7",
-          ".codex-plugin/plugin.json": "35153766d8ea5401609a8f733f5e9c390e02342148397d8a1d3b9d01869832a6",
-          "CHANGELOG.md": "afb8786cc7a7742c0999a9b0745e2cb6a5b117d4e77e3b89aab93653eb984b3e",
-          "codex-adapter.json": "8c76907725e809d941efd5a10e6d7504e263174d4c609cf8874e2015450c144c",
-          "codex-skills/criar-techspec/SKILL.md": "ac9397adb7592f5650645e1fdc02a9a33a8e58df8a1d04cfc0eea9ddf424141c",
-          "codex-skills/criar-techspec/assets/techspec-template.md": "64f7f57995ebf69b72e64d56210a542d0f284bbfed9f91f369e6248fb8304691",
-          "commands/criar-techspec.md": "e4cd1558f191bc1067ba6e4b403a0ce4b6fc2c641902d463df53eda882a36fb6",
-          "templates/techspec-template.md": "64f7f57995ebf69b72e64d56210a542d0f284bbfed9f91f369e6248fb8304691"
+          ".claude-plugin/plugin.json": {
+            "sha256": "ee5f3010769bb8f9c9e81cb6567493d18d85ea57ec2ecdf22c89e944231156a7"
+          },
+          ".codex-plugin/plugin.json": {
+            "sha256": "35153766d8ea5401609a8f733f5e9c390e02342148397d8a1d3b9d01869832a6"
+          },
+          "CHANGELOG.md": {
+            "sha256": "afb8786cc7a7742c0999a9b0745e2cb6a5b117d4e77e3b89aab93653eb984b3e"
+          },
+          "codex-adapter.json": {
+            "sha256": "8c76907725e809d941efd5a10e6d7504e263174d4c609cf8874e2015450c144c"
+          },
+          "codex-skills/criar-techspec/SKILL.md": {
+            "sha256": "ac9397adb7592f5650645e1fdc02a9a33a8e58df8a1d04cfc0eea9ddf424141c"
+          },
+          "codex-skills/criar-techspec/assets/techspec-template.md": {
+            "sha256": "64f7f57995ebf69b72e64d56210a542d0f284bbfed9f91f369e6248fb8304691"
+          },
+          "commands/criar-techspec.md": {
+            "sha256": "e4cd1558f191bc1067ba6e4b403a0ce4b6fc2c641902d463df53eda882a36fb6"
+          },
+          "templates/techspec-template.md": {
+            "sha256": "64f7f57995ebf69b72e64d56210a542d0f284bbfed9f91f369e6248fb8304691"
+          }
         }
       },
       "ddd": {
         "version": "0.5.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "63cd09e743be6e3e8cea55aafba2c43fa5000eef2b635982a7d3a8c55c886117",
-          "CHANGELOG.md": "62a9aeda2583eb1a7ff026141c97e7a48f1179bb2aa8c2a5623add8529d0f033",
-          "skills/ddd/SKILL.md": "cf4204722c96154d8ac645aae90b155d7aceb8a6c3f3665291a53214877d36a3",
-          "skills/ddd/references/acceleration-tools.md": "8118ee46d98551e67cb5af5c52c51ca89e76f05d0fe42782b76058909dd25a45",
-          "skills/ddd/references/aggregate-design-rules.md": "32c9296325f9bd9f50fb79744a0a3dfd05cb1cd1fe0126bd29a934534e888712",
-          "skills/ddd/references/application-services.md": "687c731bcb508af26261295ca1bb3d2aa74441f731f3bdfc6200820d7f6c9deb",
-          "skills/ddd/references/architecture-styles.md": "67bf064a95ff4e4f5cdd56fc36ebfaac91777029b993201c9416fd5e45ea9a03",
-          "skills/ddd/references/bounded-context-canvas.md": "1ba0f6bba1f23889c0a44131d507d4cc93bf5d6e31ad60025fb3230cc2772da3",
-          "skills/ddd/references/code-review-heuristics.md": "2b053ea00130f772685b5f717c91eecf77e387ef2f50a98de57f8af5744fbfb5",
-          "skills/ddd/references/context-mapping.md": "c5873b1b2c17385c0a3d5fc422ae638878e59da66a724e8ea413aaa7df96c99f",
-          "skills/ddd/references/cqrs-event-sourcing.md": "32d8ab5540d1ea90431ee0cc612cd9a372fdf39f7f7ff33972d80a9f160e5430",
-          "skills/ddd/references/ddd-crew-process.md": "82ebc51275c104da59be71a4a979f3f28d2186c99a55eb83ae9b0233bbee3d09",
-          "skills/ddd/references/domain-events-catalog.md": "1b2c86ea630e2dae89c0e8c8e154338de18d124659b3de43512310b0a7a5ffe4",
-          "skills/ddd/references/event-storming.md": "9b464f39a9fef7712cb2ef07efc6c2122fd793c638b22bc25b81588fbbdd5d71",
-          "skills/ddd/references/glossary.md": "3de49f49fd73c8e717b1c072c9014137e18cd5e661205d118603d608e23524b9",
-          "skills/ddd/references/legacy-migration.md": "d7ab57c138dad795be58aa2184b3d92ac161bd4057bd03d86c65ec755da3aad2",
-          "skills/ddd/references/modern-practices.md": "f85d344c9d90123254873bc5681db5ee93e90feeeec0d21213cfb477e10d2190",
-          "skills/ddd/references/project-conversion-spec.md": "34f799b79b91c469581e83f0c6c69ba17a5825766fb2b7bfdf8eeb7929212d4f",
-          "skills/ddd/references/refactoring-and-insights.md": "d56debaa9cb28401e0a6fd3950206dc5e5fb2ac0bc48ce26d67d43dc7c9e9911",
-          "skills/ddd/references/scenarios.md": "780ee427e25e253235763aa9b5e468f547cc2203e2f923d277acea9f7dc9c7a6",
-          "skills/ddd/references/strategic-design.md": "92c5933c90adb2f43181ac03df69da40d5a21dfedccbdd02427386626ef89e7b",
-          "skills/ddd/references/tactical-patterns.md": "a19e283258b9e898174e55b41d1b17d266133cdb11de91bcbb86bb7c76c2ea45"
+          ".claude-plugin/plugin.json": {
+            "sha256": "63cd09e743be6e3e8cea55aafba2c43fa5000eef2b635982a7d3a8c55c886117"
+          },
+          "CHANGELOG.md": {
+            "sha256": "62a9aeda2583eb1a7ff026141c97e7a48f1179bb2aa8c2a5623add8529d0f033"
+          },
+          "skills/ddd/SKILL.md": {
+            "sha256": "cf4204722c96154d8ac645aae90b155d7aceb8a6c3f3665291a53214877d36a3"
+          },
+          "skills/ddd/references/acceleration-tools.md": {
+            "sha256": "8118ee46d98551e67cb5af5c52c51ca89e76f05d0fe42782b76058909dd25a45"
+          },
+          "skills/ddd/references/aggregate-design-rules.md": {
+            "sha256": "32c9296325f9bd9f50fb79744a0a3dfd05cb1cd1fe0126bd29a934534e888712"
+          },
+          "skills/ddd/references/application-services.md": {
+            "sha256": "687c731bcb508af26261295ca1bb3d2aa74441f731f3bdfc6200820d7f6c9deb"
+          },
+          "skills/ddd/references/architecture-styles.md": {
+            "sha256": "67bf064a95ff4e4f5cdd56fc36ebfaac91777029b993201c9416fd5e45ea9a03"
+          },
+          "skills/ddd/references/bounded-context-canvas.md": {
+            "sha256": "1ba0f6bba1f23889c0a44131d507d4cc93bf5d6e31ad60025fb3230cc2772da3"
+          },
+          "skills/ddd/references/code-review-heuristics.md": {
+            "sha256": "2b053ea00130f772685b5f717c91eecf77e387ef2f50a98de57f8af5744fbfb5"
+          },
+          "skills/ddd/references/context-mapping.md": {
+            "sha256": "c5873b1b2c17385c0a3d5fc422ae638878e59da66a724e8ea413aaa7df96c99f"
+          },
+          "skills/ddd/references/cqrs-event-sourcing.md": {
+            "sha256": "32d8ab5540d1ea90431ee0cc612cd9a372fdf39f7f7ff33972d80a9f160e5430"
+          },
+          "skills/ddd/references/ddd-crew-process.md": {
+            "sha256": "82ebc51275c104da59be71a4a979f3f28d2186c99a55eb83ae9b0233bbee3d09"
+          },
+          "skills/ddd/references/domain-events-catalog.md": {
+            "sha256": "1b2c86ea630e2dae89c0e8c8e154338de18d124659b3de43512310b0a7a5ffe4"
+          },
+          "skills/ddd/references/event-storming.md": {
+            "sha256": "9b464f39a9fef7712cb2ef07efc6c2122fd793c638b22bc25b81588fbbdd5d71"
+          },
+          "skills/ddd/references/glossary.md": {
+            "sha256": "3de49f49fd73c8e717b1c072c9014137e18cd5e661205d118603d608e23524b9"
+          },
+          "skills/ddd/references/legacy-migration.md": {
+            "sha256": "d7ab57c138dad795be58aa2184b3d92ac161bd4057bd03d86c65ec755da3aad2"
+          },
+          "skills/ddd/references/modern-practices.md": {
+            "sha256": "f85d344c9d90123254873bc5681db5ee93e90feeeec0d21213cfb477e10d2190"
+          },
+          "skills/ddd/references/project-conversion-spec.md": {
+            "sha256": "34f799b79b91c469581e83f0c6c69ba17a5825766fb2b7bfdf8eeb7929212d4f"
+          },
+          "skills/ddd/references/refactoring-and-insights.md": {
+            "sha256": "d56debaa9cb28401e0a6fd3950206dc5e5fb2ac0bc48ce26d67d43dc7c9e9911"
+          },
+          "skills/ddd/references/scenarios.md": {
+            "sha256": "780ee427e25e253235763aa9b5e468f547cc2203e2f923d277acea9f7dc9c7a6"
+          },
+          "skills/ddd/references/strategic-design.md": {
+            "sha256": "92c5933c90adb2f43181ac03df69da40d5a21dfedccbdd02427386626ef89e7b"
+          },
+          "skills/ddd/references/tactical-patterns.md": {
+            "sha256": "a19e283258b9e898174e55b41d1b17d266133cdb11de91bcbb86bb7c76c2ea45"
+          }
         }
       },
       "deploy": {
         "version": "3.3.2",
         "hashes": {
-          ".claude-plugin/plugin.json": "af4b2cef0f9c03bc9a9aff33cc32a70f20e7d8f5f64cc5e5a6bf6988f1a272ea",
-          "CHANGELOG.md": "59a8ae334580008f9b93d5be4ad25184edbe0e3fee0275bc301a0fdbbb6c8147",
-          "skills/staging/SKILL.md": "7ed891e2746b5c846112561705cbb7e6a1f69efdc811dd7b6b93af02bf11d3ee",
-          "skills/staging/references/local-gate.md": "9e7e6b4afa03a25b0712ca804050aded2a1fd9d30b370254f5f1fc3bd7fcb16a",
-          "skills/staging/references/no-actions-agent.md": "583115ad8fb7915aa76b8edc538f1793f44b844fe3f5dbca0feee74b990a32f8",
-          "skills/staging/references/promotion-sensors.md": "72f29b0cb6a6ca5bfd844d33ae9861925ef98765bbed6f373880a01ffb27601d",
-          "skills/staging/references/red-runs-and-proof.md": "bdcc1af04c9109001f9f05860f33e80622f41b8e05f542e2c567e623e691712d",
-          "skills/staging/references/runner-and-billing.md": "127a10e8292970134dfd9eea7c4ac3890cf713b122bd8f5159d136a5b1cd82f1"
+          ".claude-plugin/plugin.json": {
+            "sha256": "af4b2cef0f9c03bc9a9aff33cc32a70f20e7d8f5f64cc5e5a6bf6988f1a272ea"
+          },
+          "CHANGELOG.md": {
+            "sha256": "59a8ae334580008f9b93d5be4ad25184edbe0e3fee0275bc301a0fdbbb6c8147"
+          },
+          "skills/staging/SKILL.md": {
+            "sha256": "7ed891e2746b5c846112561705cbb7e6a1f69efdc811dd7b6b93af02bf11d3ee"
+          },
+          "skills/staging/references/local-gate.md": {
+            "sha256": "9e7e6b4afa03a25b0712ca804050aded2a1fd9d30b370254f5f1fc3bd7fcb16a"
+          },
+          "skills/staging/references/no-actions-agent.md": {
+            "sha256": "583115ad8fb7915aa76b8edc538f1793f44b844fe3f5dbca0feee74b990a32f8"
+          },
+          "skills/staging/references/promotion-sensors.md": {
+            "sha256": "72f29b0cb6a6ca5bfd844d33ae9861925ef98765bbed6f373880a01ffb27601d"
+          },
+          "skills/staging/references/red-runs-and-proof.md": {
+            "sha256": "bdcc1af04c9109001f9f05860f33e80622f41b8e05f542e2c567e623e691712d"
+          },
+          "skills/staging/references/runner-and-billing.md": {
+            "sha256": "127a10e8292970134dfd9eea7c4ac3890cf713b122bd8f5159d136a5b1cd82f1"
+          }
         }
       },
       "dev-script": {
         "version": "0.6.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "b31de5f90ad8c64e17a2ee3533e428c6e0f56b7c33b25087b49aca4be02388c7",
-          "CHANGELOG.md": "4f4658578ee49a96253e976b9f860f545d50a74504db6c2134ef32a45c8ce6aa",
-          "skills/dev-script/SKILL.md": "8605bed31b16066d8970e8e60355883bfce58ad88edffd07b8090c99f719ce3e",
-          "skills/dev-script/assets/Caddyfile.tmpl": "a31b6153fa8d946c77d2685888170bd6977206ce77d3d5ff737833d2a9844759",
-          "skills/dev-script/assets/dev.ps1.tmpl": "9a25273b0a9f2bd3e06d3c690e4b965df268df068aae55de7b1ecfa66a17928d",
-          "skills/dev-script/assets/dev.sh.tmpl": "7506b398309bd7561da66a55817b213e111057e4aa95fac8f6167d418628e1bf",
-          "skills/dev-script/references/bash-patterns.md": "09c75f27a3bb772950581af50647cbc7d22da273d0408fcff9af16527d88bd11",
-          "skills/dev-script/references/idempotency-and-state.md": "bcbc437fa765e112ec99fea560149ae424250f7754e7b5b25a40fa0101c2bb91",
-          "skills/dev-script/references/pitfalls.md": "b11c250462d3fb851bc9233ce60011dc58cbfd49a7f79c8bc056265bafe32ab4",
-          "skills/dev-script/references/powershell-patterns.md": "a372cbfe6769c1a05968ba37ef29b60185f45a5f8933e6675c05e673d100199c",
-          "skills/dev-script/references/stack-detection.md": "8d3a17cc2644962ec6b1d650eb66772ad6eaa199bad8bbc6abad6f152b28eb89",
-          "skills/dev-script/references/tls-https-recipe.md": "8979360e48e42c65be00db71aa40b2349755814040b05e36efb4ec4208818378"
+          ".claude-plugin/plugin.json": {
+            "sha256": "b31de5f90ad8c64e17a2ee3533e428c6e0f56b7c33b25087b49aca4be02388c7"
+          },
+          "CHANGELOG.md": {
+            "sha256": "4f4658578ee49a96253e976b9f860f545d50a74504db6c2134ef32a45c8ce6aa"
+          },
+          "skills/dev-script/SKILL.md": {
+            "sha256": "8605bed31b16066d8970e8e60355883bfce58ad88edffd07b8090c99f719ce3e"
+          },
+          "skills/dev-script/assets/Caddyfile.tmpl": {
+            "sha256": "a31b6153fa8d946c77d2685888170bd6977206ce77d3d5ff737833d2a9844759"
+          },
+          "skills/dev-script/assets/dev.ps1.tmpl": {
+            "sha256": "9a25273b0a9f2bd3e06d3c690e4b965df268df068aae55de7b1ecfa66a17928d"
+          },
+          "skills/dev-script/assets/dev.sh.tmpl": {
+            "sha256": "7506b398309bd7561da66a55817b213e111057e4aa95fac8f6167d418628e1bf"
+          },
+          "skills/dev-script/references/bash-patterns.md": {
+            "sha256": "09c75f27a3bb772950581af50647cbc7d22da273d0408fcff9af16527d88bd11"
+          },
+          "skills/dev-script/references/idempotency-and-state.md": {
+            "sha256": "bcbc437fa765e112ec99fea560149ae424250f7754e7b5b25a40fa0101c2bb91"
+          },
+          "skills/dev-script/references/pitfalls.md": {
+            "sha256": "b11c250462d3fb851bc9233ce60011dc58cbfd49a7f79c8bc056265bafe32ab4"
+          },
+          "skills/dev-script/references/powershell-patterns.md": {
+            "sha256": "a372cbfe6769c1a05968ba37ef29b60185f45a5f8933e6675c05e673d100199c"
+          },
+          "skills/dev-script/references/stack-detection.md": {
+            "sha256": "8d3a17cc2644962ec6b1d650eb66772ad6eaa199bad8bbc6abad6f152b28eb89"
+          },
+          "skills/dev-script/references/tls-https-recipe.md": {
+            "sha256": "8979360e48e42c65be00db71aa40b2349755814040b05e36efb4ec4208818378"
+          }
         }
       },
       "executar-task": {
         "version": "0.1.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "3653d34516343e8e80c43a96d7eb1d486ec54c971030c3f64645136506de6019",
-          ".codex-plugin/plugin.json": "633396e6bbde8c46ee5ac373ebe7dbcf146dd6099ab29f8aa7caa5cbad302722",
-          "CHANGELOG.md": "607063764d638dced73658693534243e90f0674af959943334747ed713f51e48",
-          "codex-adapter.json": "b9b248860a0729d2d2b2c9c4271f5d06ef925cfe83a272cc3f47f112c52364e4",
-          "codex-skills/executar-task/SKILL.md": "ee4e51bb0f0ff91ad89952c93c53bcddd483ce271d0c8616661daef3c5079954",
-          "commands/executar-task.md": "2df9ab683f0d4c128d0fcb2edcfd6dee65aa720df7d276b9d0c53ae70e178903"
+          ".claude-plugin/plugin.json": {
+            "sha256": "3653d34516343e8e80c43a96d7eb1d486ec54c971030c3f64645136506de6019"
+          },
+          ".codex-plugin/plugin.json": {
+            "sha256": "633396e6bbde8c46ee5ac373ebe7dbcf146dd6099ab29f8aa7caa5cbad302722"
+          },
+          "CHANGELOG.md": {
+            "sha256": "607063764d638dced73658693534243e90f0674af959943334747ed713f51e48"
+          },
+          "codex-adapter.json": {
+            "sha256": "b9b248860a0729d2d2b2c9c4271f5d06ef925cfe83a272cc3f47f112c52364e4"
+          },
+          "codex-skills/executar-task/SKILL.md": {
+            "sha256": "ee4e51bb0f0ff91ad89952c93c53bcddd483ce271d0c8616661daef3c5079954"
+          },
+          "commands/executar-task.md": {
+            "sha256": "2df9ab683f0d4c128d0fcb2edcfd6dee65aa720df7d276b9d0c53ae70e178903"
+          }
         }
       },
       "git-housekeeping": {
         "version": "0.1.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "6538ad13b425e8081156e73aa2ee1319f8e1f6044b124c2270a2ffe2912da3a7",
-          "CHANGELOG.md": "12f4bce8584899b96b9b483ff3b037a2b298816e307146334ad5777ce17cf6f4",
-          "skills/git-housekeeping/SKILL.md": "9888a2383a96c3ca9b439bd42041c281356f57e031fe18397e5b82b2311a3fc5",
-          "skills/git-housekeeping/assets/trigger-evals.json": "08a35aa05f3552844ebc89b6793282e4d9b182b282fc91d19d26fa892c87abc2",
-          "skills/git-housekeeping/scripts/analyze.py": "4d30ba6037a199d88c2e8f86db4405261ef560776201d6e03a0c8e088a019c3f",
-          "skills/git-housekeeping/scripts/apply_plan.py": "a6e50f1cf92c968e1ab3519e9ccc5dd5f93a06e6531ff2da9b18eb0c5cd73e3d",
-          "skills/git-housekeeping/scripts/housekeeping.py": "57984c270dfd88a50947328ab8e1ba750d2960bba06a49cdc141c25225a81b69",
-          "skills/git-housekeeping/tests/check_eval.py": "31e21a5df467d4331dc3358798f230b736ba988c0dcef51c228b2a3a12681d97",
-          "skills/git-housekeeping/tests/fixture.py": "e574c1c085502c1c9d78599fbdb1549813efd017fba060d322bfbd5bf4d8ef72",
-          "skills/git-housekeeping/tests/test_analyze.py": "9877c424d591e40030d136234ca10d1f74b6b7e30e4bd69552d44f52a6b45540",
-          "skills/git-housekeeping/tests/test_apply_plan.py": "1ce40ac27cddaea96454f20fc3471c94473d650399a1e4358002f32374ee2a89",
-          "skills/git-housekeeping/tests/test_classify.py": "6a48269f811f31c595f003af57daa633754f8ebc8d4a703931ee325224a46827",
-          "skills/git-housekeeping/tests/test_parsers.py": "35ceb3f883d6012d776ac9d6ba58c9dccf563d6ce45dc2402afeeb2efce4ba4a"
+          ".claude-plugin/plugin.json": {
+            "sha256": "6538ad13b425e8081156e73aa2ee1319f8e1f6044b124c2270a2ffe2912da3a7"
+          },
+          "CHANGELOG.md": {
+            "sha256": "12f4bce8584899b96b9b483ff3b037a2b298816e307146334ad5777ce17cf6f4"
+          },
+          "skills/git-housekeeping/SKILL.md": {
+            "sha256": "9888a2383a96c3ca9b439bd42041c281356f57e031fe18397e5b82b2311a3fc5"
+          },
+          "skills/git-housekeeping/assets/trigger-evals.json": {
+            "sha256": "08a35aa05f3552844ebc89b6793282e4d9b182b282fc91d19d26fa892c87abc2"
+          },
+          "skills/git-housekeeping/scripts/analyze.py": {
+            "sha256": "4d30ba6037a199d88c2e8f86db4405261ef560776201d6e03a0c8e088a019c3f"
+          },
+          "skills/git-housekeeping/scripts/apply_plan.py": {
+            "sha256": "a6e50f1cf92c968e1ab3519e9ccc5dd5f93a06e6531ff2da9b18eb0c5cd73e3d"
+          },
+          "skills/git-housekeeping/scripts/housekeeping.py": {
+            "sha256": "57984c270dfd88a50947328ab8e1ba750d2960bba06a49cdc141c25225a81b69"
+          },
+          "skills/git-housekeeping/tests/check_eval.py": {
+            "sha256": "31e21a5df467d4331dc3358798f230b736ba988c0dcef51c228b2a3a12681d97"
+          },
+          "skills/git-housekeeping/tests/fixture.py": {
+            "sha256": "e574c1c085502c1c9d78599fbdb1549813efd017fba060d322bfbd5bf4d8ef72"
+          },
+          "skills/git-housekeeping/tests/test_analyze.py": {
+            "sha256": "9877c424d591e40030d136234ca10d1f74b6b7e30e4bd69552d44f52a6b45540"
+          },
+          "skills/git-housekeeping/tests/test_apply_plan.py": {
+            "sha256": "1ce40ac27cddaea96454f20fc3471c94473d650399a1e4358002f32374ee2a89"
+          },
+          "skills/git-housekeeping/tests/test_classify.py": {
+            "sha256": "6a48269f811f31c595f003af57daa633754f8ebc8d4a703931ee325224a46827"
+          },
+          "skills/git-housekeeping/tests/test_parsers.py": {
+            "sha256": "35ceb3f883d6012d776ac9d6ba58c9dccf563d6ce45dc2402afeeb2efce4ba4a"
+          }
         }
       },
       "html-presentation": {
         "version": "1.4.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "efa114c49c0dac395bbdff6b0c8f610fb60785dbc4d7b045ebc8ff45d5d2a836",
-          "CHANGELOG.md": "b3ba580eccbf05db129b8e4df7ab345b22c643c23425adcff51a65097dddf029",
-          "agents/deck-reviewer.md": "e1f078ab26017df698a97129f3d8df968c7b3159f3f7cb747971b11415e4fad0",
-          "skills/html-presentation/CHANGELOG.md": "55befecb8d63ad5c413cd1a59c1ddd84e18b937c4ff4d92e6e229223cbd9fa92",
-          "skills/html-presentation/SKILL.md": "87b502d9c35b18cafe2c89e5f1715dafb4af4f4783ec47819ccc6fe61f2285f7",
-          "skills/html-presentation/assets/deck-template.html": "c6acd696bbee315df3c3ca797772afa611fa8fae38b5f1c1dbf98e3246f59f08",
-          "skills/html-presentation/evals/evals.json": "95fb361952b5ebd12ac41dfc7179263b979dbd2ce50e97157522bfc8d1ea8e60",
-          "skills/html-presentation/evals/files/DESIGN.md": "4351a6d5a5af354d5c8a42ad304f001e634aca53a6d4aad1642e712a99e39510",
-          "skills/html-presentation/evals/files/politica-senhas.pdf": "c355b11d6018a220ceb32c2726837038b22b19bcbd28926be2aba010fcbe738f",
-          "skills/html-presentation/evals/files/sprint-42.md": "008229e3a712390ec9cbc465c89e0b769c06c40641f7db0625e0f2348aee0691",
-          "skills/html-presentation/references/engine.md": "b2d25096f6c770b23154a83d340b95900a56286f6aa902da803464d122e30b21",
-          "skills/html-presentation/references/layout-and-type.md": "0632fbf38f14ec70c2a8e12451f53d20ddeeebb23010edd09412f4d9c66f731d",
-          "skills/html-presentation/references/review.md": "ad4350590041cf27eae7d2103131762afc70ef15953c2b594a332879943295e3",
-          "skills/html-presentation/scripts/build.py": "246f26801306e9d75b510c9e8f5c26dc594c55498d9e804cce188edb502cdd24",
-          "skills/html-presentation/scripts/check-presenter.mjs": "853d65b583c2bf0600ba3d555239b567e7167a5508faf6481691d2267bb3e175",
-          "skills/html-presentation/scripts/shoot.sh": "4ebfb68c87ebf8b84efe242b523df59a070b542fa71d01281039281b3c8e08d3"
+          ".claude-plugin/plugin.json": {
+            "sha256": "efa114c49c0dac395bbdff6b0c8f610fb60785dbc4d7b045ebc8ff45d5d2a836"
+          },
+          "CHANGELOG.md": {
+            "sha256": "b3ba580eccbf05db129b8e4df7ab345b22c643c23425adcff51a65097dddf029"
+          },
+          "agents/deck-reviewer.md": {
+            "sha256": "e1f078ab26017df698a97129f3d8df968c7b3159f3f7cb747971b11415e4fad0"
+          },
+          "skills/html-presentation/CHANGELOG.md": {
+            "sha256": "55befecb8d63ad5c413cd1a59c1ddd84e18b937c4ff4d92e6e229223cbd9fa92"
+          },
+          "skills/html-presentation/SKILL.md": {
+            "sha256": "87b502d9c35b18cafe2c89e5f1715dafb4af4f4783ec47819ccc6fe61f2285f7"
+          },
+          "skills/html-presentation/assets/deck-template.html": {
+            "sha256": "c6acd696bbee315df3c3ca797772afa611fa8fae38b5f1c1dbf98e3246f59f08"
+          },
+          "skills/html-presentation/evals/evals.json": {
+            "sha256": "95fb361952b5ebd12ac41dfc7179263b979dbd2ce50e97157522bfc8d1ea8e60"
+          },
+          "skills/html-presentation/evals/files/DESIGN.md": {
+            "sha256": "4351a6d5a5af354d5c8a42ad304f001e634aca53a6d4aad1642e712a99e39510"
+          },
+          "skills/html-presentation/evals/files/politica-senhas.pdf": {
+            "sha256": "c355b11d6018a220ceb32c2726837038b22b19bcbd28926be2aba010fcbe738f"
+          },
+          "skills/html-presentation/evals/files/sprint-42.md": {
+            "sha256": "008229e3a712390ec9cbc465c89e0b769c06c40641f7db0625e0f2348aee0691"
+          },
+          "skills/html-presentation/references/engine.md": {
+            "sha256": "b2d25096f6c770b23154a83d340b95900a56286f6aa902da803464d122e30b21"
+          },
+          "skills/html-presentation/references/layout-and-type.md": {
+            "sha256": "0632fbf38f14ec70c2a8e12451f53d20ddeeebb23010edd09412f4d9c66f731d"
+          },
+          "skills/html-presentation/references/review.md": {
+            "sha256": "ad4350590041cf27eae7d2103131762afc70ef15953c2b594a332879943295e3"
+          },
+          "skills/html-presentation/scripts/build.py": {
+            "sha256": "246f26801306e9d75b510c9e8f5c26dc594c55498d9e804cce188edb502cdd24"
+          },
+          "skills/html-presentation/scripts/check-presenter.mjs": {
+            "sha256": "853d65b583c2bf0600ba3d555239b567e7167a5508faf6481691d2267bb3e175"
+          },
+          "skills/html-presentation/scripts/shoot.sh": {
+            "sha256": "4ebfb68c87ebf8b84efe242b523df59a070b542fa71d01281039281b3c8e08d3"
+          }
         }
       },
       "kaizen-software": {
         "version": "1.4.4",
         "hashes": {
-          ".claude-plugin/plugin.json": "d96c815e01ca03f245ccec36c189eaa1cc3ddad876b1db84cf0b22d91b0b9338",
-          "CHANGELOG.md": "a9e6b8d722745321298f51b86606d5e16a9c8f0573ea60ff944d96e32ed1e273",
-          "skills/kaizen-software/SKILL.md": "5a61c4c56a152ea079f31bfd5e47dc92c3b2fc3d807351eddfe19d8c05cde9f7",
-          "skills/kaizen-software/references/desperdicios.md": "eda98668b150c085cf9f34586557c21fd7bc58f880b614a4a97299f6ba501c78",
-          "skills/kaizen-software/references/kaizen-conceitos.md": "9822d895be67904aae1d77d679bb59cc4fff399185f6c2091b49403d97e8ec6b",
-          "skills/kaizen-software/references/templates.md": "2a01eb2004cbb1bace8fdb4bc2dc5a96d49d18a85e7eaf9062a50806d1f1f107"
+          ".claude-plugin/plugin.json": {
+            "sha256": "d96c815e01ca03f245ccec36c189eaa1cc3ddad876b1db84cf0b22d91b0b9338"
+          },
+          "CHANGELOG.md": {
+            "sha256": "a9e6b8d722745321298f51b86606d5e16a9c8f0573ea60ff944d96e32ed1e273"
+          },
+          "skills/kaizen-software/SKILL.md": {
+            "sha256": "5a61c4c56a152ea079f31bfd5e47dc92c3b2fc3d807351eddfe19d8c05cde9f7"
+          },
+          "skills/kaizen-software/references/desperdicios.md": {
+            "sha256": "eda98668b150c085cf9f34586557c21fd7bc58f880b614a4a97299f6ba501c78"
+          },
+          "skills/kaizen-software/references/kaizen-conceitos.md": {
+            "sha256": "9822d895be67904aae1d77d679bb59cc4fff399185f6c2091b49403d97e8ec6b"
+          },
+          "skills/kaizen-software/references/templates.md": {
+            "sha256": "2a01eb2004cbb1bace8fdb4bc2dc5a96d49d18a85e7eaf9062a50806d1f1f107"
+          }
         }
       },
       "n8n-ops": {
         "version": "1.0.2",
         "hashes": {
-          ".claude-plugin/plugin.json": "b37121b7f318fee04b8ba2c28f3a172e9d2326e3d31b5b7d20682c731b79c272",
-          "CHANGELOG.md": "d6335781d78047c20f5aa2c41ed20c6f35391891226d8f639b3dc6a8f03868b0",
-          "skills/n8n-ops/SKILL.md": "b85d4e4319f5b6144dbbe544b5297a4104c526afc11aa9a3c2febc6c72ddff94",
-          "skills/n8n-ops/references/diagnostico.md": "9d7b9b7bbe9077a32b66d864a48c2c0fceb0c5493a4ff14802a3e61c0fc2eaba",
-          "skills/n8n-ops/references/instancia.md": "ebde82c0c38d7cf8b397d7823c562558065df4caf9b358a8a3334d8acd3a7823",
-          "skills/n8n-ops/references/operacao.md": "d73cd92e675b59ee1f196d758530de289bc0b9d64499908b832e5cffb20266aa",
-          "skills/n8n-ops/references/vigia.md": "a293929cdbd28df94ec686224a36a7dce5d188fb4a290f47f713da047a169beb"
+          ".claude-plugin/plugin.json": {
+            "sha256": "b37121b7f318fee04b8ba2c28f3a172e9d2326e3d31b5b7d20682c731b79c272"
+          },
+          "CHANGELOG.md": {
+            "sha256": "d6335781d78047c20f5aa2c41ed20c6f35391891226d8f639b3dc6a8f03868b0"
+          },
+          "skills/n8n-ops/SKILL.md": {
+            "sha256": "b85d4e4319f5b6144dbbe544b5297a4104c526afc11aa9a3c2febc6c72ddff94"
+          },
+          "skills/n8n-ops/references/diagnostico.md": {
+            "sha256": "9d7b9b7bbe9077a32b66d864a48c2c0fceb0c5493a4ff14802a3e61c0fc2eaba"
+          },
+          "skills/n8n-ops/references/instancia.md": {
+            "sha256": "ebde82c0c38d7cf8b397d7823c562558065df4caf9b358a8a3334d8acd3a7823"
+          },
+          "skills/n8n-ops/references/operacao.md": {
+            "sha256": "d73cd92e675b59ee1f196d758530de289bc0b9d64499908b832e5cffb20266aa"
+          },
+          "skills/n8n-ops/references/vigia.md": {
+            "sha256": "a293929cdbd28df94ec686224a36a7dce5d188fb4a290f47f713da047a169beb"
+          }
         }
       },
       "pdf-generation": {
         "version": "1.6.3",
         "hashes": {
-          ".claude-plugin/plugin.json": "53feb374f7c9a2c1cb1325e4b288791352fef271c8a004005d99689e5ccee2e5",
-          "CHANGELOG.md": "80615bf8ef28167127ea77ae4f41941e32b90532b9ffda3697fcf44d3ae31b20",
-          "skills/pdf-generation/SKILL.md": "03e737c0604f17f4d4069c80166e025e980e3fa1a72d6c3ac3387a13d5e41b81",
-          "skills/pdf-generation/references/layout-analysis.md": "d41bbd8acaa24bd6cb1a399bb38822980b22c7e0c812dc73802101d22b677a6f",
-          "skills/pdf-generation/references/library-comparison.md": "c17912bdf84d00dd30e745d46d96815de33c3652424ad51561f82ac947fab3dc",
-          "skills/pdf-generation/references/pdfmake-patterns.md": "1377522e061e72a62d34cde22e965f3fe384f7ef574c177d08b8f4b827f9c062"
+          ".claude-plugin/plugin.json": {
+            "sha256": "53feb374f7c9a2c1cb1325e4b288791352fef271c8a004005d99689e5ccee2e5"
+          },
+          "CHANGELOG.md": {
+            "sha256": "80615bf8ef28167127ea77ae4f41941e32b90532b9ffda3697fcf44d3ae31b20"
+          },
+          "skills/pdf-generation/SKILL.md": {
+            "sha256": "03e737c0604f17f4d4069c80166e025e980e3fa1a72d6c3ac3387a13d5e41b81"
+          },
+          "skills/pdf-generation/references/layout-analysis.md": {
+            "sha256": "d41bbd8acaa24bd6cb1a399bb38822980b22c7e0c812dc73802101d22b677a6f"
+          },
+          "skills/pdf-generation/references/library-comparison.md": {
+            "sha256": "c17912bdf84d00dd30e745d46d96815de33c3652424ad51561f82ac947fab3dc"
+          },
+          "skills/pdf-generation/references/pdfmake-patterns.md": {
+            "sha256": "1377522e061e72a62d34cde22e965f3fe384f7ef574c177d08b8f4b827f9c062"
+          }
         }
       },
       "release": {
         "version": "2.0.2",
         "hashes": {
-          ".claude-plugin/plugin.json": "621e94c91b55edadde0923ee5234fd60650e7809367fe1089f738618bfc2f9dc",
-          "CHANGELOG.md": "ffc3930593b85a8382ed2f36befdc6045456a737e3680c14292c7819d908f0b5",
-          "skills/release/SKILL.md": "b3327be76462067418daf5117f8f9c80b6cd6cdc831a67a0decb3a944fd99ec5",
-          "skills/release/agents/openai.yaml": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94"
+          ".claude-plugin/plugin.json": {
+            "sha256": "621e94c91b55edadde0923ee5234fd60650e7809367fe1089f738618bfc2f9dc"
+          },
+          "CHANGELOG.md": {
+            "sha256": "ffc3930593b85a8382ed2f36befdc6045456a737e3680c14292c7819d908f0b5"
+          },
+          "skills/release/SKILL.md": {
+            "sha256": "b3327be76462067418daf5117f8f9c80b6cd6cdc831a67a0decb3a944fd99ec5"
+          },
+          "skills/release/agents/openai.yaml": {
+            "sha256": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94"
+          }
         }
       },
       "skill-quality-audit": {
         "version": "0.9.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "9725146a85fa1583513b50957286be119e29a6d48842cc4830d5c256235e039a",
-          "CHANGELOG.md": "6dd699bf00f13c32492709b6ca2c7bb022996f65d4028c020101539f1906649f",
-          "skills/skill-claim-check/CHANGELOG.md": "a6bf452be85fe4abae3d2ae0841c2e2de315f62a71571825e76a1edc92901539",
-          "skills/skill-claim-check/SKILL.md": "8f3a7d1fe923c0593482678f00c8f5f7663ec77ac9c90ab4ff3085152e84cc4d",
-          "skills/skill-claim-check/assets/trigger-evals.json": "20bdcc6556358a49985c3c400d0a407263068cd1f4ccf2e918efe6f97525f0c9",
-          "skills/skill-claim-check/scripts/listar-afirmacoes.sh": "e21d88ca82c3eda166792ffce7fbe4baf17bbc8e5b5075c6a64bb220d14c4f45",
-          "skills/skill-quality-audit/CHANGELOG.md": "ce12c9958726284814e47e2484017cc0eedae58f7323dd029928de023c3e885f",
-          "skills/skill-quality-audit/SKILL.md": "24e42ca305f08d67d2644ecc7092888114b6c1ee9b5fcb9bca5496f711c92e09",
-          "skills/skill-quality-audit/assets/trigger-evals.json": "3bd68edd4369fd6ce49ed84a6d4e119270f0497a6c611cd167ae80c0ded5170a",
-          "skills/skill-quality-audit/references/checks.md": "31598117301c27c99258f93a955ffdc11bbd6fd58aa45e4bf04b540857d0696a",
-          "skills/skill-quality-audit/references/contrato-relatorio.md": "8c7dec323a53610da2c42b798b4490ab93ce23033721f29121d98d7185bee9a8",
-          "skills/skill-quality-audit/references/fluxo-completo.md": "1795b3bed84ea3be730d05265160ab3146287ce01481fb5c4e6e69cc4aecc6a9",
-          "skills/skill-quality-audit/references/fontes-e-decisoes.md": "5557b2b173cef56e166fe7f12c7e64a5c8fe4ddf441f67131050bd4b1cee03fc",
-          "skills/skill-quality-audit/references/matriz-avaliacao.md": "eb30b796d143507cf3d42c73d51a7bc4a938bcb6667f8dda0a7d7755724ca266",
-          "skills/skill-quality-audit/scripts/audit_skill_quality.py": "e1a8fc814d96eeaa56a4eb36075af36241133f15f8749963175404349880a796",
-          "skills/skill-quality-audit/tests/test_audit_skill_quality.py": "dfa9ea1d3b6462ff27c7e2649df9b631417df3264f8c5e253168ed9708300925",
-          "skills/skill-refactoring/CHANGELOG.md": "6d6b8f6dad41b509cc70e695714d1c5cae0ce628fcd9da775d1a6461572a03b8",
-          "skills/skill-refactoring/SKILL.md": "81398ff1c1b6a314ae3c5302b68bc5f531638ace1acdc344bb768153d5348703",
-          "skills/skill-refactoring/assets/trigger-evals.json": "b0065f1146b4fded675d208480055df2a4f5f68930293b403b158f1b446826f8",
-          "skills/skill-refactoring/references/estudo-de-caso-monitoramento.md": "90049c6e242391f67871561f6c38f8692f3d4c6d0c09ac0f24a7cc12a49e7cbf",
-          "skills/skill-refactoring/references/leitura-fria.md": "06c83eb3d1ecd3bca399614967d006c74c287daf119ac5ab3fa2eb0fd0f2e842",
-          "skills/skill-refactoring/references/skill-compression-test-0.md": "b846fe90ce583ef450f5de042ec866eaaba89d394b86f20cc5013b46bc02145d",
-          "skills/skill-refactoring/scripts/repetidos.py": "e435f6ec5464ede77e6cf568924e7a7f1069b5ea4c7e7496821da3c5728b0b52",
-          "skills/skill-refactoring/tests/test_repetidos.py": "ddfa9a12f0a63ef7f3c48838e33412019dcad896316170075e240d39b389448e",
-          "skills/skill-self-containment/CHANGELOG.md": "e449ea965f6a6d557f72b47cd08418a15b20efc324849ee7bf842e230e25947b",
-          "skills/skill-self-containment/SKILL.md": "57ca08628e8108d9b166a743765dea03a16be64ab7aadcd9a403e2239667b7a0",
-          "skills/skill-self-containment/assets/trigger-evals.json": "11fded55cdc929dcbc2203227e46e1b741e2a188ca8f576078c5be3b717485e9"
+          ".claude-plugin/plugin.json": {
+            "sha256": "9725146a85fa1583513b50957286be119e29a6d48842cc4830d5c256235e039a"
+          },
+          "CHANGELOG.md": {
+            "sha256": "6dd699bf00f13c32492709b6ca2c7bb022996f65d4028c020101539f1906649f"
+          },
+          "skills/skill-claim-check/CHANGELOG.md": {
+            "sha256": "a6bf452be85fe4abae3d2ae0841c2e2de315f62a71571825e76a1edc92901539"
+          },
+          "skills/skill-claim-check/SKILL.md": {
+            "sha256": "8f3a7d1fe923c0593482678f00c8f5f7663ec77ac9c90ab4ff3085152e84cc4d"
+          },
+          "skills/skill-claim-check/assets/trigger-evals.json": {
+            "sha256": "20bdcc6556358a49985c3c400d0a407263068cd1f4ccf2e918efe6f97525f0c9"
+          },
+          "skills/skill-claim-check/scripts/listar-afirmacoes.sh": {
+            "sha256": "e21d88ca82c3eda166792ffce7fbe4baf17bbc8e5b5075c6a64bb220d14c4f45"
+          },
+          "skills/skill-quality-audit/CHANGELOG.md": {
+            "sha256": "ce12c9958726284814e47e2484017cc0eedae58f7323dd029928de023c3e885f"
+          },
+          "skills/skill-quality-audit/SKILL.md": {
+            "sha256": "24e42ca305f08d67d2644ecc7092888114b6c1ee9b5fcb9bca5496f711c92e09"
+          },
+          "skills/skill-quality-audit/assets/trigger-evals.json": {
+            "sha256": "3bd68edd4369fd6ce49ed84a6d4e119270f0497a6c611cd167ae80c0ded5170a"
+          },
+          "skills/skill-quality-audit/references/checks.md": {
+            "sha256": "31598117301c27c99258f93a955ffdc11bbd6fd58aa45e4bf04b540857d0696a"
+          },
+          "skills/skill-quality-audit/references/contrato-relatorio.md": {
+            "sha256": "8c7dec323a53610da2c42b798b4490ab93ce23033721f29121d98d7185bee9a8"
+          },
+          "skills/skill-quality-audit/references/fluxo-completo.md": {
+            "sha256": "1795b3bed84ea3be730d05265160ab3146287ce01481fb5c4e6e69cc4aecc6a9"
+          },
+          "skills/skill-quality-audit/references/fontes-e-decisoes.md": {
+            "sha256": "5557b2b173cef56e166fe7f12c7e64a5c8fe4ddf441f67131050bd4b1cee03fc"
+          },
+          "skills/skill-quality-audit/references/matriz-avaliacao.md": {
+            "sha256": "eb30b796d143507cf3d42c73d51a7bc4a938bcb6667f8dda0a7d7755724ca266"
+          },
+          "skills/skill-quality-audit/scripts/audit_skill_quality.py": {
+            "sha256": "e1a8fc814d96eeaa56a4eb36075af36241133f15f8749963175404349880a796"
+          },
+          "skills/skill-quality-audit/tests/test_audit_skill_quality.py": {
+            "sha256": "dfa9ea1d3b6462ff27c7e2649df9b631417df3264f8c5e253168ed9708300925"
+          },
+          "skills/skill-refactoring/CHANGELOG.md": {
+            "sha256": "6d6b8f6dad41b509cc70e695714d1c5cae0ce628fcd9da775d1a6461572a03b8"
+          },
+          "skills/skill-refactoring/SKILL.md": {
+            "sha256": "81398ff1c1b6a314ae3c5302b68bc5f531638ace1acdc344bb768153d5348703"
+          },
+          "skills/skill-refactoring/assets/trigger-evals.json": {
+            "sha256": "b0065f1146b4fded675d208480055df2a4f5f68930293b403b158f1b446826f8"
+          },
+          "skills/skill-refactoring/references/estudo-de-caso-monitoramento.md": {
+            "sha256": "90049c6e242391f67871561f6c38f8692f3d4c6d0c09ac0f24a7cc12a49e7cbf"
+          },
+          "skills/skill-refactoring/references/leitura-fria.md": {
+            "sha256": "06c83eb3d1ecd3bca399614967d006c74c287daf119ac5ab3fa2eb0fd0f2e842"
+          },
+          "skills/skill-refactoring/references/skill-compression-test-0.md": {
+            "sha256": "b846fe90ce583ef450f5de042ec866eaaba89d394b86f20cc5013b46bc02145d"
+          },
+          "skills/skill-refactoring/scripts/repetidos.py": {
+            "sha256": "e435f6ec5464ede77e6cf568924e7a7f1069b5ea4c7e7496821da3c5728b0b52"
+          },
+          "skills/skill-refactoring/tests/test_repetidos.py": {
+            "sha256": "ddfa9a12f0a63ef7f3c48838e33412019dcad896316170075e240d39b389448e"
+          },
+          "skills/skill-self-containment/CHANGELOG.md": {
+            "sha256": "e449ea965f6a6d557f72b47cd08418a15b20efc324849ee7bf842e230e25947b"
+          },
+          "skills/skill-self-containment/SKILL.md": {
+            "sha256": "57ca08628e8108d9b166a743765dea03a16be64ab7aadcd9a403e2239667b7a0"
+          },
+          "skills/skill-self-containment/assets/trigger-evals.json": {
+            "sha256": "11fded55cdc929dcbc2203227e46e1b741e2a188ca8f576078c5be3b717485e9"
+          }
         }
       },
       "ticket": {
         "version": "1.13.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "8f0d5e604d3f2f66f8327b534fe2990eb0381b679718a53808c7d9ee5e512f9b",
-          "CHANGELOG.md": "84e02af4f81549f2c01a8f24c71af6dc51c1829d37fe65a6ea40a4f8ce5e1564",
-          "skills/ticket/CHANGELOG.md": "e670f5882354c9b48fc7b388abe8cc275905314c55f26df6cbc4329ca73d6343",
-          "skills/ticket/SKILL.md": "13f8644752991df8e2b803db571c061a6e5a59e24d448ba88e937be57fec82ca",
-          "skills/ticket/assets/trigger-evals.json": "8ec2b50785e7d10a5bb802996bc9f5d1ab25450d9b6dec2fc7c4c960810c2737",
-          "skills/ticket/references/campos.md": "edbca93bbf8638a453f261113f5e47aae746fdc7280aca218d283436fb33589c",
-          "skills/ticket/references/close.md": "c086aab42138e7e75c1d1b4cfe591b796bd28c057598db6bb22286ec2176ea04",
-          "skills/ticket/references/start.md": "99654892eaf84f899fa3c13461cc84c98e30f74ce8cfa3e4c6478a48bdf5f6db",
-          "skills/ticket/references/templates.md": "0a7e33e00740e15a3d2ce4efac1ecabdd2398b9ef6c04bd799b6035b5db9e0ae",
-          "skills/ticket/references/workflow.md": "0892c37f3c2ac9b8285fcbe9de65c468e13e294ae72870ee96cd507ff2bfde46",
-          "skills/ticket/scripts/md2adf.py": "6146dfa84eb78c114f3c4874a822d3a672a1ffb7bedbd388473286e905481bcc",
-          "skills/ticket/tests/test_md2adf.py": "e86e2b23d6ed9c612dcc97aab2c59208323855abe9bc2b01e0f04cf6665d4990"
+          ".claude-plugin/plugin.json": {
+            "sha256": "8f0d5e604d3f2f66f8327b534fe2990eb0381b679718a53808c7d9ee5e512f9b"
+          },
+          "CHANGELOG.md": {
+            "sha256": "84e02af4f81549f2c01a8f24c71af6dc51c1829d37fe65a6ea40a4f8ce5e1564"
+          },
+          "skills/ticket/CHANGELOG.md": {
+            "sha256": "e670f5882354c9b48fc7b388abe8cc275905314c55f26df6cbc4329ca73d6343"
+          },
+          "skills/ticket/SKILL.md": {
+            "sha256": "13f8644752991df8e2b803db571c061a6e5a59e24d448ba88e937be57fec82ca"
+          },
+          "skills/ticket/assets/trigger-evals.json": {
+            "sha256": "8ec2b50785e7d10a5bb802996bc9f5d1ab25450d9b6dec2fc7c4c960810c2737"
+          },
+          "skills/ticket/references/campos.md": {
+            "sha256": "edbca93bbf8638a453f261113f5e47aae746fdc7280aca218d283436fb33589c"
+          },
+          "skills/ticket/references/close.md": {
+            "sha256": "c086aab42138e7e75c1d1b4cfe591b796bd28c057598db6bb22286ec2176ea04"
+          },
+          "skills/ticket/references/start.md": {
+            "sha256": "99654892eaf84f899fa3c13461cc84c98e30f74ce8cfa3e4c6478a48bdf5f6db"
+          },
+          "skills/ticket/references/templates.md": {
+            "sha256": "0a7e33e00740e15a3d2ce4efac1ecabdd2398b9ef6c04bd799b6035b5db9e0ae"
+          },
+          "skills/ticket/references/workflow.md": {
+            "sha256": "0892c37f3c2ac9b8285fcbe9de65c468e13e294ae72870ee96cd507ff2bfde46"
+          },
+          "skills/ticket/scripts/md2adf.py": {
+            "sha256": "6146dfa84eb78c114f3c4874a822d3a672a1ffb7bedbd388473286e905481bcc"
+          },
+          "skills/ticket/tests/test_md2adf.py": {
+            "sha256": "e86e2b23d6ed9c612dcc97aab2c59208323855abe9bc2b01e0f04cf6665d4990"
+          }
         }
       },
       "todo-to-github-issues": {
         "version": "2.8.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "7ad8756dc1028defe440232fc529ad4b510eb3cb98d48691c5ba2d5b7bf6f5ba",
-          "CHANGELOG.md": "c47306f1a2b3df990960d5850d22b874e382bf61544df6a8dd8d557e69e42b49",
-          "skills/todo-to-github-issues/CHANGELOG.md": "326c87a6ab7dfaabbda3f501f3ee1ec1cac718f5bd664b2bb61ff7aec2866dae",
-          "skills/todo-to-github-issues/SKILL.md": "f3e7f888f67be9c2719a92bf105a112ef3e33b043613027dc3ac8c43922334ac",
-          "skills/todo-to-github-issues/assets/trigger-evals.json": "0af4665e6cb00a0d7e334255d6be37edf28cfef7b73e9418c2e0a742c2a690a1",
-          "skills/todo-to-github-issues/references/conferir-o-fix.md": "be085813c47fcb6b66cd9ba2c7fe169262264e349416313e8ed0c96d165f2fc7",
-          "skills/todo-to-github-issues/references/migrar-a-mao.md": "e4c7bcf211091d22b552a1655853663c64c354f3943552bcf8ad8bd11163a3de",
-          "skills/todo-to-github-issues/references/modo-relatorio.md": "278d43b7ab7e62101a0c46654760fea99e0938fe544a537248cbc7f105bef623",
-          "skills/todo-to-github-issues/scripts/kit.py": "f38bcb3f9f8ea8b58c49a37736908116c25157c63bc30206972362b3c0af714a",
-          "skills/todo-to-github-issues/scripts/report.py": "61af0aecaa4ce532894a1ef10969ccd60099db7ff0889538f444e7d26fdeb247",
-          "skills/todo-to-github-issues/scripts/test_todo_format.py": "a7703cc278de3ae93beb76f995ae1eb5543dad4d8afeb62a0f2df8d2b7bcd7d5",
-          "skills/todo-to-github-issues/scripts/test_todo_issues.py": "4fd601d9e05484c1549756675dd51c92415a1789990fb00fb5c8de11cd465290",
-          "skills/todo-to-github-issues/scripts/todo_format.py": "9254b12cf0b849a6b09747b386f92f79632ce17b4e094f045b97f13e14ba335c",
-          "skills/todo-to-github-issues/scripts/todo_issues.py": "fd88659df4d538ca5c32ebe594d790340647c228411228a5a06c1101b092fbf3"
+          ".claude-plugin/plugin.json": {
+            "sha256": "7ad8756dc1028defe440232fc529ad4b510eb3cb98d48691c5ba2d5b7bf6f5ba"
+          },
+          "CHANGELOG.md": {
+            "sha256": "c47306f1a2b3df990960d5850d22b874e382bf61544df6a8dd8d557e69e42b49"
+          },
+          "skills/todo-to-github-issues/CHANGELOG.md": {
+            "sha256": "326c87a6ab7dfaabbda3f501f3ee1ec1cac718f5bd664b2bb61ff7aec2866dae"
+          },
+          "skills/todo-to-github-issues/SKILL.md": {
+            "sha256": "f3e7f888f67be9c2719a92bf105a112ef3e33b043613027dc3ac8c43922334ac"
+          },
+          "skills/todo-to-github-issues/assets/trigger-evals.json": {
+            "sha256": "0af4665e6cb00a0d7e334255d6be37edf28cfef7b73e9418c2e0a742c2a690a1"
+          },
+          "skills/todo-to-github-issues/references/conferir-o-fix.md": {
+            "sha256": "be085813c47fcb6b66cd9ba2c7fe169262264e349416313e8ed0c96d165f2fc7"
+          },
+          "skills/todo-to-github-issues/references/migrar-a-mao.md": {
+            "sha256": "e4c7bcf211091d22b552a1655853663c64c354f3943552bcf8ad8bd11163a3de"
+          },
+          "skills/todo-to-github-issues/references/modo-relatorio.md": {
+            "sha256": "278d43b7ab7e62101a0c46654760fea99e0938fe544a537248cbc7f105bef623"
+          },
+          "skills/todo-to-github-issues/scripts/kit.py": {
+            "sha256": "f38bcb3f9f8ea8b58c49a37736908116c25157c63bc30206972362b3c0af714a"
+          },
+          "skills/todo-to-github-issues/scripts/report.py": {
+            "sha256": "61af0aecaa4ce532894a1ef10969ccd60099db7ff0889538f444e7d26fdeb247"
+          },
+          "skills/todo-to-github-issues/scripts/test_todo_format.py": {
+            "sha256": "a7703cc278de3ae93beb76f995ae1eb5543dad4d8afeb62a0f2df8d2b7bcd7d5"
+          },
+          "skills/todo-to-github-issues/scripts/test_todo_issues.py": {
+            "sha256": "4fd601d9e05484c1549756675dd51c92415a1789990fb00fb5c8de11cd465290"
+          },
+          "skills/todo-to-github-issues/scripts/todo_format.py": {
+            "sha256": "9254b12cf0b849a6b09747b386f92f79632ce17b4e094f045b97f13e14ba335c"
+          },
+          "skills/todo-to-github-issues/scripts/todo_issues.py": {
+            "sha256": "fd88659df4d538ca5c32ebe594d790340647c228411228a5a06c1101b092fbf3"
+          }
         }
       },
       "ts-library": {
         "version": "0.3.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "df2db17cfbec5cd629268f6d4b9498d22fef5f0bf10615c6c1cc992813b27c14",
-          "CHANGELOG.md": "94a65240405bcace7aae3122592acf76e8ac180bb74535b7279f7b0e11918899",
-          "skills/ts-library/SKILL.md": "271b0e06dfd4d71df24b5651a0747103527d28c5f3a330944d8b87cdbcee1e49",
-          "skills/ts-library/evals/evals.json": "76f55d886196e2c4da5f34885d0f9a9b61b441d49417320e0a5ade51ae1c9dd1",
-          "skills/ts-library/references/distribuicao.md": "f517e72fc09f12b22b9876b98d3f5029c552c3a698ea54bfa60b08f74f3cb1ec",
-          "skills/ts-library/references/docs-para-agentes.md": "abcfa499b8d1c739117fa72ba35f504831f2ad6a188342c28ea676c2c6e02920",
-          "skills/ts-library/references/extracao.md": "fc682f64f235ab650fe66ab8200573413487e52c3aeb77cc6f66df124a3fa708",
-          "skills/ts-library/references/fontes.md": "ab38da8b311ac835245773eb8cdf845fa956bffff1f3898e70c24d019b8a53ca",
-          "skills/ts-library/references/pacote.md": "ab3cd9806d27f8cf0e74e8e80d8f2e8ea56cc04699bc1a408f4b20d00a49abd4",
-          "skills/ts-library/references/sensores.md": "c92357df83241c0fb59465dd90dc9384e7c4656793b3d77ae76230a77b467cb5"
+          ".claude-plugin/plugin.json": {
+            "sha256": "df2db17cfbec5cd629268f6d4b9498d22fef5f0bf10615c6c1cc992813b27c14"
+          },
+          "CHANGELOG.md": {
+            "sha256": "94a65240405bcace7aae3122592acf76e8ac180bb74535b7279f7b0e11918899"
+          },
+          "skills/ts-library/SKILL.md": {
+            "sha256": "271b0e06dfd4d71df24b5651a0747103527d28c5f3a330944d8b87cdbcee1e49"
+          },
+          "skills/ts-library/evals/evals.json": {
+            "sha256": "76f55d886196e2c4da5f34885d0f9a9b61b441d49417320e0a5ade51ae1c9dd1"
+          },
+          "skills/ts-library/references/distribuicao.md": {
+            "sha256": "f517e72fc09f12b22b9876b98d3f5029c552c3a698ea54bfa60b08f74f3cb1ec"
+          },
+          "skills/ts-library/references/docs-para-agentes.md": {
+            "sha256": "abcfa499b8d1c739117fa72ba35f504831f2ad6a188342c28ea676c2c6e02920"
+          },
+          "skills/ts-library/references/extracao.md": {
+            "sha256": "fc682f64f235ab650fe66ab8200573413487e52c3aeb77cc6f66df124a3fa708"
+          },
+          "skills/ts-library/references/fontes.md": {
+            "sha256": "ab38da8b311ac835245773eb8cdf845fa956bffff1f3898e70c24d019b8a53ca"
+          },
+          "skills/ts-library/references/pacote.md": {
+            "sha256": "ab3cd9806d27f8cf0e74e8e80d8f2e8ea56cc04699bc1a408f4b20d00a49abd4"
+          },
+          "skills/ts-library/references/sensores.md": {
+            "sha256": "c92357df83241c0fb59465dd90dc9384e7c4656793b3d77ae76230a77b467cb5"
+          }
         }
       },
       "unlovable": {
         "version": "1.1.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "858e3343b172fb59b3e352fdee179260ece2a819371828e84cf54816d93688e0",
-          "CHANGELOG.md": "8c0adee8f48e6b672736a0b2d0385aa9c155d8956eda7bd7a3873a40fb6dbc53",
-          "skills/unlovable/CHANGELOG.md": "0ded7ae72b1ba6cdd38026c700c9741bfa5b3cb4a8d6d046dff478d0c4d051a9",
-          "skills/unlovable/SKILL.md": "c9eebfcb9f6447b23b84c1b2ca774d06813fad8ea83ee0d0c95cd07bf26ee9ba"
+          ".claude-plugin/plugin.json": {
+            "sha256": "858e3343b172fb59b3e352fdee179260ece2a819371828e84cf54816d93688e0"
+          },
+          "CHANGELOG.md": {
+            "sha256": "8c0adee8f48e6b672736a0b2d0385aa9c155d8956eda7bd7a3873a40fb6dbc53"
+          },
+          "skills/unlovable/CHANGELOG.md": {
+            "sha256": "0ded7ae72b1ba6cdd38026c700c9741bfa5b3cb4a8d6d046dff478d0c4d051a9"
+          },
+          "skills/unlovable/SKILL.md": {
+            "sha256": "c9eebfcb9f6447b23b84c1b2ca774d06813fad8ea83ee0d0c95cd07bf26ee9ba"
+          }
         }
       },
       "whisper-preprocess": {
         "version": "1.1.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "88e21cb1426821703599399167febf1bf74f33c98bfcacf6d8d4b08e4dc94f06",
-          "CHANGELOG.md": "daaaddb9e34cbbd3e93acd3b7936f93151578532b3d5dd0470bfaf850c3f26b2",
-          "skills/whisper-preprocess/SKILL.md": "2274e0bd5e424ed6697b707b3a1454eb4d90ab5ab792b74de858567a2a16fa84",
-          "skills/whisper-preprocess/scripts/merge_passes.py": "90ea6452e99842c0ea4f48cda7de93f3e528b1da8b0dc9e5cf4b6efde719d25c",
-          "skills/whisper-preprocess/scripts/whisper_preprocess.py": "539405cfc3abbf5bec1125dc33455c8ddadc68464818435fd526d682d7e65caf"
+          ".claude-plugin/plugin.json": {
+            "sha256": "88e21cb1426821703599399167febf1bf74f33c98bfcacf6d8d4b08e4dc94f06"
+          },
+          "CHANGELOG.md": {
+            "sha256": "daaaddb9e34cbbd3e93acd3b7936f93151578532b3d5dd0470bfaf850c3f26b2"
+          },
+          "skills/whisper-preprocess/SKILL.md": {
+            "sha256": "2274e0bd5e424ed6697b707b3a1454eb4d90ab5ab792b74de858567a2a16fa84"
+          },
+          "skills/whisper-preprocess/scripts/merge_passes.py": {
+            "sha256": "90ea6452e99842c0ea4f48cda7de93f3e528b1da8b0dc9e5cf4b6efde719d25c"
+          },
+          "skills/whisper-preprocess/scripts/whisper_preprocess.py": {
+            "sha256": "539405cfc3abbf5bec1125dc33455c8ddadc68464818435fd526d682d7e65caf"
+          }
         }
       },
       "windows-disk-cleanup": {
         "version": "0.2.2",
         "hashes": {
-          ".claude-plugin/plugin.json": "c13e6d67f50d2fba9fb238e500bdddf3cae088687ab373f04212b0c7729580bf",
-          "CHANGELOG.md": "7b91a50095fc92700358e8aca08fe57f96ac5238f9ae0b5870b68a3aab0c1144",
-          "skills/windows-disk-cleanup/SKILL.md": "dd4c1beb4a2c8faac760c6ec40629404bc535e6ce2313ae26cf16cc060491a4b",
-          "skills/windows-disk-cleanup/assets/trigger-evals.json": "a23e058a6038fc20ca024da5fe22c88469b33fbfa1152f573db05e3acab8452c",
-          "skills/windows-disk-cleanup/references/catalog.md": "0d2a8858e2fbe864696dbd537233faf81f69eaa81bf237f6eab517589f8f2aa9",
-          "skills/windows-disk-cleanup/references/google-drive.md": "a7a144f64b7ef70eb8c68e2707db55091594ae1a925ced48c9c12174c90f123b",
-          "skills/windows-disk-cleanup/references/measurement.md": "5e340d59f36def4d184d5a2e6d567e32845ce558d4fce36e49a63eb86da11f2a",
-          "skills/windows-disk-cleanup/references/safe-deletion.md": "d349869494960afa5aaac0ddedc5de410ea7770ba946ef3adebf317c98b3ca7c",
-          "skills/windows-disk-cleanup/references/wsl-docker.md": "37058da8968f97a4f19db143893d24fbe296a167164838cd4ed85684fb2cd8a6",
-          "skills/windows-disk-cleanup/scripts/delete-from-list.sh": "2fa5bb48fdd495baa55d0cf1609dc6f485f417206606d71d1780875a988ef4d2",
-          "skills/windows-disk-cleanup/scripts/drivefs-status.py": "0c4cbe945ae2591aa46f2c7ab06e41e1baaa04372712da85157c24a963690946",
-          "skills/windows-disk-cleanup/scripts/dups.ps1": "4095185ae49e7ca5028045201ef17e49613efcfaf6984d2e811a7b1cb2337a23",
-          "skills/windows-disk-cleanup/scripts/recyclebin-list.ps1": "5e1aae392bda9e32c3908057d7f1a04816799047905c7de2d557cb2bad5aed87",
-          "skills/windows-disk-cleanup/scripts/refs-scan.ps1": "047559125ab2f1b280c5c0b6c645f34927fa020522d161d3f2468f323fd8fd8a",
-          "skills/windows-disk-cleanup/scripts/room-check.ps1": "8669d0842da470c1bc133456e7b2d880752fd09a27f72ae90c17466e46bfb11f",
-          "skills/windows-disk-cleanup/scripts/scan.ps1": "9b2e86c4b3bf4f5933123e02923bd053f7ee3e6d5ecc79125fd2bdc15fa1ec63",
-          "skills/windows-disk-cleanup/scripts/selftest.ps1": "cd9e7e066fb5c45677dcec78618127b74872e7cc91d54ac45f337a0b159baac8",
-          "skills/windows-disk-cleanup/scripts/steam-games.ps1": "eab156cda5fb14f7b92455bec6d0a6be3d681496458883499be8eb4e5cd3b497",
-          "skills/windows-disk-cleanup/scripts/summarize.ps1": "5547e8b5be4735f8559dcc7cc2e02f3b3f44fd8ce5d62b5d5d8ec1c76585afa7",
-          "skills/windows-disk-cleanup/scripts/vscode-obsolete.ps1": "064d04950c75a88cddd95b3b2763e23ea7f923c25bdf44779bd5c400e0a7275d",
-          "skills/windows-disk-cleanup/scripts/zipverify.ps1": "472f7576172ca9085b2d5cf11af7725e82d2673119dd149303bccc8e4c3631a5"
+          ".claude-plugin/plugin.json": {
+            "sha256": "c13e6d67f50d2fba9fb238e500bdddf3cae088687ab373f04212b0c7729580bf"
+          },
+          "CHANGELOG.md": {
+            "sha256": "7b91a50095fc92700358e8aca08fe57f96ac5238f9ae0b5870b68a3aab0c1144"
+          },
+          "skills/windows-disk-cleanup/SKILL.md": {
+            "sha256": "dd4c1beb4a2c8faac760c6ec40629404bc535e6ce2313ae26cf16cc060491a4b"
+          },
+          "skills/windows-disk-cleanup/assets/trigger-evals.json": {
+            "sha256": "a23e058a6038fc20ca024da5fe22c88469b33fbfa1152f573db05e3acab8452c"
+          },
+          "skills/windows-disk-cleanup/references/catalog.md": {
+            "sha256": "0d2a8858e2fbe864696dbd537233faf81f69eaa81bf237f6eab517589f8f2aa9"
+          },
+          "skills/windows-disk-cleanup/references/google-drive.md": {
+            "sha256": "a7a144f64b7ef70eb8c68e2707db55091594ae1a925ced48c9c12174c90f123b"
+          },
+          "skills/windows-disk-cleanup/references/measurement.md": {
+            "sha256": "5e340d59f36def4d184d5a2e6d567e32845ce558d4fce36e49a63eb86da11f2a"
+          },
+          "skills/windows-disk-cleanup/references/safe-deletion.md": {
+            "sha256": "d349869494960afa5aaac0ddedc5de410ea7770ba946ef3adebf317c98b3ca7c"
+          },
+          "skills/windows-disk-cleanup/references/wsl-docker.md": {
+            "sha256": "37058da8968f97a4f19db143893d24fbe296a167164838cd4ed85684fb2cd8a6"
+          },
+          "skills/windows-disk-cleanup/scripts/delete-from-list.sh": {
+            "sha256": "2fa5bb48fdd495baa55d0cf1609dc6f485f417206606d71d1780875a988ef4d2"
+          },
+          "skills/windows-disk-cleanup/scripts/drivefs-status.py": {
+            "sha256": "0c4cbe945ae2591aa46f2c7ab06e41e1baaa04372712da85157c24a963690946"
+          },
+          "skills/windows-disk-cleanup/scripts/dups.ps1": {
+            "sha256": "4095185ae49e7ca5028045201ef17e49613efcfaf6984d2e811a7b1cb2337a23"
+          },
+          "skills/windows-disk-cleanup/scripts/recyclebin-list.ps1": {
+            "sha256": "5e1aae392bda9e32c3908057d7f1a04816799047905c7de2d557cb2bad5aed87"
+          },
+          "skills/windows-disk-cleanup/scripts/refs-scan.ps1": {
+            "sha256": "047559125ab2f1b280c5c0b6c645f34927fa020522d161d3f2468f323fd8fd8a"
+          },
+          "skills/windows-disk-cleanup/scripts/room-check.ps1": {
+            "sha256": "8669d0842da470c1bc133456e7b2d880752fd09a27f72ae90c17466e46bfb11f"
+          },
+          "skills/windows-disk-cleanup/scripts/scan.ps1": {
+            "sha256": "9b2e86c4b3bf4f5933123e02923bd053f7ee3e6d5ecc79125fd2bdc15fa1ec63"
+          },
+          "skills/windows-disk-cleanup/scripts/selftest.ps1": {
+            "sha256": "cd9e7e066fb5c45677dcec78618127b74872e7cc91d54ac45f337a0b159baac8"
+          },
+          "skills/windows-disk-cleanup/scripts/steam-games.ps1": {
+            "sha256": "eab156cda5fb14f7b92455bec6d0a6be3d681496458883499be8eb4e5cd3b497"
+          },
+          "skills/windows-disk-cleanup/scripts/summarize.ps1": {
+            "sha256": "5547e8b5be4735f8559dcc7cc2e02f3b3f44fd8ce5d62b5d5d8ec1c76585afa7"
+          },
+          "skills/windows-disk-cleanup/scripts/vscode-obsolete.ps1": {
+            "sha256": "064d04950c75a88cddd95b3b2763e23ea7f923c25bdf44779bd5c400e0a7275d"
+          },
+          "skills/windows-disk-cleanup/scripts/zipverify.ps1": {
+            "sha256": "472f7576172ca9085b2d5cf11af7725e82d2673119dd149303bccc8e4c3631a5"
+          }
         }
       },
       "wsl-windows-onboarding": {
         "version": "0.4.4",
         "hashes": {
-          ".claude-plugin/plugin.json": "480be423f47f7f1eb08e62088b16caa8262b5e8b3b8994d366a2744e9689f0ba",
-          "CHANGELOG.md": "ca80e1bdb8f4dc531fb79a4fab0913c063b5626f17cb0ab5d9cd54207220d9a4",
-          "skills/wsl-windows-onboarding/SKILL.md": "416a97b909fbac2a2e130c9ce75477b49e79a4fdf1d1da4de4a4965246ede869",
-          "skills/wsl-windows-onboarding/references/project-migration.md": "6425cbd5902cdc6e6d1cb63a28326d5dd3215ed10c1ab30ff7f5b573bc93129d",
-          "skills/wsl-windows-onboarding/references/rtk-install.md": "0a44f81e20bb898d193f520025389a0289944681c384951b31bb189a2b74a60d",
-          "skills/wsl-windows-onboarding/references/shell-setup.md": "4cf1feef6abbcc2e68027e23f8204f6fae29aedeac3bd7620456c11b01ef07b7",
-          "skills/wsl-windows-onboarding/references/wsl-setup.md": "b4cd23bd826e75c3386a20086eb7b192298f9689769cc8f8373041d160ae697e",
-          "skills/wsl-windows-onboarding/scripts/migrate-repos.sh": "76dc3d436f3cb96d9393f2e1f8296052261583ca1a22c8aa6081145e3bdbbb7d",
-          "skills/wsl-windows-onboarding/scripts/wsl-diagnose.sh": "d0215f201b3b053b78c3271b7d30344a3903a4ffd12b926abf23018f8fbf1b85"
+          ".claude-plugin/plugin.json": {
+            "sha256": "480be423f47f7f1eb08e62088b16caa8262b5e8b3b8994d366a2744e9689f0ba"
+          },
+          "CHANGELOG.md": {
+            "sha256": "ca80e1bdb8f4dc531fb79a4fab0913c063b5626f17cb0ab5d9cd54207220d9a4"
+          },
+          "skills/wsl-windows-onboarding/SKILL.md": {
+            "sha256": "416a97b909fbac2a2e130c9ce75477b49e79a4fdf1d1da4de4a4965246ede869"
+          },
+          "skills/wsl-windows-onboarding/references/project-migration.md": {
+            "sha256": "6425cbd5902cdc6e6d1cb63a28326d5dd3215ed10c1ab30ff7f5b573bc93129d"
+          },
+          "skills/wsl-windows-onboarding/references/rtk-install.md": {
+            "sha256": "0a44f81e20bb898d193f520025389a0289944681c384951b31bb189a2b74a60d"
+          },
+          "skills/wsl-windows-onboarding/references/shell-setup.md": {
+            "sha256": "4cf1feef6abbcc2e68027e23f8204f6fae29aedeac3bd7620456c11b01ef07b7"
+          },
+          "skills/wsl-windows-onboarding/references/wsl-setup.md": {
+            "sha256": "b4cd23bd826e75c3386a20086eb7b192298f9689769cc8f8373041d160ae697e"
+          },
+          "skills/wsl-windows-onboarding/scripts/migrate-repos.sh": {
+            "sha256": "76dc3d436f3cb96d9393f2e1f8296052261583ca1a22c8aa6081145e3bdbbb7d"
+          },
+          "skills/wsl-windows-onboarding/scripts/wsl-diagnose.sh": {
+            "sha256": "d0215f201b3b053b78c3271b7d30344a3903a4ffd12b926abf23018f8fbf1b85"
+          }
         }
       },
       "zitadel-idp": {
         "version": "0.20.1",
         "hashes": {
-          ".claude-plugin/plugin.json": "44def0b7a1f064157988228b6f6f519aa93e80eff97276318fbf1ed8de327996",
-          "CHANGELOG.md": "36dba36cd047c87ab687582fdcdcda78dea0849effc00b6c2b77397915af2a47",
-          "skills/zitadel-idp/CHANGELOG.md": "f6e1730afb461eba6a7633fc49720dc9493f00cdca2993d3a5d9f00b44822874",
-          "skills/zitadel-idp/SKILL.md": "f88c318912b992af1886147e6f104b8021b5e5a9f42986edd706ee09b3dff5e9",
-          "skills/zitadel-idp/assets/bootstrap-zitadel.ts": "30f891fc823e2b94b11646637d7a470612d0f45e586fac02f307227734c0bc97",
-          "skills/zitadel-idp/assets/docker-compose.zitadel.yml": "52daced5684a0afdd23c9a1476595cf321a40352d97daac97db94a388a65fb8b",
-          "skills/zitadel-idp/references/api-cheatsheet.md": "21cb4a583d47ef4d166d885ecc89a28eed80f9db0a7db4af81e0dd42a4a31c48",
-          "skills/zitadel-idp/references/api-v1-to-v2-mapping.md": "d0f7dd5daa820095fdbe99fc9d6028542a5bb5eee3a665b059130b1849366090",
-          "skills/zitadel-idp/references/branding.md": "51b98c79b2192ed5588048874c9b025eb5ff24f6eae80a0ae76c19f354c7c195",
-          "skills/zitadel-idp/references/docker-compose-bootstrap.md": "30816bf3decd88993a049f369fa7e09b3c0e90399191f3d28bf84698ecbd5dbb",
-          "skills/zitadel-idp/references/migration-v2-to-v4.md": "8bfa162bce9f9e875e6e488877d77a1337aa912cc704b91f4e38a085e66d18a5",
-          "skills/zitadel-idp/references/multi-instance-and-user-migration.md": "93494c9c35825fcfad2f17d9ad9cebcf74a063ed7e0c7e3a3089e7a8382a032c",
-          "skills/zitadel-idp/references/quirks.md": "5fccaf5e583da5b5adc995c2e1feab33a1c0b6c3f0e307625dfd1cc18baa6330",
-          "skills/zitadel-idp/references/role-migration.md": "63bfe6489a062f8d9dcaf3bf0b26ef9b081635c709859a7f5c24539ddca98dd2",
-          "skills/zitadel-idp/references/spa-recipes.md": "190499c7a88ca7b532d1b8924b07edc53b4f44bfb16a6e80ab088ee3d695a4f0",
-          "skills/zitadel-idp/references/tenant-org-mapping.md": "3ed2bd19b63b90c04789cedfe1eb97ad51fa02ed906880e7b51885b67fbbdb62",
-          "skills/zitadel-idp/references/token-validation.md": "d6096bc2bf0f377d00b42225616e12b56387f0e676f7e2a7332174a9a645b5e5",
-          "skills/zitadel-idp/references/troubleshooting.md": "8b3808ffc05f00856696d4eb133fc06e1c0335fd05c8f264aa1c3ac9b5c8de87",
-          "skills/zitadel-idp/scripts/reset-zitadel.sh": "3673b384724b8692f1a9271fa9998f6b44e5d3e6240787b6ec7e80a40b7db20d"
+          ".claude-plugin/plugin.json": {
+            "sha256": "44def0b7a1f064157988228b6f6f519aa93e80eff97276318fbf1ed8de327996"
+          },
+          "CHANGELOG.md": {
+            "sha256": "36dba36cd047c87ab687582fdcdcda78dea0849effc00b6c2b77397915af2a47"
+          },
+          "skills/zitadel-idp/CHANGELOG.md": {
+            "sha256": "f6e1730afb461eba6a7633fc49720dc9493f00cdca2993d3a5d9f00b44822874"
+          },
+          "skills/zitadel-idp/SKILL.md": {
+            "sha256": "f88c318912b992af1886147e6f104b8021b5e5a9f42986edd706ee09b3dff5e9"
+          },
+          "skills/zitadel-idp/assets/bootstrap-zitadel.ts": {
+            "sha256": "30f891fc823e2b94b11646637d7a470612d0f45e586fac02f307227734c0bc97"
+          },
+          "skills/zitadel-idp/assets/docker-compose.zitadel.yml": {
+            "sha256": "52daced5684a0afdd23c9a1476595cf321a40352d97daac97db94a388a65fb8b"
+          },
+          "skills/zitadel-idp/references/api-cheatsheet.md": {
+            "sha256": "21cb4a583d47ef4d166d885ecc89a28eed80f9db0a7db4af81e0dd42a4a31c48"
+          },
+          "skills/zitadel-idp/references/api-v1-to-v2-mapping.md": {
+            "sha256": "d0f7dd5daa820095fdbe99fc9d6028542a5bb5eee3a665b059130b1849366090"
+          },
+          "skills/zitadel-idp/references/branding.md": {
+            "sha256": "51b98c79b2192ed5588048874c9b025eb5ff24f6eae80a0ae76c19f354c7c195"
+          },
+          "skills/zitadel-idp/references/docker-compose-bootstrap.md": {
+            "sha256": "30816bf3decd88993a049f369fa7e09b3c0e90399191f3d28bf84698ecbd5dbb"
+          },
+          "skills/zitadel-idp/references/migration-v2-to-v4.md": {
+            "sha256": "8bfa162bce9f9e875e6e488877d77a1337aa912cc704b91f4e38a085e66d18a5"
+          },
+          "skills/zitadel-idp/references/multi-instance-and-user-migration.md": {
+            "sha256": "93494c9c35825fcfad2f17d9ad9cebcf74a063ed7e0c7e3a3089e7a8382a032c"
+          },
+          "skills/zitadel-idp/references/quirks.md": {
+            "sha256": "5fccaf5e583da5b5adc995c2e1feab33a1c0b6c3f0e307625dfd1cc18baa6330"
+          },
+          "skills/zitadel-idp/references/role-migration.md": {
+            "sha256": "63bfe6489a062f8d9dcaf3bf0b26ef9b081635c709859a7f5c24539ddca98dd2"
+          },
+          "skills/zitadel-idp/references/spa-recipes.md": {
+            "sha256": "190499c7a88ca7b532d1b8924b07edc53b4f44bfb16a6e80ab088ee3d695a4f0"
+          },
+          "skills/zitadel-idp/references/tenant-org-mapping.md": {
+            "sha256": "3ed2bd19b63b90c04789cedfe1eb97ad51fa02ed906880e7b51885b67fbbdb62"
+          },
+          "skills/zitadel-idp/references/token-validation.md": {
+            "sha256": "d6096bc2bf0f377d00b42225616e12b56387f0e676f7e2a7332174a9a645b5e5"
+          },
+          "skills/zitadel-idp/references/troubleshooting.md": {
+            "sha256": "8b3808ffc05f00856696d4eb133fc06e1c0335fd05c8f264aa1c3ac9b5c8de87"
+          },
+          "skills/zitadel-idp/scripts/reset-zitadel.sh": {
+            "sha256": "3673b384724b8692f1a9271fa9998f6b44e5d3e6240787b6ec7e80a40b7db20d"
+          }
         }
       }
     }

@@ -73,7 +73,7 @@ class DistributionTests(unittest.TestCase):
                 copied = installed / relative
                 self.assertTrue(copied.is_file(), str(relative))
                 self.assertEqual(copied.read_bytes(), path.read_bytes(), str(relative))
-                hashes[str(relative)] = hashlib.sha256(copied.read_bytes()).hexdigest()
+                hashes[str(relative)] = dict(sha256=hashlib.sha256(copied.read_bytes()).hexdigest())
         return hashes
 
     def discovered_skills(self):

@@ -90,6 +90,26 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn('target', result.stderr)
 
+    def test_equivalent_resource_targets_are_rejected_before_writing(self):
+        (self.plugin / 'templates/second.md').write_text('# Outro template\n')
+        self.mapping['commands'][0]['resources'].append(
+            dict(source='./templates/second.md', target='assets/./demo.md'))
+        self.write_json(self.config, self.mapping)
+        result = self.adapter('--write')
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn('target', result.stderr)
+        self.assertFalse((self.plugin / 'codex-skills').exists())
+
+    def test_overlay_preserves_implicit_default_skills(self):
+        path = self.plugin / '.claude-plugin/plugin.json'
+        manifest = json.loads(path.read_text())
+        manifest.pop('skills')
+        self.write_json(path, manifest)
+        result = self.adapter('--write')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        overlay = json.loads((self.plugin / '.codex-plugin/plugin.json').read_text())
+        self.assertEqual(overlay['skills'], ['./skills', './codex-skills'])
+
     def test_unmapped_plugin_variable_is_rejected(self):
         path = self.plugin / 'commands/ready.md'
         path.write_text(path.read_text() + '${CLAUDE_PLUGIN_ROOT}/missing/file')

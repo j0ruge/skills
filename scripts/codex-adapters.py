@@ -70,9 +70,9 @@ def build_artifacts(root):
                 source_file = local_file(plugin, resource.get('source'))
                 target = resource.get('target')
                 if (not isinstance(target, str) or not target.startswith('assets/') or
-                        '..' in Path(target).parts or target in targets):
+                        '..' in Path(target).parts or Path(target) in targets):
                     raise ValueError(f'target inválido ou duplicado: {target!r}')
-                targets.add(target)
+                targets.add(Path(target))
                 artifacts[marketplace.inside(skill_dir, skill_dir / target)] = source_file.read_bytes()
                 body = body.replace('${CLAUDE_PLUGIN_ROOT}/' + resource['source'][2:], target)
             # Comandos com vários templates referenciam o diretório inteiro.
@@ -99,7 +99,7 @@ def build_artifacts(root):
         overlay = {k: manifest[k] for k in ['name', 'version', 'description', 'author',
                                           'license', 'homepage', 'repository', 'keywords']
                    if k in manifest}
-        skills = manifest.get('skills', [])
+        skills = manifest.get('skills', ['./skills'] if (plugin / 'skills').is_dir() else [])
         if isinstance(skills, str):
             skills = [skills]
         if not isinstance(skills, list) or any(not isinstance(s, str) for s in skills):
@@ -137,6 +137,7 @@ def sync_artifacts(root, write=False):
 
 
 def main():
+    """Confere as adaptações ou grava os derivados com --write explícito."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[1])
     group = parser.add_mutually_exclusive_group()

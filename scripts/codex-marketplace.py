@@ -120,6 +120,7 @@ def sync_json(path, expected, write):
 
 
 def main():
+    """Confere o catálogo ou o regenera quando --write é informado."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[1])
     mode = parser.add_mutually_exclusive_group()

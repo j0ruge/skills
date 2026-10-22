@@ -107,6 +107,45 @@ class HookTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('validator-ran', result.stdout)
 
+    def test_quoted_plugin_path_still_triggers_gate(self):
+        path = self.root / 'plugins/demo/ação.md'
+        path.parent.mkdir(parents=True)
+        path.touch()
+        self.git('config', 'core.quotePath', 'true')
+        self.git('add', '.')
+        result = self.hook()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('validator-ran', result.stdout)
+
+    def test_detector_failure_blocks_commit(self):
+        import os
+        from unittest import mock
+        tools = self.root / 'test-bin'
+        tools.mkdir()
+        detector = tools / 'rg'
+        detector.write_text('#!/bin/sh\nexit 2\n')
+        detector.chmod(0o755)
+        path = self.root / 'plugins/demo/SKILL.md'
+        path.parent.mkdir(parents=True)
+        path.touch()
+        (self.root / 'invalid').touch()
+        self.git('add', '.')
+        with mock.patch.dict(os.environ, {'PATH': str(tools) + os.pathsep + os.environ['PATH']}):
+            result = self.hook()
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_git_diff_failure_blocks_commit(self):
+        import os
+        from unittest import mock
+        tools = self.root / 'test-bin'
+        tools.mkdir()
+        git = tools / 'git'
+        git.write_text('#!/bin/sh\nexit 2\n')
+        git.chmod(0o755)
+        with mock.patch.dict(os.environ, {'PATH': str(tools) + os.pathsep + os.environ['PATH']}):
+            result = self.hook()
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_large_staged_set_does_not_skip_gate_on_sigpipe(self):
         plugin = self.root / 'plugins/demo'
         plugin.mkdir(parents=True)

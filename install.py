@@ -669,6 +669,7 @@ def _codex_install_flow() -> None:
 
 
 def main() -> None:
+    """Seleciona a plataforma e executa o fluxo correspondente do instalador."""
     print()
     print("  ╔═══════════════════════════════════════════╗")
     print("  ║    Chewiesoft Marketplace  —  Installer   ║")

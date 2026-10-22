@@ -89,7 +89,7 @@ cd skills
 python install.py
 ```
 
-The installer prompts for platform (Claude Code, Cursor, or Both) and where to place the Cursor skills. It automatically adapts plugin content for Cursor.
+The installer prompts for platform (Claude Code, Cursor, Codex, or Claude Code + Cursor) and where to place the Cursor skills. It automatically adapts plugin content for Cursor.
 
 > [!IMPORTANT]
 > **Cursor has no global skills directory** — only project-local `.cursor/skills/` is auto-loaded by the agent ([Cursor docs](https://cursor.com/docs/skills)). Run `python install.py` from inside each project where you want the skills available, and pick the **Project** option.
@@ -708,7 +708,7 @@ Para atualizar plugins instalados:
 
 ### Codex marketplace research (2026-10-22)
 
-Sources for the planned Codex support; the design is approved and implementation has not started.
+Sources used for the implemented Codex support. CLI distribution is verified; desktop, macOS, Windows, and the minimum client version remain unverified.
 Research, decisions, and the DDD/Kaizen checklist are tracked in [CONTEXT.md](CONTEXT.md), with the [design](docs/superpowers/specs/2026-10-22-codex-marketplace-design.md), [implementation plan](docs/superpowers/plans/2026-10-22-codex-marketplace.md), and [session handoff](docs/handoffs/2026-10-22-codex-marketplace.md).
 
 - [Package your plugin — OpenAI Developers](https://developers.openai.com/plugins/build/plugins) — repo marketplaces, native CLI registration, portable manifests, and compatibility with existing Claude manifests.
