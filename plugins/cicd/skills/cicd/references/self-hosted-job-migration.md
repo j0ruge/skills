@@ -569,8 +569,9 @@ Limite com um prune por idade no job de deploy, depois do `image prune`:
 ```
 
 `until=168h` preserva o que a última semana usou, que é o que deixa o próximo build rápido. Um
-`--all` ou um teto de tamanho seriam mais agressivos, e o cache é do **daemon**, compartilhado com
-os outros projetos do host.
+teto de tamanho seria mais agressivo, e o cache é do **daemon**, compartilhado com os outros
+projetos do host. O `--all` não devolve mais disco: o que ele leva a mais são registros `shared`,
+camadas de imagens vivas que a imagem segura (lição 119).
 
 **Apagar imagem não devolve disco num host que constrói as próprias imagens** (lição 118). O
 `docker rmi` de uma imagem construída ali só tira a tag: as camadas seguem presas aos registros do
@@ -587,6 +588,34 @@ uma promoção que constrói duas imagens: 97% de disco, 7,1 GB livres. O `docke
 projeto (uma delas com 2,42 GB) saiu `ok` em todas e o `df` não mudou; Images foi de 55,26 para
 53,47 GB e Build Cache de 7,48 para 9,27 GB. O `docker builder prune -f --filter until=168h` devolveu
 3,96 GB (95%, 12 GB livres), e o deploy passou.
+
+**O conserto é podar também antes do build** (lição 120). No mesmo host, o `deploy.sh` passou a
+rodar uma única poda antes do build e de novo no fim:
+
+- cada imagem guarda **por nome** só a `sha-*` que vai ao ar e a de rollback, e as outras saem com
+  `docker rmi`. Com o rollback desconhecido (container fora do ar, tag que não é `sha-*`), nenhuma
+  sai: ninguém sabe qual delas é o caminho de volta;
+- `image prune` e `builder prune --filter until=168h` rodam sempre, como acima;
+- abaixo de uma folga medida, `docker builder prune -f` sem filtro leva, depois do `rmi`, todo o
+  cache que nenhuma imagem usa. Sem `--all`: o que ele acrescenta não devolve disco (lição 119);
+- abaixo do tamanho de um build frio, mesmo depois da poda, o deploy para **antes** do build. Nada
+  no ar mudou, não há o que voltar, e um build que enche o disco derruba o banco dos outros
+  projetos do host.
+
+O build frio se mede sem tocar o cache de ninguém, num builder isolado:
+
+```bash
+docker buildx create --name medida --driver docker-container
+docker buildx build --builder medida -f <Dockerfile> .   # sem --load: fica só no cache dele
+docker buildx du --builder medida | tail -2               # Total = o build frio
+docker buildx rm medida                                   # leva o estado junto
+```
+
+Medido em 2026-10-22: 2,27 GB para um backend Node com Prisma e um frontend Vite. Um agente de
+deploy conteinerizado lê o disco do daemon sem montar nada do host: o `/` dele é um overlay sobre
+o data-root, e o `df -Pk /` lá dentro deu 13,2 GiB livres onde o `df -h /` do host dizia 14G. A
+poda e a recusa ficaram provadas com `docker` e `df` dublês no PATH (lição 117): um caso por
+regra, cada um vermelho com a regra sabotada.
 
 Onde um gate de CI e o `build-and-push` passam a disputar um runner único, **eles serializam**
 (tabela do pré-voo, item 6). Um runner efêmero ainda se registra de novo entre jobs. Diga o novo

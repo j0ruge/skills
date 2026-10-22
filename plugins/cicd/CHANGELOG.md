@@ -2,6 +2,33 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-10-22 — A poda vai para antes do build, e o `builder prune --all` não devolve disco — bump 2.38.0 → [2.39.0]
+
+**Por quê:** a lição 118 deixou o conserto como direção: medir antes de promover e, sem folga, rodar
+a mesma poda antes. No mesmo dia o `lighthouse_project` o construiu (PR #125). O `deploy.sh` passou a
+podar antes do build e no fim, retendo por nome a `sha-*` no ar e a de rollback, e a recusar o build
+abaixo do tamanho de um build frio medido (2,27 GB, num builder isolado). Na revisão, o Codex pediu
+`--all` no prune do ramo sem folga, citando a doc do Docker ("all unused build cache, not just
+dangling ones"). O código do BuildKit v0.21.0 (`cache/manager.go:1152`) e o `docker buildx du
+--verbose` do host mostraram o que o `--all` leva a mais: registros `shared`, 8,29 GB de camadas de
+imagens vivas, que não devolvem disco porque a imagem as segura. O "Build Cache" do `docker system
+df` (6,42 GB) não mostra esses registros, e o §11 dizia que o `--all` seria "mais agressivo", o que,
+para disco, não é.
+
+**O quê:**
+- `references/lessons-learned.md`: as lições 119 (o `--all` e os `shared`) e 120 (a poda antes do
+  build, a retenção por nome, a folga, a recusa, a medida do build frio e o `df` dentro do
+  container), as duas no tema "Migrar job cobrado para o self-hosted"; a 118 aponta para a 120.
+- `references/self-hosted-job-migration.md` §11: a frase do `--all` corrigida, e o desenho medido da
+  poda, com a receita do builder isolado.
+- `references/symptom-index.md`: a linha do `--all` que não mexe no `df`; a linha do `rmi` ganha o
+  conserto.
+- `SKILL.md`: o gotcha do disco dá o conserto e o aviso do `--all`.
+
+**Dívida pré-existente, fora deste retrofit:** a tabela de roteamento do `SKILL.md` segue com
+"74 rows" e "109 numbered lessons", já errados antes da 2.38.0 e sem sensor. A skill `deploy`
+(`no-actions-agent.md`, passo 4) repete que a poda do deploy roda depois do build.
+
 ## 2026-10-22 — Apagar imagem não libera disco num host que constrói as próprias imagens — bump 2.37.1 → [2.38.0]
 
 **Por quê:** antes da promoção da 0.4.3 do `lighthouse_project`, o host de staging (que também serve a
