@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
-"""Chewiesoft Marketplace Installer
+"""Instala skills no Cursor e mostra instruções nativas para Claude Code e Codex.
 
-Installs plugins as Cursor skills or shows Claude Code setup instructions.
-No external dependencies required — uses Python standard library only.
-
-Usage:
-    python install.py
+Usa somente a biblioteca padrão. Execute: python install.py.
 """
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import sys
@@ -630,6 +627,47 @@ def _cursor_install_flow() -> None:
 # Main
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _codex_install_flow() -> None:
+    """Apresenta comandos dos plugins publicados, sem executar instalações."""
+    catalog = json.loads((REPO_ROOT / '.agents/plugins/marketplace.json').read_text(encoding='utf-8'))
+    if (not isinstance(catalog, dict) or catalog.get('name') != 'chewiesoft-marketplace'
+            or not isinstance(catalog.get('plugins'), list)):
+        raise ValueError('Catálogo Codex inválido: confira name e plugins.')
+    names = []
+    for entry in catalog['plugins']:
+        if not isinstance(entry, dict):
+            raise ValueError('Entrada inválida no catálogo Codex.')
+        name = entry.get('name')
+        if (not isinstance(name, str) or not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', name)
+                or name in names):
+            raise ValueError(f'Nome de plugin Codex inválido ou duplicado: {name!r}')
+        source = entry.get('source')
+        if source != {'source': 'local', 'path': f'./plugins/{name}'}:
+            raise ValueError(f'Fonte inválida para o plugin Codex {name}.')
+        if entry.get('policy') != {'installation': 'AVAILABLE', 'authentication': 'ON_INSTALL'}:
+            raise ValueError(f'Política inválida para o plugin Codex {name}.')
+        plugin = REPO_ROOT / 'plugins' / name
+        manifest_path = plugin / '.claude-plugin/plugin.json'
+        if (not plugin.resolve().is_relative_to(REPO_ROOT.resolve())
+                or not manifest_path.resolve().is_relative_to(plugin.resolve())):
+            raise ValueError(f'Fonte fora do pacote para o plugin Codex {name}.')
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        if (not isinstance(manifest, dict) or manifest.get('name') != name
+                or not isinstance(manifest.get('platforms'), list)
+                or 'codex' not in manifest['platforms']):
+            raise ValueError(f'Plugin {name} não declara suporte Codex consistente.')
+        names.append(name)
+    if not names:
+        print('  Nenhum plugin Codex publicado neste catálogo.')
+        return
+    print('\n  Execute o registro da loja no seu ambiente Codex:')
+    print('  codex plugin marketplace add j0ruge/skills')
+    print('\n  Escolha os plugins desejados e execute apenas seus comandos:')
+    for name in names:
+        print(f'  codex plugin add {name}@chewiesoft-marketplace')
+    print('\n  Inicie uma nova sessão para usar as skills instaladas.')
+
+
 def main() -> None:
     print()
     print("  ╔═══════════════════════════════════════════╗")
@@ -644,14 +682,18 @@ def main() -> None:
 
     platform_idx = _choose(
         "Which platform are you installing for?",
-        ["Claude Code", "Cursor", "Both"],
-        default_index=2,
+        ["Claude Code", "Cursor", "Codex", "Claude Code + Cursor"],
+        default_index=3,
     )
 
-    if platform_idx in (0, 2):  # Claude Code or Both
+    if platform_idx == 2:
+        _codex_install_flow()
+        return
+
+    if platform_idx in (0, 3):
         print(_CLAUDE_CODE_INSTRUCTIONS)
 
-    if platform_idx in (1, 2):  # Cursor or Both
+    if platform_idx in (1, 3):
         _cursor_install_flow()
 
     print("\n  Done.")
@@ -663,3 +705,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\n\n  Installation cancelled.")
         sys.exit(0)
+    except (OSError, ValueError) as exc:
+        print(f'Erro: {exc}', file=sys.stderr)
+        sys.exit(1)
