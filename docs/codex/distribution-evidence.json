@@ -1,7 +1,7 @@
 [
   {
     "client": "codex-cli 0.163.0",
-    "revision": "f98c06d34f06ee86cc64c5a1e60419e806e73d8f",
+    "revision": "7df2ea752184401c820b5fe7e82d952daf3533e1",
     "commands": [
       {
         "args": [
@@ -69,7 +69,7 @@
               "pluginId": "cors@chewiesoft-marketplace",
               "name": "cors",
               "marketplaceName": "chewiesoft-marketplace",
-              "version": "1.1.1",
+              "version": "1.1.2",
               "installed": false,
               "enabled": false,
               "source": {
@@ -573,8 +573,8 @@
           "pluginId": "cors@chewiesoft-marketplace",
           "name": "cors",
           "marketplaceName": "chewiesoft-marketplace",
-          "version": "1.1.1",
-          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cors/1.1.1",
+          "version": "1.1.2",
+          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cors/1.1.2",
           "authPolicy": "ON_INSTALL"
         }
       },
@@ -1057,22 +1057,22 @@
         }
       },
       "cors": {
-        "version": "1.1.1",
+        "version": "1.1.2",
         "hashes": {
           ".claude-plugin/plugin.json": {
-            "sha256": "b6941620daf3c992f8fac5cb2ded86723b6d1051face80e01c533487ca0c4647"
+            "sha256": "e1ca5fa6ba8338ba32504b457b32cbcf39d9175c4142f1b0b2eb56953a348414"
           },
           "CHANGELOG.md": {
-            "sha256": "bbb5188b93abcc44e7e6192e348e19d4b6e0ab15e8e25386d81caeea5470132d"
+            "sha256": "9df0f4e5db67dc16212d73c45e191342d86b4bb3d9e55b6a9f2ee7839f353103"
           },
           "skills/cors/CHANGELOG.md": {
             "sha256": "784d70148829cecf896d6f2a7389207e0c7e1206ef4e3ffbb4b47828b3949019"
           },
           "skills/cors/SKILL.md": {
-            "sha256": "d0059d4409dd795958cb181101f30ce5bf7492f1c07fd45ff995e4d3fac80311"
+            "sha256": "84a223dad2037f8d013b3858c08eb54ab5394558c50ff4d49be8faf2b0b2d231"
           },
           "skills/cors/references/casos-limite.md": {
-            "sha256": "2075bc70131fde1a1db1e8bd22d91fd4fcf47d01adb8dbd528e35ea4a98d0db4"
+            "sha256": "b6b124138ed13544a80ecfdf8b1ac13ab2333a2264d8fdc510294d3d486d7758"
           },
           "skills/cors/references/configuracao.md": {
             "sha256": "be3540b22468c68d95d99ba481028530d3f0cd1f26471399e8dfa3153a4aa83f"
@@ -1940,7 +1940,7 @@
   },
   {
     "client": "codex-cli 0.163.0",
-    "revision": "f98c06d34f06ee86cc64c5a1e60419e806e73d8f",
+    "revision": "7df2ea752184401c820b5fe7e82d952daf3533e1",
     "commands": [
       {
         "args": [
@@ -1969,8 +1969,8 @@
           "pluginId": "cors@chewiesoft-marketplace",
           "name": "cors",
           "marketplaceName": "chewiesoft-marketplace",
-          "version": "1.1.1",
-          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cors/1.1.1",
+          "version": "1.1.2",
+          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cors/1.1.2",
           "authPolicy": "ON_INSTALL"
         }
       },
@@ -2121,18 +2121,18 @@
       }
     ],
     "git": {
-      "first": "180b4b8f95ebb6f3c0505ce4cd5da010d3e86784",
-      "second": "84383e3de5a649363a986bcfcafbd9f183c278b3",
-      "old_version": "1.1.1",
+      "first": "4173fe12dda47f80fef8b0b6b95e183b2b84a4a4",
+      "second": "435f19352de4645417b071cd2f7724de6d2c9e22",
+      "old_version": "1.1.2",
       "version_after_refresh": "99.0.0",
       "old_cache_removed": true,
-      "updated_skill_sha256": "99ffed43cebb4bce00fd35acb386ca9b7ba4fb3eef829eaa552a9b50bb2920a8",
+      "updated_skill_sha256": "4814ca53009e128685dd852a1c9071eec0fdbfc7b53d3370f411d98ddc0faf93",
       "version_after_add": "99.0.0"
     }
   },
   {
     "client": "codex-cli 0.163.0",
-    "revision": "f98c06d34f06ee86cc64c5a1e60419e806e73d8f",
+    "revision": "7df2ea752184401c820b5fe7e82d952daf3533e1",
     "commands": [
       {
         "args": [

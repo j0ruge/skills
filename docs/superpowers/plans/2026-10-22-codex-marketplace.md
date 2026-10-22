@@ -3,7 +3,7 @@
 > **Para execução por agentes:** usar `superpowers:executing-plans` em execução
 > nativa, tarefa por tarefa, é a recomendação para este plano. Se o usuário
 > escolher delegação na retomada, usar `superpowers:subagent-driven-development`.
-> A execução foi autorizada nesta retomada; a revisão com `/goal` permanece reservada ao próximo `/clear`.
+> A implementação e a segunda retomada de revisão foram executadas. O Check da revisão está no final; R01 continua parcial.
 
 **Goal:** permitir instalação individual dos plugins portáveis da Chewiesoft
 no marketplace nativo do Codex CLI e desktop.
@@ -451,6 +451,22 @@ Evidências, comandos reproduzíveis e R01–R12:
 [smokes.json](../../codex/smokes.json),
 [distribution-evidence.json](../../codex/distribution-evidence.json).
 Desktop, macOS e Windows continuam `not_checked`; versão mínima não estabelecida.
-R01 está `partial`. A revisão independente, `/goal`, push e publicação não foram
-executados. Seguir o [handoff](../../handoffs/2026-10-22-codex-marketplace.md)
-após novo `/clear`.
+R01 está `partial`. Na execução acima, a revisão independente ainda aguardava
+o novo `/clear`. Push e publicação não foram executados em nenhuma etapa.
+
+## Check da segunda retomada — revisão
+
+`codereview:codereview` v2.26.8 revisou o diff desde `cff1494`, incluindo o
+retrofit CORS; candidato inicial `bad6ebd`, correções `7df2ea7`. Cinco regressões
+novas reproduziram dois defeitos no adaptador e duas causas de desvio do gate;
+ficaram GREEN após mudanças pontuais. A revisão das correções não encontrou
+novos achados. Docstrings públicas e dois trechos do README foram alinhados.
+
+49 testes gerais e 55 do auditor passaram; exportação de `7df2ea7` repetiu os
+três cenários reais de distribuição, incluindo 25 pacotes / 289 arquivos.
+Grade A em todos os critérios da revisão; régua e limites preservados em
+[verification.md](../../codex/verification.md#segunda-retomada--revisão-e-correções).
+Desktop/macOS/Windows e versão mínima continuam sem comprovação; a tarefa de
+desktop acima permanece desmarcada e R01 `partial`. A revisão não autoriza
+integração ou publicação. O [handoff](../../handoffs/2026-10-22-codex-marketplace.md)
+registra o estado atual sem reiniciar o planejamento.

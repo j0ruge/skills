@@ -1,6 +1,6 @@
 # Contexto — distribuição de skills no Codex
 
-**Data:** 2026-10-22 · **Estado:** `implemented_with_gaps` · **Execução:** concluída nesta retomada; revisão após novo `/clear`.
+**Data:** 2026-10-22 · **Estado:** `implemented_with_gaps` · **Execução e revisão:** concluídas; revisão com grades A, R01 parcial.
 
 Este documento registra a pesquisa e a entrevista `grill-with-docs`. As sete
 perguntas iniciais de produto foram respondidas e o desenho foi aprovado.
@@ -258,4 +258,19 @@ nenhum patch nessas skills. Isso não substitui prova integral de codereview,
 que continua `partial` no catálogo. CORS 1.1.2 corrige navegação de Vary e aviso
 sobre método fixo, com RED/GREEN por leitura no cache, auditoria sem regressão,
 44 testes gerais e três provas Git repetidas após o commit 13f2cc0. Detalhes em
-`docs/codex/retrofits-2026-10-22.md`. Revisão com `/goal` permanece pendente.
+`docs/codex/retrofits-2026-10-22.md`. Naquela etapa, a revisão com `/goal` permanecia pendente.
+
+## Check da revisão — segunda retomada
+
+O objetivo de revisão foi ativado pelo usuário e retomado do handoff. Diff base
+`cff1494`, candidato inicial `bad6ebd`, correções `7df2ea7`. Dois defeitos no
+adaptador e duas causas de desvio do gate foram reproduzidos por cinco testes
+RED/GREEN. Docstrings de quatro `main()` e dois trechos do README foram corrigidos.
+Revisão das correções sem novos achados; grades A segundo a régua da skill,
+com R01 ainda parcial e sem inferir cobertura de desktop/macOS/Windows.
+
+49 testes gerais e 55 do auditor passaram; os três cenários de distribuição
+exportaram `7df2ea7`, conferindo 25 plugins / 289 arquivos e o ciclo Git real
+isolado. Evidência tipada por `sha256`, sem mudar valores ou regras dos scanners.
+Resultados e rastreabilidade permanecem em `docs/codex/verification.md`, sem
+substituir a matriz R01–R12. Nenhum push, merge ou publicação foi feito.

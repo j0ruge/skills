@@ -140,13 +140,14 @@ um `url.*.insteadOf` no perfil temporário redirecionou somente o transporte par
 o repositório local da fixture. Houve clone/snapshot/fetch Git reais, sem publicar
 ou acessar repositório remoto. `--ref main` acompanhou a segunda revisão.
 
-O cenário iniciou `cors` em 1.1.1, depois mudou versão para 99.0.0 e acrescentou
+Na prova inicial (`f98c06d`), o cenário iniciou `cors` em 1.1.1, depois mudou versão para 99.0.0 e acrescentou
 um marcador ao SKILL.md na origem de teste. Após
 `codex plugin marketplace upgrade chewiesoft-marketplace --json`, o cliente
 listou 99.0.0 instalada, o marcador foi lido no cache novo e o cache 1.1.1 deixou
 de existir. `plugin add` repetido também retornou 99.0.0. Portanto, neste CLI,
 o refresh atualiza também a cópia instalada; remover/reinstalar não foi necessário.
-O teste inicial que supunha cache antigo preservado falhou e foi substituído pela
+Na repetição da revisão `7df2ea7`, a versão inicial foi 1.1.2, com os mesmos
+efeitos de atualização e remoção comprovados. O teste inicial que supunha cache antigo preservado falhou e foi substituído pela
 conferência dos artefatos observados. Não extrapolar isso para versões não testadas.
 
 `plugin remove` removeu registro e cache. Depois de remover o plugin,
@@ -169,14 +170,89 @@ pessoal ou publicação remota foi feito por esta execução.
 | R09 | `passed` | 289 arquivos comparados no cache; família instalada auditada sem erro; fixture independente com template ausente reprovou. |
 | R10 | `passed` para o conjunto publicado | Nomes qualificados observados; quatro irmãs resolvidas pelo auditor instalado; argumentos/templates adaptados; release explícita e fora do contexto automático. |
 | R11 | `passed` no CLI testado | Origem Git real com transporte local, duas revisões, conteúdo e versão novos no cache, reinstalação e remoções observadas. |
-| R12 | `passed` | Preparação preservada em cff1494; execução ocorreu após retomada explícita pelo handoff. Revisão `/goal` não foi iniciada. |
+| R12 | `passed` | Preparação preservada em cff1494; execução e revisão ocorreram nas retomadas explicitamente solicitadas pelo usuário. |
 
-Checks finais do candidato `f98c06d34f06ee86cc64c5a1e60419e806e73d8f`:
+Checks históricos do candidato `f98c06d34f06ee86cc64c5a1e60419e806e73d8f`:
 44 testes gerais e 55 do auditor passaram; catálogo e adaptadores em `--check`,
 validador principal e `git diff --check` passaram. Dois avisos de campos de
 frontmatter preservados para outros hosts estão documentados, sem ignorar a
-política explícita Codex. Os commits de fechamento só atualizam estes relatórios,
-o plano, contexto e handoff; os arquivos distribuídos aos plugins permanecem iguais.
+política explícita Codex. O fechamento daquela execução alterou documentação;
+o retrofit posterior de CORS e a revisão abaixo têm evidências próprias.
+
+## Segunda retomada — revisão e correções
+
+Revisão completa de `cff1494` até `bad6ebd`, incluindo o retrofit CORS 1.1.2;
+correções verificadas em `7df2ea752184401c820b5fe7e82d952daf3533e1`.
+O fechamento posterior altera somente documentação/evidências. Foram analisados
+os seis arquivos de código alterados, seus testes, metadados, documentos e a
+coerência entre geradores, instalador, auditor, hook e pacote instalado.
+
+Foi usada `codereview:codereview` v2.26.8 do plugin local, idêntica ao SKILL.md
+instalado no plugin 2.26.9. A cópia avulsa carregada inicialmente era v2.14.1;
+as instruções atuais foram relidas integralmente. As fases B/B2 usaram ferramentas
+nativas e `gpt-6.1-sol` com esforço `medium`, pois Sonnet não está disponível
+neste runtime. Isso não altera a exclusão conservadora do plugin codereview.
+
+| Achado confirmado | Correção e prova |
+|---|---|
+| MEDIUM: `assets/demo.md` e `assets/./demo.md` sobrescreviam o mesmo destino. | Deduplicação por `Path`; teste recusa a colisão antes de escrever qualquer derivado. |
+| MEDIUM: overlay omitia skills padrão se `skills` não existisse no manifesto. | Mesmo default `./skills` do catálogo; teste confere ambas as árvores no overlay. |
+| MEDIUM: erro no detector ou em Git fazia o hook pular o gate com sucesso. | Seleção Bash sem dependência de rg; erro de `git diff` fora da condição interrompe o hook. Dois testes reproduzem os erros. |
+| MEDIUM: nomes com quoting de Git escapavam do filtro do hook. | Lista delimitada por NUL; teste com `ação.md` e `core.quotePath=true` exige execução do validador. |
+| HIGH: quatro `main()` tocados sem documentação pública. | Docstrings em português acrescentadas; sonda AST confirma 12/12 símbolos públicos e 2/2 privados de produção documentados no diff. |
+| LOW: dois trechos do README descreviam menu e estado anteriores. | Enumeração das quatro opções e estado de implementação corrigidos. |
+
+Os cinco testes comportamentais novos falharam no código anterior pelos motivos
+esperados e passaram após as correções. A revisão independente do diff das
+correções não encontrou novos defeitos. O sweep de referências não encontrou
+código morto introduzido ou abandonado pela missão; usou busca textual, sem
+ferramenta dedicada. Código morto preexistente ficou fora do sweep solicitado.
+
+A primeira varredura sinalizou três hashes como `generic-api-key`: os nomes
+dos arquivos continham `api`/`token`. Todos os 289 valores foram conferidos por
+SHA256 contra os bytes de `git show` da revisão registrada antes da conversão
+para objetos `{ "sha256": "..." }`. O produtor da evidência usa o mesmo formato.
+Não eram credenciais. Nenhum valor, regra de scanner ou whitelist foi alterado
+para descartar os alertas. A nova varredura do diff completo, com regex e gitleaks,
+retornou zero findings e zero erros.
+
+Checks da revisão de código `7df2ea7`:
+
+```bash
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+# 49 testes, OK, sem skips; os três cenários reais exportam esse commit.
+python3 plugins/skill-quality-audit/skills/skill-quality-audit/tests/test_audit_skill_quality.py
+# 55 testes, OK; código do auditor preservado nesta revisão.
+python3 scripts/codex-adapters.py --check
+python3 scripts/codex-marketplace.py --check
+python3 scripts/validate-versions.py
+git diff --check
+```
+
+O hook também validou uma exportação do índice ao criar o commit. Nova prova
+estruturada em [distribution-evidence.json](distribution-evidence.json): todos
+os cenários fixam a revisão `7df2ea7`, com 25 pacotes, 289 arquivos, CORS 1.1.2,
+as quatro skills irmãs e os casos de sabotagem/atualização/remoção aprovados.
+Logs brutos ficam em `.superpowers/sdd/2026-10-22-codex-marketplace/review/`:
+`tests-7df2ea7.log`, `auditor.log`, `adapters.log`, `catalog.log`, `versions.log`
+e `distribution-7df2ea7.json`.
+
+| Critério da revisão | Grade | Evidência |
+|---|---|---|
+| Code Quality (Zen) | A | Correções pontuais; fontes canônicas e sweep preservados. |
+| Type Safety | A | Formatos inválidos, caminhos e colisões cobertos por fixtures. |
+| Error Handling | A | Gate falha em erro; instalador mantém erros explícitos. |
+| Security | A | Regex/gitleaks sem findings; fronteiras de caminho e isolamento conferidos. |
+| Performance | A | Sem achado; caso de 2.500 arquivos staged permanece coberto. |
+| Test Coverage | A | 49 testes gerais + 55 do auditor; provas reais sem skips no Linux. |
+| Documentation | A | R01–R12, README, evidência e docstrings conferidos. |
+| **Overall** | **A** | Sem achados CRITICAL/HIGH ou correções pendentes no escopo revisado. |
+
+Grades seguem a régua original: A exige ausência de CRITICAL/HIGH e Secrets
+Detection PASS. Elas qualificam a revisão; não convertem os limites de ambiente
+em resultados aprovados. R01 continua `partial`; desktop/macOS/Windows continuam
+`not_checked`, e versão mínima não estabelecida. Não houve push, merge,
+publicação ou instalação no perfil pessoal.
 
 ## Fontes e limites
 

@@ -20,7 +20,7 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 - **Check:** cinco regressões novas falharam antes e passaram depois. A suíte
   geral passou em 49 testes, sem skips; os 55 testes do auditor também passaram.
   Geradores, validador e `git diff --check` passaram. A revisão das correções não
-  encontrou novos defeitos. Evidência Git após o commit será registrada em
+  encontrou novos defeitos. Evidência Git após o commit `7df2ea7` registrada em
   `docs/codex/verification.md`.
 - **Padronizado em:** `scripts/codex-adapters.py`, `scripts/pre-commit`,
   `tests/test_codex_adapters.py` e `tests/test_codex_validation.py`.

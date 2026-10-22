@@ -1,8 +1,10 @@
 # Retomada — loja Codex
 
-**Estado:** implementação executada em modo nativo, tarefa por tarefa; revisão
-independente reservada para novo `/clear`. R01 continua `partial` por falta de
-verificação desktop. Nenhum `/goal` foi criado nesta execução.
+**Estado atual:** revisão da segunda retomada executada, com correções em
+`7df2ea7` e grades A no escopo revisado. R01 continua `partial` por falta de
+verificação desktop. O relatório e os limites estão em
+[verification.md](../codex/verification.md#segunda-retomada--revisão-e-correções).
+Os registros de execução abaixo preservam o histórico anterior à revisão.
 
 **Repositório:** `/home/joruge/repos/skills` (`j0ruge/skills`).
 **Worktree da implementação:** `/home/joruge/.codex/worktrees/4fa1/skills`.
@@ -113,9 +115,9 @@ CORS 1.1.2 e os mesmos 25 pacotes / 289 arquivos.
 Ver [registro desta etapa](../codex/retrofits-2026-10-22.md). A revisão com `/goal`
 continua reservada ao novo `/clear`; o diff desde cff1494 inclui esse retrofit.
 
-## Segunda retomada — revisão
+## Segunda retomada — revisão (roteiro executado)
 
-Após novo `/clear`, usar o worktree e branch acima. A revisão deve comparar:
+Após o novo `/clear`, a revisão usou o worktree e branch acima, comparando:
 
 ```bash
 git diff cff1494c17c21774885e2a58ae6a5eb42cdd95d9...feat/codex-marketplace
@@ -132,7 +134,25 @@ até todos os grades serem A. Não altere a régua para obter A nem declare
 concluída uma verificação pendente. Desktop/macOS/Windows não foram testados.
 ```
 
-Criar o objetivo somente quando o usuário invocar essa etapa. A execução atual
-não fez push, merge, publicação ou instalação no perfil pessoal. A configuração
+O objetivo foi ativado pelo usuário na segunda retomada. Nenhuma etapa fez
+push, merge, publicação ou instalação no perfil pessoal. A configuração
 pessoal foi preservada; testes de modelo usaram somente autenticação montada
 como leitura, com dados e caches próprios e temporários.
+
+### Resultado da revisão
+
+- Base `cff1494`; candidato inicial revisado `bad6ebd`; correções `7df2ea7`.
+  O HEAD posterior contém apenas fechamento documental/evidências.
+- Dois defeitos no adaptador e duas causas de desvio do gate foram reproduzidos
+  e corrigidos. Cinco regressões novas ficaram RED antes e GREEN depois.
+- Quatro `main()` receberam docstrings; dois trechos desatualizados do README
+  foram corrigidos. A revisão das correções não encontrou novos achados.
+- 49 testes gerais e 55 do auditor passaram; os três cenários reais exportaram
+  `7df2ea7`, conferindo os mesmos 25 pacotes / 289 arquivos, CORS 1.1.2 e o ciclo
+  Git. Evidência estruturada renovada em `docs/codex/distribution-evidence.json`.
+- Hashes da evidência passaram a objetos `sha256`, com todos os valores
+  conferidos e preservados; regex/gitleaks sem findings nem alteração de regras.
+- A revisão teve grades A. Isso não conclui R01 nem estabelece cobertura de
+  desktop/macOS/Windows ou versão mínima. Integração/publicação continuam fora
+  desta autorização. Uma nova retomada não deve repetir a revisão encerrada;
+  deve partir desses limites e do escopo que o usuário solicitar.
