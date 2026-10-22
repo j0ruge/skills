@@ -1,7 +1,7 @@
 [
   {
     "client": "codex-cli 0.163.0",
-    "revision": "d9d7c47dca9c9397ed4fdaeed31af91010692371",
+    "revision": "f98c06d34f06ee86cc64c5a1e60419e806e73d8f",
     "commands": [
       {
         "args": [
@@ -937,6 +937,12 @@
       "skill-quality-audit:skill-refactoring",
       "skill-quality-audit:skill-self-containment"
     ],
+    "family_audit": {
+      "skills": 4,
+      "errors": 0,
+      "warnings": 0,
+      "rc": 0
+    },
     "payloads": {
       "ansible-docker-backup-restore": {
         "version": "1.3.4",
@@ -1356,7 +1362,7 @@
   },
   {
     "client": "codex-cli 0.163.0",
-    "revision": "d9d7c47dca9c9397ed4fdaeed31af91010692371",
+    "revision": "f98c06d34f06ee86cc64c5a1e60419e806e73d8f",
     "commands": [
       {
         "args": [
@@ -1537,8 +1543,8 @@
       }
     ],
     "git": {
-      "first": "de054407b7ec95765480a55408b158c5992ab3ec",
-      "second": "5bea062e5c4fafe0130b015355f1dedb8516f3b4",
+      "first": "180b4b8f95ebb6f3c0505ce4cd5da010d3e86784",
+      "second": "84383e3de5a649363a986bcfcafbd9f183c278b3",
       "old_version": "1.1.1",
       "version_after_refresh": "99.0.0",
       "old_cache_removed": true,
@@ -1548,7 +1554,7 @@
   },
   {
     "client": "codex-cli 0.163.0",
-    "revision": "d9d7c47dca9c9397ed4fdaeed31af91010692371",
+    "revision": "f98c06d34f06ee86cc64c5a1e60419e806e73d8f",
     "commands": [
       {
         "args": [

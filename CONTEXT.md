@@ -1,13 +1,13 @@
 # Contexto — distribuição de skills no Codex
 
-**Data:** 2026-10-22 · **Estado:** `planned` · **Execução:** aguardar o `/clear` do usuário e a retomada explícita.
+**Data:** 2026-10-22 · **Estado:** `implemented_with_gaps` · **Execução:** concluída nesta retomada; revisão após novo `/clear`.
 
 Este documento registra a pesquisa e a entrevista `grill-with-docs`. As sete
 perguntas iniciais de produto foram respondidas e o desenho foi aprovado.
 A [especificação](docs/superpowers/specs/2026-10-22-codex-marketplace-design.md),
 o [plano PDCA](docs/superpowers/plans/2026-10-22-codex-marketplace.md) e o
 [handoff](docs/handoffs/2026-10-22-codex-marketplace.md) formalizam a retomada.
-O plano está disponível para revisão; nenhuma tarefa de implementação foi iniciada.
+A pesquisa abaixo registra a preparação; o Check da execução está no final deste documento.
 
 ## Problema e resultado esperado
 
@@ -189,10 +189,10 @@ fronteiras de integração. Referências:
 - [x] Compatibilidade de formato foi separada da execução funcional do workflow.
 - [x] Confirmar a granularidade de seleção dos plugins com várias skills: manter os agrupamentos atuais.
 - [x] Definir onde vivem os metadados canônicos e as traduções por host: tabela de fontes na especificação aprovada.
-- [ ] Garantir que selecionar um plugin não instala os demais.
-- [ ] Provar que recursos necessários ficam acessíveis no pacote instalado.
-- [ ] Validar nomes e invocações, inclusive chamadas entre workflows relacionados.
-- [ ] Revisar o diff e seus colaboradores diretos para detectar acoplamento novo.
+- [x] Garantir que selecionar um plugin não instala os demais.
+- [x] Provar que recursos necessários ficam acessíveis no pacote instalado.
+- [x] Validar nomes e invocações, inclusive chamadas entre workflows relacionados.
+- [x] Revisar o diff e seus colaboradores diretos para detectar acoplamento novo.
 
 ## Validação Kaizen — checklist PDCA
 
@@ -206,12 +206,12 @@ Referência: [kaizen-software](plugins/kaizen-software/skills/kaizen-software/SK
 - [x] Evitar superprodução: sem pacote completo obrigatório ou segunda árvore de skills por antecipação.
 - [x] Acrescentar ao README as fontes oficiais úteis à pesquisa.
 - [x] Fechar perguntas, aprovar o desenho e escrever o plano PDCA com Check por incremento.
-- [ ] Revisar o plano detalhado na retomada antes de implementar.
-- [ ] **Do:** executar incrementos pequenos e reversíveis após a retomada.
-- [ ] **Check:** testar falha e sucesso das novas guardas, com fixtures independentes; aplicar TDD às mudanças de comportamento.
-- [ ] Conferir os arquivos efetivamente instalados e a invocação, além do resultado do instalador.
-- [ ] Revalidar os fluxos existentes afetados e tornar falhas visíveis antes de avançar.
-- [ ] **Act:** atualizar documentação e validações oficiais do projeto e registrar a melhoria no `KAIZEN_LOG.md`, sem declarar concluído o que estiver pendente.
+- [x] Revisar o plano detalhado na retomada antes de implementar.
+- [x] **Do:** executar incrementos pequenos e reversíveis após a retomada.
+- [x] **Check:** testar falha e sucesso das novas guardas, com fixtures independentes; aplicar TDD às mudanças de comportamento.
+- [x] Conferir os arquivos efetivamente instalados e a invocação, além do resultado do instalador.
+- [x] Revalidar os fluxos existentes afetados e tornar falhas visíveis antes de avançar.
+- [x] **Act:** atualizar documentação e validações oficiais do projeto e registrar a melhoria no `KAIZEN_LOG.md`, sem declarar concluído o que estiver pendente.
 - [ ] Após o segundo `/clear`, revisar com `codereview:codereview`, corrigir achados e registrar evidências até todos os critérios atingirem A.
 
 ## Retomada depois do `/clear`
@@ -223,3 +223,28 @@ testes ainda previstos. A implementação depende da retomada explícita após o
 `/clear`, conforme pedido pelo usuário.
 Nenhum ADR foi criado: ainda não foi tomada uma decisão de arquitetura difícil
 de reverter que justifique esse artefato.
+
+
+## Check da implementação — 2026-10-22
+
+A retomada explícita executou o plano nativamente, tarefa por tarefa, em worktree
+isolado. Fonte base `cff1494`; candidato Git verificado `f98c06d`. O catálogo
+publica 25 plugins / 28 workflows após smokes reais em perfis limpos. Três plugins
+foram classificados `unsupported` e três `partial`; todos os 31 foram inventariados.
+Quatro comandos receberam derivados gerados, sem segunda árvore manual.
+
+A suíte geral passou em 44 testes, a do auditor em 55. O gate, o hook real com
+snapshot staged, a conferência dos derivados, instalação individual, 289 hashes,
+política explícita e atualização/remoção Git foram medidos. Resultados completos
+em `docs/codex/verification.md`, `smokes.json` e `distribution-evidence.json`.
+
+Check DDD proporcional ao diff: identidade e unidade de seleção continuam sendo
+plugin; o manifesto canônico concentra versão/autoria/plataformas; adaptações de
+host ficam na borda de distribuição. O instalador não importa geradores nem
+PyYAML. Não foram introduzidos agregados, transações ou eventos de domínio.
+O teste da família instalada confirmou a resolução das quatro skills por diretórios
+irmãos, sem instalar outro plugin. Não houve refatoração dos workflows de domínio.
+
+R01 permanece parcial: desktop/macOS/Windows sem teste e versão mínima em aberto.
+O procedimento desktop está entregue; a revisão com `/goal` e codereview continua
+pendente para a segunda retomada. Nenhum push, merge ou publicação foi feito.

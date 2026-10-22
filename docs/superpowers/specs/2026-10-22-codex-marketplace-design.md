@@ -1,6 +1,6 @@
 # Distribuição individual de plugins no Codex
 
-**Data:** 2026-10-22 · **Estado do desenho:** `approved` · **Implementação:** `not_started`
+**Data:** 2026-10-22 · **Estado do desenho:** `approved` · **Implementação:** `implemented_with_gaps`
 
 O usuário aprovou o desenho apresentado após a entrevista de sete perguntas.
 Este documento formaliza aquele desenho; os detalhes de implementação serão

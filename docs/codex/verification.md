@@ -151,6 +151,30 @@ conferência dos artefatos observados. Não extrapolar isso para versões não t
 As remoções afetaram somente perfis temporários. Nenhum push, merge, instalação
 pessoal ou publicação remota foi feito por esta execução.
 
+## Rastreabilidade R01–R12
+
+| Critério | Resultado | Evidência e limite |
+|---|---|---|
+| R01 | `partial` | CLI comprovado; desktop `not_checked`, com procedimento abaixo. |
+| R02 | `passed` | Instalação individual da família de quatro skills e ausência dos demais plugins antes da sequência de instalações. |
+| R03 | `passed` para o conjunto publicado | Inventário dos 31 candidatos; 25 plugins / 28 entradas com smokes reais; seis excluídos. Regras integrais de domínio fora do smoke. |
+| R04 | `passed` | Nomes observados no CLI correspondem exatamente às 25 entradas Codex; os 31 plugins Claude não vazam para essa oferta. |
+| R05 | `passed` | Geradores determinísticos; testes de fontes/versões/recursos alterados e artefatos desatualizados; bytes do candidato instalados. |
+| R06 | `passed` | Oito testes do instalador: somente comandos, nenhum processo/escrita, erros explícitos e execução sem PyYAML/binário Codex. |
+| R07 | `passed` nas superfícies afetadas | Validador existente, frontmatter Cursor e seleção dos fluxos Claude/Cursor passaram. Não houve instalação em perfis pessoais. |
+| R08 | `passed` | README e matriz registram requisitos por pacote, seis exclusões, versões observadas e lacunas de sistemas/versão mínima. |
+| R09 | `passed` | 289 arquivos comparados no cache; família instalada auditada sem erro; fixture independente com template ausente reprovou. |
+| R10 | `passed` para o conjunto publicado | Nomes qualificados observados; quatro irmãs resolvidas pelo auditor instalado; argumentos/templates adaptados; release explícita e fora do contexto automático. |
+| R11 | `passed` no CLI testado | Origem Git real com transporte local, duas revisões, conteúdo e versão novos no cache, reinstalação e remoções observadas. |
+| R12 | `passed` | Preparação preservada em cff1494; execução ocorreu após retomada explícita pelo handoff. Revisão `/goal` não foi iniciada. |
+
+Checks finais do candidato `f98c06d34f06ee86cc64c5a1e60419e806e73d8f`:
+44 testes gerais e 55 do auditor passaram; catálogo e adaptadores em `--check`,
+validador principal e `git diff --check` passaram. Dois avisos de campos de
+frontmatter preservados para outros hosts estão documentados, sem ignorar a
+política explícita Codex. Os commits de fechamento só atualizam estes relatórios,
+o plano, contexto e handoff; os arquivos distribuídos aos plugins permanecem iguais.
+
 ## Fontes e limites
 
 - [Package your plugin](https://developers.openai.com/plugins/build/plugins):

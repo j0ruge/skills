@@ -3,7 +3,7 @@
 > **Para execução por agentes:** usar `superpowers:executing-plans` em execução
 > nativa, tarefa por tarefa, é a recomendação para este plano. Se o usuário
 > escolher delegação na retomada, usar `superpowers:subagent-driven-development`.
-> A execução permanece reservada para depois do `/clear` solicitado pelo usuário.
+> A execução foi autorizada nesta retomada; a revisão com `/goal` permanece reservada ao próximo `/clear`.
 
 **Goal:** permitir instalação individual dos plugins portáveis da Chewiesoft
 no marketplace nativo do Codex CLI e desktop.
@@ -19,7 +19,7 @@ testes locais. A validação YAML existente usa PyYAML.
 **Spec:** [desenho aprovado](../specs/2026-10-22-codex-marketplace-design.md).
 
 **Data:** 2026-10-22 · **Responsável:** agente executor + usuário na validação de
-superfícies não acessíveis ao executor · **Estado:** `ready_for_review`
+superfícies não acessíveis ao executor · **Estado:** `implemented_with_gaps`
 
 ## Restrições globais
 
@@ -104,10 +104,10 @@ Fixtures ficam em diretório temporário; não declarar suporte em massa nesta t
 **Saída:** evidência de precedência de catálogos, manifestos aceitos, recursos
 carregados e tratamento de comandos; decisões técnicas registradas com versão.
 
-- [ ] Ler especificação, contexto e regras do repo. Conferir branch, status e
+- [x] Ler especificação, contexto e regras do repo. Conferir branch, status e
   mudanças existentes; preservar os documentos desta fase. Criar isolamento de
   implementação pela skill de worktrees se a retomada não estiver isolada.
-- [ ] Revalidar o baseline e os comandos disponíveis:
+- [x] Revalidar o baseline e os comandos disponíveis:
 
   ```bash
   PYTHONDONTWRITEBYTECODE=1 python3 scripts/validate-versions.py
@@ -117,15 +117,15 @@ carregados e tratamento de comandos; decisões técnicas registradas com versão
   codex plugin list --help
   ```
 
-- [ ] Preparar um cliente de teste isolado, por exemplo um container ou usuário
+- [x] Preparar um cliente de teste isolado, por exemplo um container ou usuário
   de teste. Seus dados e cache não devem compartilhar o perfil pessoal. Não
   substituir variáveis de diretórios do usuário na sessão principal. Usar cópias
   temporárias dos plugins `cors`, `codereview` e `criar-prd` para cobrir skill com
   referências, várias skills e comando com template.
-- [ ] Na cópia de teste, manter um catálogo Claude com os três plugins e criar
+- [x] Na cópia de teste, manter um catálogo Claude com os três plugins e criar
   um catálogo Codex que inicialmente ofereça só `cors`. Usar o formato da fonte
   oficial já pesquisada; os caminhos resolvem para arquivos da cópia de teste.
-- [ ] Dentro do cliente isolado, executar a sequência abaixo, substituindo
+- [x] Dentro do cliente isolado, executar a sequência abaixo, substituindo
   `/work/marketplace` pelo caminho real da fixture naquele ambiente:
 
   ```bash
@@ -135,19 +135,19 @@ carregados e tratamento de comandos; decisões técnicas registradas com versão
   codex plugin list --marketplace chewiesoft-marketplace --json
   ```
 
-- [ ] Comparar os nomes estruturados, não procurar apenas ausência de erros.
+- [x] Comparar os nomes estruturados, não procurar apenas ausência de erros.
   A loja deve oferecer exatamente `cors`, e só ele deve estar instalado. Ler
   seu `SKILL.md` e uma referência pela cópia instalada; iniciar uma sessão nova
   para conferir seleção e invocação. Não rodar comandos externos sugeridos pela
   skill como parte desta prova.
-- [ ] Repetir em fixtures limpas para `codereview` e `criar-prd`. Conferir todas
+- [x] Repetir em fixtures limpas para `codereview` e `criar-prd`. Conferir todas
   as skills do plugin múltiplo; no comando, conferir o template de fallback.
-- [ ] Fixar o resultado técnico: usar manifestos existentes quando funcionarem;
+- [x] Fixar o resultado técnico: usar manifestos existentes quando funcionarem;
   usar manifesto Codex apenas quando necessário; manter comandos nativos se o
   host preservar o workflow, ou seguir a adaptação da tarefa 3. Se a precedência
   dos catálogos falhar, investigar o formato documentado e corrigir a fixture
   antes de expandir a publicação.
-- [ ] Registrar versão e ambiente testados, resultados estruturados e arquivos
+- [x] Registrar versão e ambiente testados, resultados estruturados e arquivos
   lidos. Falta de autenticação ou acesso ao desktop fica como `not_checked`, com
   o procedimento exato para completar a prova. Não registrar credenciais.
 
@@ -165,7 +165,7 @@ resultado da tarefa 1.
 Retorno 0 significa artefato atual; retorno 1 significa erro ou divergência;
 argumentos inválidos retornam 2. `--check` nunca escreve.
 
-- [ ] Criar testes de contrato por subprocesso usando `unittest` e diretórios
+- [x] Criar testes de contrato por subprocesso usando `unittest` e diretórios
   temporários. A fixture mínima tem dois plugins válidos: `ready` declara
   `claude-code` e `codex`; `excluded` declara apenas `claude-code`. Cada plugin
   tem manifesto, pasta de skill e `SKILL.md` coerentes; o catálogo Claude lista
@@ -195,32 +195,32 @@ argumentos inválidos retornam 2. `--check` nunca escreve.
   `json`, `subprocess`, `sys` e `unittest` são importadas pelo módulo de testes.
   Criar a fixture no `setUp`, nunca aproveitar o checkout real como entrada.
 
-- [ ] Acrescentar casos independentes: catálogo derivado ausente; JSON inválido;
+- [x] Acrescentar casos independentes: catálogo derivado ausente; JSON inválido;
   inclusão indevida de `excluded`; fonte fora de `plugins/`; escape por symlink;
   nome duplicado; manifesto inexistente; plataforma divergente entre manifestos;
   escrita repetida idempotente; origem com versão ou descrição alterada.
   No caso de versão alterada, conferir o derivado que efetivamente carrega versão
   segundo o formato medido, sem inventar campo de versão no catálogo.
-- [ ] Executar os testes antes de implementar e observar as falhas esperadas:
+- [x] Executar os testes antes de implementar e observar as falhas esperadas:
 
   ```bash
   python3 -m unittest discover -s tests -p 'test_codex_marketplace.py' -v
   ```
 
-- [ ] Implementar leitura, validação, filtragem exata de `codex`, ordenação
+- [x] Implementar leitura, validação, filtragem exata de `codex`, ordenação
   determinística e escrita atômica. Resolver caminhos dentro da raiz do repo;
   recusar escapes, metadados incoerentes e nomes duplicados antes de escrever.
   Comparar o documento derivado esperado com o existente, incluindo seus campos
   de políticas e fontes conforme o formato comprovado na tarefa 1.
-- [ ] Introduzir `codex` em `VALID_PLATFORMS`. Integrar a conferência do catálogo
+- [x] Introduzir `codex` em `VALID_PLATFORMS`. Integrar a conferência do catálogo
   no validador, sem tornar PyYAML uma dependência do instalador. Se uma validação
   obrigatória depender de PyYAML ausente, informar a lacuna e falhar esse gate.
-- [ ] Estender o hook para disparar também quando mudarem o gerador, o próprio
+- [x] Estender o hook para disparar também quando mudarem o gerador, o próprio
   validador, `install.py`, metadados de invocação ou adaptações Codex. Testar o
   acionamento com repositório temporário. Um arquivo corrigido só no working tree
   não pode encobrir sua versão inválida já staged: validar o snapshot ou recusar
   divergência nos arquivos conferidos, indicando que precisam ser staged.
-- [ ] Executar os testes de guardas e o baseline completo:
+- [x] Executar os testes de guardas e o baseline completo:
 
   ```bash
   python3 -m unittest discover -s tests -p 'test_codex_validation.py' -v
@@ -240,23 +240,23 @@ testes; relatório de compatibilidade; adaptadores e testes apenas se necessári
 **Saída:** conjunto explícito de plugins `supported`, com nomes, recursos,
 dependências e evidências por workflow.
 
-- [ ] Inventariar todos os plugins do catálogo. Para cada um, registrar skills,
+- [x] Inventariar todos os plugins do catálogo. Para cada um, registrar skills,
   comandos, scripts, templates, ferramentas exigidas, invocação explícita,
   referências entre workflows e limitações de sistema operacional. Começar por
   `not_checked`, sem copiar a compatibilidade Cursor como prova de Codex.
-- [ ] Examinar especialmente `statusline`, `hook-builder`, `retrofit-watch` e
+- [x] Examinar especialmente `statusline`, `hook-builder`, `retrofit-watch` e
   `ticket`, hoje declarados apenas Claude, sem presumir exclusão ou suporte só
   pelo nome. A ausência de uma equivalência pequena e comprovada gera exclusão
   documentada, conforme o escopo aprovado.
-- [ ] Para cada plugin elegível, escrever o caso que reproduz a lacuna antes de
+- [x] Para cada plugin elegível, escrever o caso que reproduz a lacuna antes de
   adaptar. Corrigir somente o contrato que falhou: ferramenta, caminho,
   argumentos, nomes de skill ou política de invocação. Preservar a intenção e
   testar o workflow original na área modificada.
-- [ ] Se comandos forem carregados corretamente pelo host, conservar esse
+- [x] Se comandos forem carregados corretamente pelo host, conservar esse
   caminho e registrar a prova. Se exigirem conversão, implementar
   `scripts/codex-adapters.py --root DIR --check|--write`, com o mesmo contrato de
   retorno e ausência de escrita em `--check` do gerador do catálogo.
-- [ ] Na ramificação com conversão, usar `codex-adapter.json` no plugin para
+- [x] Na ramificação com conversão, usar `codex-adapter.json` no plugin para
   declarar as origens e recursos; o formato mínimo para o caso já observado é:
 
   ```json
@@ -282,16 +282,16 @@ dependências e evidências por workflow.
   deve resolver seu template pelo diretório da skill instalada, mantendo a
   preferência pelo template do projeto consumidor. Não depender de expansão de
   variável de Claude sem uma prova de que ela existe nesse contexto.
-- [ ] Cobrir os adaptadores com fixtures de: `$ARGUMENTS`; caminho de template;
+- [x] Cobrir os adaptadores com fixtures de: `$ARGUMENTS`; caminho de template;
   recurso ausente; chamada entre skills; duas skills no mesmo plugin; e comando
   que exige invocação explícita. Usar `agents/openai.yaml` quando for necessário
   preservar a política de invocação demonstrada. Derivados inválidos ou antigos
   devem falhar no validador principal.
-- [ ] Alinhar os mapas `TOP_FIELDS_BY_PLATFORM` do validador e do auditor.
+- [x] Alinhar os mapas `TOP_FIELDS_BY_PLATFORM` do validador e do auditor.
   Definir o conjunto Codex por fonte ou prova, sem copiar campos Claude/Cursor.
   Testar que declarar Codex não faz um campo exclusivo de outro host passar
   silenciosamente na interseção de plataformas.
-- [ ] Rodar os testes afetados:
+- [x] Rodar os testes afetados:
 
   ```bash
   python3 plugins/skill-quality-audit/skills/skill-quality-audit/tests/test_audit_skill_quality.py
@@ -299,7 +299,7 @@ dependências e evidências por workflow.
   python3 scripts/validate-versions.py
   ```
 
-- [ ] Executar o smoke seguro de cada workflow publicado, no pacote instalado.
+- [x] Executar o smoke seguro de cada workflow publicado, no pacote instalado.
   Só então declarar `codex`, atualizar versão/CHANGELOG quando aplicável e gerar
   o catálogo. `partial`, `unsupported` e `not_checked` ficam fora dele.
 
@@ -314,16 +314,16 @@ derivados e preservar o histórico; não apagar fontes compartilhadas.
 **Interfaces produzidas:** `_codex_install_flow() -> None` apresenta instruções;
 erros de leitura/formato chegam ao tratamento de erro do CLI com retorno 1.
 
-- [ ] Testar a escolha Codex antes de implementar. Importar `install.py` com
+- [x] Testar a escolha Codex antes de implementar. Importar `install.py` com
   `importlib.util`, como o validador atual faz; redirecionar `REPO_ROOT` para uma
   fixture e capturar stdout. Usar mocks de gravação e execução externa que falham
   se forem chamados. Casos: um plugin, vários plugins, catálogo vazio, ausente e
   inválido. Catálogo vazio deve informar que não há plugins publicados e não
   apresentar uma instalação como concluída.
-- [ ] Testar a seleção dos fluxos já existentes por nome da opção, sem fixar
+- [x] Testar a seleção dos fluxos já existentes por nome da opção, sem fixar
   índices que mudam quando Codex é acrescentado. A opção combinada deve chamar
   somente os fluxos Claude Code e Cursor, com rótulo explícito.
-- [ ] Implementar a opção Codex lendo o catálogo validado. A saída deve mostrar
+- [x] Implementar a opção Codex lendo o catálogo validado. A saída deve mostrar
   estes comandos, com uma linha por plugin realmente publicado:
 
   ```text
@@ -334,14 +334,14 @@ erros de leitura/formato chegam ao tratamento de erro do CLI com retorno 1.
   `cors` é o exemplo de apresentação, não uma inclusão incondicional. A lista
   real deve vir do catálogo. Informar que a pessoa escolhe os comandos que deseja
   executar. A existência do binário Codex não é requisito para mostrar orientação.
-- [ ] Rodar:
+- [x] Rodar:
 
   ```bash
   python3 -m unittest discover -s tests -p 'test_install_codex.py' -v
   python3 scripts/validate-versions.py
   ```
 
-- [ ] Atualizar README: plataformas, instalação, seleção individual, requisitos,
+- [x] Atualizar README: plataformas, instalação, seleção individual, requisitos,
   atualização, remoção e matriz com motivos de exclusão. Manter as referências
   oficiais já adicionadas. Atualizar CLAUDE.md: plataforma `codex`, fontes
   canônicas, geração/check e procedimento para habilitar um novo plugin.
@@ -356,16 +356,16 @@ executado pelo menu Codex; erros não simulam sucesso; fluxos anteriores passam.
 **Interface consumida:** candidato completo produzido pelas tarefas anteriores.
 **Saída:** tabela R01–R12 com resultado, evidência e lacunas, mais handoff de revisão.
 
-- [ ] Preparar uma cópia Git do candidato com todos os arquivos necessários,
+- [x] Preparar uma cópia Git do candidato com todos os arquivos necessários,
   incluindo os derivados versionados. Registrar a revisão testada; não usar a
   publicação remota antiga como se já contivesse o trabalho local.
-- [ ] Em perfil limpo, registrar a loja e comparar o conjunto disponível com o
+- [x] Em perfil limpo, registrar a loja e comparar o conjunto disponível com o
   catálogo. Instalar um plugin múltiplo e confirmar todas as skills previstas e
   ausência de instalação automática dos outros plugins.
-- [ ] Ler arquivos pela cópia instalada e comparar hashes com os artefatos da
+- [x] Ler arquivos pela cópia instalada e comparar hashes com os artefatos da
   revisão candidata. Em outro cenário independente, remover um recurso exigido
   da fixture e comprovar que a verificação correspondente falha.
-- [ ] Verificar atualização usando duas revisões de uma origem Git de teste, com
+- [x] Verificar atualização usando duas revisões de uma origem Git de teste, com
   uma alteração observável de versão/conteúdo. `marketplace upgrade` atualiza o
   snapshot Git; medir separadamente quando a cópia do plugin instalado muda.
   Documentar a sequência que realmente atualiza o pacote, sem presumir que o
@@ -383,7 +383,7 @@ executado pelo menu Codex; erros não simulam sucesso; fluxos anteriores passam.
   e sistema. Registrar separadamente o que foi observado em cada ambiente; se o
   executor não tiver acesso a uma superfície, entregar o procedimento e marcar
   `not_checked`, sem atribuir conclusão a esse requisito.
-- [ ] Rodar uma vez os checks completos após o último ajuste; repetir somente
+- [x] Rodar uma vez os checks completos após o último ajuste; repetir somente
   se uma nova mudança, falha ou dúvida concreta justificar:
 
   ```bash
@@ -394,12 +394,12 @@ executado pelo menu Codex; erros não simulam sucesso; fluxos anteriores passam.
   git diff --check
   ```
 
-- [ ] Confrontar os resultados com R01–R12, atualizar CONTEXT e o relatório de
+- [x] Confrontar os resultados com R01–R12, atualizar CONTEXT e o relatório de
   compatibilidade. Uma lacuna de acesso ou teste continua visível no resultado.
-- [ ] Registrar no KAIZEN_LOG o antes/depois observado, quais guardas foram
+- [x] Registrar no KAIZEN_LOG o antes/depois observado, quais guardas foram
   provadas com casos vermelhos/verdes e onde ficaram padronizadas. Reabrir os
   arquivos citados para confirmar que os mecanismos existem.
-- [ ] Preparar handoff com revisão base/final, diff, comandos, resultados e
+- [x] Preparar handoff com revisão base/final, diff, comandos, resultados e
   lacunas para o novo `/clear`. A etapa seguinte é o `/goal` de codereview até
   todos os grades A, com correção e nova evidência para cada achado.
 
@@ -425,3 +425,32 @@ Cada incremento deve ser revisado e commitado separadamente, com mensagem em
 português explicando o motivo. Preparação de documentação não autoriza push,
 merge ou publicação remota. A integração final seguirá o escopo autorizado pelo
 usuário na retomada.
+
+
+## Check observado — execução nativa
+
+Base `cff1494c17c21774885e2a58ae6a5eb42cdd95d9`, branch
+`feat/codex-marketplace`. Candidato exportado e testado:
+`f98c06d34f06ee86cc64c5a1e60419e806e73d8f`; o fechamento seguinte altera
+somente documentação e evidências.
+
+| Incremento | Check observado | Commit(s) |
+|---|---|---|
+| 1 | Catálogo Codex teve precedência; instalação individual, nomes e leituras no cache comprovados. Comando nativo mostrou lacuna de nome/fallback. | `1bb9dff` |
+| 2 | RED/GREEN de filtragem, metadados, symlinks, conferência sem escrita e snapshot staged. | `09eb3ef` |
+| 3 | 25 plugins / 28 workflows com smokes reais; quatro comandos adaptados; release explícita; seis exclusões documentadas. Hook 100755 comprovado com commit inválido bloqueado. | `98a207d`, `8f865d0` |
+| 4 | 8 testes do instalador, sem execução/escrita no fluxo Codex; menu anterior preservado; 31 versões do README conferidas. | `6a6dbf3`, `7ff889a`, `d9d7c47` |
+| 5 | 44 testes gerais e 55 do auditor passaram; 25 pacotes / 289 arquivos conferidos no candidato Git; família de quatro skills sem erro; sabotagem detectada; refresh Git, reinstalação e remoção comprovados. | `f98c06d` + fechamento documental |
+
+`marketplace upgrade` no CLI 0.163.0 atualizou também a cópia instalada:
+versão 1.1.1 → 99.0.0, marcador novo lido e cache antigo removido na fixture Git.
+A hipótese inicial de cache preservado foi rejeitada pela medição.
+
+Evidências, comandos reproduzíveis e R01–R12:
+[verification.md](../../codex/verification.md),
+[smokes.json](../../codex/smokes.json),
+[distribution-evidence.json](../../codex/distribution-evidence.json).
+Desktop, macOS e Windows continuam `not_checked`; versão mínima não estabelecida.
+R01 está `partial`. A revisão independente, `/goal`, push e publicação não foram
+executados. Seguir o [handoff](../../handoffs/2026-10-22-codex-marketplace.md)
+após novo `/clear`.

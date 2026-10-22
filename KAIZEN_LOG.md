@@ -6,6 +6,49 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-10-22 — Distribuição Codex medida no pacote instalado
+
+- **Tipo:** melhoria incremental e padronização.
+- **Antes:** somente Claude Code/Cursor; nenhuma prova de instalação Codex; hook
+  conferia working tree e não tinha execução real pelo Git coberta.
+- **Depois:** catálogo filtrado com 25 plugins / 28 workflows, quatro comandos
+  adaptados por geração e menu orientativo sem instalação. No candidato Git,
+  289 arquivos instalados foram comparados; 44 testes gerais e 55 do auditor
+  passaram. Desktop/macOS/Windows continuam não verificados.
+- **Check:** casos independentes vermelhos/verdes cobrem inclusão indevida,
+  metadados divergentes, escapes por symlink, template ausente, fontes/derivados
+  antigos, política de invocação e índice inválido encoberto pelo working tree.
+  Git refresh foi comprovado por versão e conteúdo no cache; remoções observadas.
+- **Padronizado em:** `scripts/codex-marketplace.py`, `scripts/codex-adapters.py`,
+  `scripts/validate-versions.py`, `scripts/pre-commit` 100755, testes em `tests/`,
+  mapas de plataforma do auditor, README e CLAUDE.md. Evidências em `docs/codex/`.
+- **Yokoten:** auditor e validador usam conjunto Codex próprio; campos Claude
+  continuam avisados, sem supor equivalência com a política do Codex.
+
+### Causas verificadas nas guardas
+
+- Hook atualizado herdou modo 100644 → Git ignorava sua execução → testes chamavam
+  Bash diretamente e não verificavam um commit real. Contramedida: modo 100755
+  versionado e teste que precisa bloquear um commit inválido.
+- `rg -q` encerrava cedo com `pipefail` → Git recebia SIGPIPE em lista staged
+  grande → condição pulava o gate. Contramedida: consumir a lista completa,
+  comprovada com 2.500 arquivos staged.
+- Guarda inicial exigia campo `skills`, mas `ticket` usa descoberta padrão já
+  comprovada pelo host. Contramedida: aceitar o diretório padrão, com teste positivo
+  e negativo para skill ausente.
+
+### Desperdícios evitados e oportunidades
+
+- Sem instalação obrigatória de catálogo inteiro, cópias manuais de skills,
+  mudança de regras de negócio, push ou revisão antecipada. Seis pacotes ficaram
+  excluídos com motivo, em vez de suporte presumido por compatibilidade Cursor.
+- Os smokes sinalizaram referências antigas de CORS e exemplos específicos de
+  Zitadel; oportunidade para o mantenedor em tarefa própria, sem alterar esta entrega.
+- Próximo passo: novo `/clear` e revisão com `/goal` e codereview. Desktop requer
+  acesso ao aplicativo para fechar R01; a lacuna não foi convertida em aprovação.
+
+---
+
 ## 2026-10-22 — Planejamento da distribuição individual no Codex
 
 - **Tipo:** planejamento de melhoria incremental.
