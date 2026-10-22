@@ -248,3 +248,14 @@ irmãos, sem instalar outro plugin. Não houve refatoração dos workflows de do
 R01 permanece parcial: desktop/macOS/Windows sem teste e versão mínima em aberto.
 O procedimento desktop está entregue; a revisão com `/goal` e codereview continua
 pendente para a segunda retomada. Nenhum push, merge ou publicação foi feito.
+
+
+## Retros verificadas após a implementação
+
+O usuário autorizou investigar e executar retrofit apenas onde confirmado.
+Controles de despacho de DDD e codereview produziram chamadas nativas válidas;
+nenhum patch nessas skills. Isso não substitui prova integral de codereview,
+que continua `partial` no catálogo. CORS 1.1.2 corrige navegação de Vary e aviso
+sobre método fixo, com RED/GREEN por leitura no cache, auditoria sem regressão,
+44 testes gerais e três provas Git repetidas após o commit 13f2cc0. Detalhes em
+`docs/codex/retrofits-2026-10-22.md`. Revisão com `/goal` permanece pendente.

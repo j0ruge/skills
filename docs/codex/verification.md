@@ -104,8 +104,11 @@ os dois campos seguem avisados no gate, sem aceitação silenciosa na interseç�
 
 As exclusões e dependências dos 31 plugins estão em [compatibility.md](compatibility.md).
 Observações sobre exemplos de Zitadel e referências antigas de CORS apareceram
-nos smokes e estão preservadas nas conclusões; são conteúdo de domínio fora do
-escopo desta distribuição, sem correção ou alegação de revisão integral.
+nos smokes e estão preservadas nas conclusões históricas. Depois do fechamento
+inicial, o usuário autorizou investigar a retro: as duas referências inconsistentes
+de CORS foram corrigidas em 1.1.2. O [registro do retrofit](retrofits-2026-10-22.md)
+contém a nova prova do pacote; demais observações não foram objeto de correção
+nem de uma revisão integral.
 
 ## Tarefa 5 — distribuição da revisão Git
 

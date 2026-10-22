@@ -6,6 +6,30 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-10-22 — Retrofit confirmado sem presumir falha por nome de ferramenta
+
+- **Tipo:** correção de causa raiz e verificação de hipótese.
+- **Antes:** a retro suspeitava de portabilidade em DDD/codereview e de duas
+  referências inconsistentes em CORS.
+- **Depois:** os controles de DDD/codereview adaptaram os planos às capacidades
+  nativas, sem reproduzir a falha; fontes preservadas. CORS 1.1.2 corrige a seção
+  de Vary e o aviso que descrevia como fixa uma sonda já parametrizada.
+- **Causa raiz:** o comando da triagem mudou, mas explicação e encaminhamento
+  continuaram descrevendo o estado anterior. A leitura do pacote pelo agente
+  expôs a divergência; nome específico de outro host, isoladamente, não provou
+  falha operacional nas outras skills.
+- **Check:** cenário antigo reproduziu duas contradições; fixture corrigida e
+  instalação final confirmaram a navegação e o método. SQA antes/depois: zero
+  erros/avisos e nenhum achado novo. 44 testes gerais passaram; três provas reais
+  repetidas após o commit confirmaram CORS 1.1.2 e os 289 arquivos distribuídos.
+- **Padronizado em:** correções pontuais em `plugins/cors/skills/cors/SKILL.md` e
+  `references/casos-limite.md`, bump/CHANGELOG e espelhos, conferidos pelo gate.
+  Evidência e limites em `docs/codex/retrofits-2026-10-22.md`.
+- **Yokoten:** outros achados de conteúdo permaneceram como dívida para tarefa
+  própria; não foi inserida regra de portabilidade sem reprodução da falha.
+
+---
+
 ## 2026-10-22 — Distribuição Codex medida no pacote instalado
 
 - **Tipo:** melhoria incremental e padronização.

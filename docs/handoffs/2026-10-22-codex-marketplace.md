@@ -8,9 +8,11 @@ verificação desktop. Nenhum `/goal` foi criado nesta execução.
 **Worktree da implementação:** `/home/joruge/.codex/worktrees/4fa1/skills`.
 **Branch:** `feat/codex-marketplace`, base `main` conforme `CLAUDE.md` local.
 **Revisão base:** `cff1494c17c21774885e2a58ae6a5eb42cdd95d9`.
-**Revisão candidata testada:** `f98c06d34f06ee86cc64c5a1e60419e806e73d8f`.
-**Revisão final:** HEAD de `feat/codex-marketplace`; o fechamento após o candidato
-altera somente evidências/documentação. Resolver com `git rev-parse HEAD`.
+**Revisão candidata inicial:** `f98c06d34f06ee86cc64c5a1e60419e806e73d8f`.
+**Candidato após retrofit autorizado:** `13f2cc023a7c828b09bd51c46f0c694f6fbd2146`,
+com CORS 1.1.2 e nova prova de distribuição Git.
+**Revisão final:** HEAD de `feat/codex-marketplace`; o fechamento posterior a
+13f2cc0 altera somente documentação. Resolver com `git rev-parse HEAD`.
 O checkout original em `main` foi preservado; retome pelo worktree acima.
 
 ## Ler antes de agir
@@ -76,8 +78,9 @@ silenciosamente como campos Codex. A política explícita Codex é separada e te
 - `codereview`, `dotnet-wpf` e `retrofit-skill`: `partial`, por roteamento
   Agent/sonnet, setup/hook Claude no agrupamento WPF e resolução externa de
   scripts/irmãs respectivamente. Excluídos do catálogo sem fragmentar pacotes.
-- As conclusões dos smokes registram observações de domínio sobre exemplos
-  Zitadel e referências CORS; ficam para tarefa própria do mantenedor.
+- As duas referências inconsistentes de CORS foram corrigidas no retrofit
+  autorizado 1.1.2. Exemplos Zitadel e outras observações de conteúdo continuam
+  fora dessa correção; detalhes em `docs/codex/retrofits-2026-10-22.md`.
 - `task-start` da skill procurava títulos “Task N”; os briefs foram extraídos
   manualmente de “Tarefa N”, preservando o plano aprovado. Custo se incorreto:
   rastreabilidade, mitigada pelos briefs/ledger e commits mantidos.
@@ -93,6 +96,22 @@ Artefatos brutos permanecem no diretório ignorado do worktree
 `workflow-*/result.json`, `release-implicit.jsonl`, `final-tests.log`,
 `final-auditor.log`, `final-validation.log` e logs RED/GREEN. Os arquivos de
 `docs/codex/` consolidam a evidência versionada sem credenciais.
+
+## Retrofits autorizados após o fechamento inicial
+
+O usuário autorizou verificar os achados e aplicar apenas os confirmados.
+DDD e codereview produziram planos nativos válidos nos controles; não sofreram
+alterações. Os testes não executaram delegação ou revisão, portanto a classificação
+completa de codereview não foi promovida. Ticket não recebeu retrofit.
+
+CORS recebeu a versão 1.1.2: referência de Vary corrigida para seguranca.md §4 e
+aviso de método fixo alinhado à sonda com $METODO. Auditoria SQA antes/depois sem
+regressões, descrição preservada e versões sincronizadas. Os 44 testes gerais
+passaram; depois do commit 13f2cc0, três provas reais de distribuição confirmaram
+CORS 1.1.2 e os mesmos 25 pacotes / 289 arquivos.
+
+Ver [registro desta etapa](../codex/retrofits-2026-10-22.md). A revisão com `/goal`
+continua reservada ao novo `/clear`; o diff desde cff1494 inclui esse retrofit.
 
 ## Segunda retomada — revisão
 
