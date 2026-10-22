@@ -47,7 +47,7 @@ import re
 import sys
 from pathlib import Path
 
-VALID_PLATFORMS = {'claude-code', 'cursor'}
+VALID_PLATFORMS = {'claude-code', 'cursor', 'codex'}
 
 # Campos de topo fora da spec que cada plataforma le (so funcionam no topo): Claude Code
 # (code.claude.com/docs/en/skills, "Frontmatter reference") e Cursor (cursor.com/docs/context/skills,
@@ -333,6 +333,11 @@ def _check_cursor_frontmatter(repo_root: Path) -> 'tuple[list[str], list[str]]':
 
 
 def main():
+    try:
+        import yaml
+    except ImportError:
+        print('Erro: PyYAML ausente; a validação obrigatória não pode ser executada.')
+        sys.exit(1)
     fix_mode = '--fix' in sys.argv
     repo_root = Path(__file__).resolve().parent.parent
 
@@ -555,6 +560,17 @@ def main():
     cursor_errors, cursor_notes = _check_cursor_frontmatter(repo_root)
     errors.extend(cursor_errors)
     notes.extend(cursor_notes)
+
+    # O catálogo conferido é o mesmo artefato distribuído ao consumidor Git.
+    try:
+        spec = importlib.util.spec_from_file_location('codex_marketplace',
+                                                     repo_root / 'scripts/codex-marketplace.py')
+        codex = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(codex)
+        codex.sync_json(codex.inside(repo_root, repo_root / codex.CATALOG),
+                        codex.build_catalog(repo_root), False)
+    except (OSError, ValueError, RuntimeError) as exc:
+        errors.append(f'  distribuição Codex: {exc}')
 
     if fix_mode and fixes_applied > 0:
         print(f'\nApplied {fixes_applied} format-preserving fix(es).')
