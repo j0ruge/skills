@@ -2,6 +2,20 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.1.2] — 2026-10-22
+
+**O quê:** a triagem de `Vary: Origin` aponta para `seguranca.md` §4, que trata
+do cache por origem. O aviso de `casos-limite.md` §1a e a explicação da triagem
+agora distinguem a sonda atual com `$METODO` do exemplo problemático com `POST`
+fixo. A versão da skill foi alinhada ao pacote.
+
+**Por quê:** o smoke da cópia instalada encontrou a navegação de `Vary` apontando
+para a seção de `Expose-Headers` e uma referência descrevendo como fixa a sonda
+que já era parametrizada. O mesmo cenário, em fixture limpa com a correção,
+chegou à seção correta e confirmou a coerência do método entre os documentos.
+Auditoria antes/depois e gate de regressão conferem a mudança sem ampliar o
+escopo para revisão das regras HTTP.
+
 ## [1.1.1] — 2026-10-22
 
 Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.

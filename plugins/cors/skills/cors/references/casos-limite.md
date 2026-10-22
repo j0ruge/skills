@@ -49,9 +49,9 @@ edição quebra. Ninguém suspeita de CORS quando metade do app funciona: a inve
 tela que falhou e pode nunca chegar ao console. Contraste com o preflight que falha, onde **tudo**
 quebra de uma vez e a causa comum fica óbvia.
 
-⚠️ **A sonda default da triagem não pega isto**, porque ela pergunta por um método fixo. Repita
-o passo (3) do `SKILL.md` com `Access-Control-Request-Method:` no método que realmente falhou, ou
-leia o `access-control-allow-methods` da resposta e procure o seu método ali.
+⚠️ **Use no passo (3) o método que realmente falhou.** A sonda atual recebe esse método em
+`$METODO`; confirme seu valor e compare-o com `access-control-allow-methods`. Uma sonda
+com `POST` fixo pode aprovar uma política que ainda bloqueia o `PUT` da aplicação.
 
 ### A causa de fundo: a lista de métodos é uma duplicata da tabela de rotas
 
