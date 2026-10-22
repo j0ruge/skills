@@ -6,6 +6,34 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-10-22 — Planejamento da distribuição individual no Codex
+
+- **Tipo:** planejamento de melhoria incremental.
+- **Antes:** catálogo, instalador e validadores documentavam Claude Code e Cursor;
+  a forma de distribuir no Codex ainda não tinha decisões registradas.
+- **Depois:** pesquisa em fontes oficiais e no exemplo solicitado, entrevista
+  concluída e desenho aprovado para catálogo Codex filtrado com fontes de skills
+  compartilhadas. Especificação, plano com Check por incremento e handoff
+  preparados para a execução em outra sessão.
+- **Check da preparação:** validador existente passou; os comandos de CLI foram
+  conferidos pelo help. Esses resultados não comprovam uma instalação Codex,
+  que ainda não foi executada.
+- **Padronizado em:** referências no README e critérios documentados em
+  `CONTEXT.md` e `docs/superpowers/`. Os validadores e adaptadores previstos no
+  plano permanecem pendentes de implementação e prova.
+- **Yokoten:** a introdução de plataforma precisa alcançar o validador e o auditor
+  de skills, ambos com mapas próprios; essa verificação foi incluída no plano.
+
+### Desperdícios evitados
+
+- O usuário escolheu instalação individual por plugin, preservando os
+  agrupamentos existentes; um pacote obrigatório com todo o catálogo foi excluído.
+- O exemplo externo usa catálogo compatível com Claude; aceitá-lo como prova de
+  execução de todos os nossos workflows esconderia diferenças de ferramentas,
+  argumentos e templates. O plano começa pela prova no artefato instalado.
+
+---
+
 ## 2026-09-30 — Retro de skill puxada por hook (retrofit-watch) + skill de hooks (hook-builder)
 
 - **Tipo:** poka-yoke (a retro deixa de depender de alguém lembrar) · padronização (como se

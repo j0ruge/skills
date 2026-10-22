@@ -660,6 +660,16 @@ Para atualizar plugins instalados:
 - [Plugin Marketplaces — Claude Code Docs](https://code.claude.com/docs/en/plugin-marketplaces)
 - [Plugins Reference — Claude Code Docs](https://code.claude.com/docs/en/plugins-reference)
 
+### Codex marketplace research (2026-10-22)
+
+Sources for the planned Codex support; the design is approved and implementation has not started.
+Research, decisions, and the DDD/Kaizen checklist are tracked in [CONTEXT.md](CONTEXT.md), with the [design](docs/superpowers/specs/2026-10-22-codex-marketplace-design.md), [implementation plan](docs/superpowers/plans/2026-10-22-codex-marketplace.md), and [session handoff](docs/handoffs/2026-10-22-codex-marketplace.md).
+
+- [Package your plugin — OpenAI Developers](https://developers.openai.com/plugins/build/plugins) — repo marketplaces, native CLI registration, portable manifests, and compatibility with existing Claude manifests.
+- [Plugins — OpenAI documentation](https://learn.chatgpt.com/docs/plugins) — installation and discovery in Codex CLI and the desktop app; plugins are unavailable in the IDE extension.
+- [Build skills — OpenAI documentation](https://learn.chatgpt.com/docs/build-skills) — skill structure, invocation, local discovery, and optional `agents/openai.yaml` metadata.
+- [Matt Pocock's installation instructions](https://github.com/mattpocock/skills#installation-30-second-setup), [marketplace](https://github.com/mattpocock/skills/blob/main/.claude-plugin/marketplace.json), and [plugin manifest](https://github.com/mattpocock/skills/blob/main/.claude-plugin/plugin.json) — implementation example using a shared Claude/Codex package. Its [handoff skill](https://github.com/mattpocock/skills/blob/main/skills/productivity/handoff/SKILL.md) is content inside that package, rather than its installer.
+
 ### Skills that inspired ours
 
 - [Kulaxyz/self-learning-skills](https://github.com/Kulaxyz/self-learning-skills) (MIT), by [Kulaxyz](https://github.com/Kulaxyz): a self-improving skill that harvests a hard-won golden path from a session into a reusable skill. Its criteria are the basis of `retrofit-watch`'s retro (`plugins/retrofit-watch/skills/retrofit-watch/references/criteria.md`). Thanks to the author for sharing it.
