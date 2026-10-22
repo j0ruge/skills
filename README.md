@@ -117,18 +117,24 @@ esta implementação. Inicie sessão nova após instalar e use `/skills` ou
 `$cors:cors`. `skill-quality-audit` expõe suas quatro skills; `release` exige
 `$release:release` explícito. Ferramentas e credenciais são requisitos do consumidor.
 
-Ciclo de manutenção, executado no seu perfil de teste:
+Para atualizar a origem Git, no CLI testado o refresh também atualiza os plugins
+instalados. Confira a versão e inicie uma sessão nova:
 
 ```bash
 codex plugin marketplace upgrade chewiesoft-marketplace --json
+codex plugin list --marketplace chewiesoft-marketplace --json
+```
+
+Para remover um plugin e depois a origem:
+
+```bash
 codex plugin remove cors@chewiesoft-marketplace --json
-codex plugin add cors@chewiesoft-marketplace --json
 codex plugin marketplace remove chewiesoft-marketplace --json
 ```
 
-Refresh Git e cópia instalada são camadas diferentes. Confira a sequência
-medida, hashes e limites em [verification.md](docs/codex/verification.md).
-A remoção da loja não deve ser tratada como desinstalação dos pacotes.
+Confira a sequência medida, hashes e limites em
+[verification.md](docs/codex/verification.md). Reinstalar pelo comando `plugin add`
+também foi comprovado, mas não foi necessário após o refresh Git da versão testada.
 
 ## Available Plugins
 

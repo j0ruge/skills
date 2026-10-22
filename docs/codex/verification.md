@@ -2,7 +2,7 @@
 
 Base de implementação: `cff1494c17c21774885e2a58ae6a5eb42cdd95d9`.
 Ambiente observado em 2026-10-22: Ubuntu 24.04 x86_64, Python 3,
-`codex-cli 0.163.0`. Essa versão é a testada, não uma versão mínima comprovada.
+`codex-cli 0.163.0`, Python 3.12.3. Essa versão do CLI é a testada, não uma versão mínima comprovada.
 Desktop, macOS e Windows: `not_checked`.
 
 ## Tarefa 1 — contrato medido
@@ -106,6 +106,50 @@ As exclusões e dependências dos 31 plugins estão em [compatibility.md](compat
 Observações sobre exemplos de Zitadel e referências antigas de CORS apareceram
 nos smokes e estão preservadas nas conclusões; são conteúdo de domínio fora do
 escopo desta distribuição, sem correção ou alegação de revisão integral.
+
+## Tarefa 5 — distribuição da revisão Git
+
+Os testes em [test_codex_distribution.py](../../tests/test_codex_distribution.py)
+exportam `git archive HEAD`, sem aproveitar arquivos ignorados ou cache pessoal.
+Três cenários independentes usam um diretório pessoal temporário em Bubblewrap.
+Nenhum precisa de autenticação ou modelo. Se CLI/Bubblewrap não estiverem
+disponíveis, os testes registram `skip`; isso representa uma lacuna de cobertura.
+
+```bash
+python3 -m unittest discover -s tests -p 'test_codex_distribution.py' -v
+```
+
+Resultados estruturados: [distribution-evidence.json](distribution-evidence.json).
+A revisão efetivamente exportada está em `revision` de cada cenário. A fixture
+ofereceu exatamente 25 plugins, apesar dos 31 presentes no catálogo Claude.
+Instalar primeiro `skill-quality-audit` instalou somente esse plugin; o cliente
+descobriu as quatro skills qualificadas. Todos os plugins publicados foram
+instalados, e 289 arquivos foram comparados por bytes e SHA256 com o candidato.
+O auditor instalado também encontrou as quatro irmãs sem carregar outro plugin.
+
+Uma fixture nova removeu `criar-prd/codex-skills/criar-prd/assets/prd-template.md`
+antes da instalação. O host aceitou instalar, mas a comparação do pacote instalado
+reprovou pelo arquivo ausente. Assim, saída 0 da instalação não substitui o Check.
+
+A atualização foi medida com duas revisões de uma origem **Git**, não de uma
+origem local. O CLI registrou `https://example.invalid/codex-marketplace.git`;
+um `url.*.insteadOf` no perfil temporário redirecionou somente o transporte para
+o repositório local da fixture. Houve clone/snapshot/fetch Git reais, sem publicar
+ou acessar repositório remoto. `--ref main` acompanhou a segunda revisão.
+
+O cenário iniciou `cors` em 1.1.1, depois mudou versão para 99.0.0 e acrescentou
+um marcador ao SKILL.md na origem de teste. Após
+`codex plugin marketplace upgrade chewiesoft-marketplace --json`, o cliente
+listou 99.0.0 instalada, o marcador foi lido no cache novo e o cache 1.1.1 deixou
+de existir. `plugin add` repetido também retornou 99.0.0. Portanto, neste CLI,
+o refresh atualiza também a cópia instalada; remover/reinstalar não foi necessário.
+O teste inicial que supunha cache antigo preservado falhou e foi substituído pela
+conferência dos artefatos observados. Não extrapolar isso para versões não testadas.
+
+`plugin remove` removeu registro e cache. Depois de remover o plugin,
+`marketplace remove` removeu a origem e a lista de marketplaces ficou vazia.
+As remoções afetaram somente perfis temporários. Nenhum push, merge, instalação
+pessoal ou publicação remota foi feito por esta execução.
 
 ## Fontes e limites
 
