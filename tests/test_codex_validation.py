@@ -117,6 +117,17 @@ class HookTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('validator-ran', result.stdout)
 
+    def test_git_actually_invokes_hook_and_blocks_invalid_commit(self):
+        (self.root / 'plugins').mkdir()
+        (self.root / 'plugins/change.md').touch()
+        (self.root / 'invalid').touch()
+        self.git('add', '.')
+        result = subprocess.run(['git', '-c', f'core.hooksPath={ROOT / "scripts"}',
+                                 'commit', '-qm', 'Deve bloquear snapshot inválido'],
+                                cwd=self.root, capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0, result.stderr)
+        self.assertIn('validator-ran', result.stdout + result.stderr)
+
 
 if __name__ == '__main__':
     unittest.main()
