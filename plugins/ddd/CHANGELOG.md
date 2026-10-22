@@ -2,6 +2,10 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [0.5.1] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## [0.5.0] - 2026-10-01
 
 Lição de uma sessão real (sales_quote, SQ-153): o `CLAUDE.md` do projeto exige rodar a skill antes de

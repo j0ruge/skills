@@ -1,5 +1,9 @@
 # Changelog — release
 
+## [2.0.2] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Política Codex em agents/openai.yaml preserva a invocação explícita; o campo de topo é mantido para Claude/Cursor e continua avisado para Codex. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## [2.0.1] — 2026-10-20
 
 ### Fixed

@@ -4,7 +4,7 @@
   "author": {
     "name": "Chewiesoft"
   },
-  "version": "0.2.1",
+  "version": "0.2.2",
   "category": "development",
   "keywords": [
     "windows",
@@ -36,7 +36,8 @@
   ],
   "platforms": [
     "claude-code",
-    "cursor"
+    "cursor",
+    "codex"
   ],
   "skills": "./skills"
 }

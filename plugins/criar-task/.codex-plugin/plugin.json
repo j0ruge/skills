@@ -1,0 +1,22 @@
+{
+  "name": "criar-task",
+  "version": "0.1.1",
+  "description": "Cria tasks incrementais a partir de PRD e Tech Spec, com aprovação high-level antes de escrever arquivos. Triggers — criar task, quebrar PRD em tarefas, plano de implementação, task planning, tasks.md, subtarefas.",
+  "author": {
+    "name": "Chewiesoft"
+  },
+  "keywords": [
+    "tasks",
+    "task-planning",
+    "implementation-plan",
+    "prd",
+    "techspec",
+    "subtasks",
+    "planning",
+    "tests"
+  ],
+  "skills": [
+    "./codex-skills"
+  ],
+  "commands": []
+}

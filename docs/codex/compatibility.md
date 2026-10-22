@@ -1,10 +1,55 @@
 # Compatibilidade Codex
 
-Estados têm o significado da especificação aprovada. Somente `supported`
-entra no catálogo. A aceitação do manifesto não substitui o smoke funcional.
-As versões e sistemas efetivamente testados estão em [verification.md](verification.md).
+Inventário dos 31 plugins, auditado em 2026-10-22. Apenas `supported` entra no catálogo.
+Os smokes cobrem instalação, descoberta, leitura no cache e entrada de cada workflow;
+operações integrais de domínio e dependências autenticadas não fazem parte do smoke.
+Ubuntu 24.04/CLI 0.163.0 é a cobertura medida; desktop, macOS e Windows permanecem
+`not_checked`. Isso inclui a execução Windows de WPF/limpeza/WSL, mesmo quando o pacote carrega.
+Versão mínima ainda não estabelecida. Veja [verification.md](verification.md).
 
-Inventário completo e resultados por workflow serão preenchidos na tarefa 3.
-Na prova inicial, `cors` e as duas skills de `codereview` foram descobertos pelo
-cliente; comandos exigem adaptação de nome e fallback. Nenhuma declaração de
-suporte é publicada nesta tarefa.
+| Plugin | Estado | Workflows canônicos | Recursos | Requisitos e motivo |
+|---|---|---|---|---|
+| ansible-docker-backup-restore | `supported` | `skills/ansible-docker-backup-restore/SKILL.md` | 11 arquivos de scripts/referências/templates/assets | Ansible, Docker, SSH; Bash/Linux no alvo. Operações exigem inventário e acesso próprios. |
+| cicd | `supported` | `skills/cicd/SKILL.md` | 15 arquivos de scripts/referências/templates/assets | Git, gh autenticado, Docker conforme a stack. Sensores/CI reais são do projeto consumidor. |
+| codereview | `partial` | `skills/coderabbit-pr/SKILL.md`<br>`skills/codereview/SKILL.md` | 17 arquivos de scripts/referências/templates/assets | Git, Python; gh para PR; roteamento de modelos/agentes. As duas entradas carregam, mas o corpo exige Agent/model sonnet; equivalência completa não comprovada. |
+| cors | `supported` | `skills/cors/SKILL.md` | 4 arquivos de scripts/referências/templates/assets | Browser/DevTools para diagnóstico; stack HTTP para correções. Entrada segura pede mensagem literal do Console; não faz chamadas de rede. |
+| criar-prd | `supported` | `commands/criar-prd.md` | 1 arquivos de scripts/referências/templates/assets | Leitura/escrita de Markdown; pesquisa web condicional. Adaptador preserva template do projeto e fallback em assets/. |
+| criar-task | `supported` | `commands/criar-task.md` | 2 arquivos de scripts/referências/templates/assets | PRD e Tech Spec locais. Dois templates empacotados; aprovação antes de gerar arquivos. |
+| criar-techspec | `supported` | `commands/criar-techspec.md` | 1 arquivos de scripts/referências/templates/assets | PRD local aprovado; leitura do repo. Template empacotado; não exige acesso externo no smoke. |
+| ddd | `supported` | `skills/ddd/SKILL.md` | 19 arquivos de scripts/referências/templates/assets | Leitura de código/documentos; ferramentas de agente do host quando disponíveis. Referências Agent descrevem delegação; smoke cobre entrada e leitura, sem acionar delegação. |
+| deploy | `supported` | `skills/staging/SKILL.md` | 5 arquivos de scripts/referências/templates/assets | Git, gh ou acesso ao host, pipeline do projeto. Skill publicada como deploy:staging; smoke não promove ambientes. |
+| dev-script | `supported` | `skills/dev-script/SKILL.md` | 9 arquivos de scripts/referências/templates/assets | Bash/PowerShell e ferramentas da stack do consumidor. Gera scripts para os sistemas do projeto; smoke não executa os scripts gerados. |
+| dotnet-wpf | `partial` | `skills/dotnet-desktop-setup/SKILL.md`<br>`skills/dotnet-wpf-design/SKILL.md`<br>`skills/dotnet-wpf-e2e-testing/SKILL.md`<br>`skills/dotnet-wpf-mvvm/SKILL.md` | 28 arquivos de scripts/referências/templates/assets | Windows, .NET, ferramentas WPF/FlaUI. Agrupamento preservado: setup exige regras, hooks e configuração Claude; três skills isoladas não autorizam publicar o pacote inteiro. |
+| executar-task | `supported` | `commands/executar-task.md` | 0 arquivos de scripts/referências/templates/assets | Projeto com tarefas e ferramentas da stack. Testes e convenções dependem do projeto consumidor. |
+| git-housekeeping | `supported` | `skills/git-housekeeping/SKILL.md` | 4 arquivos de scripts/referências/templates/assets | Python 3, Git; gh opcional para comprovar squash. Planejamento/análise são separados da aplicação autorizada. |
+| hook-builder | `unsupported` | `skills/hook-builder/SKILL.md` | 22 arquivos de scripts/referências/templates/assets | Claude Code, seus eventos, payloads e protocolo de hooks. Sem equivalência do protocolo Claude comprovada dentro desta missão. |
+| html-presentation | `supported` | `skills/html-presentation/SKILL.md` | 7 arquivos de scripts/referências/templates/assets | Python, navegador/Playwright, ferramentas de PDF conforme a origem. Reviewer deck-reviewer é específico do Claude; no Codex use revisor nativo de contexto independente conforme references/review.md. |
+| kaizen-software | `supported` | `skills/kaizen-software/SKILL.md` | 3 arquivos de scripts/referências/templates/assets | Leitura/escrita de Markdown e ferramentas do projeto. Referências e templates PDCA locais; sem dependência de runtime Claude. |
+| n8n-ops | `supported` | `skills/n8n-ops/SKILL.md` | 4 arquivos de scripts/referências/templates/assets | n8n, ferramentas do projeto, API/autenticação quando usada. MCP é opcional; o alvo precisa de URL/credenciais próprias. |
+| pdf-generation | `supported` | `skills/pdf-generation/SKILL.md` | 3 arquivos de scripts/referências/templates/assets | Biblioteca PDF escolhida por stack; navegador quando necessário. Comparação de bibliotecas é recurso empacotado; geração/exportação integral não testada. |
+| release | `supported` | `skills/release/SKILL.md` | 0 arquivos de scripts/referências/templates/assets | Git e gh autenticado; versão informada explicitamente. Somente $release:release; agents/openai.yaml impede ativação implícita no Codex. |
+| retrofit-skill | `partial` | `commands/retrofit-skill.md` | 3 arquivos de scripts/referências/templates/assets | Clone deste marketplace, Python, Git e auditor irmão. O comando depende de <REPO>/plugins/ e caminhos de instalação do Claude; autocontenção no cache e integração com outros plugins não comprovadas. |
+| retrofit-watch | `unsupported` | `skills/retrofit-watch/SKILL.md` | 2 arquivos de scripts/referências/templates/assets | Stop hook, transcript e CLAUDE_PLUGIN_DATA do Claude. Watcher acoplado aos eventos e formato de transcript do Claude. |
+| skill-quality-audit | `supported` | `skills/skill-claim-check/SKILL.md`<br>`skills/skill-quality-audit/SKILL.md`<br>`skills/skill-refactoring/SKILL.md`<br>`skills/skill-self-containment/SKILL.md` | 15 arquivos de scripts/referências/templates/assets | Python 3; validadores externos opcionais. Quatro skills mantidas juntas; resolução por diretórios irmãos, sem instalar outro plugin. |
+| statusline | `unsupported` | `commands/setup.md` | 0 arquivos de scripts/referências/templates/assets | Runtime e status-line API do Claude Code. Comando setup escreve configurações e script exclusivos do Claude. |
+| ticket | `supported` | `skills/ticket/SKILL.md` | 7 arquivos de scripts/referências/templates/assets | acli, Git, Jira; JIRA_EMAIL/JIRA_API_TOKEN para REST; MCP opcional. Sem credenciais no pacote. argument-hint permanece para Claude e é ignorado no Codex; configure as variáveis no seu ambiente. |
+| todo-to-github-issues | `supported` | `skills/todo-to-github-issues/SKILL.md` | 10 arquivos de scripts/referências/templates/assets | Python, Git, gh autenticado e kit sdd instalado. O kit externo é dependência declarada; scripts empacotados são conferidos sem criar issues. |
+| ts-library | `supported` | `skills/ts-library/SKILL.md` | 6 arquivos de scripts/referências/templates/assets | Node/gerenciador do projeto, TypeScript, Git. Ferramentas da biblioteca dependem do projeto consumidor. |
+| unlovable | `supported` | `skills/unlovable/SKILL.md` | 0 arquivos de scripts/referências/templates/assets | Node e ferramentas React/Vite do projeto. Workflow específico para migrar projetos Lovable. |
+| whisper-preprocess | `supported` | `skills/whisper-preprocess/SKILL.md` | 2 arquivos de scripts/referências/templates/assets | Python, ffmpeg, Whisper e modelos locais; hardware adequado. Dependências e processamento de áudio não executados pelo smoke. |
+| windows-disk-cleanup | `supported` | `skills/windows-disk-cleanup/SKILL.md` | 18 arquivos de scripts/referências/templates/assets | Windows, PowerShell, ferramentas de disco; Bash/WSL conforme o caso. Operações Windows e exclusão de dados não executadas no smoke Linux. |
+| wsl-windows-onboarding | `supported` | `skills/wsl-windows-onboarding/SKILL.md` | 6 arquivos de scripts/referências/templates/assets | Windows/WSL2, PowerShell, Bash, rsync, ferramentas do guia. O alvo é WSL/Claude; smoke de leitura no Linux não prova operações Windows. |
+| zitadel-idp | `supported` | `skills/zitadel-idp/SKILL.md` | 15 arquivos de scripts/referências/templates/assets | Zitadel, Docker, curl/jq, credenciais do projeto. Versões/APIs exigem conferência nas referências; nenhum acesso ao IdP no smoke. |
+
+`$plugin:skill` é o nome qualificado mostrado pelo host. Instalações avulsas em
+`~/.agents/skills` ou outros marketplaces podem oferecer nomes semelhantes; confira
+a origem em `/skills` e remova duplicatas pela instalação que as criou.
+Comandos adaptados não recebem a cópia automática `source-command-*` porque o
+manifesto derivado fixa `commands: []`.
+
+O campo `platforms` dos manifestos é uma declaração deste repositório. A filtragem
+real vem do catálogo Codex próprio, cuja precedência foi provada no CLI.
+Campos de frontmatter exclusivos de Claude/Cursor continuam avisados pelo auditor;
+Codex não herda esses campos. A política explícita de release é validada separadamente.
+
+Nenhuma credencial é distribuída; os requisitos citam apenas nomes de variáveis.

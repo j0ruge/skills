@@ -107,6 +107,18 @@ class MarketplaceTests(unittest.TestCase):
         (self.root / 'plugins/ready/.claude-plugin/plugin.json').unlink()
         self.assert_rejected('plugin.json')
 
+    def test_advertised_skill_must_exist(self):
+        (self.root / 'plugins/ready/skills/ready/SKILL.md').unlink()
+        self.assert_rejected('skills')
+
+    def test_default_skills_directory_is_discovered_without_manifest_field(self):
+        manifest_path = self.root / 'plugins/ready/.claude-plugin/plugin.json'
+        manifest = json.loads(manifest_path.read_text())
+        manifest.pop('skills')
+        self.write_json(manifest_path, manifest)
+        result = self.run_script('--write')
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_plugins_directory_symlink_cannot_escape_root(self):
         with tempfile.TemporaryDirectory() as outside:
             import shutil

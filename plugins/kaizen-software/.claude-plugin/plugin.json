@@ -4,9 +4,32 @@
   "author": {
     "name": "Chewiesoft"
   },
-  "version": "1.4.3",
+  "version": "1.4.4",
   "category": "development",
-  "keywords": ["kaizen", "melhoria-continua", "continuous-improvement", "pdca", "sdca", "lean", "gemba", "muda", "jidoka", "5s", "5-porques", "root-cause", "kaizen-log", "retrospectiva", "technical-debt", "planning", "maintenance", "toyota"],
-  "platforms": ["claude-code", "cursor"],
+  "keywords": [
+    "kaizen",
+    "melhoria-continua",
+    "continuous-improvement",
+    "pdca",
+    "sdca",
+    "lean",
+    "gemba",
+    "muda",
+    "jidoka",
+    "5s",
+    "5-porques",
+    "root-cause",
+    "kaizen-log",
+    "retrospectiva",
+    "technical-debt",
+    "planning",
+    "maintenance",
+    "toyota"
+  ],
+  "platforms": [
+    "claude-code",
+    "cursor",
+    "codex"
+  ],
   "skills": "./skills"
 }

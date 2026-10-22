@@ -57,7 +57,9 @@ CLAUDE_CODE_TOP_FIELDS = {'when_to_use', 'argument-hint', 'arguments', 'disable-
                           'user-invocable', 'disallowed-tools', 'model', 'effort', 'context', 'agent',
                           'background', 'hooks', 'paths', 'shell'}
 CURSOR_TOP_FIELDS = {'paths', 'disable-model-invocation', 'icon', 'color'}
-TOP_FIELDS_BY_PLATFORM = {'claude-code': CLAUDE_CODE_TOP_FIELDS, 'cursor': CURSOR_TOP_FIELDS}
+# Codex lê a política em agents/openai.yaml; campos exclusivos do Claude não viram aceitos.
+TOP_FIELDS_BY_PLATFORM = {'claude-code': CLAUDE_CODE_TOP_FIELDS, 'cursor': CURSOR_TOP_FIELDS,
+                          'codex': set()}
 
 # Tetos vindos do CLAUDE.md deste repo ("Skill description guidelines"): alvo 350, cap
 # duro 500. Nao sao numeros inventados aqui -- a politica ja estava escrita e nada a
@@ -268,6 +270,16 @@ def _check_skill_spec(repo_root: Path) -> 'tuple[list[str], list[str]]':
             plats = manifest.get('platforms') if isinstance(manifest, dict) else None
             if isinstance(plats, list) and plats and all(p in TOP_FIELDS_BY_PLATFORM for p in plats):
                 aceitos = set.intersection(*(TOP_FIELDS_BY_PLATFORM[p] for p in plats))
+                if 'codex' in plats and data.get('disable-model-invocation') is True:
+                    policy_path = skill_md.parent / 'agents/openai.yaml'
+                    try:
+                        policy = yaml.safe_load(policy_path.read_text(encoding='utf-8'))
+                        implicit = policy.get('policy', {}).get('allow_implicit_invocation')
+                    except (OSError, yaml.YAMLError, AttributeError):
+                        implicit = None
+                    if implicit is not False:
+                        errors.append(f'  {rel}: Codex exige policy.allow_implicit_invocation: false '
+                                      'em agents/openai.yaml para preservar invocação explícita')
         except (OSError, ValueError):
             pass
         extra = sorted(set(data) - SPEC_FIELDS - aceitos)
@@ -569,6 +581,11 @@ def main():
         spec.loader.exec_module(codex)
         codex.sync_json(codex.inside(repo_root, repo_root / codex.CATALOG),
                         codex.build_catalog(repo_root), False)
+        adapter_spec = importlib.util.spec_from_file_location('codex_adapters',
+                                                             repo_root / 'scripts/codex-adapters.py')
+        adapters = importlib.util.module_from_spec(adapter_spec)
+        adapter_spec.loader.exec_module(adapters)
+        adapters.sync_artifacts(repo_root)
     except (OSError, ValueError, RuntimeError) as exc:
         errors.append(f'  distribuição Codex: {exc}')
 

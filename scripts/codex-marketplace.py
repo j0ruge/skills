@@ -67,6 +67,20 @@ def load_plugins(root):
         if not isinstance(manifest['description'], str) or not re.fullmatch(
                 r'\d+\.\d+\.\d+', str(manifest['version'])):
             raise ValueError(f'{name}: description ou version inválida')
+        if 'codex' in platforms:
+            skills = manifest.get('skills', ['./skills'] if (plugin / 'skills').is_dir() else [])
+            if isinstance(skills, str):
+                skills = [skills]
+            if not isinstance(skills, list):
+                raise ValueError(f'{name}: skills deve ser caminho ou lista')
+            for value in skills:
+                if not isinstance(value, str) or not value.startswith('./'):
+                    raise ValueError(f'{name}: caminho de skills inválido')
+                directory = inside(plugin, plugin / value)
+                if not directory.is_dir() or not any(directory.rglob('SKILL.md')):
+                    raise ValueError(f'{name}: skills ausentes em {value}')
+            if not skills and not (plugin / 'codex-adapter.json').is_file():
+                raise ValueError(f'{name}: skills ausentes e nenhum adaptador de comandos')
         plugins.append((entry, manifest, plugin))
     return sorted(plugins, key=lambda p: p[0]['name'])
 

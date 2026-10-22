@@ -3,5 +3,306 @@
   "interface": {
     "displayName": "Chewiesoft"
   },
-  "plugins": []
+  "plugins": [
+    {
+      "name": "ansible-docker-backup-restore",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ansible-docker-backup-restore"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "cicd",
+      "source": {
+        "source": "local",
+        "path": "./plugins/cicd"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "cors",
+      "source": {
+        "source": "local",
+        "path": "./plugins/cors"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "criar-prd",
+      "source": {
+        "source": "local",
+        "path": "./plugins/criar-prd"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "criar-task",
+      "source": {
+        "source": "local",
+        "path": "./plugins/criar-task"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "criar-techspec",
+      "source": {
+        "source": "local",
+        "path": "./plugins/criar-techspec"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "architecture"
+    },
+    {
+      "name": "ddd",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ddd"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "architecture"
+    },
+    {
+      "name": "deploy",
+      "source": {
+        "source": "local",
+        "path": "./plugins/deploy"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "dev-script",
+      "source": {
+        "source": "local",
+        "path": "./plugins/dev-script"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "executar-task",
+      "source": {
+        "source": "local",
+        "path": "./plugins/executar-task"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "git-housekeeping",
+      "source": {
+        "source": "local",
+        "path": "./plugins/git-housekeeping"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "html-presentation",
+      "source": {
+        "source": "local",
+        "path": "./plugins/html-presentation"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "operations"
+    },
+    {
+      "name": "kaizen-software",
+      "source": {
+        "source": "local",
+        "path": "./plugins/kaizen-software"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "n8n-ops",
+      "source": {
+        "source": "local",
+        "path": "./plugins/n8n-ops"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "operations"
+    },
+    {
+      "name": "pdf-generation",
+      "source": {
+        "source": "local",
+        "path": "./plugins/pdf-generation"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "release",
+      "source": {
+        "source": "local",
+        "path": "./plugins/release"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "skill-quality-audit",
+      "source": {
+        "source": "local",
+        "path": "./plugins/skill-quality-audit"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "quality"
+    },
+    {
+      "name": "ticket",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ticket"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "todo-to-github-issues",
+      "source": {
+        "source": "local",
+        "path": "./plugins/todo-to-github-issues"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "ts-library",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ts-library"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "unlovable",
+      "source": {
+        "source": "local",
+        "path": "./plugins/unlovable"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "whisper-preprocess",
+      "source": {
+        "source": "local",
+        "path": "./plugins/whisper-preprocess"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "windows-disk-cleanup",
+      "source": {
+        "source": "local",
+        "path": "./plugins/windows-disk-cleanup"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "wsl-windows-onboarding",
+      "source": {
+        "source": "local",
+        "path": "./plugins/wsl-windows-onboarding"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    },
+    {
+      "name": "zitadel-idp",
+      "source": {
+        "source": "local",
+        "path": "./plugins/zitadel-idp"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "development"
+    }
+  ]
 }

@@ -2,6 +2,10 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [3.3.2] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## 2026-10-22 — Com agente no host, ler o disco do host antes do merge — bump 3.3.0 → [3.3.1]
 
 **Por quê:** na promoção da 0.4.3 do `lighthouse_project`, o agente constrói as duas imagens no host

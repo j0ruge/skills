@@ -16,6 +16,12 @@ def load_validator():
 
 
 class ValidationTests(unittest.TestCase):
+    def test_codex_does_not_accept_claude_frontmatter_by_intersection(self):
+        validator = load_validator()
+        self.assertIn('codex', validator.TOP_FIELDS_BY_PLATFORM)
+        self.assertNotIn('argument-hint', validator.TOP_FIELDS_BY_PLATFORM['codex'])
+        self.assertNotIn('disable-model-invocation', validator.TOP_FIELDS_BY_PLATFORM['codex'])
+
     def test_codex_is_valid_platform(self):
         self.assertIn('codex', load_validator().VALID_PLATFORMS)
 
@@ -25,6 +31,26 @@ class ValidationTests(unittest.TestCase):
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 1)
         self.assertIn('PyYAML', result.stdout + result.stderr)
+
+    def test_explicit_skill_needs_codex_invocation_policy(self):
+        import json
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            plugin = root / 'plugins/demo'
+            (plugin / '.claude-plugin').mkdir(parents=True)
+            (plugin / '.claude-plugin/plugin.json').write_text(json.dumps(
+                dict(platforms=['claude-code', 'codex'])))
+            skill = plugin / 'skills/demo'
+            skill.mkdir(parents=True)
+            (skill / 'SKILL.md').write_text('---\nname: demo\ndescription: "Example"\n'
+                                          'disable-model-invocation: true\n---\nRead.\n')
+            validator = load_validator()
+            errors, _ = validator._check_skill_spec(root)
+            self.assertTrue(any('allow_implicit_invocation' in e for e in errors), errors)
+            (skill / 'agents').mkdir()
+            (skill / 'agents/openai.yaml').write_text('policy:\n  allow_implicit_invocation: false\n')
+            errors, _ = validator._check_skill_spec(root)
+            self.assertFalse(errors, errors)
 
 
 class HookTests(unittest.TestCase):
@@ -79,6 +105,16 @@ class HookTests(unittest.TestCase):
         (self.root / 'invalid').unlink()
         result = self.hook()
         self.assertNotEqual(result.returncode, 0)
+        self.assertIn('validator-ran', result.stdout)
+
+    def test_large_staged_set_does_not_skip_gate_on_sigpipe(self):
+        plugin = self.root / 'plugins/demo'
+        plugin.mkdir(parents=True)
+        for index in range(2500):
+            (plugin / f'resource-{index:05d}-long-path-for-pipe-capacity.md').touch()
+        self.git('add', '.')
+        result = self.hook()
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('validator-ran', result.stdout)
 
 

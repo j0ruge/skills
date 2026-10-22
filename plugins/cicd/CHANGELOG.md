@@ -2,6 +2,10 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.38.1] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## 2026-10-22 — Apagar imagem não libera disco num host que constrói as próprias imagens — bump 2.37.1 → [2.38.0]
 
 **Por quê:** antes da promoção da 0.4.3 do `lighthouse_project`, o host de staging (que também serve a

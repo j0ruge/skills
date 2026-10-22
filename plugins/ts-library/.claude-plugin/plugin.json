@@ -4,9 +4,26 @@
   "author": {
     "name": "Chewiesoft"
   },
-  "version": "0.3.0",
+  "version": "0.3.1",
   "category": "development",
-  "keywords": ["typescript", "library", "npm", "package-json", "exports", "esm", "publint", "attw", "api-extractor", "vendored-tarball", "release", "monorepo"],
-  "platforms": ["claude-code", "cursor"],
+  "keywords": [
+    "typescript",
+    "library",
+    "npm",
+    "package-json",
+    "exports",
+    "esm",
+    "publint",
+    "attw",
+    "api-extractor",
+    "vendored-tarball",
+    "release",
+    "monorepo"
+  ],
+  "platforms": [
+    "claude-code",
+    "cursor",
+    "codex"
+  ],
   "skills": "./skills"
 }

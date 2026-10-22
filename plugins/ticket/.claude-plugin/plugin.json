@@ -4,7 +4,7 @@
   "author": {
     "name": "Chewiesoft"
   },
-  "version": "1.13.0",
+  "version": "1.13.1",
   "category": "development",
   "keywords": [
     "jira",
@@ -37,6 +37,7 @@
     "rest-e-sensor"
   ],
   "platforms": [
-    "claude-code"
+    "claude-code",
+    "codex"
   ]
 }

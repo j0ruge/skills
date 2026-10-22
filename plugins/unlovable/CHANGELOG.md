@@ -1,5 +1,9 @@
 # Changelog — unlovable
 
+## [1.1.1] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## [1.1.0] — 2026-09-09
 
 Primeiro uso real depois de publicada: limpeza do `sales_quote` (Vite + React

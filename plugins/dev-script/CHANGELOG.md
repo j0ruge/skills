@@ -1,5 +1,9 @@
 # Changelog — `dev-script`
 
+## [0.6.1] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## [0.6.0] — 2026-09-28
 
 Progressive disclosure e autocontenção pela spec e pelas boas práticas do agentskills.io, a partir

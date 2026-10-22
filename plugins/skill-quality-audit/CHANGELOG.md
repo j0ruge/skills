@@ -1,5 +1,9 @@
 # Changelog — skill-quality-audit
 
+## [0.9.1] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. O auditor reconhece Codex com conjunto próprio vazio de campos extras; a interseção não aceita campos exclusivos de outros hosts. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## [0.9.0] — 2026-10-20
 
 ### `skill-quality-audit` 0.7.0: campo de topo aceito quando toda plataforma do plugin o lê

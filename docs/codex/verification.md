@@ -66,6 +66,47 @@ identificou o ajuste para Python; `coderabbit-pr` leu `pr-branch.md` e pediu o
 número do PR ausente. `criar-prd` confirmou o template legível e apontou a
 lacuna de variável e nome. Essa falha é a evidência para a tarefa 3.
 
+## Tarefa 2 — guardas
+
+O gerador tem modos `--check` (padrão) e `--write`, raiz configurável e escrita
+atômica. Fixtures independentes provaram erro para catálogo ausente/inválido,
+inclusão indevida, caminhos fora do pacote, symlinks externos, identidade/plataforma
+divergentes e manifestos ausentes. Conferência não escreve. A versão é lida
+diretamente do manifesto; alterações incoerentes são recusadas.
+O hook exporta o índice Git para diretório temporário antes de validar: uma
+correção não staged não esconde a entrada inválida do índice. O caso com 2.500
+arquivos também passou após remover a saída antecipada que provocava SIGPIPE.
+PyYAML ausente agora reprova o gate, em vez de pular verificações obrigatórias.
+
+## Tarefa 3 — pacote e entrada dos workflows
+
+25 plugins e 28 workflows passaram nos smokes de leitura, cada plugin em perfil
+limpo: conjunto disponível exato, instalação individual, `skills/list`, hashes
+dos arquivos instalados e leitura pelo agente da skill e de seu recurso indicado.
+[smokes.json](smokes.json) registra versão do conteúdo testado, caminhos, comandos
+de leitura e conclusão. Depois disso, os manifestos receberam o patch de
+distribuição e `codex`; a cópia Git final é conferida separadamente na tarefa 5.
+
+Quatro comandos precisaram de `codex-adapter.json`. A prova com somente `skills`
+no manifesto Codex ainda mostrava uma duplicata `source-command-*`; acrescentar
+`commands: []` deixou exatamente `criar-prd:criar-prd`. Essa forma medida foi
+usada nos quatro adaptadores. Scripts de geração copiam assets, traduzem o
+fallback e preservam a preferência pelo template do projeto. Testes cobrem
+argumentos, template ausente, chamada declarada entre skills, múltiplos comandos,
+versão/conteúdo desatualizados e política explícita, inclusive a herdada da fonte.
+
+`release:release` carregou quando nomeada explicitamente; em processo novo,
+sem invocação, o agente respondeu `[]` à lista de skills de plugin expostas
+automaticamente, sem ferramentas. A guarda também reprova remover sua política
+`allow_implicit_invocation: false`. O campo Claude permanece útil nas outras
+plataformas. `ticket` mantém `argument-hint` para Claude, ignorado pelo Codex;
+os dois campos seguem avisados no gate, sem aceitação silenciosa na interseção.
+
+As exclusões e dependências dos 31 plugins estão em [compatibility.md](compatibility.md).
+Observações sobre exemplos de Zitadel e referências antigas de CORS apareceram
+nos smokes e estão preservadas nas conclusões; são conteúdo de domínio fora do
+escopo desta distribuição, sem correção ou alegação de revisão integral.
+
 ## Fontes e limites
 
 - [Package your plugin](https://developers.openai.com/plugins/build/plugins):

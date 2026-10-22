@@ -1,0 +1,395 @@
+{
+  "client": "codex-cli 0.163.0",
+  "platform": "Ubuntu 24.04 x86_64",
+  "coverage": "workflow_entry_only",
+  "results": [
+    {
+      "plugin": "ansible-docker-backup-restore",
+      "version": "1.3.3",
+      "skills": [
+        "ansible-docker-backup-restore:ansible-docker-backup-restore"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ansible-docker-backup-restore/1.3.3/skills/ansible-docker-backup-restore/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ansible-docker-backup-restore/1.3.3/skills/ansible-docker-backup-restore/assets/backup-volumes.sh"
+      ],
+      "conclusion": "Vou usar a skill indicada para conferir os arquivos instalados e o fallback do asset, apenas por leitura.\n\nansible-docker-backup-restore: próximo passo é obter operação, servidor/usuário, inventário, origem/destino e data do backup; SKILL.md e asset lidos, fallback confirmado em `<diretório da skill>/assets/backup-volumes.sh`, sem depender de template no projeto; script exige `<backup_dir> <backup_date>`; nenhuma lacuna de nome/recurso observada, ferramentas operacionais não verificadas.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ansible-docker-backup-restore/1.3.3/skills/ansible-docker-backup-restore/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ansible-docker-backup-restore/1.3.3/skills/ansible-docker-backup-restore/assets/backup-volumes.sh /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ansible-docker-backup-restore/1.3.3/skills/ansible-docker-backup-restore/references/levantamento-e-escopo.md'"
+      ]
+    },
+    {
+      "plugin": "cicd",
+      "version": "2.38.0",
+      "skills": [
+        "cicd:cicd"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cicd/2.38.0/skills/cicd/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cicd/2.38.0/skills/cicd/references/cd-pipeline-pitfalls.md"
+      ],
+      "conclusion": "Vou usar a skill `cicd:cicd` e ler os dois arquivos indicados, apenas para conferir o próximo passo e as dependências.\n\ncicd:cicd — SKILL.md e referência lidos no cache; próximo passo: obter projeto/repositório, stack e sintoma para direcionar o diagnóstico; nomes e recursos solicitados encontrados; ferramentas operacionais não verificadas; nenhum asset ou fallback relativo à skill é indicado nesses arquivos, e os templates nginx citados pertencem ao projeto.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cicd/2.38.0/skills/cicd/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cicd/2.38.0/skills/cicd/references/cd-pipeline-pitfalls.md'",
+        "/usr/bin/zsh -lc \"sed -n '1,300p' /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cicd/2.38.0/skills/cicd/references/cd-pipeline-pitfalls.md\"",
+        "/usr/bin/zsh -lc \"sed -n '301,470p' /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cicd/2.38.0/skills/cicd/references/cd-pipeline-pitfalls.md\""
+      ]
+    },
+    {
+      "plugin": "cors",
+      "version": "1.1.0",
+      "skills": [
+        "cors:cors"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cors/1.1.0/skills/cors/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cors/1.1.0/skills/cors/references/casos-limite.md"
+      ],
+      "conclusion": "Vou usar a skill `cors:cors` e ler os dois arquivos no cache, apenas para conferir o próximo passo e possíveis lacunas.\n`cors:cors` — Próximo passo: obter URL, origem, método que falha, headers/credenciais e mensagem literal do console para distinguir CORS/CSP/mixed content; arquivos lidos, sem assets/fallback aplicável; lacunas: nome interno `cors` versus invocação `cors:cors`, referência a `Vary: Origin` aponta §3 incorreta e §1a ainda descreve sonda fixa já corrigida; nenhuma ferramenta adicional necessária nesta etapa.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cors/1.1.0/skills/cors/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cors/1.1.0/skills/cors/references/casos-limite.md'"
+      ]
+    },
+    {
+      "plugin": "criar-prd",
+      "version": "0.1.0",
+      "skills": [
+        "criar-prd:criar-prd"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/criar-prd/0.1.0/codex-skills/criar-prd/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/criar-prd/0.1.0/codex-skills/criar-prd/assets/prd-template.md"
+      ],
+      "conclusion": "Vou conferir a skill criar-prd e seu template empacotado apenas por leitura.\ncriar-prd:criar-prd — Próximo passo: uma rodada de até 5 perguntas de clarificação e obtenção do slug para validação; sem template no projeto, fallback confirmado em `/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/criar-prd/0.1.0/codex-skills/criar-prd/assets/prd-template.md`; nenhuma lacuna de ferramenta, nome ou recurso identificada.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/criar-prd/0.1.0/codex-skills/criar-prd/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/criar-prd/0.1.0/codex-skills/criar-prd/assets/prd-template.md'"
+      ]
+    },
+    {
+      "plugin": "criar-task",
+      "version": "0.1.0",
+      "skills": [
+        "criar-task:criar-task"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/criar-task/0.1.0/codex-skills/criar-task/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/criar-task/0.1.0/codex-skills/criar-task/assets/task-template.md"
+      ],
+      "conclusion": "Vou usar a skill criar-task para conferir, apenas por leitura, as instruções e o template instalado.\n\ncriar-task:criar-task — Próximo passo: pedir apenas o slug e parar; sem template no projeto, fallback confirmado em `assets/task-template.md`, relativo à skill instalada; nenhuma lacuna de ferramenta ou nome; `assets/tasks-template.md` é também exigido, mas não foi incluído nesta leitura.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/criar-task/0.1.0/codex-skills/criar-task/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/criar-task/0.1.0/codex-skills/criar-task/assets/task-template.md'"
+      ]
+    },
+    {
+      "plugin": "criar-techspec",
+      "version": "0.1.0",
+      "skills": [
+        "criar-techspec:criar-techspec"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/criar-techspec/0.1.0/codex-skills/criar-techspec/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/criar-techspec/0.1.0/codex-skills/criar-techspec/assets/techspec-template.md"
+      ],
+      "conclusion": "Vou conferir a skill `criar-techspec:criar-techspec` e seu template no cache instalado, apenas por leitura.\n\n`criar-techspec:criar-techspec`: próximo passo é pedir apenas o slug e parar; SKILL.md e template lidos, fallback confirmado em `/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/criar-techspec/0.1.0/codex-skills/criar-techspec/assets/techspec-template.md`; nome interno `criar-techspec` compatível com a invocação qualificada; nenhuma lacuna de ferramenta ou recurso identificada.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/criar-techspec/0.1.0/codex-skills/criar-techspec/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/criar-techspec/0.1.0/codex-skills/criar-techspec/assets/techspec-template.md'"
+      ]
+    },
+    {
+      "plugin": "ddd",
+      "version": "0.5.0",
+      "skills": [
+        "ddd:ddd"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ddd/0.5.0/skills/ddd/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ddd/0.5.0/skills/ddd/references/acceleration-tools.md"
+      ],
+      "conclusion": "Vou usar a skill ddd:ddd para conferir o roteamento e o recurso indicado, apenas por leitura no cache instalado.\n\n`ddd:ddd` — Próximo passo: perguntar o objetivo (analysis/strategic/spec/teaching), pois faltam argumentos; SKILL.md e acceleration-tools.md presentes e legíveis; nome interno `ddd`, coerente com a invocação qualificada; lacuna: ferramenta `Agent`/`subagent_type` citada não existe nesta interface; não há comandos com assets nem fallback de template a conferir nesses arquivos.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ddd/0.5.0/skills/ddd/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ddd/0.5.0/skills/ddd/references/acceleration-tools.md'"
+      ]
+    },
+    {
+      "plugin": "deploy",
+      "version": "3.3.1",
+      "skills": [
+        "deploy:staging"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/deploy/3.3.1/skills/staging/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/deploy/3.3.1/skills/staging/references/local-gate.md"
+      ],
+      "conclusion": "Vou usar a skill deploy:staging para este smoke, lendo apenas os dois arquivos indicados no cache.\ndeploy:staging — Próximo passo: identificar o repositório e mapear branches → workflows habilitados → ambientes (Step 0); SOURCE/TARGET ainda por descobrir; SKILL.md e references/local-gate.md presentes e lidos; nome local `staging` corresponde à invocação `deploy:staging`; disponibilidade/autenticação de `gh` não verificadas; sem assets/templates ou fallback relativo aplicável.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/deploy/3.3.1/skills/staging/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/deploy/3.3.1/skills/staging/references/local-gate.md'"
+      ]
+    },
+    {
+      "plugin": "dev-script",
+      "version": "0.6.0",
+      "skills": [
+        "dev-script:dev-script"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/dev-script/0.6.0/skills/dev-script/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/dev-script/0.6.0/skills/dev-script/assets/Caddyfile.tmpl"
+      ],
+      "conclusion": "Vou usar a skill dev-script para conferir, apenas por leitura, o workflow e o template no cache instalado.\n\ndev-script:dev-script — Próximo passo: fase 1, detectar a stack por leitura; faltam definir plataforma e necessidade de LAN. SKILL.md e fallback `assets/Caddyfile.tmpl`, relativo à skill no cache, legíveis sem template no projeto; placeholders dependem da detecção. Nenhuma lacuna de ferramenta, nome ou recurso nos arquivos conferidos.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/dev-script/0.6.0/skills/dev-script/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/dev-script/0.6.0/skills/dev-script/assets/Caddyfile.tmpl'"
+      ]
+    },
+    {
+      "plugin": "executar-task",
+      "version": "0.1.0",
+      "skills": [
+        "executar-task:executar-task"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/executar-task/0.1.0/codex-skills/executar-task/SKILL.md"
+      ],
+      "conclusion": "Vou conferir a skill `executar-task` no cache instalado, apenas por leitura.\n\n`executar-task:executar-task`: próximo passo é solicitar apenas o slug da funcionalidade e parar; nome local `executar-task` corresponde à invocação qualificada; nenhuma lacuna de ferramenta identificada; não há recurso complementar nem uso de assets/template para conferir fallback.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/executar-task/0.1.0/codex-skills/executar-task/SKILL.md'"
+      ]
+    },
+    {
+      "plugin": "git-housekeeping",
+      "version": "0.1.0",
+      "skills": [
+        "git-housekeeping:git-housekeeping"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/git-housekeeping/0.1.0/skills/git-housekeeping/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/git-housekeeping/0.1.0/skills/git-housekeeping/assets/trigger-evals.json"
+      ],
+      "conclusion": "Vou conferir a skill e o recurso no cache instalado, apenas por leitura.\ngit-housekeeping:git-housekeeping — Próximo passo: obter `<repo>` ou `<pasta>` para varredura; skill e `assets/trigger-evals.json` lidos no cache, com recurso relativo à skill, sem template no projeto; nome interno `git-housekeeping` corresponde à invocação qualificada; requer Python ≥3.9, git ≥2.31 e `gh` autenticado para provas via GitHub, cuja disponibilidade não foi verificada; nenhuma execução realizada.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/git-housekeeping/0.1.0/skills/git-housekeeping/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/git-housekeeping/0.1.0/skills/git-housekeeping/assets/trigger-evals.json'"
+      ]
+    },
+    {
+      "plugin": "html-presentation",
+      "version": "1.4.0",
+      "skills": [
+        "html-presentation:html-presentation"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/html-presentation/1.4.0/skills/html-presentation/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/html-presentation/1.4.0/skills/html-presentation/assets/deck-template.html"
+      ],
+      "conclusion": "Vou usar a skill html-presentation para conferir, apenas por leitura, o workflow e o template no cache instalado.\nhtml-presentation:html-presentation — Próximo passo: coletar fonte/tema, apresentador, duração, modo de exibição, leitura posterior, chamada final e idiomas em uma rodada; SKILL.md e template lidos no cache, com fallback confirmado em `<skill>/assets/deck-template.html`, independente de template no projeto; nome interno `html-presentation` compatível; nenhuma lacuna nos recursos lidos, dependências de execução não verificadas.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/html-presentation/1.4.0/skills/html-presentation/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/html-presentation/1.4.0/skills/html-presentation/assets/deck-template.html'",
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/html-presentation/1.4.0/skills/html-presentation/assets/deck-template.html'"
+      ]
+    },
+    {
+      "plugin": "kaizen-software",
+      "version": "1.4.3",
+      "skills": [
+        "kaizen-software:kaizen-software"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/kaizen-software/1.4.3/skills/kaizen-software/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/kaizen-software/1.4.3/skills/kaizen-software/references/desperdicios.md"
+      ],
+      "conclusion": "Vou usar a skill kaizen-software para conferir, apenas por leitura, o workflow e o recurso instalado.\n\nkaizen-software:kaizen-software — Próximo passo: obter objetivo, projeto e modalidade desejada; SKILL.md e references/desperdicios.md lidos no cache, sem lacuna de nome, ferramenta ou recurso nesses arquivos; comandos com assets/fallback não se aplicam.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/kaizen-software/1.4.3/skills/kaizen-software/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/kaizen-software/1.4.3/skills/kaizen-software/references/desperdicios.md'"
+      ]
+    },
+    {
+      "plugin": "n8n-ops",
+      "version": "1.0.1",
+      "skills": [
+        "n8n-ops:n8n-ops"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/n8n-ops/1.0.1/skills/n8n-ops/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/n8n-ops/1.0.1/skills/n8n-ops/references/diagnostico.md"
+      ],
+      "conclusion": "Vou usar a skill n8n-ops para conferir os dois arquivos indicados, apenas por leitura local.\nn8n-ops:n8n-ops — SKILL.md e references/diagnostico.md lidos no cache; próximo passo: obter instância, IDs dos workflows, evento/chave de negócio e janela temporal, ler references/instancia.md e iniciar pela gravação/pré-condição; acesso somente leitura ainda não identificado; sem comandos com assets de template ou fallback relativo aplicável (`/assets/index-*.js` é bundle remoto).",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/n8n-ops/1.0.1/skills/n8n-ops/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/n8n-ops/1.0.1/skills/n8n-ops/references/diagnostico.md'"
+      ]
+    },
+    {
+      "plugin": "pdf-generation",
+      "version": "1.6.2",
+      "skills": [
+        "pdf-generation:pdf-generation"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/pdf-generation/1.6.2/skills/pdf-generation/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/pdf-generation/1.6.2/skills/pdf-generation/references/layout-analysis.md"
+      ],
+      "conclusion": "Vou usar a skill pdf-generation para conferir, apenas por leitura, o próximo passo e as lacunas no recurso indicado.\n\npdf-generation:pdf-generation — Próximo passo: solicitar template PDF/Excel/imagem ou descrição clara do layout para mapear seções e campos; SKILL.md e references/layout-analysis.md acessíveis; nome interno `pdf-generation` corresponde à invocação qualificada; ferramenta `Read` e companion visual não disponíveis explicitamente; arquivos lidos não definem comando com assets nem fallback de template relativo à skill.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/pdf-generation/1.6.2/skills/pdf-generation/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/pdf-generation/1.6.2/skills/pdf-generation/references/layout-analysis.md'"
+      ]
+    },
+    {
+      "plugin": "release",
+      "version": "2.0.1",
+      "skills": [
+        "release:release"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/release/2.0.1/skills/release/SKILL.md"
+      ],
+      "conclusion": "Vou ler a skill no cache instalado e conferir as referências, mantendo o smoke apenas em leitura.\n\n`release:release` — Próximo passo: solicitar a versão semântica; `--path` é opcional. Nome interno `release` compatível com a invocação; requer `git` e `gh` autenticado (não verificados). Template embutido no SKILL.md; sem recurso externo ou asset que exija fallback relativo à skill.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/release/2.0.1/skills/release/SKILL.md'"
+      ]
+    },
+    {
+      "plugin": "skill-quality-audit",
+      "version": "0.9.0",
+      "skills": [
+        "skill-quality-audit:skill-claim-check",
+        "skill-quality-audit:skill-quality-audit",
+        "skill-quality-audit:skill-refactoring",
+        "skill-quality-audit:skill-self-containment"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-claim-check/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-claim-check/assets/trigger-evals.json",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-quality-audit/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-quality-audit/assets/trigger-evals.json",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-refactoring/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-refactoring/assets/trigger-evals.json",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-self-containment/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-self-containment/assets/trigger-evals.json"
+      ],
+      "conclusion": "Vou ler as quatro skills invocadas e seus assets no cache instalado, apenas para identificar o próximo passo e eventuais lacunas de distribuição.\nskill-claim-check: próximo passo é solicitar `<dir-da-skill>`; scanner e asset presentes; `assets/trigger-evals.json` resolve pela raiz desta skill no cache, sem template no projeto; nenhuma lacuna de nome/recurso observada.\nskill-quality-audit: próximo passo é solicitar alvo e escopo simples/completo; auditor e asset presentes; asset relativo à própria skill; gates opcionais `skills-ref`/`agentskills`/`uvx` não tiveram disponibilidade verificada.\nskill-refactoring: próximo passo é solicitar `<dir-da-skill>` para mapear tamanho e seções, apenas diagnóstico; `repetidos.py`, referências e asset presentes; asset relativo à própria skill, sem template no projeto; nenhuma lacuna observada.\nskill-self-containment: próximo passo é solicitar `<dir-da-skill>` para mapear arquivos e dependências; auditor vizinho e asset presentes; asset relativo à própria skill, sem template no projeto; validador externo não verificado, com checklist manual como fallback.",
+      "read_commands": [
+        "/usr/bin/zsh -lc \"cat '/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-claim-check/SKILL.md' '/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-claim-check/assets/trigger-evals.json' '/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-quality-audit/SKILL.md' '/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-quality-audit/assets/trigger-evals.json' '/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-refactoring/SKILL.md' '/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-refactoring/assets/trigger-evals.json' '/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-self-containment/SKILL.md' '/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-self-containment/assets/trigger-evals.json'\"",
+        "/usr/bin/zsh -lc \"cat '/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-quality-audit/SKILL.md' '/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-quality-audit/assets/trigger-evals.json'\"",
+        "/usr/bin/zsh -lc \"cat '/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-refactoring/SKILL.md' '/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills/skill-refactoring/assets/trigger-evals.json'\"",
+        "/usr/bin/zsh -lc \"rg --files '/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/skill-quality-audit/0.9.0/skills'\""
+      ]
+    },
+    {
+      "plugin": "ticket",
+      "version": "1.13.0",
+      "skills": [
+        "ticket:ticket"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ticket/1.13.0/skills/ticket/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ticket/1.13.0/skills/ticket/assets/trigger-evals.json"
+      ],
+      "conclusion": "Vou usar a skill `ticket:ticket` para conferir o roteamento e o recurso instalado, apenas por leitura.\n\n`ticket:ticket` — Sem argumentos: mostrar `start` (`open`/`abrir`), `split`, `close`, `status`; SKILL.md e `assets/trigger-evals.json` lidos no cache, com asset relativo à skill, sem template do projeto; MCP disponível sob `mcp__codex_apps__atlassian_rovo__legacy__atlassian_rovo_legacy_*`, divergindo do nome documentado `mcp__atlassian__*`; CLI e credenciais não verificadas.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ticket/1.13.0/skills/ticket/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ticket/1.13.0/skills/ticket/assets/trigger-evals.json'"
+      ]
+    },
+    {
+      "plugin": "todo-to-github-issues",
+      "version": "2.8.0",
+      "skills": [
+        "todo-to-github-issues:todo-to-github-issues"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/todo-to-github-issues/2.8.0/skills/todo-to-github-issues/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/todo-to-github-issues/2.8.0/skills/todo-to-github-issues/assets/trigger-evals.json"
+      ],
+      "conclusion": "Vou usar a skill indicada para conferir, apenas por leitura, o `SKILL.md` e o recurso de avaliação no cache instalado.\n\ntodo-to-github-issues:todo-to-github-issues — Próximo passo: obter arquivo/repositório alvo e modo (padrão `plan`); nome compatível e `assets/trigger-evals.json` presente e legível, resolvido relativo à skill; não há fallback de template embarcado: formato/sensor dependem do kit sdd externo; Python ≥3.8, bash, git e gh autenticado são requisitos ainda não verificados.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/todo-to-github-issues/2.8.0/skills/todo-to-github-issues/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/todo-to-github-issues/2.8.0/skills/todo-to-github-issues/assets/trigger-evals.json'"
+      ]
+    },
+    {
+      "plugin": "ts-library",
+      "version": "0.3.0",
+      "skills": [
+        "ts-library:ts-library"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ts-library/0.3.0/skills/ts-library/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ts-library/0.3.0/skills/ts-library/references/distribuicao.md"
+      ],
+      "conclusion": "Vou usar a skill ts-library para conferir o workflow de distribuição, lendo apenas os dois arquivos indicados no cache instalado.\nts-library:ts-library (distribuição): próximo passo é obter pacote/repositório, operação desejada e instalação na estação, CI e Docker antes de escolher a distribuição; ambos os arquivos estão acessíveis; scripts citados são propostas, ferramentas não verificadas; não há comando com template em `assets` nem fallback relativo à skill nesses arquivos.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ts-library/0.3.0/skills/ts-library/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ts-library/0.3.0/skills/ts-library/references/distribuicao.md'"
+      ]
+    },
+    {
+      "plugin": "unlovable",
+      "version": "1.1.0",
+      "skills": [
+        "unlovable:unlovable"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/unlovable/1.1.0/skills/unlovable/SKILL.md"
+      ],
+      "conclusion": "Vou usar a skill unlovable em modo somente leitura para conferir o arquivo instalado e suas referências.\nunlovable:unlovable — SKILL.md instalado lido; próximo passo: obter o caminho do projeto e realizar inventário somente leitura; nome compatível (`unlovable`), sem ferramenta ou recurso auxiliar exigido; favicon depende de asset da marca, sem fallback relativo à skill nem template declarado.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/unlovable/1.1.0/skills/unlovable/SKILL.md'"
+      ]
+    },
+    {
+      "plugin": "whisper-preprocess",
+      "version": "1.1.0",
+      "skills": [
+        "whisper-preprocess:whisper-preprocess"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/whisper-preprocess/1.1.0/skills/whisper-preprocess/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/whisper-preprocess/1.1.0/skills/whisper-preprocess/scripts/merge_passes.py"
+      ],
+      "conclusion": "Vou usar a skill whisper-preprocess para conferir, apenas por leitura, as instruções e o recurso no cache instalado.\nwhisper-preprocess:whisper-preprocess — Próximo passo: obter o caminho da mídia; merge avulso exige `--primary`, `--secondary` e `--output`. SKILL.md e `scripts/merge_passes.py` lidos no cache, nomes compatíveis; sem assets/templates referenciados, fallback relativo em `scripts/`. Python, ffmpeg, Whisper e modelo local permanecem não verificados; nenhuma execução ou escrita realizada.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/whisper-preprocess/1.1.0/skills/whisper-preprocess/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/whisper-preprocess/1.1.0/skills/whisper-preprocess/scripts/merge_passes.py'"
+      ]
+    },
+    {
+      "plugin": "windows-disk-cleanup",
+      "version": "0.2.1",
+      "skills": [
+        "windows-disk-cleanup:windows-disk-cleanup"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/windows-disk-cleanup/0.2.1/skills/windows-disk-cleanup/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/windows-disk-cleanup/0.2.1/skills/windows-disk-cleanup/assets/trigger-evals.json"
+      ],
+      "conclusion": "Vou conferir a skill e o arquivo de avaliações no cache instalado, apenas por leitura.\nwindows-disk-cleanup:windows-disk-cleanup — Próximo passo: obter volumes-alvo e meta de espaço livre, ler `references/measurement.md` e levantar baseline; SKILL.md e `assets/trigger-evals.json` encontrados no cache, com asset resolvido relativamente à skill, sem template no projeto; nome local `windows-disk-cleanup` compatível com a invocação qualificada; disponibilidade de PowerShell/Windows e demais recursos ainda não verificada, sem executar scripts.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/windows-disk-cleanup/0.2.1/skills/windows-disk-cleanup/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/windows-disk-cleanup/0.2.1/skills/windows-disk-cleanup/assets/trigger-evals.json'"
+      ]
+    },
+    {
+      "plugin": "wsl-windows-onboarding",
+      "version": "0.4.3",
+      "skills": [
+        "wsl-windows-onboarding:wsl-windows-onboarding"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/wsl-windows-onboarding/0.4.3/skills/wsl-windows-onboarding/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/wsl-windows-onboarding/0.4.3/skills/wsl-windows-onboarding/references/project-migration.md"
+      ],
+      "conclusion": "Vou usar a skill indicada e ler os dois arquivos do cache, apenas para conferir o próximo passo e os recursos referenciados.\nwsl-windows-onboarding:wsl-windows-onboarding — Próximo passo: solicitar origem Windows, destino WSL e distro; SKILL.md e referência lidos, scripts presentes; resolver `scripts/migrate-repos.sh` relativamente à pasta da skill no cache, sem template no projeto; sem assets ou ferramenta específica exigida, disponibilidade de WSL/rsync ainda não verificada; nada executado além das leituras.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/wsl-windows-onboarding/0.4.3/skills/wsl-windows-onboarding/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/wsl-windows-onboarding/0.4.3/skills/wsl-windows-onboarding/references/project-migration.md'",
+        "/usr/bin/zsh -lc 'ls -l /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/wsl-windows-onboarding/0.4.3/skills/wsl-windows-onboarding/scripts/migrate-repos.sh /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/wsl-windows-onboarding/0.4.3/skills/wsl-windows-onboarding/scripts/wsl-diagnose.sh'"
+      ]
+    },
+    {
+      "plugin": "zitadel-idp",
+      "version": "0.20.0",
+      "skills": [
+        "zitadel-idp:zitadel-idp"
+      ],
+      "paths": [
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/zitadel-idp/0.20.0/skills/zitadel-idp/SKILL.md",
+        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/zitadel-idp/0.20.0/skills/zitadel-idp/assets/bootstrap-zitadel.ts"
+      ],
+      "conclusion": "Vou usar a skill `zitadel-idp:zitadel-idp` para conferir os dois arquivos instalados e o fallback do asset, apenas por leitura.\n`zitadel-idp:zitadel-idp` — Próximo passo: informar objetivo/sintoma e, para bootstrap, URL, caminho do PAT, nomes, roles e URIs; fallback confirmado em `assets/bootstrap-zitadel.ts`, relativo à skill instalada, sem template no projeto; lacunas: nomes fixos JRC/ERP-JRC/battery, caminhos PAT/saída dependentes do projeto original e comentário `ListProjectRoles` contradiz a Quirk 49; nenhuma ferramenta adicional necessária para esta leitura.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/zitadel-idp/0.20.0/skills/zitadel-idp/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/zitadel-idp/0.20.0/skills/zitadel-idp/assets/bootstrap-zitadel.ts'"
+      ]
+    }
+  ]
+}

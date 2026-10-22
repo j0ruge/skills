@@ -1,0 +1,14 @@
+{
+  "commands": [
+    {
+      "name": "criar-prd",
+      "source": "./commands/criar-prd.md",
+      "resources": [
+        {
+          "source": "./templates/prd-template.md",
+          "target": "assets/prd-template.md"
+        }
+      ]
+    }
+  ]
+}

@@ -2,6 +2,10 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.1.1] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## 2026-09-22 — Preflight aprovado e requisição bloqueada — [1.1.0]
 
 **O quê:** nova seção `casos-limite.md` §1a — o preflight que responde `204` com todos os headers

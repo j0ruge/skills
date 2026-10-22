@@ -4,9 +4,27 @@
   "author": {
     "name": "Chewiesoft"
   },
-  "version": "0.5.0",
+  "version": "0.5.1",
   "category": "architecture",
-  "keywords": ["ddd", "domain-driven-design", "bounded-context", "event-storming", "context-mapping", "aggregate", "cqrs", "hexagonal", "modular-monolith", "erp", "legacy-migration", "code-review", "architecture"],
-  "platforms": ["claude-code", "cursor"],
+  "keywords": [
+    "ddd",
+    "domain-driven-design",
+    "bounded-context",
+    "event-storming",
+    "context-mapping",
+    "aggregate",
+    "cqrs",
+    "hexagonal",
+    "modular-monolith",
+    "erp",
+    "legacy-migration",
+    "code-review",
+    "architecture"
+  ],
+  "platforms": [
+    "claude-code",
+    "cursor",
+    "codex"
+  ],
   "skills": "./skills"
 }

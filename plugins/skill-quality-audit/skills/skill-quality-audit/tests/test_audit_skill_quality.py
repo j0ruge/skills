@@ -529,6 +529,15 @@ class TestCamposClaudeCodeNoTopo(Base):
         self.assertIn(("A4", "AVISO"), f)
         self.assertIn(("G2", "ERRO"), f)
 
+    def test_codex_nao_aceita_campos_exclusivos_de_outro_host(self):
+        d = self._skill('disable-model-invocation: true\nargument-hint: "x"\n',
+                        platforms=["claude-code", "cursor", "codex"])
+        self._fake_ref(self.UNEXPECTED.format(d=d, campos="argument-hint, disable-model-invocation"))
+        rc, f = self._achados(d)
+        self.assertIn(("A4", "AVISO"), f)
+        self.assertNotIn(("A4", "INFO"), f)
+        self.assertIn(("G2", "ERRO"), f)
+
 
 class TestC2ContratoDeSubagente(Base):
     """C2: reference que cita outra pela raiz da skill ({SKILL_DIR}/references/...) é contrato de subagente."""

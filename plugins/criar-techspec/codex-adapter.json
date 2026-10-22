@@ -1,0 +1,14 @@
+{
+  "commands": [
+    {
+      "name": "criar-techspec",
+      "source": "./commands/criar-techspec.md",
+      "resources": [
+        {
+          "source": "./templates/techspec-template.md",
+          "target": "assets/techspec-template.md"
+        }
+      ]
+    }
+  ]
+}

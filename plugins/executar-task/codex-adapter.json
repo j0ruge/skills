@@ -1,0 +1,9 @@
+{
+  "commands": [
+    {
+      "name": "executar-task",
+      "source": "./commands/executar-task.md",
+      "resources": []
+    }
+  ]
+}

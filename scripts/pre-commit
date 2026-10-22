@@ -3,7 +3,7 @@
 # Instalar: git config core.hooksPath scripts/
 set -euo pipefail
 
-if git diff --cached --name-only | rg -q '^(plugins/|\.agents/plugins/|\.claude-plugin/|install\.py$|scripts/(codex-.*\.py|validate-versions\.py|pre-commit)$|tests/test_codex_.*\.py$)'; then
+if git diff --cached --name-only | rg '^(plugins/|\.agents/plugins/|\.claude-plugin/|install\.py$|scripts/(codex-.*\.py|validate-versions\.py|pre-commit)$|tests/test_codex_.*\.py$)' > /dev/null; then
     echo '[pre-commit] Validando o conteúdo staged da distribuição...'
     snapshot=$(mktemp -d)
     trap 'rm -rf -- "$snapshot"' EXIT
