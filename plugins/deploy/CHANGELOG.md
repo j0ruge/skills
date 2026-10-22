@@ -2,6 +2,19 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-10-22 — Com agente no host, ler o disco do host antes do merge — bump 3.3.0 → [3.3.1]
+
+**Por quê:** na promoção da 0.4.3 do `lighthouse_project`, o agente constrói as duas imagens no host
+de staging, e o host estava em 97% de disco (7,1 GB livres), servindo também a produção de outro
+sistema. A poda do `deploy.sh` roda no fim, depois do build, então não salva um build que não cabe.
+E apagar as imagens antigas não liberou nada: as camadas seguiam no cache do BuildKit, e só o
+`docker builder prune -f --filter until=168h` devolveu 3,96 GB. O Step 4 com agente olhava a pasta
+do agente e as migrations, não o disco.
+
+**O quê:** `references/no-actions-agent.md`, tabela "What changes in each step": a linha
+**4 — disk** (`df -h /` e `docker system df` no host antes do merge; a poda do cache em vez do `rmi`),
+com o detalhe na lição 118 da `cicd`.
+
 ## 2026-10-15 — Migration com constraint nova: sondar a base do ambiente com a expressão do próprio constraint — bump 3.2.0 → [3.3.0]
 
 **Por quê:** a promoção da 0.4.0 do `lighthouse_project` (PR #31, `develop → staging`) carregava uma

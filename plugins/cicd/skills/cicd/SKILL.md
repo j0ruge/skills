@@ -1,7 +1,7 @@
 ---
 name: cicd
 metadata:
-  version: 2.37.1
+  version: 2.38.0
 description: "GitHub Actions / Docker / GHCR pipeline troubleshooting and config, auto-routed by stack (Node/Prisma, Django/gunicorn, Vite). Self-hosted runner runbook — what breaks when you move a billed job onto one, which runner to trust for production — deploy-time proof (rollback with re-smoke, backup gates that check the dump), and Actions minute economics. Triggers — CI/CD, GitHub Actions, job never starts, Actions minutes/quota, GHCR auth, self-hosted runner, deploy queued, rollback/backup gate."
 ---
 
@@ -124,6 +124,7 @@ One line each; read the numbered lesson in `references/lessons-learned.md` when 
 - **Containerized runner:** bind mounts resolve on the host but CLI paths (`--env-file`, `-f`) resolve inside the container, the image must carry every binary the workflow calls, and the CD's `up -d` never recreates the runner (lessons 89, 90, 97).
 - **VITE_* are baked at build time**, so changing the secret without rebuilding is a no-op, and a build-time image needs an environment suffix on its tag or a fast-forward promotion makes production overwrite staging (lessons 18, 64).
 - **`docker run` does not pull and `compose run`/`up` does not rebuild when the tag exists locally**, so a stale image applies old migrations or declarations, green (lessons 29, 91).
+- **On a host that builds its own images, `docker rmi` frees no disk:** the layers stay in the BuildKit cache, and only `docker builder prune` returns them. The deploy's prune runs after the build, so measure `df -h /` and `docker system df` before promoting (lesson 118).
 - **`compose run` orphans inherit `VIRTUAL_HOST`** and poison the nginx-proxy upstream pool (~50% 401); pass `-e VIRTUAL_HOST= -e LETSENCRYPT_HOST=` (lesson 34).
 - **GHCR paths must be lowercase** (`github.repository_owner` keeps the case), and GHCR packages are born private (lessons 55, 56).
 

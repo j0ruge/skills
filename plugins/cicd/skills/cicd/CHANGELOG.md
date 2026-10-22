@@ -2,6 +2,30 @@
 
 Lessons retrofitted into the skill, dated. Each entry describes **what** changed and **why** (the symptom it would have prevented).
 
+## 2026-10-22 — Apagar imagem não libera disco num host que constrói as próprias imagens — bump 2.37.1 → [2.38.0]
+
+**Por quê:** antes da promoção da 0.4.3 do `lighthouse_project`, o host de staging (que também serve a
+produção de outro sistema) estava em 97% de disco, com 7,1 GB livres, e o deploy por agente constrói
+as duas imagens ali. O `docker rmi` de 13 imagens antigas do projeto saiu `ok` em todas, e o `df` não
+mudou. O `docker system df` mostrou o porquê: Images caiu 1,79 GB e Build Cache subiu os mesmos
+1,79 GB, porque as camadas de uma imagem construída no host seguem presas aos registros do BuildKit.
+Só o `docker builder prune -f --filter until=168h` devolveu disco: 3,96 GB, para 95%. O §11 já trazia
+essa poda, mas como limite de crescimento do cache, rodando no fim do deploy. Ele não dizia que
+apagar imagem não basta, nem que a poda do deploy vem **depois** do build, então o build da versão
+nova tem de caber no disco de antes da promoção. Medir com `du -sh /var/lib/docker` passou de 10
+minutos sem terminar.
+
+**O quê:**
+- `references/self-hosted-job-migration.md` §11: o parágrafo do `rmi` que não libera, a medida
+  antes de promover (`df -h /`, `docker system df`, `docker buildx du`) e o caso medido.
+- `references/lessons-learned.md`: a lição 118, no tema "Migrar job cobrado para o self-hosted".
+- `references/symptom-index.md`: a linha do sintoma (`rmi` ok, `df` parado).
+- `SKILL.md`: uma linha nos Gotchas.
+
+**Dívida pré-existente, fora deste retrofit:** a tabela de roteamento do `SKILL.md` diz "74 rows" e
+"109 numbered lessons"; medido em 2026-10-22, antes desta versão, eram 76 linhas e 117 lições
+(`grep -cE` nas duas references), e nenhum sensor mede esses números.
+
 ## 2026-10-15 — A tabela de gatilhos é o modelo dos projetos de origem, não a regra — bump 2.37.0 → [2.37.1]
 
 **Por quê:** desde a primeira versão (`822a7ac`, 2026-03-13) a "Workflow Overview" dizia que

@@ -572,6 +572,22 @@ Limite com um prune por idade no job de deploy, depois do `image prune`:
 `--all` ou um teto de tamanho seriam mais agressivos, e o cache é do **daemon**, compartilhado com
 os outros projetos do host.
 
+**Apagar imagem não devolve disco num host que constrói as próprias imagens** (lição 118). O
+`docker rmi` de uma imagem construída ali só tira a tag: as camadas seguem presas aos registros do
+cache do BuildKit. No `docker system df`, a linha Images cai e a Build Cache sobe o mesmo tanto, com o
+`df` parado. Só `docker builder prune` as devolve. E a poda do deploy roda **depois** do build (no
+`deploy.sh` medido, no fim, só com o deploy verde), então o build da versão nova tem de caber no
+disco livre de **antes** da promoção. Num host que serve outros sistemas, meça antes de promover
+(`df -h /` e `docker system df`; `docker buildx du` detalha o cache) e, sem folga, rode a mesma poda
+antes. Não meça com `du -sh /var/lib/docker`: no caso abaixo, num host com dezenas de imagens, ele
+passou de 10 minutos sem terminar.
+
+Medido em 2026-10-22, num host de staging que também serve a produção de outro sistema, antes de
+uma promoção que constrói duas imagens: 97% de disco, 7,1 GB livres. O `docker rmi` de 13 imagens do
+projeto (uma delas com 2,42 GB) saiu `ok` em todas e o `df` não mudou; Images foi de 55,26 para
+53,47 GB e Build Cache de 7,48 para 9,27 GB. O `docker builder prune -f --filter until=168h` devolveu
+3,96 GB (95%, 12 GB livres), e o deploy passou.
+
 Onde um gate de CI e o `build-and-push` passam a disputar um runner único, **eles serializam**
 (tabela do pré-voo, item 6). Um runner efêmero ainda se registra de novo entre jobs. Diga o novo
 tempo de CD em voz alta no PR, para ninguém ler a lentidão como regressão.
