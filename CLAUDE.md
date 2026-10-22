@@ -2,10 +2,11 @@
 
 ## Project Overview
 
-**chewiesoft-marketplace** — a dual-platform plugin marketplace owned by **j0ruge**. Distributes skills and commands for **Claude Code** and **Cursor**, developed exclusively by the owner.
+**chewiesoft-marketplace** — a plugin marketplace owned by **j0ruge**. Distributes skills and commands for **Claude Code**, **Cursor** and **Codex**, developed exclusively by the owner.
 
 For Claude Code, this repository follows the [Claude Code Plugin Marketplace](https://code.claude.com/docs/en/plugins-reference) specification.
 For Cursor, skills are installed via the interactive `install.py` script at the repo root.
+For Codex, `.agents/plugins/marketplace.json` is a filtered, generated native catalog; `install.py` only shows commands.
 
 ## Marketplace Structure
 
@@ -33,6 +34,7 @@ skills/
 ### Platform Compatibility
 
 Each `plugin.json` includes a `platforms` field declaring which platforms support the plugin:
+- `["claude-code", "cursor", "codex"]` — conteúdo validado para distribuição no Codex; requisitos em `docs/codex/compatibility.md`
 - `["claude-code", "cursor"]` — available on both platforms
 - `["claude-code"]` — Claude Code only (e.g., `statusline`)
 
@@ -254,7 +256,7 @@ cd skills
 python install.py
 ```
 
-The installer prompts for platform (Claude Code / Cursor / Both) and install location, then copies and adapts the skills automatically.
+The installer prompts for platform (Claude Code / Cursor / Codex / Claude Code + Cursor). Cursor copies and adapts skills; Claude Code and Codex show native commands.
 
 **Cursor caveat:** Cursor (as of 2026) does not auto-load skills from a global directory — only project-local `.cursor/skills/` is read by the agent. Run `install.py` inside each project and pick the **Project** option. The optional **Staging cache** writes to `~/.cursor/skills/` as a master copy you mirror manually.
 
@@ -283,3 +285,43 @@ Available speckit commands: `specify`, `clarify`, `plan`, `analyze`, `tasks`, `i
 ## Git
 
 - **Main branch**: `main`
+
+## Distribuição Codex
+
+A fonte canônica de identidade, versão, autoria e plataformas continua em
+`plugins/<plugin>/.claude-plugin/plugin.json`; a localização vem do catálogo Claude.
+O catálogo Codex contém exatamente os plugins com `codex`, ordenados por nome.
+Conteúdo e recursos permanecem em `plugins/`, sem segunda árvore editada à mão.
+
+Antes de habilitar `codex`, audite todos os workflows do agrupamento, dependências,
+invocação e recursos. Instale em perfil isolado, confira os nomes pelo cliente e
+faça smoke seguro de cada entrada no cache instalado. Registre evidências em
+`docs/codex/`; `partial`, `unsupported` e `not_checked` ficam fora do catálogo.
+Documente sistemas e versões medidos sem inferir cobertura do desktop ou Windows.
+
+Comandos que precisarem de adaptação declaram `codex-adapter.json`; fontes são os
+`commands/*.md` e recursos do plugin. `codex-skills/` e `.codex-plugin/plugin.json`
+são derivados versionados. O manifesto fixa `commands: []` para evitar a cópia
+automática `source-command-*`. Nunca edite esses derivados manualmente.
+Invocação explícita no Codex usa `agents/openai.yaml` com
+`policy.allow_implicit_invocation: false`; campos Claude não substituem essa política.
+
+```bash
+python3 scripts/codex-adapters.py --write
+python3 scripts/codex-marketplace.py --write
+python3 scripts/codex-adapters.py --check
+python3 scripts/codex-marketplace.py --check
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+python3 scripts/validate-versions.py
+```
+
+Geradores aceitam `--root DIR`; sem modo explícito conferem e não escrevem.
+O instalador usa somente a biblioteca padrão. O gate obrigatório usa PyYAML e
+falha se ela faltar. Auditor e validador mantêm mapas alinhados por plataforma;
+Codex não herda campos específicos de outros hosts.
+O hook executável `scripts/pre-commit`, habilitado por
+`git config core.hooksPath scripts/`, confere uma exportação do índice Git.
+Corrija e faça stage de todos os derivados antes de commitar.
+
+Atualize versões/CHANGELOGs, README, catálogo e evidências no mesmo incremento.
+A revisão com `/goal` e codereview permanece separada, conforme o handoff.

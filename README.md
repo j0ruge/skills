@@ -2,10 +2,10 @@
 
 # Chewiesoft Marketplace
 
-*Plugin marketplace for Claude Code and Cursor — CI/CD, code review, deployments, releases, and more.*
+*Plugin marketplace for Claude Code, Cursor and Codex — CI/CD, code review, deployments, releases, and more.*
 
 [![Plugins](https://img.shields.io/badge/plugins-31-blue?style=flat-square)](#available-plugins)
-[![Platform](https://img.shields.io/badge/platform-Claude%20Code%20%7C%20Cursor-blueviolet?style=flat-square)](https://code.claude.com)
+[![Platform](https://img.shields.io/badge/platform-Claude%20Code%20%7C%20Cursor%20%7C%20Codex-blueviolet?style=flat-square)](https://code.claude.com)
 [![License](https://img.shields.io/badge/license-Proprietary-red?style=flat-square)](#)
 
 </div>
@@ -14,42 +14,48 @@
 
 ---
 
-A curated dual-platform plugin marketplace for [Claude Code](https://code.claude.com) and [Cursor](https://cursor.com) by **j0ruge**. Each plugin packages production-ready skills and commands that integrate directly into your workflow — no configuration needed beyond install.
+A curated plugin marketplace for [Claude Code](https://code.claude.com) and [Cursor](https://cursor.com) by **j0ruge**. Each plugin packages production-ready skills and commands that integrate directly into your workflow — no configuration needed beyond install.
 
 ## Platform Compatibility
 
-| Plugin | Claude Code | Cursor | Notes |
-|--------|:-----------:|:------:|-------|
-| **ansible-docker-backup-restore** | ✓ | ✓ | Skill — backup + restore of Dockerized services via Ansible, with a read-only backup-freshness check |
-| **cicd** | ✓ | ✓ | Skill — works on both platforms without changes |
-| **codereview** | ✓ | ✓ | Skills — adapted automatically by the installer |
-| **cors** | ✓ | ✓ | Skill — works on both platforms |
-| **criar-prd** | ✓ | ✓ | Command (Claude Code) / Skill (Cursor) |
-| **criar-task** | ✓ | ✓ | Command (Claude Code) / Skill (Cursor) |
-| **criar-techspec** | ✓ | ✓ | Command (Claude Code) / Skill (Cursor) |
-| **ddd** | ✓ | ✓ | Skill — works on both platforms |
-| **deploy** | ✓ | ✓ | Skill — works on both platforms |
-| **dev-script** | ✓ | ✓ | Skill — generates `dev.sh` (bash) + `dev.ps1` (PowerShell) per project |
-| **dotnet-wpf** | ✓ | ✓ | Skills — works on both platforms |
-| **executar-task** | ✓ | ✓ | Command (Claude Code) / Skill (Cursor) |
-| **git-housekeeping** | ✓ | ✓ | Skill — Python 3 stdlib scripts (read-only analysis + plan applier) and `git`; `gh` optional, to prove squash merges |
-| **hook-builder** | ✓ | — | Claude Code only — builds and proves Claude Code hooks; Python 3 stdlib scripts (probe, fixture harness, config lint) |
-| **html-presentation** | ✓ | ✓ | Skill + agent — timed HTML slide deck from source material; the `deck-reviewer` agent is Claude Code only (Cursor falls back to a general-purpose reviewer) |
-| **kaizen-software** | ✓ | ✓ | Skill — Kaizen (continuous improvement) methodology for planning, implementing and maintaining software, plus teaching material; verifies by artifact, not by the tool's label |
-| **pdf-generation** | ✓ | ✓ | Skill — PDF template design + library selection (pdfmake/pdf-lib/PDFKit/Puppeteer/@react-pdf), modular sections, visual verification |
-| **release** | ✓ | ✓ | Skill (runs only when invoked) |
-| **retrofit-skill** | ✓ | ✓ | Command (Claude Code) / Skill (Cursor) |
-| **retrofit-watch** | ✓ | — | Claude Code only — Stop hook + skill; Python 3 stdlib and `git` |
-| **skill-quality-audit** | ✓ | ✓ | Skills — four skills in one plugin (audit entry point + 3 sisters that find each other); Python 3 stdlib script |
-| **statusline** | ✓ | — | Claude Code only (uses the Claude Code status line API) |
-| **ticket** | ✓ | — | Claude Code only (`/ticket` slash command + Jira `acli` + atlassian MCP) |
-| **todo-to-github-issues** | ✓ | ✓ | Skill — Python scripts + `gh`; needs the sdd kit on the machine |
-| **ts-library** | ✓ | ✓ | Skill — TypeScript/Node library packaging, sensors, release and distribution; no scripts yet |
-| **unlovable** | ✓ | ✓ | Skill — works on both platforms |
-| **whisper-preprocess** | ✓ | ✓ | Skill — ffmpeg + OpenAI Whisper offline audio→text pipeline (silence removal, voice enhancement, segmentation, multilingual merge); decoupled stable-gain listening copy (no "picotamento") |
-| **zitadel-idp** | ✓ | ✓ | Skill — Zitadel self-hosted OIDC integration field guide (bootstrap, JWT, branding, 50 gotchas with proto-aligned v4.15 examples + CD cutover survival kit + Console UI human-user creation pitfalls + production-cutover v0.7.0 (backend `extra_hosts` for hairpin-NAT IdP, 3-layer SPA defense vs RT-reuse session revoke) + smoke-e2e CI v0.8.0 (admin.pat bind mount EACCES cascade into `unique_constraints_pkey`, default password policy 4-class trap, Login UI v2 healthcheck slow on small runners) + real-browser smoke v0.9.0 (seed user grant reconciliation gap on YAML evolution, browser→backend CORS preflight 401 mimicking JWT failure, Playwright self-signed Zitadel recipe) + admin-console `Failed to fetch` mixed-content v0.10.0 (`api` http vs `issuer` https from `--tlsMode disabled`; recreate, don't `docker start`) + v2.66→v4 upgrade runbook + API v1→v2 mapping) |
-| **windows-disk-cleanup** | ✓ | ✓ | Skill — frees Windows disk space without losing data: C#-backed inventory with coverage, duplicates proven by SHA256 with hardlinks discounted, zip×folder by CRC32, user-authorized rounds (manifest → reversible step → delete from list → re-measure), Google Drive cache cap-before-clear, old-profile rescue, WSL/Docker vhdx, sabotage self-test |
-| **wsl-windows-onboarding** | ✓ | ✓ | Skill — onboards a Windows box to WSL2: install the Ubuntu distro + a non-root sudo user, diagnose WSL, install rtk + Claude Code (global rtk hook), migrate projects into the Linux FS (copy→validate→delete, incl. a **tight-disk one-repo-at-a-time** loop for a nearly-full `C:` and the reserved-name `nul`/`\\?\` delete trap, CRLF/filemode "whole tree modified" diagnosis), and set up zsh + the Windows Terminal profile (icon + default) |
+| Plugin | Claude Code | Cursor | Codex CLI | Notes |
+|---|:---:|:---:|:---:|---|
+| **ansible-docker-backup-restore** | 1.3.4 | ✓ | ✓ | Skill — backup + restore of Dockerized services via Ansible, with a read-only backup-freshness check |
+| **cicd** | 2.38.1 | ✓ | ✓ | Skill — works on both platforms without changes |
+| **codereview** | 2.26.9 | ✓ | partial | Skills — adapted automatically by the installer Codex: As duas entradas carregam, mas o corpo exige Agent/model sonnet; equivalência completa não comprovada. |
+| **cors** | 1.1.1 | ✓ | ✓ | Skill — works on both platforms |
+| **criar-prd** | 0.1.1 | ✓ | ✓ | Command (Claude Code) / Skill (Cursor) |
+| **criar-task** | 0.1.1 | ✓ | ✓ | Command (Claude Code) / Skill (Cursor) |
+| **criar-techspec** | 0.1.1 | ✓ | ✓ | Command (Claude Code) / Skill (Cursor) |
+| **ddd** | 0.5.1 | ✓ | ✓ | Skill — works on both platforms |
+| **deploy** | 3.3.2 | ✓ | ✓ | Skill — works on both platforms |
+| **dev-script** | 0.6.1 | ✓ | ✓ | Skill — generates `dev.sh` (bash) + `dev.ps1` (PowerShell) per project |
+| **dotnet-wpf** | 1.8.0 | ✓ | partial | Skills — works on both platforms Codex: Agrupamento preservado: setup exige regras, hooks e configuração Claude; três skills isoladas não autorizam publicar o pacote inteiro. |
+| **executar-task** | 0.1.1 | ✓ | ✓ | Command (Claude Code) / Skill (Cursor) |
+| **git-housekeeping** | 0.1.1 | ✓ | ✓ | Skill — Python 3 stdlib scripts (read-only analysis + plan applier) and `git`; `gh` optional, to prove squash merges |
+| **hook-builder** | 0.1.2 | — | unsupported | Claude Code only — builds and proves Claude Code hooks; Python 3 stdlib scripts (probe, fixture harness, config lint) Codex: Sem equivalência do protocolo Claude comprovada dentro desta missão. |
+| **html-presentation** | 1.4.1 | ✓ | ✓ | Skill + agent — timed HTML slide deck from source material; the `deck-reviewer` agent is Claude Code only (Cursor falls back to a general-purpose reviewer) |
+| **kaizen-software** | 1.4.4 | ✓ | ✓ | Skill — Kaizen (continuous improvement) methodology for planning, implementing and maintaining software, plus teaching material; verifies by artifact, not by the tool's label |
+| **n8n-ops** | 1.0.2 | ✓ | ✓ | Use quando JÁ existe um n8n rodando e algo nele está errado, não provado ou invisível — não para desenhar fluxos na tela. Cron ou webhook que não disparou nem avisou ninguém, sem prova de que rodou; import que duplica, erra projectId/userId ou diz sucesso sem mudar nada; execution_entity/execution_data com valor estranho; ensaiar antes de ativar; alarme que deduplica sem esconder a segunda falha. `active` não prova que roda; exit 0 não prova que importou. Não use para Zapier, Make ou Airflow. |
+| **pdf-generation** | 1.6.3 | ✓ | ✓ | Skill — PDF template design + library selection (pdfmake/pdf-lib/PDFKit/Puppeteer/@react-pdf), modular sections, visual verification |
+| **release** | 2.0.2 | ✓ | ✓ | Skill (runs only when invoked) |
+| **retrofit-skill** | 0.8.0 | ✓ | partial | Command (Claude Code) / Skill (Cursor) Codex: O comando depende de <REPO>/plugins/ e caminhos de instalação do Claude; autocontenção no cache e integração com outros plugins não comprovadas. |
+| **retrofit-watch** | 0.3.3 | — | unsupported | Claude Code only — Stop hook + skill; Python 3 stdlib and `git` Codex: Watcher acoplado aos eventos e formato de transcript do Claude. |
+| **skill-quality-audit** | 0.9.1 | ✓ | ✓ | Skills — four skills in one plugin (audit entry point + 3 sisters that find each other); Python 3 stdlib script |
+| **statusline** | 1.5.2 | — | unsupported | Claude Code only (uses the Claude Code status line API) Codex: Comando setup escreve configurações e script exclusivos do Claude. |
+| **ticket** | 1.13.1 | — | ✓ | Claude Code only (`/ticket` slash command + Jira `acli` + atlassian MCP) |
+| **todo-to-github-issues** | 2.8.1 | ✓ | ✓ | Skill — Python scripts + `gh`; needs the sdd kit on the machine |
+| **ts-library** | 0.3.1 | ✓ | ✓ | Skill — TypeScript/Node library packaging, sensors, release and distribution; no scripts yet |
+| **unlovable** | 1.1.1 | ✓ | ✓ | Skill — works on both platforms |
+| **whisper-preprocess** | 1.1.1 | ✓ | ✓ | Skill — ffmpeg + OpenAI Whisper offline audio→text pipeline (silence removal, voice enhancement, segmentation, multilingual merge); decoupled stable-gain listening copy (no "picotamento") |
+| **windows-disk-cleanup** | 0.2.2 | ✓ | ✓ | Skill — frees Windows disk space without losing data: C#-backed inventory with coverage, duplicates proven by SHA256 with hardlinks discounted, zip×folder by CRC32, user-authorized rounds (manifest → reversible step → delete from list → re-measure), Google Drive cache cap-before-clear, old-profile rescue, WSL/Docker vhdx, sabotage self-test |
+| **wsl-windows-onboarding** | 0.4.4 | ✓ | ✓ | Skill — onboards a Windows box to WSL2: install the Ubuntu distro + a non-root sudo user, diagnose WSL, install rtk + Claude Code (global rtk hook), migrate projects into the Linux FS (copy→validate→delete, incl. a **tight-disk one-repo-at-a-time** loop for a nearly-full `C:` and the reserved-name `nul`/`\\?\` delete trap, CRLF/filemode "whole tree modified" diagnosis), and set up zsh + the Windows Terminal profile (icon + default) |
+| **zitadel-idp** | 0.20.1 | ✓ | ✓ | Skill — Zitadel self-hosted OIDC integration field guide (bootstrap, JWT, branding, 50 gotchas with proto-aligned v4.15 examples + CD cutover survival kit + Console UI human-user creation pitfalls + production-cutover v0.7.0 (backend `extra_hosts` for hairpin-NAT IdP, 3-layer SPA defense vs RT-reuse session revoke) + smoke-e2e CI v0.8.0 (admin.pat bind mount EACCES cascade into `unique_constraints_pkey`, default password policy 4-class trap, Login UI v2 healthcheck slow on small runners) + real-browser smoke v0.9.0 (seed user grant reconciliation gap on YAML evolution, browser→backend CORS preflight 401 mimicking JWT failure, Playwright self-signed Zitadel recipe) + admin-console `Failed to fetch` mixed-content v0.10.0 (`api` http vs `issuer` https from `--tlsMode disabled`; recreate, don't `docker start`) + v2.66→v4 upgrade runbook + API v1→v2 mapping) |
+
+Codex: **25 plugins / 28 workflows**, com smoke de distribuição e entrada no CLI 0.163.0
+em Ubuntu 24.04. Desktop, macOS e Windows: `not_checked`; versão mínima não estabelecida.
+Dependências, limitações e exclusões: [matriz detalhada](docs/codex/compatibility.md).
+O catálogo Codex é filtrado; a extensão de IDE está fora desta distribuição.
 
 ## Installation
 
@@ -89,6 +95,40 @@ The installer prompts for platform (Claude Code, Cursor, or Both) and where to p
 > **Cursor has no global skills directory** — only project-local `.cursor/skills/` is auto-loaded by the agent ([Cursor docs](https://cursor.com/docs/skills)). Run `python install.py` from inside each project where you want the skills available, and pick the **Project** option.
 >
 > The installer also offers a **Staging cache** option that copies the converted skills to `~/.cursor/skills/` as a master copy — handy as a source to mirror into projects, but Cursor itself will not pick those up directly.
+
+### Codex
+
+`python3 install.py` oferece **Codex** e mostra os comandos sem executá-los.
+A opção **Claude Code + Cursor** continua limitada às duas plataformas.
+Escolha plugins individualmente; um pacote com várias skills mantém seu
+agrupamento e não instala o restante da loja.
+
+Depois que esta revisão estiver publicada no repositório remoto:
+
+```bash
+codex plugin marketplace add j0ruge/skills
+codex plugin list --marketplace chewiesoft-marketplace --available --json
+codex plugin add cors@chewiesoft-marketplace
+```
+
+Antes da publicação, registre a raiz do clone candidato com
+`codex plugin marketplace add /caminho/absoluto/skills`. O remoto antigo não prova
+esta implementação. Inicie sessão nova após instalar e use `/skills` ou
+`$cors:cors`. `skill-quality-audit` expõe suas quatro skills; `release` exige
+`$release:release` explícito. Ferramentas e credenciais são requisitos do consumidor.
+
+Ciclo de manutenção, executado no seu perfil de teste:
+
+```bash
+codex plugin marketplace upgrade chewiesoft-marketplace --json
+codex plugin remove cors@chewiesoft-marketplace --json
+codex plugin add cors@chewiesoft-marketplace --json
+codex plugin marketplace remove chewiesoft-marketplace --json
+```
+
+Refresh Git e cópia instalada são camadas diferentes. Confira a sequência
+medida, hashes e limites em [verification.md](docs/codex/verification.md).
+A remoção da loja não deve ser tratada como desinstalação dos pacotes.
 
 ## Available Plugins
 
