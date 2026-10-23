@@ -440,3 +440,14 @@ Os artefatos locais foram reunidos em
 SHA256, bundle das quatro branches e logs/propostas/fixtures da sessão. Os perfis
 com autenticação, caches, metadados Git, links e nomes de configuração ou
 credenciais constam nas exclusões; os originais permanecem nas origens.
+
+### Prova do candidato com Kaizen integrado
+
+Depois do commit `f4b6af00b501ff6d4097eeb610620148f2c1184b`, a suíte passou
+em 61 testes gerais, 55 do auditor e 15 do scanner, sem skips. Os três cenários
+reais exportaram esse commit e conferiram 25 pacotes / **290 arquivos** por
+conjunto exato e SHA256. Kaizen 1.4.5 inclui a nova referência; a diferença para
+os 289 arquivos anteriores é esse único recurso. Instalação individual,
+descoberta, auditor da família instalada, sabotagem e ciclo Git passaram.
+`distribution-evidence.json` aponta esse candidato; o fechamento posterior
+altera somente evidências da raiz, preservando os pacotes.

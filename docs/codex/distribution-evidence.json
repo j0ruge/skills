@@ -1,7 +1,7 @@
 [
   {
     "client": "codex-cli 0.163.0",
-    "revision": "6bdc2ef3f6914e421786afaf11099918036ca37d",
+    "revision": "f4b6af00b501ff6d4097eeb610620148f2c1184b",
     "commands": [
       {
         "args": [
@@ -249,7 +249,7 @@
               "pluginId": "kaizen-software@chewiesoft-marketplace",
               "name": "kaizen-software",
               "marketplaceName": "chewiesoft-marketplace",
-              "version": "1.4.4",
+              "version": "1.4.5",
               "installed": false,
               "enabled": false,
               "source": {
@@ -733,8 +733,8 @@
           "pluginId": "kaizen-software@chewiesoft-marketplace",
           "name": "kaizen-software",
           "marketplaceName": "chewiesoft-marketplace",
-          "version": "1.4.4",
-          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/kaizen-software/1.4.4",
+          "version": "1.4.5",
+          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/kaizen-software/1.4.5",
           "authPolicy": "ON_INSTALL"
         }
       },
@@ -1440,16 +1440,19 @@
         }
       },
       "kaizen-software": {
-        "version": "1.4.4",
+        "version": "1.4.5",
         "hashes": {
           ".claude-plugin/plugin.json": {
-            "sha256": "d96c815e01ca03f245ccec36c189eaa1cc3ddad876b1db84cf0b22d91b0b9338"
+            "sha256": "fd9f63810221fe4a1c2bed8c4ed0980383d3e3d307e2a21358c07ec3c8b9f250"
           },
           "CHANGELOG.md": {
-            "sha256": "a9e6b8d722745321298f51b86606d5e16a9c8f0573ea60ff944d96e32ed1e273"
+            "sha256": "ee13307bdce7c7b2bba80d0869b5a8d536caebfa189d8386aa100a3635bb78f3"
           },
           "skills/kaizen-software/SKILL.md": {
-            "sha256": "5a61c4c56a152ea079f31bfd5e47dc92c3b2fc3d807351eddfe19d8c05cde9f7"
+            "sha256": "8e3b7081ef573e9505565a4cf78d1b4e686f8586a9a75393a53cf6162216a668"
+          },
+          "skills/kaizen-software/references/check-incremental.md": {
+            "sha256": "d8b10881dbbf849b3db1266b6073a1e6ec6cacfc75768a7d470b2c2ef1b088e5"
           },
           "skills/kaizen-software/references/desperdicios.md": {
             "sha256": "eda98668b150c085cf9f34586557c21fd7bc58f880b614a4a97299f6ba501c78"
@@ -1940,7 +1943,7 @@
   },
   {
     "client": "codex-cli 0.163.0",
-    "revision": "6bdc2ef3f6914e421786afaf11099918036ca37d",
+    "revision": "f4b6af00b501ff6d4097eeb610620148f2c1184b",
     "commands": [
       {
         "args": [
@@ -2121,8 +2124,8 @@
       }
     ],
     "git": {
-      "first": "ba49df582f867c216209e0af1fe856bc0813ab41",
-      "second": "8acd4a6a001be5a2eb335248e78f59cc675eeba1",
+      "first": "029220d22eca4ab63e9a933513d5e81b09503de8",
+      "second": "ba0c1e8a67b21fb11d9f05e8a599aed9c6e7054f",
       "old_version": "1.1.2",
       "version_after_refresh": "99.0.0",
       "old_cache_removed": true,
@@ -2132,7 +2135,7 @@
   },
   {
     "client": "codex-cli 0.163.0",
-    "revision": "6bdc2ef3f6914e421786afaf11099918036ca37d",
+    "revision": "f4b6af00b501ff6d4097eeb610620148f2c1184b",
     "commands": [
       {
         "args": [
