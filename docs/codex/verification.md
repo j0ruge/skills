@@ -414,3 +414,29 @@ foi atribuído um nome por suposição. Uma amostra por cenário não mede varia
 estatística. A prova cobre somente a etapa 0 no CLI Linux: não altera R01 nem
 comprova publicação, desktop, macOS ou Windows. Nenhum segredo foi copiado para
 as evidências; a autenticação foi montada apenas para leitura.
+
+## Integração da worktree Kaizen antes do merge
+
+O usuário pediu consolidar artefatos das worktrees e escolheu adaptar e revisar
+`9e53c38` antes de concluir o PR #6. O commit antigo propunha 1.3.7; a integração
+foi portada para 1.4.5 sobre 1.4.4, preservando byte a byte o texto anterior,
+descontadas somente a versão e a inserção do novo roteamento.
+
+A revisão independente encontrou um MEDIUM no exemplo antigo: severidade na
+identidade fazia redução parecer regressão. O caso ficou vermelho antes da
+correção. O exemplo adaptado separa identidade e severidade, preserva
+multiplicidade e compara limiares ordenados. A versão correta passou; cinco
+variantes sabotadas foram detectadas. Re-revisão independente sem novos achados.
+Os controles de aplicação cobriram troca de identidade com contagem igual,
+duplicação, gate obrigatório antigo reprovado e baseline não reproduzível.
+
+SQA local antes/depois sem erros, avisos, NOVO ou SUMIU. As INFO preexistentes
+permanecem. Descrição e plataformas foram preservadas; manifesto, catálogo,
+README e skill declaram 1.4.5. O arquivo de referência novo precisa entrar na
+próxima prova do pacote instalado; as evidências anteriores continuam históricas.
+
+Os artefatos locais foram reunidos em
+`/home/joruge/artefatos/skills-pr6-2026-10-22-1dspgoxp/`: manifesto com origem e
+SHA256, bundle das quatro branches e logs/propostas/fixtures da sessão. Os perfis
+com autenticação, caches, metadados Git, links e nomes de configuração ou
+credenciais constam nas exclusões; os originais permanecem nas origens.

@@ -6,6 +6,29 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-10-22 — Consolidar worktrees e integrar o Check incremental preservado
+
+- **Antes:** a worktree Kaizen guardava `9e53c38`, não integrado, enquanto a loja
+  evoluiu até 1.4.4. O procedimento de baseline estava ausente da versão atual;
+  o exemplo antigo tratava redução de severidade como achado novo.
+- **Depois:** Kaizen 1.4.5 preserva o texto atual e acrescenta a receita, com
+  identidade independente da severidade e comparação por limiar. Não houve
+  rebaixamento de versão ou remoção das lições posteriores ao commit antigo.
+- **Check:** leitura independente confirmou a lacuna explícita; o texto anterior
+  já permitia decisões corretas por inferência, sem falha de conduta reproduzida.
+  O falso bloqueio do exemplo foi reproduzido em RED e corrigido; cinco controles
+  mutados falharam, enquanto o exemplo correto passou. Re-revisão independente
+  do ajuste sem novos achados. SQA antes/depois sem novos findings.
+- **Preservação:** quatro branches e 2.714 arquivos da sessão foram reunidos em
+  `/home/joruge/artefatos/skills-pr6-2026-10-22-1dspgoxp/`, com origem e hashes no
+  manifesto e bundle Git verificado. Originais preservados; perfis temporários,
+  caches, metadados Git e arquivos com nomes de credenciais/configuração local
+  constam nas exclusões. A consolidação é local, sem publicar esses arquivos.
+- **Padronizado em:** Fase 2 de Kaizen e `references/check-incremental.md`;
+  metadados/README/CHANGELOG sincronizados em 1.4.5.
+
+---
+
 ## 2026-10-22 — Diagnósticos e transporte na segunda revisão do PR #6
 
 - **Antes:** YAML e mapas inválidos escapavam como traceback; a prova de
