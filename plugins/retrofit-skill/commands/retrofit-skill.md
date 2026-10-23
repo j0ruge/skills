@@ -1,7 +1,7 @@
 ---
 description: Apply non-obvious session lessons to a target skill in two modes — full (marketplace skill: bumps version, updates CHANGELOG/marketplace.json/README, commits and pushes) or lean (local skill in another repo: edits files + CHANGELOG and commits there, no bump or marketplace changes). Triggers — retrofit, skill-maintenance, session-lessons, lean-retrofit, local-skill.
 metadata:
-  version: 0.8.0
+  version: 0.9.0
 ---
 
 A régua deste retrofit é a família `skill-quality-audit`: um baseline antes de
@@ -266,6 +266,13 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
      claude plugin update <plugin>@<loja> --scope user   # escopo de projeto: na pasta dele, --scope project
      ```
 
+     O "updated from X to Y" da CLI diz a versão, não o conteúdo. Confira que o cache é o que
+     você publicou (o `.in_use` é um marcador do Claude Code, não do plugin):
+
+     ```bash
+     diff -r --exclude=.in_use <REPO>/plugins/<plugin> ~/.claude/plugins/cache/<loja>/<plugin>/<versão> && echo idêntico
+     ```
+
      Plugin que não está instalado não tem o que atualizar: diga isso. O agente não
      roda comando de barra, então termine pedindo ao usuário `/reload-plugins`, que
      ativa na sessão aberta o plugin atualizado (sem ele, só no próximo reinício).
@@ -315,12 +322,30 @@ python3 "$RS/scripts/audit_gate.py" "$B"           # NOVO / dívida / SUMIU / LE
   estiver, restaure.
 - **Cada `CLAIM` recebe um veredito:** `tem sensor` (comando, `arquivo:símbolo`
   ou URL), `derivar` (a fórmula no lugar do valor), `datar` (data e comando de
-  medição) ou `remover`. Um retrofit escreve "medido em 11/09/2026" e "91 linhas"
+  medição) ou `remover`. **`tem sensor` só depois de rodar o sensor e comparar o
+  valor:** citar o comando não prova o número, e a linha nova foi escrita nesta
+  sessão, sem segunda leitura. Afirmação sobre terceiro se confere no terceiro:
+  `apt-cache policy`, `gh api …/compare/A...B`, o mesmo trecho de código em duas
+  tags, a man page (*Armadilhas*, §9). Um retrofit escreve "medido em 11/09/2026" e "91 linhas"
   o tempo todo, e é exatamente isso que apodrece. A régua é a da skill
   `skill-claim-check`; carregue-a se algum claim ficar sem veredito óbvio. A
   lista é heurística e deixa passar afirmação em prosa (no ensaio, "600 segundos"
   não apareceu). Por isso o gate imprime `LER` com as linhas novas de cada
   arquivo: leia todas elas.
+- **Script que o retrofit tocou roda no interpretador real:** `--help`, um caso
+  válido e um inválido, com o `rc` esperado escrito antes de rodar. O B7 só prova
+  que o script compila (`compile()`, `bash -n`).
+- **Reference ou script novo pede o teste frio:** a skill copiada sozinha, sem o
+  harness em volta, mostra se ela depende de arquivo de fora da própria pasta.
+
+  ```bash
+  F=$(mktemp -d -p ~/.wt); cp -r "$ALVO" "$F/"
+  env -u HERMES_HOME python3 "$SQA" "$F/$(basename "$ALVO")" --no-uvx --no-changelog-required "${FLAGS[@]}"; echo "rc=$?"
+  ```
+
+  Só aqui entra o `--no-changelog-required`: a cópia isolada perde o
+  `<plugin>/CHANGELOG.md`, e o B5 sairia ERRO em toda skill do marketplace
+  (*Armadilhas*, §9).
 - **Teto de 2 ciclos** (corrigir e rodar o gate de novo). Se ainda sobrar `NOVO`,
   pare e relate em vez de insistir.
 

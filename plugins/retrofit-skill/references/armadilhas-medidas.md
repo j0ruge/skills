@@ -2,12 +2,12 @@
 
 O comando `retrofit-skill` traz cada regra em uma ou duas linhas. Aqui está a história medida
 que a justifica, movida do comando na 0.7.1 sem reescrita (as seções 7 e 8 nasceram aqui, na
-0.7.3). Leia a seção quando quiser contestar
+0.7.3, e a 9, na 0.9.0). Leia a seção quando quiser contestar
 ou afrouxar a regra correspondente: é o que se perde se ela sair.
 
 Sumário: 1. Symlink, não cópia · 2. Repo atrás do remoto · 3. Outra sessão no mesmo checkout ·
 4. Cheque dos quatro lugares · 5. O `--stat` como último sensor · 6. Orçamento da spec ·
-7. Windows chamando o WSL · 8. A cópia instalada atrás da fonte
+7. Windows chamando o WSL · 8. A cópia instalada atrás da fonte · 9. Sensor citado não é sensor rodado
 
 ## 1. `~/.claude/skills/<nome>` costuma ser um symlink, não uma cópia
 
@@ -150,3 +150,34 @@ agente não roda comando de barra. A CLI responde "Restart to apply changes"; o 
 se descreve como "Activate pending plugin changes in the current session", e o `/reload-skills`,
 como "Pick up skills added or changed on disk during this session" (texto do binário do Claude
 Code em 05/10/2026).
+
+## 9. Sensor citado não é sensor rodado
+
+Medido em 23/10/2026 na `windows-games-linux` 1.0.0, publicada no mesmo dia. O
+`audit_skill_quality.py` deu `rc=0` (0 erros, 0 avisos) e o `skills-ref` 0.1.1 validou a skill.
+O `--claims` listou 26 afirmações. Rodar o sensor de cada uma suspeita, em vez de só classificar,
+mudou o resultado:
+
+- **Falsa:** "o Ubuntu 24.04 parou no Lutris 0.5.18". O `apt-cache policy lutris` mostrou
+  `0.5.14-2` em `noble/multiverse`. A 0.5.18 da máquina tinha vindo de um `.deb` à mão. O auditor
+  classificou a linha como "versão fixa" e pediu "validado quando?", e uma data teria
+  satisfeito o pedido com o número errado.
+- **Confirmadas só rodando:**
+  - "a vkd3d-proton do Lutris é mais velha que a do Proton": `gh api …/compare/v2.14...<commit>`
+    deu 1330 commits à frente e 0 atrás;
+  - "o furo vale desde a 0.5.20": o sha256 da `get_executable()` é igual nas tags v0.5.20 e
+    v0.5.22;
+  - "o `comm` é truncado em 15 caracteres": o `prctl(PR_SET_NAME)` com um nome de 30 deixou 15 em
+    `/proc/self/comm`.
+
+Todas tinham sido escritas pelo agente na própria sessão de criação, que é a situação de toda
+linha nova de um retrofit. O JorUge aprovou essa análise para criação e retrofit de skill
+("gostei desta analise ao criar ou retrofitar uma skill"). Daí a 0.9.0: `tem sensor` exige o
+sensor rodado.
+
+Na mesma auditoria, o teste frio (a skill copiada sozinha, com `env -u HERMES_HOME`) deu `rc=1`
+só pelo B5: no marketplace, o CHANGELOG fica em `<plugin>/`, fora da pasta da skill. Com
+`--no-changelog-required`, deu `rc=0`. Por isso a flag entra no teste frio e continua fora do
+gate normal (CHANGELOG 0.7.2). E o `diff -r` do plugin contra o cache instalado mostrou que o
+Claude Code acrescenta um marcador `.in_use` à pasta: sem `--exclude=.in_use`, o diff nunca sai
+vazio.

@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.9.0] — 2026-10-23
+
+### `tem sensor` exige o sensor rodado
+
+Na `windows-games-linux` 1.0.0, publicada no mesmo dia, o `audit_skill_quality.py` deu `rc=0`
+(0 erros, 0 avisos) e o `skills-ref` 0.1.1 validou a skill. Mesmo assim, rodar o sensor de cada
+afirmação do `--claims` achou uma falsa ("o Ubuntu 24.04 parou no Lutris 0.5.18"; o
+`apt-cache policy` mostrou 0.5.14-2) e confirmou outras três que só estavam citadas. O JorUge
+aprovou essa análise para criação e retrofit de skill. O caso medido está em
+`references/armadilhas-medidas.md` §9.
+
+- **Gate da auditoria, `CLAIM`:** o veredito `tem sensor` só vale depois de rodar o sensor e
+  comparar o valor. Afirmação sobre terceiro se confere no terceiro (`apt-cache policy`,
+  `gh api …/compare`, o mesmo trecho de código em duas tags, a man page).
+- **Gate da auditoria, scripts:** um script tocado pelo retrofit roda no interpretador com
+  `--help`, um caso válido e um inválido, e o `rc` esperado é escrito antes. O B7 só compila.
+- **Gate da auditoria, teste frio:** reference ou script novo pede a skill copiada sozinha, com
+  `env -u HERMES_HOME`. Só ali entra o `--no-changelog-required`, porque a cópia isolada perde o
+  `<plugin>/CHANGELOG.md` (medido: `rc=1` só pelo B5, `rc=0` com a flag). O gate normal continua
+  sem ela (0.7.2).
+- **Depois do push:** `diff -r --exclude=.in_use` do plugin contra o cache instalado. A CLI diz a
+  versão, não o conteúdo, e o Claude Code grava um marcador `.in_use` na pasta do cache.
+
 ## [0.8.0] — 2026-10-05
 
 ### Depois do push, a loja e a sessão
