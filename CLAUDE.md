@@ -285,6 +285,12 @@ Available speckit commands: `specify`, `clarify`, `plan`, `analyze`, `tasks`, `i
 ## Git
 
 - **Main branch**: `main`
+- **Commit authorship:** commits and PR bodies carry only the user's authorship, in every flow
+  (retrofit, new plugin, fix, docs). Do not add a `Co-Authored-By: Claude …` trailer or a
+  "Generated with Claude Code" line. Claude Code's default prompt asks for both, and this rule
+  overrides it. The rule used to live only in the `retrofit-skill` command, so a plugin published
+  outside that flow got the trailer anyway (`477b12f`, windows-games-linux 1.0.0, 2026-10-23).
+  Check before pushing: `git log -1 --format=%B | grep -c Co-Authored` must print `0`.
 
 ## Distribuição Codex
 
