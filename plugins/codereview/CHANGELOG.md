@@ -2,6 +2,19 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.2] — 2026-10-23
+
+### A passada 6.10 vale também para DOCS
+
+- **O quê:** `skills/codereview/references/detection-passes.md`, regra crítica da 6.10: sai "except `EXCLUDED`
+  and `DOCS`", e a lista de categorias passa a incluir `DOCS`, como o `per-file-agent.md` já dizia ("whatever
+  its category (CODE / TESTS / CONFIG / UI_LIB / STYLES / DOCS)").
+- **Por quê:** era a dívida registrada na 2.26.10. As duas instruções se contradiziam, e a errada era a da 6.10:
+  o pre-scan não filtra extensão e lê toda linha acrescentada do diff. Medido em 2026-10-23, num repo
+  descartável: um `README.md` com uma chave no formato da AWS deu um achado `AWS Access Key ID` da regex e um
+  `aws-access-token` do gitleaks. Um agente que seguisse a 6.10 ao pé da letra pularia os segredos de um doc
+  que a sessão escreveu.
+
 ## [2.27.1] — 2026-10-23
 
 ### Modo `worktree`: os arquivos novos entram no cabeçalho e no probe de docstrings
