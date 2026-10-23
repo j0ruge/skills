@@ -367,3 +367,14 @@ Evidências brutas: diretório ignorado
 A revisão cobre o SHA citado; as mudanças posteriores exigem nova revisão
 independente para ampliar essa cobertura. R01 continua parcial por falta da prova
 desktop; macOS/Windows e versão mínima permanecem sem comprovação.
+
+### Distribuição após o commit da segunda resposta
+
+Os três cenários reais foram repetidos por `git archive HEAD` depois do commit
+`6bdc2ef3f6914e421786afaf11099918036ca37d`: 61 testes gerais aprovados,
+sem skips; 25 pacotes / 289 arquivos conferidos byte a byte. A evidência atual
+em `distribution-evidence.json` aponta esse commit, incluindo DDD 0.5.2, PDF
+generation 1.6.4 e release 2.0.3. Passaram instalação individual, descoberta das
+quatro irmãs, auditor da família instalado, sabotagem de template e ciclo Git de
+atualização/reinstalação/remoção. O fechamento posterior muda somente documentos
+da raiz e evidências, sem alterar esses pacotes.

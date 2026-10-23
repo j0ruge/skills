@@ -1,7 +1,7 @@
 [
   {
     "client": "codex-cli 0.163.0",
-    "revision": "cb7f95c6d68a99ef8fe8600fe21f7135326ca856",
+    "revision": "6bdc2ef3f6914e421786afaf11099918036ca37d",
     "commands": [
       {
         "args": [
@@ -141,7 +141,7 @@
               "pluginId": "ddd@chewiesoft-marketplace",
               "name": "ddd",
               "marketplaceName": "chewiesoft-marketplace",
-              "version": "0.5.1",
+              "version": "0.5.2",
               "installed": false,
               "enabled": false,
               "source": {
@@ -285,7 +285,7 @@
               "pluginId": "pdf-generation@chewiesoft-marketplace",
               "name": "pdf-generation",
               "marketplaceName": "chewiesoft-marketplace",
-              "version": "1.6.3",
+              "version": "1.6.4",
               "installed": false,
               "enabled": false,
               "source": {
@@ -303,7 +303,7 @@
               "pluginId": "release@chewiesoft-marketplace",
               "name": "release",
               "marketplaceName": "chewiesoft-marketplace",
-              "version": "2.0.2",
+              "version": "2.0.3",
               "installed": false,
               "enabled": false,
               "source": {
@@ -637,8 +637,8 @@
           "pluginId": "ddd@chewiesoft-marketplace",
           "name": "ddd",
           "marketplaceName": "chewiesoft-marketplace",
-          "version": "0.5.1",
-          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ddd/0.5.1",
+          "version": "0.5.2",
+          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/ddd/0.5.2",
           "authPolicy": "ON_INSTALL"
         }
       },
@@ -765,8 +765,8 @@
           "pluginId": "pdf-generation@chewiesoft-marketplace",
           "name": "pdf-generation",
           "marketplaceName": "chewiesoft-marketplace",
-          "version": "1.6.3",
-          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/pdf-generation/1.6.3",
+          "version": "1.6.4",
+          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/pdf-generation/1.6.4",
           "authPolicy": "ON_INSTALL"
         }
       },
@@ -781,8 +781,8 @@
           "pluginId": "release@chewiesoft-marketplace",
           "name": "release",
           "marketplaceName": "chewiesoft-marketplace",
-          "version": "2.0.2",
-          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/release/2.0.2",
+          "version": "2.0.3",
+          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/release/2.0.3",
           "authPolicy": "ON_INSTALL"
         }
       },
@@ -1179,16 +1179,16 @@
         }
       },
       "ddd": {
-        "version": "0.5.1",
+        "version": "0.5.2",
         "hashes": {
           ".claude-plugin/plugin.json": {
-            "sha256": "63cd09e743be6e3e8cea55aafba2c43fa5000eef2b635982a7d3a8c55c886117"
+            "sha256": "ffad793a0d432f9202856a18b41ab92770899893694b237c9802fb1a1256341b"
           },
           "CHANGELOG.md": {
-            "sha256": "62a9aeda2583eb1a7ff026141c97e7a48f1179bb2aa8c2a5623add8529d0f033"
+            "sha256": "84c005c6fda652af85e4ba4c499ee8b84b5302029464d7a9b6c8e6b023b5accf"
           },
           "skills/ddd/SKILL.md": {
-            "sha256": "cf4204722c96154d8ac645aae90b155d7aceb8a6c3f3665291a53214877d36a3"
+            "sha256": "8824c48e2efa65d6bf09aabb2b231ba790322d37a6ac49e112dd3d9770663bc0"
           },
           "skills/ddd/references/acceleration-tools.md": {
             "sha256": "8118ee46d98551e67cb5af5c52c51ca89e76f05d0fe42782b76058909dd25a45"
@@ -1489,16 +1489,16 @@
         }
       },
       "pdf-generation": {
-        "version": "1.6.3",
+        "version": "1.6.4",
         "hashes": {
           ".claude-plugin/plugin.json": {
-            "sha256": "53feb374f7c9a2c1cb1325e4b288791352fef271c8a004005d99689e5ccee2e5"
+            "sha256": "1060e5285ef1373ebaef6459fd82996f6315d1cc399f42af727b6fd905452a61"
           },
           "CHANGELOG.md": {
-            "sha256": "80615bf8ef28167127ea77ae4f41941e32b90532b9ffda3697fcf44d3ae31b20"
+            "sha256": "d9facb4e003e702e0ddd0e86282d6af8d6c35db95ae51b545b682aa96c169d7f"
           },
           "skills/pdf-generation/SKILL.md": {
-            "sha256": "03e737c0604f17f4d4069c80166e025e980e3fa1a72d6c3ac3387a13d5e41b81"
+            "sha256": "df654325ea6d53108ae9637046cad0fbb8187cd4cedac7279a50d12cab387daa"
           },
           "skills/pdf-generation/references/layout-analysis.md": {
             "sha256": "d41bbd8acaa24bd6cb1a399bb38822980b22c7e0c812dc73802101d22b677a6f"
@@ -1512,16 +1512,16 @@
         }
       },
       "release": {
-        "version": "2.0.2",
+        "version": "2.0.3",
         "hashes": {
           ".claude-plugin/plugin.json": {
-            "sha256": "621e94c91b55edadde0923ee5234fd60650e7809367fe1089f738618bfc2f9dc"
+            "sha256": "24be023480ff1b44eab025cd66a37361e156a2ec50f0210ca562f9531f34cd28"
           },
           "CHANGELOG.md": {
-            "sha256": "ffc3930593b85a8382ed2f36befdc6045456a737e3680c14292c7819d908f0b5"
+            "sha256": "6f45f58cd096e8c18134ca5d19ebfcdaba190656d41b8a540e6a7302e947939c"
           },
           "skills/release/SKILL.md": {
-            "sha256": "b3327be76462067418daf5117f8f9c80b6cd6cdc831a67a0decb3a944fd99ec5"
+            "sha256": "84858237ae424979a66ef1020c8c94e7edfa5bb90f307d273749bb62d5f7a37f"
           },
           "skills/release/agents/openai.yaml": {
             "sha256": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94"
@@ -1621,7 +1621,7 @@
             "sha256": "8f0d5e604d3f2f66f8327b534fe2990eb0381b679718a53808c7d9ee5e512f9b"
           },
           "CHANGELOG.md": {
-            "sha256": "84e02af4f81549f2c01a8f24c71af6dc51c1829d37fe65a6ea40a4f8ce5e1564"
+            "sha256": "e17ed78c5ebbd419cffa7dfe06f5ae20c7c74ff493f8a9fbe3de307c0cf1c0ce"
           },
           "skills/ticket/CHANGELOG.md": {
             "sha256": "e670f5882354c9b48fc7b388abe8cc275905314c55f26df6cbc4329ca73d6343"
@@ -1940,7 +1940,7 @@
   },
   {
     "client": "codex-cli 0.163.0",
-    "revision": "cb7f95c6d68a99ef8fe8600fe21f7135326ca856",
+    "revision": "6bdc2ef3f6914e421786afaf11099918036ca37d",
     "commands": [
       {
         "args": [
@@ -2121,8 +2121,8 @@
       }
     ],
     "git": {
-      "first": "8b0630126cd25b6fb06ff3d0c4351702d7b91288",
-      "second": "186dcabc1fc08f4cdc9e33dcd09f79f286fc86a3",
+      "first": "ba49df582f867c216209e0af1fe856bc0813ab41",
+      "second": "8acd4a6a001be5a2eb335248e78f59cc675eeba1",
       "old_version": "1.1.2",
       "version_after_refresh": "99.0.0",
       "old_cache_removed": true,
@@ -2132,7 +2132,7 @@
   },
   {
     "client": "codex-cli 0.163.0",
-    "revision": "cb7f95c6d68a99ef8fe8600fe21f7135326ca856",
+    "revision": "6bdc2ef3f6914e421786afaf11099918036ca37d",
     "commands": [
       {
         "args": [
