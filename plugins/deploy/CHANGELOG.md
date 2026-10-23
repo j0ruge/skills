@@ -2,9 +2,29 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
-## [3.3.2] — 2026-10-22
+## [3.3.3] — 2026-10-22
 
 Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
+## 2026-10-22 — A poda que roda é a da árvore promovida; recusa por disco se repete no mesmo head — bump 3.3.1 → [3.3.2]
+
+**Por quê:** a linha **4 — disk** afirmava, em geral, que a poda do deploy roda depois do build. Era
+um fato do `deploy.sh` do `lighthouse_project`, e deixou de ser no mesmo dia: o PR #125 (`5285865` na
+`develop`) passou a podar também antes do build, a reter por nome a `sha-*` no ar e a de rollback, e
+a recusar o build abaixo de um piso de disco (`git show 5285865:infra/staging/scripts/deploy.sh`,
+`passo "disco antes do build"` antes de `passo "build das imagens"`). Para quem promove, isso muda
+três coisas. Qual poda roda é a da árvore promovida, porque o agente roda o script do sha, então uma
+promoção que leva o conserto se beneficia dele no mesmo deploy. A falta de disco passa a ser uma
+recusa antes do build, que não mudou nada no ar e se resolve liberando disco e pedindo de novo o
+mesmo head. E liberar disco com `builder prune --all` não adianta (`cicd` 2.39.0, lição 119).
+
+**O quê:** `skills/staging/references/no-actions-agent.md`, linha **4 — disk** da tabela "What changes
+in each step": ler a poda na árvore promovida, os dois ramos (só depois do build; antes também, com
+a recusa e o caminho de volta pelo Step 7), e o aviso do `--all`. O `df -h /` antes do merge e a
+lição 118 ficam.
+
+**Dívida pré-existente, fora deste retrofit:** os INFO F1 (uma reference citada sem dizer quando ler)
+e F4 (sem evals) da `skill-quality-audit`.
 
 ## 2026-10-22 — Com agente no host, ler o disco do host antes do merge — bump 3.3.0 → [3.3.1]
 
