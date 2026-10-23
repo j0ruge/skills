@@ -1,11 +1,17 @@
 ---
 name: pdf-generation
 metadata:
-  version: 1.6.2
+  version: 1.6.4
 description: "PDF generation design toolkit — analyze a reference template, pick the library (pdfmake, pdf-lib, PDFKit, Puppeteer, @react-pdf), and design modular sections with conditional columns, revision control, and visual verification. Carries hard-won pdfmake pitfalls: column widths that silently push the table off the page, colorless SVG logos, glyph-eating ligatures. Triggers — PDF generation, PDF template, pdfmake, invoice/proposal/report PDF, column overflow, SVG logo in PDF."
 ---
 
 ## User Input
+
+A entrada desta invocação é o texto enviado pelo usuário junto ao pedido da skill.
+Hosts que preenchem o bloco abaixo oferecem a entrada por substituição. Se ele
+permanecer literal, como no Codex, use o texto da mensagem do usuário, incluindo
+versão, opções e caminhos informados. Só trate a entrada como vazia quando o
+usuário não tiver fornecido esses dados.
 
 ```text
 $ARGUMENTS

@@ -100,7 +100,9 @@ sem invocação, o agente respondeu `[]` à lista de skills de plugin expostas
 automaticamente, sem ferramentas. A guarda também reprova remover sua política
 `allow_implicit_invocation: false`. O campo Claude permanece útil nas outras
 plataformas. `ticket` mantém `argument-hint` para Claude, ignorado pelo Codex;
-os dois campos seguem avisados no gate, sem aceitação silenciosa na interseção.
+os dois campos geram aviso no gate local. Com o validador externo disponível,
+o auditor classifica a reprovação estrita como `G2 ERRO` e retorna 1. Esse limite
+não é aprovação externa nem herança de campos Codex; ver a segunda revisão abaixo.
 
 As exclusões e dependências dos 31 plugins estão em [compatibility.md](compatibility.md).
 Observações sobre exemplos de Zitadel e referências antigas de CORS apareceram
@@ -330,3 +332,38 @@ Plugins, conferir o conjunto publicado, instalar um plugin múltiplo e iniciar
 conversa nova. Invocar cada skill pelo nome mostrado, solicitar leitura de uma
 referência e interpretação de entrada segura. Registrar versão, sistema, nomes
 e recursos lidos. Até executar esse procedimento, R01 continua parcial.
+
+## Segunda revisão do Claude Code — 92ea30e
+
+O [comentário 6355341570](https://github.com/j0ruge/skills/pull/6#issuecomment-6355341570)
+trouxe cinco achados. A execução CLI terminou com retorno 0 e confirmou o mesmo
+SHA completo do head: `92ea30e91bb494165a9d87d8f0dc4d2a1d92660b`.
+
+- YAML malformado passa a `ValueError` com origem; `invocations` exige mapa e
+  valores textuais. Os dois consumidores relatam erros sem traceback e o gate
+  preserva diagnósticos anteriores. Não houve ampliação genérica de `except`.
+- DDD 0.5.2, PDF generation 1.6.4 e release 2.0.3 explicitam a mensagem do
+  usuário como entrada quando o host mantém o placeholder literal. A substituição
+  dos outros hosts permanece; release conserva sua política de invocação explícita.
+- A documentação agora distingue `A4 AVISO`/gate local de `G2 ERRO` externo.
+  Medição real por `uvx skills-ref==0.1.1`: release e ticket retornam 1 no auditor
+  padrão com validação externa. A regra de interseção é intencional e foi
+  preservada; não equivale a aprovação externa nem impede instalar o pacote.
+- A prova de descoberta usa bytes sem buffer de texto, acumula linhas JSONL e
+  mantém prazo global. Regressões cobrem duas respostas no mesmo burst, linhas
+  fragmentadas e EOF antes da resposta.
+- O instalador reutiliza `build_catalog` e recusa derivados divergentes, inclusive
+  omissão de plugin habilitado. Continua somente leitura e sem dependência YAML.
+
+Baseline: 53 testes gerais e 55 do auditor, sem falhas. Após as correções:
+61 testes gerais, 55 do auditor e 15 do scanner aprovados. Oito regressões novas;
+RED observado nos três defeitos de lógica e cinco mutantes detectados (YAML,
+forma de invocations, leitura em lote, fragmentos e catálogo divergente).
+SQA local antes/depois das três skills: nenhuma diferença de findings.
+Os dois erros externos descritos acima são limites conhecidos, não checks verdes.
+
+Evidências brutas: diretório ignorado
+`.superpowers/sdd/2026-10-22-codex-marketplace/pr/round2/`.
+A revisão cobre o SHA citado; as mudanças posteriores exigem nova revisão
+independente para ampliar essa cobertura. R01 continua parcial por falta da prova
+desktop; macOS/Windows e versão mínima permanecem sem comprovação.

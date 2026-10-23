@@ -68,9 +68,10 @@ python3 scripts/validate-versions.py
 git diff --check
 ```
 
-Dois avisos documentados permanecem: `disable-model-invocation` em release e
-`argument-hint` em ticket continuam úteis para Claude/Cursor e não são aceitos
-silenciosamente como campos Codex. A política explícita Codex é separada e testada.
+No gate local, `disable-model-invocation` em release e `argument-hint` em ticket
+geram avisos. O auditor externo estrito pode reprovar os mesmos campos com
+`G2 ERRO` e retorno 1; não são aceitos pela interseção Codex. A política explícita
+Codex é separada e testada. A segunda revisão detalha essa distinção.
 
 ## Lacunas e decisões da execução
 
@@ -193,3 +194,13 @@ Os 25 pacotes continuam sendo o conjunto publicado; codereview permanece excluí
 A revisão original de Claude Code e CodeRabbit cobre `467c75c`, não os commits de
 resposta. As evidências novas comprovam os checks do candidato integrado. R01,
 desktop/macOS/Windows e versão mínima permanecem com os limites já registrados.
+
+## Segunda resposta ao Claude Code
+
+Comentário 6355341570, sobre `92ea30e`: normalização de erros de entrada nos
+adaptadores; entrada textual explícita em DDD 0.5.2/PDF generation 1.6.4/release
+2.0.3; transporte JSONL sem dependência de buffer de texto; contrato do instalador
+reutilizado do gerador. O auditor mantém sua regra de interseção. Foi corrigida a
+documentação: release/ticket têm aviso local, mas `G2 ERRO` e retorno 1 externo,
+confirmados com `uvx skills-ref==0.1.1`. Checks e limites em
+`docs/codex/verification.md`; 61 testes gerais, 55 do auditor e 15 do scanner.

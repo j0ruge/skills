@@ -1,5 +1,9 @@
 # Changelog — pdf-generation
 
+## [1.6.4] — 2026-10-22
+
+A entrada textual da invocação é explícita quando o host não substitui `$ARGUMENTS`, inclusive no Codex. Preserva o bloco para os hosts que fazem a substituição e a checagem de entrada vazia.
+
 ## [1.6.3] — 2026-10-22
 
 Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.

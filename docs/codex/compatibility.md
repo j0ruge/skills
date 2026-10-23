@@ -49,7 +49,15 @@ manifesto derivado fixa `commands: []`.
 
 O campo `platforms` dos manifestos é uma declaração deste repositório. A filtragem
 real vem do catálogo Codex próprio, cuja precedência foi provada no CLI.
-Campos de frontmatter exclusivos de Claude/Cursor continuam avisados pelo auditor;
-Codex não herda esses campos. A política explícita de release é validada separadamente.
+Campos de frontmatter exclusivos de Claude/Cursor geram `A4 AVISO` no auditor local
+e avisos em `validate-versions.py`. Com o validador externo disponível
+(`--external auto`, via skills-ref/agentskills/uvx), release e ticket recebem
+`G2 ERRO` e o auditor retorna 1 por esses campos fora da spec. Esse limite de
+portabilidade é explícito: Codex não os herda, e a regra de interseção não foi
+relaxada. A política explícita de release é validada separadamente.
+
+As skills ddd, pdf-generation e release usam o texto da mensagem de invocação
+quando `$ARGUMENTS` permanece literal; os hosts que substituem o bloco continuam
+usando essa substituição. Comandos derivados já traduzem o placeholder.
 
 Nenhuma credencial é distribuída; os requisitos citam apenas nomes de variáveis.

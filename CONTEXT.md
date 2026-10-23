@@ -289,3 +289,12 @@ com 14 controles e auditoria sem erros/avisos; permanece excluído do catálogo 
 Resultados e limites continuam em `docs/codex/verification.md`. A revisão original
 cobre `467c75c`; os checks posteriores não substituem revisão independente do head
 novo. Desktop/macOS/Windows e versão mínima continuam sem comprovação.
+
+## Check da segunda revisão externa do PR #6
+
+O Claude Code terminou a rodada sobre `92ea30e`, com cinco achados no comentário
+6355341570. Correções e distinção entre gate local e auditor externo estão em
+`docs/codex/verification.md`. 61 testes gerais, 55 do auditor e 15 do scanner
+passaram; a auditoria externa de release/ticket reprova os campos de host com
+retorno 1, limite agora documentado sem relaxar a regra. A cobertura do Claude
+continua no SHA revisado, sem inferir aprovação das correções posteriores.

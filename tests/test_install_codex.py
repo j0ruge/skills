@@ -28,15 +28,26 @@ class InstallTests(unittest.TestCase):
 
     def catalog(self, names):
         entries = []
+        canonical = []
         for name in names:
             plugin = self.root / 'plugins' / name
             (plugin / '.claude-plugin').mkdir(parents=True, exist_ok=True)
             (plugin / '.claude-plugin/plugin.json').write_text(json.dumps(
-                dict(name=name, platforms=['claude-code', 'codex'])))
+                dict(name=name, version='1.0.0', description='Example skill',
+                     platforms=['claude-code', 'codex'])))
+            skill = plugin / 'skills' / name / 'SKILL.md'
+            skill.parent.mkdir(parents=True, exist_ok=True)
+            skill.write_text(f'---\nname: {name}\ndescription: Example skill\n---\nEntrada.\n')
+            canonical.append(dict(name=name, version='1.0.0', description='Example skill',
+                                  source='./plugins/'+name, platforms=['claude-code', 'codex']))
             entries.append(dict(name=name, source=dict(source='local', path='./plugins/'+name),
                                 policy=dict(installation='AVAILABLE', authentication='ON_INSTALL'),
                                 category='development'))
-        self.catalog_path.write_text(json.dumps(dict(name='chewiesoft-marketplace', plugins=entries)))
+        self.catalog_path.write_text(json.dumps(dict(name='chewiesoft-marketplace',
+                                                    interface=dict(displayName='Chewiesoft'), plugins=entries)))
+        source = self.root / '.claude-plugin/marketplace.json'
+        source.parent.mkdir(exist_ok=True)
+        source.write_text(json.dumps(dict(name='chewiesoft-marketplace', plugins=canonical)))
 
     def flow(self):
         output = io.StringIO()
@@ -91,6 +102,38 @@ class InstallTests(unittest.TestCase):
         self.catalog(['cors'])
         manifest = self.root / 'plugins/cors/.claude-plugin/plugin.json'
         manifest.write_text(json.dumps(dict(name='cors', platforms=['claude-code'])))
+        with self.assertRaises(ValueError):
+            self.flow()
+
+    def test_generator_and_installer_share_catalog_policy(self):
+        """Uma mudança do contrato gerado é lida pelo instalador sem nova regra."""
+        self.catalog(['cors'])
+        original = importlib.util.spec_from_file_location
+        def spec_with_policy(name, path):
+            spec = original(name, path)
+            execute = spec.loader.exec_module
+            def load(module):
+                execute(module)
+                build = module.build_catalog
+                def changed(root):
+                    result = build(root)
+                    result['plugins'][0]['policy']['authentication'] = 'ON_USE'
+                    return result
+                module.build_catalog = changed
+            spec.loader.exec_module = load
+            return spec
+        catalog = json.loads(self.catalog_path.read_text())
+        catalog['plugins'][0]['policy']['authentication'] = 'ON_USE'
+        self.catalog_path.write_text(json.dumps(catalog))
+        with mock.patch('importlib.util.spec_from_file_location', side_effect=spec_with_policy):
+            self.assertIn('codex plugin add cors@', self.flow())
+
+    def test_stale_subset_cannot_omit_an_enabled_plugin(self):
+        """Um catálogo parcial é rejeitado sem anunciar lista vazia válida."""
+        self.catalog(['cors'])
+        catalog = json.loads(self.catalog_path.read_text())
+        catalog['plugins'] = []
+        self.catalog_path.write_text(json.dumps(catalog))
         with self.assertRaises(ValueError):
             self.flow()
 

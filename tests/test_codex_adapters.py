@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import unittest
@@ -59,6 +60,54 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn('demo.md', result.stderr)
         self.assertFalse((self.plugin / 'codex-skills').exists())
+
+    def test_invalid_yaml_is_reported_without_traceback_or_writes(self):
+        """Um comando malformado produz diagnóstico normal nos dois consumidores."""
+        source = self.plugin / 'commands/ready.md'
+        source.write_text('---\ndescription: [\n---\nEntrada.\n')
+        result = self.adapter('--write')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('frontmatter inválido no comando ready', result.stderr)
+        self.assertNotIn('Traceback', result.stderr)
+        self.assertFalse((self.plugin / 'codex-skills').exists())
+
+    def test_invalid_invocations_are_reported_without_traceback_or_writes(self):
+        """Mapeamentos com forma ou valores errados falham antes de escrever."""
+        for value in [[], 'texto', None, {'/next:go': []}]:
+            with self.subTest(value=value):
+                self.mapping['commands'][0]['invocations'] = value
+                self.write_json(self.config, self.mapping)
+                result = self.adapter('--write')
+                self.assertEqual(result.returncode, 1)
+                self.assertIn('invocations', result.stderr)
+                self.assertNotIn('Traceback', result.stderr)
+                self.assertFalse((self.plugin / 'codex-skills').exists())
+
+    def test_validator_keeps_collected_diagnostics_when_adapter_input_is_invalid(self):
+        """O gate relata erros dos adaptadores junto dos avisos anteriores."""
+        scripts = self.root / 'scripts'
+        scripts.mkdir()
+        for name in ['validate-versions.py', 'codex-adapters.py', 'codex-marketplace.py']:
+            shutil.copy2(SCRIPT.parent / name, scripts / name)
+        shutil.copy2(SCRIPT.parent.parent / 'install.py', self.root / 'install.py')
+        self.assertEqual(subprocess.run([sys.executable, str(scripts / 'codex-marketplace.py'),
+                                        '--write'], capture_output=True).returncode, 0)
+        skill = self.plugin / 'skills/ready/SKILL.md'
+        skill.write_text(skill.read_text().replace('name: ready', 'name: other'))
+        source = self.plugin / 'commands/ready.md'
+        original = source.read_text()
+        for kind in ['yaml', 'invocations']:
+            with self.subTest(kind=kind):
+                source.write_text('---\ndescription: [\n---\nEntrada.\n' if kind == 'yaml' else original)
+                self.mapping['commands'][0]['invocations'] = {} if kind == 'yaml' else []
+                self.write_json(self.config, self.mapping)
+                result = subprocess.run([sys.executable, str(scripts / 'validate-versions.py')],
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, 1)
+                output = result.stdout + result.stderr
+                self.assertIn('other', output)
+                self.assertIn('distribuição Codex:', output)
+                self.assertNotIn('Traceback', output)
 
     def test_changed_source_and_resource_make_check_fail(self):
         self.assertEqual(self.adapter('--write').returncode, 0)

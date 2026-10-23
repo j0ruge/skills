@@ -5,6 +5,7 @@ Usa somente a biblioteca padrão. Execute: python install.py.
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import re
 import shutil
@@ -629,34 +630,14 @@ def _cursor_install_flow() -> None:
 
 def _codex_install_flow() -> None:
     """Apresenta comandos dos plugins publicados, sem executar instalações."""
-    catalog = json.loads((REPO_ROOT / '.agents/plugins/marketplace.json').read_text(encoding='utf-8'))
-    if (not isinstance(catalog, dict) or catalog.get('name') != 'chewiesoft-marketplace'
-            or not isinstance(catalog.get('plugins'), list)):
-        raise ValueError('Catálogo Codex inválido: confira name e plugins.')
-    names = []
-    for entry in catalog['plugins']:
-        if not isinstance(entry, dict):
-            raise ValueError('Entrada inválida no catálogo Codex.')
-        name = entry.get('name')
-        if (not isinstance(name, str) or not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', name)
-                or name in names):
-            raise ValueError(f'Nome de plugin Codex inválido ou duplicado: {name!r}')
-        source = entry.get('source')
-        if source != {'source': 'local', 'path': f'./plugins/{name}'}:
-            raise ValueError(f'Fonte inválida para o plugin Codex {name}.')
-        if entry.get('policy') != {'installation': 'AVAILABLE', 'authentication': 'ON_INSTALL'}:
-            raise ValueError(f'Política inválida para o plugin Codex {name}.')
-        plugin = REPO_ROOT / 'plugins' / name
-        manifest_path = plugin / '.claude-plugin/plugin.json'
-        if (not plugin.resolve().is_relative_to(REPO_ROOT.resolve())
-                or not manifest_path.resolve().is_relative_to(plugin.resolve())):
-            raise ValueError(f'Fonte fora do pacote para o plugin Codex {name}.')
-        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-        if (not isinstance(manifest, dict) or manifest.get('name') != name
-                or not isinstance(manifest.get('platforms'), list)
-                or 'codex' not in manifest['platforms']):
-            raise ValueError(f'Plugin {name} não declara suporte Codex consistente.')
-        names.append(name)
+    spec = importlib.util.spec_from_file_location(
+        'codex_marketplace', Path(__file__).resolve().parent / 'scripts/codex-marketplace.py')
+    marketplace = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(marketplace)
+    catalog = marketplace.read_json(marketplace.inside(REPO_ROOT, REPO_ROOT / marketplace.CATALOG))
+    if catalog != marketplace.build_catalog(REPO_ROOT):
+        raise ValueError('Catálogo Codex ausente ou desatualizado; execute codex-marketplace.py --write.')
+    names = [entry['name'] for entry in catalog['plugins']]
     if not names:
         print('  Nenhum plugin Codex publicado neste catálogo.')
         return

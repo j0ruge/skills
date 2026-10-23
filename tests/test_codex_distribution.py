@@ -3,12 +3,14 @@
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import shutil
 import select
 import subprocess
 import tarfile
 import tempfile
+import time
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -78,23 +80,30 @@ class DistributionTests(unittest.TestCase):
 
     def discovered_skills(self):
         process = subprocess.Popen(self.sandbox('app-server', '--stdio'), stdin=subprocess.PIPE,
-                                   stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+                                   stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0)
         try:
             for message in [dict(id=1, method='initialize',
                                  params=dict(clientInfo=dict(name='distribution-test', version='1'))),
                             dict(method='initialized'),
                             dict(id=2, method='skills/list', params=dict(cwds=['/tmp/work'], forceReload=True))]:
-                process.stdin.write(json.dumps(message)+'\n')
+                process.stdin.write((json.dumps(message)+'\n').encode('utf-8'))
                 process.stdin.flush()
-            while select.select([process.stdout], [], [], 10)[0]:
-                line = process.stdout.readline()
-                if not line:
+            pending = b''
+            deadline = time.monotonic() + 10
+            while (remaining := deadline - time.monotonic()) > 0:
+                if not select.select([process.stdout], [], [], remaining)[0]:
                     break
-                message = json.loads(line)
-                if message.get('id') == 2:
-                    rows = message['result']['data']
-                    self.assertFalse(any(row['errors'] for row in rows), rows)
-                    return sorted(s['name'] for row in rows for s in row['skills'] if s.get('pluginId'))
+                chunk = os.read(process.stdout.fileno(), 65536)
+                if not chunk:
+                    break
+                pending += chunk
+                while b'\n' in pending:
+                    line, pending = pending.split(b'\n', 1)
+                    message = json.loads(line)
+                    if message.get('id') == 2:
+                        rows = message['result']['data']
+                        self.assertFalse(any(row['errors'] for row in rows), rows)
+                        return sorted(s['name'] for row in rows for s in row['skills'] if s.get('pluginId'))
             self.fail('skills/list não respondeu')
         finally:
             process.terminate()

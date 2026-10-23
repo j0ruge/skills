@@ -1,11 +1,17 @@
 ---
 name: ddd
 metadata:
-  version: 0.5.0
+  version: 0.5.2
 description: Domain-Driven Design toolkit — analyzes codebases for DDD violations, guides strategic design (event storming, context mapping), generates legacy→DDD migration specs. Language-agnostic. Synthesizes Evans + Vernon + modular-monolith practice. Triggers — DDD, bounded context, aggregate, event storming, hexagonal, legacy migration, architecture review.
 ---
 
 ## User Input
+
+A entrada desta invocação é o texto enviado pelo usuário junto ao pedido da skill.
+Hosts que preenchem o bloco abaixo oferecem a entrada por substituição. Se ele
+permanecer literal, como no Codex, use o texto da mensagem do usuário, incluindo
+versão, opções e caminhos informados. Só trate a entrada como vazia quando o
+usuário não tiver fornecido esses dados.
 
 ```text
 $ARGUMENTS

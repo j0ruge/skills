@@ -391,7 +391,7 @@
     {
       "name": "release",
       "source": "./plugins/release",
-      "version": "2.0.2",
+      "version": "2.0.3",
       "description": "Create a GitHub Release with categorized English notes from git history, on any stack. Follows the repo's tag series (`v1.2.0`, `<package>-v1.2.0`), covers a first release, and edits the notes of an already-published version instead of tagging it twice. Triggers — release, release notes, GitHub Release, gh release, changelog, semver, monorepo.",
       "category": "development",
       "keywords": [
@@ -444,7 +444,7 @@
     {
       "name": "ddd",
       "source": "./plugins/ddd",
-      "version": "0.5.1",
+      "version": "0.5.2",
       "description": "Domain-Driven Design toolkit — analyzes codebases for DDD violations, guides strategic design (event storming, context mapping), generates legacy→DDD migration specs. Language-agnostic. Synthesizes Evans + Vernon + modular-monolith practice. Triggers — DDD, bounded context, aggregate, event storming, hexagonal, legacy migration, architecture review.",
       "category": "architecture",
       "keywords": [
@@ -634,7 +634,7 @@
     {
       "name": "pdf-generation",
       "source": "./plugins/pdf-generation",
-      "version": "1.6.3",
+      "version": "1.6.4",
       "description": "PDF generation design toolkit — analyze a reference template, pick the library (pdfmake, pdf-lib, PDFKit, Puppeteer, @react-pdf), and design modular sections with conditional columns, revision control, and visual verification. Carries hard-won pdfmake pitfalls: column widths that silently push the table off the page, colorless SVG logos, glyph-eating ligatures. Triggers — PDF generation, PDF template, pdfmake, invoice/proposal/report PDF, column overflow, SVG logo in PDF.",
       "category": "development",
       "keywords": [

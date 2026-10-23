@@ -53,7 +53,10 @@ def build_artifacts(root):
             pieces = source.split('---', 2)
             if len(pieces) != 3 or pieces[0].strip():
                 raise ValueError(f'frontmatter ausente no comando {name}')
-            metadata = yaml.safe_load(pieces[1])
+            try:
+                metadata = yaml.safe_load(pieces[1])
+            except yaml.YAMLError as exc:
+                raise ValueError(f'frontmatter inválido no comando {name}: {exc}') from exc
             if not isinstance(metadata, dict) or not isinstance(metadata.get('description'), str):
                 raise ValueError(f'description ausente no comando {name}')
             body = pieces[2].lstrip().replace('$ARGUMENTS', 'entrada do usuário nesta invocação')
@@ -79,7 +82,10 @@ def build_artifacts(root):
                 mapped_templates = {Path(r['source']).name for r in resources}
                 if source_templates == mapped_templates:
                     body = body.replace('${CLAUDE_PLUGIN_ROOT}/templates/', 'assets/')
-            for old, new in command.get('invocations', {}).items():
+            invocations = command.get('invocations', {})
+            if not isinstance(invocations, dict):
+                raise ValueError(f'invocations deve ser objeto no comando {name}')
+            for old, new in invocations.items():
                 if not isinstance(old, str) or not isinstance(new, str) or not new.startswith('$'):
                     raise ValueError('invocations deve mapear nomes para $plugin:skill')
                 body = body.replace(old, new)

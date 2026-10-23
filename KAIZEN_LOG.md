@@ -6,6 +6,24 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-10-22 — Diagnósticos e transporte na segunda revisão do PR #6
+
+- **Antes:** YAML e mapas inválidos escapavam como traceback; a prova de
+  descoberta misturava `select` com buffer de texto; o instalador duplicava o
+  contrato gerado. Três skills dependiam de placeholder sem explicar a entrada
+  no Codex. A documentação confundia aviso local com aprovação externa.
+- **Depois:** erros de entrada normalizados na origem, JSONL acumulado em bytes,
+  contrato do gerador reutilizado e entrada textual explícita. A interseção do
+  auditor permanece estrita; a documentação registra `G2 ERRO` externo.
+- **Check:** baseline 53 gerais/55 auditor; depois 61 gerais/55 auditor/15 scanner.
+  Oito regressões e cinco mutantes detectados. SQA das três skills sem diferença
+  de findings. Auditor externo real de release e ticket retornou 1, como agora
+  documentado; esse resultado não é tratado como check verde.
+- **Padronizado em:** adaptadores, instalador, testes de transporte e instruções
+  canônicas das três skills; rastreabilidade em `docs/codex/verification.md`.
+
+---
+
 ## 2026-10-22 — Origem da revisão separada da conta que publica
 
 - **Tipo:** padronização de duas lições verificadas, autorizada pelo usuário.
