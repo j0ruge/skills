@@ -2,9 +2,11 @@
 
 ## Atualizar pela release do GitHub
 
-O repositório do Ubuntu 24.04 parou no Lutris 0.5.18. As releases novas saem como `.deb` em
+O Ubuntu 24.04 traz o Lutris 0.5.14 (`0.5.14-2` em `noble/multiverse`, conferido em 2026-10-23
+com `apt-cache policy lutris`). As releases novas saem como `.deb` em
 https://github.com/lutris/lutris/releases (em 2026-10-23, a mais recente era a v0.5.22, de
-2026-02-25).
+2026-02-25). Um `lutris` mais novo que o do repositório veio de um `.deb` instalado à mão, e o
+`apt-cache policy` mostra isso: a versão aparece só em `/var/lib/dpkg/status`.
 
 ```bash
 gh api repos/lutris/lutris/releases --jq '.[0:3][] | {tag: .tag_name, date: .published_at, assets: [.assets[].name]}'
@@ -59,7 +61,8 @@ for i in json.load(sys.stdin)["results"]:
 ```
 
 Prefira o script que baixa o instalador oficial "latest" e tem menos winetricks. O `dotnet48`,
-por exemplo, leva muitos minutos e nem sempre é necessário. Desconfie de script com `.msi` de
+por exemplo, é lento (o próprio script do Lutris avisa "This will take a while") e nem sempre é
+necessário: o MTG Arena rodou sem ele. Desconfie de script com `.msi` de
 versão fixa: o jogo fica preso nela. Abra o instalador com
 `setsid nohup lutris lutris:install/<slug-do-script> > log 2>&1 &`, guardando o stdout, que é o
 único lugar onde a saída do Wine aparece.

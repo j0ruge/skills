@@ -5,7 +5,7 @@ license: MIT
 compatibility: Linux. Verificado em Ubuntu 24.04 (X11/GNOME, Intel/Mesa) com Lutris 0.5.22, umu-launcher 1.4.4 e GE-Proton11-11 em 2026-10-23. Scripts em bash e python3; diagnose.sh importa os módulos Python do próprio Lutris (/usr/lib/python3/dist-packages).
 metadata:
   author: JorUge
-  version: "1.0.0"
+  version: "1.0.1"
   hermes:
     tags:
       - Gaming
@@ -33,10 +33,12 @@ tempo e esconde a causa.
 - **No teste final, não mate o jogo.** Se o jogo abriu pelo caminho real (o Lutris), deixe-o
   aberto para o usuário.
 - **Para encerrar um processo de teste, use `pkill -x <nome.exe>`, nunca `pkill -f`.** O `-f` casa
-  com a linha de comando do seu próprio shell, que contém o mesmo nome, e mata a sessão. O `comm`
-  do processo é truncado em 15 caracteres.
+  com a linha de comando do seu próprio shell, que contém o mesmo nome, e mata a sessão. O `-x`
+  compara com o `comm` do processo, que o kernel trunca em 15 caracteres (`TASK_COMM_LEN` = 16
+  com o byte nulo, `man 5 proc_pid_comm`). Se o nome do exe for mais longo, use os 15 primeiros.
 - **`sudo` não funciona pelo `!` do Claude Code**, porque não há TTY. Use `pkexec sh -c '…'`: o
-  GNOME abre a janela de senha. Detalhes em `references/instalar-atualizar-lutris.md`.
+  GNOME abre a janela de senha. Antes de instalar pacotes ou atualizar o Lutris, leia
+  `references/instalar-atualizar-lutris.md`.
 
 ## Fluxo
 
@@ -44,15 +46,15 @@ tempo e esconde a causa.
    `scripts/diagnose.sh <parte-do-slug>` (ex.: `magic`). O script é somente leitura e mostra a
    versão do Lutris, a config do jogo, o runner efetivo, o estado das DLLs gráficas no prefixo
    (symlink, `.orig`, origem), os logs de crash e o que faltar de i386.
-2. **Achar onde o jogo morre.** Leia o log da camada mais funda que chegou a escrever algo. A
-   tabela de onde cada log fica está em `references/onde-ficam-os-logs.md`. Num jogo Unity, a
+2. **Achar onde o jogo morre.** Leia o log da camada mais funda que chegou a escrever algo. Se
+   não souber onde fica o log de uma camada, leia `references/onde-ficam-os-logs.md`. Num jogo Unity, a
    última linha do `Player.log` antes de `Crash!!!` e a lista de módulos carregados dizem qual
    API gráfica estava em uso (`wined3d.dll` = wined3d; `d3d11.dll` sem `wined3d.dll` = DXVK).
 3. **Teste A/B fora do Lutris.** Rode o `.exe` do jogo direto pelo umu com
    `scripts/ab-launch.sh`, com o mesmo `PROTONPATH` e o mesmo modo gráfico. Ele responde
    `RUNNING`, `CRASH` ou `EXITED`.
    - **Funciona direto e quebra pelo Lutris:** a culpa é do env ou das DLLs que o Lutris injeta.
-     Vá para `references/lutris-umu-dll-managers.md`.
+     Antes de corrigir, leia `references/lutris-umu-dll-managers.md`.
    - **Quebra nos dois:** o problema está no Proton, no driver ou no jogo. Troque **uma**
      variável por vez (`--wined3d` ↔ DXVK, versão do Proton, `--overrides`).
 4. **Isolar a variável.** Some ao teste direto, uma por vez, as diferenças do env do Lutris (o
@@ -63,24 +65,25 @@ tempo e esconde a causa.
    a esse jogo.
 6. **Validar pelo caminho real:** `lutris lutris:rungameid/<id>` (o id está em `pga.db`, e o
    `diagnose.sh` mostra) e confirmar que o jogo passa do ponto onde morria **e continua de pé**
-   depois de uns 30 s. Depois rode de novo o `diagnose.sh` para ver as DLLs no estado esperado.
+   depois de uns 30 s. O prazo é heurística: no caso de origem o crash vinha em 6 a 14 s, e 30 s
+   dá margem. Depois rode de novo o `diagnose.sh` para ver as DLLs no estado esperado.
 
 ## Sintoma → causa conhecida
 
-| Sintoma | Causa provável | Onde está o detalhe |
+| Sintoma | Causa provável | Detalhe |
 |---|---|---|
-| Abre e fecha em 5–15 s pelo Lutris, mas roda direto pelo umu | Lutris ≥0.5.20 com runner "GE-Proton (Latest)" injeta DXVK/VKD3D/NVAPI próprios num prefixo Proton | `references/lutris-umu-dll-managers.md` |
+| Abre e fecha em segundos pelo Lutris (6 a 14 s no caso de origem), mas roda direto pelo umu | Lutris 0.5.20 a 0.5.22 com runner "GE-Proton (Latest)" aplica os managers DXVK/VKD3D/NVAPI dele num prefixo Proton (código igual nas três; execução testada na 0.5.22) | Ao confirmar, leia `references/lutris-umu-dll-managers.md` |
 | Unity: `Crash!!!` logo após `[Subsystems] Discovering subsystems` | Sonda de D3D12 quebrando (mistura de vkd3d com dxgi do wined3d ou override `d3d12=n`) | idem |
-| Lutris avisa `i386 libGL.so.1 missing` / `libgnutls.so.30 missing` | Faltam libs de 32 bits; no Ubuntu 24.04 o pacote é `libgnutls30t64:i386` | `references/instalar-atualizar-lutris.md` |
+| Lutris avisa `i386 libGL.so.1 missing` / `libgnutls.so.30 missing` | Faltam libs de 32 bits; no Ubuntu 24.04 o pacote é `libgnutls30t64:i386` | Ao instalar, leia `references/instalar-atualizar-lutris.md` |
 | `Battle.net source is unavailable … protobuf` ao abrir o Lutris | Falta `python3-protobuf` (só aviso) | idem |
 | Ícone na área de trabalho falha no fim da instalação (`FileNotFoundError … .desktop`) | Bug cosmético do Lutris; o jogo instala mesmo assim | idem |
-| `lutris.log`: `Game still running … Stopping` | Normal em jogos com launcher que chama o jogo e sai; não é a causa | `references/onde-ficam-os-logs.md` |
+| `lutris.log`: `Game still running … Stopping` | Normal em jogos com launcher que chama o jogo e sai; não é a causa | Ao ler logs, `references/onde-ficam-os-logs.md` |
 
 ## Casos registrados
 
-- **MTG Arena, Intel UHD 770, Lutris 0.5.22, GE-Proton11-11, out/2026:**
-  `references/caso-mtg-arena-2026-10.md`. Contém a sequência de evidências, os comandos e o que
-  ficou em aberto.
+- **MTG Arena, Intel UHD 770, Lutris 0.5.22, GE-Proton11-11, out/2026:** se o jogo for Unity ou o
+  sintoma for parecido, leia `references/caso-mtg-arena-2026-10.md`, com a sequência de
+  evidências, os comandos e o que ficou em aberto.
 
 Ao resolver um jogo novo com causa nova, registre o caso em `references/caso-<jogo>-<aaaa-mm>.md`,
 acrescente a linha na tabela acima e anote no `CHANGELOG.md` do plugin.
