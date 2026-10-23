@@ -1,0 +1,243 @@
+{
+  "measured_at_utc": "2026-10-23T02:17:55Z",
+  "client": "codex-cli 0.163.0",
+  "platform": "Ubuntu 24.04 x86_64",
+  "scope": "argument_interpretation_only",
+  "model_selection": "runtime_default",
+  "resolved_model": null,
+  "model_identification_note": "O stream JSONL não informou o identificador do modelo.",
+  "source_revision": "86bf29ca74f2bf08f6384d5be29e862d8d857d60",
+  "baseline_failure_reproduced": false,
+  "conclusion": "A release 2.0.3 interpretou os seis casos; os dois controles de 2.0.2 também passaram. Nenhuma alteração adicional da skill foi necessária.",
+  "isolation": {
+    "installed_package": true,
+    "fresh_process_per_case": true,
+    "fixture_read_only": true,
+    "personal_config_loaded": false,
+    "auth_read_only_mount": true,
+    "git_and_gh_blocked": true
+  },
+  "coverage_limits": [
+    "Interpretação da etapa 0; publicação não executada.",
+    "Uma amostra por cenário; não mede variabilidade estatística.",
+    "CLI Linux; sem nova evidência de desktop, macOS ou Windows."
+  ],
+  "results": [
+    {
+      "variant": "previous",
+      "revision": "92ea30e91bb494165a9d87d8f0dc4d2a1d92660b",
+      "version": "2.0.2",
+      "skill_hash": {
+        "sha256": "b3327be76462067418daf5117f8f9c80b6cd6cdc831a67a0decb3a944fd99ec5"
+      },
+      "case": "version-and-path",
+      "input": "3.4.5 --path packages/api/",
+      "expected": [
+        "3.4.5",
+        "packages/api/",
+        false
+      ],
+      "actual": [
+        "3.4.5",
+        "packages/api/",
+        false
+      ],
+      "passed": true,
+      "next_step": "Etapa 1: detectar o nome do projeto (somente previsto; não executado).",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/release/2.0.2/skills/release/SKILL.md'"
+      ],
+      "error_count": 0,
+      "forbidden_call_count": 0
+    },
+    {
+      "variant": "previous",
+      "revision": "92ea30e91bb494165a9d87d8f0dc4d2a1d92660b",
+      "version": "2.0.2",
+      "skill_hash": {
+        "sha256": "b3327be76462067418daf5117f8f9c80b6cd6cdc831a67a0decb3a944fd99ec5"
+      },
+      "case": "empty",
+      "input": "",
+      "expected": [
+        null,
+        null,
+        true
+      ],
+      "actual": [
+        null,
+        null,
+        true
+      ],
+      "passed": true,
+      "next_step": "Perguntar ao usuário qual versão usar antes de prosseguir.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/release/2.0.2/skills/release/SKILL.md'"
+      ],
+      "error_count": 0,
+      "forbidden_call_count": 0
+    },
+    {
+      "variant": "current",
+      "revision": "86bf29ca74f2bf08f6384d5be29e862d8d857d60",
+      "version": "2.0.3",
+      "skill_hash": {
+        "sha256": "84858237ae424979a66ef1020c8c94e7edfa5bb90f307d273749bb62d5f7a37f"
+      },
+      "case": "version-and-path",
+      "input": "3.4.5 --path packages/api/",
+      "expected": [
+        "3.4.5",
+        "packages/api/",
+        false
+      ],
+      "actual": [
+        "3.4.5",
+        "packages/api/",
+        false
+      ],
+      "passed": true,
+      "next_step": "Etapa 1: detectar o nome do projeto (prevista, não executada).",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/release/2.0.3/skills/release/SKILL.md'"
+      ],
+      "error_count": 0,
+      "forbidden_call_count": 0
+    },
+    {
+      "variant": "current",
+      "revision": "86bf29ca74f2bf08f6384d5be29e862d8d857d60",
+      "version": "2.0.3",
+      "skill_hash": {
+        "sha256": "84858237ae424979a66ef1020c8c94e7edfa5bb90f307d273749bb62d5f7a37f"
+      },
+      "case": "version-only",
+      "input": "6.7.8",
+      "expected": [
+        "6.7.8",
+        null,
+        false
+      ],
+      "actual": [
+        "6.7.8",
+        null,
+        false
+      ],
+      "passed": true,
+      "next_step": "Etapa 1: detectar o nome do projeto (prevista, não executada).",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/release/2.0.3/skills/release/SKILL.md'"
+      ],
+      "error_count": 0,
+      "forbidden_call_count": 0
+    },
+    {
+      "variant": "current",
+      "revision": "86bf29ca74f2bf08f6384d5be29e862d8d857d60",
+      "version": "2.0.3",
+      "skill_hash": {
+        "sha256": "84858237ae424979a66ef1020c8c94e7edfa5bb90f307d273749bb62d5f7a37f"
+      },
+      "case": "path-only",
+      "input": "--path tools/app/",
+      "expected": [
+        null,
+        "tools/app/",
+        true
+      ],
+      "actual": [
+        null,
+        "tools/app/",
+        true
+      ],
+      "passed": true,
+      "next_step": "Perguntar ao usuário qual versão usar antes de prosseguir.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/release/2.0.3/skills/release/SKILL.md'"
+      ],
+      "error_count": 0,
+      "forbidden_call_count": 0
+    },
+    {
+      "variant": "current",
+      "revision": "86bf29ca74f2bf08f6384d5be29e862d8d857d60",
+      "version": "2.0.3",
+      "skill_hash": {
+        "sha256": "84858237ae424979a66ef1020c8c94e7edfa5bb90f307d273749bb62d5f7a37f"
+      },
+      "case": "empty",
+      "input": "",
+      "expected": [
+        null,
+        null,
+        true
+      ],
+      "actual": [
+        null,
+        null,
+        true
+      ],
+      "passed": true,
+      "next_step": "Perguntar ao usuário qual versão usar antes de prosseguir.",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/release/2.0.3/skills/release/SKILL.md'"
+      ],
+      "error_count": 0,
+      "forbidden_call_count": 0
+    },
+    {
+      "variant": "current",
+      "revision": "86bf29ca74f2bf08f6384d5be29e862d8d857d60",
+      "version": "2.0.3",
+      "skill_hash": {
+        "sha256": "84858237ae424979a66ef1020c8c94e7edfa5bb90f307d273749bb62d5f7a37f"
+      },
+      "case": "option-first",
+      "input": "--path packages/ui/ 4.5.6",
+      "expected": [
+        "4.5.6",
+        "packages/ui/",
+        false
+      ],
+      "actual": [
+        "4.5.6",
+        "packages/ui/",
+        false
+      ],
+      "passed": true,
+      "next_step": "Etapa 1: detectar o nome do projeto (não executada).",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/release/2.0.3/skills/release/SKILL.md'"
+      ],
+      "error_count": 0,
+      "forbidden_call_count": 0
+    },
+    {
+      "variant": "current",
+      "revision": "86bf29ca74f2bf08f6384d5be29e862d8d857d60",
+      "version": "2.0.3",
+      "skill_hash": {
+        "sha256": "84858237ae424979a66ef1020c8c94e7edfa5bb90f307d273749bb62d5f7a37f"
+      },
+      "case": "quoted-path",
+      "input": "5.6.7 --path \"apps/My API/\"",
+      "expected": [
+        "5.6.7",
+        "apps/My API/",
+        false
+      ],
+      "actual": [
+        "5.6.7",
+        "apps/My API/",
+        false
+      ],
+      "passed": true,
+      "next_step": "Etapa 1: detectar o nome do projeto (prevista, não executada).",
+      "read_commands": [
+        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/release/2.0.3/skills/release/SKILL.md'"
+      ],
+      "error_count": 0,
+      "forbidden_call_count": 0
+    }
+  ]
+}

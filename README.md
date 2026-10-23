@@ -710,6 +710,7 @@ Para atualizar plugins instalados:
 
 Sources used for the implemented Codex support. CLI distribution is verified; desktop, macOS, Windows, and the minimum client version remain unverified.
 Review fixes cover adapter input errors, JSONL transport, shared installer validation, and native skill arguments. Local frontmatter warnings can still be strict external audit errors; see [compatibility](docs/codex/compatibility.md).
+Release argument parsing passed six isolated model scenarios; two controls on the previous version also passed. See [argument evidence](docs/codex/release-arguments-evidence.json).
 Integration and external review are tracked in [PR #6](https://github.com/j0ruge/skills/pull/6); the desktop acceptance check remains pending.
 Research, decisions, and the DDD/Kaizen checklist are tracked in [CONTEXT.md](CONTEXT.md), with the [design](docs/superpowers/specs/2026-10-22-codex-marketplace-design.md), [implementation plan](docs/superpowers/plans/2026-10-22-codex-marketplace.md), and [session handoff](docs/handoffs/2026-10-22-codex-marketplace.md).
 

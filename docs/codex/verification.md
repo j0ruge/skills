@@ -378,3 +378,39 @@ generation 1.6.4 e release 2.0.3. Passaram instalação individual, descoberta d
 quatro irmãs, auditor da família instalado, sabotagem de template e ciclo Git de
 atualização/reinstalação/remoção. O fechamento posterior muda somente documentos
 da raiz e evidências, sem alterar esses pacotes.
+
+## Interpretação real dos argumentos de release — 2026-10-22
+
+O usuário autorizou investigar a ressalva do retrofit de release. A versão 2.0.3
+foi exportada do commit `86bf29ca74f2bf08f6384d5be29e862d8d857d60`, instalada
+em perfil isolado e comparada byte a byte com a fonte. Cada cenário usou um
+processo novo do Codex CLI 0.163.0, invocação explícita `$release:release` e
+leitura da skill no cache. O modelo executou somente `cat`; git e gh estavam
+bloqueados. Nenhuma release foi publicada.
+
+| Entrada de release 2.0.3 | Versão interpretada | Caminho interpretado | Pede versão? |
+|---|---|---|---|
+| `3.4.5 --path packages/api/` | `3.4.5` | `packages/api/` | não |
+| `6.7.8` | `6.7.8` | ausente | não |
+| `--path tools/app/` | ausente | `tools/app/` | sim |
+| vazia | ausente | ausente | sim |
+| `--path packages/ui/ 4.5.6` | `4.5.6` | `packages/ui/` | não |
+| `5.6.7 --path "apps/My API/"` | `5.6.7` | `apps/My API/` | não |
+
+**Resultado:** seis de seis casos atuais passaram. Dois controles com a release
+2.0.2 (`92ea30e`), versão/caminho e entrada vazia, também passaram. Portanto a
+falha de interpretação anterior não foi reproduzida nesses controles; o resultado
+valida o comportamento atual, sem provar que o fallback tenha causado a melhora.
+Não houve novo patch ou bump da skill. A pendência de verificar a interpretação
+real fica encerrada para esses cenários.
+
+[Evidência estruturada](release-arguments-evidence.json). Logs e o executor
+ficam fora do Git em `/home/joruge/.wt/release-arguments-xeqm8ta1/`.
+Para repetir, copie o executor `investigate.py` dessa pasta para um diretório
+novo e execute a cópia. O destino das evidências é o diretório do próprio
+executor; os casos existentes são preservados.
+O modelo padrão do runtime não informou seu identificador no stream JSONL; não
+foi atribuído um nome por suposição. Uma amostra por cenário não mede variação
+estatística. A prova cobre somente a etapa 0 no CLI Linux: não altera R01 nem
+comprova publicação, desktop, macOS ou Windows. Nenhum segredo foi copiado para
+as evidências; a autenticação foi montada apenas para leitura.
