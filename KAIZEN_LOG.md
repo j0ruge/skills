@@ -6,6 +6,50 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-10-22 — Origem da revisão separada da conta que publica
+
+- **Tipo:** padronização de duas lições verificadas, autorizada pelo usuário.
+- **Antes:** a detecção por logins perdia os achados do Claude Code publicados
+  pela conta do operador; a passagem de sensores não explicitava o rename que
+  esconde a origem monitorada.
+- **Depois:** codereview 2.27.0 / coderabbit-pr 4.6.0 coleta candidatos pelo corpo
+  do comentário, confirma a origem e compara o SHA completo antes de contar
+  cobertura. O marcador sozinho não autentica a revisão. O passe 6.11 inclui
+  remoções e renames nos limites do escopo, respeitando read-only e autorização.
+- **Check:** 14 controles e consulta GitHub real preservaram os quatro achados;
+  leitura fria conferiu roteamento, proveniência, contagem, cobertura, severidade
+  e limite de atuação. SQA antes/depois: zero erros/avisos nas duas skills, sem
+  NOVO ou SUMIU; descrições preservadas e ambas abaixo de 20.000 caracteres.
+- **Padronizado em:** `plugins/codereview/skills/coderabbit-pr/references/reviewer-registry.md`,
+  seu roteiro no SKILL.md e `plugins/codereview/skills/codereview/references/detection-passes.md`.
+- **Yokoten:** candidatos sem origem ou com parse inconsistente permanecem
+  pendentes, sem virar aprovação; revisão de commit antigo não cobre head novo.
+  Tabela de logins duplicada fundida com o cadastro canônico, sem retirar logins.
+
+---
+
+## 2026-10-22 — Revisão externa cobre ordem e rename nos limites do pacote
+
+- **Tipo:** correção de causa raiz e redução de duplicação apontada na revisão.
+- **Antes:** o catálogo comparava plataformas pela ordem, divergindo do validador;
+  o hook via somente o destino de renames para fora dos diretórios monitorados.
+- **Depois:** comparação de plataformas independente da ordem, preservando tipos
+  e conteúdo; `--no-renames` expõe a remoção da origem ao gate staged.
+- **Check:** dois casos de ordem e um rename ficaram RED antes e GREEN depois.
+  Remover as guardas fez as regressões falharem. Passaram 53 testes gerais, 55 do
+  auditor e 15 do scanner. O preview combinado passou nos três cenários reais
+  de distribuição, com 25 pacotes / 289 arquivos.
+- **Padronizado em:** `scripts/codex-marketplace.py`, `scripts/pre-commit` e testes
+  em `tests/test_codex_marketplace.py` / `tests/test_codex_validation.py`.
+- **Yokoten:** catálogo e adaptador usam `skill_paths` e `atomic_write` comuns;
+  mutantes foram detectados nos dois consumidores e na limpeza do temporário.
+  Fallbacks mortos de PyYAML foram removidos; a dependência continua obrigatória.
+- **Integração:** correções preparadas localmente em resposta ao Claude Code no
+  PR #6. A main avançou durante a revisão; o preview da reconciliação foi
+  preparado separadamente, sem commit na branch do PR.
+
+---
+
 ## 2026-10-22 — Hash tipado preserva a varredura do manifesto
 
 - **Tipo:** padronização de correção verificada.

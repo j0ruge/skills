@@ -259,6 +259,43 @@ incorporou a lição dos hashes em codereview 2.26.10. Esse pacote continua excl
 do catálogo Codex; o conjunto publicado e a prova dos 289 arquivos em `7df2ea7`
 permanecem válidos. Esse incremento tem verificações próprias e não promove R01.
 
+## Resposta à revisão externa do PR #6 — preparada localmente
+
+Claude Code revisou `467c75c`, com quatro achados no comentário
+`6353481019`. Foram confirmados e tratados na branch `feat/codex-marketplace`:
+
+| Achado | Correção e evidência |
+|---|---|
+| Ordem de plataformas divergente | Comparação por listas ordenadas após validar tipos; dois testes cobrem plugins incluídos e excluídos. |
+| Rename para fora do pacote pula o gate | `--no-renames` inclui a remoção da origem; teste mantém só o rename staged e exige o bloqueio do snapshot sem o recurso. |
+| Fallbacks mortos sem PyYAML | Retornos `no-yaml`/`PULADO` e relatório inacessíveis removidos; a guarda obrigatória e seu teste permanecem. |
+| Regras repetidas nos geradores | `skill_paths` e `atomic_write` compartilhados; casos existentes cobrem ambos, com prova adicional de falha na troca atômica e limpeza do temporário. |
+
+Baseline: 49 testes gerais, 55 do auditor e 15 do scanner aprovados. Após as
+correções, 53 testes gerais, 55 do auditor e 15 do scanner passaram, sem skips.
+Os mutantes das guardas, do default de
+skills e da limpeza do temporário foram detectados. Logs em
+`.superpowers/sdd/2026-10-22-codex-marketplace/pr/fixes/`.
+
+CodeRabbit cobriu `467c75c` sem achados de código e manteve o aviso agregado de
+docstrings. A sonda AST por linhas adicionadas encontrou 14/14 funções de produção
+documentadas; funções de testes foram medidas separadamente (1/77). Essa população
+não é a mesma dos 93 itens do relatório do bot; o aviso não foi apresentado como
+eliminado nem o limiar foi alterado. Copilot não revisou por limite de cota.
+
+A base avançou para `0d2e56d`, causando conflitos em cinco arquivos. A proposta de
+reconciliação preserva as correções de CICD/deploy da main, o suporte Codex e o
+histórico, com patches de distribuição CICD 2.39.1 e deploy 3.3.3. O preview foi
+preparado fora da branch; commit, envio e atualização do PR aguardam decisão do
+usuário conforme o fluxo da skill. R01 continua parcial.
+
+O preview também passou nos três cenários reais de distribuição, com 25 pacotes
+e 289 arquivos, incluindo CICD 2.39.1 e deploy 3.3.3. A origem foi a árvore Git
+`838201420449b9f07a90bdab611626d95ebfd48e`, exportada sem criar um commit no PR;
+não é uma revisão já enviada. A evidência distingue `merge-preview-tree` de
+commit. Artefatos e patch proposto em
+`/home/joruge/.wt/pr6-merge-preview-_nbcr7ug/`.
+
 ## Fontes e limites
 
 - [Package your plugin](https://developers.openai.com/plugins/build/plugins):

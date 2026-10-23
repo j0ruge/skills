@@ -29,6 +29,16 @@ def inside(root, path):
     return path
 
 
+def skill_paths(plugin, manifest):
+    """Normaliza os diretórios de skills com a mesma regra em todos os derivados."""
+    skills = manifest.get('skills', ['./skills'] if (plugin / 'skills').is_dir() else [])
+    if isinstance(skills, str):
+        skills = [skills]
+    if not isinstance(skills, list) or any(not isinstance(s, str) for s in skills):
+        raise ValueError(f'{plugin.name}: skills deve ser caminho ou lista de caminhos')
+    return skills
+
+
 def load_plugins(root):
     """Confere a identidade e os caminhos antes de selecionar plataformas."""
     root = root.resolve()
@@ -56,23 +66,24 @@ def load_plugins(root):
         manifest = read_json(inside(plugin, plugin / '.claude-plugin/plugin.json'))
         if not isinstance(manifest, dict):
             raise ValueError(f'{name}: plugin.json deve ser objeto')
-        for key in ['name', 'version', 'description', 'platforms']:
+        for key in ['name', 'version', 'description']:
             if not manifest.get(key) or entry.get(key) != manifest.get(key):
                 raise ValueError(f'{name}: {key} divergente entre catálogo e plugin.json')
-        platforms = manifest['platforms']
-        if (not isinstance(platforms, list) or
+        platforms = manifest.get('platforms')
+        if (not isinstance(platforms, list) or not platforms or
                 any(not isinstance(p, str) or p not in VALID_PLATFORMS for p in platforms) or
                 len(set(platforms)) != len(platforms)):
             raise ValueError(f'{name}: platforms inválidas')
+        catalog_platforms = entry.get('platforms')
+        if (not isinstance(catalog_platforms, list) or
+                any(not isinstance(p, str) for p in catalog_platforms) or
+                sorted(catalog_platforms) != sorted(platforms)):
+            raise ValueError(f'{name}: platforms divergente entre catálogo e plugin.json')
         if not isinstance(manifest['description'], str) or not re.fullmatch(
                 r'\d+\.\d+\.\d+', str(manifest['version'])):
             raise ValueError(f'{name}: description ou version inválida')
         if 'codex' in platforms:
-            skills = manifest.get('skills', ['./skills'] if (plugin / 'skills').is_dir() else [])
-            if isinstance(skills, str):
-                skills = [skills]
-            if not isinstance(skills, list):
-                raise ValueError(f'{name}: skills deve ser caminho ou lista')
+            skills = skill_paths(plugin, manifest)
             for value in skills:
                 if not isinstance(value, str) or not value.startswith('./'):
                     raise ValueError(f'{name}: caminho de skills inválido')
@@ -106,13 +117,17 @@ def sync_json(path, expected, write):
         return
     if not write:
         raise ValueError(f'derivado ausente ou desatualizado: {path}; execute --write')
+    atomic_write(path, encoded.encode('utf-8'))
+
+
+def atomic_write(path, data):
+    """Substitui bytes atomicamente e remove o temporário mesmo se a troca falhar."""
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = None
     try:
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=path.parent,
-                                         prefix='.codex-', delete=False) as stream:
+        with tempfile.NamedTemporaryFile(dir=path.parent, prefix='.codex-', delete=False) as stream:
             temporary = Path(stream.name)
-            stream.write(encoded)
+            stream.write(data)
         os.replace(temporary, path)
     finally:
         if temporary is not None:

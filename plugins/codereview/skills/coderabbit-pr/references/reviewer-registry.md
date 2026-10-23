@@ -1,6 +1,6 @@
 # Reviewer Registry
 
-Maps AI review bots to their GitHub login, comment structure, and output file name.
+Maps AI reviewers to their origin, GitHub author, comment structure, and output file name.
 
 ## Supported Reviewers
 
@@ -10,8 +10,46 @@ Maps AI review bots to their GitHub login, comment structure, and output file na
 | GitHub Copilot | `copilot-pull-request-reviewer[bot]` (review object), `Copilot` (its inline comments) | `copilot-review.md` | Review body + inline comments, under two logins |
 | Gemini Code Assist | `gemini-code-assist[bot]` | `gemini-review.md` | Inline + review body summary |
 | Codex | `chatgpt-codex-connector[bot]` | `codex-review.md` | Inline comments + boilerplate review body + status summary on the issue |
+| Claude Code ultrareview | The CLI user, with verified provenance | `claude-review.md` | Findings in an issue comment; inspect its body, not only its author |
 
 ## Comment Structures by Reviewer
+
+### Claude Code (`ultrareview --post`)
+
+This mode posts a plain issue comment **from the CLI user's GitHub account**, not a fixed bot
+login or a pull-request review object. Collect its candidates at Phase 1.2:
+
+```bash
+gh api "repos/$REPO/issues/$PR/comments" --paginate --jq '.[] |
+  select((.body // "") | contains("<!-- claude-code-ultrareview-post:")) |
+  {id, author: .user.login, url: .html_url, body}'
+```
+
+The marker identifies a **candidate**, not authenticated provenance. Match the returned comment
+URL/ID to the completed CLI invocation's receipt, or use the user's explicit confirmation of its
+origin. Without that evidence, keep the source unverified and do not count it as coverage.
+A launch/request comment is not a completed review.
+
+If provenance is missing, record case (b) with the candidate URL and reason; request the receipt
+or user confirmation before applying its suggestions. Preserve parsed observations as unverified.
+If the count or format is inconsistent, keep a pending GENERAL parse item in `claude-review.md`
+and preserve the raw body until it is interpreted completely. Neither state is zero findings or
+an approval; process other verified reviewers normally. Candidate presence prevents the Phase 1
+"no reviewer artifacts" early exit, but never establishes coverage by itself.
+
+For the observed format, the header is `**Claude Code review** — N findings on commit <sha>`;
+the footer contains `claude-code-ultrareview-post:` and an execution ID. Parse the finding
+sections under `### … — file:line` or `file:start-end` (locations are backtick-quoted), and check
+that their count equals N. Preserve each path, range, text and original severity; `Nit` starts
+as LOW and Phase 3 recalibrates it. Process these findings at Phase 1.3 as `issue-comment`,
+using `claude-review.md`, even though the author is human.
+
+Origin and coverage are separate: obtain the **full reviewed commit SHA** from the invocation
+record or resolve the header's abbreviated SHA uniquely, then compare the full value with the
+PR head. A shared short prefix is insufficient. An older review can supply findings to verify
+against current code, but covers only its own commit. A mismatched count, unrecognized format,
+marker alone or missing provenance is unverified coverage, never an approval with zero findings.
+Do not assume other Claude posting modes use this schema.
 
 ### CodeRabbit (`coderabbitai[bot]`)
 
@@ -135,9 +173,9 @@ gh api "repos/{REPO}/issues/{PR}/comments" --paginate \
   --jq '[.[].user.login] | unique[]'
 ```
 
-Match against the registry. A reviewer found **only** on the issue endpoint posted nothing to
-extract: it goes straight to Phase 2's zero-findings determination, where its comment tells (a)
-from (b). Only reviewers with inline comments or a review body go through Phase 1.3.
+Match against the registry, including Claude Code issue-comment candidates above. A reviewer
+with only a status or walkthrough goes to Phase 2's zero-findings determination. A verified CLI
+comment containing findings goes through Phase 1.3; its endpoint is not a reason to discard it.
 
 **A reviewer that runs only on request is invisible when nobody asked.** Codex is often set to
 review only on `@codex review`: a PR nobody asked about has **zero** Codex events on all three
@@ -161,8 +199,8 @@ Copilot's quota notice.
 
 ## Coverage Per Commit
 
-A review covers the commit it was made on, not the PR. Phase 2 compares each reviewer's last
-**review with a body** against the head; commits after it went unreviewed by that bot (case b for
+A review covers its own commit, not the PR. For Claude Code CLI comments, use the full SHA
+verified above. For review objects, Phase 2 compares the last **review with a body** against the head; commits after it went unreviewed by that bot (case b for
 that range), whatever it found on the earlier commit:
 
 ```bash

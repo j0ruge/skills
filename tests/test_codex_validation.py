@@ -117,6 +117,28 @@ class HookTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('validator-ran', result.stdout)
 
+    def test_rename_out_of_distribution_paths_still_runs_gate(self):
+        source = self.root / 'plugins/demo/templates/example.md'
+        source.parent.mkdir(parents=True)
+        source.write_text('# Template de distribuição\n')
+        # O snapshot inválido obriga o gate a bloquear o commit desse rename.
+        (self.root / 'scripts/validate-versions.py').write_text(
+            'from pathlib import Path\nimport sys\n'
+            'print("validator-ran")\n'
+            'sys.exit(0 if (Path(__file__).resolve().parents[1]/'
+            '"plugins/demo/templates/example.md").exists() else 1)\n')
+        self.git('add', '.')
+        self.git('commit', '-qm', 'Base com recurso distribuído e seu validador')
+        self.git('config', 'diff.renames', 'true')
+        target = self.root / 'docs/example.md'
+        target.parent.mkdir()
+        self.git('mv', str(source), str(target))
+        self.assertEqual(self.git('diff', '--cached', '--name-only').stdout.strip(),
+                         'docs/example.md')
+        result = self.hook()
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('validator-ran', result.stdout)
+
     def test_detector_failure_blocks_commit(self):
         import os
         from unittest import mock

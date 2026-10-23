@@ -4,10 +4,8 @@
 import argparse
 import importlib.util
 import json
-import os
 from pathlib import Path
 import sys
-import tempfile
 
 spec = importlib.util.spec_from_file_location('marketplace', Path(__file__).with_name('codex-marketplace.py'))
 marketplace = importlib.util.module_from_spec(spec)
@@ -99,11 +97,7 @@ def build_artifacts(root):
         overlay = {k: manifest[k] for k in ['name', 'version', 'description', 'author',
                                           'license', 'homepage', 'repository', 'keywords']
                    if k in manifest}
-        skills = manifest.get('skills', ['./skills'] if (plugin / 'skills').is_dir() else [])
-        if isinstance(skills, str):
-            skills = [skills]
-        if not isinstance(skills, list) or any(not isinstance(s, str) for s in skills):
-            raise ValueError(f'skills inválidas: {plugin}')
+        skills = marketplace.skill_paths(plugin, manifest)
         overlay.update(skills=[*skills, './codex-skills'], commands=[])
         artifacts[marketplace.inside(plugin, plugin / '.codex-plugin/plugin.json')] = (
             json.dumps(overlay, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
@@ -124,16 +118,7 @@ def sync_artifacts(root, write=False):
             continue
         if not write:
             raise ValueError(f'adaptador ausente ou desatualizado: {path}; execute codex-adapters.py --write')
-        path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = None
-        try:
-            with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as stream:
-                temporary = Path(stream.name)
-                stream.write(data)
-            os.replace(temporary, path)
-        finally:
-            if temporary is not None:
-                temporary.unlink(missing_ok=True)
+        marketplace.atomic_write(path, data)
 
 
 def main():

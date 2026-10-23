@@ -151,7 +151,6 @@ def _read_skill_description(repo_root: Path, name: str) -> 'tuple[str | None, st
       'no-frontmatter' -> SKILL.md existe mas nao tem bloco --- ... ---
       'yaml-error'     -> frontmatter presente mas nao e YAML valido
       'no-description' -> frontmatter sem a chave description
-      'no-yaml'        -> pyyaml ausente; a leitura foi PULADA de proposito
 
     Sobre 'yaml-error': a causa recorrente e uma description SEM ASPAS contendo `: `
     (dois-pontos + espaco), como em "...auto-routed by stack: Node...". Em YAML isso
@@ -160,22 +159,18 @@ def _read_skill_description(repo_root: Path, name: str) -> 'tuple[str | None, st
     fica latente ate um consumidor estrito aparecer. Cura: envolver o valor em aspas
     duplas -- muda a sintaxe, nao o valor.
 
-    Sobre 'no-yaml': o valor pode ser um escalar YAML entre aspas (varias skills usam
+    O valor pode ser um escalar YAML entre aspas (varias skills usam
     "..." e uma delas contem `C:\\Users` com backslash escapado). Um regex ingenuo
     devolve o texto COM as aspas e COM o escape, o que produz divergencia falsa -- foi
     exatamente o que aconteceu na auditoria manual que motivou esta verificacao, que
     acusou 7 plugins quando apenas 5 divergiam. Reimplementar o unescape do YAML a mao
     e a mesma classe de dividia (normalizacao pareada) que a checagem tenta evitar, por
-    isso o parse e delegado ao pyyaml e, na ausencia dele, a comparacao com o SKILL.md
-    e pulada com aviso VISIVEL em vez de rodar sobre um parse duvidoso.
+    isso o parse e delegado ao PyYAML, dependencia obrigatoria do gate.
     """
     skill_path = repo_root / 'plugins' / name / 'skills' / name / 'SKILL.md'
     if not skill_path.exists():
         return None, 'no-skill'
-    try:
-        import yaml  # opcional: nao e dependencia do resto do script
-    except ImportError:
-        return None, 'no-yaml'
+    import yaml
     m = _FRONTMATTER_RE.match(skill_path.read_text(encoding='utf-8'))
     if not m:
         return None, 'no-frontmatter'
@@ -234,10 +229,7 @@ def _check_skill_spec(repo_root: Path) -> 'tuple[list[str], list[str]]':
     outros clientes da spec) nao.
     """
     errors, warnings = [], []
-    try:
-        import yaml
-    except ImportError:
-        return [], ['  spec check: pyyaml ausente -> check 7 PULADO (pip install pyyaml)']
+    import yaml
     for skill_md in sorted((repo_root / 'plugins').glob('*/skills/*/SKILL.md')):
         rel = skill_md.relative_to(repo_root).as_posix()
         text = skill_md.read_text(encoding='utf-8')
@@ -311,10 +303,7 @@ def _load_cursor_skill_map(repo_root: Path) -> 'list[dict] | None':
 # deixava a ultima linha do bloco metadata solta quando ele fechava o frontmatter, e 12
 # arquivos saiam com YAML invalido (todo-to-github-issues ja publicado assim).
 def _check_cursor_frontmatter(repo_root: Path) -> 'tuple[list[str], list[str]]':
-    try:
-        import yaml
-    except ImportError:
-        return [], ['  cursor check: pyyaml ausente -> check 8 PULADO (pip install pyyaml)']
+    import yaml
     install_py = repo_root / 'install.py'
     if not install_py.exists():
         return [], []
@@ -468,7 +457,6 @@ def main():
                 )
 
     # Check 6: description is identical across SKILL.md, plugin.json and marketplace.json
-    yaml_missing_reported = False
     for entry in plugins:
         name = entry.get('name', '?')
         plugin_json_path = repo_root / 'plugins' / name / '.claude-plugin' / 'plugin.json'
@@ -479,15 +467,7 @@ def main():
         marketplace_desc = entry.get('description')
         skill_desc, status = _read_skill_description(repo_root, name)
 
-        if status == 'no-yaml':
-            if not yaml_missing_reported:
-                notes.append(
-                    '  description check: pyyaml ausente -> a comparacao com SKILL.md foi '
-                    'PULADA (plugin.json vs marketplace.json segue valendo). '
-                    'Instale pyyaml para o gate completo: pip install pyyaml'
-                )
-                yaml_missing_reported = True
-        elif status == 'yaml-error':
+        if status == 'yaml-error':
             errors.append(
                 f'  {name}: o frontmatter do SKILL.md nao e YAML valido -- causa tipica e '
                 f'uma description SEM ASPAS contendo ": " (ex.: "by stack: Node"), que em '

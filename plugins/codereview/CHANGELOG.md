@@ -2,6 +2,22 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.0] — 2026-10-22
+
+### Revisão Claude Code publicada como usuário e origem de renames no gate
+
+- `coderabbit-pr` 4.6.0: detecta candidatos do ultrareview no corpo de comentários
+  gerais, confirma origem e SHA completo antes de contar cobertura e preserva os
+  achados mesmo quando o autor é uma conta humana. O marcador não autentica origem.
+- `codereview` 2.27.0: a passagem de sensores cegos verifica a enumeração de
+  remoções e renames nos limites do escopo, incluindo a prova de que o validador rodou.
+- A tabela duplicada de logins foi fundida com o cadastro canônico da referência;
+  o roteiro agora exige lê-lo na detecção. As regras de commit, severidade e grade F
+  permanecem. Descrições preservadas.
+- Prova da proposta: comentário real do PR #6 e controles de origem, contagem,
+  commit antigo, prefixo ambíguo, pedido sem revisão, marcador inválido e renames
+  em repos novos. Os artefatos e relatórios ficam fora do repositório.
+
 ## [2.26.10] — 2026-10-22
 
 ### Hash explícito antes de excluir o manifesto da varredura

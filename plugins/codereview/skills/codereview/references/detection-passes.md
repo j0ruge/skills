@@ -508,18 +508,28 @@ The unifying test, and the question to ask of any sensor in a diff:
 A sensor that answers "stops reporting" is worse than no sensor, because its presence is read as
 coverage. That is what makes this a review-time finding rather than a style note.
 
-#### The eight forms
+#### The forms
 
 | Form | What to grep for | Why it blinds |
 |------|------------------|---------------|
 | **Swallowed error in a sensor** | `2>/dev/null`, `\|\| true`, `catch {}`, `except: pass`, `?? ''`, `.catch(() => null)` on a read whose value decides an alert | The variable ends up empty/default, the warning branch never fires, and the log says nothing |
 | **Negative verdict** | success defined as *"did not match a list of failure strings"* — `grep -q 'error\|failed' \|\| echo OK` | Everything that breaks **before** the tool runs (connection refused, container missing, permission denied) matches no failure pattern and reads as success |
 | **Gate aimed at the wrong target** | `head -1`, `[0]`, a glob assumed singular, a hardcoded filename where the build emits N | The gate passes green over a file it was never supposed to be the only one checking |
+| **Rename hides a watched origin** | `git diff --name-only` followed by a watched-path filter with rename detection enabled | A rename leaving the watched prefix lists only its destination, so removal of a required input never reaches the gate |
 | **Dedup key too coarse** | an alert/idempotency key built from `{rule, day, entity}` with no per-event discriminant | The second real occurrence in the same window collides with the first and is dropped forever — and by the second one nobody is watching |
 | **Green by subtraction** | a diff where a check's count drops (fewer warnings, fewer failing tests, lint clean) in the same change that deletes, skips or loosens what the check reads — a removed test, `.skip`/`xit`, a new `eslint-disable`/`# noqa`, a widened ignore glob, a deleted citation or fixture | The sensor turns greener because its input shrank, not because the defect was fixed; the report reads as an improvement |
 | **Optional gate that vanishes** | a gate guarded by `[ -f "$TOOL" ] &&`, `command -v x &&`, `if exists(...)`, "run X if installed", with no `else` that prints SKIP | When the tool or path is missing the gate simply does not run, and a gate that did not run looks exactly like one that passed |
 | **Assertion without a timeout** | `curl`/`fetch`/`http` in an assertion with no `--max-time`/`--connect-timeout`/`AbortSignal` | On a network failure the body is empty, "no forbidden pattern found" counts zero occurrences in nothing, and prints `ok` |
 | **Silent drop in a transform** | a converter, ingest, ETL or export step that skips records by type or category (`if kind in SKIP: continue`, a `filter` on a type set) without counting what it dropped, and no output-vs-input unit count anywhere downstream | The validator checks the shape of what came out, and what never came out has no shape to fail. Measured: a PDF→Markdown converter dropped every page whose only block was typed `footer` (dedications, epigraphs) while its wrapper printed OK and its validator exited 0; only counting page markers against the PDF's page count saw it |
+
+For Git-triggered gates, inspect path enumeration as well as the validator. In a read-only
+review, inspect existing tests/evidence or mark the missing proof as needs reproduction. With
+caller authorization to run a verification harness, use fresh fixtures outside the repository:
+test a deletion and renames entering, leaving and staying inside the watched scope, with
+`diff.renames=true`. `--no-renames --name-only -z` exposes a rename as deletion plus addition;
+an alternative is `--name-status -z` with both rename paths parsed. A move out of scope must still
+trigger validation of the missing input. Check both the gate result and evidence that its
+validator ran: exit 0 alone can mean it was skipped. The existing severity rules still apply.
 
 #### Calibration — what is NOT a finding
 

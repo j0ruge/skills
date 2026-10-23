@@ -1,9 +1,11 @@
+import importlib.util
 import json
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 SCRIPT = Path(__file__).resolve().parents[1] / 'scripts/codex-marketplace.py'
 
@@ -138,6 +140,26 @@ class MarketplaceTests(unittest.TestCase):
         self.save_source()
         self.assert_rejected('platforms')
 
+    def test_platform_order_does_not_change_support_set(self):
+        self.entries[0]['platforms'] = list(reversed(self.entries[0]['platforms']))
+        self.save_source()
+        result = self.run_script('--write')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual([p['name'] for p in json.loads(self.catalog.read_text())['plugins']],
+                         ['ready'])
+
+    def test_excluded_plugin_platform_order_is_irrelevant(self):
+        manifest_path = self.root / 'plugins/excluded/.claude-plugin/plugin.json'
+        manifest = json.loads(manifest_path.read_text())
+        manifest['platforms'] = ['claude-code', 'cursor']
+        self.write_json(manifest_path, manifest)
+        self.entries[1]['platforms'] = ['cursor', 'claude-code']
+        self.save_source()
+        result = self.run_script('--write')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual([p['name'] for p in json.loads(self.catalog.read_text())['plugins']],
+                         ['ready'])
+
     def test_changed_identity_metadata_is_rejected(self):
         for key in ['version', 'description', 'name']:
             with self.subTest(key=key):
@@ -156,6 +178,18 @@ class MarketplaceTests(unittest.TestCase):
 
     def test_invalid_arguments(self):
         self.assertEqual(self.run_script('--check', '--write').returncode, 2)
+
+    def test_atomic_write_failure_preserves_original_and_cleans_temporary(self):
+        self.write_json(self.catalog, {'original': True})
+        original = self.catalog.read_bytes()
+        spec = importlib.util.spec_from_file_location('marketplace_atomic_test', SCRIPT)
+        marketplace = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(marketplace)
+        with mock.patch.object(marketplace.os, 'replace', side_effect=OSError('falha simulada')):
+            with self.assertRaisesRegex(OSError, 'falha simulada'):
+                marketplace.atomic_write(self.catalog, b'{"new":true}\n')
+        self.assertEqual(self.catalog.read_bytes(), original)
+        self.assertEqual(list(self.catalog.parent.iterdir()), [self.catalog])
 
 
 if __name__ == '__main__':

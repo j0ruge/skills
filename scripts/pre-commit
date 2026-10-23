@@ -5,7 +5,7 @@ set -euo pipefail
 
 snapshot=$(mktemp -d)
 trap 'rm -rf -- "$snapshot"' EXIT
-git diff --cached --name-only -z > "$snapshot/paths"
+git diff --cached --no-renames --name-only -z > "$snapshot/paths"
 needs_validation=false
 while IFS= read -r -d '' path; do
     case "$path" in

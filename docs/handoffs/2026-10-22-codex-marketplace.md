@@ -167,3 +167,20 @@ O pacote continua excluído do catálogo Codex; os 25 pacotes / 289 arquivos da
 prova em `7df2ea7` não mudaram. Detalhes, limites e comandos em
 [retrofits-2026-10-22.md](../codex/retrofits-2026-10-22.md#retrofit-posterior-à-revisão--codereview-22610).
 O incremento permanece local, sem publicação da missão ou atualização pessoal.
+
+### PR #6 e resposta ao Claude Code
+
+O usuário autorizou abrir o [PR #6](https://github.com/j0ruge/skills/pull/6) contra
+main e solicitar revisão do Claude Code. A branch foi enviada em `467c75c`.
+Claude Code publicou quatro achados, agora corrigidos localmente: ordem de
+plataformas, rename fora do pacote, fallbacks mortos de PyYAML e duplicação dos
+helpers. A suíte local passou em 53 testes; ver o relatório de verificação.
+
+A main avançou para `0d2e56d` durante a revisão. Há conflitos em
+`.claude-plugin/marketplace.json`, `README.md`, `plugins/cicd/.claude-plugin/plugin.json`,
+`plugins/cicd/CHANGELOG.md` e `plugins/deploy/CHANGELOG.md`. A reconciliação foi
+preparada em preview separado, preservando as duas linhas de trabalho e propondo
+CICD 2.39.1 / deploy 3.3.3 para a distribuição combinada. Nenhum commit de resposta
+ou merge na branch do PR foi criado nesta etapa; dependem da decisão do usuário.
+O checklist temporário `claude-review.md` registra os quatro itens e a etapa
+pendente de integração. Não tratar correção local como revisão do novo head.
