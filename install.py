@@ -250,6 +250,13 @@ CURSOR_SKILL_MAP: list[dict[str, Any]] = [
         "source_dir": "plugins/windows-disk-cleanup/skills/windows-disk-cleanup",
     },
     {
+        "plugin": "windows-games-linux",
+        "cursor_name": "windows-games-linux",
+        "display": "Windows Games on Linux — find where a Lutris/Proton/Wine game dies, A/B-launch it outside Lutris, fix the game config",
+        "source_type": "skill",
+        "source_dir": "plugins/windows-games-linux/skills/windows-games-linux",
+    },
+    {
         "plugin": "kaizen-software",
         "cursor_name": "kaizen-software",
         "display": "Kaizen — continuous improvement across planning, implementation and maintenance (PDCA, 5 whys, kaizen log)",

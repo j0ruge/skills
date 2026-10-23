@@ -1,6 +1,6 @@
 # Compatibilidade Codex
 
-Inventário dos 31 plugins, auditado em 2026-10-22. Apenas `supported` entra no catálogo.
+Inventário dos 32 plugins: 31 auditados em 2026-10-22; `windows-games-linux` entrou em 2026-10-23 sem avaliação Codex (`not_checked`). Apenas `supported` entra no catálogo.
 Os smokes cobrem instalação, descoberta, leitura no cache e entrada de cada workflow;
 operações integrais de domínio e dependências autenticadas não fazem parte do smoke.
 Ubuntu 24.04/CLI 0.163.0 é a cobertura medida; desktop, macOS e Windows permanecem
@@ -38,6 +38,7 @@ Versão mínima ainda não estabelecida. Veja [verification.md](verification.md)
 | unlovable | `supported` | `skills/unlovable/SKILL.md` | 0 arquivos de scripts/referências/templates/assets | Node e ferramentas React/Vite do projeto. Workflow específico para migrar projetos Lovable. |
 | whisper-preprocess | `supported` | `skills/whisper-preprocess/SKILL.md` | 2 arquivos de scripts/referências/templates/assets | Python, ffmpeg, Whisper e modelos locais; hardware adequado. Dependências e processamento de áudio não executados pelo smoke. |
 | windows-disk-cleanup | `supported` | `skills/windows-disk-cleanup/SKILL.md` | 18 arquivos de scripts/referências/templates/assets | Windows, PowerShell, ferramentas de disco; Bash/WSL conforme o caso. Operações Windows e exclusão de dados não executadas no smoke Linux. |
+| windows-games-linux | `not_checked` | `skills/windows-games-linux/SKILL.md` | 6 arquivos de scripts/referências/templates/assets | Linux com Lutris/umu/Proton ou Wine, bash e python3; pkexec ou sudo para instalar pacotes. Lança jogos na tela do usuário. Não avaliado no Codex nesta publicação. |
 | wsl-windows-onboarding | `supported` | `skills/wsl-windows-onboarding/SKILL.md` | 6 arquivos de scripts/referências/templates/assets | Windows/WSL2, PowerShell, Bash, rsync, ferramentas do guia. O alvo é WSL/Claude; smoke de leitura no Linux não prova operações Windows. |
 | zitadel-idp | `supported` | `skills/zitadel-idp/SKILL.md` | 15 arquivos de scripts/referências/templates/assets | Zitadel, Docker, curl/jq, credenciais do projeto. Versões/APIs exigem conferência nas referências; nenhum acesso ao IdP no smoke. |
 

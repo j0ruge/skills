@@ -1,0 +1,30 @@
+{
+  "name": "windows-games-linux",
+  "description": "Diagnose and fix Windows games on Linux run through Lutris, umu, Proton or Wine: find the layer where the game dies, A/B-launch it outside Lutris, read Unity/Proton logs, fix the game config. Catches Lutris injecting its own VKD3D/NVAPI into Proton prefixes. Triggers — game closes on launch, Lutris, Proton, Wine, umu, DXVK, VKD3D, i386 libs.",
+  "author": {
+    "name": "Chewiesoft"
+  },
+  "version": "1.0.0",
+  "category": "development",
+  "keywords": [
+    "lutris",
+    "proton",
+    "wine",
+    "umu-launcher",
+    "ge-proton",
+    "dxvk",
+    "vkd3d",
+    "wined3d",
+    "unity-player-log",
+    "windows-games",
+    "linux-gaming",
+    "i386",
+    "pkexec",
+    "crash-on-launch"
+  ],
+  "platforms": [
+    "claude-code",
+    "cursor"
+  ],
+  "skills": "./skills"
+}
