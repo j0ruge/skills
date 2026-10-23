@@ -2,6 +2,28 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.1] — 2026-10-23
+
+### Modo `worktree`: os arquivos novos entram no cabeçalho e no probe de docstrings
+
+- **O quê:**
+  - `skills/codereview/references/configuration.md`, linha `worktree`: o `git diff HEAD --stat` só conta
+    arquivos rastreados, então cada arquivo novo soma o `git diff --no-index --numstat /dev/null <file>`
+    (rc 1), e o Files Changed sai da lista de arquivos mudados.
+  - `skills/codereview/references/report-template.md`, probe Python de docstrings: um arquivo novo não tem
+    diff contra o `HEAD`, então todas as linhas dele contam como acrescentadas (`git ls-files
+    --error-unmatch` falha para ele).
+- **Por quê:** a regra do modo só dizia que o pre-scan de segredos lê os dois lados. As outras duas etapas
+  usam `git diff HEAD` e perdiam os arquivos novos sem aviso. Medido em 2026-10-23 (magic_tutor, Python,
+  13 arquivos mudados, 3 novos): o stat deu 10 arquivos e +106, o `added_lines` do pre-scan deu 190, e as
+  84 linhas dos três novos fecharam a conta; no `monitor/ambiente.py` novo, o `git diff -U0 HEAD` voltou com
+  0 bytes, e o probe listou só `<module>`. Com a regra, listou `ler_env` e `caminho`.
+- **Descartada, com prova:** procurar `-m <módulo>` nos testes para achar a cobertura por subprocesso. Na
+  mesma revisão, ele achou só o `__main__.py`, que o probe de import já achava; o arquivo coberto por
+  transitividade (`leitor_log.py`) continua no julgamento da Fase C que o `report-template.md` já pede.
+- **Dívida anterior, não tratada aqui:** a linha da `codereview` no README do marketplace não tem frase da
+  v2.26.10 nem da v2.27.0.
+
 ## [2.27.0] — 2026-10-22
 
 ### Revisão Claude Code publicada como usuário e origem de renames no gate
