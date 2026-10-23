@@ -3,6 +3,10 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.8.1] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## [2.8.0] — 2026-10-20
 
 Minor: o plano ganha a linha `REF?`, porque um `#N` solto no item vira, na issue, link para o `#N`

@@ -4,7 +4,7 @@
   "author": {
     "name": "Chewiesoft"
   },
-  "version": "0.20.0",
+  "version": "0.20.1",
   "category": "development",
   "keywords": [
     "zitadel",
@@ -89,7 +89,8 @@
   ],
   "platforms": [
     "claude-code",
-    "cursor"
+    "cursor",
+    "codex"
   ],
   "skills": "./skills"
 }

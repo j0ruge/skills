@@ -1,5 +1,9 @@
 # Changelog — zitadel-idp
 
+## [0.20.1] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## [0.20.0] - 2026-10-15
 
 ### Added

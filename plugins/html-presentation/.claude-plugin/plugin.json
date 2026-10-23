@@ -4,7 +4,7 @@
   "author": {
     "name": "Chewiesoft"
   },
-  "version": "1.4.0",
+  "version": "1.4.1",
   "category": "operations",
   "keywords": [
     "presentation",
@@ -21,7 +21,8 @@
   ],
   "platforms": [
     "claude-code",
-    "cursor"
+    "cursor",
+    "codex"
   ],
   "skills": "./skills"
 }

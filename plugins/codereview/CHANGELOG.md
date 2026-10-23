@@ -2,6 +2,47 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.0] — 2026-10-22
+
+### Revisão Claude Code publicada como usuário e origem de renames no gate
+
+- `coderabbit-pr` 4.6.0: detecta candidatos do ultrareview no corpo de comentários
+  gerais, confirma origem e SHA completo antes de contar cobertura e preserva os
+  achados mesmo quando o autor é uma conta humana. O marcador não autentica origem.
+- `codereview` 2.27.0: a passagem de sensores cegos verifica a enumeração de
+  remoções e renames nos limites do escopo, incluindo a prova de que o validador rodou.
+- A tabela duplicada de logins foi fundida com o cadastro canônico da referência;
+  o roteiro agora exige lê-lo na detecção. As regras de commit, severidade e grade F
+  permanecem. Descrições preservadas.
+- Prova da proposta: comentário real do PR #6 e controles de origem, contagem,
+  commit antigo, prefixo ambíguo, pedido sem revisão, marcador inválido e renames
+  em repos novos. Os artefatos e relatórios ficam fora do repositório.
+
+## [2.26.10] — 2026-10-22
+
+### Hash explícito antes de excluir o manifesto da varredura
+
+- **O quê:** `codereview` §6.10 oferece um registro com campo `sha256` quando o
+  schema JSON puder mudar, antes de sugerir allowlist por caminho. Exige conferir
+  os hashes contra a revisão fixada, preservar caminhos/valores, atualizar os
+  consumidores e repetir os mesmos scanners no diff completo. Um canário gerado
+  em execução no mesmo manifesto comprova que a detecção continua ativa.
+- **Por quê:** a revisão da loja Codex sinalizou três checksums como credenciais.
+  Os 289 hashes foram conferidos por bytes; explicitar `sha256` removeu os alertas
+  sem excluir o arquivo nem alterar regras ou valores. A opção anterior com
+  allowlist fica preservada para consumidores cujo schema não puder mudar.
+- **Prova:** três fixtures independentes em `TestTypedHashManifest` reproduzem o
+  falso positivo original, passam com o hash tipado e detectam o canário no mesmo
+  arquivo. A régua de grade F e o tratamento dos achados do scanner permanecem.
+- **Checks:** 15 testes do scanner passaram, com gitleaks real e sem skips. SQA
+  antes/depois sem erros ou avisos; gate sem `NOVO`/`SUMIU`. SKILL.md: 247 linhas,
+  19.999 → 20.000 caracteres pelo bump; descrição preservada em 477 caracteres.
+  Auditoria de prompts nativa e teste de aplicação sem achados novos. O guia
+  histórico de prompt audit não estava disponível; não foi alegada execução do
+  comando Claude nem de validadores externos SQA, mantidos em `--external off`.
+- **Dívida anterior:** o texto de categorias de §6.10 exclui DOCS, em divergência
+  com o contrato per-file. Registrada para tarefa própria, sem ampliar o retrofit.
+
 ## [2.26.9] — 2026-10-21
 
 ### A cópia desatualizada roda da instalada, o conserto do Check de um plano se prova com o JSON do runner feito à mão, e um `local/ci` verde no head é o baseline (coderabbit-pr 4.5.6)

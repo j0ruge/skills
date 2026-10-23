@@ -2,6 +2,10 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [3.3.3] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## 2026-10-22 — A poda que roda é a da árvore promovida; recusa por disco se repete no mesmo head — bump 3.3.1 → [3.3.2]
 
 **Por quê:** a linha **4 — disk** afirmava, em geral, que a poda do deploy roda depois do build. Era

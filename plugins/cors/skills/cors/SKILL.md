@@ -1,7 +1,7 @@
 ---
 name: cors
 metadata:
-  version: 1.0.1
+  version: 1.1.2
 description: "Diagnostica e configura CORS — o erro que mente sobre a causa. Decide qual portão barrou (CORS x CSP connect-src x mixed content, idênticos no JS), lê a mensagem literal do Chrome, e dá a receita por stack (nginx, Express, Django, Spring, FastAPI, CDN). Preflight, credenciais, Vary: Origin e as misconfigs que viram vulnerabilidade. Triggers — CORS, Access-Control-Allow-Origin, preflight, blocked by CORS policy, cross-origin, OPTIONS 401, no-cors, erro de CORS."
 ---
 
@@ -66,7 +66,7 @@ curl -sS -D- -o /dev/null -X OPTIONS "$URL" \
 **por método**: perguntar por `POST` quando quem falha é `PUT` devolve `204` e headers
 completos, e a sonda passa a atestar saúde exatamente onde há doença. A allowlist quase
 sempre contém `GET` e `POST` — são os primeiros que alguém escreve —, então o método
-ausente é justamente o que a sonda default não pergunta.
+ausente é justamente o que uma sonda com método fixo não pergunta.
 
 Leitura dos três:
 
@@ -84,7 +84,7 @@ Leitura dos três:
   **parcial** — a lista funciona, o formulário salva, e só uma ação quebra —, e por ser parcial
   a suspeita cai na tela, não no CORS. Ver `casos-limite.md` §1a.
 - **`Vary: Origin` ausente com allowlist dinâmica** → funciona hoje e quebra atrás de CDN. Ver
-  `references/casos-limite.md` §3.
+  `references/seguranca.md` §4.
 
 Se (2) e (3) parecem certos e o browser ainda bloqueia, o portão é outro — releia a tabela dos três
 portões e vá para `references/diagnostico.md` §2 ler a mensagem exata.

@@ -1,5 +1,9 @@
 # Changelog — `wsl-windows-onboarding`
 
+## [0.4.4] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## [0.4.3] — 2026-09-28
 
 Conformidade com as boas práticas do agentskills.io, apontada pelo `skill-quality-audit` v0.2.0:

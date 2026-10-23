@@ -47,7 +47,7 @@ import re
 import sys
 from pathlib import Path
 
-VALID_PLATFORMS = {'claude-code', 'cursor'}
+VALID_PLATFORMS = {'claude-code', 'cursor', 'codex'}
 
 # Campos de topo fora da spec que cada plataforma le (so funcionam no topo): Claude Code
 # (code.claude.com/docs/en/skills, "Frontmatter reference") e Cursor (cursor.com/docs/context/skills,
@@ -57,7 +57,9 @@ CLAUDE_CODE_TOP_FIELDS = {'when_to_use', 'argument-hint', 'arguments', 'disable-
                           'user-invocable', 'disallowed-tools', 'model', 'effort', 'context', 'agent',
                           'background', 'hooks', 'paths', 'shell'}
 CURSOR_TOP_FIELDS = {'paths', 'disable-model-invocation', 'icon', 'color'}
-TOP_FIELDS_BY_PLATFORM = {'claude-code': CLAUDE_CODE_TOP_FIELDS, 'cursor': CURSOR_TOP_FIELDS}
+# Codex lê a política em agents/openai.yaml; campos exclusivos do Claude não viram aceitos.
+TOP_FIELDS_BY_PLATFORM = {'claude-code': CLAUDE_CODE_TOP_FIELDS, 'cursor': CURSOR_TOP_FIELDS,
+                          'codex': set()}
 
 # Tetos vindos do CLAUDE.md deste repo ("Skill description guidelines"): alvo 350, cap
 # duro 500. Nao sao numeros inventados aqui -- a politica ja estava escrita e nada a
@@ -149,7 +151,6 @@ def _read_skill_description(repo_root: Path, name: str) -> 'tuple[str | None, st
       'no-frontmatter' -> SKILL.md existe mas nao tem bloco --- ... ---
       'yaml-error'     -> frontmatter presente mas nao e YAML valido
       'no-description' -> frontmatter sem a chave description
-      'no-yaml'        -> pyyaml ausente; a leitura foi PULADA de proposito
 
     Sobre 'yaml-error': a causa recorrente e uma description SEM ASPAS contendo `: `
     (dois-pontos + espaco), como em "...auto-routed by stack: Node...". Em YAML isso
@@ -158,22 +159,18 @@ def _read_skill_description(repo_root: Path, name: str) -> 'tuple[str | None, st
     fica latente ate um consumidor estrito aparecer. Cura: envolver o valor em aspas
     duplas -- muda a sintaxe, nao o valor.
 
-    Sobre 'no-yaml': o valor pode ser um escalar YAML entre aspas (varias skills usam
+    O valor pode ser um escalar YAML entre aspas (varias skills usam
     "..." e uma delas contem `C:\\Users` com backslash escapado). Um regex ingenuo
     devolve o texto COM as aspas e COM o escape, o que produz divergencia falsa -- foi
     exatamente o que aconteceu na auditoria manual que motivou esta verificacao, que
     acusou 7 plugins quando apenas 5 divergiam. Reimplementar o unescape do YAML a mao
     e a mesma classe de dividia (normalizacao pareada) que a checagem tenta evitar, por
-    isso o parse e delegado ao pyyaml e, na ausencia dele, a comparacao com o SKILL.md
-    e pulada com aviso VISIVEL em vez de rodar sobre um parse duvidoso.
+    isso o parse e delegado ao PyYAML, dependencia obrigatoria do gate.
     """
     skill_path = repo_root / 'plugins' / name / 'skills' / name / 'SKILL.md'
     if not skill_path.exists():
         return None, 'no-skill'
-    try:
-        import yaml  # opcional: nao e dependencia do resto do script
-    except ImportError:
-        return None, 'no-yaml'
+    import yaml
     m = _FRONTMATTER_RE.match(skill_path.read_text(encoding='utf-8'))
     if not m:
         return None, 'no-frontmatter'
@@ -232,10 +229,7 @@ def _check_skill_spec(repo_root: Path) -> 'tuple[list[str], list[str]]':
     outros clientes da spec) nao.
     """
     errors, warnings = [], []
-    try:
-        import yaml
-    except ImportError:
-        return [], ['  spec check: pyyaml ausente -> check 7 PULADO (pip install pyyaml)']
+    import yaml
     for skill_md in sorted((repo_root / 'plugins').glob('*/skills/*/SKILL.md')):
         rel = skill_md.relative_to(repo_root).as_posix()
         text = skill_md.read_text(encoding='utf-8')
@@ -268,6 +262,16 @@ def _check_skill_spec(repo_root: Path) -> 'tuple[list[str], list[str]]':
             plats = manifest.get('platforms') if isinstance(manifest, dict) else None
             if isinstance(plats, list) and plats and all(p in TOP_FIELDS_BY_PLATFORM for p in plats):
                 aceitos = set.intersection(*(TOP_FIELDS_BY_PLATFORM[p] for p in plats))
+                if 'codex' in plats and data.get('disable-model-invocation') is True:
+                    policy_path = skill_md.parent / 'agents/openai.yaml'
+                    try:
+                        policy = yaml.safe_load(policy_path.read_text(encoding='utf-8'))
+                        implicit = policy.get('policy', {}).get('allow_implicit_invocation')
+                    except (OSError, yaml.YAMLError, AttributeError):
+                        implicit = None
+                    if implicit is not False:
+                        errors.append(f'  {rel}: Codex exige policy.allow_implicit_invocation: false '
+                                      'em agents/openai.yaml para preservar invocação explícita')
         except (OSError, ValueError):
             pass
         extra = sorted(set(data) - SPEC_FIELDS - aceitos)
@@ -299,10 +303,7 @@ def _load_cursor_skill_map(repo_root: Path) -> 'list[dict] | None':
 # deixava a ultima linha do bloco metadata solta quando ele fechava o frontmatter, e 12
 # arquivos saiam com YAML invalido (todo-to-github-issues ja publicado assim).
 def _check_cursor_frontmatter(repo_root: Path) -> 'tuple[list[str], list[str]]':
-    try:
-        import yaml
-    except ImportError:
-        return [], ['  cursor check: pyyaml ausente -> check 8 PULADO (pip install pyyaml)']
+    import yaml
     install_py = repo_root / 'install.py'
     if not install_py.exists():
         return [], []
@@ -333,6 +334,12 @@ def _check_cursor_frontmatter(repo_root: Path) -> 'tuple[list[str], list[str]]':
 
 
 def main():
+    """Valida metadados, frontmatter e distribuição; aplica conciliações com --fix."""
+    try:
+        import yaml
+    except ImportError:
+        print('Erro: PyYAML ausente; a validação obrigatória não pode ser executada.')
+        sys.exit(1)
     fix_mode = '--fix' in sys.argv
     repo_root = Path(__file__).resolve().parent.parent
 
@@ -450,7 +457,6 @@ def main():
                 )
 
     # Check 6: description is identical across SKILL.md, plugin.json and marketplace.json
-    yaml_missing_reported = False
     for entry in plugins:
         name = entry.get('name', '?')
         plugin_json_path = repo_root / 'plugins' / name / '.claude-plugin' / 'plugin.json'
@@ -461,15 +467,7 @@ def main():
         marketplace_desc = entry.get('description')
         skill_desc, status = _read_skill_description(repo_root, name)
 
-        if status == 'no-yaml':
-            if not yaml_missing_reported:
-                notes.append(
-                    '  description check: pyyaml ausente -> a comparacao com SKILL.md foi '
-                    'PULADA (plugin.json vs marketplace.json segue valendo). '
-                    'Instale pyyaml para o gate completo: pip install pyyaml'
-                )
-                yaml_missing_reported = True
-        elif status == 'yaml-error':
+        if status == 'yaml-error':
             errors.append(
                 f'  {name}: o frontmatter do SKILL.md nao e YAML valido -- causa tipica e '
                 f'uma description SEM ASPAS contendo ": " (ex.: "by stack: Node"), que em '
@@ -555,6 +553,22 @@ def main():
     cursor_errors, cursor_notes = _check_cursor_frontmatter(repo_root)
     errors.extend(cursor_errors)
     notes.extend(cursor_notes)
+
+    # O catálogo conferido é o mesmo artefato distribuído ao consumidor Git.
+    try:
+        spec = importlib.util.spec_from_file_location('codex_marketplace',
+                                                     repo_root / 'scripts/codex-marketplace.py')
+        codex = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(codex)
+        codex.sync_json(codex.inside(repo_root, repo_root / codex.CATALOG),
+                        codex.build_catalog(repo_root), False)
+        adapter_spec = importlib.util.spec_from_file_location('codex_adapters',
+                                                             repo_root / 'scripts/codex-adapters.py')
+        adapters = importlib.util.module_from_spec(adapter_spec)
+        adapter_spec.loader.exec_module(adapters)
+        adapters.sync_artifacts(repo_root)
+    except (OSError, ValueError, RuntimeError) as exc:
+        errors.append(f'  distribuição Codex: {exc}')
 
     if fix_mode and fixes_applied > 0:
         print(f'\nApplied {fixes_applied} format-preserving fix(es).')

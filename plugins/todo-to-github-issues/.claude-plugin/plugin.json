@@ -4,7 +4,7 @@
   "author": {
     "name": "Chewiesoft"
   },
-  "version": "2.8.0",
+  "version": "2.8.1",
   "category": "development",
   "keywords": [
     "todo",
@@ -23,7 +23,8 @@
   ],
   "platforms": [
     "claude-code",
-    "cursor"
+    "cursor",
+    "codex"
   ],
   "skills": "./skills"
 }

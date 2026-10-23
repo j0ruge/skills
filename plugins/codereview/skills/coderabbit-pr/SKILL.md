@@ -1,7 +1,7 @@
 ---
 name: coderabbit-pr
 metadata:
-  version: 4.5.6
+  version: 4.6.0
 description: Resolves AI review comments on a GitHub PR — auto-detects CodeRabbit, Copilot, Gemini, Codex; creates per-reviewer checklists, verifies findings against current code (with byte-exact inspection when reviewers cite invisible/control characters), applies fixes, runs regression tests, resolves GitHub conversations, then cleans up its own checklist files. Triggers — coderabbit, copilot review, gemini review, codex review, fix PR review.
 ---
 
@@ -34,7 +34,7 @@ Read each one at the step that needs it:
 
 - `references/pr-branch.md` — read at Phase 1.1, for the stale copy, worktree, writer, conflicts
   and sweep.
-- `references/reviewer-registry.md` — read at Phase 1.2 when a login is not in the table below, and
+- `references/reviewer-registry.md` — read at Phase 1.2 for login and CLI-comment detection, and
   at 1.3 when structuring findings: comment structure, severity markers and metadata to discard per
   reviewer, the rule for unknown bots; Phase 2: coverage per commit.
 - `references/checklist-template.md` — read at Phase 2 before writing a checklist: file structure,
@@ -85,7 +85,7 @@ never commits: the user decides when. The one tracking file per reviewer in the 
 
 - **`gh` CLI not available or not authenticated**: Stop with: "The `gh` CLI is not installed or authenticated. Run `gh auth login` before using this skill."
 - **PR not found**: Stop with: "PR #{n} not found or insufficient permissions."
-- **No known reviewer bot posted anything at all** (on none of the three endpoints of 1.2): Stop with: "No AI review comments found on PR #{n}."
+- **No reviewer artifacts or CLI candidates exist** (on any endpoint of 1.2): Stop with: "No AI review comments found on PR #{n}."
   A reviewer that posted but yielded zero actionable findings (an approval, an empty summary, "unable to review") is **not** this case: it goes through Phase 2's zero-findings path and is reported.
 - **File no longer exists**: Mark as `[x] File removed — not applicable`.
 - **Line not locatable** (heavy modifications since review): Use context clues (function name, surrounding code) to locate. If truly unmappable: `[x] Not locatable in current code — requires manual review`.
@@ -121,17 +121,10 @@ for e in pulls/$PR/comments pulls/$PR/reviews issues/$PR/comments; do
   gh api "repos/$REPO/$e" --paginate --jq '[.[].user.login] | unique[]'; done
 ```
 
-Union all three: a reviewer may post only a review body (Gemini's summary, a quota notice), only
-inline comments, or only an issue comment (CodeRabbit on the Free plan: a walkthrough, no review —
-case (b), registry). Skip one and a reviewer silently vanishes. Match the logins against the
-known bots:
-
-| Login | Reviewer |
-|-------|----------|
-| `coderabbitai[bot]` / `coderabbitai` | CodeRabbit |
-| `copilot-pull-request-reviewer[bot]` (review object) / `Copilot` (its inline comments) | Copilot |
-| `gemini-code-assist[bot]` | Gemini |
-| `chatgpt-codex-connector[bot]` | Codex |
+Union all three; a reviewer may post only on one endpoint. Read the registry's detection
+rules now: match bot logins and collect CLI review candidates from issue-comment bodies.
+Claude Code can post as the CLI user's account, so the author list alone is insufficient.
+Verify origin and reviewed commit before counting coverage; an unverified candidate is not a pass.
 
 With `--reviewer`, filter to that reviewer.
 Report: "Found reviews from: {list of reviewers}. Processing {N} reviewer(s)."
@@ -159,12 +152,15 @@ gh api "repos/$REPO/pulls/$PR/reviews" --paginate --jq '.[] | select(.body != ""
 - The projection drops `diff_hunk`, URLs, reactions and nested user objects (most bytes, per `wc -c`)
   **before** they reach any context.
 
+Carry the CLI candidate objects collected in 1.2 into this step; parse them by the registry
+before treating a reviewer as zero-findings.
+
 **Interpretation — delegate only when the output is genuinely big** (roughly >1500 lines, or 3+
 reviewers each with a long review body): hand *that text* to a cheaper-model agent per reviewer, in
 parallel. Otherwise structure it yourself. Either way, produce a **numbered list** with, per finding:
 sequential number; severity (CRITICAL/HIGH/MEDIUM/LOW; for the markers, `references/reviewer-registry.md`); file
 path and line; title (bold text or first sentence); 1-2 sentence summary; whether a code suggestion is
-included; source (inline/review-body/nitpick).
+included; source (inline/review-body/issue-comment/nitpick).
 
 **Deduplication**: match by file path + line range + first 100 chars of title; a finding both inline
 and in the review body keeps the inline version (more precise line); findings sharing a root cause
@@ -177,7 +173,7 @@ A reviewer with 0 findings after filtering goes to Phase 2's zero-findings path.
 ### Phase 2: Create Checklist Files
 
 For each reviewer with findings, write `{reviewer}-review.md` in the project root
-(`coderabbit-review.md`, `copilot-review.md`, `gemini-review.md`, `codex-review.md`, or
+(`coderabbit-review.md`, `copilot-review.md`, `gemini-review.md`, `codex-review.md`, `claude-review.md`, or
 `{bot-login}-review.md` for an unknown bot), following `references/checklist-template.md`: items by
 severity (CRITICAL > HIGH > MEDIUM > LOW), each `- [ ]` with number, severity tag, file:line, title and
 a 1-2 sentence summary; pre-addressed items noted; a "Final Result" table at the end, all Pending.

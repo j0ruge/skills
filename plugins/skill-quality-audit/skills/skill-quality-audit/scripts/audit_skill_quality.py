@@ -43,7 +43,9 @@ CLAUDE_CODE_TOP_FIELDS = {"when_to_use", "argument-hint", "arguments", "disable-
 CURSOR_TOP_FIELDS = {"paths", "disable-model-invocation", "icon", "color"}
 # Custo aceito (INFO) só em skill de plugin cujas `platforms` do plugin.json TODAS leem o campo no
 # topo; fora disso (sem manifesto, upload para claude.ai/API, plataforma que o ignora) segue AVISO.
-TOP_FIELDS_BY_PLATFORM = {"claude-code": CLAUDE_CODE_TOP_FIELDS, "cursor": CURSOR_TOP_FIELDS}
+# Codex usa agents/openai.yaml para política; não aceita campos específicos dos outros hosts.
+TOP_FIELDS_BY_PLATFORM = {"claude-code": CLAUDE_CODE_TOP_FIELDS, "cursor": CURSOR_TOP_FIELDS,
+                          "codex": set()}
 RE_UNEXPECTED = re.compile(r"^\s*-\s*Unexpected fields in frontmatter: (.+?)\. Only \[")
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 MAX_NAME, MAX_DESC, MAX_COMPAT = 64, 1024, 500

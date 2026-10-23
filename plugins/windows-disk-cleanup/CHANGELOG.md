@@ -1,5 +1,9 @@
 # Changelog — `windows-disk-cleanup`
 
+## [0.2.2] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## [0.2.1] — 2026-10-05
 
 ### A exclusão feita pelo usuário também é conferida pelo artefato

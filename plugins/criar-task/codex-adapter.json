@@ -1,0 +1,18 @@
+{
+  "commands": [
+    {
+      "name": "criar-task",
+      "source": "./commands/criar-task.md",
+      "resources": [
+        {
+          "source": "./templates/task-template.md",
+          "target": "assets/task-template.md"
+        },
+        {
+          "source": "./templates/tasks-template.md",
+          "target": "assets/tasks-template.md"
+        }
+      ]
+    }
+  ]
+}

@@ -4,9 +4,31 @@
   "author": {
     "name": "Chewiesoft"
   },
-  "version": "1.6.2",
+  "version": "1.6.4",
   "category": "development",
-  "keywords": ["pdf", "pdf-generation", "pdfmake", "pdf-lib", "pdfkit", "puppeteer", "react-pdf", "template-analysis", "layout-design", "conditional-columns", "invoice", "proposal", "report", "revision-control", "bold-parser", "svg-logo", "vector-logo"],
-  "platforms": ["claude-code", "cursor"],
+  "keywords": [
+    "pdf",
+    "pdf-generation",
+    "pdfmake",
+    "pdf-lib",
+    "pdfkit",
+    "puppeteer",
+    "react-pdf",
+    "template-analysis",
+    "layout-design",
+    "conditional-columns",
+    "invoice",
+    "proposal",
+    "report",
+    "revision-control",
+    "bold-parser",
+    "svg-logo",
+    "vector-logo"
+  ],
+  "platforms": [
+    "claude-code",
+    "cursor",
+    "codex"
+  ],
   "skills": "./skills"
 }

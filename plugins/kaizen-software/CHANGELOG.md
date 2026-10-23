@@ -2,6 +2,29 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.5] — 2026-10-22
+
+Integra o Check incremental preservado na worktree `9e53c38`, sobre a versão
+atual 1.4.4, sem rebaixar o plugin ou retirar as lições posteriores à 1.3.6.
+
+- A Fase 2 direciona para `references/check-incremental.md` quando o critério é
+  não introduzir regressão em artefato com legado. A receita preserva baseline,
+  identidade, multiplicidade e severidade; dívida anterior e gates obrigatórios
+  continuam separados. O exemplo sintético em memória cobre contagem igual com
+  identidade diferente, duplicação, agravamento e desaparecimento.
+- O controle com o texto anterior já tomou decisões corretas nos três cenários
+  avaliados, por inferência. A integração torna o procedimento explícito; não é
+  descrita como correção de uma falha de execução reproduzida.
+- A revisão identificou falso bloqueio no exemplo antigo: severidade fazia
+  parte da identidade e uma redução parecia achado novo. O exemplo adaptado
+  compara identidade e limiares de severidade separadamente, com RED/GREEN para
+  redução e controles de multiplicidade, agravamento e desaparecimento.
+- Descrição e compatibilidade Claude/Cursor/Codex preservadas.
+
+## [1.4.4] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## [1.4.3] — 2026-10-20
 
 ### Vocabulário válido não prova sentido igual

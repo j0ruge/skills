@@ -1,5 +1,13 @@
 # Changelog — release
 
+## [2.0.3] — 2026-10-22
+
+A entrada textual da invocação é explícita quando o host não substitui `$ARGUMENTS`, inclusive no Codex. Preserva o bloco para os hosts que fazem a substituição e a checagem de entrada vazia.
+
+## [2.0.2] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Política Codex em agents/openai.yaml preserva a invocação explícita; o campo de topo é mantido para Claude/Cursor: aviso local para Codex, mas `G2 ERRO` e retorno 1 no auditor com validação externa estrita. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## [2.0.1] — 2026-10-20
 
 ### Fixed

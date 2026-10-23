@@ -6,6 +6,234 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-10-22 — Consolidar worktrees e integrar o Check incremental preservado
+
+- **Antes:** a worktree Kaizen guardava `9e53c38`, não integrado, enquanto a loja
+  evoluiu até 1.4.4. O procedimento de baseline estava ausente da versão atual;
+  o exemplo antigo tratava redução de severidade como achado novo.
+- **Depois:** Kaizen 1.4.5 preserva o texto atual e acrescenta a receita, com
+  identidade independente da severidade e comparação por limiar. Não houve
+  rebaixamento de versão ou remoção das lições posteriores ao commit antigo.
+- **Check:** leitura independente confirmou a lacuna explícita; o texto anterior
+  já permitia decisões corretas por inferência, sem falha de conduta reproduzida.
+  O falso bloqueio do exemplo foi reproduzido em RED e corrigido; cinco controles
+  mutados falharam, enquanto o exemplo correto passou. Re-revisão independente
+  do ajuste sem novos achados. SQA antes/depois sem novos findings.
+- **Preservação:** quatro branches e 2.714 arquivos da sessão foram reunidos em
+  `/home/joruge/artefatos/skills-pr6-2026-10-22-1dspgoxp/`, com origem e hashes no
+  manifesto e bundle Git verificado. Originais preservados; perfis temporários,
+  caches, metadados Git e arquivos com nomes de credenciais/configuração local
+  constam nas exclusões. A consolidação é local, sem publicar esses arquivos.
+- **Padronizado em:** Fase 2 de Kaizen e `references/check-incremental.md`;
+  metadados/README/CHANGELOG sincronizados em 1.4.5.
+
+---
+
+## 2026-10-22 — Diagnósticos e transporte na segunda revisão do PR #6
+
+- **Antes:** YAML e mapas inválidos escapavam como traceback; a prova de
+  descoberta misturava `select` com buffer de texto; o instalador duplicava o
+  contrato gerado. Três skills dependiam de placeholder sem explicar a entrada
+  no Codex. A documentação confundia aviso local com aprovação externa.
+- **Depois:** erros de entrada normalizados na origem, JSONL acumulado em bytes,
+  contrato do gerador reutilizado e entrada textual explícita. A interseção do
+  auditor permanece estrita; a documentação registra `G2 ERRO` externo.
+- **Check:** baseline 53 gerais/55 auditor; depois 61 gerais/55 auditor/15 scanner.
+  Oito regressões e cinco mutantes detectados. SQA das três skills sem diferença
+  de findings. Auditor externo real de release e ticket retornou 1, como agora
+  documentado; esse resultado não é tratado como check verde.
+- **Padronizado em:** adaptadores, instalador, testes de transporte e instruções
+  canônicas das três skills; rastreabilidade em `docs/codex/verification.md`.
+
+---
+
+## 2026-10-22 — Origem da revisão separada da conta que publica
+
+- **Tipo:** padronização de duas lições verificadas, autorizada pelo usuário.
+- **Antes:** a detecção por logins perdia os achados do Claude Code publicados
+  pela conta do operador; a passagem de sensores não explicitava o rename que
+  esconde a origem monitorada.
+- **Depois:** codereview 2.27.0 / coderabbit-pr 4.6.0 coleta candidatos pelo corpo
+  do comentário, confirma a origem e compara o SHA completo antes de contar
+  cobertura. O marcador sozinho não autentica a revisão. O passe 6.11 inclui
+  remoções e renames nos limites do escopo, respeitando read-only e autorização.
+- **Check:** 14 controles e consulta GitHub real preservaram os quatro achados;
+  leitura fria conferiu roteamento, proveniência, contagem, cobertura, severidade
+  e limite de atuação. SQA antes/depois: zero erros/avisos nas duas skills, sem
+  NOVO ou SUMIU; descrições preservadas e ambas abaixo de 20.000 caracteres.
+- **Padronizado em:** `plugins/codereview/skills/coderabbit-pr/references/reviewer-registry.md`,
+  seu roteiro no SKILL.md e `plugins/codereview/skills/codereview/references/detection-passes.md`.
+- **Yokoten:** candidatos sem origem ou com parse inconsistente permanecem
+  pendentes, sem virar aprovação; revisão de commit antigo não cobre head novo.
+  Tabela de logins duplicada fundida com o cadastro canônico, sem retirar logins.
+
+---
+
+## 2026-10-22 — Revisão externa cobre ordem e rename nos limites do pacote
+
+- **Tipo:** correção de causa raiz e redução de duplicação apontada na revisão.
+- **Antes:** o catálogo comparava plataformas pela ordem, divergindo do validador;
+  o hook via somente o destino de renames para fora dos diretórios monitorados.
+- **Depois:** comparação de plataformas independente da ordem, preservando tipos
+  e conteúdo; `--no-renames` expõe a remoção da origem ao gate staged.
+- **Check:** dois casos de ordem e um rename ficaram RED antes e GREEN depois.
+  Remover as guardas fez as regressões falharem. Passaram 53 testes gerais, 55 do
+  auditor e 15 do scanner. O preview combinado passou nos três cenários reais
+  de distribuição, com 25 pacotes / 289 arquivos.
+- **Padronizado em:** `scripts/codex-marketplace.py`, `scripts/pre-commit` e testes
+  em `tests/test_codex_marketplace.py` / `tests/test_codex_validation.py`.
+- **Yokoten:** catálogo e adaptador usam `skill_paths` e `atomic_write` comuns;
+  mutantes foram detectados nos dois consumidores e na limpeza do temporário.
+  Fallbacks mortos de PyYAML foram removidos; a dependência continua obrigatória.
+- **Integração:** após autorização, `2511ba8` incorporou a resposta e `cb7f95c`
+  integrou main `0d2e56d` conforme o preview aprovado. Os 53 testes gerais e os
+  três cenários reais do commit integrado passaram; 25 pacotes / 289 arquivos
+  conferidos, com CICD 2.39.1 e deploy 3.3.3.
+
+---
+
+## 2026-10-22 — Hash tipado preserva a varredura do manifesto
+
+- **Tipo:** padronização de correção verificada.
+- **Antes:** §6.10 de codereview reconhecia checksums sinalizados como credenciais,
+  mas oferecia apenas allowlist do arquivo como remédio durável.
+- **Depois:** codereview 2.26.10 oferece primeiro um registro com `sha256` quando
+  o schema puder mudar, preservando a alternativa anterior para schema imutável.
+- **Check:** 15 testes passaram, incluindo três fixtures independentes com
+  gitleaks real: alerta original, hash tipado limpo e canário detectado no mesmo
+  manifesto. SQA antes/depois sem erros/avisos; gate sem `NOVO` ou `SUMIU`.
+- **Padronizado em:** `plugins/codereview/skills/codereview/references/detection-passes.md`
+  §6.10 e `tests/test_scan_secrets.py:TestTypedHashManifest` da mesma skill.
+- **Yokoten:** a referência exige conferir todos os hashes na revisão fixada,
+  atualizar produtor e consumidores e repetir os mesmos scanners/regras. Nenhuma
+  exceção de scanner foi adicionada. Versões e descrição conferidas nos espelhos.
+
+---
+
+## 2026-10-22 — Revisão impede perda de recursos e desvio do gate
+
+- **Tipo:** correção de causa raiz e padronização.
+- **Antes:** targets equivalentes podiam sobrescrever templates; o overlay podia
+  omitir skills descobertas pelo diretório padrão. O hook podia aceitar commit
+  sem validar quando o detector falhava ou Git colocava aspas no nome do arquivo.
+- **Depois:** targets são comparados como caminhos; o overlay preserva `./skills`;
+  o hook consome nomes delimitados por NUL, usa seleção Bash e falha se Git falhar.
+- **Causa raiz:** a validação comparava representações textuais em vez dos
+  caminhos resolvidos; dois consumidores divergiam no default de skills; o status
+  da pipeline do detector confundia erro com ausência de arquivos relevantes.
+- **Check:** cinco regressões novas falharam antes e passaram depois. A suíte
+  geral passou em 49 testes, sem skips; os 55 testes do auditor também passaram.
+  Geradores, validador e `git diff --check` passaram. A revisão das correções não
+  encontrou novos defeitos. Evidência Git após o commit `7df2ea7` registrada em
+  `docs/codex/verification.md`.
+- **Padronizado em:** `scripts/codex-adapters.py`, `scripts/pre-commit`,
+  `tests/test_codex_adapters.py` e `tests/test_codex_validation.py`.
+- **Evidência tipada:** os 289 hashes foram conferidos contra a revisão registrada
+  antes de receberem o campo `sha256`. Isso removeu três alertas indevidos de
+  gitleaks sobre nomes de arquivos com `api`/`token`, sem mudar digest, scanner,
+  regra ou whitelist; a mesma representação é emitida pelo teste de distribuição.
+- **Yokoten:** defaults conferidos entre gerador e adaptador; filtro cobre todos
+  os caminhos de distribuição, inclusive nomes não ASCII. A sonda de docstrings
+  levou à documentação dos quatro `main()` tocados. README corrigido em dois
+  trechos que ainda descreviam o menu e a implementação antigos.
+
+---
+
+## 2026-10-22 — Retrofit confirmado sem presumir falha por nome de ferramenta
+
+- **Tipo:** correção de causa raiz e verificação de hipótese.
+- **Antes:** a retro suspeitava de portabilidade em DDD/codereview e de duas
+  referências inconsistentes em CORS.
+- **Depois:** os controles de DDD/codereview adaptaram os planos às capacidades
+  nativas, sem reproduzir a falha; fontes preservadas. CORS 1.1.2 corrige a seção
+  de Vary e o aviso que descrevia como fixa uma sonda já parametrizada.
+- **Causa raiz:** o comando da triagem mudou, mas explicação e encaminhamento
+  continuaram descrevendo o estado anterior. A leitura do pacote pelo agente
+  expôs a divergência; nome específico de outro host, isoladamente, não provou
+  falha operacional nas outras skills.
+- **Check:** cenário antigo reproduziu duas contradições; fixture corrigida e
+  instalação final confirmaram a navegação e o método. SQA antes/depois: zero
+  erros/avisos e nenhum achado novo. 44 testes gerais passaram; três provas reais
+  repetidas após o commit confirmaram CORS 1.1.2 e os 289 arquivos distribuídos.
+- **Padronizado em:** correções pontuais em `plugins/cors/skills/cors/SKILL.md` e
+  `references/casos-limite.md`, bump/CHANGELOG e espelhos, conferidos pelo gate.
+  Evidência e limites em `docs/codex/retrofits-2026-10-22.md`.
+- **Yokoten:** outros achados de conteúdo permaneceram como dívida para tarefa
+  própria; não foi inserida regra de portabilidade sem reprodução da falha.
+
+---
+
+## 2026-10-22 — Distribuição Codex medida no pacote instalado
+
+- **Tipo:** melhoria incremental e padronização.
+- **Antes:** somente Claude Code/Cursor; nenhuma prova de instalação Codex; hook
+  conferia working tree e não tinha execução real pelo Git coberta.
+- **Depois:** catálogo filtrado com 25 plugins / 28 workflows, quatro comandos
+  adaptados por geração e menu orientativo sem instalação. No candidato Git,
+  289 arquivos instalados foram comparados; 44 testes gerais e 55 do auditor
+  passaram. Desktop/macOS/Windows continuam não verificados.
+- **Check:** casos independentes vermelhos/verdes cobrem inclusão indevida,
+  metadados divergentes, escapes por symlink, template ausente, fontes/derivados
+  antigos, política de invocação e índice inválido encoberto pelo working tree.
+  Git refresh foi comprovado por versão e conteúdo no cache; remoções observadas.
+- **Padronizado em:** `scripts/codex-marketplace.py`, `scripts/codex-adapters.py`,
+  `scripts/validate-versions.py`, `scripts/pre-commit` 100755, testes em `tests/`,
+  mapas de plataforma do auditor, README e CLAUDE.md. Evidências em `docs/codex/`.
+- **Yokoten:** auditor e validador usam conjunto Codex próprio; campos Claude
+  continuam avisados, sem supor equivalência com a política do Codex.
+
+### Causas verificadas nas guardas
+
+- Hook atualizado herdou modo 100644 → Git ignorava sua execução → testes chamavam
+  Bash diretamente e não verificavam um commit real. Contramedida: modo 100755
+  versionado e teste que precisa bloquear um commit inválido.
+- `rg -q` encerrava cedo com `pipefail` → Git recebia SIGPIPE em lista staged
+  grande → condição pulava o gate. Contramedida: consumir a lista completa,
+  comprovada com 2.500 arquivos staged.
+- Guarda inicial exigia campo `skills`, mas `ticket` usa descoberta padrão já
+  comprovada pelo host. Contramedida: aceitar o diretório padrão, com teste positivo
+  e negativo para skill ausente.
+
+### Desperdícios evitados e oportunidades
+
+- Sem instalação obrigatória de catálogo inteiro, cópias manuais de skills,
+  mudança de regras de negócio, push ou revisão antecipada. Seis pacotes ficaram
+  excluídos com motivo, em vez de suporte presumido por compatibilidade Cursor.
+- Os smokes sinalizaram referências antigas de CORS e exemplos específicos de
+  Zitadel; oportunidade para o mantenedor em tarefa própria, sem alterar esta entrega.
+- Próximo passo: novo `/clear` e revisão com `/goal` e codereview. Desktop requer
+  acesso ao aplicativo para fechar R01; a lacuna não foi convertida em aprovação.
+
+---
+
+## 2026-10-22 — Planejamento da distribuição individual no Codex
+
+- **Tipo:** planejamento de melhoria incremental.
+- **Antes:** catálogo, instalador e validadores documentavam Claude Code e Cursor;
+  a forma de distribuir no Codex ainda não tinha decisões registradas.
+- **Depois:** pesquisa em fontes oficiais e no exemplo solicitado, entrevista
+  concluída e desenho aprovado para catálogo Codex filtrado com fontes de skills
+  compartilhadas. Especificação, plano com Check por incremento e handoff
+  preparados para a execução em outra sessão.
+- **Check da preparação:** validador existente passou; os comandos de CLI foram
+  conferidos pelo help. Esses resultados não comprovam uma instalação Codex,
+  que ainda não foi executada.
+- **Padronizado em:** referências no README e critérios documentados em
+  `CONTEXT.md` e `docs/superpowers/`. Os validadores e adaptadores previstos no
+  plano permanecem pendentes de implementação e prova.
+- **Yokoten:** a introdução de plataforma precisa alcançar o validador e o auditor
+  de skills, ambos com mapas próprios; essa verificação foi incluída no plano.
+
+### Desperdícios evitados
+
+- O usuário escolheu instalação individual por plugin, preservando os
+  agrupamentos existentes; um pacote obrigatório com todo o catálogo foi excluído.
+- O exemplo externo usa catálogo compatível com Claude; aceitá-lo como prova de
+  execução de todos os nossos workflows esconderia diferenças de ferramentas,
+  argumentos e templates. O plano começa pela prova no artefato instalado.
+
+---
+
 ## 2026-09-30 — Retro de skill puxada por hook (retrofit-watch) + skill de hooks (hook-builder)
 
 - **Tipo:** poka-yoke (a retro deixa de depender de alguém lembrar) · padronização (como se

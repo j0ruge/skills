@@ -4,10 +4,16 @@ description: "Create a GitHub Release with categorized English notes from git hi
 disable-model-invocation: true
 compatibility: "Claude Code and Cursor read disable-model-invocation only at the top: the skill runs only as /release:release (/release in Cursor), never from context, because it publishes a GitHub Release. Requires git and an authenticated gh CLI."
 metadata:
-  version: 2.0.1
+  version: 2.0.3
 ---
 
 ## User Input
+
+A entrada desta invocação é o texto enviado pelo usuário junto ao pedido da skill.
+Hosts que preenchem o bloco abaixo oferecem a entrada por substituição. Se ele
+permanecer literal, como no Codex, use o texto da mensagem do usuário, incluindo
+versão, opções e caminhos informados. Só trate a entrada como vazia quando o
+usuário não tiver fornecido esses dados.
 
 ```text
 $ARGUMENTS
@@ -38,7 +44,7 @@ Create or update a **GitHub Release** with detailed release notes in **English**
 
 ### 0. Parse arguments
 
-Extract from `$ARGUMENTS`:
+Extraia da entrada desta invocação, definida acima:
 - `$NEW_VERSION` — the semantic version (if provided)
 - `$PATH_FILTER` — the `--path` value (if provided). Step 3 appends it as `-- <path>`; step 5 prefixes the manifest paths with it.
 

@@ -1,0 +1,22 @@
+{
+  "name": "executar-task",
+  "version": "0.1.1",
+  "description": "Executa a próxima task planejada com leitura mínima, TDD, testes obrigatórios e marcação de conclusão só após validação. Triggers — executar task, implementar tarefa, próxima task, TDD, validar task, tasks.md.",
+  "author": {
+    "name": "Chewiesoft"
+  },
+  "keywords": [
+    "task-execution",
+    "implementation",
+    "tdd",
+    "tests",
+    "validation",
+    "tasks",
+    "techspec",
+    "development-workflow"
+  ],
+  "skills": [
+    "./codex-skills"
+  ],
+  "commands": []
+}

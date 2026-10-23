@@ -1,5 +1,9 @@
 # Changelog — ticket
 
+## [1.13.1] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. argument-hint permanece no topo para Claude; Codex o ignora e o auditor local mantém `A4 AVISO`; com validação externa estrita há `G2 ERRO` e retorno 1. O workflow usa entrada textual. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
+
 ## [1.13.0] — 2026-10-16
 
 ### Por quê

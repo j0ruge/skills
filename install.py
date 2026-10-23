@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
-"""Chewiesoft Marketplace Installer
+"""Instala skills no Cursor e mostra instruções nativas para Claude Code e Codex.
 
-Installs plugins as Cursor skills or shows Claude Code setup instructions.
-No external dependencies required — uses Python standard library only.
-
-Usage:
-    python install.py
+Usa somente a biblioteca padrão. Execute: python install.py.
 """
 from __future__ import annotations
 
+import importlib.util
+import json
 import re
 import shutil
 import sys
@@ -630,7 +628,29 @@ def _cursor_install_flow() -> None:
 # Main
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _codex_install_flow() -> None:
+    """Apresenta comandos dos plugins publicados, sem executar instalações."""
+    spec = importlib.util.spec_from_file_location(
+        'codex_marketplace', Path(__file__).resolve().parent / 'scripts/codex-marketplace.py')
+    marketplace = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(marketplace)
+    catalog = marketplace.read_json(marketplace.inside(REPO_ROOT, REPO_ROOT / marketplace.CATALOG))
+    if catalog != marketplace.build_catalog(REPO_ROOT):
+        raise ValueError('Catálogo Codex ausente ou desatualizado; execute codex-marketplace.py --write.')
+    names = [entry['name'] for entry in catalog['plugins']]
+    if not names:
+        print('  Nenhum plugin Codex publicado neste catálogo.')
+        return
+    print('\n  Execute o registro da loja no seu ambiente Codex:')
+    print('  codex plugin marketplace add j0ruge/skills')
+    print('\n  Escolha os plugins desejados e execute apenas seus comandos:')
+    for name in names:
+        print(f'  codex plugin add {name}@chewiesoft-marketplace')
+    print('\n  Inicie uma nova sessão para usar as skills instaladas.')
+
+
 def main() -> None:
+    """Seleciona a plataforma e executa o fluxo correspondente do instalador."""
     print()
     print("  ╔═══════════════════════════════════════════╗")
     print("  ║    Chewiesoft Marketplace  —  Installer   ║")
@@ -644,14 +664,18 @@ def main() -> None:
 
     platform_idx = _choose(
         "Which platform are you installing for?",
-        ["Claude Code", "Cursor", "Both"],
-        default_index=2,
+        ["Claude Code", "Cursor", "Codex", "Claude Code + Cursor"],
+        default_index=3,
     )
 
-    if platform_idx in (0, 2):  # Claude Code or Both
+    if platform_idx == 2:
+        _codex_install_flow()
+        return
+
+    if platform_idx in (0, 3):
         print(_CLAUDE_CODE_INSTRUCTIONS)
 
-    if platform_idx in (1, 2):  # Cursor or Both
+    if platform_idx in (1, 3):
         _cursor_install_flow()
 
     print("\n  Done.")
@@ -663,3 +687,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\n\n  Installation cancelled.")
         sys.exit(0)
+    except (OSError, ValueError) as exc:
+        print(f'Erro: {exc}', file=sys.stderr)
+        sys.exit(1)

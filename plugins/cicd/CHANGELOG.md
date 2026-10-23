@@ -2,6 +2,10 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.39.1] — 2026-10-22
+
+- Reintegra a distribuição Codex sobre CICD 2.39.0, preservando as correções da main e o agrupamento existente.
+
 ## 2026-10-22 — A poda vai para antes do build, e o `builder prune --all` não devolve disco — bump 2.38.0 → [2.39.0]
 
 **Por quê:** a lição 118 deixou o conserto como direção: medir antes de promover e, sem folga, rodar
@@ -28,6 +32,10 @@ para disco, não é.
 **Dívida pré-existente, fora deste retrofit:** a tabela de roteamento do `SKILL.md` segue com
 "74 rows" e "109 numbered lessons", já errados antes da 2.38.0 e sem sensor. A skill `deploy`
 (`no-actions-agent.md`, passo 4) repete que a poda do deploy roda depois do build.
+
+## [2.38.1] — 2026-10-22
+
+Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
 
 ## 2026-10-22 — Apagar imagem não libera disco num host que constrói as próprias imagens — bump 2.37.1 → [2.38.0]
 
