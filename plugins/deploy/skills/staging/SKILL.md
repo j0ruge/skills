@@ -2,7 +2,7 @@
 name: staging
 description: "Promote code to staging (and on to production) through the repo's real CD pipeline. Reads each workflow's `on.push.branches` and `runs-on` instead of assuming — the wrong branch can deploy production, and a hosted job under a billing block never starts. Waits for CI green on the exact commit, promotes by PR merge commit, watches the run, then proves the deploy by the data. Triggers — deploy staging, promote to staging, subir para staging, CD pipeline, cd-staging, promover para produção."
 metadata:
-  version: 3.3.1
+  version: 3.3.2
 ---
 
 ## Deploy to Staging
