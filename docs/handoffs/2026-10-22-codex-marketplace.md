@@ -78,8 +78,10 @@ Codex é separada e testada. A segunda revisão detalha essa distinção.
 - Desktop, macOS e Windows: `not_checked`. O procedimento desktop está no
   relatório; a versão mínima do Codex não foi estabelecida. Não declarar R01
   completo nem suporte operacional Windows com base em leituras no Linux.
-- `statusline`, `hook-builder` e `retrofit-watch`: `unsupported`, por contratos
-  específicos do runtime Claude sem equivalência comprovada nesta missão.
+- `statusline` e `hook-builder`: `unsupported`, por contratos específicos do
+  runtime Claude sem equivalência comprovada nesta missão. `retrofit-watch` foi
+  corrigido para `partial` em 2026-10-23: a adaptação Codex local funciona, mas
+  ainda não integra o pacote distribuído por esta loja; ver a matriz atual.
 - `codereview`, `dotnet-wpf` e `retrofit-skill`: `partial`, por roteamento
   Agent/sonnet, setup/hook Claude no agrupamento WPF e resolução externa de
   scripts/irmãs respectivamente. Excluídos do catálogo sem fragmentar pacotes.
