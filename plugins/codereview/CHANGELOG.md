@@ -2,6 +2,33 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.3] — 2026-10-23
+
+### O `git add -p` com respostas fixas é cego, e um falso que termina cedo esconde o ramo sabotado (coderabbit-pr 4.6.1)
+
+- **O quê:**
+  - `skills/coderabbit-pr/references/thread-resolution.md`, 5.0 (*Authorised to commit*): o `git add -p`
+    alimentado por respostas fixas (um here-doc de `n`/`y`) é o atalho tentador da separação por achado, e é
+    cego: cada resposta vai para o trecho que o git mostra em seguida, e um palpite errado põe no índice o
+    trecho do outro achado com a árvore limpa. O caminho continua o `git apply --cached -` por trecho
+    classificado.
+  - `skills/coderabbit-pr/references/fix-loop.md`, passo 4: quando nenhuma sabotagem fica vermelha, uma causa
+    comum é um falso que para antes do real. Uma stream falsa que acaba logo depois do evento deixa o caminho
+    de reserva do fim da stream responder pelo ramo afrouxado. A correção é dar ao falso a vida do processo
+    real.
+- **Por quê:** na sessão do `/coderabbit-pr` do PR #73 do magic_tutor (2026-10-23):
+  - com a separação por achado autorizada, `n`, `y` no `docs/monitor.md` puseram no índice o trecho do 2º
+    achado (`4 +++-` no `git diff --cached --stat`) no lugar do 1º (`2 +-`). O `git diff --cached` pegou antes
+    do commit;
+  - o conserto do F8 (`6fa6613`) põe um `set()` no ramo `registrou`. Com o processo falso fechando a saída
+    logo depois do `registrou`, tirar esse `set()` deixou os 38 testes verdes, porque o `set()` do fim da
+    stream respondia por ele. Com a saída aberta até o desligamento, como no `powershell.exe` real, a mesma
+    sabotagem ficou vermelha. As duas medidas foram feitas na sessão, com a sabotagem desfeita e a árvore
+    limpa depois.
+- **Onde:** só nas references. O `SKILL.md` da `coderabbit-pr` muda só o `metadata.version` (4.6.0 → 4.6.1,
+  mesmo comprimento) e segue com 19 932 caracteres. Uma linha nova nas *Gotchas* passaria do teto de ~20 mil.
+  Ele já manda ler o `fix-loop.md` antes do primeiro conserto de lógica e o `thread-resolution.md` na Fase 5.
+
 ## [2.27.2] — 2026-10-23
 
 ### A passada 6.10 vale também para DOCS

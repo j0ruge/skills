@@ -33,7 +33,12 @@ com arquivo não rastreado", and the push went through once the checklist left t
 
 **Authorised to commit, one commit per finding?** Several findings usually share a file, so split
 by hunk: classify every hunk of `git diff -U3` by finding **before** staging anything (one that
-fits no finding stops the split), stage each group with `git apply --cached -`, and commit. A
+fits no finding stops the split), stage each group with `git apply --cached -`, and commit.
+`git add -p` fed fixed answers (a here-doc of `n`/`y`) is the tempting shortcut, and it is blind:
+each answer goes to whichever hunk git shows next, so a wrong guess stages the other finding's hunk
+and the tree stays clean either way. Measured 2026-10-23 (magic_tutor PR #73): `n`, `y` on
+`docs/monitor.md` staged the second finding's hunk (`4 +++-` in `git diff --cached --stat`) instead
+of the first's (`2 +-`); the cached diff caught it before the commit. A
 derived artifact the code shifts (line anchors in a doc) is recomputed per commit against the
 index (`git diff --cached`), or the middle commits fail a check the last one passes. A tool that
 rewrites only the index leaves the working tree on the old value: after the commit, `git diff`

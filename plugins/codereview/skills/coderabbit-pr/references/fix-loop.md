@@ -48,7 +48,12 @@ symptom — including one that opens a new fail-open next to it. The regression 
 4. **Sabotage the fix.** Loosen or revert the line(s) the fix added — the guard becomes a no-op, the
    anchored regex becomes "anywhere", the strict comparison becomes lax — and run the probes again.
    At least one must go red. If none does, the fix has no sensor: write the probe that catches the
-   loosened version, then restore the fix. Prove the sabotage actually changed the file before
+   loosened version, then restore the fix. A common cause is a fake that stops earlier than the real
+   thing: a fake stream that ends right after the event lets the end-of-stream fallback answer for
+   the branch you loosened. Give the fake the real lifetime. Measured 2026-10-23 (magic_tutor PR #73,
+   `6fa6613`): with the fake process closing its output right after `registrou`, removing that
+   branch's `set()` left all 38 tests green; kept open until shutdown, as the real `powershell.exe`
+   is, the same sabotage went red. Prove the sabotage actually changed the file before
    trusting a "still green" — a sabotage that did not apply proves nothing. Count the loosened text
    in the file itself (`grep -cF '<loosened text>' <file>`), not with `git diff | grep '^+'`: a shell
    hook can swap in `rtk git diff`, which indents every changed line (`  +…`), so the grep finds
