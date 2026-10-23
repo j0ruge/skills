@@ -40,7 +40,7 @@ A curated plugin marketplace for [Claude Code](https://code.claude.com) and [Cur
 | **pdf-generation** | ✓ | ✓ | ✓ | Skill — PDF template design + library selection (pdfmake/pdf-lib/PDFKit/Puppeteer/@react-pdf), modular sections, visual verification |
 | **release** | ✓ | ✓ | ✓ | Skill (runs only when invoked) |
 | **retrofit-skill** | ✓ | ✓ | partial | Command (Claude Code) / Skill (Cursor) Codex: O comando depende de <REPO>/plugins/ e caminhos de instalação do Claude; autocontenção no cache e integração com outros plugins não comprovadas. |
-| **retrofit-watch** | ✓ | — | unsupported | Claude Code only — Stop hook + skill; Python 3 stdlib and `git` Codex: Watcher acoplado aos eventos e formato de transcript do Claude. |
+| **retrofit-watch** | ✓ | — | partial | Codex CLI: adaptação local em funcionamento; o plugin desta loja ainda empacota os hooks Claude e não inclui o adaptador Codex. |
 | **skill-quality-audit** | ✓ | ✓ | ✓ | Skills — four skills in one plugin (audit entry point + 3 sisters that find each other); Python 3 stdlib script |
 | **statusline** | ✓ | — | unsupported | Claude Code only (uses the Claude Code status line API) Codex: Comando setup escreve configurações e script exclusivos do Claude. |
 | **ticket** | ✓ | — | ✓ | Claude Code only (`/ticket` slash command + Jira `acli` + atlassian MCP) |
@@ -56,6 +56,8 @@ Codex: **25 plugins / 28 workflows**, com smoke de distribuição e entrada no C
 em Ubuntu 24.04. Desktop, macOS e Windows: `not_checked`; versão mínima não estabelecida.
 Dependências, limitações e exclusões: [matriz detalhada](docs/codex/compatibility.md).
 O catálogo Codex é filtrado; a extensão de IDE está fora desta distribuição.
+`partial` também cobre adaptações locais que funcionam no Codex, mas ainda não
+estão empacotadas neste catálogo, como `retrofit-watch`.
 
 ## Installation
 
@@ -433,6 +435,14 @@ A Stop hook notices when one of **our** skills did real work in the session and 
 
 **Ours** = the `chewiesoft-marketplace` cache or clone (full mode; the retrofit argument is the **plugin** name) or a skill tracked in git in a repo owned by `j0ruge`, `JRC-Brasil` or `chewiesoft` (lean mode). Third-party skills, `skills-lock.json` entries, `.agents/skills`, `~/.hermes` and untracked skills are ignored.
 It defers while the turn waits for you, asks at most twice per skill per session, never talks back to a `claude -p` session (it queues the retro outside the repo instead, for `/retrofit-watch:retrofit-watch pendentes`) and never stores assistant text. `RETROFIT_WATCH=off` disables it; `~/.claude/retrofit-watch.json` tunes owners/include/exclude.
+
+**Codex CLI:** há uma adaptação local ativa, separada do plugin desta loja.
+Na instalação observada, `~/.codex/hooks.json` chama
+`~/.agents/skills/retrofit-watch/scripts/codex_retrofit_watch.py`. Os avisos de
+retro desta sessão vêm desse adaptador. O pacote publicado ainda traz o motor e
+os hooks Claude; falta incluir a camada Codex e validar sua instalação pelo
+marketplace. Por isso a tabela usa `partial` e ele permanece fora do catálogo
+Codex nativo. Veja a [distinção na matriz](docs/codex/compatibility.md#retrofit-watch-local-no-codex).
 
 **Credits.** The retro criteria (moment signals, promotion rule, triage and the secret self-audit) are adapted from [`self-learning`](https://github.com/Kulaxyz/self-learning-skills) by [Kulaxyz](https://github.com/Kulaxyz) (MIT). Thank you for publishing it. The difference is in purpose: `self-learning` creates a new skill on its own, while `retrofit-watch` sends the lesson to a skill that already exists, through `/retrofit-skill` and its confirmation gate.
 

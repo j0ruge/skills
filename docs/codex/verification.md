@@ -451,3 +451,12 @@ os 289 arquivos anteriores é esse único recurso. Instalação individual,
 descoberta, auditor da família instalada, sabotagem e ciclo Git passaram.
 `distribution-evidence.json` aponta esse candidato; o fechamento posterior
 altera somente evidências da raiz, preservando os pacotes.
+
+## Correção de classificação de retrofit-watch — 2026-10-23
+
+O watcher observado no CLI usa a adaptação Codex local; a tabela descrevia apenas
+o pacote Claude da loja. Configuração do hook, destino do symlink e proveniência
+foram conferidos. README, matriz e handoff agora usam `partial`; a distinção e as
+fontes estão em [compatibility.md](compatibility.md#retrofit-watch-local-no-codex).
+O catálogo continua com 25 plugins. Esta correção não altera o pacote nem a
+instalação pessoal ou as modificações existentes no repo Hermes.
