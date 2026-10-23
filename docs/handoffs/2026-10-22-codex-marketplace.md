@@ -1,10 +1,10 @@
 # Retomada — loja Codex
 
-**Estado atual:** revisão da segunda retomada executada, com correções em
-`7df2ea7` e grades A no escopo revisado. R01 continua `partial` por falta de
-verificação desktop. O relatório e os limites estão em
-[verification.md](../codex/verification.md#segunda-retomada--revisão-e-correções).
-Os registros de execução abaixo preservam o histórico anterior à revisão.
+**Estado atual:** resposta ao Claude Code aplicada em `2511ba8`; main `0d2e56d`
+integrada na branch em `cb7f95c`, com nova prova dos 25 pacotes / 289 arquivos.
+PR #6 permanece a via de integração. R01 continua `partial` por falta de teste
+desktop. Resultados e limites em [verification.md](../codex/verification.md).
+Os registros abaixo preservam o histórico das etapas anteriores.
 
 **Repositório:** `/home/joruge/repos/skills` (`j0ruge/skills`).
 **Worktree da implementação:** `/home/joruge/.codex/worktrees/4fa1/skills`.
@@ -13,8 +13,10 @@ Os registros de execução abaixo preservam o histórico anterior à revisão.
 **Revisão candidata inicial:** `f98c06d34f06ee86cc64c5a1e60419e806e73d8f`.
 **Candidato após retrofit autorizado:** `13f2cc023a7c828b09bd51c46f0c694f6fbd2146`,
 com CORS 1.1.2 e nova prova de distribuição Git.
-**Revisão final:** HEAD de `feat/codex-marketplace`; o fechamento posterior a
-13f2cc0 altera somente documentação. Resolver com `git rev-parse HEAD`.
+**Correções da revisão externa e retrofit 2.27.0:** `2511ba8`.
+**Candidato integrado e testado:** `cb7f95c`, com os dois pais de merge preservados.
+**Revisão final:** HEAD de `feat/codex-marketplace`; após `cb7f95c`, o fechamento
+altera somente documentação/evidências. Resolver com `git rev-parse HEAD`.
 O checkout original em `main` foi preservado; retome pelo worktree acima.
 
 ## Ler antes de agir
@@ -172,15 +174,22 @@ O incremento permanece local, sem publicação da missão ou atualização pesso
 
 O usuário autorizou abrir o [PR #6](https://github.com/j0ruge/skills/pull/6) contra
 main e solicitar revisão do Claude Code. A branch foi enviada em `467c75c`.
-Claude Code publicou quatro achados, agora corrigidos localmente: ordem de
+Claude Code publicou quatro achados, corrigidos em `2511ba8`: ordem de
 plataformas, rename fora do pacote, fallbacks mortos de PyYAML e duplicação dos
 helpers. A suíte local passou em 53 testes; ver o relatório de verificação.
 
-A main avançou para `0d2e56d` durante a revisão. Há conflitos em
+A main avançou para `0d2e56d` durante a revisão. Os conflitos em
 `.claude-plugin/marketplace.json`, `README.md`, `plugins/cicd/.claude-plugin/plugin.json`,
-`plugins/cicd/CHANGELOG.md` e `plugins/deploy/CHANGELOG.md`. A reconciliação foi
-preparada em preview separado, preservando as duas linhas de trabalho e propondo
-CICD 2.39.1 / deploy 3.3.3 para a distribuição combinada. Nenhum commit de resposta
-ou merge na branch do PR foi criado nesta etapa; dependem da decisão do usuário.
-O checklist temporário `claude-review.md` registra os quatro itens e a etapa
-pendente de integração. Não tratar correção local como revisão do novo head.
+`plugins/cicd/CHANGELOG.md` e `plugins/deploy/CHANGELOG.md` foram resolvidos conforme
+o preview aprovado. O usuário autorizou aplicação, integração da base, commit e
+envio ao PR. `cb7f95c` preserva as duas linhas de trabalho, com CICD 2.39.1 e
+deploy 3.3.3. A suíte integrada passou em 53 testes gerais, 55 do auditor e 15 do
+scanner; os três cenários reais exportaram esse commit, sem skips.
+
+O retrofit codereview 2.27.0 / coderabbit-pr 4.6.0 foi aplicado junto da resposta.
+Quatorze controles, leitura fria e auditoria sem erros/avisos sustentam as duas
+lições: origem de revisão separada do login e enumeração de renames do gate.
+Os 25 pacotes continuam sendo o conjunto publicado; codereview permanece excluído.
+A revisão original de Claude Code e CodeRabbit cobre `467c75c`, não os commits de
+resposta. As evidências novas comprovam os checks do candidato integrado. R01,
+desktop/macOS/Windows e versão mínima permanecem com os limites já registrados.

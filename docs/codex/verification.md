@@ -259,7 +259,7 @@ incorporou a lição dos hashes em codereview 2.26.10. Esse pacote continua excl
 do catálogo Codex; o conjunto publicado e a prova dos 289 arquivos em `7df2ea7`
 permanecem válidos. Esse incremento tem verificações próprias e não promove R01.
 
-## Resposta à revisão externa do PR #6 — preparada localmente
+## Resposta à revisão externa do PR #6 — aplicada e integrada
 
 Claude Code revisou `467c75c`, com quatro achados no comentário
 `6353481019`. Foram confirmados e tratados na branch `feat/codex-marketplace`:
@@ -285,9 +285,9 @@ eliminado nem o limiar foi alterado. Copilot não revisou por limite de cota.
 
 A base avançou para `0d2e56d`, causando conflitos em cinco arquivos. A proposta de
 reconciliação preserva as correções de CICD/deploy da main, o suporte Codex e o
-histórico, com patches de distribuição CICD 2.39.1 e deploy 3.3.3. O preview foi
-preparado fora da branch; commit, envio e atualização do PR aguardam decisão do
-usuário conforme o fluxo da skill. R01 continua parcial.
+histórico, com patches de distribuição CICD 2.39.1 e deploy 3.3.3. Após autorização
+explícita, as correções e o retrofit foram commitados em `2511ba8`; a main foi
+integrada em `cb7f95c`. Os pais desse merge são `2511ba8` e `0d2e56d`. R01 continua parcial.
 
 O preview também passou nos três cenários reais de distribuição, com 25 pacotes
 e 289 arquivos, incluindo CICD 2.39.1 e deploy 3.3.3. A origem foi a árvore Git
@@ -295,6 +295,27 @@ e 289 arquivos, incluindo CICD 2.39.1 e deploy 3.3.3. A origem foi a árvore Git
 não é uma revisão já enviada. A evidência distingue `merge-preview-tree` de
 commit. Artefatos e patch proposto em
 `/home/joruge/.wt/pr6-merge-preview-_nbcr7ug/`.
+
+### Check do commit integrado
+
+Depois do merge, os 53 testes gerais, 55 do auditor e 15 do scanner passaram, sem
+skips. Os geradores, validador principal e hook staged também passaram. A prova
+de distribuição foi repetida após o commit para que `git archive HEAD` exportasse
+o candidato integrado real: três cenários aprovados em `cb7f95c`, com 25 pacotes
+e 289 arquivos, CICD 2.39.1 e deploy 3.3.3. Os hashes, atualização Git e sabotagem
+estão renovados em [distribution-evidence.json](distribution-evidence.json).
+
+Codereview 2.27.0 / coderabbit-pr 4.6.0 acrescenta a detecção do comentário CLI
+publicado como usuário e o caso de rename na passagem de sensores. Foram
+executados 14 controles, consulta real ao GitHub e leitura fria; SQA antes/depois
+sem erros/avisos e sem regressões. Descrições preservadas e limites de tamanho
+respeitados. O plugin continua excluído do catálogo Codex.
+
+Logs finais em `.superpowers/sdd/2026-10-22-codex-marketplace/pr/final/`:
+`merged-general.log`, `merged-auditor.log`, `merged-scanner.log`,
+`committed-distribution.log` e `committed-distribution.json`. O fechamento após
+`cb7f95c` altera apenas documentação/evidências; os pacotes testados permanecem
+idênticos. A cobertura da revisão original continua atribuída a `467c75c`.
 
 ## Fontes e limites
 

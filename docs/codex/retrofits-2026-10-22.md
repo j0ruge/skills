@@ -124,3 +124,32 @@ git diff --check
 
 Este incremento foi mantido na branch local da missão. A autorização de retrofit
 não foi usada para publicar os commits da loja ou atualizar perfis pessoais.
+
+## Retrofit 2.27.0 e integração autorizada no PR #6
+
+O usuário aprovou o diff completo, sua combinação com as quatro correções de
+Claude Code, a integração de main na branch do PR e commit/envio. `2511ba8`
+contém o retrofit; `cb7f95c` incorpora main `0d2e56d`, preservando os dois pais.
+
+Coderabbit-pr 4.6.0 reconhece candidatos de `ultrareview --post` no corpo do
+comentário publicado pela conta do operador. Exige origem confirmada e SHA
+completo antes de contar cobertura; marcador sozinho, parse incompleto e revisão
+de commit antigo não viram aprovação. Codereview 2.27.0 inclui a enumeração de
+remoções/renames na passagem 6.11, com distinção entre leitura de evidência e
+harness autorizado. As regras de commit, severidade e grade F permanecem.
+
+Quatorze controles cobriram o comentário real com quatro achados, origem,
+contagem, SHA/prefixo e quatro cenários Git em fixtures novas. Duas leituras frias
+conferiram o roteamento e as regras; ambiguidades foram ajustadas e reconferidas.
+SQA antes/depois sem erros/avisos nas duas skills, com `--external off`; gates sem
+NOVO ou SUMIU. SKILL.md final: codereview 247 linhas / 19.999 caracteres;
+coderabbit-pr 338 linhas / 19.932 caracteres. Descrições e logins anteriores
+preservados; a tabela duplicada foi fundida com o cadastro canônico.
+
+O conjunto integrado passou em 53 testes gerais, 55 do auditor e 15 do scanner.
+Após o commit, a prova real de distribuição exportou `cb7f95c` e conferiu os
+mesmos 25 pacotes / 289 arquivos, agora com CICD 2.39.1 e deploy 3.3.3. Codereview
+continua `partial`, fora da oferta Codex; este retrofit não conclui sua portabilidade.
+Evidências do retrofit em `/home/joruge/.wt/retrofit-review-detection-fzi4zd1i/`,
+complementadas pelos logs finais do PR no workspace ignorado. R01 continua parcial;
+nenhum perfil pessoal foi instalado ou atualizado.

@@ -44,9 +44,10 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 - **Yokoten:** catálogo e adaptador usam `skill_paths` e `atomic_write` comuns;
   mutantes foram detectados nos dois consumidores e na limpeza do temporário.
   Fallbacks mortos de PyYAML foram removidos; a dependência continua obrigatória.
-- **Integração:** correções preparadas localmente em resposta ao Claude Code no
-  PR #6. A main avançou durante a revisão; o preview da reconciliação foi
-  preparado separadamente, sem commit na branch do PR.
+- **Integração:** após autorização, `2511ba8` incorporou a resposta e `cb7f95c`
+  integrou main `0d2e56d` conforme o preview aprovado. Os 53 testes gerais e os
+  três cenários reais do commit integrado passaram; 25 pacotes / 289 arquivos
+  conferidos, com CICD 2.39.1 e deploy 3.3.3.
 
 ---
 

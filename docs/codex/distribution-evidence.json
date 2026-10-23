@@ -1,7 +1,7 @@
 [
   {
     "client": "codex-cli 0.163.0",
-    "revision": "7df2ea752184401c820b5fe7e82d952daf3533e1",
+    "revision": "cb7f95c6d68a99ef8fe8600fe21f7135326ca856",
     "commands": [
       {
         "args": [
@@ -51,7 +51,7 @@
               "pluginId": "cicd@chewiesoft-marketplace",
               "name": "cicd",
               "marketplaceName": "chewiesoft-marketplace",
-              "version": "2.38.1",
+              "version": "2.39.1",
               "installed": false,
               "enabled": false,
               "source": {
@@ -159,7 +159,7 @@
               "pluginId": "deploy@chewiesoft-marketplace",
               "name": "deploy",
               "marketplaceName": "chewiesoft-marketplace",
-              "version": "3.3.2",
+              "version": "3.3.3",
               "installed": false,
               "enabled": false,
               "source": {
@@ -557,8 +557,8 @@
           "pluginId": "cicd@chewiesoft-marketplace",
           "name": "cicd",
           "marketplaceName": "chewiesoft-marketplace",
-          "version": "2.38.1",
-          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cicd/2.38.1",
+          "version": "2.39.1",
+          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/cicd/2.39.1",
           "authPolicy": "ON_INSTALL"
         }
       },
@@ -653,8 +653,8 @@
           "pluginId": "deploy@chewiesoft-marketplace",
           "name": "deploy",
           "marketplaceName": "chewiesoft-marketplace",
-          "version": "3.3.2",
-          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/deploy/3.3.2",
+          "version": "3.3.3",
+          "installedPath": "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/deploy/3.3.3",
           "authPolicy": "ON_INSTALL"
         }
       },
@@ -995,19 +995,19 @@
         }
       },
       "cicd": {
-        "version": "2.38.1",
+        "version": "2.39.1",
         "hashes": {
           ".claude-plugin/plugin.json": {
-            "sha256": "628806166f7b38110ad95ec1d3c0825457cf319550787dd66f3127e2b1ebb21e"
+            "sha256": "0594f385265a419438717d18d7e92b7cc8e5f8249b38c3eaa2b92a143bc2bc14"
           },
           "CHANGELOG.md": {
-            "sha256": "3112109b81c7955ae259036b9660df69650232a01ee6521e204a4e5a6f10f9d6"
+            "sha256": "ec23c0c8cda21a3a910e6347ade33d19302b1da3d28dd159967d90d582f245cb"
           },
           "skills/cicd/CHANGELOG.md": {
-            "sha256": "4b0e5af01092614e6f771e28d32cf8fb0518298bd43b55b78d46ee738b9ab1ad"
+            "sha256": "722f0ced74bdfc1593686a60633f3ea309ac09a9fbdaf0ffe0b1d0923f1daa6e"
           },
           "skills/cicd/SKILL.md": {
-            "sha256": "fdaea5ffd3ef114ed4c943733f450858d5b62abc270ee4955032c6137163c3b2"
+            "sha256": "b1a5c585bd87d8663d204b683142f7934ac946eec74092eecd1525aac7dd4e2d"
           },
           "skills/cicd/references/cd-pipeline-pitfalls.md": {
             "sha256": "1078e7232831d1c9ae7888fc133c5a850fc5584de83e7662d6171071e10e5fc5"
@@ -1031,16 +1031,16 @@
             "sha256": "6ab934bbca9e25105af2e45103d1207d6eef326acc10ead148ec23ff4deba810"
           },
           "skills/cicd/references/lessons-learned.md": {
-            "sha256": "cec98adab606ff0d438b9c29ad2148456c2432d69fa58580f9bf868b9cebcb6c"
+            "sha256": "efd72a67ee3c54a239d9c6649c597427cc63ca4d0b8d3ea2e473cf9ec52477a3"
           },
           "skills/cicd/references/self-hosted-job-migration.md": {
-            "sha256": "6d27c0cc77442e9a81b84f78a2e12dd645eaf02c686670b3c00b6f159ddbd2a2"
+            "sha256": "332f2d21ecc11d1c80f3a511217a0c2bb3c21947bbb7fb5b7179fabba01b4705"
           },
           "skills/cicd/references/self-hosted-runner-docker.md": {
             "sha256": "a8622622367ada606c9372480ef9b74a6e57d6294816ce23b2c7b2ea8555f80e"
           },
           "skills/cicd/references/symptom-index.md": {
-            "sha256": "01a7910c6629a3b075e2fa2e03a15446e896878da0ba11df5dc698662c198772"
+            "sha256": "0770aaadceed94db45e4f70d0dbce6152837043622e9001e2e9d04854410ca9b"
           },
           "skills/cicd/references/test-fixes-backend.md": {
             "sha256": "ad6ac7ffa43da9585d3736da0986160161829508f0e48c41ae9f543cf2337067"
@@ -1250,22 +1250,22 @@
         }
       },
       "deploy": {
-        "version": "3.3.2",
+        "version": "3.3.3",
         "hashes": {
           ".claude-plugin/plugin.json": {
-            "sha256": "af4b2cef0f9c03bc9a9aff33cc32a70f20e7d8f5f64cc5e5a6bf6988f1a272ea"
+            "sha256": "65e5e355080ddd02a2c13ad930edf6f9fdd473323062b6867cad5b96c14df102"
           },
           "CHANGELOG.md": {
-            "sha256": "59a8ae334580008f9b93d5be4ad25184edbe0e3fee0275bc301a0fdbbb6c8147"
+            "sha256": "0a8cbdc88f79ae983722fdc4545421a84a48764fbb9810cef539580723069d54"
           },
           "skills/staging/SKILL.md": {
-            "sha256": "7ed891e2746b5c846112561705cbb7e6a1f69efdc811dd7b6b93af02bf11d3ee"
+            "sha256": "8b3b15e4f223db844770d56e264a13a5bad22fe84d2088ec3274fd13b523c469"
           },
           "skills/staging/references/local-gate.md": {
             "sha256": "9e7e6b4afa03a25b0712ca804050aded2a1fd9d30b370254f5f1fc3bd7fcb16a"
           },
           "skills/staging/references/no-actions-agent.md": {
-            "sha256": "583115ad8fb7915aa76b8edc538f1793f44b844fe3f5dbca0feee74b990a32f8"
+            "sha256": "46ae5ea90801f74a06649e55c985bee5aef1333f785257641a204cd1847d5076"
           },
           "skills/staging/references/promotion-sensors.md": {
             "sha256": "72f29b0cb6a6ca5bfd844d33ae9861925ef98765bbed6f373880a01ffb27601d"
@@ -1940,7 +1940,7 @@
   },
   {
     "client": "codex-cli 0.163.0",
-    "revision": "7df2ea752184401c820b5fe7e82d952daf3533e1",
+    "revision": "cb7f95c6d68a99ef8fe8600fe21f7135326ca856",
     "commands": [
       {
         "args": [
@@ -2121,8 +2121,8 @@
       }
     ],
     "git": {
-      "first": "4173fe12dda47f80fef8b0b6b95e183b2b84a4a4",
-      "second": "435f19352de4645417b071cd2f7724de6d2c9e22",
+      "first": "8b0630126cd25b6fb06ff3d0c4351702d7b91288",
+      "second": "186dcabc1fc08f4cdc9e33dcd09f79f286fc86a3",
       "old_version": "1.1.2",
       "version_after_refresh": "99.0.0",
       "old_cache_removed": true,
@@ -2132,7 +2132,7 @@
   },
   {
     "client": "codex-cli 0.163.0",
-    "revision": "7df2ea752184401c820b5fe7e82d952daf3533e1",
+    "revision": "cb7f95c6d68a99ef8fe8600fe21f7135326ca856",
     "commands": [
       {
         "args": [

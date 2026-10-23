@@ -470,3 +470,13 @@ Desktop/macOS/Windows e versão mínima continuam sem comprovação; a tarefa de
 desktop acima permanece desmarcada e R01 `partial`. A revisão não autoriza
 integração ou publicação. O [handoff](../../handoffs/2026-10-22-codex-marketplace.md)
 registra o estado atual sem reiniciar o planejamento.
+
+## Check da integração autorizada no PR #6
+
+Após revisão do Claude Code, quatro achados foram corrigidos em `2511ba8` e a
+base main `0d2e56d` foi integrada em `cb7f95c`. O usuário autorizou o conjunto,
+incluindo retrofit codereview 2.27.0, commit e envio à branch do PR. Os 53 testes
+gerais, 55 do auditor e 15 do scanner passaram; a exportação do commit integrado
+repetiu os três cenários reais com 25 pacotes / 289 arquivos. Os limites de R01 e
+a tarefa desktop desmarcada acima permanecem. A evidência atual está no
+[relatório](../../codex/verification.md#check-do-commit-integrado).

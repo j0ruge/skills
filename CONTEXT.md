@@ -1,6 +1,6 @@
 # Contexto — distribuição de skills no Codex
 
-**Data:** 2026-10-22 · **Estado:** `implemented_with_gaps` · **Execução e revisão:** concluídas; revisão com grades A, R01 parcial.
+**Data:** 2026-10-22 · **Estado:** `implemented_with_gaps` · **Integração:** PR #6, resposta ao Claude Code e base reconciliada; R01 parcial.
 
 Este documento registra a pesquisa e a entrevista `grill-with-docs`. As sete
 perguntas iniciais de produto foram respondidas e o desenho foi aprovado.
@@ -274,3 +274,18 @@ exportaram `7df2ea7`, conferindo 25 plugins / 289 arquivos e o ciclo Git real
 isolado. Evidência tipada por `sha256`, sem mudar valores ou regras dos scanners.
 Resultados e rastreabilidade permanecem em `docs/codex/verification.md`, sem
 substituir a matriz R01–R12. Nenhum push, merge ou publicação foi feito.
+
+## Check da resposta ao PR #6
+
+O usuário autorizou abrir o PR contra main e solicitar Claude Code. Os quatro
+achados de `467c75c` foram corrigidos em `2511ba8`; main `0d2e56d` entrou na branch
+por merge `cb7f95c`, preservando as mudanças recentes e o suporte Codex. CICD 2.39.1
+e deploy 3.3.3 conciliam as versões. A autorização incluiu commit e envio ao PR.
+
+Passaram 53 testes gerais, 55 do auditor e 15 do scanner. A distribuição real do
+commit integrado repetiu os três cenários com 25 pacotes / 289 arquivos, sem
+skips. Codereview 2.27.0 / coderabbit-pr 4.6.0 incorporou as duas lições verificadas,
+com 14 controles e auditoria sem erros/avisos; permanece excluído do catálogo Codex.
+Resultados e limites continuam em `docs/codex/verification.md`. A revisão original
+cobre `467c75c`; os checks posteriores não substituem revisão independente do head
+novo. Desktop/macOS/Windows e versão mínima continuam sem comprovação.
