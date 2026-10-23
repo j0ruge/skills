@@ -2,6 +2,27 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.4] — 2026-10-23
+
+### O `evidence:` do DOCS é a saída salva da medição, não o script
+
+- **O quê:** `skills/codereview/references/configuration.md`, *Docs this session wrote*: um bullet novo diz que
+  a evidência da categoria `DOCS (written this session; evidence: …)` é o stdout salvo de cada medição
+  (`script > out.txt`), com o script ao lado só como a origem da saída. O contrato do agente proíbe rodar os
+  comandos do projeto, então um caminho de script não confere nada. Vale também para o fato lido numa
+  exploração, e a afirmação de ausência precisa do zero impresso. Um bullet *Measured* registra o caso.
+- **Por quê:** no `/codereview` do PR #75 do magic_tutor (2026-10-23), com os dois scripts de medida como
+  evidência, o agente DOCS respondeu "there is no saved output" e deixou como `needs reproduction` as três
+  afirmações da nota de protocolo (833 aparições, Replay15 `[1, 376]`, Replay10). A validação trocou só a
+  evidência, com o mesmo doc (`docs/monitor.md`, `55fc495...f76b15f`) e o mesmo prompt de lançamento: com a
+  saída salva, as três conferiram; com uma cópia sabotada (total 834), o agente devolveu MEDIUM e notou que as
+  linhas por contagem somam 833 (815+16+1+1). Nas duas rodadas, o "nenhuma nas transitórias" se apoiava na
+  falta de uma linha, e na sabotada a afirmação tirada de uma exploração sem saída salva voltou como
+  `needs reproduction`.
+- **Onde:** só na reference. O `SKILL.md` muda só o `metadata.version` (2.27.2 → 2.27.4, mesmo comprimento) e
+  segue com 19 999 caracteres, no teto de ~20 mil; a Fase B dele já aponta *Docs this session wrote* para o
+  DOCS escrito na sessão.
+
 ## [2.27.3] — 2026-10-23
 
 ### O `git add -p` com respostas fixas é cego, e um falso que termina cedo esconde o ramo sabotado (coderabbit-pr 4.6.1)

@@ -224,6 +224,20 @@ against code the range leaves out.
 - Send it to a Phase B agent in the same batch, launch prompt unchanged, with category
   `DOCS (written this session; evidence: <path or none>)` — also when Phase B otherwise runs inline
   (≤3 CODE files). The agent's contract says what a DOCS file gets.
+- **The evidence is the measurement's saved output, not its script.** The agent's contract forbids
+  running the project's commands, so a script path checks nothing: save each measurement's stdout
+  to a file (`script > out.txt`) and pass that file, with the script beside it only as how the
+  output was made. The same holds for a fact read in an exploration (the state at one message):
+  save what it printed. A claim of absence ("none in X") needs its zero printed: a tally has no
+  row for a zero (a Python `Counter` prints none), and a missing line proves nothing to a reader.
+- Measured 2026-10-23 (magic_tutor, PR #75): with the two measurement scripts as evidence, the
+  agent answered "there is no saved output" and left three claims of a protocol note (833
+  appearances in 97 replays, a `[1, 376]` example, a one-annotation-per-target example)
+  `needs reproduction`. Same doc and launch prompt, only the evidence swapped: the saved output
+  checked all three, and a copy with the total changed to 834 came back MEDIUM (`"833 aparições"
+  does not match the saved measurement`; its per-count rows add up to 833). Both runs saw that
+  "none in the transient ones" rested on a missing line, and the claim from an unsaved exploration
+  came back `needs reproduction`.
 - Rounds that keep finding the next claim in the same doc: recommend removing the claim, not adding
   evidence. In the series below every added word became the next round's finding (rounds 3 to 6),
   and it closed when the fixes took text out.
