@@ -1,7 +1,10 @@
 # Lutris injeta DLLs próprias num prefixo Proton (umu)
 
 Verificado em **Lutris 0.5.22** (deb do GitHub, 2026-02-25), runner wine com a versão padrão
-**"GE-Proton (Latest)"**, em 2026-10-23. Confira de novo se a versão do Lutris for outra, com o
+**"GE-Proton (Latest)"**, em 2026-10-23. A função `get_executable()` é idêntica na v0.5.20 e na
+v0.5.22 (mesmo sha256 do trecho baixado de `raw.githubusercontent.com/lutris/lutris/<tag>/lutris/runners/wine.py`),
+e o `is_proton_path` também; por isso o furo deve valer desde a 0.5.20, embora só a 0.5.22 tenha
+sido testada rodando. Confira de novo se a versão do Lutris for outra, com o
 sensor do fim deste arquivo.
 
 ## O mecanismo
@@ -20,7 +23,8 @@ runtime, e acrescenta `<dll>=n` (somente nativa) ao `WINEDLLOVERRIDES`. Para des
 symlink e devolve o `.orig`.
 
 O Proton **gerencia as próprias DLLs**: copia DXVK e vkd3d-proton, ou as do wined3d com
-`PROTON_USE_WINED3D=1`, sempre que muda a config do prefixo (o arquivo `config_info`). Por isso
+`PROTON_USE_WINED3D=1`, sempre que muda a config do prefixo (o arquivo `config_info`; bloco
+`prefix_info` do script `proton`, lido no GE-Proton11-11 em 2026-10-23). Por isso
 cada manager declara `proton_compatible = False`, e `runners/wine.py:get_dll_managers()` o
 desliga quando `proton.is_proton_path(self.get_executable())` é verdadeiro.
 
@@ -35,8 +39,12 @@ prefixo que o Proton também está gerenciando.
 - O script de instalação manda `dxvk: false`, e o Lutris exporta `PROTON_USE_WINED3D=1`: o
   Proton coloca d3d11/dxgi do **wined3d** e o `d3d12.dll` builtin do Wine.
 - Ao mesmo tempo, o VKD3D do Lutris troca `d3d12.dll`/`d3d12core.dll` por symlinks para a
-  vkd3d-proton dele (v2.14 em 2026-10, mais velha que a do GE-Proton) e força `d3d12=n`,
-  `d3d12core=n`. O DXVK-NVAPI força `nvapi=n` e `nvapi64=n`.
+  vkd3d-proton dele (v2.14, de 2024-12-19, ainda a mais nova em `vkd3d_versions.json` em
+  2026-10) e força `d3d12=n`,
+  `d3d12core=n`. O DXVK-NVAPI força `nvapi=n` e `nvapi64=n`. A vkd3d-proton do Lutris é mais
+  velha que a do Proton. Sensor: o arquivo `files/lib/wine/vkd3d-proton/version` do Proton traz o
+  commit, e `gh api repos/HansKristian-Work/vkd3d-proton/compare/v2.14...<commit>` deu 1330
+  commits à frente e 0 atrás para o GE-Proton11-11 em 2026-10-23.
 - Quem sonda D3D12 na inicialização, como o Unity 6 com seu "D3D12 Device Filter", morre nessa
   mistura. O `Player.log` termina em `[Subsystems] Discovering subsystems …` e logo depois
   vem `Crash!!!`. O `d3d12.dll` nem aparece entre os módulos carregados, porque a carga falhou.

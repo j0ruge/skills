@@ -1,5 +1,28 @@
 # Changelog — `windows-games-linux`
 
+## [1.0.1] — 2026-10-23
+
+### Afirmações conferidas por sensor (auditoria pós-publicação)
+
+A `skill-quality-audit` deu `rc=0` na 1.0.0 (0 erros, 0 avisos, `skills-ref` 0.1.1 válido), mas
+a revisão das 26 afirmações do `--claims`, cada uma conferida com um sensor real, achou uma falsa e
+cinco sem derivação. Todas foram escritas na sessão de criação.
+
+- **Corrigido:** `references/instalar-atualizar-lutris.md` (e a 1.0.0 deste CHANGELOG) dizia que o
+  Ubuntu 24.04 "parou no Lutris 0.5.18". O `apt-cache policy lutris` mostra `0.5.14-2` em
+  `noble/multiverse`. A 0.5.18 da máquina de origem tinha vindo de um `.deb` instalado à mão. A
+  reference agora diz como o `apt-cache policy` revela isso.
+- **Confirmado e com sensor no texto:** a vkd3d-proton v2.14 do Lutris é mais velha que a do
+  GE-Proton11-11 (GitHub compare: 1330 commits à frente, 0 atrás). O furo vale da 0.5.20 à 0.5.22:
+  o sha256 da `get_executable()` é igual nas duas tags e o `is_proton_path` também. Execução
+  testada só na 0.5.22, e o texto diz isso.
+- **Derivação e proveniência:** "15 caracteres" ganha a fonte (`TASK_COMM_LEN` = 16 com o nulo,
+  `man 5 proc_pid_comm`; conferido com `prctl` → `comm` de 15). O "5–15 s" virou o observado
+  (6 a 14 s), os "30 s" estão marcados como heurística, o `config_info` cita o bloco `prefix_info`
+  do script `proton`, e o "dotnet48 leva muitos minutos" virou o aviso do próprio script.
+- **F1:** cada reference citada no `SKILL.md` diz quando ser lida ("antes de corrigir", "ao
+  instalar", "se o jogo for Unity…").
+
 ## [1.0.0] — 2026-10-23
 
 Primeira versão. Nasceu de um caso real: o MTG Arena abria e fechava em ~10 s pelo Lutris 0.5.22 com o
