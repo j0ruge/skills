@@ -2,6 +2,25 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.7] — 2026-10-24
+
+### A evidência da doc de um pipeline é a pasta que a fase autora salvou, não a re-medida
+
+- **O quê:** um bullet em `skills/codereview/references/configuration.md`, *Docs this session wrote*. Para a doc que
+  uma fase de pipeline escreveu, a evidência é a pasta onde essa fase salvou as medidas que a doc cita, e cada
+  artefato citado vai pelo caminho exato. Uma re-medida num head mais novo não confirma valor volátil (tempo) nem
+  valor carimbado num head.
+- **Por quê:** no `/codereview` r1 do PR #20 do dotp-remake (2026-10-24), a evidência do handoff da REVIEW do kit
+  `sdd` foi a re-medida do orquestrador no head do PR e a pasta da fase DOCS, sem a pasta da própria REVIEW.
+  - O agente desse handoff deu 3 LOW falsos: o 12,8 s e o 22,7 s "sem prova" (a re-medida deu 12,6 s) e um
+    `TEST_CMD` "no 8a5c07d" contra a evidência carimbada no `7e2ae4a`. O agente de outra doc deu o mesmo 12,8 s.
+    A Fase C os refutou pelo `grep` na pasta da REVIEW (`tempo 12.8 s` 1×, `tempo: 22.7 s` 3×).
+  - Sonda com o mesmo prompt e só a pasta da REVIEW acrescentada à evidência: os 3 sumiram, e o agente achou 1 LOW
+    real (âncoras que um commit posterior deslocou, conferidas com `git show 8a5c07d:…`).
+  - Na mesma rodada, com a pasta da DOCS mas sem o relatório que a doc cita, um agente contou 4 motivos numa cópia
+    velha do repo (`.cache/reports/gate-yield.md`); o relatório da fase tinha 3.
+- **Onde:** só na reference; o `SKILL.md` muda apenas o `metadata.version` (247 linhas, 19.994 chars).
+
 ## [2.27.6] — 2026-10-24
 
 ### O modo do terminal na saída, o rebase entre rodadas, a doc do handoff e o `.claude/skills/`

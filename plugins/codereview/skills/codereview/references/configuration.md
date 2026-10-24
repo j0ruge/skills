@@ -244,6 +244,20 @@ phase, and step 7 checks the doc against the diff, not against code the range le
   names itself. Measured 2026-10-23 (magic_tutor, PR #77): round 1's fix added a sentence (two
   replays gained a section) with no saved output; round 2's prompt named `secoes.out.txt` before
   it existed, and it was written just after the launch, in time only by luck.
+- **The evidence of a pipeline's doc is the folder its phase saved, not your re-run.** A handoff
+  or report a phase wrote cites the measurements that phase made, at the head it reviewed. Pass
+  that folder, and each artifact a doc cites by its exact path: given only a parent folder, the
+  agent reads the repo's own copy of a report, which may be stale. A re-run at a later head
+  confirms neither a volatile value (a timing) nor one stamped with a head, and the agent reports
+  the mismatch as a finding. Measured 2026-10-24 (a .NET rules engine, PR #20, round 1): with only
+  the orchestrator's re-run at the PR head and the DOCS phase's folder, the agent of the kit
+  REVIEW's handoff gave 3 LOW (a 12.8 s and a 22.7 s "without evidence", the re-run reading
+  12.6 s, and a `TEST_CMD` "at 8a5c07d" against evidence stamped `7e2ae4a`), and another doc's
+  agent the same 12.8 s; the REVIEW's folder held both values. Same launch prompt with that folder
+  added: the 3 were gone, and the agent found a real LOW instead (anchors a later commit had moved,
+  checked with `git show <head>:<file>`). In the same round an agent given the DOCS folder but not
+  the report a doc cited counted 4 reasons in a stale copy under the repo, where the phase's report
+  had 3.
 - **A sentence that confines a change to a list is a claim of absence about the rest.** "the
   split's section now opens at the cast (Replay22, 24 and 25)" says no other section moved. Save
   the per-item detail of everything that changed, not only the totals, so the agent can check the
