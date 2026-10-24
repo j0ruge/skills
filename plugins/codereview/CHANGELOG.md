@@ -2,6 +2,28 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.5] — 2026-10-23
+
+### A rodada de correção confere o `base=`, a evidência existe antes do lançamento, e a frase de exclusividade tem o detalhe salvo
+
+- **O quê:** três bullets em `skills/codereview/references/configuration.md`.
+  - *Re-review rounds*: uma correção dobrada nos commits revisados (`git commit --fixup` + `rebase --autosquash`,
+    ou `--amend`) tira o `base=` da linha do ramo. A rodada confere com `git merge-base --is-ancestor <base> HEAD`
+    e, com rc 1, escreve o diff de dois pontos (`git -P diff <base> HEAD`) em cada prompt e na Fase A.
+  - *Docs this session wrote*: todo arquivo de evidência existe antes do lançamento (`ls` da lista: um caminho
+    ausente sai com rc 2 e o nome dele), e a afirmação nova de uma correção ganha a sua saída salva.
+  - *Docs this session wrote*: a frase que restringe uma mudança a uma lista é uma afirmação de ausência sobre o
+    resto; a saída salva imprime o detalhe por item, não só o total.
+- **Por quê:** no `/codereview` do PR #77 do magic_tutor (2026-10-23). Depois de dobrar a correção da rodada 1
+  com fixup e autosquash, o `4f682e1` revisado deixou de ser ancestral (`--is-ancestor` rc 1). O
+  `git diff --stat 4f682e1...2bd9a7c` deu 6 arquivos, +181/−47 (o ramo inteiro); o de dois pontos, 2 arquivos,
+  +7/−6 (a correção), e a rodada 2 sobre ele voltou limpa. A frase nova da correção (duas narrações ganham uma
+  seção) não tinha saída salva, e o `secoes.out.txt` citado no prompt foi gravado logo depois do lançamento. E o
+  agente DOCS da rodada 1 só achou o LOW da frase "Replay22, 24 e 25" porque a saída salva imprimia as outras
+  linhas mudadas por arquivo (Replay68: 38, Replay73: 32).
+- **Onde:** só na reference. O `SKILL.md` muda só o `metadata.version` (2.27.4 → 2.27.5, mesmo comprimento) e
+  segue com 19.999 chars.
+
 ## [2.27.4] — 2026-10-23
 
 ### O `evidence:` do DOCS é a saída salva da medição, não o script

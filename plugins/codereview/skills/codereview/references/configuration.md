@@ -238,6 +238,19 @@ against code the range leaves out.
   does not match the saved measurement`; its per-count rows add up to 833). Both runs saw that
   "none in the transient ones" rested on a missing line, and the claim from an unsaved exploration
   came back `needs reproduction`.
+- **Every evidence file exists before the launch.** A fix that adds a claim needs its own saved
+  output for the next round, and a path the prompt names but the session writes after the launch
+  races the agent's read. `ls` the evidence list before launching: a missing path exits 2 and
+  names itself. Measured 2026-10-23 (magic_tutor, PR #77): round 1's fix added a sentence (two
+  replays gained a section) with no saved output; round 2's prompt named `secoes.out.txt` before
+  it existed, and it was written just after the launch, in time only by luck.
+- **A sentence that confines a change to a list is a claim of absence about the rest.** "the
+  split's section now opens at the cast (Replay22, 24 and 25)" says no other section moved. Save
+  the per-item detail of everything that changed, not only the totals, so the agent can check the
+  list. Measured 2026-10-23 (magic_tutor, PR #77): the saved narration diff printed, beside the
+  totals (26 lines in, 0 out), the other changed lines per file, and the agent saw two more files
+  (38 and 32 lines) whose sections had changed too, a LOW; the totals alone would have left it
+  nothing to check.
 - Rounds that keep finding the next claim in the same doc: recommend removing the claim, not adding
   evidence. In the series below every added word became the next round's finding (rounds 3 to 6),
   and it closed when the fixes took text out.
@@ -395,6 +408,16 @@ These decide whether the rounds converge:
   fixes): scratchpad copies of the reviewed files and `diff -u <copy> <file>` in the prompts did the
   same job. Measured 2026-10-19 (Python, rounds 2 and 3 over uncommitted fixes): one `git stash
   create` taken before the fixes was the base of both rounds, and `git stash list` stayed empty.
+- **A fix folded into the reviewed commits takes `base=` off the branch.** `git commit --fixup`
+  with `rebase --autosquash` (or an `--amend`) rewrites the commit the last round reviewed: its
+  sha is no longer an ancestor of `HEAD`, and `{base}...HEAD` diffs from their merge base, the
+  base branch, so the round reviews the whole branch again. Before the round, run
+  `git merge-base --is-ancestor <base> HEAD`; on rc 1, write the two-dot tree diff
+  (`git -P diff <base> HEAD -- <file>`) out in every prompt and use it in Phase A's steps 5–8,
+  the secrets pre-scan included. Measured 2026-10-23 (magic_tutor, PR #77): after the fixup,
+  `git diff --stat 4f682e1...2bd9a7c` gave 6 files, +181/−47 (the branch), and
+  `git diff --stat 4f682e1 2bd9a7c` 2 files, +7/−6 (the fix); the round over the two-dot range
+  sent the two docs to one agent and came back clean.
 - **Reproduce between rounds, not during one.** A mutant that confirms a `needs reproduction` finding
   (detection-passes.md, 6.12) edits a file: run it after every agent has returned, against the
   related test files, and restore the file before the next launch (`git status --short` empty).
