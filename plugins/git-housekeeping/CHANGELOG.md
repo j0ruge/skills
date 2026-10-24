@@ -1,5 +1,31 @@
 # Changelog — `git-housekeeping`
 
+## [0.2.0] — 2026-10-24
+
+### A aprovação parcial do plano, sem editar o JSON
+
+Nasceu de uma limpeza no `dotp-remake`: o `analyze.py` pôs 16 itens em `SAI` (9 branches locais, 6
+remotas e 1 worktree, todos com merge provado), e o usuário aprovou só a branch local que a tarefa
+pedia. O `apply_plan.py` apagava todo item `delete` do escopo, e a skill não tinha como aprovar
+parte do plano.
+
+- **O contorno, e a falha dele:** numa cópia do plano, `decision` passou a `keep` nos outros itens.
+  O primeiro filtro usou o tipo `branch`, mas o gravado é `local-branch`, e o `--dry-run` respondeu
+  `nada a apagar neste escopo` com rc 0, o mesmo de um plano vazio de verdade. Com o tipo certo, o
+  dry-run mostrou só o item aprovado e o apply o apagou.
+- **`--only <nome>`, repetível, no `apply_plan.py`:** restringe aos itens `delete` do escopo com
+  esse nome, o do relatório (a branch, ou o caminho do worktree, comparado por `realpath`). No
+  escopo local, o nome de uma branch pega também a ref remote-tracking dela. Os outros itens do
+  escopo ficam, e uma linha diz quantos (`fora do --only: N item(s) deste escopo ficam`). As
+  recusas de sempre continuam: a branch em uso num worktree que não foi escolhido é recusada.
+- **Nome que não casa é uso inválido:** o `--only` que não acha item `delete` no escopo sai com rc 2
+  antes de apagar qualquer coisa, com o nome recusado e os que o plano aceita.
+- **No `SKILL.md`:** o passo 3 manda um `--only` por item aprovado, nos passos 4 e 6, com
+  `--dry-run` antes, e nunca editar o plano à mão; a armadilha do rc 0 calado entrou na lista. O
+  `metadata.version` dizia 0.1.0 desde a 0.1.1 e passa a 0.2.0, junto com o `plugin.json`.
+- **Testes:** 3 novos em `test_apply_plan.py` (só o aprovado sai, local e remoto; nome fora do plano
+  é rc 2 sem mudar nada; o `--dry-run` com `--only`), os 3 vistos falhando antes do código.
+
 ## [0.1.1] — 2026-10-22
 
 Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.

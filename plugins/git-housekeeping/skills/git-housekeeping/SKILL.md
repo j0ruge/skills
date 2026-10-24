@@ -2,7 +2,7 @@
 name: git-housekeeping
 description: "Safely deletes merged git branches, local and remote, and their worktrees. A read-only scan proves each merge by merge commit or by the merged PR's head sha; only the approved plan is deleted, with sha leases and two confirmations. Triggers — merged branches, branch cleanup, delete merged branches, stale worktrees, git housekeeping, prune branches."
 metadata:
-  version: 0.1.0
+  version: 0.2.0
 ---
 
 # git-housekeeping
@@ -20,6 +20,9 @@ foram medidos no git 2.43.0 em 2026-10-20, num repo descartável.
   que entrou depois do merge.
 - Apagar no remoto a branch que é gatilho de deploy (`on.push.branches`) ou head de PR aberto quebra
   o deploy ou fecha o PR.
+- O plano editado à mão para aprovar só parte dele falha calado: um filtro que não casa (o tipo
+  gravado é `local-branch`, não `branch`) dá `nada a apagar neste escopo` com rc 0, igual a um
+  plano vazio (medido em 2026-10-24). O `--only` recusa o nome que não casa com rc 2.
 - `git worktree remove`, sem `--force`, apaga os arquivos ignorados (`.env.local`, `node_modules/`)
   com rc 0, sem aviso.
 - `%(upstream:track)` não diz `[gone]` enquanto a ref remote-tracking velha existe. O "sumiu do
@@ -51,7 +54,7 @@ o `apply_plan.py` reclassifica com o mesmo código que gerou o plano.
 |---|---|---|
 | `analyze.py --repo <repo> --remote origin --plan <arquivo>` | `git fetch` (sem prune), consulta o remoto e o gh, grava o plano e imprime o relatório. Não apaga nada. | 0 ok; 2 remoto que não responde, repo inválido ou plano dentro do repo |
 | `analyze.py --scan <pasta>` | Uma linha por repo da pasta. Sem rede, sem plano, sem escrever nada. | 0 |
-| `apply_plan.py --plan <arquivo> --scope local\|remote [--dry-run]` | Reclassifica cada item `delete` do escopo com os fatos de agora e apaga o que ainda passa. | 0 tudo feito; 1 algo recusado; 2 plano inválido |
+| `apply_plan.py --plan <arquivo> --scope local\|remote [--only <nome>]... [--dry-run]` | Reclassifica cada item `delete` do escopo com os fatos de agora e apaga o que ainda passa. O `--only` restringe aos nomes aprovados. | 0 tudo feito; 1 algo recusado; 2 plano inválido ou `--only` fora do plano |
 
 ## Fluxo (um repo)
 
@@ -70,7 +73,9 @@ o `apply_plan.py` reclassifica com o mesmo código que gerou o plano.
    o nome; nunca abra nem imprima o conteúdo.
 
 3. **1ª confirmação: o local** (branches locais, worktrees e refs remote-tracking). Pergunte com a
-   lista na frente do usuário.
+   lista na frente do usuário. Se ele aprovar só parte, passe um `--only <nome>` por item aprovado
+   nos passos 4 e 6, com o nome que o relatório mostra (a branch, ou o caminho do worktree), e rode
+   antes com `--dry-run`. Nunca edite o plano à mão.
 
 4. **Apagar o local:**
 

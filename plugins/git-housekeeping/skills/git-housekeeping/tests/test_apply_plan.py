@@ -240,6 +240,43 @@ class ApplyTest(unittest.TestCase):
             self.assertIn("faria: ", r.stdout)
         self.assertEqual((snapshot(self.fx.clone), self.fx.remote_branches()), before)
 
+    def test_only_apaga_so_o_aprovado(self):
+        """O usuário aprovou 1 dos 2: o --only apaga esse, e o outro fica no plano e no repo."""
+        self.merged("feat/a")
+        self.merged("feat/b")
+        plan = self.analyze()
+        r = self.apply("--plan", plan, "--scope", "local", "--only", "feat/a")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertNotIn("feat/a", self.fx.local_branches())
+        self.assertIn("feat/b", self.fx.local_branches())
+        self.assertIn("fora do --only: 1 item(s) deste escopo ficam", r.stdout)
+        r = self.apply("--plan", plan, "--scope", "remote", "--only", "feat/a")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertNotIn("feat/a", self.fx.remote_branches())
+        self.assertIn("feat/b", self.fx.remote_branches())
+
+    def test_only_que_nao_casa_e_uso_invalido(self):
+        """Nome que não é delete no escopo sai com rc 2 e nada muda, em vez do "nada a apagar" com rc 0."""
+        self.merged("feat/a")
+        plan = self.analyze()
+        before = (snapshot(self.fx.clone), self.fx.remote_branches())
+        r = self.apply("--plan", plan, "--scope", "local", "--only", "feat/a", "--only", "branch feat/a")
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn("'branch feat/a'", r.stderr)
+        self.assertIn("feat/a", r.stderr.split("aceita:", 1)[-1])
+        self.assertEqual((snapshot(self.fx.clone), self.fx.remote_branches()), before)
+
+    def test_only_no_dry_run_mostra_so_o_aprovado(self):
+        """O --dry-run com --only diz que faria só o escolhido."""
+        self.merged("feat/a")
+        self.merged("feat/b")
+        plan = self.analyze()
+        r = self.apply("--plan", plan, "--scope", "local", "--only", "feat/b", "--dry-run")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("faria: branch local feat/b", r.stdout)
+        self.assertNotIn("feat/a", r.stdout.replace("fora do --only", ""))
+        self.assertIn("feat/a", self.fx.local_branches())
+
     def test_plano_vazio(self):
         """Sem nada a apagar, sai 0 e diz isso (Review Focus 4)."""
         plan = self.analyze()
