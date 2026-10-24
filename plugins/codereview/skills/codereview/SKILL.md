@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.27.5
+  version: 2.27.6
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -100,7 +100,7 @@ Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. T
    (`{SKILL_DIR}` = absolute path of this SKILL.md's directory). It prints JSON `{findings:[...], scanners:[...], errors:[...]}`; keep it verbatim as `SECRETS_PRESCAN`, the authoritative source for Phase C's Secrets Detection table and F-grade gate. A crash or non-JSON output means the scan did not run: warn the user and re-run it — an absent payload is never "scan returned clean".
 
 Classify each changed file:
-- EXCLUDED: lock files, node_modules, dist, build, .next, min files, binaries, .claude/ (unless the user names it; rules/ is DOCS)
+- EXCLUDED: lock files, node_modules, dist, build, .next, min files, binaries, .claude/ (unless named; rules/ and skills/ are DOCS, their scripts CODE)
 - CODE: source files matching {fileExtensions} in {baseDir}, excluding tests and generated; an extensionless executable counts when its shebang runs one of those languages (`bin/tool`, `#!/usr/bin/env bash`)
 - UI_LIB: files in {generatedDirs}
 - TESTS: files matching {testFilePatterns}
@@ -108,19 +108,19 @@ Classify each changed file:
 - DOCS: *.md, *.txt
 - STYLES: CSS/SCSS/LESS
 
-For each CODE file, check test coverage by probing candidate test file paths — same dir (`{Base}.test.{ext}`, `{Base}.spec.{ext}`), a `__tests__` sibling, then the project test root, then a changed test that imports it — and record it as WITH_TESTS / STALE_TESTS / NO_TESTS. Probe all CODE files in one shell loop (one Bash call, `path|status` per file), in bash with `nullglob`: zsh aborts an unmatched glob, and a bare `==` as `= not found`.
+For each CODE file, probe candidate test file paths — same dir (`{Base}.test.{ext}`, `{Base}.spec.{ext}`), a `__tests__` sibling, then the project test root, then a changed test that imports it — and record it as WITH_TESTS / STALE_TESTS / NO_TESTS. Probe all CODE files in one shell loop (one Bash call, `path|status` per file), in bash with `nullglob`: zsh aborts an unmatched glob, and a bare `==` as `= not found`.
 
 Phase A hands Phases B and C: BASE_BRANCH, BRANCH_NAME, MERGE_BASE, DIFF_STAT, COMMIT_LOG, the FILES list (path, category, test_status), COUNTS per category, and SECRETS_PRESCAN.
 
-If CHANGED_FILES empty, dirty `git status --porcelain` → `worktree` mode (`references/configuration.md`). Both empty → output "No changes detected between this branch and `{BASE_BRANCH}`." and stop — unless the user scoped paths: then empty is a pathspec error (read configuration.md §Path-scoped reviews).
+If CHANGED_FILES empty, dirty `git status --porcelain` → `worktree` mode (`references/configuration.md`). Both empty → output "No changes detected between this branch and `{BASE_BRANCH}`." and stop — unless the user scoped paths: then empty is a pathspec error (configuration.md §Path-scoped reviews).
 
 More than 15 CODE files: order the groups by change size (diff stat lines); every file still gets an agent, none is cut.
 
 ### Phase B: Per-File Analysis (sonnet agents, parallel)
 
-For each CODE file (or group of 2-3 small files sharing imports), each changed TESTS file on a test-quality focus (6.12) and each DOCS file this session or its pipeline wrote (configuration.md, *Docs this session wrote*), **spawn a sonnet agent** to analyze it. Launch all agents **in parallel**, in one message.
+For each CODE file (or group of 2-3 small files sharing imports), each changed TESTS file on a test-quality focus (6.12) and each DOCS file this session, its pipeline or the handoff it continues wrote (configuration.md, *Docs this session wrote*), **spawn a sonnet agent** to analyze it. Launch all agents **in parallel**, in one message.
 
-Each agent reads its instructions itself, when it starts, from `{SKILL_DIR}/references/per-file-agent.md`, so every agent gets the same contract. Emit only the launch prompt below, placeholders filled — nothing added (no themes, framing or reproduction requests: those come back marked `needs reproduction`), nothing removed. `model: "sonnet"` on every call.
+Each agent reads its instructions itself from `{SKILL_DIR}/references/per-file-agent.md`, so every agent gets the same contract. Emit only the launch prompt below, placeholders filled — nothing added (no themes, framing or reproduction requests: those come back marked `needs reproduction`), nothing removed. `model: "sonnet"` on every call.
 
 ```
 Agent(model: "sonnet", prompt: "
@@ -142,7 +142,7 @@ scope and output format.
 
 The agent returns a numbered findings list (`N. [SEVERITY] {category} — {file}:{line} — {title}`, with Description and Suggestion), or `No findings for {FILE_PATH}`, and ends with `Tool calls: … | Files read in full: …` and `END_OF_FILE_REVIEW`.
 
-**Grouping**: files that import from each other share an agent when possible (max 3), which catches intra-group issues without the main model. A **TOCTOU** race spanning files (service reads, controller acts) is flagged single-file with "cross-file verification needed"; Phase C judges it.
+**Grouping**: files that import from each other share an agent when possible (max 3), catching intra-group issues without the main model. A **TOCTOU** race spanning files (service reads, controller acts) is flagged single-file with "cross-file verification needed"; Phase C judges it.
 
 ### Phase B2: Dead Code Sweep (sonnet agent, parallel)
 

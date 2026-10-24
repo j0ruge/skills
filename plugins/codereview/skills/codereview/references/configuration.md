@@ -215,11 +215,11 @@ version, while a session started fresh loads the `installPath`.
 ## Docs this session wrote
 
 Read this when a changed DOCS file was written by this session, by you or by a pipeline you run or
-follow (a headless phase such as the `sdd run` DOCS phase, a writer agent you launched), and makes
-factual claims (paths, counts, names, versions, licenses, what a source can or cannot answer).
-Phase C step 7 is yours, so on your own file it is a self-review; on the pipeline's, nobody else
-reads it: its own review ran before that phase, and step 7 checks the doc against the diff, not
-against code the range leaves out.
+follow (a headless phase such as the `sdd run` DOCS phase, a writer agent you launched), or by the
+earlier session whose handoff you continue, and makes factual claims (paths, counts, names,
+versions, licenses, what a source can or cannot answer). Phase C step 7 is yours, so on your own
+file it is a self-review; on the pipeline's, nobody else reads it: its own review ran before that
+phase, and step 7 checks the doc against the diff, not against code the range leaves out.
 
 - Send it to a Phase B agent in the same batch, launch prompt unchanged, with category
   `DOCS (written this session; evidence: <path or none>)` — also when Phase B otherwise runs inline
@@ -262,6 +262,10 @@ against code the range leaves out.
   own review. Sent to an agent as written this session, the doc gave the round's only MEDIUM: the
   cell left out a form the parser accepts (`FE_NUM_COLOURS` with `OP_GREATER_THAN`) and ended by
   calling any other operator an error, against a code file the range did not touch.
+- Measured 2026-10-24 (magic_tutor, PR #81): the branch's docs came from the session before the
+  handoff, and no review had read them. Sent to agents as written this session, they gave round 1's
+  only docs MEDIUM, `README.md:188`: a known-limitations line outside the diff's hunks that the new
+  feature had made false; and 4 LOW.
 - **A count next to a named example reads as that example's count.** "the ETB of X, 67 of the 619
   requests" says X made the 67, and a total that matches the measuring script does not check it.
   The agent can only infer from reading the script: in step 7, re-run it grouped by the entity the
@@ -418,6 +422,16 @@ These decide whether the rounds converge:
   `git diff --stat 4f682e1...2bd9a7c` gave 6 files, +181/−47 (the branch), and
   `git diff --stat 4f682e1 2bd9a7c` 2 files, +7/−6 (the fix); the round over the two-dot range
   sent the two docs to one agent and came back clean.
+- **A rebase onto the updated base between rounds needs the rebased head as `base=`.** It takes the
+  reviewed sha off the branch too (`--is-ancestor` rc 1), but here the two-dot diff from it is not
+  the fix: it carries the base's new commits, inside the same files when the fix touches them, so
+  the file list does not show them. Right after the rebase, before the first fix,
+  `git rev-parse HEAD` is the rebased copy of the reviewed head: the next round's `base=`, with the
+  usual three-dot range. Measured 2026-10-24 (magic_tutor, PR #81): rebased over a merged PR,
+  `6652602` became `68d8139`; `git diff --stat 6652602 daf045e` and
+  `git diff --stat 68d8139 daf045e` listed the same 12 files, +160/−45 against +153/−44, and
+  `git diff --stat 6652602 68d8139` showed the gap: 2 files, 8 lines of the merged PR, both files
+  the fix also edited.
 - **Reproduce between rounds, not during one.** A mutant that confirms a `needs reproduction` finding
   (detection-passes.md, 6.12) edits a file: run it after every agent has returned, against the
   related test files, and restore the file before the next launch (`git status --short` empty).

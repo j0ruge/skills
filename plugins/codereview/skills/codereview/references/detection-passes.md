@@ -135,6 +135,14 @@ Apply these 5 principles as analysis lenses to all CODE files (reduced rigor for
 - Potential null access without checks
 - Off-by-one errors in loops or array operations
 - `async` functions that never `await` anything (likely missing await or unnecessary async)
+- A terminal mode changed with no restore on every exit path: `input()` with `readline` loaded and
+  blocked in a daemon thread, raw mode, `curses`, a `termios.tcsetattr` with no restore in `atexit`
+  or `finally`. Ctrl+C ends the process with the reader still inside, and the user's shell is left
+  without echo — MEDIUM, `needs reproduction`. Phase C reproduces it in a pseudo-terminal: the
+  program on `os.openpty()`, a SIGINT, then `termios.tcgetattr` of the pty; through a shell, use
+  bash, since zsh restores the tty after each command (2026-10-24: no per-file agent flagged it;
+  after the Ctrl+C the bare pty had ECHO and ICANON off, `stty -a` read `-icanon -echo` under bash
+  and `icanon echo` under zsh; a pty test of the real `main()` was red before the fix).
 
 **When `frameworkPatterns` is `react|vue|angular|node`:**
 

@@ -2,6 +2,37 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.6] — 2026-10-24
+
+### O modo do terminal na saída, o rebase entre rodadas, a doc do handoff e o `.claude/skills/`
+
+- **O quê:**
+  - `references/detection-passes.md`, 6.1 *Universal*: o modo do terminal mudado sem restauração em toda saída
+    (`input()` com `readline` preso numa thread daemon, raw mode, `curses`, `tcsetattr` sem `atexit`/`finally`) é
+    MEDIUM `needs reproduction`, com a receita da Fase C: pseudo-terminal, SIGINT, `tcgetattr`, e o bash, porque o
+    zsh restaura o tty depois de cada comando.
+  - `references/configuration.md`, *Re-review rounds*: um rebase sobre o base atualizado entre rodadas pede como
+    `base=` a cópia rebaseada da cabeça revisada (`git rev-parse HEAD` logo depois do rebase), não o sha antigo.
+  - `references/configuration.md`, *Docs this session wrote*: a doc escrita pela sessão anterior do handoff que se
+    continua conta como escrita nesta sessão (e o `SKILL.md` diz isso no roteamento da Fase B).
+  - `SKILL.md`, classificação: em `.claude/`, `skills/` é DOCS, como `rules/`, e os scripts de lá são CODE.
+- **Por quê:** no `/codereview` do PR #81 do magic_tutor (2026-10-24), em três rodadas.
+  - Nenhum agente por arquivo viu que o `input()` com `readline` numa thread daemon deixava o terminal sem eco
+    depois do Ctrl+C. A reprodução em pty da Fase C mostrou ECHO e ICANON desligados; por um shell, o
+    `bash --norc -i` deu `-icanon -echo`, e o `zsh -f -i`, `icanon echo`. O teste em pty do `main()` foi vermelho
+    antes do conserto e verde depois.
+  - Depois da rodada 1, o ramo foi rebaseado sobre um PR mergeado: `6652602` virou `68d8139`. O
+    `git diff --stat 6652602 daf045e`, a regra do fixup, e o `68d8139 daf045e` listaram os mesmos 12 arquivos,
+    +160/−45 contra +153/−44; o `6652602 68d8139` mostrou as 8 linhas do PR mergeado dentro de 2 arquivos que o
+    conserto também mexeu. A rodada 2 sobre o `68d8139` pegou só o conserto.
+  - As docs do ramo vinham da sessão anterior do handoff, sem revisão. Mandadas como escritas nesta sessão, deram o
+    único MEDIUM de docs da rodada 1 (`README.md:188`, fora dos trechos alterados) e 4 LOW. A `SKILL.md` e o script
+    de uma skill do projeto (`.claude/skills/revisar-partida/`) deram 2 desses LOW.
+- **Onde:** nas references, e no `SKILL.md` duas frases de classificação e roteamento. Para elas caberem, quatro
+  frases do `SKILL.md` foram reescritas sem perder conteúdo (o "when it starts" do contrato, o "which catches" do
+  agrupamento, o "read" do ponteiro de path-scoped, o "check test coverage by probing"): 19.999 → 19.994 chars,
+  247 linhas.
+
 ## [2.27.5] — 2026-10-23
 
 ### A rodada de correção confere o `base=`, a evidência existe antes do lançamento, e a frase de exclusividade tem o detalhe salvo
