@@ -3,6 +3,22 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-25 — a órfã consertada sem o marcador, o motivo conferido e o worktree destacado
+
+Publicado como **v2.8.2**. Saiu do espelho do `TODO.md` do `magic_tutor` depois do merge do PR #101
+de lá (missão `20261024-dica-na-hora` do kit sdd), que criou a #102 e deixou 4 órfãs.
+
+- **A missão apaga o item sem `RESOLVED by`.** As 4 órfãs saíram do arquivo no PR #101, sem o
+  marcador: a #90, a #64 e a #91 consertadas pela missão, e a #53 conferida ao vivo. O plano as leu `no RESOLVED by`, o `--close-orphans` as
+  pulou, e a linha `ORPHAN` do `SKILL.md` e a dica do script mandavam fechar como `not planned`. Isso
+  diria "não vamos fazer" sobre o que foi feito. Elas foram fechadas à mão como `completed`, com o
+  commit e o PR, como a seção *Erros comuns* já dizia. Agora a linha e a dica dizem os dois casos.
+- **O motivo, conferido depois.** O `gh issue view N --json stateReason` deu `Unknown JSON field` no
+  gh 2.45.0, e o `gh api repos/j0ruge/magic_tutor/issues/N --jq .state_reason` deu `completed` nas 4.
+- **O checkout da `main` estava ocupado:** o aluno jogava lá com o monitor ligado, e ele estava atrás
+  do merge. O espelho rodou de um `git worktree add --detach … origin/main`: `permalinks at 8d1eaab`,
+  e o plano final deu `create=0 update=0 orphans=0`.
+
 ## 2026-10-20 — o `#N` solto que o GitHub liga ao número errado
 
 Publicado como **v2.8.0**. Saiu do espelho do `TODO.md` do `magic_tutor` depois dos PRs #32 e #33

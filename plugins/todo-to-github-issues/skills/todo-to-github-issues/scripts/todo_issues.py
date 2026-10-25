@@ -829,8 +829,9 @@ def main() -> int:
                       f"clone? renamed file? unmerged branch?), so its last text is unknown: read it, then "
                       f"close as completed if it carried RESOLVED by, as not planned if it did not")
             else:
-                print(f"skipped #{iss['number']} — no RESOLVED by in its last text: close it by hand, "
-                      f"`gh issue close {iss['number']} --reason \"not planned\" --comment \"<para onde foi>\"`")
+                print(f"skipped #{iss['number']} — no RESOLVED by in its last text: close it by hand. "
+                      f"Fixed: `gh issue close {iss['number']} --reason completed --comment \"<commit e PR>\"`; "
+                      f"decided, refuted or deferred: `--reason \"not planned\" --comment \"<para onde foi>\"`")
     return 0
 
 

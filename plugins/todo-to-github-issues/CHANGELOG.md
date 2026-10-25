@@ -3,6 +3,26 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.8.2] — 2026-10-25
+
+Patch: a órfã sem `RESOLVED by` que foi consertada fecha como `completed`, e não como `not planned`.
+
+### Fixed
+
+- **`SKILL.md`, linha `ORPHAN`.** O caso `no RESOLVED by` mandava fechar tudo como `not planned`,
+  inclusive o item "consertado sem o marcador", que é o jeito de a missão do kit sdd apagar o item.
+  Agora a linha separa os dois: consertado fecha com `--reason completed` e o commit e o PR; decidido,
+  refutado ou adiado fecha com `not planned` e o destino. A seção *Erros comuns* já dizia isso.
+- **`scripts/todo_issues.py`.** A dica que o `--close-orphans` imprime ao pular essa órfã mostra os
+  dois casos. Só a mensagem muda.
+
+### Added
+
+- **Conferir o motivo do fechamento:** `gh api repos/<dono>/<repo>/issues/N --jq .state_reason`. O
+  `gh issue view --json stateReason` não existe no gh 2.45.
+- **Espelhar de um worktree destacado** no `origin/<padrão>` quando o checkout da branch padrão está
+  ocupado ou atrás do remoto.
+
 ## [2.8.1] — 2026-10-22
 
 Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.

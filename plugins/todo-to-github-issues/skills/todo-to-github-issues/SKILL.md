@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.8.0
+  version: 2.8.2
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -74,7 +74,7 @@ importa conforme o modo: abra-os só para depurar ou alterar esse modo.
 | `UPDATE (text)` | texto, título ou seção mudou de verdade | leia o item antes do `--apply`; é o único `UPDATE` que pede olho |
 | `REF?` | um `#N` solto num corpo que esta rodada escreve (`CREATE`, `UPDATE (text)`), com o destino que o GitHub dará ao link | confira; se o texto quis dizer outra coisa, corrija a fonte (`dono/repo#N`, "item N") antes do `--apply` |
 | `SKIP` | o corpo traz `RESOLVED by <hash>` e não existe issue | nada: não se abre card para achado já fechado; com o hash já na branch padrão, o `--fix` apaga o item |
-| `ORPHAN` | a issue está aberta, mas o item saiu do arquivo. A linha diz em que commit ele saiu e, se o último texto trazia `RESOLVED by`, quem o consertou (`fixed by …`) — lido no commit da remoção, nunca no `HEAD` | **`fixed by`:** `--close-orphans` fecha como concluída, citando o conserto e a remoção. **`no RESOLVED by`** (decidido, refutado, adiado, ou consertado sem o marcador): `--close-orphans` pula (`SKIP`); feche à mão, `gh issue close N --reason "not planned" --comment "<para onde foi>"`. **`last text unknown`** (`removal not found`): a chave nunca saiu do histórico deste checkout — clone raso, arquivo renomeado, branch não mergeada (a de um PR aberto sai como `PENDING`). Desconhecido não é ausente: leia o último texto antes de escolher `completed` ou `not planned` |
+| `ORPHAN` | a issue está aberta, mas o item saiu do arquivo. A linha diz em que commit ele saiu e, se o último texto trazia `RESOLVED by`, quem o consertou (`fixed by …`) — lido no commit da remoção, nunca no `HEAD` | **`fixed by`:** `--close-orphans` fecha como concluída, citando o conserto e a remoção. **`no RESOLVED by`**: `--close-orphans` pula (`SKIP`); feche à mão. Consertado sem o marcador (a missão do kit sdd apaga o item assim): `gh issue close N --reason completed --comment "<commit e PR>"`; decidido, refutado ou adiado: `--reason "not planned" --comment "<para onde foi>"`. **`last text unknown`** (`removal not found`): a chave nunca saiu do histórico deste checkout — clone raso, arquivo renomeado, branch não mergeada (a de um PR aberto sai como `PENDING`). Desconhecido não é ausente: leia o último texto antes de escolher `completed` ou `not planned` |
 | `PENDING` | a remoção não está no histórico, mas o item está na cabeça de um PR aberto: a issue nasceu de um `--apply` na branch do PR. Só a órfã sem remoção é procurada, com um `gh pr list` e o arquivo em cada cabeça (do git local, ou da API de conteúdo) | nada: deixe aberta, e `--close-orphans` a pula. Depois do merge, vira `OK` ou `UPDATE`. Limite: PR de fork (cabeça em outro repositório) não foi medido; se a cabeça não for lida, a issue segue `ORPHAN` |
 | `RENAME?` | par `ORPHAN` + `CREATE` com ≥ 85% do mesmo texto: o título mudou | confirme com o humano; se for o mesmo achado, rode o comando impresso **antes** do `--apply`, e a issue antiga vira `UPDATE` |
 | `CLOSED` | a issue foi fechada à mão, mas o item continua no arquivo | decisão humana: reabrir a issue ou apagar o item |
@@ -191,6 +191,8 @@ tem linhas próprias (`CREATE closed`, `LINK?`, `COMMENT`, `CLOSE`).
   último texto trazia `RESOLVED by <hash>`, e pula as outras com `SKIP`: item refutado, adiado ou
   levado para outro lugar (cabeçalho de sensor, YAGNI) fica aberto até alguém fechá-lo à mão como
   `not planned`, com o destino. Até a 2.2.0 ele fechava todas como *concluídas*, sem citar conserto.
+  Para conferir o motivo depois: `gh api repos/<dono>/<repo>/issues/N --jq .state_reason` (o
+  `gh issue view --json stateReason` não existe no gh 2.45, medido em 2026-10-25).
 - **Ler `removal not found` como "saiu por decisão".** Até a 2.3.0 a remoção era procurada pelo
   texto do título, que o parser normaliza: o kit sdd fechou quase como `not planned` um item
   consertado (#113, título com `` `^  ok    ` ``). Desde a 2.3.1 ela é achada pela chave.
@@ -210,6 +212,9 @@ tem linhas próprias (`CREATE closed`, `LINK?`, `COMMENT`, `CLOSE`).
   publicado a vê como `PENDING` até o merge, não como órfã (kit sdd #249, do PR #248, 2026-10-13).
   Para mudar UMA issue antes do merge, pegue o corpo dela no `--dump`, tire o `# título` que o dump
   põe no topo e aplique com `gh issue edit N --body-file`; o plano depois do merge a lê como em dia.
+  Com o checkout da branch padrão ocupado ou atrás do remoto, espelhe de um worktree destacado,
+  `git worktree add --detach <dir> origin/<padrão>` (magic_tutor, 2026-10-25: `permalinks at 8d1eaab`,
+  e o plano final em `create=0 update=0 orphans=0`).
 - **Editar o corpo à mão sem o link da âncora.** O `UPDATE (anchor)` (`update_kind`) compara os
   corpos sem o alvo dos links, mas com os colchetes: uma âncora escrita `` `arq:N` `` no lugar de
   `` [`arq:N`](…) `` nunca mais é `(anchor)`, e cada linha deslocada volta como `UPDATE (text)` (kit
