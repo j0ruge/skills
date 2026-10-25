@@ -60,6 +60,15 @@ re-run on the head (the detached worktree above) before it is called a regressio
 `local/ci=success` (`infra/gate/gate.sh --sem-ci: 15/15, 0 reprovados`) for 17 minutes, the gate the
 repo's CLAUDE.md declares; the fix head `8ab1942` got the same gate, 15/15.
 
+**A run you watched on the same tree is the baseline too.** A suite you ran earlier in the session
+counts when the tree it ran on is the head's (`git rev-parse <commit you tested>^{tree}` equals
+`git rev-parse HEAD^{tree}`), the tree you fix has no local change, and the command is the one 4.1
+picks. A rebase or a cherry-pick that rebuilds the same content makes other commits with the same
+tree, and the hash is the proof, never the likeness of the steps. Measured 2026-10-25 (magic_tutor
+PR #103): the `TEST_CMD` ran, 952 passed, on a scratch cherry-pick of the branch onto `main`; the
+rebased head `ee81a77` had the same tree, `9937589`, and after the fix 4.2 ran 955 passed: the 952
+and the 3 new tests.
+
 **Save the baseline as:**
 
 ```

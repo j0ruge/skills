@@ -146,3 +146,16 @@ Then update each checklist with:
 - **Resolved in this run**: {n}
 - **Previously resolved**: {n}
 ```
+
+## 5.4 The Fix Commits Need a Review Too
+
+The fixes 5.0 pushed are commits no bot has seen. Coverage is per commit (SKILL.md Phase 2, case
+b), and a reviewer that runs only on request (Codex, `reviewer-registry.md`) never looks at them on
+its own: the closing report would carry fix commits reviewed by nobody. Before the report and
+Phase 6, offer to post `@codex review` on the PR (a comment on the user's PR is theirs to approve),
+then wait, in the background, for `completed` on the new head with the registry's
+`codex-review-state` command. `findings=false` is case (a) for the fix commits; a new finding is a
+new round of this skill. Declined, the report names the fix commits as unreviewed. Measured
+2026-10-25 (magic_tutor PR #103): Codex's P2 was on `ee81a77`, the fix went out as `693832e`, and
+the thread was resolved with `total: 1 unresolved: 0`. Only the user's `@codex review` brought
+`completed 693832e… findings=false` and a 👍 on the PR.

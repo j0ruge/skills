@@ -2,6 +2,22 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.9] — 2026-10-25
+
+### Os commits do conserto pedem revisão, e a rodada assistida na mesma árvore é linha de base (coderabbit-pr 4.6.3)
+
+- **O quê:** `skills/coderabbit-pr/references/thread-resolution.md` ganha a seção *5.4 The Fix Commits Need a Review
+  Too*: antes do relatório e da Fase 6, oferecer o `@codex review` e esperar `completed` na cabeça nova. O passo 5.3
+  do `SKILL.md` roteia para ela numa frase. `references/regression-testing.md` (4.0) aceita como linha de base a
+  suíte já rodada na sessão quando o `HEAD^{tree}` é o mesmo da árvore testada.
+- **Por quê:** no `/codereview:coderabbit-pr` do PR #103 do magic_tutor (2026-10-25), o P2 do Codex estava no
+  `ee81a77`, o conserto saiu como `693832e`, e a rodada fechava com o commit do conserto revisado por nenhum robô:
+  o Codex só revisa sob pedido, e a skill só mandava relatar o caso (b). Quem pediu o `@codex review` foi o
+  usuário, e ele deu `completed 693832e… findings=false`. A linha de base veio de uma rodada de 952 testes numa
+  cópia descartável com a mesma árvore `9937589` do head rebaseado; depois do conserto, 955.
+- **Onde:** o `SKILL.md` da `coderabbit-pr` estava a 68 caracteres do teto de 20 mil, então o detalhe ficou nas
+  references, e ele ganhou só a frase do 5.3 e o `metadata.version` (4.6.2 → 4.6.3).
+
 ## [2.27.8] — 2026-10-25
 
 ### O grep do limite do CodeRabbit casava o walkthrough comum (coderabbit-pr 4.6.2)
