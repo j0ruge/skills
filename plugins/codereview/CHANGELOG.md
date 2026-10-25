@@ -2,6 +2,33 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.10] — 2026-10-25
+
+### O `base=` da rodada vem colado do git, a evidência se lê antes do lançamento, e o agente de DOCS confere o roteamento das references (codereview 2.27.10)
+
+Três lições do `/codereview` do PR #107 do magic_tutor (quatro rodadas sobre um script Python e as docs de duas skills
+locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19.994 de 20.000).
+
+- **`references/configuration.md`, *Re-review rounds*: o `base=` vem colado da saída do git.**
+  - **O quê:** o sha da rodada sai de `git rev-parse <sha curto>` (ou do curto que o `git log --oneline` imprimiu) e
+    vai colado na Fase A e em cada prompt de lançamento; nunca é refeito de memória.
+  - **Por quê:** na rodada 3, o comando de diff de um prompt levou `0fe9e979ecdf…`, e o `git rev-parse 0fe9e97` dá
+    `0fe9e97adcfed…`. O agente só revisou o intervalo certo porque a linha `Merge base:` trazia o sha curto; a
+    correção foi mandada a ele por mensagem.
+- **`references/configuration.md`, *Docs this session wrote*: leia cada arquivo de evidência antes do lançamento.**
+  - **O quê:** além do `ls` (o bullet de antes), a leitura: um comando que falha dentro de um pipe deixa uma linha
+    plausível. No zsh, `git show $ref:caminho` lê o `:c`, `:h` ou `:t` como modificador: `"${ref}:caminho"`.
+  - **Por quê:** a evidência do tamanho de uma página saiu `5a42767^: 0` (o git recebeu `5a42767^onhecimento/…` e
+    falhou) para uma página de 20.708 bytes. O erro apareceu porque a saída foi lida antes de ir para o agente; com
+    as chaves, 20.708 e 22.391.
+- **`references/per-file-agent.md`: num `SKILL.md`, cada reference citada diz quando ler.**
+  - **O quê:** o agente de um arquivo DOCS que é o `SKILL.md` de uma Agent Skill confere o roteamento (a boa prática
+    do agentskills.io); a citação que só nomeia o arquivo é LOW.
+  - **Por quê:** a correção da rodada 1 trocou "(o comando acima)" por "(`references/carta-pelo-nome.md`)". O agente
+    da rodada 2 conferiu que o arquivo existe e não deu achado; quem pegou foi a auditoria da skill (o F1 da
+    `skill-quality-audit`, ausente em `b4d16dc` e presente em `4c5d034`). Reescrita como "Para conferir o custo no
+    banco, leia `references/carta-pelo-nome.md`", o F1 saiu, e a rodada 4 voltou limpa.
+
 ## [2.27.9] — 2026-10-25
 
 ### Os commits do conserto pedem revisão, e a rodada assistida na mesma árvore é linha de base (coderabbit-pr 4.6.3)

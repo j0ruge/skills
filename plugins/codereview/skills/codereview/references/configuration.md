@@ -244,6 +244,12 @@ phase, and step 7 checks the doc against the diff, not against code the range le
   names itself. Measured 2026-10-23 (magic_tutor, PR #77): round 1's fix added a sentence (two
   replays gained a section) with no saved output; round 2's prompt named `secoes.out.txt` before
   it existed, and it was written just after the launch, in time only by luck.
+- **Read each evidence file before the launch, too.** A command that fails inside a pipe still
+  leaves a plausible line, and the agent checks the doc against it. In zsh, `git show $ref:path`
+  reads the `:c`, `:h` or `:t` after `$ref` as a modifier: brace the name, `"${ref}:path"`.
+  Measured 2026-10-25 (magic_tutor, PR #107): `git show $ref:conhecimento/decks/x.md | wc -c`
+  sent `5a42767^onhecimento/…` to git, which failed, and the evidence file said `5a42767^: 0` for
+  a page of 20708 bytes; braced, it said 20708 and 22391.
 - **The evidence of a pipeline's doc is the folder its phase saved, not your re-run.** A handoff
   or report a phase wrote cites the measurements that phase made, at the head it reviewed. Pass
   that folder, and each artifact a doc cites by its exact path: given only a parent folder, the
@@ -389,6 +395,13 @@ launches no agent, and the report grades code nobody read.
 Read this whenever `base=` names the head an earlier round reviewed (SKILL.md, *Re-review the fix*).
 These decide whether the rounds converge:
 
+- **`base=` is pasted from git's output, never retyped.** The head a round starts from was printed
+  turns earlier, and a full sha rebuilt from memory names no commit. Take it from
+  `git rev-parse <short sha>`, or the short sha as `git log --oneline` printed it, and paste that
+  string into Phase A and into every launch prompt. Measured 2026-10-25 (magic_tutor, PR #107,
+  round 3): one prompt's diff command carried `0fe9e979ecdf…`, while `git rev-parse 0fe9e97`
+  gives `0fe9e97adcfed…`; that agent reviewed the right range only because its `Merge base:` line
+  had the short sha.
 - **The agents never see the earlier reports.** A finding a previous round dismissed with a written
   reason can come back with no new evidence — measured 2026-10-03: the same unreachable "partial
   batch" finding in rounds 2 and 3. Answer it by citing that verdict; it does not count against the
