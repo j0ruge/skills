@@ -1,5 +1,35 @@
 # Changelog — `git-housekeeping`
 
+## [0.3.0] — 2026-10-25
+
+### O fast-forward publicado sai pelo reflog, e a upstream na default não faz da branch a default
+
+Nasceu de uma limpeza no `j0ruge/skills`: quatro branches `retrofit-*`, criadas com
+`git worktree add -b X <wt> origin/main` (a receita do `retrofit-skill`) e publicadas por
+`push origin HEAD:main`, todas contidas na `origin/main`, ficaram em `FICA` com o motivo "branch
+default do origin". Foram apagadas à mão, com a contenção provada antes de cada `branch -d`.
+
+- **A upstream na default não conta como contraparte remota:** em `_classify_local_base`, a
+  proteção era conferida com o nome local e com o da upstream, e a `main` da upstream casava com a
+  default. Agora a branch que rastreia a default é julgada pelo próprio nome; as outras proteções
+  (PR aberto, `housekeeping.protect`, workflow) continuam valendo para a upstream que não é a default.
+- **A prova nova, só para a branch local, `_commits_made_here`:** quando a ponta é um commit da
+  default (o caso "branch nunca usada, ou fast-forward sem PR"), o reflog da branch decide. Com pelo
+  menos uma entrada `commit…` e todos os shas do reflog contidos na default, a branch sai, com a
+  evidência `reflog` e o motivo "fast-forward na main: os N commit(s) feitos nesta branch (reflog)
+  estão nela"; o worktree limpo dela sai junto. Sem reflog (desligado ou expirado), só com a criação,
+  ou com um sha fora da default (um `reset` ou um rebase que abandonou commit), segue `NÃO PROVADO`.
+  A branch remota não muda: ela não tem reflog.
+- **No `SKILL.md`:** uma armadilha nova (a receita `worktree add -b X <wt> origin/main` e o reflog
+  que separa os dois casos) e a linha da tabela *Como ler um "não provado"* com a exceção do reflog.
+- **Testes:** `tests/test_fast_forward_publicado.py`, com cinco casos num repo de fixture: publicada
+  com upstream na `main` e sem upstream (saem, o worktree junto), nova e apelido da `main` (nunca
+  usadas, não a default), e o commit abandonado por `reset` (não prova). Os testes das publicadas e
+  das nunca usadas foram vistos falhando antes do código (3 falhas, com o da `main` verde); o do
+  commit abandonado entrou depois, para prender a guarda que nenhum caso prendia. Dos quatro mutantes das guardas novas, três foram mortos;
+  o quarto (tirar o `not made` da condição) é equivalente, porque a função já devolve 0 sem commit
+  feito, e o `not made` só poupa as chamadas de `is_ancestor`.
+
 ## [0.2.0] — 2026-10-24
 
 ### A aprovação parcial do plano, sem editar o JSON

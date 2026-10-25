@@ -2,7 +2,7 @@
 name: git-housekeeping
 description: "Safely deletes merged git branches, local and remote, and their worktrees. A read-only scan proves each merge by merge commit or by the merged PR's head sha; only the approved plan is deleted, with sha leases and two confirmations. Triggers — merged branches, branch cleanup, delete merged branches, stale worktrees, git housekeeping, prune branches."
 metadata:
-  version: 0.2.0
+  version: 0.3.0
 ---
 
 # git-housekeeping
@@ -25,6 +25,10 @@ foram medidos no git 2.43.0 em 2026-10-20, num repo descartável.
   plano vazio (medido em 2026-10-24). O `--only` recusa o nome que não casa com rc 2.
 - `git worktree remove`, sem `--force`, apaga os arquivos ignorados (`.env.local`, `node_modules/`)
   com rc 0, sem aviso.
+- `git worktree add -b X <wt> origin/main` deixa `X` rastreando a `main`, e o fast-forward publicado
+  (`push origin HEAD:main`) deixa a ponta num commit da `main`, como a de uma branch nunca usada.
+  Quem os separa é o reflog local: com commits feitos nela, todos na default, a branch sai (evidência `reflog`). Medido em
+  2026-10-25: quatro `retrofit-*` ficavam presas como se fossem a branch default.
 - `%(upstream:track)` não diz `[gone]` enquanto a ref remote-tracking velha existe. O "sumiu do
   remoto" só sai confiável do `git ls-remote`.
 - `git remote get-url` aplica o `insteadOf`. O `owner/repo` do GitHub sai da URL crua
@@ -111,7 +115,7 @@ fora mesmo assim, rode o `analyze.py` de novo e mostre o motivo novo antes.
 |---|---|---|
 | `a ponta andou depois do merge: N commit(s) depois` | Há commit na branch que não está na default. | Abrir PR com o que sobrou, ou decidir que é descartável. |
 | `mergeada na staging, não na main` | O código só está na branch de integração. | Esperar a promoção para a default. |
-| `a ponta é um commit da main: branch nunca usada, ou fast-forward sem PR` | Não dá para distinguir branch recém-criada de merge fast-forward. | Apagar à mão, se ele souber qual é. |
+| `a ponta é um commit da main: branch nunca usada, ou fast-forward sem PR` | Não dá para distinguir branch recém-criada de merge fast-forward. Na branch local, o reflog distingue: com commits feitos nela, todos na main, ela sai; aqui chega a nunca usada, ou a que abandonou um commit. | Apagar à mão, se ele souber qual é. |
 | `sem prova por PR (...)` | Sem `gh` (ou remoto fora do GitHub), o squash não se prova. | `gh auth login` e analisar de novo. |
 | `o PR aberto não pode ser conferido (...)` | Sem `gh`, nenhuma branch remota sai, nem a mergeada: apagá-la fecharia um PR aberto. | `gh auth login` e analisar de novo; a local mergeada sai assim mesmo. |
 | `esta ref é o único ponteiro local para esses commits` | O remoto apagou a branch sem merge, e o `fetch --prune` apagaria a última cópia. | Criar uma branch na ponta (`git branch <nome> <sha>`), se o trabalho importa. |

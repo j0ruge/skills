@@ -447,9 +447,28 @@ def protection(facts: Facts, *names: str) -> str:
     return ""
 
 
+def _commits_made_here(facts: Facts, name: str) -> int:
+    """Os commits que o reflog diz feitos na branch, se tudo por onde ela passou está na default.
+
+    0 quando não há essa prova: reflog vazio ou expirado, só a criação (branch nunca usada), ou um sha
+    fora da default (um reset ou rebase que abandonou commits).
+    """
+    proc = run_git(facts.repo, "reflog", "show", "--format=%H %gs", f"refs/heads/{name}", "--")
+    entries = [line.split(" ", 1) for line in proc.stdout.splitlines() if line.strip()]
+    if proc.returncode != 0 or not entries:
+        return 0
+    made = sum(1 for e in entries if len(e) == 2 and e[1].startswith("commit"))
+    shas = {e[0] for e in entries}
+    if not made or any(not is_ancestor(facts.repo, sha, facts.default_sha) for sha in shas):
+        return 0
+    return made
+
+
 def _classify_local_base(facts: Facts, b: LocalBranch) -> Item:
     """A decisão de uma branch local sem contar os worktrees ligados (eles entram em classify)."""
     on_remote = b.upstream_name if b.upstream_remote == facts.remote else ""
+    if on_remote == facts.default and b.name != facts.default:
+        on_remote = ""  # `worktree add -b X <wt> origin/main` rastreia a default: não faz de X a default
     remote_name = on_remote or b.name
 
     def item(decision, reason, evidence=""):
@@ -466,6 +485,12 @@ def _classify_local_base(facts: Facts, b: LocalBranch) -> Item:
     if reason:
         return item("keep", reason)
     decision, reason, evidence = merge_proof(facts, remote_name, b.sha)
+    if decision == "unproven" and is_ancestor(facts.repo, b.sha, facts.default_sha):
+        made = _commits_made_here(facts, b.name)
+        if made:
+            decision, evidence = "delete", "reflog"
+            reason = (f"fast-forward na {facts.default}: os {made} commit(s) feitos nesta branch "
+                      f"(reflog) estão nela")
     if decision == "keep" and not b.upstream_remote:
         reason = "não mergeada: trabalho só local"
     if decision != "delete" and on_remote and on_remote not in facts.remote_heads:
