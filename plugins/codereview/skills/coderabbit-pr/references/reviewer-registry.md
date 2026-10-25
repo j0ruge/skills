@@ -228,8 +228,11 @@ found nothing and posted no review object, of its issue comment *"Didn't find an
 
 **CodeRabbit skips an incremental review in silence.** At the rate limit it posts no new review:
 it **edits** its walkthrough issue comment (`updated_at` moves, `created_at` does not) to
-`## Review limit reached`, and the skipped range is the *"… between <old sha> and <new sha>"* line.
-On PR #219 that edit was the only trace that `d8da110` went unreviewed by it.
+`## Review limit reached`, and the skipped range is the *"… between <old sha> and <new sha>"* line
+quoted (`> `) inside that notice. On PR #219 that edit was the only trace that `d8da110` went
+unreviewed by it. Unquoted, the same line sits in the *Recent review info* of every walkthrough and
+names the range that run processed, not a skipped one: measured 2026-10-25 (dotp-remake PR #21,
+Free plan, no limit), an unanchored `between` pattern matched it once, a limit on a PR that had none.
 
 **It also pauses itself after N reviewed commits.** With
 `reviews.auto_review.auto_pause_after_reviewed_commits` set, it edits the same comment to
@@ -242,8 +245,11 @@ after it were reviewed by no bot. Confirm both:
 ```bash
 gh api "repos/$REPO/issues/$PR/comments" --paginate \
   --jq '.[] | select(.user.login == "coderabbitai[bot]") | .body' \
-  | grep -E 'Review limit reached|Reviews paused|and between [0-9a-f]{40} and'
+  | grep -E 'Review limit reached|Reviews paused|^> .*and between [0-9a-f]{40} and'
 ```
+
+The `^> ` is what tells the two lines apart: on PRs #219 (limit), #246 (pause) and dotp-remake #21
+(neither) this grep matched 2, 1 and 0 lines; without it, 2, 1 and 1.
 
 ## Extensibility
 

@@ -2,6 +2,22 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.8] — 2026-10-25
+
+### O grep do limite do CodeRabbit casava o walkthrough comum (coderabbit-pr 4.6.2)
+
+- **O quê:** `skills/coderabbit-pr/references/reviewer-registry.md`, *Coverage Per Commit*. A faixa pulada no
+  limite é a linha *"… between <old sha> and <new sha>"* citada (`> `) dentro do aviso, e o grep de confirmação
+  passa a ancorá-la: `^> .*and between [0-9a-f]{40} and`. Sem o `> `, a mesma linha está no *Recent review info*
+  de todo walkthrough e nomeia a faixa que a execução processou, não uma pulada.
+- **Por quê:** no `/codereview:coderabbit-pr` do PR #21 do dotp-remake (2026-10-25), o grep da skill contou 1
+  casamento num comentário sem `Review limit reached` nem `Reviews paused`: a linha comum do plano Free. Lida
+  pela contagem, ela vira "limite atingido" num PR sem limite. Medido com o grep sobre o corpo dos comentários
+  do `coderabbitai[bot]`: sdd_agents #219 (limite) 2 → 2, sdd_agents #246 (pausa) 1 → 1, dotp-remake #21 1 → 0.
+  Neste PR não houve dano: o caso já era (b) pelo plano Free, e a linha foi lida antes do veredito.
+- **Onde:** só na reference. O `SKILL.md` da `coderabbit-pr` muda só o `metadata.version` (4.6.1 → 4.6.2, mesmo
+  comprimento) e segue com 19 932 caracteres; a Fase 2 já roteia para o registry em *coverage per commit*.
+
 ## [2.27.7] — 2026-10-24
 
 ### A evidência da doc de um pipeline é a pasta que a fase autora salvou, não a re-medida
