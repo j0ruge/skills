@@ -2,6 +2,23 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.6] — 2026-10-25
+
+Patch: duas lições de uma sessão no `magic_tutor` (um alvo do kit sdd), em
+`references/kaizen-conceitos.md`. O `SKILL.md` já roteia as duas seções, e ficou
+igual, salvo a versão, porque está a 132 caracteres do teto de 20 mil.
+
+- **Poka-yoke:** a verificação que mora num comando opcional não protege a porta
+  que gasta. O aviso de que nenhuma regra de leitura cobria a skill `codereview`
+  existia só no `sdd preflight`. O `sdd run` pagou a REVIEW (US$ 5,61) sem
+  repeti-lo, e as três missões de 2026-10-24 tiveram 5, 2 e 3 leituras negadas no
+  `pipeline.log`. O 4º porquê parou aí. A contramedida no alvo foi o `READ_EXTRA`
+  (j0ruge/magic_tutor#104), e no kit ficou o achado (j0ruge/sdd_agents#326).
+- **Rótulo ≠ artefato, o inverso:** o Check feito numa cópia só vale para o
+  artefato entregue com o mesmo hash de conteúdo. Os testes rodaram numa cópia
+  descartável, o rebase de verdade gerou outros commits, e o `git rev-parse
+  HEAD^{tree}` igual (`9937589`) levou os 952 testes ao PR (j0ruge/magic_tutor#103).
+
 ## [1.4.5] — 2026-10-22
 
 Integra o Check incremental preservado na worktree `9e53c38`, sobre a versão
