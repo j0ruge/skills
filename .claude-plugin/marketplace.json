@@ -1110,7 +1110,7 @@
     {
       "name": "git-housekeeping",
       "source": "./plugins/git-housekeeping",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "description": "Safely deletes merged git branches, local and remote, and their worktrees. A read-only scan proves each merge by merge commit or by the merged PR's head sha; only the approved plan is deleted, with sha leases and two confirmations. Triggers — merged branches, branch cleanup, delete merged branches, stale worktrees, git housekeeping, prune branches.",
       "category": "development",
       "keywords": [

@@ -1,5 +1,22 @@
 # Changelog — `git-housekeeping`
 
+## [0.3.1] — 2026-10-25
+
+### O `--only` da ref remote-tracking é o nome da branch
+
+- **O quê:** no passo 3 do `SKILL.md`, a frase do `--only` diz que a ref remote-tracking vai pelo nome
+  da branch, sem o `origin/` que o relatório mostra, e que esse `--only` leva a branch local e a ref
+  juntas. O `matches()` do `apply_plan.py` compara o nome cru do item, que o plano grava sem o remoto;
+  o prefixo só entra no rótulo impresso.
+- **Por quê:** no pós-merge do PR #21 do dotp-remake (2026-10-25), o relatório mostrou
+  `ref remote-tracking origin/plano-3-5-b`, e o passo 3 mandava usar "o nome que o relatório mostra".
+  `apply_plan.py --scope local --only plano-3-5-b --only origin/plano-3-5-b --dry-run` saiu com rc 2
+  (`--only fora do plano neste escopo: 'origin/plano-3-5-b'; o plano aceita: plano-3-5-b`), medido de
+  novo na 0.3.0 com o mesmo plano. `--only plano-3-5-b --dry-run` listou os dois itens, e o apply
+  apagou os dois. A recusa é segura e diz o nome aceito, mas quem lê o passo ao pé da letra perde uma
+  chamada, e pode deixar a ref para trás achando que ela não foi aprovada.
+- **Onde:** só no `SKILL.md`, com duas linhas a mais; nenhum script mudou.
+
 ## [0.3.0] — 2026-10-25
 
 ### O fast-forward publicado sai pelo reflog, e a upstream na default não faz da branch a default

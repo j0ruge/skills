@@ -2,7 +2,7 @@
 name: git-housekeeping
 description: "Safely deletes merged git branches, local and remote, and their worktrees. A read-only scan proves each merge by merge commit or by the merged PR's head sha; only the approved plan is deleted, with sha leases and two confirmations. Triggers — merged branches, branch cleanup, delete merged branches, stale worktrees, git housekeeping, prune branches."
 metadata:
-  version: 0.3.0
+  version: 0.3.1
 ---
 
 # git-housekeeping
@@ -79,7 +79,9 @@ o `apply_plan.py` reclassifica com o mesmo código que gerou o plano.
 3. **1ª confirmação: o local** (branches locais, worktrees e refs remote-tracking). Pergunte com a
    lista na frente do usuário. Se ele aprovar só parte, passe um `--only <nome>` por item aprovado
    nos passos 4 e 6, com o nome que o relatório mostra (a branch, ou o caminho do worktree), e rode
-   antes com `--dry-run`. Nunca edite o plano à mão.
+   antes com `--dry-run`. Nunca edite o plano à mão. A ref remote-tracking vai pelo nome da branch,
+   sem o `origin/` do relatório, e esse `--only` leva a branch local e a ref juntas: o
+   `--only origin/<b>` sai com rc 2 (medido em 2026-10-25).
 
 4. **Apagar o local:**
 
