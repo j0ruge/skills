@@ -459,6 +459,18 @@ These decide whether the rounds converge:
   `git diff --stat 68d8139 daf045e` listed the same 12 files, +160/−45 against +153/−44, and
   `git diff --stat 6652602 68d8139` showed the gap: 2 files, 8 lines of the merged PR, both files
   the fix also edited.
+- **A rewrite of the whole branch needs the rewritten copy of the reviewed head, and a search for
+  the old shas.** `git filter-branch` or `git filter-repo` (to take a file or field out of the
+  history before a push) takes the reviewed sha off the branch like a rebase, but the fixes may
+  already sit on top, so `git rev-parse HEAD` is not the copy. Find it by subject
+  (`git log --format='%h %s' <base-branch>..HEAD`: the copy keeps subject, author and author date),
+  confirm `git merge-base --is-ancestor <copy> HEAD` (rc 0), and use it as `base=` with the usual
+  three-dot range. A doc in the tree that cites an old sha (a checkpoint's Commit column, a plan, a
+  handoff) now names a commit only the backup ref holds: search the tree for each old short sha
+  before the round, since such a file is often outside the round's diff and no agent reads it.
+  Measured 2026-10-25 (magic_tutor, PR #112): a `filter-branch --tree-filter` over 27 unpushed
+  commits turned the reviewed `fa5b44f` into `e1eb8a1`, and `base=e1eb8a1` gave the fix's 9 files;
+  the search found the seven old shas of a checkpoint's Commit column, the round's cross-file LOW.
 - **Reproduce between rounds, not during one.** A mutant that confirms a `needs reproduction` finding
   (detection-passes.md, 6.12) edits a file: run it after every agent has returned, against the
   related test files, and restore the file before the next launch (`git status --short` empty).

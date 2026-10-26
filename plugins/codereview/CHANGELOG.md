@@ -2,6 +2,27 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.11] — 2026-10-25
+
+### A reescrita do ramo inteiro entre rodadas: a cópia da cabeça revisada pelo assunto, e a busca dos sha antigos (codereview 2.27.11)
+
+Uma lição do `/codereview` do PR #112 do magic_tutor (três rodadas sobre o ramo de uma missão). Não entra no
+`SKILL.md`, que está a 5 caracteres do teto do C1 (19.995 de 20.000).
+
+- **`references/configuration.md`, *Re-review rounds*: um item novo, depois do item do rebase.**
+  - **O quê:** depois de uma reescrita do ramo inteiro (`git filter-branch`, `git filter-repo`), o `base=` da rodada
+    é a cópia reescrita da cabeça revisada, achada pelo assunto e conferida com `--is-ancestor` rc 0. E os sha
+    antigos citados na árvore se procuram antes da rodada.
+  - **Por quê:** entre a rodada 1 e a 2, um `filter-branch --tree-filter` sobre os 27 commits sem push tirou um
+    campo de texto de dois JSON. A skill cobria o fixup/amend (a cabeça sai do ramo, e o diff vira o de dois pontos)
+    e o rebase (o `git rev-parse HEAD` logo depois do rebase é a cópia), mas não este caso:
+    - os 5 commits do conserto já estavam por cima, então o `HEAD` era a cópia do último deles, e não da cabeça
+      revisada `fa5b44f`;
+    - a cópia (`e1eb8a1`) saiu pelo assunto. Com `base=e1eb8a1`, o diff de três pontos deu os 9 arquivos certos;
+    - a coluna Commit do `checkpoint.md` da missão ainda trazia os 7 sha de antes, que só o ramo de backup local
+      guardava. O arquivo estava fora do diff da rodada 2, e nenhum agente o leu: foi o achado entre arquivos do
+      orquestrador (LOW), visto numa busca pelos sha antigos na árvore.
+
 ## [2.27.10] — 2026-10-25
 
 ### O `base=` da rodada vem colado do git, a evidência se lê antes do lançamento, e o agente de DOCS confere o roteamento das references (codereview 2.27.10)
