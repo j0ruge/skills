@@ -142,8 +142,8 @@ gh api "repos/$REPO/issues/$PR/comments" --paginate \
 
 **The same comment carries the state as JSON**, in a `<!-- codex-review-state:v1 {…} -->` marker:
 `code_review.status` (`running` → `completed`), the full `code_review.commit_sha`, and
-`code_review.has_any_findings` (`null` while running). It also tells whether that review found
-anything, which the table does not:
+`code_review.has_any_findings` (`null` while running). It also tells, almost always, whether that
+review found anything, which the table does not (the exception is below):
 
 ```bash
 gh api "repos/$REPO/issues/$PR/comments" --paginate --jq '.[] | select(.user.login == "chatgpt-codex-connector[bot]")
@@ -155,6 +155,16 @@ gh api "repos/$REPO/issues/$PR/comments" --paginate --jq '.[] | select(.user.log
 Codex posts no review object and no inline comment: the summary and a 👍 reaction on the PR are all
 there is. Measured 2026-10-18 (dotp-remake PR #7): `running` at 03:20 UTC, `completed` on the head
 with `findings=false`, the `+1` at 03:21, and zero Codex reviews on `/pulls/7/reviews`.
+
+**`findings=true` alone is not a finding.** The flag once said `true` for a head whose receipt said
+*"Didn't find any major issues"* and on which Codex posted nothing: no review object with that
+`commit_id`, no inline comment with that `original_commit_id`. With `true`, read what was posted on
+the head before opening a round; nothing posted and a receipt naming the head is case (a), and the
+report notes the mismatch. Measured 2026-10-26 (sdd_agents PR #330): `completed d426c68…
+has_any_findings=true has_unresolved_findings=false`, receipt `6421460144` on `d426c68350`, nothing
+posted; on the next head (`6160ae1`) the flag read `false` beside its receipt. The cause is unknown,
+and it is not a PR-wide flag: on the fix heads of magic_tutor #103 and #114 and dotp-remake #13,
+after a P2 on an earlier head, flag and receipt agreed on `false`.
 
 ## Detection Strategy
 
@@ -213,6 +223,25 @@ The `select(.body != "")` is not optional: a bot's **reply on a thread** creates
 an empty body on the current head. Measured 2026-10-04 (sdd_agents PR #219): CodeRabbit's last
 review was on `b9e95ba`, its thread reply put an empty-body review on `d8da110`, and an unfiltered
 "last review" read the fix commit as covered.
+
+**CodeRabbit with nothing to say leaves no review object.** It reviews each push on its own, and
+with no finding it only edits its walkthrough: *"No actionable comments were generated in the recent
+review"*, with the unquoted *"… between <old sha> and <new sha>"* line naming the range it ran on.
+The last-review-with-a-body rule above then reads the head as unreviewed. For CodeRabbit, that
+walkthrough with the range ending at the head is coverage, case (a), and asking again is redundant.
+Measured 2026-10-26 (sdd_agents PR #330, Advanced plan): the push of `6160ae1` was reviewed by
+18:32Z with that text and the range `d426c68…6160ae1`, no CodeRabbit review object carries
+`6160ae1`, and a `@coderabbitai review` posted at 18:27Z, while it ran, got only *"Already reviewed
+the last commit"*.
+
+**Its allowance line predicts the limit.** A CodeRabbit review on a plan with an included allowance
+ends with *"Included review availability: … up to 1 included review per hour; 0 remain after this
+review"*. With 0 remaining, the next push or request inside that window gets `Review limit reached`
+(case b for that range). Before 5.4 asks again, wait the window out, or name the commit as
+unreviewed by CodeRabbit in the report. Measured 2026-10-26 (sdd_agents PR #330): the review of
+`a215a9b` at 15:11:59Z said 0 remain; the fix `8fbecb8`, pushed about 15:40Z, got the limit and was
+never seen by CodeRabbit; the request on `d426c68` at 16:02Z was served at 16:09:50Z. The Free plan
+prints the same line (magic_tutor PR #123, 2026-10-26).
 
 **An inline comment's `commit_id` is not the commit it was written on.** Once a push moves the head,
 an inline comment whose line still anchors reports the new head as `commit_id`; the commit the

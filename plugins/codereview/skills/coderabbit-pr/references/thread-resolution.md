@@ -155,7 +155,9 @@ its own: the closing report would carry fix commits reviewed by nobody. Before t
 Phase 6, offer to post `@codex review` on the PR (a comment on the user's PR is theirs to approve),
 then wait, in the background, for `completed` on the new head with the registry's
 `codex-review-state` command. `findings=false` is case (a) for the fix commits; a new finding is a
-new round of this skill. Declined, the report names the fix commits as unreviewed. Measured
-2026-10-25 (magic_tutor PR #103): Codex's P2 was on `ee81a77`, the fix went out as `693832e`, and
-the thread was resolved with `total: 1 unresolved: 0`. Only the user's `@codex review` brought
-`completed 693832e… findings=false` and a 👍 on the PR.
+new round of this skill. With `findings=true`, read what was posted on the head before calling it a
+finding (registry, *Codex*). CodeRabbit reviews the push on its own: read its allowance line before
+asking (registry, *Coverage Per Commit*). Declined, the report names the fix commits as unreviewed.
+Measured 2026-10-25 (magic_tutor PR #103): Codex's P2 was on `ee81a77`, the fix went out as
+`693832e`, and the thread was resolved with `total: 1 unresolved: 0`. Only the user's
+`@codex review` brought `completed 693832e… findings=false` and a 👍 on the PR.

@@ -2,6 +2,39 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.12] — 2026-10-26
+
+### A cobertura por commit dos bots: o `findings=true` do Codex sem nada postado, o review do CodeRabbit sem objeto e a linha de cota que prevê o limite (codereview 2.27.12)
+
+Três lições da `coderabbit-pr` no PR #330 do sdd_agents (quatro heads revisados pelos bots: `a215a9b`, `8fbecb8`,
+`d426c68` e `6160ae1`). Nenhuma entra no `SKILL.md`, que está a 14 caracteres do teto do C1 (19.986 de 20.000); só o
+`metadata.version` da `coderabbit-pr` sobe, de 4.6.3 para 4.6.4.
+
+- **`references/reviewer-registry.md`, seção do Codex: "`findings=true` alone is not a finding".**
+  - **O quê:** com `has_any_findings=true`, leia o que foi postado no head antes de abrir uma rodada. Sem nada postado
+    e com um recibo que nomeia o head, é caso (a), e o relatório registra o descasamento. A frase "It also tells
+    whether that review found anything" ganhou um "almost always".
+  - **Por quê:** no `d426c68`, o estado dizia `has_any_findings=true, has_unresolved_findings=false`; o recibo do
+    mesmo head (`6421460144`) dizia "Didn't find any major issues", e o Codex não postou nada. Pela regra antiga, o
+    head limpo não virava caso (a). A causa é desconhecida. A 1ª leitura ("o flag é do PR inteiro") foi refutada
+    antes do commit: nos heads do conserto do magic_tutor #103 e #114, do dotp-remake #13 e do próprio #330 no
+    `6160ae1`, todos depois de um P2 num head anterior, o flag e o recibo concordam em `false`.
+- **Mesmo arquivo, *Coverage Per Commit*: "CodeRabbit with nothing to say leaves no review object".**
+  - **O quê:** para o CodeRabbit, o walkthrough com "No actionable comments were generated in the recent review" e o
+    intervalo sem `> ` terminando no head é cobertura (caso a).
+  - **Por quê:** o push do `6160ae1` foi revisado às 18:32Z sem nenhum objeto de review com esse commit, e a regra do
+    "último review com corpo" o lia como não revisado. O `@coderabbitai review` postado às 18:27Z, com o review
+    automático já em curso, recebeu só "Already reviewed the last commit".
+- **Mesmo arquivo, mesma seção: "Its allowance line predicts the limit".**
+  - **O quê:** a linha "Included review availability: … 0 remain after this review" avisa que o próximo push ou
+    pedido dentro da janela bate no `Review limit reached`. Antes de a 5.4 pedir de novo, espere a janela ou registre
+    o commit como não revisado pelo CodeRabbit.
+  - **Por quê:** o review do `a215a9b` (15:11:59Z) dizia "0 remain", e o conserto `8fbecb8` (~15:40Z) bateu no
+    limite e nunca foi visto pelo CodeRabbit. O pedido no `d426c68` às 16:02Z foi atendido às 16:09:50Z. O plano Free
+    imprime a mesma linha (magic_tutor PR #123).
+- **`references/thread-resolution.md`, 5.4:** duas orações que apontam para os dois parágrafos (o `findings=true` e a
+  linha de cota).
+
 ## [2.27.11] — 2026-10-25
 
 ### A reescrita do ramo inteiro entre rodadas: a cópia da cabeça revisada pelo assunto, e a busca dos sha antigos (codereview 2.27.11)
