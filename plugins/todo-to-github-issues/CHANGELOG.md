@@ -3,6 +3,18 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.8.3] — 2026-10-26
+
+Patch: o `#N` solto se pega na branch do PR, antes do merge.
+
+### Added
+
+- **`SKILL.md`, *Erro comum* "Deixar um `#N` solto no item".** Rode o plano (sem `--apply`) na
+  branch do PR, antes do merge. O `REF?` só sai para os corpos que a rodada escreve (`CREATE` e
+  `UPDATE (text)`), e na branch do PR são justamente os itens que o PR acrescenta ou muda. O conserto
+  vai no mesmo PR. Depois do merge, ele pede outro PR: no magic_tutor, os 3 `#N` soltos do PR #114
+  pediram o PR #115.
+
 ## [2.8.2] — 2026-10-25
 
 Patch: a órfã sem `RESOLVED by` que foi consertada fecha como `completed`, e não como `not planned`.

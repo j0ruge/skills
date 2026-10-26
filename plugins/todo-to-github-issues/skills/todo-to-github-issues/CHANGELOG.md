@@ -3,6 +3,22 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-26 — o plano na branch do PR, antes do merge
+
+Publicado como **v2.8.3**. Saiu do espelho do `TODO.md` do `magic_tutor` depois do merge do PR #114
+de lá (a revisão do draft), que trouxe os itens 58 a 64.
+
+- **O `REF?` chegou depois do merge.** O plano na `main` (`a328e42`, o #114 mergeado) deu 3 linhas
+  `REF?` (L205 `#58`, L31 `#57`, L165 `#26`): os 3 queriam dizer "item N" e iam virar link para a
+  issue #58, a issue #57 e o PR #26. Os `#N` vieram do `9ce446b`, um commit da branch do #114. O
+  conserto pediu um PR só para isso, o #115.
+- **Na branch, o plano já mostra.** O mesmo plano, rodado na branch do #115 (`bc3d1d4`), deu rc 0 e
+  nenhum `REF?`. Na branch do #114, antes do merge, teria mostrado os 3, porque o `REF?` sai para os
+  corpos que a rodada escreve, e são os itens que o PR mexe. O plano só lê: isso não contradiz o
+  *Erro comum* "Espelhar a partir de uma branch de trabalho", que é sobre o `--apply`.
+- **O espelho depois do #115:** `create=7 update=3`, o canário criou a #116 e o `--apply` as #117 a
+  #122. O plano final deu `create=0 update=0 ok=23 orphans=0`.
+
 ## 2026-10-25 — a órfã consertada sem o marcador, o motivo conferido e o worktree destacado
 
 Publicado como **v2.8.2**. Saiu do espelho do `TODO.md` do `magic_tutor` depois do merge do PR #101
