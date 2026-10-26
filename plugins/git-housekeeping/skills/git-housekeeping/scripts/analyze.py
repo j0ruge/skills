@@ -35,6 +35,9 @@ def render(plan: dict) -> str:
     gh = "sim" if plan["gh_available"] else f"não ({plan['gh_reason']})"
     lines = [f"git-housekeeping: {plan['repo']} (remoto {plan['remote']}, default "
              f"{plan['default_branch']}, prova por PR: {gh})", ""]
+    if not plan.get("procs_checked", True):
+        # Sem /proc, a sessão aberta num worktree não segura o worktree: quem lê precisa saber.
+        lines[-1:-1] = ["processos nos worktrees: não conferido (sem /proc)"]
     if not any(i["decision"] == "delete" for i in plan["items"]):
         lines += ["Nada a limpar.", ""]
     for decision, title in GROUPS:
@@ -45,7 +48,9 @@ def render(plan: dict) -> str:
             if i["author"]:
                 line += f"  [último commit: {i['author']}]"
             if i["kind"] == "worktree" and decision == "delete" and i["action"] == "remove":
+                links = i.get("links", {})
                 names = [("⚠ " if Path(x.rstrip("/")).name.startswith(".env") else "") + x
+                         + (f" → {links[x]} (link: só o link sai)" if x in links else "")
                          for x in i["ignored"]]
                 line += f"  [{mb(i['kb'])}; ignorados que vão junto: {', '.join(names) or 'nenhum'}]"
             lines.append(line)

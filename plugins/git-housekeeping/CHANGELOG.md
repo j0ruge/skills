@@ -1,5 +1,45 @@
 # Changelog — `git-housekeeping`
 
+## [0.4.0] — 2026-10-26
+
+### O symlink ignorado sai marcado, e o worktree com um processo dentro fica
+
+Nasceu da limpeza do `magic_tutor`, do `skills` e do `sdd_agents` depois do PR #115 do
+`magic_tutor`.
+
+- **O symlink ignorado:**
+  - **O quê:** o `Item` do worktree ganha `links` (nome → destino, lido com `os.readlink`), e o
+    relatório mostra o link como `.venv → <destino> (link: só o link sai)`. O `SKILL.md` ganha a
+    armadilha.
+  - **Por quê:** os 5 worktrees do `magic_tutor` listavam o `.venv` entre os "ignorados que vão
+    junto", sem a barra final, e nada dizia que era link. Ele apontava para o `.venv` do checkout,
+    onde o monitor do aluno rodava, e foi preciso conferir à mão com `readlink` antes de aprovar.
+    Depois do apply, o `.venv/bin/python` do checkout respondeu (3.12.3) e o monitor seguiu de pé.
+  - **Teste:** o `test_symlink_ignorado_sai_e_o_destino_fica` já passava antes do código e agora
+    registra esse comportamento do git. O `test_symlink_ignorado_sai_marcado_como_link` cobre o
+    relatório.
+- **O worktree com um processo dentro:**
+  - **O quê:**
+    - o `proc_cwds()` lê o cwd de cada processo no `/proc`, sem contar o próprio;
+    - o `_classify_worktree` mantém em FICA o worktree onde algum processo está, com o pid e o
+      comando no motivo;
+    - o `apply_plan` reclassifica com o mesmo código, então um processo que entrou depois do plano
+      faz o apply recusar o worktree;
+    - sem `/proc` (macOS, não testado), o plano grava `procs_checked: false` e o cabeçalho diz
+      `processos nos worktrees: não conferido (sem /proc)`.
+  - **Por quê:** o relatório do `sdd_agents` pôs em `SAI` dois worktrees irmãos
+    (`sdd_agents-achados-dica-mais-rapida`, `sdd_agents-reincidencia`) que outra sessão podia estar
+    usando. Antes, só o cwd do próprio `analyze` protegia um worktree. Num worktree descartável, a
+    varredura do `/proc` achou um `sleep` com o cwd dentro.
+  - **Limite medido:** o processo do Claude Code fica com o cwd onde foi aberto. Esta sessão continuou
+    em `magic_tutor` depois de muitos `cd ~/.wt/…` pelo Bash. No mesmo dia, a ponta de
+    `sdd_agents-health-pula-catalogo` andou entre duas análises sem nenhum processo com o cwd lá
+    dentro. A sessão que só entra pelo shell não segura o worktree.
+  - **Testes:** `test_worktree_com_processo_dentro_fica`,
+    `test_processo_que_entrou_depois_do_plano_segura_o_worktree`, `ProcessosTest` e
+    `CabecalhoTest`. Os de processo pulam onde não há `/proc`. Com a varredura sabotada
+    (`procs={}`), os 2 de processo ficam vermelhos.
+
 ## [0.3.1] — 2026-10-25
 
 ### O `--only` da ref remote-tracking é o nome da branch

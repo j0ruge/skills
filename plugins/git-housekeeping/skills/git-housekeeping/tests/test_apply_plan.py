@@ -293,6 +293,38 @@ class ApplyTest(unittest.TestCase):
         self.assertNotIn("feat/ação", self.fx.local_branches())
         self.assertNotIn("feat/ação", self.fx.remote_branches())
 
+    def test_symlink_ignorado_sai_e_o_destino_fica(self):
+        """O git worktree remove apaga o link, não o destino (magic_tutor, 2026-10-26)."""
+        self.merged("feat/w")
+        wt = self.fx.worktree("wt-w", "feat/w")
+        venv = self.root / "venv-do-checkout"
+        (venv / "bin").mkdir(parents=True)
+        (venv / "bin" / "python").write_text("#!/bin/sh\n", encoding="utf-8")
+        with open(self.fx.clone / ".git" / "info" / "exclude", "a", encoding="utf-8") as f:
+            f.write(".venv\n")
+        (wt / ".venv").symlink_to(venv)
+        plan = self.analyze()
+        r = self.apply("--plan", plan, "--scope", "local")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertFalse(wt.exists())
+        self.assertTrue((venv / "bin" / "python").is_file())
+
+    @unittest.skipUnless(os.path.isdir("/proc/self"), "sem /proc: a varredura de processos não roda")
+    def test_processo_que_entrou_depois_do_plano_segura_o_worktree(self):
+        """A sessão abriu no worktree depois do plano: o apply recusa e o worktree fica."""
+        self.merged("feat/w")
+        wt = self.fx.worktree("wt-w", "feat/w")
+        plan = self.analyze()
+        proc = subprocess.Popen(["sleep", "60"], cwd=wt)
+        try:
+            r = self.apply("--plan", plan, "--scope", "local")
+        finally:
+            proc.kill()
+            proc.wait()
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn(f"pid {proc.pid}", r.stdout)
+        self.assertTrue(wt.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

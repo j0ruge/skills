@@ -87,6 +87,54 @@ class AnalyzeCliTest(unittest.TestCase):
         self.assertIn("feat/ação", names)
         self.assertIn("feat/ação", r.stdout)
 
+    def test_symlink_ignorado_sai_marcado_como_link(self):
+        """O .venv do worktree aponta para o do checkout: o relatório diz que só o link sai."""
+        self.fx.branch("feat/w"); self.fx.merge("feat/w", pr=False)
+        wt = self.fx.worktree("wt-w", "feat/w")
+        venv = self.root / "venv-do-checkout"
+        venv.mkdir()
+        with open(self.fx.clone / ".git" / "info" / "exclude", "a", encoding="utf-8") as f:
+            f.write(".venv\n")
+        (wt / ".venv").symlink_to(venv)
+        r = run(self.fx, "--repo", self.fx.clone, "--plan", self.plan)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn(f".venv → {venv} (link: só o link sai)", r.stdout)
+        item = next(i for i in json.loads(self.plan.read_text(encoding="utf-8"))["items"]
+                    if i["kind"] == "worktree")
+        self.assertEqual(item["decision"], "delete")
+        self.assertEqual(item["links"], {".venv": str(venv)})
+
+    @unittest.skipUnless(os.path.isdir("/proc/self"), "sem /proc: a varredura de processos não roda")
+    def test_worktree_com_processo_dentro_fica(self):
+        """Outra sessão aberta no worktree: ele fica, e o motivo traz o pid."""
+        self.fx.branch("feat/w"); self.fx.merge("feat/w", pr=False)
+        wt = self.fx.worktree("wt-w", "feat/w")
+        proc = subprocess.Popen(["sleep", "60"], cwd=wt)
+        try:
+            r = run(self.fx, "--repo", self.fx.clone, "--plan", self.plan)
+        finally:
+            proc.kill()
+            proc.wait()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        item = next(i for i in json.loads(self.plan.read_text(encoding="utf-8"))["items"]
+                    if i["kind"] == "worktree")
+        self.assertEqual(item["decision"], "keep")
+        self.assertIn(f"pid {proc.pid}", item["reason"])
+        self.assertIn("diretório atual neste worktree", item["reason"])
+
+
+class CabecalhoTest(unittest.TestCase):
+    """O que o relatório não conseguiu conferir aparece no cabeçalho, em vez de sumir calado."""
+
+    def test_sem_proc_o_cabecalho_avisa(self):
+        sys.path.insert(0, str(HERE.parent / "scripts"))
+        import analyze  # noqa: E402
+        plan = {"repo": "/r", "remote": "origin", "default_branch": "main", "gh_available": True,
+                "gh_reason": "", "procs_checked": False, "items": [],
+                "disk": {"git_kb": 0, "worktrees_kb": 0}}
+        self.assertIn("processos nos worktrees: não conferido (sem /proc)", analyze.render(plan))
+        self.assertNotIn("processos nos worktrees", analyze.render(dict(plan, procs_checked=True)))
+
 
 class VarreduraTest(unittest.TestCase):
     """A varredura promete só ler: refs, worktrees e index ficam idênticos (Review Focus 5)."""

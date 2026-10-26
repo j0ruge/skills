@@ -90,6 +90,7 @@ class Item:
     action: str = ""
     kb: int = 0
     ignored: list = field(default_factory=list)
+    links: dict = field(default_factory=dict)
     author: str = ""
 
 
@@ -116,6 +117,7 @@ class Facts:
     offline: bool
     cwd: str = ""
     busy: dict = field(default_factory=dict)
+    procs: dict | None = None
 
 
 _SLUG = re.compile(r"^(?:https://(?:[^@/]+@)?github\.com/|ssh://git@github\.com/|git@github\.com:)"
@@ -236,6 +238,28 @@ def _busy(path) -> tuple:
             branch = head.read_text(encoding="utf-8").strip() if head.is_file() else ""
             return op, branch.removeprefix("refs/heads/")
     return "", ""
+
+
+def proc_cwds(proc="/proc") -> dict | None:
+    """{pid: (cwd real, comando)} de cada processo visível, sem o próprio; None sem /proc (macOS).
+
+    A sessão aberta num worktree tem o cwd lá dentro; a que só entrou pelo shell, não (o processo
+    dela fica onde foi aberto), e o processo do lado Windows do WSL não aparece.
+    """
+    root = Path(proc)
+    if not (root / "self").is_dir():
+        return None
+    out = {}
+    for entry in os.listdir(root):
+        if not entry.isdigit() or int(entry) == os.getpid():
+            continue
+        try:
+            cwd = os.path.realpath(os.readlink(root / entry / "cwd"))
+            cmd = (root / entry / "cmdline").read_bytes().replace(b"\0", b" ")
+        except OSError:
+            continue
+        out[int(entry)] = (cwd, cmd.decode("utf-8", "replace").strip())
+    return out
 
 
 def worktrees(repo) -> list:
@@ -388,7 +412,7 @@ def load_facts(repo, remote: str = "origin", offline: bool = False) -> Facts:
         worktrees=wts, current_path=top, protect_patterns=patterns,
         workflow_branches=_workflow_branches(repo, default_sha), merged_prs=merged,
         open_prs=opened, gh_available=gh_ok, gh_reason=gh_reason, offline=offline,
-        cwd=os.path.realpath(os.getcwd()), busy=busy,
+        cwd=os.path.realpath(os.getcwd()), busy=busy, procs=proc_cwds(),
     )
 
 
@@ -513,6 +537,11 @@ def _classify_worktree(facts: Facts, wt: Worktree, base: dict) -> Item:
         return item("keep", "travado (git worktree lock)")
     if facts.cwd and _inside(facts.cwd, wt.path):
         return item("keep", "é o worktree onde a sessão está (o diretório atual)")
+    inside = sorted(pid for pid, (cwd, _) in (facts.procs or {}).items() if _inside(cwd, wt.path))
+    if inside:
+        more = f" e mais {len(inside) - 1}" if len(inside) > 1 else ""
+        return item("keep", f"um processo está com o diretório atual neste worktree "
+                            f"(pid {inside[0]}: {facts.procs[inside[0]][1][:60]}{more})")
     op, rebasing = facts.busy.get(wt.path, ("", ""))
     if op:
         out = item("keep", f"{op} em andamento neste worktree")
@@ -539,6 +568,9 @@ def _classify_worktree(facts: Facts, wt: Worktree, base: dict) -> Item:
     listing = git(wt.path, "status", "--porcelain", "-z", "--ignored",
                   "--untracked-files=normal").split("\0")
     out.ignored = [entry[3:] for entry in listing if entry.startswith("!! ")]
+    # O symlink ignorado (o .venv que aponta para o do checkout) sai sem levar o destino.
+    out.links = {x: os.readlink(os.path.join(wt.path, x.rstrip("/"))) for x in out.ignored
+                 if os.path.islink(os.path.join(wt.path, x.rstrip("/")))}
     return out
 
 
@@ -596,6 +628,7 @@ def build_plan(facts: Facts) -> dict:
         "remote": facts.remote, "default_branch": facts.default,
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "gh_available": facts.gh_available, "gh_reason": facts.gh_reason,
+        "procs_checked": facts.procs is not None,
         "items": [asdict(i) for i in items],
         "disk": {"git_kb": git_kb(facts.repo),
                  "worktrees_kb": sum(i.kb for i in items if i.decision == "delete")},

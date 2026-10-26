@@ -2,7 +2,7 @@
 name: git-housekeeping
 description: "Safely deletes merged git branches, local and remote, and their worktrees. A read-only scan proves each merge by merge commit or by the merged PR's head sha; only the approved plan is deleted, with sha leases and two confirmations. Triggers — merged branches, branch cleanup, delete merged branches, stale worktrees, git housekeeping, prune branches."
 metadata:
-  version: 0.3.1
+  version: 0.4.0
 ---
 
 # git-housekeeping
@@ -29,6 +29,10 @@ foram medidos no git 2.43.0 em 2026-10-20, num repo descartável.
   (`push origin HEAD:main`) deixa a ponta num commit da `main`, como a de uma branch nunca usada.
   Quem os separa é o reflog local: com commits feitos nela, todos na default, a branch sai (evidência `reflog`). Medido em
   2026-10-25: quatro `retrofit-*` ficavam presas como se fossem a branch default.
+- O `.venv` que é symlink para o do checkout aparece entre os ignorados sem a barra final, porque
+  para o git o link é arquivo. O `git worktree remove` apaga só o link, e o destino fica: medido em
+  2026-10-26 em 5 worktrees do magic_tutor, com um processo rodando do `.venv` do checkout. O
+  relatório marca o link (`.venv → <destino> (link: só o link sai)`).
 - `%(upstream:track)` não diz `[gone]` enquanto a ref remote-tracking velha existe. O "sumiu do
   remoto" só sai confiável do `git ls-remote`.
 - `git remote get-url` aplica o `insteadOf`. O `owner/repo` do GitHub sai da URL crua
@@ -128,8 +132,11 @@ Ficam sempre: a branch default, a branch atual, `main`, `master`, `develop`, `st
 `production`, `release/*`, as citadas em `branches:` de algum workflow, as que são head ou base de
 PR aberto (sem `gh` para conferir, nenhuma remota sai), a branch de um rebase em andamento, e as do
 padrão local do usuário. Também fica o worktree onde a sessão está (o diretório atual), o que tem
-rebase, merge, bisect, cherry-pick ou revert parado, e o que ganhou arquivo ignorado novo depois do
-plano. O padrão local:
+rebase, merge, bisect, cherry-pick ou revert parado, o que ganhou arquivo ignorado novo depois do
+plano, e o que tem um processo com o diretório atual lá dentro. Esse último sai do `/proc` (Linux e
+WSL): pega a sessão aberta no worktree, um terminal ou um servidor. Não pega a sessão que só entrou
+pelo shell (o processo dela fica onde foi aberto) nem o processo do lado Windows. Sem `/proc`
+(macOS), o cabeçalho do relatório diz `processos nos worktrees: não conferido`. O padrão local:
 
 ```bash
 git config --add housekeeping.protect 'deploy/*'

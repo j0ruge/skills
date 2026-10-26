@@ -355,5 +355,25 @@ class DestacadoForaDaMainTest(unittest.TestCase):
             self.assertIn("fora da main", wt_item.reason)
 
 
+class ProcessosTest(unittest.TestCase):
+    """O cwd de cada processo vem do /proc; sem ele, a varredura diz que não conferiu."""
+
+    def test_sem_proc_devolve_none(self):
+        self.assertIsNone(hk.proc_cwds("/nao/existe"))
+
+    @unittest.skipUnless(os.path.isdir("/proc/self"), "sem /proc")
+    def test_acha_o_processo_e_nao_conta_a_si_mesmo(self):
+        with tempfile.TemporaryDirectory() as d:
+            proc = subprocess.Popen(["sleep", "60"], cwd=d)
+            try:
+                found = hk.proc_cwds()
+            finally:
+                proc.kill()
+                proc.wait()
+            self.assertEqual(found[proc.pid][0], os.path.realpath(d))
+            self.assertIn("sleep", found[proc.pid][1])
+            self.assertNotIn(os.getpid(), found)
+
+
 if __name__ == "__main__":
     unittest.main()
