@@ -30,12 +30,12 @@ Regras gerais, conferidas por `validar_config`:
 
 | Campo | Tipo | O que é |
 |---|---|---|
-| `backend` | `"kb"` | o único backend da 0.1.0: a CLI `kb` de um BookStack, chamada por subprocesso |
-| `cli` | texto | caminho da CLI do backend (aceita `~`). O plugin não traz a CLI: ela é dependência declarada |
-| `python` | texto | o interpretador que roda a CLI (o do venv dela, se houver) |
+| `backend` | `"kb"` | o único backend da 0.1.0: a CLI `kb` de um BookStack, chamada por subprocesso (o contrato está em `kb.md`) |
+| `cli` | texto | caminho da CLI do backend (aceita `~`, expandido pelo `HOME` do processo). O plugin não traz a CLI: ela é dependência declarada. Um caminho que não existe vira aviso no hook (`rc 2` do interpretador) |
+| `python` | texto | o interpretador que roda a CLI (o do venv dela, se houver; aceita `~`). Ausente: aviso "programa não encontrado" |
 | `target` | texto | o valor passado ao `--target` do backend (ex.: `prod` ou `staging`) |
 | `page_id` | inteiro > 0 | o id da Página de ambientes no destino |
-| `allowed_roles` | lista não vazia, sem repetição | os papéis que podem ver a página. Entram no callout da página e no poka-yoke de permissão do adaptador: página visível a papel fora desta lista, nada se escreve |
+| `allowed_roles` | lista não vazia, sem repetição | os papéis que podem ver a página, pelo nome de exibição do papel no BookStack (`role.display_name`). Entram no callout da página e na trava do adaptador: página que herda do livro, com fallback `view` ou visível a papel fora desta lista, nada se escreve |
 
 ## `include` e `exclude`
 

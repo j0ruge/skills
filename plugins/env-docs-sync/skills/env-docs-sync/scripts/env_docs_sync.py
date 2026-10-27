@@ -643,32 +643,42 @@ class Destino(Protocol):
 
     def ler_corpo(self, ambiente: str, caminho: str) -> str | None: ...
 
-    def escrever(self, op: Operacao) -> None: ...
+    def escrever(self, op: Operacao) -> bool | None:
+        """Escreve, ou levanta. `False` diz "o destino já tinha isto, nada foi escrito"."""
 
 
 @dataclass
 class ResultadoSync:
     estado: dict
     aplicadas: list
+    """As operações aceitas pelo destino, escritas ou não; todas entram no estado."""
     falhou: Operacao | None = None
     erro: BaseException | None = None
+    sem_escrita: list = field(default_factory=list)
+    """As aceitas que o destino não precisou escrever (já tinha o conteúdo)."""
 
 
-def aplicar(estado: Mapping, operacoes, destino: Destino, *, quando: datetime) -> ResultadoSync:
+def aplicar(estado: Mapping, operacoes, destino: Destino, *, quando: datetime,
+            ao_aceitar: Callable[[dict], None] | None = None) -> ResultadoSync:
     """Escreve cada operação no destino, em ordem, e registra só as que o destino aceitou.
 
     Para na primeira falha: o estado devolvido não tem a operação que falhou nem as seguintes,
-    e o próximo gatilho tenta de novo.
+    e o próximo gatilho tenta de novo. `ao_aceitar(estado parcial)` roda depois de cada operação
+    aceita: o hook grava ali, para um timeout do host no meio da rodada não perder o que já foi.
     """
-    atual, aplicadas = dict(estado), []
+    atual, aplicadas, sem_escrita = dict(estado), [], []
     for op in operacoes:
         try:
-            destino.escrever(op)
+            escreveu = destino.escrever(op)
         except Exception as erro:  # o adaptador decide o tipo; quem chama relata sem valores
-            return ResultadoSync(atual, aplicadas, op, erro)
+            return ResultadoSync(atual, aplicadas, op, erro, sem_escrita)
         atual = registrar_operacao(atual, op, quando=quando)
         aplicadas.append(op)
-    return ResultadoSync(atual, aplicadas)
+        if escreveu is False:
+            sem_escrita.append(op)
+        if ao_aceitar is not None:
+            ao_aceitar(atual)
+    return ResultadoSync(atual, aplicadas, sem_escrita=sem_escrita)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -768,11 +778,211 @@ class DestinoDiretorio:
         _gravar_privado(self._arquivo(op.ambiente, op.caminho), op.corpo)
 
 
+# ---------------------------------------------------------------------------------------------
+# Adaptador kb: a CLI de um BookStack, por subprocesso, com a trava de permissão
+# ---------------------------------------------------------------------------------------------
+
+KB_TIMEOUT = 90
+"""Segundos para cada chamada da CLI kb (ela mesma repete 429/5xx e espera a persistência)."""
+LIMITE_CHANGELOG = 180
+"""O `changelog` de uma revisão do BookStack aceita até 180 caracteres (registro da API, v26.09)."""
+_RE_HEADING_HTML = re.compile(r"<h([1-6])\b([^>]*)>(.*?)</h\1\s*>", re.S | re.I)
+
+
+class ErroDePermissao(ErroEnvDocs):
+    """A página é visível além de `doc.allowed_roles`: nada se escreve (o destino precisa ser menos
+    exposto que a origem)."""
+
+
+def permissao_restrita(dados, permitidos) -> list[str]:
+    """[] quando só papéis de `permitidos` veem a página; senão, os motivos (nomes de papel, sem valor).
+
+    Falha fechado: herdar do livro (`inheriting` diferente de false) não prova restrição; o fallback
+    precisa ter `view` false; e todo papel em `role_permissions` com `view` diferente de false
+    precisa estar em `permitidos`, comparado pelo `role.display_name`.
+    """
+    motivos = []
+    if not isinstance(dados, Mapping):
+        return ["a resposta de permissões não é um objeto"]
+    fallback, papeis = dados.get("fallback_permissions"), dados.get("role_permissions")
+    if not isinstance(fallback, Mapping):
+        motivos.append("a resposta não traz fallback_permissions")
+    elif fallback.get("inheriting") is not False:
+        motivos.append("a página herda as permissões (inheriting): a restrição não está provada")
+    elif fallback.get("view") is not False:
+        motivos.append("o fallback (todos os outros papéis) tem view")
+    if not isinstance(papeis, list):
+        motivos.append("a resposta não traz role_permissions")
+        return motivos
+    extras = set()
+    for item in papeis:
+        if not isinstance(item, Mapping):
+            extras.add("item ilegível")
+            continue
+        if item.get("view") is False:
+            continue
+        papel = item.get("role") if isinstance(item.get("role"), Mapping) else {}
+        nome = papel.get("display_name")
+        if nome not in permitidos:
+            extras.add(nome if isinstance(nome, str) else f"role_id {item.get('role_id')}")
+    if extras:
+        motivos.append("papéis fora de doc.allowed_roles com view: " + ", ".join(sorted(extras)))
+    return motivos
+
+
+def _texto_de_heading(fragmento: str) -> str:
+    return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", fragmento))).strip()
+
+
+def corpo_da_secao(pagina: str, sob: str, titulo: str) -> str | None:
+    """O corpo do h3 `titulo` dentro do h2 `sob`: do fim do `<h3>` até o próximo heading de nível ≤ 3.
+
+    O casamento é pelo texto exato do heading (sem tags, entidades resolvidas, espaços colapsados),
+    a mesma regra do `section-set` do kb. None se o h2 ou o h3 não existem; repetido é erro.
+    """
+    heads = [(m.start(), m.end(), int(m.group(1)), _texto_de_heading(m.group(3)))
+             for m in _RE_HEADING_HTML.finditer(pagina or "")]
+    h2s = [h for h in heads if h[2] == 2 and h[3] == sob]
+    if not h2s:
+        return None
+    if len(h2s) > 1:
+        raise ErroEnvDocs(f"a página tem {len(h2s)} h2 {sob!r}")
+    fim_h2 = next((h[0] for h in heads if h[0] > h2s[0][0] and h[2] <= 2), len(pagina))
+    h3s = [h for h in heads if h[2] == 3 and h2s[0][1] <= h[0] < fim_h2 and h[3] == titulo]
+    if not h3s:
+        return None
+    if len(h3s) > 1:
+        raise ErroEnvDocs(f"a página tem {len(h3s)} h3 {titulo!r} sob {sob!r}")
+    fim = next((h[0] for h in heads if h[0] > h3s[0][0] and h[2] <= 3), len(pagina))
+    return pagina[h3s[0][1]:fim]
+
+
+def bloco_confere(op: Operacao, corpo: str | None) -> bool:
+    """O bloco relido é o que a operação mandou? Pelo hash do conteúdo do `<pre>`; no `marcar_ausente`,
+    pelo callout e pelo conteúdo antigo mantido."""
+    if corpo is None:
+        return False
+    texto = conteudo_do_bloco(corpo)
+    if op.acao == "marcar_ausente":
+        return "ausente desde" in corpo and texto == conteudo_do_bloco(op.corpo)
+    return texto is not None and hash_sha256(texto.encode("utf-8")) == op.sha256
+
+
+def _expandir(caminho: str, ambiente: Mapping[str, str]) -> str:
+    if caminho == "~" or caminho.startswith("~/"):
+        return (ambiente.get("HOME") or str(Path.home())) + caminho[1:]
+    return caminho
+
+
+def _erro_do_kb(resultado: ResultadoComando) -> str:
+    """O erro da CLI kb (`{"error": {code, message, backup?}}` no stderr), sem ecoar outra coisa."""
+    try:
+        erro = json.loads(resultado.stderr.decode("utf-8"))["error"]
+        code, mensagem, backup = erro.get("code"), str(erro.get("message", ""))[:240], erro.get("backup")
+    except (UnicodeDecodeError, ValueError, KeyError, TypeError, AttributeError):
+        return f"rc {resultado.returncode}, sem o JSON de erro do kb no stderr"
+    texto = f"rc {resultado.returncode}, {code}: {mensagem}"
+    if backup:
+        texto += f"; a escrita pode ter ocorrido (backup do kb: {backup})"
+    return texto
+
+
+class DestinoKb:
+    """O Destino `kb`: `kb page section-set` para cada Bloco de arquivo, com o corpo pelo stdin.
+
+    Antes da primeira escrita, confere as permissões da página (`permissao_restrita`); depois de cada
+    escrita, relê a página e confere o bloco (`bloco_confere`). Só então o estado pode ser gravado.
+    A CLI e o python vêm de `doc.cli` e `doc.python` (com `~`), o alvo de `doc.target`.
+    """
+
+    def __init__(self, config: Mapping, ctx: "Contexto", *, commit: str | None = None):
+        doc = config["doc"]
+        self.page_id, self.target = str(doc["page_id"]), doc["target"]
+        self.permitidos = frozenset(doc["allowed_roles"])
+        self.base = [_expandir(doc["python"], ctx.ambiente), _expandir(doc["cli"], ctx.ambiente)]
+        self.ctx, self.commit = ctx, commit
+        self._permissao_conferida = False
+        self._html_fixo = None
+
+    def _kb(self, *args, entrada: bytes | None = None, aceitos=(0,)):
+        resultado = self.ctx.runner([*self.base, *args, "--target", self.target], env=self.ctx.ambiente,
+                                    timeout=KB_TIMEOUT, entrada=entrada)
+        if resultado.returncode not in aceitos:
+            raise ErroEnvDocs(f"kb {args[0]} {args[1]}: {_erro_do_kb(resultado)}")
+        try:
+            return resultado.returncode, json.loads(resultado.stdout.decode("utf-8"))
+        except (UnicodeDecodeError, ValueError):
+            raise ErroEnvDocs(f"kb {args[0]} {args[1]}: a saída não é JSON (rc {resultado.returncode})") from None
+
+    def conferir_permissao(self) -> None:
+        if self._permissao_conferida:
+            return
+        _, dados = self._kb("content-permissions", "read", "page", self.page_id)
+        motivos = permissao_restrita(dados, self.permitidos)
+        if motivos:
+            raise ErroDePermissao(f"a página {self.page_id} é visível além de doc.allowed_roles "
+                                  f"({'; '.join(motivos)}); nada foi escrito")
+        self._permissao_conferida = True
+
+    def _html(self) -> str:
+        if self._html_fixo is not None:
+            return self._html_fixo
+        _, pagina = self._kb("pages", "read", self.page_id)
+        if not isinstance(pagina, dict) or not isinstance(pagina.get("raw_html", pagina.get("html")), str):
+            raise ErroEnvDocs(f"kb pages read {self.page_id}: a página veio sem html")
+        return pagina.get("raw_html") or pagina.get("html") or ""
+
+    def fixar_leitura(self) -> None:
+        """Lê a página uma vez e serve o `ler_corpo` dessa cópia (o `status`, que só lê)."""
+        self._html_fixo = None
+        self._html_fixo = self._html()
+
+    def ler_corpo(self, ambiente, caminho):
+        return corpo_da_secao(self._html(), f"[{ambiente}]", caminho)
+
+    def _changelog(self, op: Operacao) -> str:
+        if op.acao == "marcar_ausente":
+            marca = "ausente"
+        elif op.ambiente == "development" and self.commit:
+            marca = commit_curto(self.commit)
+        else:
+            marca = f"sha256:{op.sha256[:12]}"
+        return f"env-docs-sync: [{op.ambiente}] {op.caminho} @ {marca}"[:LIMITE_CHANGELOG]
+
+    def escrever(self, op: Operacao) -> None:
+        """Confere a trava, pula o bloco que a página já tem e escreve pelo `section-set`.
+
+        Pular: se o `<pre>` relido já tem o hash do arquivo (e o callout "ausente" bate com a ação),
+        não há escrita. Sem isso, outro host (que tem o próprio estado) ou um estado perdido
+        reescreveria o bloco só pela linha "sincronizado em", criando uma revisão sem mudança.
+        `--create` em toda ação: o h3 que falta na página (apagado à mão, página migrada) volta, e o
+        kb só troca quando o h3 existe. O corpo vai pelo stdin, nunca em argv.
+        """
+        self.conferir_permissao()
+        atual = self.ler_corpo(op.ambiente, op.caminho)
+        if bloco_confere(op, atual) and ("ausente desde" in atual) == (op.acao == "marcar_ausente"):
+            return False
+        self._kb("page", "section-set", self.page_id, f"--heading={op.caminho}", f"--under={op.sob}",
+                 "--create", "--stdin", f"--changelog={self._changelog(op)}", "--apply",
+                 entrada=op.corpo.encode("utf-8"))
+        if not bloco_confere(op, self.ler_corpo(op.ambiente, op.caminho)):
+            raise ErroEnvDocs(f"releitura: o bloco {op.ambiente} {op.caminho} na página não confere com o "
+                              "enviado; o estado não muda")
+        return True
+
+    def substituir_pagina(self, pagina: str, *, aplicar: bool, changelog: str):
+        """`kb page replace` com a página inteira pelo stdin. Sem `aplicar`, o dry-run do kb (rc 4)."""
+        self.conferir_permissao()
+        args = ["page", "replace", self.page_id, "--html=@-", f"--confirm={self.page_id}",
+                f"--changelog={changelog[:LIMITE_CHANGELOG]}"] + (["--apply"] if aplicar else [])
+        return self._kb(*args, entrada=pagina.encode("utf-8"), aceitos=(0,) if aplicar else (4,))
+
+
 def destino_da_config(config: Mapping, raiz: Path, ctx: "Contexto") -> Destino:
     """A fábrica padrão: o Destino do `doc.backend` da config."""
     backend = config["doc"]["backend"]
     if backend == "kb":
-        raise ErroEnvDocs("adaptador kb ainda não implementado nesta versão; nada foi escrito")
+        return DestinoKb(config, ctx, commit=_commit(None, raiz))
     raise ErroEnvDocs(f"backend sem adaptador: {backend!r}")
 
 
@@ -1185,14 +1395,22 @@ class Rodada:
     erro_do_destino: ErroEnvDocs | None = None
     avisos_remotos: list = field(default_factory=list)
     carimbados: list = field(default_factory=list)
+    sem_escrita: list = field(default_factory=list)
 
     @property
     def mudou_estado(self) -> bool:
         return bool(self.aplicadas or self.carimbados)
 
+    @property
+    def escritas(self) -> list:
+        """As aplicadas que o destino escreveu de fato (sem as que ele já tinha)."""
+        puladas = {id(op) for op in self.sem_escrita}
+        return [op for op in self.aplicadas if id(op) not in puladas]
+
 
 def rodada(estado: Mapping, config: Mapping, raiz: Path, *, remotos, ctx: Contexto, quando: datetime,
-           commit: str | None, montar_destino: Callable[[], Destino]) -> tuple[dict, Rodada]:
+           commit: str | None, montar_destino: Callable[[], Destino],
+           ao_aceitar: Callable[[dict], None] | None = None) -> tuple[dict, Rodada]:
     """Uma rodada de sync: lê development (Varredura) e os `remotos` (ssh), planeja e aplica.
 
     Devolve (novo estado, Rodada). Quem chama grava o estado se `Rodada.mudou_estado`. Ambiente
@@ -1213,11 +1431,12 @@ def rodada(estado: Mapping, config: Mapping, raiz: Path, *, remotos, ctx: Contex
         return (carimbar_remotos(estado, sem_pendencia, quando),
                 Rodada(pendentes=mudancas, erro_do_destino=erro, avisos_remotos=avisos, carimbados=sem_pendencia))
     operacoes = planejar(estado, atuais, sincronizado_em=quando, commit=commit, ler_corpo=destino.ler_corpo)
-    resultado = aplicar(estado, operacoes, destino, quando=quando)
+    resultado = aplicar(estado, operacoes, destino, quando=quando, ao_aceitar=ao_aceitar)
     pendentes = operacoes[len(resultado.aplicadas):]
     prontos = [a for a in lidos if a not in {op.ambiente for op in pendentes}]
     return (carimbar_remotos(resultado.estado, prontos, quando),
-            Rodada(resultado.aplicadas, pendentes, resultado.falhou, resultado.erro, None, avisos, prontos))
+            Rodada(resultado.aplicadas, pendentes, resultado.falhou, resultado.erro, None, avisos, prontos,
+                   resultado.sem_escrita))
 
 
 def _linhas_da_rodada(nome: str, r: Rodada) -> list[str]:
@@ -1226,8 +1445,8 @@ def _linhas_da_rodada(nome: str, r: Rodada) -> list[str]:
     if r.erro_do_destino is not None:
         linhas.append(f"aviso — {nome}: {r.erro_do_destino}. Pendente: {_listar(r.pendentes)}. "
                       "O estado não mudou; o próximo gatilho tenta de novo.")
-    if r.aplicadas:
-        linhas.append(f"Página de ambientes atualizada ({nome}) — {_listar(r.aplicadas)}")
+    if r.escritas:
+        linhas.append(f"Página de ambientes atualizada ({nome}) — {_listar(r.escritas)}")
     if r.falhou is not None:
         linhas.append(f"aviso — {nome}: falhou em {r.falhou.ambiente} {r.falhou.caminho} ({_detalhe(r.erro)}). "
                       f"Pendente: {_listar(r.pendentes)}. O estado dessas operações não mudou; o próximo "
@@ -1266,7 +1485,8 @@ def sincronizar_repo(raiz: Path, gatilho: Gatilho, editados, ctx: Contexto) -> l
         quando = ctx.agora()
         novo, r = rodada(estado, config, raiz, remotos=remotos_devidos(config, estado, gatilho, quando), ctx=ctx,
                          quando=quando, commit=_commit(None, raiz),
-                         montar_destino=lambda: ctx.fabrica_destino(config, raiz, ctx))
+                         montar_destino=lambda: ctx.fabrica_destino(config, raiz, ctx),
+                         ao_aceitar=lambda parcial: gravar_estado(arquivo, parcial))
         if r.mudou_estado:
             gravar_estado(arquivo, novo)
     return _linhas_da_rodada(raiz.name, r)
@@ -1382,8 +1602,10 @@ def _cmd_sync(args):
                      montar_destino=lambda: _destino_da_cli(args, config, raiz))
     for aviso in r.avisos_remotos:
         print(f"env-docs-sync: aviso — {aviso}; o ambiente fica como estava", file=sys.stderr)
-    for op in r.aplicadas:
+    for op in r.escritas:
         print(f"aplicado: {op.resumo()}")
+    for op in r.sem_escrita:
+        print(f"já no destino: {op.resumo()}")
     if r.mudou_estado:
         gravar_estado(args.state, novo)
     if r.erro_do_destino is not None:
@@ -1400,12 +1622,16 @@ def _destino_da_cli(args, config, raiz):
     """`--to-dir` (destino de diretório, para teste) ou o Destino de `doc.backend`."""
     if args.to_dir:
         return DestinoDiretorio(args.to_dir)
+    if config["doc"]["backend"] == "kb":
+        return DestinoKb(config, Contexto(), commit=_commit(getattr(args, "commit", None), raiz))
     return destino_da_config(config, raiz, Contexto())
 
 
 def _cmd_status(args):
     raiz, config = _contexto(args)
     destino = _destino_da_cli(args, config, raiz)
+    if isinstance(destino, DestinoKb):
+        destino.fixar_leitura()  # uma leitura da página serve todos os blocos
     atuais, avisos = {"development": _locais(raiz, config)}, []
     if args.remote:
         lidos, avisos = ler_remotos(config, _remotos(config), Contexto())
@@ -1420,6 +1646,53 @@ def _cmd_status(args):
     if contagem["ok"] != len(linhas):
         return 3
     return 1 if avisos else 0
+
+
+def _cmd_migrate(args):
+    """A Página de ambientes inteira, renderizada do template, publicada por `kb page replace`.
+
+    Lê todos os ambientes (development e os ssh): sem um deles, a página nova perderia blocos, e a
+    migração não sai. Passa pela mesma trava de permissão. Sem `--apply`, só o dry-run do kb (rc 4).
+    Com `--state`, grava o estado com o que foi publicado.
+    """
+    raiz, config = _contexto(args)
+    if config["doc"]["backend"] != "kb":
+        raise ErroEnvDocs("migrate só existe para o backend kb")
+    quando, commit = _agora(args.now), _commit(args.commit, raiz)
+    ctx = Contexto()
+    atuais = {"development": _locais(raiz, config)}
+    lidos, avisos = ler_remotos(config, _remotos(config), ctx)
+    for aviso in avisos:
+        print(f"env-docs-sync: aviso — {aviso}", file=sys.stderr)
+    if avisos:
+        raise ErroEnvDocs("migração cancelada: a página nova precisa de todos os ambientes; nada foi enviado")
+    atuais.update(lidos)
+    blocos = {}
+    for ambiente, arquivos in atuais.items():
+        for caminho, dados in arquivos.items():
+            try:
+                blocos.setdefault(ambiente, {})[caminho] = bloco_de_arquivo(
+                    dados, sincronizado_em=quando, commit=commit if ambiente == "development" else None)
+            except ErroEnvDocs as erro:
+                raise ErroEnvDocs(f"{ambiente} {caminho}: {erro}") from None
+    marca = commit_curto(commit) if commit else f"{quando:%Y-%m-%d %H:%M}"
+    destino = DestinoKb(config, ctx, commit=commit)
+    rc, saida = destino.substituir_pagina(pagina_de_ambientes(config, blocos), aplicar=args.apply,
+                                          changelog=f"env-docs-sync: migração ao template @ {marca}")
+    contagem = sum(len(a) for a in atuais.values())
+    if not args.apply:
+        print(f"dry-run (nada enviado; use --apply): {contagem} bloco(s) em {len(atuais)} ambiente(s)")
+        print(json.dumps(saida, ensure_ascii=False, sort_keys=True))
+        return 4
+    print(f"página {destino.page_id} publicada: {contagem} bloco(s) em {len(atuais)} ambiente(s)")
+    print(json.dumps(saida, ensure_ascii=False, sort_keys=True))
+    if args.state:
+        estado = estado_vazio()
+        for ambiente, arquivos in atuais.items():
+            estado["environments"][ambiente] = {c: {"sha256": hash_sha256(d), "synced_at": _carimbo(quando)}
+                                                for c, d in arquivos.items()}
+        gravar_estado(args.state, carimbar_remotos(estado, lidos, quando))
+    return 0
 
 
 def _cmd_hook(args):
@@ -1484,6 +1757,10 @@ def _parser():
                      _cmd_status)
     status.add_argument("--to-dir", help="destino de diretório, para teste (padrão: o de doc.backend)")
     status.add_argument("--remote", action="store_true", help="também confere os ambientes remotos (ssh)")
+    migrate = comando("migrate", "publica a Página de ambientes inteira (kb page replace), com a trava; "
+                      "sem --apply, dry-run (rc 4)", _cmd_migrate, relogio=True)
+    migrate.add_argument("--state", help="grava aqui o estado do que foi publicado (só com --apply)")
+    migrate.add_argument("--apply", action="store_true", help="publica de verdade (sem isto: dry-run do kb)")
     hook = sub.add_parser("hook", help="entrada do hook do Claude Code e do Codex CLI (payload no stdin; sai 0)")
     hook.set_defaults(funcao=_cmd_hook)
     render = comando("render-page", "grava a Página de ambientes inteira (0600) para o replace",

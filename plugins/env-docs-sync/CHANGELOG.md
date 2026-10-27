@@ -2,8 +2,8 @@
 
 ## [0.1.0] — em construção
 
-Em construção, por incrementos: o núcleo puro com testes offline, a entrada do hook nos dois hosts e
-o Sync remoto. Ainda não há destino kb, e o plugin ainda não está no catálogo da loja.
+Em construção, por incrementos: o núcleo puro com testes offline, a entrada do hook nos dois hosts, o
+Sync remoto e o destino kb. O plugin ainda não está no catálogo da loja.
 
 ### Por quê
 
@@ -86,3 +86,23 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
   - testes com runner falso e com `ssh`/`sshpass` falsos num processo real, que gravam o próprio
     `/proc/<pid>/cmdline`: a senha não aparece em nenhum argv e chega ao `SSHPASS`. 12 mutantes
     dos guardas deixaram a suíte vermelha.
+- **Destino kb** (`DestinoKb`, montado pela fábrica de `doc.backend`), pela CLI de `doc.cli`/`doc.python`:
+  - **trava de permissão** antes da primeira escrita: recusa a página que herda do livro, que tem
+    fallback `view` ou que é visível a papel fora de `doc.allowed_roles` (pelo `role.display_name`),
+    falhando fechado. A recusa é aviso com exit 0 no hook, e o estado não muda;
+  - cada bloco por `kb page section-set … --create --stdin --apply`, com o changelog
+    `env-docs-sync: [<ambiente>] <caminho> @ <commit|sha>`, e a releitura do bloco conferida pelo hash
+    antes de liberar o estado. `--create` vai em toda ação, para um h3 apagado à mão voltar;
+  - **pula o bloco que a página já tem.** Medido no KB de staging: sem isso, a linha "sincronizado
+    em" faria cada host, ou cada estado perdido, criar uma revisão sem mudança;
+  - o estado é gravado depois de cada operação aceita, para um timeout do host no meio da rodada não
+    perder o que já foi; e a mensagem lista só o que foi escrito (o que já estava fica calado).
+- **`migrate`:** a página inteira pelo template, com todos os ambientes (um remoto que falha cancela),
+  por `kb page replace --html=@- --confirm=<id>`, pela mesma trava; sem `--apply`, o dry-run da CLI
+  (rc 4); com `--state`, grava o estado do que foi publicado. `status` lê a página uma vez só.
+- **`references/kb.md`:** o contrato com a CLI, a trava, a escrita de um bloco e o check ao vivo no KB
+  de staging: página herdando, visível a `Viewer` e restrita; migração; edição pelo comando real do
+  hook; nada mudou; outro host com estado vazio; e K2 com 1 byte trocado na página.
+- **Testes** contra um kb falso (`tests/kb_falso.py`), um processo de verdade que guarda a página num
+  JSON, acrescenta os ids `bkmrk-` e devolve os rc e o JSON de erro da CLI real. 12 mutantes do
+  adaptador deixaram a suíte vermelha.

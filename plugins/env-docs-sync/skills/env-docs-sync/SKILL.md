@@ -2,7 +2,7 @@
 name: env-docs-sync
 description: "Mirrors every .env* file of a repo into a restricted environments documentation page: one section per environment, one block per file, rewritten only when its hash changes. Values never reach logs or local state, which keeps only hashes. Triggers — env docs, .env sync, environments page, env-docs-sync, .env-docs.json, environment variables docs."
 license: MIT
-compatibility: Python 3.11+, só biblioteca padrão (testado com o 3.12.3), git 2.31+. Hooks medidos em 2026-10-27 no Claude Code 2.1.309 e no codex-cli 0.164.0 (payload real capturado nos dois). Sync remoto com o ssh do OpenSSH (medido no 9.6p1) e, para host com senha, o sshpass (medido no 1.09). O destino kb ainda não existe na 0.1.0.
+compatibility: Python 3.11+, só biblioteca padrão (testado com o 3.12.3), git 2.31+. Hooks medidos em 2026-10-27 no Claude Code 2.1.309 e no codex-cli 0.164.0 (payload real capturado nos dois). Sync remoto com o ssh do OpenSSH (medido no 9.6p1) e, para host com senha, o sshpass (medido no 1.09). Destino kb conferido contra o KB de staging (BookStack v26.09) em 2026-10-27.
 metadata:
   author: JorUge
   version: "0.1.0"
@@ -24,6 +24,7 @@ O exemplo completo e fictício está em `assets/env-docs.example.json`.
 | `references/config.md` | ao escrever, revisar ou depurar uma `.env-docs.json`: schema campo a campo, padrões e o arquivo de estado |
 | `references/hosts.md` | ao mexer no hook ou depurar um disparo: o payload, o ambiente e a pasta de dados medidos no Claude Code e no Codex, e a receita de captura |
 | `references/safety.md` | antes de mudar qualquer caminho por onde passa conteúdo de `.env*`: o que pode sair, por onde, e os testes que provam |
+| `references/kb.md` | ao configurar o backend `kb`, depurar uma escrita recusada ou migrar a página: os comandos da CLI, a trava de permissão, a escrita de um bloco e o que foi medido no KB de staging |
 
 ## Linguagem
 
@@ -45,9 +46,10 @@ Os mesmos nomes valem aqui, na config, no código e na página.
 | Subcomando | Estado |
 |---|---|
 | `init` | planejado: o agente escreve a `.env-docs.json` do repositório |
-| `sync` | **parcial:** só `development`. Escreve no destino de `doc.backend` ou, com `--to-dir`, num diretório local (teste e inspeção). O adaptador `kb` é planejado: hoje o backend `kb` recusa com aviso |
+| `sync` | existe: `development` (e os ssh com `--remote`) no destino de `doc.backend` (o kb, com a trava de permissão) ou, com `--to-dir`, num diretório local (teste e inspeção) |
 | `sync --remote` | existe: lê também os ambientes ssh, sem olhar a janela; rc 1 se algum não foi lido |
 | `status` | existe: por arquivo, `ok`, `diverge` ou `ausente`, comparando o hash do bloco relido no destino com o do arquivo; rc 3 se algo não está `ok`. Com `--remote`, confere também os ambientes ssh |
+| `migrate` | existe: publica a Página de ambientes inteira (`kb page replace`), com todos os ambientes e a trava; sem `--apply`, o dry-run da CLI (rc 4) |
 | `install --codex` | planejado: registra o hook no Codex e grava o trust |
 | `hook` | existe: a entrada do `hooks/hooks.json` (PostToolUse de edição e de shell, Stop e SessionStart); sempre sai 0 |
 | `validate`, `scan`, `plan`, `render-page` | existem |
@@ -59,12 +61,14 @@ python3 "$S" scan --root .                           # Varredura: caminho e hash
 python3 "$S" plan --root . --state <estado.json>     # o que mudou desde o último sync
 python3 "$S" sync --root . --state <estado.json> [--to-dir <pasta>] [--remote]
 python3 "$S" status --root . [--to-dir <pasta>] [--remote]   # ok / diverge / ausente por arquivo
-python3 "$S" render-page --root . --out <pagina.html>  # a página inteira, 0600, para o replace
+python3 "$S" render-page --root . --out <pagina.html>  # a página inteira, 0600, para inspeção
+python3 "$S" migrate --root . [--state <estado.json>] [--apply]   # página inteira no kb
 python3 "$S" hook < payload.json                         # o que o hooks.json roda
 ```
 
 Códigos de saída: 0 ok · 1 erro de E/S, de conteúdo ou do destino · 2 config inválida ou uso
-errado · 3 `status` com algum arquivo fora de `ok`. O `hook` sai sempre com 0. Nenhum subcomando
+errado · 3 `status` com algum arquivo fora de `ok` · 4 `migrate` sem `--apply` (dry-run). O `hook`
+sai sempre com 0. Nenhum subcomando
 imprime valor: só caminhos, ações, contagens e o início do hash.
 
 ## Como o núcleo decide
@@ -152,17 +156,19 @@ a variável nomeada sai desse ambiente. Com `auth_env: null`, vale a chave, sem 
   `ConnectTimeout`. Fora da rede, toda SessionStart paga isso por ambiente devido, porque a falha
   não carimba.
 
-## Contrato com o destino kb (planejado)
+## Destino kb
 
-O adaptador kb implementa a porta `Destino` (`ler_corpo`, `escrever`) chamando a CLI declarada
-em `doc.cli`:
+`DestinoKb` implementa a porta `Destino` chamando a CLI `kb` de `doc.cli` (o plugin não a traz).
+Cada escrita segue quatro passos. Leia `references/kb.md` quando configurar o backend ou depurar uma
+escrita recusada:
 
-- **Bloco de arquivo:** `kb page section-set <page_id> --heading "<caminho>" --under "[<ambiente>]" [--create] --stdin --apply`.
-  - O stdin é exatamente `Operacao.corpo`, sem o h3. `--under` é `Operacao.sob`.
-  - `--create` vai quando `Operacao.acao == "criar"`.
-- **Página inteira** (migração): `kb page replace <page_id> --html @<arquivo> --confirm <page_id> --apply`, com o arquivo 0600 de `render-page`.
-- **Conferência antes do estado:** reler o bloco e comparar `hash_sha256(conteudo_do_bloco(corpo).encode())`
-  com o hash do arquivo. `conteudo_do_bloco` tolera os ids que o destino acrescenta.
+1. **Trava**, antes da primeira escrita: lê as permissões da página e recusa se ela herda do livro,
+   se o fallback tem `view` ou se algum papel com `view` está fora de `doc.allowed_roles`.
+2. **Pula** o bloco que a página já tem (mesmo hash no `<pre>`): nem outro host nem um estado perdido
+   criam revisão sem mudança.
+3. `kb page section-set <id> --heading=<caminho> --under=[<ambiente>] --create --stdin --apply`, com
+   o corpo pelo stdin e o changelog `env-docs-sync: [<ambiente>] <caminho> @ <commit|sha>`.
+4. **Relê e confere** o hash do bloco antes de liberar o estado.
 
 ## Segredo
 
@@ -210,9 +216,14 @@ seção CI/CD sai como "a gerar" nesta versão.
 - **O gatilho por host não interpreta o comando.** Ele procura a ferramenta como palavra e o nome
   do host com borda: `host.example` não casa `host.example.evil`, `192.0.2.6` não casa
   `192.0.2.60`, e `ssh-keygen -R host` não conta.
-- **Dois hosts, dois estados.** Claude Code e Codex não dividem a pasta de dados, então a mesma
-  mudança é sincronizada uma vez por host. O destino precisa tratar conteúdo igual como "sem
-  mudança" (no kb, `changed: false` sem PUT), senão cada host gera uma revisão.
+- **Dois hosts, dois estados.** Claude Code e Codex não dividem a pasta de dados, então cada host
+  planeja a mesma mudança. O adaptador kb relê o bloco e pula o que a página já tem; sem isso, a
+  linha "sincronizado em" faria cada host criar uma revisão (medido no KB de staging).
+- **Edição feita na página não é desfeita pelo hook.** Ele decide pelo estado local, e o arquivo não
+  mudou. O `status` acusa `diverge` (rc 3), e um `sync --state <arquivo novo>` reescreve só o bloco
+  divergente.
+- **`--create` em toda escrita de bloco**, não só em `criar`: um h3 apagado à mão volta, em vez de
+  travar o sync com "heading não encontrado" a cada gatilho.
 
 ## Testes
 
