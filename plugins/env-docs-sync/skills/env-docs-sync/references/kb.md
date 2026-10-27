@@ -82,3 +82,20 @@ a config local do sandbox e a CLI `kb` com o `section-set` e o `replace` novos:
 
 O caso K2 mostra um limite: o hook decide pelo estado local, então uma edição feita na **página**
 não é desfeita enquanto o arquivo não muda. O `status` acusa, e um `sync` com estado novo conserta.
+
+### Disparo ao vivo nos dois hosts (CA4)
+
+Um repositório sandbox criado do zero, com `.env` e `.env.local` sintéticos, apontado para a mesma
+página. O plugin veio do worktree (`claude -p --plugin-dir`) e, no Codex, de uma loja local instalada
+num `CODEX_HOME` descartável, com o trust gravado pelo `install --codex --apply` e **sem**
+`--dangerously-bypass-hook-trust`. Antes de cada caso, `status` e a revisão; depois, de novo, e o
+log de debug do host.
+
+| Caso | Gatilho que escreveu | Revisão | `status` depois |
+|---|---|---|---|
+| a. Claude, `Edit` no `.env.local` | SessionStart (os 2 blocos criados, 8,4 s) e PostToolUse `Edit` (troca, 4,4 s); o Stop ficou calado (84 ms) | +3 | 2 `ok` |
+| b. Claude, `echo X=1 >> .env.local` pelo Bash | PostToolUse `Bash` (4,5 s); o SessionStart ficou calado (105 ms) | +1 | 2 `ok` |
+| c. Codex, `apply_patch` no `.env.local` | PostToolUse. O estado do Codex começou vazio e o SessionStart planejou os 2 blocos, mas eles já estavam na página e foram pulados | +1 | 2 `ok` |
+| d. Codex, `echo >>` pelo shell | PostToolUse (`hook: … Completed` no stderr) | +1 | 2 `ok` |
+| e. `.env` editado à mão, depois `claude -p` novo | SessionStart (troca, 4,9 s); antes, o `status` dava `diverge` | +1 | 2 `ok` |
+| f. pacote do Codex mudado (update simulado) | nada: cada hook sai `Failed`; depois do `install --codex --apply`, o SessionStart seguinte escreveu o pendente | +1 | 2 `ok` |

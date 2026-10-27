@@ -1,0 +1,28 @@
+{
+  "medido": "codex-cli 0.164.0, currentHash do app-server hooks/list, 2026-10-27; o pacote instalado pelo codex plugin add, com o lixo copiado junto",
+  "plugin_id": "eds-golden@eds-golden-market",
+  "arquivos": {
+    ".claude-plugin/plugin.json": "{\"name\": \"eds-golden\", \"version\": \"0.0.1\"}\n",
+    "hooks/hooks.json": "{\"hooks\": {\"PostToolUse\": [{\"matcher\": \"Write|Edit\", \"hooks\": [{\"type\": \"command\", \"command\": \"echo ação \\\"${PLUGIN_ROOT}\\\"\", \"timeout\": 7}, {\"type\": \"command\", \"command\": \"true\", \"async\": true, \"statusMessage\": \"olá\"}]}, {\"matcher\": \"Bash\", \"hooks\": [{\"type\": \"command\", \"command\": \"printf '%s' \\\"a\\\\\\\\b\\\"\", \"timeout\": 120}]}], \"Stop\": [{\"matcher\": \"ignorado\", \"hooks\": [{\"type\": \"command\", \"command\": \"true\", \"timeout\": 0}]}], \"SessionStart\": [{\"hooks\": [{\"type\": \"command\", \"command\": \"true\", \"timeout\": 120}]}], \"SubagentStop\": [{\"hooks\": [{\"type\": \"command\", \"command\": \"true\", \"timeout\": 3, \"commandWindows\": \"cmd /c exit 0\"}]}], \"PreToolUse\": [{\"matcher\": \"*\", \"hooks\": [{\"type\": \"command\", \"command\": \"true\"}]}], \"SessionEnd\": [{\"hooks\": [{\"type\": \"command\", \"command\": \"true\", \"timeout\": 9}]}], \"Interrupt\": [{\"hooks\": [{\"type\": \"command\", \"command\": \"true\"}]}]}}\n",
+    "B.txt": "upper\n",
+    "a.txt": "",
+    "a/b.txt": "x",
+    "ç/ñ.txt": "unicode\n",
+    "__pycache__/m.cpython-312.pyc": "lixo",
+    "sub/x.pyc": "lixo",
+    ".venv/lib/y.txt": "lixo",
+    "pkg.egg-info/PKG-INFO": "lixo"
+  },
+  "conteudo": "sha256:84a3be80f08ecbf1f97a9fb507304adb19a80d054d39a8778d85912bc5755f3f",
+  "declaracoes": {
+    "eds-golden@eds-golden-market:hooks/hooks.json:pre_tool_use:0:0": "sha256:b30d8c3c10d15e07c1f6479619d2e81059794466921c11b395b2bc917ddb4e15",
+    "eds-golden@eds-golden-market:hooks/hooks.json:post_tool_use:0:0": "sha256:f95f612e14da01edbfdf966cac5369d05e331aab89dfcf3c81005b50bebd7aef",
+    "eds-golden@eds-golden-market:hooks/hooks.json:post_tool_use:0:1": "sha256:7b18adc157c6bd2554d0bed4786f8e117a87cfcf83e996cc211081bf1587c858",
+    "eds-golden@eds-golden-market:hooks/hooks.json:post_tool_use:1:0": "sha256:c3286a5aba7dbe1c1209e0977b2d727aaa8f45ac806878fe23d7e8c29147dacf",
+    "eds-golden@eds-golden-market:hooks/hooks.json:session_start:0:0": "sha256:175885bc18c4622a119848741dda70850d9cc85dfc82e1bae573725f2ad19063",
+    "eds-golden@eds-golden-market:hooks/hooks.json:session_end:0:0": "sha256:0408973db4c606ef0b942b13de03431201c09e7746a6fbf2d078370f1af83d68",
+    "eds-golden@eds-golden-market:hooks/hooks.json:subagent_stop:0:0": "sha256:57d03085b2223fd1f951e8d6efccb932877a824a32198be4d1a5216a66f8aab7",
+    "eds-golden@eds-golden-market:hooks/hooks.json:stop:0:0": "sha256:b25508d2c190c60ce60f933b540274aadef543edd8e326efe697b0db5f893408",
+    "eds-golden@eds-golden-market:hooks/hooks.json:interrupt:0:0": "sha256:fb1ffe26e8dbd2e7fb8855d602d1545f7e1b53854ebfb71aead8f18db9e7607a"
+  }
+}

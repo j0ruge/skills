@@ -68,11 +68,46 @@ O que isso decide:
 
 ## 4. Trust no Codex
 
-A captura rodou com `codex exec --dangerously-bypass-hook-trust`, que vale só para aquela
-invocação. Numa sessão interativa, o hook do plugin continua precisando de trust em `/hooks`, e o
-hook sem trust é pulado sem erro. O `install --codex` (planejado) grava o `trusted_hash`. Se o
-Codex honra o hash gravado antes da sessão, e se ele sobrevive a um update do plugin, ainda não
-foi medido.
+O Codex só roda o hook de plugin que tem trust gravado no `config.toml` do `CODEX_HOME`. Hook sem
+trust é pulado sem erro. O `install --codex` grava esse trust, e o `--dangerously-bypass-hook-trust`
+do `codex exec` (usado na captura) vale só para aquela invocação. O algoritmo abaixo foi lido no
+codex-rs na tag `rust-v0.164.0` e conferido contra o próprio Codex: o pacote sintético de
+`tests/fixtures/codex-hooks-list-dourado.json` foi instalado pelo `codex plugin add`, e o
+`currentHash` que o `hooks/list` do `codex app-server` devolveu para cada hook é o que o teste
+compara.
+
+| Peça | Regra | Fonte (`codex-rs/`, tag `rust-v0.164.0`) |
+|---|---|---|
+| chave | `[hooks.state."<plugin_id>:hooks/hooks.json:<evento snake_case>:<índice do grupo>:<índice do handler>"]`; o `plugin_id` é `<plugin>@<loja>` | `hooks/src/lib.rs:100-130`, `hooks/src/declarations.rs:35-37` |
+| campos | `trusted_hash` (a declaração) e `trusted_content_hash` (o pacote); `enabled` fica como está | `config/src/hook_config.rs:28-36` |
+| hash da declaração | `{event_name, matcher, hooks: [handler]}` sem os campos nulos, em JSON com chaves ordenadas e sem espaço, no sha256 | `hooks/src/engine/discovery.rs:868-891`, `config/src/fingerprint.rs:54-66` |
+| handler normalizado | `type`, `command` (o texto cru, com `${CLAUDE_PLUGIN_ROOT}` sem expandir), `timeout` (padrão 600; SessionEnd e Interrupt, 1 a 3), `async` (sempre presente) e `statusMessage` se houver; `commandWindows` sai | `hooks/src/engine/discovery.rs:545-622`, `:841-863` |
+| matcher | descartado em Stop, UserPromptSubmit, Pre/PostModelRequest e Interrupt; nos outros, o texto como está (`*` incluído) | `hooks/src/events/common.rs:114-134` |
+| impressão do pacote | sha256 de `codex-plugin-bundle-v1` e de cada entrada da pasta instalada, em pré-ordem, nomes em ordem de bytes: tamanho u64 LE + caminho relativo, e `directory` ou `file` + tamanho + bytes. Pula `__pycache__`, `.venv`, `*.pyc`, `*.egg-info`; symlink é erro | `hooks/src/engine/plugin_fingerprint.rs:15-91` |
+| conferência | a cada execução o Codex recalcula a impressão; diferente do `trusted_content_hash`, o hook falha com "plugin contents changed; hook approval required" | `hooks/src/engine/plugin_trust.rs:28-69` |
+| quem grava | o `/hooks` grava `trusted_hash = "<declaração>/<conteúdo>"`, e o config writer parte nos dois campos | `app-server/src/config_manager_service.rs:364-390` |
+| versão ativa | a pasta de versão em `plugins/cache/<loja>/<plugin>/`; o `install` recusa quando há mais de uma | `core-plugin-common/src/installed.rs:47-68` |
+
+**Medido em 2026-10-27** (codex-cli 0.164.0, `CODEX_HOME` descartável, sandbox apontado para a
+página sintética do KB de staging), sem `--dangerously-bypass-hook-trust`:
+
+| Caso | Resultado |
+|---|---|
+| `install --codex --apply` e `hooks/list` | os 4 hooks `trusted` |
+| `codex exec` com `apply_patch` e com `echo >>` | o hook roda e sincroniza; o estado nasce na pasta de dados do Codex |
+| `codex plugin add` de novo, mesmo conteúdo | continua `trusted` |
+| `codex plugin remove` + `add`, mesmo conteúdo | continua `trusted`: o `remove` apaga o `[plugins."<id>"]`, mas não o `[hooks.state]` |
+| um byte mudado no pacote (update) e `add` | `modified`; cada hook sai `Failed` no `codex exec` e a página não muda, até o `install --codex` rodar de novo, que troca só os `trusted_content_hash` |
+
+O que o `codex exec` mostra: sem `--json`, o stderr tem `hook: <evento>` e `hook: <evento>
+Completed` (ou `Failed`), mas **não** o `systemMessage`; com `--json`, nenhum evento de hook. A prova
+de que o hook rodou é o estado na pasta de dados e a revisão da página.
+
+**Oráculo para a próxima versão do Codex.** O `codex app-server` fala JSON-RPC por linha no stdio:
+`initialize` (com `clientInfo` e `capabilities.experimentalApi: true`), a notificação `initialized`
+e `hooks/list` com `{"cwds": [<pasta>]}`. Cada hook da resposta traz `key`, `trustStatus` e
+`currentHash` (`<declaração>/<conteúdo>`). Reinstale o pacote dourado num `CODEX_HOME` descartável,
+compare os `currentHash` com a fixture e, se mudarem, refaça a fixture e o algoritmo.
 
 ## 5. Receita de captura
 
@@ -101,6 +136,7 @@ Depois, anonimize (caminhos, ids, `permission_mode`) e confira que o sensor
 
 ## 6. Ainda não medido
 
-- O disparo do hook **real** (não do probe) nos dois hosts, com o destino de verdade.
-- O trust gravado pelo `install --codex` numa sessão interativa do Codex.
+- O trust gravado numa sessão **interativa** do Codex (TUI). O `codex exec` honrou o trust gravado,
+  e a descoberta dos hooks é a mesma; o `/hooks` da TUI não foi aberto.
+- O `codex plugin marketplace upgrade` de uma loja git (só a loja local foi medida, por reinstall).
 - macOS e Windows. No Windows, o Codex usa `commandWindows`, que o `hooks.json` não define.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """env-docs-sync: mantém os arquivos .env* de um repositório espelhados numa Página de ambientes.
 
-Este arquivo tem três camadas, nesta ordem:
+Este arquivo tem cinco camadas, nesta ordem:
 
 1. **Núcleo puro.** Config, Varredura, hash, Bloco de arquivo, plano de operações, estado e a
    Página de ambientes inteira. Não abre rede, não chama o backend de documentação nem o ssh.
@@ -13,7 +13,10 @@ Este arquivo tem três camadas, nesta ordem:
 3. **Entrada do hook.** Lê o payload do Claude Code ou do Codex CLI, acha a raiz pelo git, aplica o
    filtro do Checkout da verdade, refaz a Varredura e sincroniza sob trava, com o estado por
    repositório na pasta de dados do plugin. Sempre sai com 0.
-4. **CLI** (`validate`, `scan`, `plan`, `sync`, `status`, `render-page`, `hook`).
+4. **Instalação no Codex.** A chave, o hash da declaração e a impressão do pacote que o Codex confere,
+   e a edição cirúrgica do `config.toml` que grava o trust.
+5. **CLI** (`init`, `validate`, `scan`, `plan`, `sync`, `status`, `migrate`, `install`, `render-page`,
+   `hook`).
 
 Regra de segredo, em todas as camadas: nenhum valor de arquivo .env* vai para stdout, stderr,
 mensagem de erro, `repr` ou estado. O valor só vai para o corpo do Bloco de arquivo, que é o destino.
@@ -24,6 +27,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import copy
+import difflib
 import fcntl
 import functools
 import hashlib
@@ -32,11 +36,13 @@ import json
 import os
 import re
 import socket
+import stat
 import string
 import subprocess
 import sys
 import tempfile
 import time
+import tomllib
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from html.parser import HTMLParser
@@ -265,6 +271,28 @@ def carregar_config(caminho) -> dict:
     except json.JSONDecodeError as erro:
         raise ErroDeConfig([f"{caminho}: JSON inválido na linha {erro.lineno}, coluna {erro.colno}: {erro.msg}"]) from None
     return validar_config(dados)
+
+
+INCLUDE_INICIAL = ("**/.env", "**/.env.*")
+
+
+def config_inicial(raiz, hostname: str) -> dict:
+    """A `.env-docs.json` do `init`: development pela Varredura e pelo hostname; o que só a pessoa sabe
+    (destino, página, papéis, servidor e domínio) fica null, e o `validate` lista cada um."""
+    pastas = sorted({str(Path(c).parent) for c in varredura(raiz, list(INCLUDE_INICIAL), [])})
+    onde = ", ".join("raiz" if pasta == "." else pasta for pasta in pastas)
+    return {
+        "doc": {"backend": "kb", "cli": None, "python": None, "target": None, "page_id": None, "allowed_roles": None},
+        "values": "full",
+        "include": list(INCLUDE_INICIAL),
+        "exclude": [],
+        "environments": {"development": {
+            "source": "local", "machine": hostname, "server": None, "domain": None,
+            "where": f"checkout principal: {onde}" if onde else "checkout principal",
+            "source_of_truth": f"checkout principal em {hostname}",
+        }},
+        "run": [],
+    }
 
 
 # ---------------------------------------------------------------------------------------------
@@ -1530,6 +1558,361 @@ def status_dos_arquivos(atuais: Mapping[str, Mapping[str, bytes]], destino: Dest
 
 
 # ---------------------------------------------------------------------------------------------
+# Instalação no Codex: o trust dos hooks do plugin, gravado no config.toml do CODEX_HOME
+# ---------------------------------------------------------------------------------------------
+# O Codex só roda o hook de plugin que tem trust em `[hooks.state."<chave>"]`. A chave, o hash da
+# declaração e a impressão do pacote saem do codex-rs na tag rust-v0.164.0 (arquivo e linha em
+# references/hosts.md §4) e foram conferidos contra o `currentHash` do `hooks/list` do app-server
+# (tests/fixtures/codex-hooks-list-dourado.json).
+
+CODEX_MEDIDO = "0.164.0"
+"""Versão do codex-cli em que o algoritmo foi lido no código e conferido contra o próprio Codex."""
+
+NOME_DO_PLUGIN = "env-docs-sync"
+
+CODEX_EVENTOS = {
+    "PreModelRequest": "pre_model_request",
+    "PostModelRequest": "post_model_request",
+    "PreToolUse": "pre_tool_use",
+    "PermissionRequest": "permission_request",
+    "PostToolUse": "post_tool_use",
+    "PreCompact": "pre_compact",
+    "PostCompact": "post_compact",
+    "SessionStart": "session_start",
+    "SessionEnd": "session_end",
+    "UserPromptSubmit": "user_prompt_submit",
+    "SubagentStart": "subagent_start",
+    "SubagentStop": "subagent_stop",
+    "Stop": "stop",
+    "Interrupt": "interrupt",
+}
+"""Evento do hooks.json → rótulo da chave, na ordem em que o Codex percorre os eventos."""
+
+_CODEX_SEM_MATCHER = frozenset({"PreModelRequest", "PostModelRequest", "UserPromptSubmit", "Stop", "Interrupt"})
+_CODEX_TIMEOUT_CURTO = frozenset({"SessionEnd", "Interrupt"})  # padrão 1 s, teto 3 s; os outros, 600 s
+_CAMPOS_DO_HANDLER = frozenset({"type", "command", "commandWindows", "command_windows", "timeout", "async",
+                                "statusMessage"})
+_CAMPOS_DO_GRUPO = frozenset({"matcher", "hooks"})
+_LIXO_DO_PACOTE = ("__pycache__", ".venv")
+_RE_HASH = re.compile(r"sha256:[0-9a-f]{64}")
+_CAMPOS_DO_TRUST = ("trusted_hash", "trusted_content_hash")
+
+
+def _erro_de_forma(onde: str, problema: str) -> ErroEnvDocs:
+    return ErroEnvDocs(f"a forma do hook mudou em {onde}: {problema}. O hash do trust só modela handler "
+                       f"`command` com {', '.join(sorted(_CAMPOS_DO_HANDLER))}; aprove em /hooks no Codex")
+
+
+def _handler_normalizado(evento: str, handler, onde: str) -> dict:
+    """O handler como o Codex o guarda antes de hashear: `commandWindows` fora, timeout com o padrão."""
+    if not isinstance(handler, dict):
+        raise _erro_de_forma(onde, "o handler não é objeto")
+    if handler.get("type") != "command":
+        raise _erro_de_forma(onde, f"type {handler.get('type')!r}")
+    sobra = sorted(set(handler) - _CAMPOS_DO_HANDLER)
+    if sobra:
+        raise _erro_de_forma(onde, f"campo {', '.join(sobra)}")
+    comando, timeout = handler.get("command"), handler.get("timeout")
+    assincrono, status = handler.get("async", False), handler.get("statusMessage")
+    if not isinstance(comando, str) or not comando.strip():
+        raise _erro_de_forma(onde, "command vazio ou ausente (o Codex pula o handler)")
+    if timeout is not None and (isinstance(timeout, bool) or not isinstance(timeout, int) or timeout < 0):
+        raise _erro_de_forma(onde, "timeout que não é inteiro sem sinal")
+    janelas = handler.get("commandWindows", handler.get("command_windows"))
+    if not isinstance(assincrono, bool) or any(v is not None and not isinstance(v, str) for v in (status, janelas)):
+        raise _erro_de_forma(onde, "async, statusMessage ou commandWindows do tipo errado")
+    if evento in _CODEX_TIMEOUT_CURTO:
+        timeout = min(max(1 if timeout is None else timeout, 1), 3)
+    else:
+        timeout = max(600 if timeout is None else timeout, 1)
+    normal = {"type": "command", "command": comando, "timeout": timeout, "async": assincrono}
+    if status is not None:
+        normal["statusMessage"] = status
+    return normal
+
+
+def _hash_da_declaracao(evento: str, matcher, handler: dict) -> str:
+    """`hook_hash` do Codex: a identidade {event_name, matcher, hooks: [handler]} sem os None, em JSON
+    com as chaves ordenadas e sem espaços, no sha256 (`version_for_toml`)."""
+    identidade = {"event_name": CODEX_EVENTOS[evento], "hooks": [handler]}
+    if matcher is not None:
+        identidade["matcher"] = matcher
+    texto = json.dumps(identidade, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return "sha256:" + hashlib.sha256(texto.encode("utf-8")).hexdigest()
+
+
+def hooks_do_pacote(raiz, plugin_id: str) -> list[tuple[str, str]]:
+    """[(chave do `[hooks.state]`, hash da declaração)] de cada handler do `hooks/hooks.json` do pacote,
+    na ordem do Codex. Recusa, em vez de errar o hash, qualquer forma que a função não modela."""
+    arquivo = Path(raiz) / "hooks" / "hooks.json"
+    try:
+        dados = json.loads(arquivo.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as erro:
+        raise ErroEnvDocs(f"hooks.json do pacote ilegível em {arquivo} ({type(erro).__name__})") from None
+    if not isinstance(dados, dict) or set(dados) - {"description", "hooks"} or not isinstance(dados.get("hooks"), dict):
+        raise _erro_de_forma(str(arquivo), "o topo não é {description, hooks}")
+    desconhecidos = sorted(set(dados["hooks"]) - set(CODEX_EVENTOS))
+    if desconhecidos:
+        raise _erro_de_forma(str(arquivo), f"evento que o Codex não tem: {', '.join(desconhecidos)}")
+    saida = []
+    for evento, rotulo in CODEX_EVENTOS.items():
+        grupos = dados["hooks"].get(evento, [])
+        if not isinstance(grupos, list):
+            raise _erro_de_forma(evento, "o evento não é lista")
+        for g, grupo in enumerate(grupos):
+            if not isinstance(grupo, dict) or set(grupo) - _CAMPOS_DO_GRUPO or not isinstance(grupo.get("hooks"), list):
+                raise _erro_de_forma(f"{evento}[{g}]", "o grupo não é {matcher, hooks}")
+            matcher = grupo.get("matcher")
+            if matcher is not None and not isinstance(matcher, str):
+                raise _erro_de_forma(f"{evento}[{g}]", "matcher que não é texto")
+            if evento in _CODEX_SEM_MATCHER:
+                matcher = None  # o Codex descarta o matcher destes eventos antes de hashear
+            for h, handler in enumerate(grupo["hooks"]):
+                normal = _handler_normalizado(evento, handler, f"{evento}[{g}].hooks[{h}]")
+                saida.append((f"{plugin_id}:hooks/hooks.json:{rotulo}:{g}:{h}",
+                              _hash_da_declaracao(evento, matcher, normal)))
+    return saida
+
+
+def impressao_do_pacote(raiz) -> str:
+    """`plugin_content_hash` do Codex: sha256 de "codex-plugin-bundle-v1" e de cada entrada da pasta,
+    em pré-ordem com os nomes em ordem de bytes. Pula `__pycache__`, `.venv`, `*.pyc` e `*.egg-info`."""
+    raiz = Path(raiz)
+    if not stat.S_ISDIR(os.lstat(raiz).st_mode):
+        raise ErroEnvDocs(f"o pacote instalado não é pasta: {raiz}")
+    impressao = hashlib.sha256(b"codex-plugin-bundle-v1")
+    pendentes = [raiz]
+    while pendentes:
+        caminho = pendentes.pop()
+        relativo = "" if caminho == raiz else caminho.relative_to(raiz).as_posix()
+        nome = caminho.name if relativo else ""
+        if nome in _LIXO_DO_PACOTE or nome.endswith((".pyc", ".egg-info")):
+            continue
+        bruto = os.fsencode(relativo)
+        impressao.update(len(bruto).to_bytes(8, "little") + bruto)
+        modo = os.lstat(caminho).st_mode
+        if stat.S_ISDIR(modo):
+            impressao.update(b"directory")
+            filhos = sorted(os.listdir(caminho), key=os.fsencode)
+            pendentes.extend(caminho / filho for filho in reversed(filhos))
+        elif stat.S_ISREG(modo):
+            dados = caminho.read_bytes()
+            impressao.update(b"file" + len(dados).to_bytes(8, "little") + dados)
+        else:
+            raise ErroEnvDocs(f"o pacote tem symlink ou arquivo especial em {relativo}: o Codex recusa a "
+                              "impressão e pula os hooks do plugin")
+    return "sha256:" + impressao.hexdigest()
+
+
+@dataclass(frozen=True)
+class PluginNoCodex:
+    plugin_id: str
+    versao: str
+    raiz: Path
+    ligado: bool
+
+
+def plugin_no_codex(codex_home, config: Mapping, nome: str = NOME_DO_PLUGIN) -> PluginNoCodex:
+    """O pacote instalado em `plugins/cache/<loja>/<nome>/<versão>/` com a entrada `[plugins."<id>"]` no
+    config.toml. Mais de uma loja ou de uma versão é recusa, não escolha."""
+    cache = Path(codex_home) / "plugins" / "cache"
+    achados = []
+    if cache.is_dir():
+        for loja in sorted(cache.iterdir()):
+            if (loja / nome).is_dir():
+                versoes = sorted(p for p in (loja / nome).iterdir() if p.is_dir() and not p.name.startswith("."))
+                if versoes:
+                    achados.append((loja.name, versoes))
+    instrucao = f"instale com `codex plugin add {nome}@<loja>` e rode de novo"
+    if not achados:
+        raise ErroEnvDocs(f"{nome} não está instalado no Codex em {codex_home} (nada em plugins/cache); {instrucao}")
+    if len(achados) > 1:
+        raise ErroEnvDocs(f"{nome} está instalado por mais de uma loja ({', '.join(l for l, _ in achados)}); "
+                          "deixe uma só com `codex plugin remove`")
+    loja, versoes = achados[0]
+    plugin_id = f"{nome}@{loja}"
+    if len(versoes) > 1:
+        raise ErroEnvDocs(f"{plugin_id} tem mais de uma versão no cache ({', '.join(v.name for v in versoes)}); "
+                          f"reinstale com `codex plugin add {plugin_id}`")
+    entrada = config.get("plugins", {}).get(plugin_id) if isinstance(config.get("plugins"), dict) else None
+    if not isinstance(entrada, dict):
+        raise ErroEnvDocs(f"{plugin_id} não está instalado: o pacote está no cache, mas o config.toml não tem "
+                          f'[plugins."{plugin_id}"]; {instrucao}')
+    return PluginNoCodex(plugin_id, versoes[0].name, versoes[0], entrada.get("enabled") is not False)
+
+
+def _ler_toml(texto: str) -> dict:
+    try:
+        return tomllib.loads(texto)
+    except tomllib.TOMLDecodeError as erro:  # a mensagem é fixa + linha e coluna; não ecoa valor
+        raise ErroEnvDocs(f"config.toml inválido ({erro}); nada foi gravado") from None
+
+
+def _com_quebra_no_fim(texto: str) -> str:
+    nl = "\r\n" if "\r\n" in texto else "\n"
+    return texto + nl if texto and not texto.endswith("\n") else texto
+
+
+def _linha_do_cabecalho(linhas, chave: str) -> int | None:
+    citada = re.escape(chave)
+    padrao = re.compile(rf"\[\s*hooks\s*\.\s*state\s*\.\s*(?:\"{citada}\"|'{citada}')\s*\](?:\s*#.*)?")
+    return next((i for i, linha in enumerate(linhas) if padrao.fullmatch(linha.strip())), None)
+
+
+def editar_trust(texto: str, desejado: Mapping[str, Mapping[str, str]]) -> str:
+    """O config.toml com `desejado` ({chave: {campo: hash}}) no `[hooks.state]`, editado como texto.
+
+    Troca a linha do campo dentro da tabela `[hooks.state."<chave>"]` ou acrescenta o que falta; sem a
+    tabela, acrescenta a tabela no fim. O resto do arquivo fica byte a byte. Confere o resultado
+    relendo o TOML: se ele não for o antigo mais `desejado`, recusa (trust em tabela inline ou chave
+    pontuada, que a edição não cobre)."""
+    for campos in desejado.values():
+        if any(not isinstance(v, str) or not _RE_HASH.fullmatch(v) for v in campos.values()):
+            raise ErroEnvDocs("valor fora do formato de hash (sha256:<64 hex>); nada foi gravado")
+    antes = _ler_toml(texto)
+    nl = "\r\n" if "\r\n" in texto else "\n"
+    linhas = _com_quebra_no_fim(texto).splitlines(keepends=True)
+    estado = antes.get("hooks", {}).get("state", {}) if isinstance(antes.get("hooks"), dict) else {}
+    for chave, campos in desejado.items():
+        atual = estado.get(chave) if isinstance(estado, dict) else None
+        faltam = {c: v for c, v in campos.items() if not (isinstance(atual, dict) and atual.get(c) == v)}
+        if not faltam:
+            continue
+        inicio = _linha_do_cabecalho(linhas, chave)
+        if inicio is None:
+            linhas += ([nl] if linhas else []) + [f'[hooks.state."{chave}"]{nl}']
+            linhas += [f'{campo} = "{valor}"{nl}' for campo, valor in campos.items()]
+            continue
+        fim = next((i for i in range(inicio + 1, len(linhas)) if linhas[i].lstrip().startswith("[")), len(linhas))
+        for campo, valor in faltam.items():
+            nova = f'{campo} = "{valor}"{nl}'
+            achada = next((i for i in range(inicio + 1, fim) if re.match(rf"\s*{campo}\s*=", linhas[i])), None)
+            if achada is not None:
+                linhas[achada] = nova
+            else:
+                ultima = max((i for i in range(inicio, fim) if linhas[i].strip()), default=inicio)
+                linhas.insert(ultima + 1, nova)
+                fim += 1
+    novo = "".join(linhas)
+    if novo == _com_quebra_no_fim(texto):
+        return texto
+    esperado = copy.deepcopy(antes)
+    try:
+        tabela = esperado.setdefault("hooks", {}).setdefault("state", {})
+        for chave, campos in desejado.items():
+            tabela.setdefault(chave, {}).update(campos)
+        confere = tomllib.loads(novo) == esperado
+    except (AttributeError, TypeError, tomllib.TOMLDecodeError):
+        confere = False
+    if not confere:
+        raise ErroEnvDocs("o trust deste config.toml está numa forma que a edição não cobre (tabela inline ou "
+                          "chave pontuada); nada foi gravado. Aprove os hooks em /hooks no Codex")
+    return novo
+
+
+@dataclass(frozen=True)
+class InstalacaoCodex:
+    plugin: PluginNoCodex
+    config: Path
+    conteudo: str
+    chaves: tuple[str, ...]
+    mudam: tuple[str, ...]
+    antes: bytes = field(repr=False)
+    depois: str = field(repr=False)
+
+
+def planejar_instalacao(codex_home) -> InstalacaoCodex:
+    """O que o `install --codex` gravaria: a chave e os dois hashes de cada hook do pacote instalado."""
+    config = Path(codex_home) / "config.toml"
+    try:
+        bruto = config.read_bytes()
+    except FileNotFoundError:
+        raise ErroEnvDocs(f"{NOME_DO_PLUGIN} não está instalado no Codex em {codex_home}: {config} não existe") from None
+    try:
+        texto = bruto.decode("utf-8")
+    except UnicodeDecodeError:
+        raise ErroEnvDocs(f"{config} não é UTF-8; nada foi gravado") from None
+    dados = _ler_toml(texto)
+    plugin = plugin_no_codex(codex_home, dados)
+    hooks = hooks_do_pacote(plugin.raiz, plugin.plugin_id)
+    conteudo = impressao_do_pacote(plugin.raiz)
+    desejado = {chave: {"trusted_hash": decl, "trusted_content_hash": conteudo} for chave, decl in hooks}
+    estado = dados.get("hooks", {}).get("state", {}) if isinstance(dados.get("hooks"), dict) else {}
+    estado = estado if isinstance(estado, dict) else {}
+    mudam = tuple(chave for chave, campos in desejado.items()
+                  if not isinstance(estado.get(chave), dict) or any(estado[chave].get(c) != v for c, v in campos.items()))
+    return InstalacaoCodex(plugin, config, conteudo, tuple(desejado), mudam, bruto, editar_trust(texto, desejado))
+
+
+def linhas_da_mudanca(antes: str, depois: str, nome: str) -> list[str]:
+    """O diff sem contexto do config.toml. Só aparecem linhas do trust; qualquer outra sai omitida, para
+    um valor do config.toml (um token de MCP, por exemplo) nunca chegar à tela."""
+    nosso = re.compile(rf'(?:\[hooks\.state\."[^"]+"\]|(?:{"|".join(_CAMPOS_DO_TRUST)}) = "sha256:[^"]*")?')
+    saida = []
+    for linha in difflib.unified_diff(_com_quebra_no_fim(antes).splitlines(), depois.splitlines(),
+                                      fromfile=nome, tofile=f"{nome} (com o trust)", n=0, lineterm=""):
+        if linha[:1] in "+-" and not linha.startswith(("+++", "---")) and not nosso.fullmatch(linha[1:]):
+            linha = linha[0] + "<linha omitida: não é do trust>"
+        saida.append(linha)
+    return saida
+
+
+def aviso_da_versao_do_codex(env: Mapping[str, str], executar=rodar_comando) -> str | None:
+    """Aviso quando o codex do PATH não é a versão em que o hash foi medido (ou não roda)."""
+    try:
+        resultado = executar(["codex", "--version"], env=env, timeout=10)
+    except ErroEnvDocs as erro:
+        return f"{erro}: a versão do Codex não foi conferida (o hash foi medido no codex-cli {CODEX_MEDIDO})"
+    partes = resultado.stdout.decode("utf-8", errors="replace").split()
+    versao = partes[-1] if resultado.returncode == 0 and partes else None
+    if versao is None:
+        return f"codex --version não respondeu: a versão não foi conferida (o hash foi medido no {CODEX_MEDIDO})"
+    if versao != CODEX_MEDIDO:
+        return (f"este é o codex-cli {versao}, e o hash foi medido no {CODEX_MEDIDO}: depois do --apply, confira "
+                "em /hooks que os hooks do env-docs-sync aparecem confiados")
+    return None
+
+
+def _copia_de_seguranca(config: Path, bruto: bytes) -> Path:
+    carimbo = datetime.now().strftime("%Y%m%dT%H%M%S")
+    for n in range(100):
+        copia = config.with_name(f"{config.name}.env-docs-sync-{carimbo}{f'-{n}' if n else ''}.bak")
+        try:
+            descritor = os.open(copia, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        except FileExistsError:
+            continue
+        with os.fdopen(descritor, "wb") as saida:
+            saida.write(bruto)
+            saida.flush()
+            os.fsync(saida.fileno())
+        return copia
+    raise ErroEnvDocs(f"não achei nome livre para a cópia de {config}; nada foi gravado")
+
+
+def aplicar_instalacao(plano: InstalacaoCodex) -> Path:
+    """Grava o config.toml: cópia antes, temporário com o mesmo modo, os.replace no arquivo real (um
+    config.toml que é symlink continua symlink). Recusa se o arquivo mudou desde o plano."""
+    real = plano.config.resolve()
+    modo = stat.S_IMODE(os.stat(real).st_mode)
+    copia = _copia_de_seguranca(plano.config, plano.antes)
+    descritor, temporario = tempfile.mkstemp(dir=real.parent, prefix=f".{real.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(descritor, "w", encoding="utf-8", newline="") as saida:
+            os.fchmod(saida.fileno(), modo)
+            saida.write(plano.depois)
+            saida.flush()
+            os.fsync(saida.fileno())
+        if real.read_bytes() != plano.antes:
+            raise ErroEnvDocs(f"{plano.config} mudou durante a instalação; nada foi gravado (rode de novo)")
+        os.replace(temporario, real)
+    except BaseException:
+        if os.path.exists(temporario):
+            os.unlink(temporario)
+        raise
+    return copia
+
+
+# ---------------------------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------------------------
 
@@ -1710,6 +2093,61 @@ def _cmd_hook(args):
     return 0
 
 
+def _cmd_init(args):
+    """Escreve a `.env-docs.json` inicial; nunca sobrescreve. Lista os arquivos da Varredura e o que falta."""
+    raiz = Path(args.root)
+    arquivo = raiz / ".env-docs.json"
+    config = config_inicial(raiz, socket.gethostname())
+    try:
+        descritor = os.open(arquivo, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    except FileExistsError:
+        raise ErroEnvDocs(f"{arquivo} já existe; edite à mão (o init não sobrescreve)") from None
+    with os.fdopen(descritor, "w", encoding="utf-8") as saida:
+        saida.write(json.dumps(config, ensure_ascii=False, indent=2) + "\n")
+    arquivos = varredura(raiz, config["include"], config["exclude"])
+    print(f"gravado {arquivo}: {len(arquivos)} arquivo(s) na Varredura")
+    for caminho in arquivos:
+        print(f"  {caminho}")
+    try:
+        validar_config(config)
+    except ErroDeConfig as erro:
+        print("a preencher (o validate recusa até lá):")
+        for linha in erro.erros:
+            print(f"  {linha}")
+    print("staging e production entram à mão, com source ssh, host e files (references/config.md)")
+    return 0
+
+
+def _cmd_install(args):
+    """Grava no config.toml do Codex o trust dos hooks do plugin instalado. Sem `--apply`, mostra o diff
+    exato e sai 4; com `--apply`, faz cópia e grava; já confiado, sai 0 sem tocar o arquivo."""
+    home = Path(args.codex_home or os.environ.get("CODEX_HOME") or Path.home() / ".codex")
+    aviso = aviso_da_versao_do_codex(dict(os.environ))
+    if aviso:
+        print(f"env-docs-sync: aviso — {aviso}", file=sys.stderr)
+    plano = planejar_instalacao(home)
+    plugin = plano.plugin
+    print(f"plugin {plugin.plugin_id} {plugin.versao} em {plugin.raiz}")
+    print(f"conteúdo do pacote: {plano.conteudo}")
+    print(f"{len(plano.chaves)} hook(s): {len(plano.mudam)} a confiar, {len(plano.chaves) - len(plano.mudam)} já confiado(s)")
+    if not plugin.ligado:
+        print(f"env-docs-sync: aviso — {plugin.plugin_id} está desligado no config.toml (enabled = false); "
+              "o trust vale quando você ligar", file=sys.stderr)
+    if not plano.mudam:
+        print("nada a mudar: o config.toml já confia nestes hooks com este conteúdo")
+        return 0
+    for linha in linhas_da_mudanca(plano.antes.decode("utf-8"), plano.depois, str(plano.config)):
+        print(linha)
+    if not args.apply:
+        print("dry-run: nada gravado; rode de novo com --apply")
+        return 4
+    copia = aplicar_instalacao(plano)
+    print(f"cópia do config.toml anterior: {copia}")
+    print(f"gravado: {len(plano.mudam)} hook(s) confiado(s) em {plano.config}. Confira em /hooks numa sessão "
+          "do Codex. Um update do plugin muda o conteúdo e pede este comando de novo")
+    return 0
+
+
 def _cmd_render_page(args):
     raiz, config = _contexto(args)
     quando, commit = _agora(args.now), _commit(args.commit, raiz)
@@ -1745,6 +2183,9 @@ def _parser():
         p.set_defaults(funcao=funcao)
         return p
 
+    init = sub.add_parser("init", help="escreve a .env-docs.json inicial (nunca sobrescreve)")
+    init.add_argument("--root", default=".", help="raiz do repositório (padrão: .)")
+    init.set_defaults(funcao=_cmd_init)
     comando("validate", "valida a .env-docs.json", _cmd_validate)
     comando("scan", "Varredura: caminhos e hash curto", _cmd_scan)
     comando("plan", "mudanças desde o último sync (só caminhos e hashes)", _cmd_plan, estado=True)
@@ -1761,6 +2202,13 @@ def _parser():
                       "sem --apply, dry-run (rc 4)", _cmd_migrate, relogio=True)
     migrate.add_argument("--state", help="grava aqui o estado do que foi publicado (só com --apply)")
     migrate.add_argument("--apply", action="store_true", help="publica de verdade (sem isto: dry-run do kb)")
+    install = sub.add_parser("install", help="grava no config.toml do Codex o trust dos hooks do plugin "
+                             "instalado; sem --apply, o diff exato (rc 4)")
+    install.add_argument("--codex", action="store_true", required=True,
+                         help="o host (só o Codex precisa: no Claude Code, o plugin instalado já roda)")
+    install.add_argument("--codex-home", help="padrão: $CODEX_HOME ou ~/.codex")
+    install.add_argument("--apply", action="store_true", help="grava de verdade, com cópia antes")
+    install.set_defaults(funcao=_cmd_install)
     hook = sub.add_parser("hook", help="entrada do hook do Claude Code e do Codex CLI (payload no stdin; sai 0)")
     hook.set_defaults(funcao=_cmd_hook)
     render = comando("render-page", "grava a Página de ambientes inteira (0600) para o replace",

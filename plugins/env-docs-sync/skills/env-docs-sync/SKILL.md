@@ -2,7 +2,7 @@
 name: env-docs-sync
 description: "Mirrors every .env* file of a repo into a restricted environments documentation page: one section per environment, one block per file, rewritten only when its hash changes. Values never reach logs or local state, which keeps only hashes. Triggers — env docs, .env sync, environments page, env-docs-sync, .env-docs.json, environment variables docs."
 license: MIT
-compatibility: Python 3.11+, só biblioteca padrão (testado com o 3.12.3), git 2.31+. Hooks medidos em 2026-10-27 no Claude Code 2.1.309 e no codex-cli 0.164.0 (payload real capturado nos dois). Sync remoto com o ssh do OpenSSH (medido no 9.6p1) e, para host com senha, o sshpass (medido no 1.09). Destino kb conferido contra o KB de staging (BookStack v26.09) em 2026-10-27.
+compatibility: Python 3.11+, só biblioteca padrão (testado com o 3.12.3), git 2.31+. Hooks medidos em 2026-10-27 no Claude Code 2.1.309 e no codex-cli 0.164.0 (payload real capturado nos dois; trust do Codex conferido contra o hooks/list do app-server). Sync remoto com o ssh do OpenSSH (medido no 9.6p1) e, para host com senha, o sshpass (medido no 1.09). Destino kb conferido contra o KB de staging (BookStack v26.09) em 2026-10-27.
 metadata:
   author: JorUge
   version: "0.1.0"
@@ -22,7 +22,7 @@ O exemplo completo e fictício está em `assets/env-docs.example.json`.
 | Leia | Quando |
 |---|---|
 | `references/config.md` | ao escrever, revisar ou depurar uma `.env-docs.json`: schema campo a campo, padrões e o arquivo de estado |
-| `references/hosts.md` | ao mexer no hook ou depurar um disparo: o payload, o ambiente e a pasta de dados medidos no Claude Code e no Codex, e a receita de captura |
+| `references/hosts.md` | ao mexer no hook, depurar um disparo ou um trust do Codex: o payload, o ambiente e a pasta de dados medidos no Claude Code e no Codex, o algoritmo do trust com as fontes e o oráculo, e a receita de captura |
 | `references/safety.md` | antes de mudar qualquer caminho por onde passa conteúdo de `.env*`: o que pode sair, por onde, e os testes que provam |
 | `references/kb.md` | ao configurar o backend `kb`, depurar uma escrita recusada ou migrar a página: os comandos da CLI, a trava de permissão, a escrita de um bloco e o que foi medido no KB de staging |
 
@@ -45,17 +45,18 @@ Os mesmos nomes valem aqui, na config, no código e na página.
 
 | Subcomando | Estado |
 |---|---|
-| `init` | planejado: o agente escreve a `.env-docs.json` do repositório |
+| `init` | existe: escreve a `.env-docs.json` inicial pela Varredura e pelo hostname, com `null` no que só a pessoa sabe; nunca sobrescreve |
 | `sync` | existe: `development` (e os ssh com `--remote`) no destino de `doc.backend` (o kb, com a trava de permissão) ou, com `--to-dir`, num diretório local (teste e inspeção) |
 | `sync --remote` | existe: lê também os ambientes ssh, sem olhar a janela; rc 1 se algum não foi lido |
 | `status` | existe: por arquivo, `ok`, `diverge` ou `ausente`, comparando o hash do bloco relido no destino com o do arquivo; rc 3 se algo não está `ok`. Com `--remote`, confere também os ambientes ssh |
 | `migrate` | existe: publica a Página de ambientes inteira (`kb page replace`), com todos os ambientes e a trava; sem `--apply`, o dry-run da CLI (rc 4) |
-| `install --codex` | planejado: registra o hook no Codex e grava o trust |
+| `install --codex` | existe: grava no `config.toml` do Codex o trust dos hooks do plugin instalado; sem `--apply`, o diff exato (rc 4) |
 | `hook` | existe: a entrada do `hooks/hooks.json` (PostToolUse de edição e de shell, Stop e SessionStart); sempre sai 0 |
 | `validate`, `scan`, `plan`, `render-page` | existem |
 
 ```bash
 S=<pasta desta skill>/scripts/env_docs_sync.py
+python3 "$S" init --root .                           # .env-docs.json inicial; o validate lista o que falta
 python3 "$S" validate --root .                       # a config vale? (rc 2 com a lista de erros)
 python3 "$S" scan --root .                           # Varredura: caminho e hash curto
 python3 "$S" plan --root . --state <estado.json>     # o que mudou desde o último sync
@@ -63,11 +64,13 @@ python3 "$S" sync --root . --state <estado.json> [--to-dir <pasta>] [--remote]
 python3 "$S" status --root . [--to-dir <pasta>] [--remote]   # ok / diverge / ausente por arquivo
 python3 "$S" render-page --root . --out <pagina.html>  # a página inteira, 0600, para inspeção
 python3 "$S" migrate --root . [--state <estado.json>] [--apply]   # página inteira no kb
+python3 "$S" install --codex [--codex-home DIR] [--apply]   # trust do hook no Codex
 python3 "$S" hook < payload.json                         # o que o hooks.json roda
 ```
 
 Códigos de saída: 0 ok · 1 erro de E/S, de conteúdo ou do destino · 2 config inválida ou uso
-errado · 3 `status` com algum arquivo fora de `ok` · 4 `migrate` sem `--apply` (dry-run). O `hook`
+errado · 3 `status` com algum arquivo fora de `ok` · 4 `migrate` ou `install --codex` sem `--apply`
+(dry-run). O `hook`
 sai sempre com 0. Nenhum subcomando
 imprime valor: só caminhos, ações, contagens e o início do hash.
 
@@ -138,6 +141,24 @@ só hashes e carimbos, com a trava `.lock` ao lado. A pasta é `CLAUDE_PLUGIN_DA
 `$XDG_STATE_HOME/env-docs-sync` (padrão `~/.local/state/env-docs-sync`). Cada host tem a sua
 pasta, e então cada host sincroniza uma vez por conta própria. Leia `references/hosts.md` quando
 precisar dos caminhos medidos em cada host.
+
+## Instalação no Codex
+
+No Claude Code, o plugin instalado já roda. No Codex, cada hook de plugin precisa de trust no
+`config.toml`, e hook sem trust é pulado sem erro. O `install --codex` faz o que o `/hooks` faria:
+
+1. acha o pacote em `$CODEX_HOME/plugins/cache/<loja>/env-docs-sync/<versão>/` com a entrada
+   `[plugins."env-docs-sync@<loja>"]` (mais de uma loja ou versão é recusa);
+2. calcula a chave e o hash da declaração de cada handler do `hooks/hooks.json` instalado, e a
+   impressão do pacote. Forma que o hash não modela (outro `type`, campo novo, evento só do Claude)
+   é recusa, não palpite;
+3. sem `--apply`, imprime o diff sem contexto do `config.toml` e sai 4. Com `--apply`, grava uma
+   cópia `config.toml.env-docs-sync-<carimbo>.bak` (0600), troca só as linhas do trust ou acrescenta a
+   tabela no fim, relê o TOML para conferir e grava atomicamente, com o mesmo modo. Já confiado, sai
+   0 sem tocar o arquivo.
+
+O algoritmo, as fontes no codex-rs, o oráculo `hooks/list` e o que foi medido estão em
+`references/hosts.md` §4. O aviso de versão sai quando o `codex --version` não é o `CODEX_MEDIDO`.
 
 ## Sync remoto
 
@@ -222,6 +243,14 @@ seção CI/CD sai como "a gerar" nesta versão.
 - **Edição feita na página não é desfeita pelo hook.** Ele decide pelo estado local, e o arquivo não
   mudou. O `status` acusa `diverge` (rc 3), e um `sync --state <arquivo novo>` reescreve só o bloco
   divergente.
+- **Update do plugin no Codex desliga o hook até o `install --codex` rodar de novo.** O trust fica
+  preso ao conteúdo exato do pacote: um byte mudado, e cada hook sai `hook: … Failed` no
+  `codex exec`, calado na página. Reinstalar o mesmo conteúdo e `codex plugin remove` + `add`
+  mantêm o trust, porque o `remove` não apaga o `[hooks.state]` (medido no 0.164.0).
+- **O `codex exec` não mostra o `systemMessage`.** Sem `--json`, o stderr só diz `hook: <evento>
+  Completed`; com `--json`, nada. Confira pelo `status` e pela revisão da página.
+- **O `init` deixa `null`, não "a preencher".** Um texto passaria no `validate` e viraria aviso a
+  cada disparo do hook; o `null` faz o `validate` listar cada campo que falta.
 - **`--create` em toda escrita de bloco**, não só em `criar`: um h3 apagado à mão volta, em vez de
   travar o sync com "heading não encontrado" a cada gatilho.
 
@@ -234,6 +263,8 @@ cd <pasta desta skill> && python3 -B -m unittest discover -s tests -v
 Só biblioteca padrão, sem rede. Os payloads de `tests/fixtures/` são capturas reais dos dois hosts,
 anonimizadas, e o teste troca a raiz anonimizada pela de um repositório git criado no momento
 (worktree incluído). `test_hook.ComandoReal` roda a string inteira do `command` do `hooks.json` por
-`sh -c`, inclusive com o script ausente e com stdin inválido. O teste `test_sem_marcas_da_empresa.py` varre o pacote inteiro
+`sh -c`, inclusive com o script ausente e com stdin inválido. A fixture
+`codex-hooks-list-dourado.json` é o oráculo do trust: um pacote sintético e o `currentHash` que o
+`hooks/list` do Codex deu para cada hook. O teste `test_sem_marcas_da_empresa.py` varre o pacote inteiro
 atrás de marcas da empresa de origem, porque o repositório é público, e prova numa cópia sabotada
 que o sensor reprova.

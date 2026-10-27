@@ -3,7 +3,7 @@
 ## [0.1.0] — em construção
 
 Em construção, por incrementos: o núcleo puro com testes offline, a entrada do hook nos dois hosts, o
-Sync remoto e o destino kb. O plugin ainda não está no catálogo da loja.
+Sync remoto, o destino kb, a instalação no Codex e o `init`. O plugin ainda não está no catálogo da loja.
 
 ### Por quê
 
@@ -106,3 +106,29 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
 - **Testes** contra um kb falso (`tests/kb_falso.py`), um processo de verdade que guarda a página num
   JSON, acrescenta os ids `bkmrk-` e devolve os rc e o JSON de erro da CLI real. 12 mutantes do
   adaptador deixaram a suíte vermelha.
+- **`install --codex [--codex-home DIR] [--apply]`:** grava no `config.toml` do Codex o trust dos
+  hooks do plugin instalado, o que o `/hooks` faria à mão:
+  - chave `<plugin>@<loja>:hooks/hooks.json:<evento>:<grupo>:<handler>`, `trusted_hash` (a
+    declaração normalizada) e `trusted_content_hash` (a impressão do pacote instalado), com o
+    algoritmo lido no codex-rs na tag `rust-v0.164.0` (arquivo e linha na `hosts.md` §4);
+  - conferido contra o próprio Codex: a fixture `codex-hooks-list-dourado.json` é um pacote
+    sintético instalado pelo `codex plugin add`, com o `currentHash` que o `hooks/list` do
+    `codex app-server` deu. O pacote força ordem por bytes, lixo ignorado, nome não ASCII, `async`,
+    `statusMessage`, `commandWindows`, matcher descartado e os timeouts padrão e com teto;
+  - recusa, sem tocar o arquivo: plugin fora do cache ou do `[plugins]`, mais de uma loja ou versão,
+    forma de hook que o hash não modela, symlink no pacote, trust em tabela inline ou chave
+    pontuada, `config.toml` que muda entre o plano e a gravação;
+  - sem `--apply`, o diff sem contexto (rc 4), que só mostra linha do trust; com `--apply`, cópia
+    `.bak` 0600, edição só das linhas do trust, releitura do TOML e gravação atômica com o mesmo
+    modo, inclusive num `config.toml` que é symlink. Idempotente;
+  - aviso quando o `codex --version` não é o 0.164.0, a versão medida.
+- **`init`:** a `.env-docs.json` inicial pela Varredura e pelo hostname, com `null` no destino, na
+  página, nos papéis, no servidor e no domínio: o `validate` lista cada um. Nunca sobrescreve.
+- **Disparo ao vivo (CA4)**, num sandbox novo apontado para a página sintética do KB de staging, sem
+  `--dangerously-bypass-hook-trust` no Codex: Claude `Edit` e `Bash`, Codex `apply_patch` e shell,
+  edição à mão com SessionStart novo, e o update do pacote do Codex. Medido: o Codex honra o trust
+  gravado; reinstalar o mesmo conteúdo e `remove` + `add` mantêm o trust; um byte mudado no pacote
+  faz cada hook sair `Failed` até o `install --codex` rodar de novo; o `codex exec` não mostra o
+  `systemMessage`. Os resultados estão na `kb.md` §5 e na `hosts.md` §4.
+- **Testes:** 38 novos (`test_codex.py`, `test_init.py`); 22 mutantes dos guardas novos deixaram a
+  suíte vermelha.
