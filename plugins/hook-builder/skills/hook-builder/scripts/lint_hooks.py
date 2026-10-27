@@ -61,7 +61,8 @@ PLACEHOLDER = re.compile(
 ROOT_PLACEHOLDERS = ("${CLAUDE_PLUGIN_ROOT}", "${PLUGIN_ROOT}")
 STOP_EVENTS = {"Stop", "SubagentStop"}
 # Token de path num command: corta em espaço, aspas, `=` de flag, `:`/`,` de lista e operadores de
-# shell. Path com espaço dentro de aspas fica de fora (limite conhecido).
+# shell. Limite conhecido: um path com espaço, mesmo entre aspas, é cortado no espaço e vira um
+# aviso falso de "não existe".
 PATH_TOKEN = re.compile(r"[^\s\"'=:,;&|()]+")
 
 # Codex CLI 0.164.0: HookEventsToml, MatcherGroup e HookHandlerConfig em

@@ -33,7 +33,7 @@ class LintTest(unittest.TestCase):
 
     def plugin(self, command, event="Stop", guard=False):
         """Um plugin em <tmp>/p com hooks/hooks.json e um script de Stop."""
-        (self.dir / "p" / "scripts").mkdir(parents=True)
+        (self.dir / "p" / "scripts").mkdir(parents=True, exist_ok=True)
         body = "import json, sys\n" + ("json.load(sys.stdin)['stop_hook_active']\n" if guard else "")
         (self.dir / "p" / "scripts" / "stop.py").write_text(body, encoding="utf-8")
         return self.config({"hooks": {event: [{"hooks": [{"type": "command", "command": command}]}]}},
@@ -74,9 +74,9 @@ class LintTest(unittest.TestCase):
             with self.subTest(name):
                 result = run(self.config(data, name), "--host", "both")
                 self.assertEqual(result.returncode, 0, result.stdout)
-                lines = [line for line in result.stdout.splitlines() if fragment in line]
-                self.assertEqual(len(lines), 1, result.stdout)
-                self.assertTrue(lines[0].startswith("AVISO"), lines[0])
+                avisos = [line for line in result.stdout.splitlines() if line.startswith("AVISO")]
+                self.assertEqual(len(avisos), 1, result.stdout)
+                self.assertIn(fragment, avisos[0])
 
     def test_plugin_directory_is_unchecked_not_missing(self):
         command = 'cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 stop.py; true'
@@ -85,17 +85,23 @@ class LintTest(unittest.TestCase):
         self.assertIn("cita só diretório", result.stdout)
 
     def test_placeholder_list_is_split(self):
-        command = ('PYTHONPATH="${CLAUDE_PLUGIN_ROOT}/scripts:${PLUGIN_ROOT}" '
-                   'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/stop.py"')
-        result = run(self.plugin(command, guard=True), "--host", "both")
-        self.assertIn("0 erro(s), 0 aviso(s)", result.stdout)
+        for sep in (":", ","):
+            with self.subTest(sep=sep):
+                command = (f'X="${{CLAUDE_PLUGIN_ROOT}}/scripts{sep}${{PLUGIN_ROOT}}" '
+                           'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/stop.py"')
+                result = run(self.plugin(command, guard=True), "--host", "both")
+                self.assertIn("0 erro(s), 0 aviso(s)", result.stdout)
 
-    @unittest.skipIf(os.geteuid() == 0, "root lê arquivo 000")
+    @unittest.skipIf(os.name == "nt" or os.geteuid() == 0, "chmod 000 não barra a leitura")
     def test_unreadable_stop_script_is_a_warning(self):
         path = self.plugin('python3 "${CLAUDE_PLUGIN_ROOT}/scripts/stop.py"')
         script = self.dir / "p" / "scripts" / "stop.py"
         script.chmod(0)
-        self.assertIn("não li stop.py", run(path, "--host", "codex").stdout)
+        result = run(path, "--host", "codex")
+        self.assertEqual(result.returncode, 0, result.stdout)
+        avisos = [line for line in result.stdout.splitlines() if "não li stop.py" in line]
+        self.assertEqual(len(avisos), 1, result.stdout)
+        self.assertTrue(avisos[0].startswith("AVISO"), avisos[0])
 
     def test_non_object_json_is_an_error(self):
         for data in (None, 3, []):
