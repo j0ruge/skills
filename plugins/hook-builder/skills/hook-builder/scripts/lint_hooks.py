@@ -17,7 +17,8 @@ Com --host codex (ou both, para um hooks.json que serve aos dois), também confe
 Codex: evento entre os do config (CODEX_EVENTS); `args` (o Codex não tem e ignora a chave, então o
 command roda sem os argumentos); `if` (ignorado: o hook roda em toda chamada do matcher); type
 `http` (não existe lá); `prompt`/`agent` (lidos e pulados); timeout inteiro; chave de topo além de
-`description` e `hooks` (o arquivo é recusado); `${CLAUDE_PROJECT_DIR}` (o Codex não define).
+`description` e `hooks` (o arquivo é recusado); `${CLAUDE_PROJECT_DIR}` e `CLAUDE_PLUGIN_OPTION_*`
+(o Codex não define); `once` (ignorado).
 
 Fonte: https://code.claude.com/docs/en/hooks (lido em 2026-09-30, Claude Code 2.1.283) e, para o
 Codex, codex-rs/config/src/hook_config.rs e hooks/src/engine/discovery.rs na tag rust-v0.164.0.
@@ -99,20 +100,27 @@ def unquoted_placeholder(cmd):
 
 
 def script_paths(handler, plugin_root):
-    parts = [handler.get("command", "")] + [a for a in handler.get("args", []) if isinstance(a, str)]
-    found = []
+    """Scripts do plugin citados no handler: (os achados no disco, os citados que não achei)."""
+    command, args = handler.get("command"), handler.get("args")
+    parts = [command] if isinstance(command, str) else []
+    if isinstance(args, list):
+        parts += [a for a in args if isinstance(a, str)]
+    found, missing = [], []
     for part in parts:
         for token in re.findall(r"[^\s\"']+", part):
             for root in ROOT_PLACEHOLDERS:
-                if root in token and plugin_root:
-                    path = token.replace(root, plugin_root)
-                    if os.path.isfile(path):
+                if root in token:
+                    path = token.replace(root, plugin_root) if plugin_root else ""
+                    if path and os.path.isfile(path):
                         found.append(path)
-    return found
+                    else:
+                        missing.append(token)
+    return found, missing
 
 
 def check_placeholder(rep, where, handler, exec_ok):
-    if "args" not in handler and unquoted_placeholder(handler.get("command", "")):
+    command = handler.get("command")
+    if "args" not in handler and isinstance(command, str) and unquoted_placeholder(command):
         hint = "use aspas duplas ou a forma exec (args)" if exec_ok else "ponha aspas duplas"
         rep.warn(where, f"placeholder sem aspas na forma shell; {hint}")
 
@@ -120,13 +128,18 @@ def check_placeholder(rep, where, handler, exec_ok):
 def check_stop_guard(rep, where, event, handler, plugin_root):
     if event not in STOP_EVENTS:
         return
-    for path in script_paths(handler, plugin_root):
+    found, missing = script_paths(handler, plugin_root)
+    for path in found:
         try:
-            text = open(path, encoding="utf-8", errors="ignore").read()
+            with open(path, encoding="utf-8", errors="ignore") as fh:
+                text = fh.read()
         except OSError:
             continue
         if "stop_hook_active" not in text:
             rep.warn(where, f"{os.path.basename(path)} não menciona stop_hook_active (risco de loop)")
+    for token in missing:
+        rep.warn(where, f"não achei {token} para conferir a guarda de stop_hook_active "
+                 "(rode o lint no hooks/hooks.json do plugin)")
 
 
 def each_group(rep, event, groups):
@@ -168,9 +181,15 @@ def lint_handler(rep, where, event, handler, plugin_root, exec_ok=True):
         rep.err(where, "timeout precisa ser número (segundos)")
     if htype != "command":
         return
-    check_placeholder(rep, where, handler, exec_ok)
+    command = handler.get("command")
+    if command and not isinstance(command, str):
+        rep.err(where, "command precisa ser texto")
     if "args" in handler and not isinstance(handler["args"], list):
         rep.err(where, "args precisa ser uma lista")
+        return
+    if not isinstance(command, str):
+        return
+    check_placeholder(rep, where, handler, exec_ok)
     check_stop_guard(rep, where, event, handler, plugin_root)
 
 
@@ -194,15 +213,26 @@ def lint_codex_handler(rep, where, event, handler, plugin_root):
         rep.err(where, "no Codex, timeout é inteiro em segundos")
     if "if" in handler:
         rep.warn(where, "o Codex ignora 'if': o hook roda em toda chamada que casar o matcher")
+    if "once" in handler:
+        rep.warn(where, "o Codex ignora 'once'")
     if htype != "command":
         return
     if "args" in handler:
         rep.err(where, "o Codex não tem 'args' e ignora a chave: o command roda sem os argumentos; "
                 "use a forma shell com o placeholder entre aspas, que serve aos dois hosts")
-    if "${CLAUDE_PROJECT_DIR}" in handler.get("command", ""):
+    # O que vale nos dois hosts vai sem o prefixo, para o --host both imprimir uma vez só.
+    neutral = where[len("codex:"):]
+    command = handler.get("command")
+    if not command:
+        rep.err(neutral, "type 'command' exige o campo 'command'")
+        return
+    if not isinstance(command, str):
+        rep.err(neutral, "command precisa ser texto")
+        return
+    if "${CLAUDE_PROJECT_DIR}" in command:
         rep.warn(where, "o Codex não define CLAUDE_PROJECT_DIR; lá o comando roda no cwd da sessão")
-    # As duas checagens valem nos dois hosts: sem o prefixo, o --host both imprime uma vez.
-    neutral = where.removeprefix("codex:")
+    if "CLAUDE_PLUGIN_OPTION_" in command:
+        rep.warn(where, "o Codex não define CLAUDE_PLUGIN_OPTION_*; lá a variável chega vazia")
     check_placeholder(rep, neutral, handler, exec_ok=False)
     # SubagentStop também traz stop_hook_active no Codex
     # (hooks/schema/generated/subagent-stop.command.input.schema.json, rust-v0.164.0).
@@ -250,7 +280,8 @@ def lint_hooks(rep, hooks, plugin_root, exec_ok=True):
 
 def lint_plugin_json(rep, path):
     try:
-        manifest = json.load(open(path, encoding="utf-8"))
+        with open(path, encoding="utf-8") as fh:
+            manifest = json.load(fh)
     except (OSError, ValueError) as exc:
         rep.err(path, f"não li o plugin.json: {exc}")
         return
@@ -264,11 +295,11 @@ def lint_plugin_json(rep, path):
 
 
 def option(argv, name, default):
-    """Valor depois de `name`; "" quando a opção veio sem valor (uso inválido)."""
+    """Valor depois de `name`; None quando a opção veio sem valor (uso inválido)."""
     if name not in argv:
         return default
     i = argv.index(name) + 1
-    return argv[i] if i < len(argv) and not argv[i].startswith("--") else ""
+    return argv[i] if i < len(argv) and not argv[i].startswith("--") else None
 
 
 def main(argv):
@@ -276,16 +307,17 @@ def main(argv):
         print(__doc__, file=sys.stderr)
         return 2
     path = argv[0]
-    plugin_json = option(argv, "--plugin-json", None)
+    plugin_json = option(argv, "--plugin-json", "")
     host = option(argv, "--host", "claude")
-    if "" in (plugin_json, host):
+    if None in (plugin_json, host):
         print("ERRO   --plugin-json e --host pedem um valor", file=sys.stderr)
         return 2
     if host not in {"claude", "codex", "both"}:
         print("ERRO   --host aceita claude, codex ou both", file=sys.stderr)
         return 2
     try:
-        data = json.load(open(path, encoding="utf-8"))
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
     except (OSError, ValueError) as exc:
         print(f"ERRO   {path}: JSON inválido ou ilegível: {exc}")
         return 1

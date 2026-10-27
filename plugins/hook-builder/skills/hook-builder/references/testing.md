@@ -99,7 +99,7 @@ O `claude plugin validate` pega o formato do plugin.
 6. **No Codex**, se o hook também roda lá:
    - capture o payload pela receita "Capturar e testar no Codex" da reference do Codex (a que o
      SKILL.md roteia para hook que também roda lá): `capture_payload.py --print-config EVENTO DIR
-     --host codex > "$CODEX_HOME/hooks.json"` num `CODEX_HOME` descartável, e
+     --host codex > "$CODEX_HOME/hooks.json"` num `CODEX_HOME` descartável, com a credencial linkada, e
      `codex exec --dangerously-bypass-hook-trust … < /dev/null`. A receita traz o comando inteiro
      e o motivo de cada parte: `CODEX_HOME` fora do `/tmp`, `/dev/null` e flag de trust;
    - depois, numa sessão normal, confira em `/hooks` que o hook aparece e está confiável. Sem

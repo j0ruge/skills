@@ -38,20 +38,46 @@ class LintTest(unittest.TestCase):
         return self.config({"hooks": {event: [{"hooks": [{"type": "command", "command": command}]}]}},
                            "p/hooks/hooks.json")
 
-    def test_codex_malformed_structure_is_an_error(self):
+    def test_malformed_structure_is_an_error_in_every_host(self):
+        stop = lambda handler: {"hooks": {"Stop": [{"hooks": [handler]}]}}  # noqa: E731
         cases = {
-            "hooks lista": {"hooks": []},
-            "evento objeto": {"hooks": {"Stop": {}}},
-            "grupo texto": {"hooks": {"Stop": ["x"]}},
-            "grupo sem hooks": {"hooks": {"Stop": [{"matcher": ""}]}},
-            "hooks vazio": {"hooks": {"Stop": [{"hooks": []}]}},
+            "hooks lista": ({"hooks": []}, "precisa ser um objeto"),
+            "evento objeto": ({"hooks": {"Stop": {}}}, "lista de grupos"),
+            "grupo texto": ({"hooks": {"Stop": ["x"]}}, "grupo precisa ser um objeto"),
+            "grupo sem hooks": ({"hooks": {"Stop": [{"matcher": ""}]}}, "falta a lista 'hooks'"),
+            "hooks vazio": ({"hooks": {"Stop": [{"hooks": []}]}}, "falta a lista 'hooks'"),
+            "command número": (stop({"type": "command", "command": 123}), "command precisa ser texto"),
+            "sem command": (stop({"type": "command"}), "exige o campo 'command'"),
         }
-        for name, data in cases.items():
+        for name, (data, fragment) in cases.items():
             for host in ("codex", "claude", "both"):
                 with self.subTest(name, host=host):
                     result = run(self.config(data), "--host", host)
-                    self.assertEqual(result.returncode, 1, result.stdout)
-                    self.assertIn("ERRO", result.stdout)
+                    self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                    self.assertIn(fragment, result.stdout)
+                    self.assertNotIn("Traceback", result.stderr)
+
+    def test_args_not_a_list_does_not_crash(self):
+        data = {"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "x", "args": 5}]}]}}
+        for host in ("claude", "codex"):
+            with self.subTest(host=host):
+                result = run(self.config(data), "--host", host)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+
+    def test_unresolved_stop_script_is_a_warning(self):
+        data = {"hooks": {"Stop": [{"hooks": [
+            {"type": "command", "command": 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/nao-existe.py"'}]}]}}
+        for path in (self.config(data, "solto.json"), self.config(data, "p/hooks/hooks.json")):
+            with self.subTest(path=path.name):
+                self.assertIn("não achei", run(path, "--host", "both").stdout)
+
+    def test_codex_warns_on_claude_only_fields(self):
+        data = {"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [
+            {"type": "command", "command": 'x "$CLAUDE_PLUGIN_OPTION_TOKEN"', "once": True}]}]}}
+        result = run(self.config(data), "--host", "codex")
+        self.assertIn("'once'", result.stdout)
+        self.assertIn("CLAUDE_PLUGIN_OPTION_", result.stdout)
 
     def test_codex_valid_shell_form_passes(self):
         command = 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/stop.py"'

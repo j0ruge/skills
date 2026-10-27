@@ -1,4 +1,5 @@
 """O probe: o que ele grava, com que permissão, o que esconde e como recusa uso inválido."""
+import io
 import json
 import os
 import stat
@@ -7,6 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 CAPTURE = HERE.parent / "scripts" / "capture_payload.py"
@@ -45,10 +47,12 @@ class CaptureTest(unittest.TestCase):
         names = ["CODEX_AUTH_JSON", "PLUGIN_DB_PASSWD", "CLAUDE_X_CREDENTIALS", "CODEX_COOKIE",
                  "PLUGIN_PRIVATE_PEM", "CLAUDE_API_KEY", "CODEX_PASSPHRASE"]
         self.capture(json.dumps({"hook_event_name": "Stop"}),
-                     {**{name: canary for name in names}, "CODEX_HOME": "/visivel"})
+                     {**{name: canary for name in names}, "CODEX_HOME": "/visivel",
+                      "CLAUDE_CODE_BYPASS_X": "1"})
         env_text = next(self.out.glob("env-*")).read_text()
         self.assertNotIn(canary, env_text)
         self.assertIn("CODEX_HOME=/visivel", env_text)
+        self.assertIn("CLAUDE_CODE_BYPASS_X=1", env_text)
 
     def test_event_name_cannot_leave_the_directory(self):
         self.capture(json.dumps({"hook_event_name": "../../fora"}))
@@ -66,6 +70,33 @@ class CaptureTest(unittest.TestCase):
         for args in (["--host"], ["--matcher"], ["--matcher", "--host", "codex"]):
             with self.subTest(args=args):
                 self.assertEqual(run("--print-config", "Stop", self.out, *args).returncode, 2)
+
+    def test_empty_matcher_is_still_accepted(self):
+        result = run("--print-config", "Stop", self.out, "--matcher", "")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("matcher", json.loads(result.stdout)["hooks"]["Stop"][0])
+
+    def test_planted_symlink_is_not_followed(self):
+        self.out.mkdir()
+        target = Path(self.tmp.name) / "alvo"
+        target.write_text("intacto")
+        real_open = os.open
+
+        def plant_then_open(path, flags, mode=0o777):
+            if str(path).startswith(str(self.out)) and not os.path.lexists(path):
+                os.symlink(target, path)
+            return real_open(path, flags, mode)
+
+        sys.path.insert(0, str(CAPTURE.parent))
+        import capture_payload
+        stdin, sys.stdin = sys.stdin, io.StringIO("{}")
+        try:
+            with mock.patch.object(capture_payload.os, "open", plant_then_open):
+                with self.assertRaises(FileExistsError):
+                    capture_payload.capture(str(self.out))
+        finally:
+            sys.stdin = stdin
+        self.assertEqual(target.read_text(), "intacto")
 
     def test_codex_config_is_shell_form(self):
         config = json.loads(run("--print-config", "Stop", self.out, "--host", "codex").stdout)

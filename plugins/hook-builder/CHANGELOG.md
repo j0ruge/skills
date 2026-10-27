@@ -32,16 +32,23 @@ gravaria um segredo em disco se a captura fosse feita contra um `.env` real.
   - A forma (`hooks` objeto, eventos com lista de grupos, grupo com `hooks`) é conferida igual nos
     dois hosts.
   - A guarda de `stop_hook_active` vale em `Stop` e `SubagentStop`, que no Codex também traz o
-    campo, e com `${CLAUDE_PLUGIN_ROOT}` ou `${PLUGIN_ROOT}`.
+    campo, e com `${CLAUDE_PLUGIN_ROOT}` ou `${PLUGIN_ROOT}`. Um script citado que o lint não
+    acha vira aviso, em vez de sumir da conferência.
+  - `command` que não é texto e `args` que não é lista dão erro, sem traceback.
+  - No Codex, `once` e `CLAUDE_PLUGIN_OPTION_*` também dão aviso.
   - Com `--host both`, nenhum aviso sai duas vezes.
 - **`capture_payload.py --host codex`:** imprime um `hooks.json` do Codex na forma shell POSIX. O
   env capturado agora inclui `CODEX*` e `PLUGIN_*`.
-  - A lista do `<redacted>` ganhou `PASS`, `AUTH`, `CRED`, `COOKIE` e `PRIVATE`.
-  - O diretório sai 0700 e os arquivos 0600, porque o stdin cru traz conteúdo de arquivo.
+  - A lista do `<redacted>` ganhou `PASSW`, `PASSPHRASE`, `AUTH`, `CRED`, `COOKIE` e `PRIVATE`.
+    Não ganhou `PASS`, que esconderia um `BYPASS`.
+  - Os arquivos saem 0600, porque o stdin cru traz conteúdo de arquivo. O DIR que a captura cria
+    sai 0700, e um DIR que já existe fica como está. A escrita usa `O_EXCL`, então um symlink
+    plantado no nome faz a captura falhar, em vez de ser seguido.
   - O nome do evento é saneado antes de virar nome de arquivo.
   - Uma falha da captura vai para o stderr, em vez de sumir.
-- **`tests/`:** 14 testes (`python3 -m unittest discover -s tests`, na pasta da skill) para os dois
-  scripts. Contra o código sem os consertos acima, 16 subtestes ficam vermelhos.
+- **`tests/`:** 19 testes (`python3 -m unittest discover -s tests`, na pasta da skill) para os dois
+  scripts. Contra os scripts do `b0d5c6c`, o primeiro commit da 0.2.0, 26 deles ou dos seus
+  subtestes ficam vermelhos.
 - **Fixtures capturadas e normalizadas:**
   - no Codex 0.164.0, `codex-posttooluse-apply_patch.json`, `codex-posttooluse-bash.json`,
     `codex-stop.json` e `codex-sessionstart.json`;
@@ -64,15 +71,16 @@ gravaria um segredo em disco se a captura fosse feita contra um `.env` real.
   própria e marcada como desta skill, vem a exceção que aponta o §9.
 - **Opção sem valor nos dois scripts** (`--host`, `--plugin-json`, `--matcher`): agora é uso
   inválido, com rc 2. Antes, `lint_hooks.py x --host` caía em `claude` sem avisar, e `--matcher` no
-  fim dava `IndexError`.
+  fim dava `IndexError`. `--matcher ""` continua valendo como "sem matcher".
 - **Gotchas:** +5 linhas: trust no Codex, `args` ignorado, `apply_patch`, payload com conteúdo e
   `MultiEdit`, que não existe na 2.1.309. A linha do trust limita o
   `--dangerously-bypass-hook-trust` a captura e E2E num `CODEX_HOME` descartável.
 
 ### Revisão antes da publicação
 
-O `/codereview` da faixa, antes do push, achou 4 MEDIUM e 15 LOW. Os consertos entraram nesta
-mesma versão, que ainda não tinha saído:
+O `/codereview` da faixa, antes do push, achou 4 MEDIUM e 15 LOW na primeira rodada e 4 MEDIUM e
+5 LOW na segunda, que revisou só o conserto. Os consertos entraram nesta mesma versão, que ainda
+não tinha saído:
 
 - **O `lint_hooks.py --host codex` aprovava um `hooks.json` malformado.** `{"hooks": []}` dava
   rc 0, e o caminho Claude dava rc 1.
@@ -81,6 +89,8 @@ mesma versão, que ainda não tinha saído:
   checkout principal parecia worktree. Agora a receita usa `--path-format=absolute`.
 - **O gotcha mandava usar o bypass de trust "na automação", sem escopo.**
 - **Os scripts não tinham teste.** Os demais itens são ponteiros e fontes nas references.
+- **Na segunda rodada, o lint dava traceback** com `"args": 5` ou `"command": 123`, e saía com o
+  mesmo rc 1 de "achou erro".
 
 ## [0.1.2] — 2026-10-07
 

@@ -9,11 +9,12 @@ Dois modos:
       $CODEX_HOME/hooks.json. No Windows, o Codex usa `commandWindows`, que este modo não gera.
   --capture DIR
       Modo hook: lê o stdin, grava DIR/stdin-<evento>-<n>.json e DIR/env-<evento>-<n>.txt
-      (diretório 0700, arquivos 0600). Sai sempre com exit 0 e stdout vazio, para não interferir
-      na sessão; uma falha vai para o stderr, que aparece no debug log do host.
+      (arquivos 0600; o DIR que ele cria sai 0700, e um DIR que já existe fica como está).
+      Sai sempre com exit 0 e stdout vazio, para não interferir na sessão; uma falha vai para o
+      stderr, que aparece no debug log do host.
 
 Grava as variáveis CLAUDE*, CODEX* e PLUGIN_*. Valores de variáveis com TOKEN, SECRET, KEY,
-PASS, AUTH, CRED, COOKIE, PRIVATE ou SOCKET no nome são gravados como <redacted>. Num Codex
+PASSW, PASSPHRASE, AUTH, CRED, COOKIE, PRIVATE ou SOCKET no nome são gravados como <redacted>. Num Codex
 lançado de dentro do Claude Code, as CLAUDE* vêm herdadas do processo pai: não leia como se o
 Codex as definisse.
 
@@ -29,7 +30,7 @@ import shlex
 import sys
 import time
 
-SENSITIVE = re.compile(r"TOKEN|SECRET|KEY|PASS|AUTH|CRED|COOKIE|PRIVATE|SOCKET", re.I)
+SENSITIVE = re.compile(r"TOKEN|SECRET|KEY|PASSW|PASSPHRASE|AUTH|CRED|COOKIE|PRIVATE|SOCKET", re.I)
 
 
 def print_config(events, out_dir, matcher=None, host="claude"):
@@ -54,7 +55,8 @@ def print_config(events, out_dir, matcher=None, host="claude"):
 
 def write_private(path, text):
     """O stdin cru pode trazer o conteúdo de um arquivo editado: só o dono lê."""
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    # O_EXCL: o nome é único por chamada, e um symlink plantado nele faz a escrita falhar.
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as fh:
         fh.write(text)
 
@@ -79,11 +81,11 @@ def capture(out_dir):
 
 
 def option(argv, name, default):
-    """Valor depois de `name`; "" quando a opção veio sem valor (uso inválido)."""
+    """Valor depois de `name`; None quando a opção veio sem valor (uso inválido)."""
     if name not in argv:
         return default
     i = argv.index(name) + 1
-    return argv[i] if i < len(argv) and not argv[i].startswith("--") else ""
+    return argv[i] if i < len(argv) and not argv[i].startswith("--") else None
 
 
 def main(argv):
@@ -91,9 +93,9 @@ def main(argv):
         print(__doc__)
         return 0 if argv else 2
     if len(argv) >= 3 and argv[0] == "--print-config":
-        matcher = option(argv, "--matcher", None)
+        matcher = option(argv, "--matcher", "")
         host = option(argv, "--host", "claude")
-        if matcher == "":
+        if matcher is None:
             print("--matcher pede um valor", file=sys.stderr)
             return 2
         if host not in ("claude", "codex"):
