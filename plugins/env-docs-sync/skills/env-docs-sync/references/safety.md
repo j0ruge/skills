@@ -35,7 +35,11 @@ só a operação aceita entrou.
 ## Mutantes
 
 Uma suíte que passa com o guarda quebrado não prova o guarda. Cada mutante abaixo, aplicado numa
-cópia do script, deixou a suíte vermelha (2026-10-27):
+cópia do script, deixou a suíte vermelha (2026-10-27). Os de CI/CD, seções derivadas e versão do
+Codex estão em `tests/mutantes.py`, fora do `discover`: `python3 -B tests/mutantes.py [M1 …]` sai 0
+quando todos morrem e aponta o mutante cujo trecho sumiu do script ou que não compila (este derruba o
+import de todo módulo e deixaria a suíte vermelha sem teste nenhum). Os de hook, Sync remoto e destino
+kb foram rodados à mão nos incrementos anteriores e não estão nele.
 
 - **hook:** filtro de worktree desligado, máquina sempre aceita, `stop_hook_active` ignorado,
   filtro de edição aceitando qualquer arquivo, estado gravado sem o destino aceitar, `status`

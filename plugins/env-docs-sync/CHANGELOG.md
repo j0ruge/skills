@@ -157,3 +157,8 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
   (com a fixture sabotada, 0/9 e rc 1). O 0.165.0 entrou em `CODEX_MEDIDOS`, e o `install --codex`
   deixa de avisar nele. Teste novo e 4 mutantes vermelhos. A description ficou com 348 caracteres,
   igual no `SKILL.md`, no `plugin.json` e no catálogo.
+- **`tests/mutantes.py`**, rodado à mão como o oráculo: os 31 mutantes da CI/CD, das seções derivadas
+  e da versão do Codex, cada um numa cópia do plugin inteiro. Sai 1 com o mutante vivo, com o
+  trecho que sumiu do script ou com o mutante que não compila; um mutante que não muda nada sai
+  `VIVO`. O M22 (status sem a linha das derivadas) não compilava, e a suíte ficava vermelha só pelo
+  import (16 erros): foi refeito e morre em 3 testes.
