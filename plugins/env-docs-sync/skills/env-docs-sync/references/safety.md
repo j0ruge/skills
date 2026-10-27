@@ -56,4 +56,6 @@ cópia do script, deixou a suíte vermelha (2026-10-27):
   `replace` sem conferir antes nem reler depois, a quebra antes da CI/CD somando a cada volta,
   workflow editado não vigiado e `.yml` de qualquer pasta vigiado, derivadas depois de um bloco que
   falhou, estado com `derived` qualquer, `status` sem a linha das derivadas e `migrate` sem elas no
-  estado.
+  estado;
+- **versão do Codex** (4 mutantes, todos vermelhos): nunca avisar, conferir só a primeira versão
+  medida, aviso que cita só a primeira e a lista sem o 0.165.0.

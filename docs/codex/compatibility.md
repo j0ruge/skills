@@ -1,9 +1,9 @@
 # Compatibilidade Codex
 
-Inventário dos 32 plugins: 31 auditados em 2026-10-22; `windows-games-linux` entrou em 2026-10-23 sem avaliação Codex (`not_checked`). Apenas `supported` entra no catálogo.
+Inventário dos 33 plugins: 31 auditados em 2026-10-22; `windows-games-linux` entrou em 2026-10-23 sem avaliação Codex (`not_checked`), e `env-docs-sync` entrou em 2026-10-27, avaliado na entrada. Apenas `supported` entra no catálogo.
 Os smokes cobrem instalação, descoberta, leitura no cache e entrada de cada workflow;
 operações integrais de domínio e dependências autenticadas não fazem parte do smoke.
-Ubuntu 24.04/CLI 0.163.0 é a cobertura medida (o `hook-builder` 0.2.0, em 2026-10-27, na 0.164.0); desktop, macOS e Windows permanecem
+Ubuntu 24.04/CLI 0.163.0 é a cobertura medida (o `hook-builder` 0.2.0, em 2026-10-27, na 0.164.0, e o `env-docs-sync` 0.1.0, no mesmo dia, na 0.165.0); desktop, macOS e Windows permanecem
 `not_checked`. Isso inclui a execução Windows de WPF/limpeza/WSL, mesmo quando o pacote carrega.
 Versão mínima ainda não estabelecida. Veja [verification.md](verification.md).
 
@@ -20,6 +20,7 @@ Versão mínima ainda não estabelecida. Veja [verification.md](verification.md)
 | deploy | `supported` | `skills/staging/SKILL.md` | 5 arquivos de scripts/referências/templates/assets | Git, gh ou acesso ao host, pipeline do projeto. Skill publicada como deploy:staging; smoke não promove ambientes. |
 | dev-script | `supported` | `skills/dev-script/SKILL.md` | 9 arquivos de scripts/referências/templates/assets | Bash/PowerShell e ferramentas da stack do consumidor. Gera scripts para os sistemas do projeto; smoke não executa os scripts gerados. |
 | dotnet-wpf | `partial` | `skills/dotnet-desktop-setup/SKILL.md`<br>`skills/dotnet-wpf-design/SKILL.md`<br>`skills/dotnet-wpf-e2e-testing/SKILL.md`<br>`skills/dotnet-wpf-mvvm/SKILL.md` | 28 arquivos de scripts/referências/templates/assets | Windows, .NET, ferramentas WPF/FlaUI. Agrupamento preservado: setup exige regras, hooks e configuração Claude; três skills isoladas não autorizam publicar o pacote inteiro. |
+| env-docs-sync | `supported` | `skills/env-docs-sync/SKILL.md` | 7 arquivos de scripts/referências/templates/assets | Python 3.11+ (stdlib) e git; ssh para o Sync remoto e gh opcional para a seção CI/CD; o destino `kb` usa a CLI e as credenciais do próprio projeto. Os hooks (PostToolUse, Stop, SessionStart) só rodam no Codex depois que `install --codex --apply` grava o trust no `config.toml`, e cada update do pacote pede o comando de novo. Smoke de 2026-10-27 no codex-cli 0.165.0, num `CODEX_HOME` descartável: instalação, descoberta `env-docs-sync:env-docs-sync`, leitura de `references/hosts.md` pelo cache, os 4 hooks `trusted` no `hooks/list` e disparo pela cópia instalada (SessionStart, `apply_patch`, Stop) num sandbox apontado para uma página sintética, sem `--dangerously-bypass-hook-trust`. A sessão interativa (TUI) não foi medida. |
 | executar-task | `supported` | `commands/executar-task.md` | 0 arquivos de scripts/referências/templates/assets | Projeto com tarefas e ferramentas da stack. Testes e convenções dependem do projeto consumidor. |
 | git-housekeeping | `supported` | `skills/git-housekeeping/SKILL.md` | 4 arquivos de scripts/referências/templates/assets | Python 3, Git; gh opcional para comprovar squash. Planejamento/análise são separados da aplicação autorizada. |
 | hook-builder | `supported` | `skills/hook-builder/SKILL.md` | 29 arquivos de scripts/referências/templates/assets | Python 3 (stdlib); Claude Code e/ou Codex CLI, conforme o host do hook. Contrato Codex conferido no código da tag rust-v0.164.0 e em probe com `codex exec` (`references/codex.md`); smoke de 2026-10-27 no codex-cli 0.164.0: instalação, descoberta `hook-builder:hook-builder`, leitura de `references/codex.md` pelo cache e fixtures Codex no `hook_test.py`. |
@@ -79,7 +80,7 @@ o disparo; a leitura da configuração confirma qual implementação os produziu
 Já `plugins/retrofit-watch/hooks/hooks.json` usa `${CLAUDE_PLUGIN_ROOT}` e o
 motor `retrofit_watch.py`; o plugin 0.3.3 declara apenas `claude-code`. A camada
 `codex_retrofit_watch.py` e seu template `assets/hooks.json` existem na instalação
-local, sem fazer parte desse pacote. O catálogo Codex tem 26 plugins desde a entrada do `hook-builder` 0.2.0 (2026-10-27), e o watcher continua fora:
+local, sem fazer parte desse pacote. O catálogo Codex tem 27 plugins desde a entrada do `env-docs-sync` 0.1.0 (2026-10-27), e o watcher continua fora:
 publicar o watcher nele exige integrar essa camada e provar instalação/confiança
 e execução pelo pacote instalado. Esta correção documental não certifica desktop,
 macOS, Windows ou equivalência completa entre os dois watchers.

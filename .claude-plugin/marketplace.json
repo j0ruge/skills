@@ -1158,6 +1158,27 @@
         "claude-code",
         "cursor"
       ]
+    },
+    {
+      "name": "env-docs-sync",
+      "source": "./plugins/env-docs-sync",
+      "version": "0.1.0",
+      "description": "Mirrors every .env* file of a repo into a restricted environments page: one section per environment, one block per file, rewritten only when its hash changes, plus a CI/CD section with secret names. Values never reach logs or local state. Triggers — env docs, .env sync, environments page, env-docs-sync, .env-docs.json, environment variables docs.",
+      "category": "development",
+      "keywords": [
+        "env",
+        "dotenv",
+        "environments",
+        "documentation",
+        "bookstack",
+        "secrets",
+        "hooks",
+        "codex"
+      ],
+      "platforms": [
+        "claude-code",
+        "codex"
+      ]
     }
   ]
 }

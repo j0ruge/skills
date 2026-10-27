@@ -1,10 +1,10 @@
 # Changelog — env-docs-sync
 
-## [0.1.0] — em construção
+## [0.1.0] — 2026-10-27
 
-Em construção, por incrementos: o núcleo puro com testes offline, a entrada do hook nos dois hosts, o
-Sync remoto, o destino kb, a instalação no Codex, o `init` e a seção CI/CD com as Seções derivadas.
-O plugin ainda não está no catálogo da loja.
+Primeira versão publicada, feita por incrementos: o núcleo puro com testes offline, a entrada do hook
+nos dois hosts, o Sync remoto, o destino kb, a instalação no Codex, o `init` e a seção CI/CD com as
+Seções derivadas. Entra no catálogo da loja para o Claude Code e o Codex CLI.
 
 ### Por quê
 
@@ -122,7 +122,8 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
   - sem `--apply`, o diff sem contexto (rc 4), que só mostra linha do trust; com `--apply`, cópia
     `.bak` 0600, edição só das linhas do trust, releitura do TOML e gravação atômica com o mesmo
     modo, inclusive num `config.toml` que é symlink. Idempotente;
-  - aviso quando o `codex --version` não é o 0.164.0, a versão medida.
+  - aviso quando o `codex --version` não está em `CODEX_MEDIDOS`, as versões em que o hash bateu
+    com o próprio Codex (0.164.0 e 0.165.0).
 - **`init`:** a `.env-docs.json` inicial pela Varredura e pelo hostname, com `null` no destino, na
   página, nos papéis, no servidor e no domínio: o `validate` lista cada um. Nunca sobrescreve.
 - **Disparo ao vivo (CA4)**, num sandbox novo apontado para a página sintética do KB de staging, sem
@@ -152,3 +153,7 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
   iguais; com a fixture sabotada, rc 1.
 - **Testes:** 73 novos (`test_ci.py`, `test_derivadas.py` e os de config e `init`); 27 mutantes do
   leitor de workflow, do gh e das derivadas deixaram a suíte vermelha.
+- **Codex 0.165.0**, que o próprio Codex instalou no dia da publicação: o oráculo deu 9/9 iguais
+  (com a fixture sabotada, 0/9 e rc 1). O 0.165.0 entrou em `CODEX_MEDIDOS`, e o `install --codex`
+  deixa de avisar nele. Teste novo e 4 mutantes vermelhos. A description ficou com 348 caracteres,
+  igual no `SKILL.md`, no `plugin.json` e no catálogo.

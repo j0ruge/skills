@@ -141,6 +141,20 @@
       ]
     },
     {
+      "plugin": "env-docs-sync",
+      "version": "0.1.0",
+      "skills": [
+        "env-docs-sync:env-docs-sync"
+      ],
+      "paths": [
+        "/home/joruge/.wt/codex-smoke-eds/home/plugins/cache/chewiesoft-marketplace/env-docs-sync/0.1.0/skills/env-docs-sync/references/hosts.md"
+      ],
+      "read_commands": [
+        "/usr/bin/zsh -lc 'head -n 3 /home/joruge/.wt/codex-smoke-eds/home/plugins/cache/chewiesoft-marketplace/env-docs-sync/0.1.0/skills/env-docs-sync/references/hosts.md'"
+      ],
+      "conclusion": "NAMES: env-docs-sync:env-docs-sync\nHEADING: # Hosts: o que o hook recebe e onde o estado mora\n(codex-cli 0.165.0, 2026-10-27, CODEX_HOME descartável instalado do catálogo local do repositório; install --codex --apply: 4 hooks trusted no hooks/list; codex exec com apply_patch num sandbox apontado para uma página sintética, sem --dangerously-bypass-hook-trust: SessionStart, PostToolUse e Stop Completed, página da revisão 13 para a 15, status 3 ok e rc 0)"
+    },
+    {
       "plugin": "executar-task",
       "version": "0.1.0",
       "skills": [

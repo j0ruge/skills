@@ -353,12 +353,21 @@ class InstallCli(unittest.TestCase):
     def test_avisa_quando_o_codex_nao_e_a_versao_medida(self):
         r = self.cli("--codex", rc=4)
         self.assertNotIn("aviso", r.stderr)
-        self.codex_falso("codex-cli 0.165.0")
+        self.codex_falso("codex-cli 0.166.0")
         r = self.cli("--codex", rc=4)
-        self.assertIn("0.165.0", r.stderr)
-        self.assertIn(eds.CODEX_MEDIDO, r.stderr)
+        self.assertIn("0.166.0", r.stderr)
+        for versao in eds.CODEX_MEDIDOS:
+            self.assertIn(versao, r.stderr)
         r = self.cli("--codex", rc=4, path="/nada")
         self.assertIn("aviso", r.stderr)
+
+    def test_versao_conferida_pelo_oraculo_nao_avisa(self):
+        # o 0.165.0 entrou pelo tests/oraculo_codex.py (9/9 iguais à fixture), não pela leitura do código
+        self.assertEqual(eds.CODEX_MEDIDOS, ("0.164.0", "0.165.0"))
+        for versao in eds.CODEX_MEDIDOS:
+            self.codex_falso(f"codex-cli {versao}")
+            r = self.cli("--codex", rc=4)
+            self.assertNotIn("aviso", r.stderr, versao)
 
 
 if __name__ == "__main__":

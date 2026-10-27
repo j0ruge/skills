@@ -99,6 +99,11 @@ página sintética do KB de staging), sem `--dangerously-bypass-hook-trust`:
 | `codex plugin remove` + `add`, mesmo conteúdo | continua `trusted`: o `remove` apaga o `[plugins."<id>"]`, mas não o `[hooks.state]` |
 | um byte mudado no pacote (update) e `add` | `modified`; cada hook sai `Failed` no `codex exec` e a página não muda, até o `install --codex` rodar de novo, que troca só os `trusted_content_hash` |
 
+**No 0.165.0** (2026-10-27, pela cópia instalada do catálogo local da loja, num `CODEX_HOME`
+descartável): `install --codex --apply` deixou os 4 hooks `trusted` no `hooks/list`; o `codex exec`
+com `apply_patch` no sandbox rodou SessionStart, PostToolUse e Stop (`Completed`), a página
+sintética ganhou 2 revisões e o `status` deu 3 `ok`; `remove` + `add` manteve os 4 `trusted`.
+
 O que o `codex exec` mostra: sem `--json`, o stderr tem `hook: <evento>` e `hook: <evento>
 Completed` (ou `Failed`), mas **não** o `systemMessage`; com `--json`, nenhum evento de hook. A prova
 de que o hook rodou é o estado na pasta de dados e a revisão da página.
@@ -115,7 +120,10 @@ python3 tests/oraculo_codex.py ~/.cache/env-docs-sync-oraculo   # pasta nova; rc
 ```
 
 No codex-cli 0.164.0 (2026-10-27): 9/9 iguais, rc 0; com a fixture sabotada num hash, rc 1 e o hook
-apontado. Se mudarem, releia o codex-rs da versão nova, ajuste o algoritmo e refaça a fixture.
+apontado. No 0.165.0 (2026-10-27, depois da troca automática do binário): 9/9 iguais, rc 0, e 0/9
+com rc 1 contra a fixture sabotada no `conteudo`. Versão que o oráculo confirma entra em
+`CODEX_MEDIDOS`, no script e no teste, e o `install --codex` deixa de avisar nela. Se mudarem,
+releia o codex-rs da versão nova, ajuste o algoritmo e refaça a fixture.
 
 ## 5. Receita de captura
 

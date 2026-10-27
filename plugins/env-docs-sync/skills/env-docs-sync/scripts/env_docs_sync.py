@@ -1999,8 +1999,9 @@ def status_dos_arquivos(atuais: Mapping[str, Mapping[str, bytes]], destino: Dest
 # references/hosts.md §4) e foram conferidos contra o `currentHash` do `hooks/list` do app-server
 # (tests/fixtures/codex-hooks-list-dourado.json).
 
-CODEX_MEDIDO = "0.164.0"
-"""Versão do codex-cli em que o algoritmo foi lido no código e conferido contra o próprio Codex."""
+CODEX_MEDIDOS = ("0.164.0", "0.165.0")
+"""Versões do codex-cli em que o hash bateu com o próprio Codex: o 0.164.0 pela leitura do código e
+pela fixture, e cada versão seguinte pelo tests/oraculo_codex.py."""
 
 NOME_DO_PLUGIN = "env-docs-sync"
 
@@ -2291,18 +2292,21 @@ def linhas_da_mudanca(antes: str, depois: str, nome: str) -> list[str]:
     return saida
 
 
+_MEDIDOS = " e no ".join(CODEX_MEDIDOS)
+
+
 def aviso_da_versao_do_codex(env: Mapping[str, str], executar=rodar_comando) -> str | None:
     """Aviso quando o codex do PATH não é a versão em que o hash foi medido (ou não roda)."""
     try:
         resultado = executar(["codex", "--version"], env=env, timeout=10)
     except ErroEnvDocs as erro:
-        return f"{erro}: a versão do Codex não foi conferida (o hash foi medido no codex-cli {CODEX_MEDIDO})"
+        return f"{erro}: a versão do Codex não foi conferida (o hash foi medido no codex-cli {_MEDIDOS})"
     partes = resultado.stdout.decode("utf-8", errors="replace").split()
     versao = partes[-1] if resultado.returncode == 0 and partes else None
     if versao is None:
-        return f"codex --version não respondeu: a versão não foi conferida (o hash foi medido no {CODEX_MEDIDO})"
-    if versao != CODEX_MEDIDO:
-        return (f"este é o codex-cli {versao}, e o hash foi medido no {CODEX_MEDIDO}: depois do --apply, confira "
+        return f"codex --version não respondeu: a versão não foi conferida (o hash foi medido no {_MEDIDOS})"
+    if versao not in CODEX_MEDIDOS:
+        return (f"este é o codex-cli {versao}, e o hash foi medido no {_MEDIDOS}: depois do --apply, confira "
                 "em /hooks que os hooks do env-docs-sync aparecem confiados")
     return None
 

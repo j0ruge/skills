@@ -1,8 +1,8 @@
 ---
 name: env-docs-sync
-description: "Mirrors every .env* file of a repo into a restricted environments documentation page: one section per environment, one block per file, rewritten only when its hash changes, plus a CI/CD section (workflows, runs-on, secret names via gh). Values never reach logs or local state, which keeps only hashes. Triggers — env docs, .env sync, environments page, env-docs-sync, .env-docs.json, environment variables docs."
+description: "Mirrors every .env* file of a repo into a restricted environments page: one section per environment, one block per file, rewritten only when its hash changes, plus a CI/CD section with secret names. Values never reach logs or local state. Triggers — env docs, .env sync, environments page, env-docs-sync, .env-docs.json, environment variables docs."
 license: MIT
-compatibility: Python 3.11+, só biblioteca padrão (testado com o 3.12.3), git 2.31+. Hooks medidos em 2026-10-27 no Claude Code 2.1.309 e no codex-cli 0.164.0 (payload real capturado nos dois; trust do Codex conferido contra o hooks/list do app-server). Sync remoto com o ssh do OpenSSH (medido no 9.6p1) e, para host com senha, o sshpass (medido no 1.09). CI/CD pelo GitHub CLI 2.85.0, opcional. Destino kb conferido contra o KB de staging (BookStack v26.09) em 2026-10-27.
+compatibility: Python 3.11+, só biblioteca padrão (testado com o 3.12.3 e o 3.11.14), git 2.31+. Hooks medidos em 2026-10-27 no Claude Code 2.1.309 e no codex-cli 0.164.0 (payload real capturado nos dois; trust do Codex conferido contra o hooks/list do app-server, também no 0.165.0). Sync remoto com o ssh do OpenSSH (medido no 9.6p1) e, para host com senha, o sshpass (medido no 1.09). CI/CD pelo GitHub CLI 2.85.0, opcional. Destino kb conferido contra o KB de staging (BookStack v26.09) em 2026-10-27.
 metadata:
   author: JorUge
   version: "0.1.0"
@@ -160,7 +160,7 @@ No Claude Code, o plugin instalado já roda. No Codex, cada hook de plugin preci
    0 sem tocar o arquivo.
 
 O algoritmo, as fontes no codex-rs, o oráculo `hooks/list` e o que foi medido estão em
-`references/hosts.md` §4. O aviso de versão sai quando o `codex --version` não é o `CODEX_MEDIDO`.
+`references/hosts.md` §4. O aviso de versão sai quando o `codex --version` não está em `CODEX_MEDIDOS`.
 
 ## Seções derivadas e CI/CD
 
@@ -256,7 +256,7 @@ seção CI/CD sai de `ci`; com `ci: null`, uma frase diz que não há CI/CD decl
 - **Update do plugin no Codex desliga o hook até o `install --codex` rodar de novo.** O trust fica
   preso ao conteúdo exato do pacote: um byte mudado, e cada hook sai `hook: … Failed` no
   `codex exec`, calado na página. Reinstalar o mesmo conteúdo e `codex plugin remove` + `add`
-  mantêm o trust, porque o `remove` não apaga o `[hooks.state]` (medido no 0.164.0).
+  mantêm o trust, porque o `remove` não apaga o `[hooks.state]` (medido no 0.164.0 e no 0.165.0).
 - **O `codex exec` não mostra o `systemMessage`.** Sem `--json`, o stderr só diz `hook: <evento>
   Completed`; com `--json`, nada. Confira pelo `status` e pela revisão da página.
 - **O `init` deixa `null`, não "a preencher".** Um texto passaria no `validate` e viraria aviso a
