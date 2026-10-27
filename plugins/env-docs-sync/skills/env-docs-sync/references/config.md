@@ -20,7 +20,7 @@ Regras gerais, conferidas por `validar_config`:
 |---|---|---|---|
 | `doc` | objeto | sim | o destino: backend, página e papéis (ver abaixo) |
 | `values` | `"full"` | sim | o conteúdo integral vai para a página restrita; é o único modo da 0.1.0 |
-| `remote_check_every` | texto `<n>m`, `<n>h` ou `<n>d` | só com ambiente ssh | intervalo mínimo entre dois Sync remotos disparados pela SessionStart (ex.: `"24h"`) |
+| `remote_check_every` | texto `<n>m`, `<n>h` ou `<n>d` | só com ambiente ssh | intervalo mínimo entre a última leitura boa de um ambiente ssh e a próxima que a SessionStart dispara (ex.: `"24h"`). O gatilho por host citado num comando do shell e o `sync --remote` não olham a janela |
 | `include` | lista não vazia de padrões | sim | os arquivos que entram na Varredura |
 | `exclude` | lista de padrões (pode ser vazia) | sim | somados ao piso `EXCLUDE_PADRAO` |
 | `environments` | objeto | sim | um objeto por Ambiente (ver abaixo) |
@@ -83,9 +83,9 @@ Os arquivos de development saem da Varredura. Não há `files`.
 | Campo | O que é |
 |---|---|
 | `source` | sempre `"ssh"` |
-| `host` | o destino do ssh (`usuario@host` ou alias do `~/.ssh/config`), sem espaço e sem começar por `-` |
-| `auth_env` | `null` quando o host aceita chave; senão, o **nome** da variável de ambiente com a senha, que o Sync remoto entrega ao `sshpass -e`. Nunca a senha |
-| `files` | objeto não vazio `{"caminho na página": "caminho remoto"}`. A chave é o h3 do Bloco de arquivo (relativa, com `/`, sem `..`); o valor começa por `/` ou `~/` |
+| `host` | o destino do ssh (`usuario@host` ou alias do `~/.ssh/config`), sem espaço e sem começar por `-`. É também o que o gatilho por host procura no comando do shell, sem o `usuario@` |
+| `auth_env` | `null` quando o host aceita chave (`ssh -o BatchMode=yes`, sem sshpass); senão, o **nome** da variável de ambiente com a senha, que o Sync remoto entrega ao `sshpass -e` em `SSHPASS`, no ambiente do filho e nunca em argv. Nunca a senha. A variável precisa estar no ambiente do processo que roda o hook |
+| `files` | objeto não vazio `{"caminho na página": "caminho remoto"}`. A chave é o h3 do Bloco de arquivo (relativa, com `/`, sem `..`); o valor começa por `/` ou `~/`, e o `~/` expande do lado do servidor. Cada arquivo é lido com `cat -- <caminho>`, até 1 MiB |
 
 ## `run`
 

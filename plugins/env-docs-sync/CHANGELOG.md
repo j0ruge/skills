@@ -2,8 +2,8 @@
 
 ## [0.1.0] — em construção
 
-Em construção, por incrementos: o núcleo puro com testes offline, depois a entrada do hook nos dois
-hosts. Ainda não há destino kb nem Sync remoto, e o plugin ainda não está no catálogo da loja.
+Em construção, por incrementos: o núcleo puro com testes offline, a entrada do hook nos dois hosts e
+o Sync remoto. Ainda não há destino kb, e o plugin ainda não está no catálogo da loja.
 
 ### Por quê
 
@@ -68,3 +68,21 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
   (`stop_hook_active`). Testes de gatilho, filtro, worktree, máquina, trava, falha do destino,
   canário e o `command` inteiro por `sh -c` (script ausente, stdin inválido). 8 mutantes dos
   guardas deixaram a suíte vermelha.
+- **Sync remoto** (`source: "ssh"`):
+  - cada arquivo de `files` sai de `ssh -o BatchMode=yes -o ConnectTimeout=10 -- <host> "cat -- <caminho>"`,
+    com o `~/` expandido do lado do servidor; com `auth_env`, `sshpass -e` e a senha em `SSHPASS` no
+    ambiente do filho, nunca em argv;
+  - gatilhos: PostToolUse `Bash` cujo comando usa `ssh`/`scp`/`sshpass`/`rsync` e cita o host
+    (ferramenta como palavra, host com borda), e a SessionStart no máximo uma vez por
+    `remote_check_every`, pelo carimbo `remote_checked_at`;
+  - falha (rede, senha, arquivo, mais de 1 MiB, 30 s) deixa o ambiente fora da rodada, com um
+    aviso, e não marca nada como ausente. O carimbo só vai para o ambiente lido e escrito sem
+    pendência;
+  - medido no OpenSSH 9.6p1 com o sshpass 1.09: com `BatchMode=yes` ou
+    `NumberOfPasswordPrompts=1`, a senha errada sai 255, como a rede fora; com o padrão, sai 5. Host
+    inalcançável custa os 10 s do `ConnectTimeout`;
+  - `sync --remote` e `status --remote` na CLI. Sem `--remote`, o `sync` diz quais ambientes ficaram
+    fora da rodada;
+  - testes com runner falso e com `ssh`/`sshpass` falsos num processo real, que gravam o próprio
+    `/proc/<pid>/cmdline`: a senha não aparece em nenhum argv e chega ao `SSHPASS`. 12 mutantes
+    dos guardas deixaram a suíte vermelha.

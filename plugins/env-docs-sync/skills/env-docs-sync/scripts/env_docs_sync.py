@@ -777,6 +777,167 @@ def destino_da_config(config: Mapping, raiz: Path, ctx: "Contexto") -> Destino:
 
 
 # ---------------------------------------------------------------------------------------------
+# Processo filho (ssh, e o backend do destino) e a fonte ssh do Sync remoto
+# ---------------------------------------------------------------------------------------------
+
+SSH_CONNECT_TIMEOUT = 10
+"""Segundos para o ssh desistir de conectar (`-o ConnectTimeout`)."""
+SSH_TIMEOUT = 30
+"""Segundos para cada leitura remota inteira (conexão + `cat`)."""
+LIMITE_REMOTO = 1 << 20
+"""Um `.env` remoto acima de 1 MiB é erro de config (caminho apontando outro arquivo), não conteúdo."""
+FERRAMENTAS_SSH = ("ssh", "scp", "sshpass", "rsync")
+_RE_FERRAMENTA_SSH = re.compile(r"(?<![\w.-])(?:" + "|".join(FERRAMENTAS_SSH) + r")(?![\w.-])")
+
+
+@dataclass(frozen=True)
+class ResultadoComando:
+    returncode: int
+    stdout: bytes = field(default=b"", repr=False)
+    stderr: bytes = field(default=b"", repr=False)
+
+
+def rodar_comando(argv, *, env: Mapping[str, str], timeout: float, entrada: bytes | None = None) -> ResultadoComando:
+    """O runner padrão: argv sem shell, ambiente explícito, stdin = `entrada` (ou /dev/null).
+
+    Timeout e programa ausente viram ErroEnvDocs, sem ecoar argv nem saída. Os testes injetam outro
+    runner com a mesma assinatura.
+    """
+    opcoes = {"input": entrada} if entrada is not None else {"stdin": subprocess.DEVNULL}
+    try:
+        saida = subprocess.run(list(argv), env=dict(env), capture_output=True, timeout=timeout, **opcoes)
+    except subprocess.TimeoutExpired:
+        raise ErroEnvDocs(f"{Path(argv[0]).name}: tempo esgotado ({timeout:g} s)") from None
+    except FileNotFoundError:
+        raise ErroEnvDocs(f"{Path(argv[0]).name}: programa não encontrado") from None
+    except OSError as erro:
+        raise ErroEnvDocs(f"{Path(argv[0]).name}: não rodou ({type(erro).__name__})") from None
+    return ResultadoComando(saida.returncode, saida.stdout, saida.stderr)
+
+
+def aspas_remotas(caminho: str) -> str:
+    """O caminho remoto citado para o shell do servidor. `~/` fica fora das aspas, para expandir lá."""
+    def citar(texto):
+        return "'" + texto.replace("'", "'\\''") + "'"
+    if caminho.startswith("~/"):
+        resto = caminho[2:]
+        return "~/" + citar(resto) if resto else "~/"
+    return citar(caminho)
+
+
+def comando_ssh(ambiente_cfg: Mapping, remoto: str, ambiente_do_processo: Mapping[str, str]):
+    """(argv, env) para ler `remoto` do host do ambiente, só leitura (`cat`).
+
+    `auth_env` null: chave, com `BatchMode=yes` (nunca pergunta nada). `auth_env` com um nome:
+    `sshpass -e`, com a senha em `SSHPASS` no ambiente do filho, nunca em argv (que o `ps` mostra).
+    A variável original sai do ambiente do filho. `--` antes do host impede que ele vire opção.
+    """
+    env = dict(ambiente_do_processo)
+    tempo = ["-o", f"ConnectTimeout={SSH_CONNECT_TIMEOUT}"]
+    alvo = ["--", ambiente_cfg["host"], "cat -- " + aspas_remotas(remoto)]
+    variavel = ambiente_cfg.get("auth_env")
+    if variavel is None:
+        return ["ssh", "-o", "BatchMode=yes", *tempo, *alvo], env
+    senha = env.pop(variavel, None)
+    if not senha:
+        raise ErroEnvDocs(f"a variável {variavel} (auth_env) não está definida no ambiente; sem senha, "
+                          "o ambiente não foi lido")
+    env["SSHPASS"] = senha
+    # Medido (sshpass 1.09, OpenSSH 9.6p1): BatchMode=yes desliga o prompt e tudo sai 255; com
+    # NumberOfPasswordPrompts=1, senha errada também sai 255. Com o padrão, o sshpass vê o 2º prompt,
+    # desiste depois de uma tentativa e sai 5, o que separa "senha errada" de "rede fora".
+    return ["sshpass", "-e", "ssh", "-o", "BatchMode=no", *tempo, *alvo], env
+
+
+def motivo_ssh(rc: int, *, sshpass: bool) -> str:
+    """O motivo legível de um rc do ssh/sshpass, sem a saída de erro (que pode citar o servidor)."""
+    if sshpass and rc == 5:
+        return "senha recusada pelo servidor, sshpass rc 5"
+    if sshpass and rc == 6:
+        return "chave do host desconhecida (conecte uma vez à mão para aceitá-la), sshpass rc 6"
+    if rc == 255:
+        return "conexão ou autenticação ssh falhou, rc 255"
+    if rc == 1:
+        return "arquivo remoto ausente ou ilegível, rc 1"
+    return f"rc {rc}"
+
+
+def ler_remoto(nome: str, ambiente_cfg: Mapping, ctx: "Contexto") -> dict[str, bytes]:
+    """{caminho na página: bytes} de um ambiente ssh. Qualquer falha levanta: o ambiente inteiro fica
+    de fora desta rodada (não vira ausente), e o próximo gatilho tenta de novo."""
+    arquivos = {}
+    for rel, remoto in sorted(ambiente_cfg["files"].items()):
+        argv, env = comando_ssh(ambiente_cfg, remoto, ctx.ambiente)
+        resultado = ctx.runner(argv, env=env, timeout=SSH_TIMEOUT)
+        if resultado.returncode != 0:
+            raise ErroEnvDocs(f"{nome}: a leitura de {rel} por ssh falhou "
+                              f"({motivo_ssh(resultado.returncode, sshpass=argv[0] == 'sshpass')})")
+        if len(resultado.stdout) > LIMITE_REMOTO:
+            raise ErroEnvDocs(f"{nome}: {rel} remoto é grande demais (> {LIMITE_REMOTO} bytes); confira o caminho")
+        arquivos[rel] = resultado.stdout
+    return arquivos
+
+
+def ler_remotos(config: Mapping, ambientes, ctx: "Contexto") -> tuple[dict, list[str]]:
+    """({ambiente: {caminho: bytes}} dos que leram, [avisos]). Quem falhou fica fora do mapa."""
+    lidos, avisos = {}, []
+    for nome in ambientes:
+        try:
+            lidos[nome] = ler_remoto(nome, config["environments"][nome], ctx)
+        except ErroEnvDocs as erro:
+            avisos.append(str(erro) if str(erro).startswith(f"{nome}:") else f"{nome}: {erro}")
+    return lidos, avisos
+
+
+def host_citado(comando: str, host: str) -> bool:
+    """O comando do shell usa ssh, scp, sshpass ou rsync E cita o host (com ou sem `usuario@`)?
+
+    Não interpreta o comando: procura a ferramenta como palavra e o nome do host com borda, para
+    `host.example` não casar `host.example.evil` nem `192.0.2.6` casar `192.0.2.60`.
+    """
+    if not isinstance(comando, str) or not _RE_FERRAMENTA_SSH.search(comando):
+        return False
+    nome = host.rsplit("@", 1)[-1].strip("[]")
+    return bool(nome) and re.search(r"(?<![\w.-])" + re.escape(nome) + r"(?![\w-]|\.\w)", comando) is not None
+
+
+def _remotos(config: Mapping) -> list[str]:
+    return [a for a in AMBIENTES if a != "development" and a in config["environments"]]
+
+
+def _vencido(carimbo: str | None, intervalo: int, agora: datetime) -> bool:
+    if carimbo is None:
+        return True
+    quando = datetime.fromisoformat(carimbo)
+    if quando.tzinfo is None:
+        quando = quando.astimezone()
+    return quando > agora or (agora - quando).total_seconds() >= intervalo
+
+
+def remotos_devidos(config: Mapping, estado: Mapping, gatilho, agora: datetime) -> list[str]:
+    """Os ambientes ssh a ler neste gatilho: no PostToolUse `Bash`, os do host citado; na
+    SessionStart, os cuja última leitura boa passou de `remote_check_every`. Os outros, nenhum."""
+    remotos = _remotos(config)
+    if not remotos:
+        return []
+    if gatilho.evento == "PostToolUse" and gatilho.comando is not None:
+        return [a for a in remotos if host_citado(gatilho.comando, config["environments"][a]["host"])]
+    if gatilho.evento == "SessionStart":
+        intervalo = intervalo_em_segundos(config["remote_check_every"])
+        checados = estado.get("remote_checked_at", {})
+        return [a for a in remotos if _vencido(checados.get(a), intervalo, agora)]
+    return []
+
+
+def carimbar_remotos(estado: Mapping, ambientes, quando: datetime) -> dict:
+    """Novo estado com `remote_checked_at` = `quando` nos ambientes dados (lidos e sem pendência)."""
+    novo = copy.deepcopy(dict(estado))
+    for ambiente in ambientes:
+        novo.setdefault("remote_checked_at", {})[ambiente] = _carimbo(quando)
+    return novo
+
+
+# ---------------------------------------------------------------------------------------------
 # Entrada do hook: gatilho, Checkout da verdade, estado por repositório, trava
 # ---------------------------------------------------------------------------------------------
 
@@ -946,7 +1107,9 @@ class Contexto:
     pasta_de_estado: Path | None = None
     """None: resolve por `pasta_de_estado(ambiente)`."""
     ambiente: Mapping[str, str] = field(default_factory=lambda: dict(os.environ))
+    """O ambiente dos processos filhos (ssh, backend) e de onde sai a senha de `auth_env`."""
     espera_da_trava: float = ESPERA_DA_TRAVA
+    runner: Callable[..., ResultadoComando] = rodar_comando
 
 
 @dataclass
@@ -1012,11 +1175,72 @@ def _detalhe(erro: BaseException) -> str:
     return f"erro inesperado ({type(erro).__name__})"
 
 
+@dataclass
+class Rodada:
+    """O que uma rodada de sync fez. Nada aqui carrega valor de arquivo."""
+    aplicadas: list = field(default_factory=list)
+    pendentes: list = field(default_factory=list)
+    falhou: Operacao | None = None
+    erro: BaseException | None = None
+    erro_do_destino: ErroEnvDocs | None = None
+    avisos_remotos: list = field(default_factory=list)
+    carimbados: list = field(default_factory=list)
+
+    @property
+    def mudou_estado(self) -> bool:
+        return bool(self.aplicadas or self.carimbados)
+
+
+def rodada(estado: Mapping, config: Mapping, raiz: Path, *, remotos, ctx: Contexto, quando: datetime,
+           commit: str | None, montar_destino: Callable[[], Destino]) -> tuple[dict, Rodada]:
+    """Uma rodada de sync: lê development (Varredura) e os `remotos` (ssh), planeja e aplica.
+
+    Devolve (novo estado, Rodada). Quem chama grava o estado se `Rodada.mudou_estado`. Ambiente
+    remoto que falhou ao ler fica fora de `atuais` (intocado, não vira ausente). O carimbo
+    `remote_checked_at` só vai para o ambiente lido sem nenhuma operação pendente, para a falha de
+    escrita ser tentada de novo no próximo gatilho e não só depois da janela.
+    """
+    atuais = {"development": _locais(raiz, config)}
+    lidos, avisos = ler_remotos(config, remotos, ctx)
+    atuais.update(lidos)
+    mudancas = diferencas(estado, {ambiente: _hashes(arquivos) for ambiente, arquivos in atuais.items()})
+    if not mudancas:
+        return carimbar_remotos(estado, lidos, quando), Rodada(avisos_remotos=avisos, carimbados=list(lidos))
+    sem_pendencia = [a for a in lidos if a not in {m.ambiente for m in mudancas}]
+    try:
+        destino = montar_destino()
+    except ErroEnvDocs as erro:
+        return (carimbar_remotos(estado, sem_pendencia, quando),
+                Rodada(pendentes=mudancas, erro_do_destino=erro, avisos_remotos=avisos, carimbados=sem_pendencia))
+    operacoes = planejar(estado, atuais, sincronizado_em=quando, commit=commit, ler_corpo=destino.ler_corpo)
+    resultado = aplicar(estado, operacoes, destino, quando=quando)
+    pendentes = operacoes[len(resultado.aplicadas):]
+    prontos = [a for a in lidos if a not in {op.ambiente for op in pendentes}]
+    return (carimbar_remotos(resultado.estado, prontos, quando),
+            Rodada(resultado.aplicadas, pendentes, resultado.falhou, resultado.erro, None, avisos, prontos))
+
+
+def _linhas_da_rodada(nome: str, r: Rodada) -> list[str]:
+    linhas = [f"aviso — {nome}: {aviso}. O ambiente fica como estava; o próximo gatilho tenta de novo."
+              for aviso in r.avisos_remotos]
+    if r.erro_do_destino is not None:
+        linhas.append(f"aviso — {nome}: {r.erro_do_destino}. Pendente: {_listar(r.pendentes)}. "
+                      "O estado não mudou; o próximo gatilho tenta de novo.")
+    if r.aplicadas:
+        linhas.append(f"Página de ambientes atualizada ({nome}) — {_listar(r.aplicadas)}")
+    if r.falhou is not None:
+        linhas.append(f"aviso — {nome}: falhou em {r.falhou.ambiente} {r.falhou.caminho} ({_detalhe(r.erro)}). "
+                      f"Pendente: {_listar(r.pendentes)}. O estado dessas operações não mudou; o próximo "
+                      "gatilho tenta de novo.")
+    return linhas
+
+
 def sincronizar_repo(raiz: Path, gatilho: Gatilho, editados, ctx: Contexto) -> list[str]:
     """Uma raiz, um gatilho: as linhas do `systemMessage` (vazio = calado).
 
     Calado quando: sem config; fora do Checkout da verdade (worktree ou outra máquina); edição que
-    não toca arquivo da Varredura; nada mudou. O estado só é gravado com o que o destino aceitou.
+    não toca arquivo da Varredura; nada mudou e nenhum ambiente remoto está devido. O estado só é
+    gravado com o que o destino aceitou e com o carimbo dos remotos lidos sem pendência.
     """
     caminho_config = raiz / NOME_DA_CONFIG
     if not caminho_config.is_file() or not checkout_da_verdade(raiz):
@@ -1032,36 +1256,20 @@ def sincronizar_repo(raiz: Path, gatilho: Gatilho, editados, ctx: Contexto) -> l
         return []
     pasta = ctx.pasta_de_estado or pasta_de_estado(ctx.ambiente)
     arquivo = arquivo_de_estado(raiz, pasta)
-    if not diferencas(carregar_estado(arquivo), {"development": _hashes(_locais(raiz, config))}):
+    estado = carregar_estado(arquivo)
+    if (not remotos_devidos(config, estado, gatilho, ctx.agora())
+            and not diferencas(estado, {"development": _hashes(_locais(raiz, config))})):
         return []
 
     with trava_do_repo(raiz, pasta, ctx.espera_da_trava):
         estado = carregar_estado(arquivo)  # outro processo pode ter sincronizado enquanto esperávamos
-        locais = _locais(raiz, config)
-        mudancas = diferencas(estado, {"development": _hashes(locais)})
-        if not mudancas:
-            return []
-        try:
-            destino = ctx.fabrica_destino(config, raiz, ctx)
-        except ErroEnvDocs as erro:
-            return [f"aviso — {raiz.name}: {erro}. Pendente: {_listar(mudancas)}. "
-                    "O estado não mudou; o próximo gatilho tenta de novo."]
         quando = ctx.agora()
-        operacoes = planejar(estado, {"development": locais}, sincronizado_em=quando,
-                             commit=_commit(None, raiz), ler_corpo=destino.ler_corpo)
-        resultado = aplicar(estado, operacoes, destino, quando=quando)
-        if resultado.aplicadas:
-            gravar_estado(arquivo, resultado.estado)
-
-    linhas = []
-    if resultado.aplicadas:
-        linhas.append(f"Página de ambientes atualizada ({raiz.name}) — {_listar(resultado.aplicadas)}")
-    if resultado.falhou is not None:
-        pendentes = operacoes[len(resultado.aplicadas):]
-        linhas.append(f"aviso — {raiz.name}: falhou em {resultado.falhou.ambiente} {resultado.falhou.caminho} "
-                      f"({_detalhe(resultado.erro)}). Pendente: {_listar(pendentes)}. O estado dessas "
-                      "operações não mudou; o próximo gatilho tenta de novo.")
-    return linhas
+        novo, r = rodada(estado, config, raiz, remotos=remotos_devidos(config, estado, gatilho, quando), ctx=ctx,
+                         quando=quando, commit=_commit(None, raiz),
+                         montar_destino=lambda: ctx.fabrica_destino(config, raiz, ctx))
+        if r.mudou_estado:
+            gravar_estado(arquivo, novo)
+    return _linhas_da_rodada(raiz.name, r)
 
 
 def executar_hook(texto: str, ctx: Contexto | None = None) -> RespostaHook:
@@ -1163,33 +1371,29 @@ def _cmd_plan(args):
     return 0
 
 
-def _remotos_ignorados(config):
-    remotos = [a for a in AMBIENTES if a in config["environments"] and a != "development"]
-    if remotos:
-        print(f"ambientes remotos ignorados nesta versão: {', '.join(remotos)} (Sync remoto ainda não existe)")
-
-
 def _cmd_sync(args):
     raiz, config = _contexto(args)
     quando, commit = _agora(args.now), _commit(args.commit, raiz)
     estado = carregar_estado(args.state)
-    destino = _destino_da_cli(args, config, raiz)
-    operacoes = planejar(estado, {"development": _locais(raiz, config)}, sincronizado_em=quando,
-                         commit=commit, ler_corpo=destino.ler_corpo)
-    _remotos_ignorados(config)
-    if not operacoes:
-        print("nada a sincronizar")
-        return 0
-    resultado = aplicar(estado, operacoes, destino, quando=quando)
-    for op in resultado.aplicadas:
+    remotos = _remotos(config) if args.remote else []
+    if remotos == [] and _remotos(config):
+        print(f"ambientes remotos fora desta rodada: {', '.join(_remotos(config))} (use --remote)")
+    novo, r = rodada(estado, config, raiz, remotos=remotos, ctx=Contexto(), quando=quando, commit=commit,
+                     montar_destino=lambda: _destino_da_cli(args, config, raiz))
+    for aviso in r.avisos_remotos:
+        print(f"env-docs-sync: aviso — {aviso}; o ambiente fica como estava", file=sys.stderr)
+    for op in r.aplicadas:
         print(f"aplicado: {op.resumo()}")
-    if resultado.aplicadas:
-        gravar_estado(args.state, resultado.estado)
-    if resultado.falhou is not None:
-        detalhe = str(resultado.erro) if isinstance(resultado.erro, ErroEnvDocs) else type(resultado.erro).__name__
-        print(f"env-docs-sync: falhou em {resultado.falhou.resumo()}: {detalhe}", file=sys.stderr)
+    if r.mudou_estado:
+        gravar_estado(args.state, novo)
+    if r.erro_do_destino is not None:
+        raise r.erro_do_destino
+    if r.falhou is not None:
+        print(f"env-docs-sync: falhou em {r.falhou.resumo()}: {_detalhe(r.erro)}", file=sys.stderr)
         return 1
-    return 0
+    if not r.aplicadas:
+        print("nada a sincronizar")
+    return 1 if r.avisos_remotos else 0
 
 
 def _destino_da_cli(args, config, raiz):
@@ -1202,12 +1406,20 @@ def _destino_da_cli(args, config, raiz):
 def _cmd_status(args):
     raiz, config = _contexto(args)
     destino = _destino_da_cli(args, config, raiz)
-    linhas = status_dos_arquivos({"development": _locais(raiz, config)}, destino)
+    atuais, avisos = {"development": _locais(raiz, config)}, []
+    if args.remote:
+        lidos, avisos = ler_remotos(config, _remotos(config), Contexto())
+        atuais.update(lidos)
+    linhas = status_dos_arquivos(atuais, destino)
     for ambiente, caminho, situacao in linhas:
         print(f"{situacao}\t{ambiente}\t{caminho}")
     contagem = {s: sum(1 for *_, x in linhas if x == s) for s in ("ok", "diverge", "ausente")}
     print(f"{contagem['ok']} ok, {contagem['diverge']} diverge, {contagem['ausente']} ausente")
-    return 0 if contagem["ok"] == len(linhas) else 3
+    for aviso in avisos:
+        print(f"env-docs-sync: aviso — {aviso}; o ambiente não foi conferido", file=sys.stderr)
+    if contagem["ok"] != len(linhas):
+        return 3
+    return 1 if avisos else 0
 
 
 def _cmd_hook(args):
@@ -1266,9 +1478,12 @@ def _parser():
     sync = comando("sync", "aplica o plano de development no destino", _cmd_sync,
                    estado=True, relogio=True)
     sync.add_argument("--to-dir", help="destino de diretório, para teste (padrão: o de doc.backend)")
+    sync.add_argument("--remote", action="store_true",
+                      help="também lê por ssh os ambientes remotos (Sync remoto), sem olhar a janela")
     status = comando("status", "hash do bloco relido no destino x hash do arquivo (rc 3 se algo diverge)",
                      _cmd_status)
     status.add_argument("--to-dir", help="destino de diretório, para teste (padrão: o de doc.backend)")
+    status.add_argument("--remote", action="store_true", help="também confere os ambientes remotos (ssh)")
     hook = sub.add_parser("hook", help="entrada do hook do Claude Code e do Codex CLI (payload no stdin; sai 0)")
     hook.set_defaults(funcao=_cmd_hook)
     render = comando("render-page", "grava a Página de ambientes inteira (0600) para o replace",

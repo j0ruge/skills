@@ -107,9 +107,9 @@ class Cli(unittest.TestCase):
             self.assertNotIn(CANARIO, saida)
         self.assertFalse(self.estado.exists(), "falha no planejamento não grava estado")
 
-    def test_ambientes_remotos_ficam_de_fora_nesta_versao(self):
+    def test_sem_remote_os_ambientes_remotos_ficam_de_fora(self):
         saida = self.sync().stdout
-        self.assertIn("ignorados nesta versão: staging, production", saida)
+        self.assertIn("fora desta rodada: staging, production (use --remote)", saida)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 name: env-docs-sync
 description: "Mirrors every .env* file of a repo into a restricted environments documentation page: one section per environment, one block per file, rewritten only when its hash changes. Values never reach logs or local state, which keeps only hashes. Triggers — env docs, .env sync, environments page, env-docs-sync, .env-docs.json, environment variables docs."
 license: MIT
-compatibility: Python 3.11+, só biblioteca padrão (testado com o 3.12.3), git 2.31+. Hooks medidos em 2026-10-27 no Claude Code 2.1.309 e no codex-cli 0.164.0 (payload real capturado nos dois). O destino kb e o Sync remoto ainda não existem na 0.1.0.
+compatibility: Python 3.11+, só biblioteca padrão (testado com o 3.12.3), git 2.31+. Hooks medidos em 2026-10-27 no Claude Code 2.1.309 e no codex-cli 0.164.0 (payload real capturado nos dois). Sync remoto com o ssh do OpenSSH (medido no 9.6p1) e, para host com senha, o sshpass (medido no 1.09). O destino kb ainda não existe na 0.1.0.
 metadata:
   author: JorUge
   version: "0.1.0"
@@ -38,7 +38,7 @@ Os mesmos nomes valem aqui, na config, no código e na página.
 | Checkout da verdade | o checkout principal (não worktree) na máquina `environments.development.machine` | `checkout_da_verdade()`, `maquina_confere()` |
 | Fonte da verdade | onde vive a cópia que vale de cada ambiente | `environments.*.source_of_truth` |
 | Varredura | achar os `.env*` e comparar o hash de cada um com o estado | `varredura()`, `diferencas()` |
-| Sync remoto | ler o `.env` de staging e de production por ssh, só leitura | planejado |
+| Sync remoto | ler o `.env` de staging e de production por ssh, só leitura | `ler_remoto()`, `remotos_devidos()` |
 
 ## O que existe na 0.1.0
 
@@ -46,8 +46,8 @@ Os mesmos nomes valem aqui, na config, no código e na página.
 |---|---|
 | `init` | planejado: o agente escreve a `.env-docs.json` do repositório |
 | `sync` | **parcial:** só `development`. Escreve no destino de `doc.backend` ou, com `--to-dir`, num diretório local (teste e inspeção). O adaptador `kb` é planejado: hoje o backend `kb` recusa com aviso |
-| `sync --remote` | planejado (Sync remoto) |
-| `status` | existe: por arquivo, `ok`, `diverge` ou `ausente`, comparando o hash do bloco relido no destino com o do arquivo; rc 3 se algo não está `ok` |
+| `sync --remote` | existe: lê também os ambientes ssh, sem olhar a janela; rc 1 se algum não foi lido |
+| `status` | existe: por arquivo, `ok`, `diverge` ou `ausente`, comparando o hash do bloco relido no destino com o do arquivo; rc 3 se algo não está `ok`. Com `--remote`, confere também os ambientes ssh |
 | `install --codex` | planejado: registra o hook no Codex e grava o trust |
 | `hook` | existe: a entrada do `hooks/hooks.json` (PostToolUse de edição e de shell, Stop e SessionStart); sempre sai 0 |
 | `validate`, `scan`, `plan`, `render-page` | existem |
@@ -57,8 +57,8 @@ S=<pasta desta skill>/scripts/env_docs_sync.py
 python3 "$S" validate --root .                       # a config vale? (rc 2 com a lista de erros)
 python3 "$S" scan --root .                           # Varredura: caminho e hash curto
 python3 "$S" plan --root . --state <estado.json>     # o que mudou desde o último sync
-python3 "$S" sync --root . --state <estado.json> [--to-dir <pasta>]
-python3 "$S" status --root . [--to-dir <pasta>]          # ok / diverge / ausente por arquivo
+python3 "$S" sync --root . --state <estado.json> [--to-dir <pasta>] [--remote]
+python3 "$S" status --root . [--to-dir <pasta>] [--remote]   # ok / diverge / ausente por arquivo
 python3 "$S" render-page --root . --out <pagina.html>  # a página inteira, 0600, para o replace
 python3 "$S" hook < payload.json                         # o que o hooks.json roda
 ```
@@ -99,9 +99,9 @@ O `hooks/hooks.json` liga o mesmo comando a quatro gatilhos, nos dois hosts:
 | Gatilho | O que faz |
 |---|---|
 | PostToolUse `Write\|Edit` (no Codex, o `apply_patch` casa por alias) | se algum caminho editado é arquivo da Varredura, refaz a Varredura da raiz **do arquivo** e sincroniza; senão, calado |
-| PostToolUse `Bash` | refaz a Varredura da raiz do `cwd`. Não interpreta o comando |
-| `Stop` | a mesma Varredura, que pega a edição à mão. Sai calado com `stop_hook_active` |
-| `SessionStart` | a mesma Varredura, no começo de cada sessão |
+| PostToolUse `Bash` | refaz a Varredura da raiz do `cwd`, sem interpretar o comando. Se o comando usa `ssh`, `scp`, `sshpass` ou `rsync` e cita o host de um ambiente da config, faz também o Sync remoto daquele ambiente |
+| `Stop` | a mesma Varredura, que pega a edição à mão. Sai calado com `stop_hook_active`. Sem ssh |
+| `SessionStart` | a mesma Varredura, mais o Sync remoto de cada ambiente cuja última leitura boa passou de `remote_check_every` |
 
 O fluxo de cada raiz, em ordem, sempre com exit 0:
 
@@ -111,8 +111,8 @@ O fluxo de cada raiz, em ordem, sempre com exit 0:
    um worktree, um clone em outra máquina ou uma missão headless num worktree de sobrescrever a
    página.
 3. Config inválida ou estado corrompido: um aviso, nada mais.
-4. Hashes iguais aos do estado: calado, e o destino nem é montado (~50 ms num repo de 2 GB com
-   `node_modules`, medido em 2026-10-27).
+4. Hashes iguais aos do estado e nenhum ambiente remoto devido: calado, e o destino nem é montado
+   (~50 ms num repo de 2 GB com `node_modules`, medido em 2026-10-27).
 5. Trava `flock` por repositório (espera até 30 s; depois, aviso). Relê o estado, refaz o plano e
    monta o Destino pela fábrica de `doc.backend`.
 6. Aplica. O estado só ganha o que o destino aceitou; a falha vira aviso com os caminhos pendentes,
@@ -134,6 +134,23 @@ só hashes e carimbos, com a trava `.lock` ao lado. A pasta é `CLAUDE_PLUGIN_DA
 `$XDG_STATE_HOME/env-docs-sync` (padrão `~/.local/state/env-docs-sync`). Cada host tem a sua
 pasta, e então cada host sincroniza uma vez por conta própria. Leia `references/hosts.md` quando
 precisar dos caminhos medidos em cada host.
+
+## Sync remoto
+
+Cada arquivo de `environments.<staging|production>.files` é lido com
+`ssh -o BatchMode=yes -o ConnectTimeout=10 -- <host> "cat -- <caminho>"`. O conteúdo vem pelo stdout,
+e o `~/` do caminho expande do lado do servidor (`aspas_remotas`). Com `auth_env`, o comando vira
+`sshpass -e ssh -o BatchMode=no …`, e a senha vai em `SSHPASS` no ambiente do filho, nunca em argv;
+a variável nomeada sai desse ambiente. Com `auth_env: null`, vale a chave, sem sshpass.
+
+- **Falha não é ausência.** Rede fora, senha recusada, arquivo ilegível, mais de 1 MiB ou o tempo
+  de 30 s esgotado: o ambiente inteiro fica de fora da rodada, com um aviso, e nada vira `ausente`.
+  O próximo gatilho tenta de novo.
+- **Carimbo.** `remote_checked_at` só ganha a data do ambiente lido **e** escrito sem pendência.
+  Uma escrita que falhou é tentada na próxima SessionStart, sem esperar a janela.
+- **Custo medido** (2026-10-27): falha de autenticação, 0,2 s; host inalcançável, os 10 s do
+  `ConnectTimeout`. Fora da rede, toda SessionStart paga isso por ambiente devido, porque a falha
+  não carimba.
 
 ## Contrato com o destino kb (planejado)
 
@@ -183,6 +200,16 @@ seção CI/CD sai como "a gerar" nesta versão.
   cria). O estado nasce com `mkdir -p` e 0700.
 - **O stdout do hook é JSON em ASCII, só com `systemMessage`.** O schema de saída do Codex 0.164.0
   tem `additionalProperties: false`, e o locale do host pode não ser UTF-8.
+- **Com `sshpass`, nem `BatchMode=yes` nem `NumberOfPasswordPrompts=1`.** Os dois fazem a senha
+  errada sair com rc 255, o mesmo da rede fora. Com o padrão, o sshpass vê o 2º prompt, desiste
+  depois de uma tentativa e sai 5 (medido no sshpass 1.09 com OpenSSH 9.6p1). O aviso traduz o rc:
+  255 conexão ou autenticação, 5 senha, 6 chave do host desconhecida, 1 arquivo ausente ou ilegível.
+- **A variável de `auth_env` precisa estar no ambiente do host do agente** (o shell que abriu o
+  Claude Code ou o Codex). Uma senha que só existe num arquivo `.env` não é vista, e o ambiente
+  fica de fora com o aviso "a variável … não está definida".
+- **O gatilho por host não interpreta o comando.** Ele procura a ferramenta como palavra e o nome
+  do host com borda: `host.example` não casa `host.example.evil`, `192.0.2.6` não casa
+  `192.0.2.60`, e `ssh-keygen -R host` não conta.
 - **Dois hosts, dois estados.** Claude Code e Codex não dividem a pasta de dados, então a mesma
   mudança é sincronizada uma vez por host. O destino precisa tratar conteúdo igual como "sem
   mudança" (no kb, `changed: false` sem PUT), senão cada host gera uma revisão.
