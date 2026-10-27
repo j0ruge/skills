@@ -1,9 +1,10 @@
 # Referência da `.env-docs.json`
 
-A `.env-docs.json` fica na raiz do repositório que adota o plugin, e é versionada. Ela não guarda
-segredo: diz onde estão os arquivos, onde vive a Página de ambientes e quem pode vê-la. O exemplo
-completo e fictício está em `assets/env-docs.example.json`, e `env_docs_sync.py validate --root .`
-confere uma config real.
+A `.env-docs.json` fica na raiz do repositório que adota o plugin, e é versionada. Ela nomeia o que
+o hook executa, então mudá-la é mudar o que roda: leia a `safety.md`, *Confiança na config*, antes
+de adotar o plugin ou de revisar uma mudança nela. Ela não guarda segredo: diz onde estão os
+arquivos, onde vive a Página de ambientes e quem pode vê-la. O exemplo completo e fictício está em
+`assets/env-docs.example.json`, e `env_docs_sync.py validate --root .` confere uma config real.
 
 Regras gerais, conferidas por `validar_config`:
 

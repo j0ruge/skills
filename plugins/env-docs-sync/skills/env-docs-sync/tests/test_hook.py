@@ -222,6 +222,37 @@ class Hook(BaseHook):
         # Controle: o checkout principal, com o mesmo payload, age.
         self.assertIsNotNone(self.hook(fixture("claude-stop.json", self.raiz)).mensagem)
 
+    def test_git_que_falha_avisa_em_vez_de_calar(self):
+        # git < 2.31 (sem --path-format), timeout ou rc != 0: não prova worktree, e calar deixaria a
+        # página envelhecer sem ninguém saber
+        original = eds._git
+
+        def git_quebrado(pasta, *args):
+            return None if "--path-format=absolute" in args else original(pasta, *args)
+
+        eds._git = git_quebrado
+        try:
+            resposta = self.hook(fixture("claude-stop.json", self.raiz))
+        finally:
+            eds._git = original
+        self.assertIsNotNone(resposta.mensagem)
+        self.assertIn("checkout da verdade", resposta.mensagem)
+        self.assertIn("git", resposta.mensagem)
+        self.assertEqual(self.fabricas, 0)
+
+    def test_commit_da_linha_e_do_repo_mesmo_com_git_dir_de_outro(self):
+        # um hook disparado de dentro de um hook do git herda GIT_DIR; o _git limpa, o _commit também
+        outro = criar_repo(Path(self.tmp.name) / "outro", {})
+        git(outro, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "--allow-empty",
+            "-m", "outro")
+        proprio = git(self.raiz, "rev-parse", "HEAD").stdout.strip()
+        os.environ["GIT_DIR"] = str(outro / ".git")
+        try:
+            sha = eds._commit(None, self.raiz)
+        finally:
+            del os.environ["GIT_DIR"]
+        self.assertEqual(sha, proprio)
+
     def test_subpasta_do_checkout_principal_nao_parece_worktree(self):
         sub = self.raiz / "packages" / "api"
         sub.mkdir(parents=True)

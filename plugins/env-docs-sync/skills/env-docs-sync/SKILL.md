@@ -118,7 +118,7 @@ O fluxo de cada raiz, em ordem, sempre com exit 0:
    `environments.development.machine` (sem caixa; aceita o nome curto), calado. É isso que impede
    um worktree, um clone em outra máquina ou uma missão headless num worktree de sobrescrever a
    página.
-3. Config inválida ou estado corrompido: um aviso, nada mais.
+3. Config inválida, estado corrompido ou git que não responde: um aviso, nada mais.
 4. Hashes iguais aos do estado, nenhum ambiente remoto devido e as Seções derivadas em dia: calado,
    e o destino nem é montado
    (~50 ms num repo de 2 GB com `node_modules`, medido em 2026-10-27).

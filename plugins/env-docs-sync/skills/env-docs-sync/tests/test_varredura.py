@@ -60,6 +60,20 @@ class Varredura(unittest.TestCase):
         # `.env*` pega `.envrc`, que não é arquivo de env: por isso o exemplo usa dois padrões.
         self.assertIn(".envrc", achados)
 
+    def test_pasta_ilegivel_falha_em_vez_de_sumir(self):
+        # sem o onerror, o os.walk engole o PermissionError, e o .env dali viraria "ausente desde"
+        fechada = self.raiz / "fechada"
+        fechada.mkdir()
+        (fechada / ".env").write_text("X=1\n", encoding="utf-8")
+        fechada.chmod(0)
+        try:
+            with self.assertRaises(eds.ErroEnvDocs) as ctx:
+                eds.varredura(self.raiz, INCLUDE, [])
+        finally:
+            fechada.chmod(0o755)
+        self.assertIn("fechada", str(ctx.exception))
+        self.assertIn("fechada/.env", eds.varredura(self.raiz, INCLUDE, []), "controle: legível, entra")
+
     def test_caminhos_relativos_com_barra_e_ordenados(self):
         achados = eds.varredura(self.raiz, INCLUDE, [])
         self.assertEqual(achados, sorted(achados))

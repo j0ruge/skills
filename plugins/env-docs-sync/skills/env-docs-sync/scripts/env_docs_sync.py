@@ -54,7 +54,6 @@ __version__ = "0.1.0"
 AMBIENTES = ("development", "staging", "production")
 """Ambientes conhecidos, na ordem da página e do plano."""
 
-ACOES = ("criar", "trocar", "marcar_ausente")
 
 EXCLUDE_PADRAO = (
     "**/.git/**",
@@ -353,6 +352,12 @@ def casa_padrao(caminho: str, padroes) -> bool:
     return any(_compilar(p).fullmatch(caminho) for p in padroes)
 
 
+def _pasta_ilegivel(erro: OSError):
+    """`onerror` do os.walk: pasta que não lista levanta, em vez de sumir com os arquivos dela."""
+    raise ErroEnvDocs(f"Varredura: não deu para listar {erro.filename} ({erro.strerror}); os arquivos dali "
+                      "pareceriam ausentes") from None
+
+
 def varredura(raiz, include, exclude) -> list[str]:
     """Os arquivos sob `raiz` que casam com `include` e não com `exclude` + EXCLUDE_PADRAO.
 
@@ -365,7 +370,7 @@ def varredura(raiz, include, exclude) -> list[str]:
     exclusoes = (*EXCLUDE_PADRAO, *exclude)
     podas = tuple(p[:-3] for p in exclusoes if p.endswith("/**"))
     achados = []
-    for pasta, subpastas, arquivos in os.walk(raiz, followlinks=False):
+    for pasta, subpastas, arquivos in os.walk(raiz, followlinks=False, onerror=_pasta_ilegivel):
         rel_pasta = Path(pasta).relative_to(raiz).as_posix()
         prefixo = "" if rel_pasta == "." else rel_pasta + "/"
         subpastas[:] = sorted(
@@ -387,6 +392,7 @@ def varredura(raiz, include, exclude) -> list[str]:
 
 
 def hash_sha256(dados: bytes) -> str:
+    """sha256 hexadecimal dos bytes: a identidade de um arquivo no estado e no bloco."""
     return hashlib.sha256(dados).hexdigest()
 
 
@@ -406,6 +412,7 @@ _RE_CALLOUT_AUSENTE = re.compile(
 
 
 def commit_curto(sha: str) -> str:
+    """Os 7 primeiros caracteres de um sha válido; levanta para qualquer outra coisa."""
     if not isinstance(sha, str) or not _RE_COMMIT.fullmatch(sha):
         raise ErroEnvDocs("commit precisa ser um sha hexadecimal minúsculo de 7 a 40 caracteres")
     return sha[:7]
@@ -470,6 +477,7 @@ def conteudo_do_bloco(corpo: str) -> str | None:
 
 
 def callout_ausente(desde: date) -> str:
+    """O callout que vai no topo do bloco de um arquivo que saiu da Fonte da verdade."""
     return (f'<p class="callout danger">ausente desde {desde:%Y-%m-%d}: o arquivo não existe mais na '
             "Fonte da verdade; o bloco abaixo é a última versão sincronizada.</p>")
 
@@ -585,6 +593,7 @@ _RE_CARIMBO = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:[+-]\d{2}:\d{2}
 
 
 def estado_vazio() -> dict:
+    """O estado de um repositório que ainda não sincronizou nada."""
     return {"version": ESTADO_VERSAO, "environments": {}, "remote_checked_at": {}}
 
 
@@ -691,16 +700,24 @@ def registrar_operacao(estado: Mapping, op: Operacao, *, quando: datetime) -> di
 
 
 class Destino(Protocol):
-    """Porta do destino da documentação. O adaptador kb (I3) e o DestinoDiretorio a implementam."""
+    """Porta do destino da documentação. O DestinoKb e o DestinoDiretorio a implementam."""
 
-    def ler_corpo(self, ambiente: str, caminho: str) -> str | None: ...
+    def ler_corpo(self, ambiente: str, caminho: str) -> str | None:
+        """O corpo do bloco (ambiente, caminho) no destino, ou None quando ele não está lá."""
 
     def escrever(self, op: Operacao) -> bool | None:
         """Escreve, ou levanta. `False` diz "o destino já tinha isto, nada foi escrito"."""
 
+    def conferir_derivadas(self, config, ci_cd) -> bool | None:
+        """As Seções derivadas do destino são as que a config e a CI/CD gerariam? None: não há."""
+
+    def escrever_derivadas(self, config, ci_cd) -> bool:
+        """Refaz as Seções derivadas, ou levanta. `False`: já estavam iguais, nada foi escrito."""
+
 
 @dataclass
 class ResultadoSync:
+    """O que a aplicação do plano deixou: o estado novo, as operações aceitas e a primeira falha."""
     estado: dict
     aplicadas: list
     """As operações aceitas pelo destino, escritas ou não; todas entram no estado."""
@@ -743,6 +760,7 @@ def aplicar(estado: Mapping, operacoes, destino: Destino, *, quando: datetime,
 
 @dataclass(frozen=True)
 class JobDoCi:
+    """Um job de workflow como a seção CI/CD o mostra: id, `runs-on` e environment."""
     id: str
     runs_on: str | None
     """`a, b` para lista; o texto como está para escalar ou expressão; `?` para forma não lida;
@@ -752,6 +770,7 @@ class JobDoCi:
 
 @dataclass(frozen=True)
 class WorkflowDoCi:
+    """Um arquivo de workflow lido sem PyYAML: o arquivo, o nome e os jobs."""
     arquivo: str
     nome: str
     jobs: tuple
@@ -888,6 +907,7 @@ def _esc(texto: str) -> str:
 
 
 def tabela_de_ambientes(config: Mapping) -> str:
+    """A tabela de Ambientes da página: uma linha por ambiente que a config declara, escapada."""
     cabecalho = "".join(f"<th>{c}</th>" for c in
                         ("Ambiente", "Servidor", "Domínio", "Onde vive o .env", "Fonte da verdade"))
     linhas = []
@@ -911,6 +931,7 @@ def secao_de_ambiente(ambiente: str, blocos: Mapping[str, str]) -> str:
 
 
 def secao_como_rodar(config: Mapping) -> str:
+    """A seção Como rodar: um bloco de código por item de `run`, escapado."""
     if not config["run"]:
         return "<p>Nenhum comando declarado em <code>run</code> na <code>.env-docs.json</code>.</p>"
     return "\n".join(f'<p><strong>{_esc(item["label"])}</strong></p>\n'
@@ -956,6 +977,7 @@ def secao_ci_cd(ci: Mapping | None, workflows, nomes) -> str:
 
 
 def carregar_template(caminho=TEMPLATE_PADRAO) -> str:
+    """O texto do template da Página de ambientes (o do pacote, se nenhum outro vier)."""
     return Path(caminho).read_text(encoding="utf-8")
 
 
@@ -1072,6 +1094,7 @@ def derivadas_devidas(config: Mapping, estado: Mapping, entradas: str, agora: da
 
 @dataclass(frozen=True)
 class PedidoDeDerivadas:
+    """O que a rodada precisa para refazer as Seções derivadas: o hash das entradas e o leitor da CI/CD."""
     entradas: str
     ler_ci_cd: Callable[[], str]
     """Lê os workflows e o gh só quando a rodada chega às derivadas."""
@@ -1109,21 +1132,26 @@ class DestinoDiretorio:
         return self.pasta / ambiente / f"{caminho}.html"
 
     def ler_corpo(self, ambiente, caminho):
+        """O bloco em `<pasta>/<ambiente>/<caminho>.html`, ou None."""
         arquivo = self._arquivo(ambiente, caminho)
         return arquivo.read_text(encoding="utf-8") if arquivo.is_file() else None
 
     def escrever(self, op):
+        """Grava o corpo da operação, 0600."""
         _gravar_privado(self._arquivo(op.ambiente, op.caminho), op.corpo)
 
     def ler_derivadas(self) -> str | None:
+        """As Seções derivadas gravadas, ou None."""
         arquivo = self.pasta / "derivadas.html"
         return arquivo.read_text(encoding="utf-8") if arquivo.is_file() else None
 
     def conferir_derivadas(self, config, ci_cd) -> bool | None:
+        """None sem derivadas gravadas; senão, se as gravadas são as que a config geraria."""
         atual = self.ler_derivadas()
         return None if atual is None else atual == pagina_das_derivadas(config, ci_cd)
 
     def escrever_derivadas(self, config, ci_cd) -> bool:
+        """Grava as derivadas quando mudaram; `False`: já estavam iguais."""
         nova = pagina_das_derivadas(config, ci_cd)
         if self.ler_derivadas() == nova:
             return False
@@ -1217,7 +1245,7 @@ def bloco_confere(op: Operacao, corpo: str | None) -> bool:
         return False
     texto = conteudo_do_bloco(corpo)
     if op.acao == "marcar_ausente":
-        return "ausente desde" in corpo and texto == conteudo_do_bloco(op.corpo)
+        return bool(_RE_CALLOUT_AUSENTE.search(corpo)) and texto == conteudo_do_bloco(op.corpo)
     return texto is not None and hash_sha256(texto.encode("utf-8")) == op.sha256
 
 
@@ -1268,6 +1296,8 @@ class DestinoKb:
             raise ErroEnvDocs(f"kb {args[0]} {args[1]}: a saída não é JSON (rc {resultado.returncode})") from None
 
     def conferir_permissao(self) -> None:
+        """A trava: levanta ErroDePermissao se a página é visível além de `doc.allowed_roles`.
+        Lê uma vez por destino."""
         if self._permissao_conferida:
             return
         _, dados = self._kb("content-permissions", "read", "page", self.page_id)
@@ -1291,6 +1321,7 @@ class DestinoKb:
         self._html_fixo = self._html()
 
     def ler_corpo(self, ambiente, caminho):
+        """O corpo do bloco na página relida (o h3 `caminho` sob o h2 `[ambiente]`), ou None."""
         return corpo_da_secao(self._html(), f"[{ambiente}]", caminho)
 
     def _changelog(self, op: Operacao) -> str:
@@ -1302,7 +1333,7 @@ class DestinoKb:
             marca = f"sha256:{op.sha256[:12]}"
         return f"env-docs-sync: [{op.ambiente}] {op.caminho} @ {marca}"[:LIMITE_CHANGELOG]
 
-    def escrever(self, op: Operacao) -> None:
+    def escrever(self, op: Operacao) -> bool:
         """Confere a trava, pula o bloco que a página já tem e escreve pelo `section-set`.
 
         Pular: se o `<pre>` relido já tem o hash do arquivo (e o callout "ausente" bate com a ação),
@@ -1313,7 +1344,7 @@ class DestinoKb:
         """
         self.conferir_permissao()
         atual = self.ler_corpo(op.ambiente, op.caminho)
-        if bloco_confere(op, atual) and ("ausente desde" in atual) == (op.acao == "marcar_ausente"):
+        if bloco_confere(op, atual) and bool(_RE_CALLOUT_AUSENTE.search(atual)) == (op.acao == "marcar_ausente"):
             return False
         self._kb("page", "section-set", self.page_id, f"--heading={op.caminho}", f"--under={op.sob}",
                  "--create", "--stdin", f"--changelog={self._changelog(op)}", "--apply",
@@ -1324,6 +1355,7 @@ class DestinoKb:
         return True
 
     def conferir_derivadas(self, config, ci_cd) -> bool:
+        """As Seções derivadas da página relida batem com as que a config e a CI/CD gerariam?"""
         return derivadas_conferem(self._html(), pagina_das_derivadas(config, ci_cd))
 
     def escrever_derivadas(self, config, ci_cd) -> bool:
@@ -1373,6 +1405,7 @@ _RE_FERRAMENTA_SSH = re.compile(r"(?<![\w.-])(?:" + "|".join(FERRAMENTAS_SSH) + 
 
 @dataclass(frozen=True)
 class ResultadoComando:
+    """O rc e as saídas de um subprocesso; as saídas ficam fora do repr, porque podem ter valores."""
     returncode: int
     stdout: bytes = field(default=b"", repr=False)
     stderr: bytes = field(default=b"", repr=False)
@@ -1528,6 +1561,7 @@ GH_TIMEOUT = 30
 
 @dataclass(frozen=True)
 class NomesDoCi:
+    """Os nomes de segredos e variáveis de um escopo do GitHub, pelo gh. Só nomes, nunca valores."""
     escopo: str
     """`repositório` ou o nome de um environment do GitHub."""
     segredos: tuple
@@ -1686,10 +1720,14 @@ def checkout_da_verdade(pasta) -> bool:
     """`pasta` está num checkout principal, não num worktree? (`--git-dir` == `--git-common-dir`)
 
     O `--path-format=absolute` (git 2.31+) é obrigatório: sem ele, numa subpasta do checkout
-    principal o `--git-common-dir` sai relativo e o checkout parece worktree.
+    principal o `--git-common-dir` sai relativo e o checkout parece worktree. Git que não responde
+    (versão anterior, timeout, rc != 0) levanta ErroEnvDocs: isso não prova worktree, e calar
+    deixaria a página envelhecer sem aviso.
     """
     saida = _git(pasta, "rev-parse", "--path-format=absolute", "--git-dir", "--git-common-dir")
-    linhas = saida.splitlines() if saida else []
+    if saida is None:
+        raise ErroEnvDocs("o git não respondeu ao `rev-parse --path-format=absolute` (git 2.31+, timeout ou erro)")
+    linhas = saida.splitlines()
     return len(linhas) == 2 and os.path.realpath(linhas[0]) == os.path.realpath(linhas[1])
 
 
@@ -1761,6 +1799,7 @@ class Contexto:
 
 @dataclass
 class RespostaHook:
+    """O que o hook devolve ao host: a mensagem para a pessoa e as linhas de log."""
     mensagem: str | None = None
     """O `systemMessage`: caminhos, ações e avisos. Nunca valores."""
     log: list = field(default_factory=list)
@@ -1920,7 +1959,14 @@ def sincronizar_repo(raiz: Path, gatilho: Gatilho, editados, ctx: Contexto) -> l
     gravado com o que o destino aceitou e com o carimbo dos remotos lidos sem pendência.
     """
     caminho_config = raiz / NOME_DA_CONFIG
-    if not caminho_config.is_file() or not checkout_da_verdade(raiz):
+    if not caminho_config.is_file():
+        return []
+    try:
+        verdade = checkout_da_verdade(raiz)
+    except ErroEnvDocs as erro:
+        return [f"aviso — {raiz.name}: não deu para decidir se este é o checkout da verdade ({erro}); "
+                "nada foi sincronizado."]
+    if not verdade:
         return []
     try:
         config = carregar_config(caminho_config)
@@ -2141,6 +2187,7 @@ def impressao_do_pacote(raiz) -> str:
 
 @dataclass(frozen=True)
 class PluginNoCodex:
+    """O plugin instalado num CODEX_HOME: id, versão, pasta da versão ativa e se está ligado."""
     plugin_id: str
     versao: str
     raiz: Path
@@ -2247,6 +2294,7 @@ def editar_trust(texto: str, desejado: Mapping[str, Mapping[str, str]]) -> str:
 
 @dataclass(frozen=True)
 class InstalacaoCodex:
+    """O plano do `install --codex`: o plugin, o config.toml, o hash do conteúdo e as chaves de trust."""
     plugin: PluginNoCodex
     config: Path
     conteudo: str
@@ -2364,16 +2412,13 @@ def _agora(texto):
 
 
 def _commit(texto, raiz):
+    """O sha da linha "commit" do bloco: o `--commit` dado ou o HEAD da raiz, pelo `_git` (sem os
+    `GIT_*` herdados, que apontariam para outro repositório). None quando o git não responde."""
     if texto is not None:
         commit_curto(texto)
         return texto
-    try:
-        saida = subprocess.run(["git", "-C", str(raiz), "rev-parse", "HEAD"], capture_output=True,
-                               text=True, timeout=10)
-    except (OSError, subprocess.TimeoutExpired):
-        return None
-    sha = saida.stdout.strip()
-    return sha if saida.returncode == 0 and _RE_COMMIT.fullmatch(sha) else None
+    sha = (_git(raiz, "rev-parse", "HEAD") or "").strip()
+    return sha if _RE_COMMIT.fullmatch(sha) else None
 
 
 def _contexto(args):
@@ -2673,6 +2718,7 @@ def _parser():
 
 
 def main(argv=None) -> int:
+    """Entrada da CLI: roda o subcomando e traduz cada erro num rc (2 config, 1 o resto), sem valores."""
     args = _parser().parse_args(argv)
     try:
         return args.funcao(args)

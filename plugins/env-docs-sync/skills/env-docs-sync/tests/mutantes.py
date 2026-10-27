@@ -6,11 +6,14 @@ plugin inteiro, e a suíte tem de ficar vermelha. Rodado à mão depois de mexer
     python3 -B tests/mutantes.py            # todos
     python3 -B tests/mutantes.py M28 M31    # só esses
 
-Sai 0 quando todos morrem e 1 com a lista dos vivos, de um trecho que não está mais no script (aí o
-guarda mudou, e o mutante precisa ser refeito) ou de um mutante que não compila. A cópia é do plugin inteiro porque os testes leem o
-`hooks/hooks.json` e o sensor anti-marca varre `SKILL.parent.parent`: com só a pasta da skill, ele
-varreria a pasta temporária inteira. Cobre os mutantes da seção CI/CD, das seções derivadas e da versão
-do Codex; os dos incrementos anteriores, listados em `references/safety.md`, foram rodados à mão.
+Antes dos mutantes, roda a suíte sem nenhum (o controle): vermelha, sai 2, porque todo mutante
+sairia morto sem provar nada. Sai 0 quando todos morrem e 1 com a lista dos vivos, de um trecho que
+não está mais no script (aí o guarda mudou, e o mutante precisa ser refeito) ou de um mutante que
+não compila. A cópia é do plugin inteiro porque os testes leem o `hooks/hooks.json` e o sensor
+anti-marca varre `SKILL.parent.parent`: com só a pasta da skill, ele varreria a pasta temporária
+inteira. Cobre os mutantes da seção CI/CD, das seções derivadas, da versão do Codex e dos guardas da
+revisão de código antes da publicação; os dos incrementos anteriores, listados em
+`references/safety.md`, foram rodados à mão.
 """
 import shutil
 import subprocess
@@ -72,33 +75,55 @@ MUTANTES = [
     ("M29 só a primeira versão medida", "    if versao not in CODEX_MEDIDOS:", "    if versao != CODEX_MEDIDOS[0]:"),
     ("M30 aviso cita só a primeira", '_MEDIDOS = " e no ".join(CODEX_MEDIDOS)', "_MEDIDOS = CODEX_MEDIDOS[0]"),
     ("M31 sem o 0.165.0", 'CODEX_MEDIDOS = ("0.164.0", "0.165.0")', 'CODEX_MEDIDOS = ("0.164.0",)'),
+    ("M32 git que falha vira worktree", "    if saida is None:\n        raise ErroEnvDocs(\"o git não respondeu",
+     "    if saida is None:\n        return False\n        raise ErroEnvDocs(\"o git não respondeu"),
+    ("M33 aviso do git vira silêncio", "    except ErroEnvDocs as erro:\n        return [f\"aviso — {raiz.name}: não deu para decidir",
+     "    except ErroEnvDocs as erro:\n        return [] and [f\"aviso — {raiz.name}: não deu para decidir"),
+    ("M34 os.walk sem onerror", "os.walk(raiz, followlinks=False, onerror=_pasta_ilegivel)", "os.walk(raiz, followlinks=False)"),
+    ("M35 callout por substring no escrever", "bool(_RE_CALLOUT_AUSENTE.search(atual)) == (op.acao",
+     "(\"ausente desde\" in atual) == (op.acao"),
+    ("M36 callout por substring no bloco_confere", "return bool(_RE_CALLOUT_AUSENTE.search(corpo)) and texto",
+     "return \"ausente desde\" in corpo and texto"),
+    ("M37 _commit com os GIT_* herdados", "    sha = (_git(raiz, \"rev-parse\", \"HEAD\") or \"\").strip()",
+     "    sha = subprocess.run([\"git\", \"-C\", str(raiz), \"rev-parse\", \"HEAD\"], capture_output=True,\n"
+     "                         text=True).stdout.strip()"),
 ]
 
 
-def rodar(nome, antes, depois):
-    """Aplica um mutante numa cópia e roda a suíte; devolve `morto`, `VIVO`, `ALVO NÃO ACHADO` ou
-    `NÃO COMPILA`. Mutante que quebra a sintaxe derruba o import de todo módulo de teste: a suíte fica
-    vermelha sem que nenhum teste tenha olhado o guarda, por isso ele não conta como morto."""
+def _suite(antes=None, depois=None):
+    """Roda a suíte numa cópia do plugin inteiro, com o mutante aplicado quando `antes` vem.
+
+    Devolve (estado, última linha do unittest), com estado `verde`, `vermelho`, `estourou`,
+    `ALVO NÃO ACHADO` ou `NÃO COMPILA`."""
     with tempfile.TemporaryDirectory() as tmp:
         shutil.copytree(SKILL.parent.parent, Path(tmp) / "env-docs-sync", ignore=shutil.ignore_patterns("__pycache__"))
         copia = Path(tmp) / "env-docs-sync" / "skills" / "env-docs-sync"
-        script = copia / "scripts" / "env_docs_sync.py"
-        texto = script.read_text(encoding="utf-8")
-        if texto.count(antes) != 1:
-            return f"ALVO NÃO ACHADO ({texto.count(antes)}x)"
-        mutado = texto.replace(antes, depois)
-        try:
-            compile(mutado, str(script), "exec")
-        except SyntaxError as erro:
-            return f"NÃO COMPILA ({erro.msg}, linha {erro.lineno})"
-        script.write_text(mutado, encoding="utf-8")
+        if antes is not None:
+            script = copia / "scripts" / "env_docs_sync.py"
+            texto = script.read_text(encoding="utf-8")
+            if texto.count(antes) != 1:
+                return "ALVO NÃO ACHADO", f"{texto.count(antes)}x"
+            mutado = texto.replace(antes, depois)
+            try:
+                compile(mutado, str(script), "exec")
+            except SyntaxError as erro:
+                return "NÃO COMPILA", f"{erro.msg}, linha {erro.lineno}"
+            script.write_text(mutado, encoding="utf-8")
         try:
             r = subprocess.run([sys.executable, "-B", "-m", "unittest", "discover", "-s", "tests"], cwd=copia,
                                capture_output=True, text=True, timeout=TEMPO_DA_SUITE)
         except subprocess.TimeoutExpired:
-            return f"morto (a suíte passou de {TEMPO_DA_SUITE} s)"
-        ultima = (r.stderr.strip().splitlines() or ["?"])[-1]
-        return f"morto ({ultima})" if r.returncode != 0 else f"VIVO ({ultima})"
+            return "estourou", f"a suíte passou de {TEMPO_DA_SUITE} s"
+        return ("verde" if r.returncode == 0 else "vermelho"), (r.stderr.strip().splitlines() or ["?"])[-1]
+
+
+def rodar(antes, depois):
+    """Aplica um mutante numa cópia e roda a suíte; devolve `morto`, `VIVO`, `ALVO NÃO ACHADO` ou
+    `NÃO COMPILA`. Mutante que quebra a sintaxe derruba o import de todo módulo de teste: a suíte fica
+    vermelha sem que nenhum teste tenha olhado o guarda, por isso ele não conta como morto."""
+    estado, detalhe = _suite(antes, depois)
+    rotulo = {"vermelho": "morto", "estourou": "morto", "verde": "VIVO"}.get(estado, estado)
+    return f"{rotulo} ({detalhe})"
 
 
 def main(argv):
@@ -107,9 +132,15 @@ def main(argv):
     if desconhecidos:
         print(f"mutante desconhecido: {', '.join(sorted(desconhecidos))}", file=sys.stderr)
         return 2
+    # Controle: sem mutante, a suíte tem de passar; senão todo mutante sairia morto sem provar nada.
+    estado, detalhe = _suite()
+    if estado != "verde":
+        print(f"controle: a suíte sem mutante não passou ({estado}: {detalhe}); nenhum mutante conta",
+              file=sys.stderr)
+        return 2
     vivos = []
     for nome, antes, depois in escolhidos:
-        estado = rodar(nome, antes, depois)
+        estado = rodar(antes, depois)
         if not estado.startswith("morto"):
             vivos.append(nome)
         print(f"{nome}: {estado}", flush=True)

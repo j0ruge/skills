@@ -268,6 +268,20 @@ class DestinoKbTestes(BaseKb):
         self.assertEqual(self.kb.ler()["revision_count"], revisoes)
         self.assertEqual(sum(1 for c in self.kb.comandos() if c.startswith("page section-set")), 1)
 
+    def test_texto_ausente_desde_no_arquivo_nao_e_o_callout(self):
+        """O callout é o `<p class="callout danger">`, não a frase solta no conteúdo do `.env`."""
+        dados = {"development": {".env": f"# ausente desde 2024-01-01\nDB_PASSWORD={CANARIO}\n".encode()}}
+        (op,) = eds.planejar(eds.estado_vazio(), dados, sincronizado_em=QUANDO, commit="abc1234")
+        self.assertIs(self.destino.escrever(op), True)
+        revisoes = self.kb.ler()["revision_count"]
+        outro_host = eds.DestinoKb(self.config, self.ctx, commit="fedcba9")
+        (op,) = eds.planejar(eds.estado_vazio(), dados, sincronizado_em=QUANDO.replace(hour=23), commit="fedcba9")
+        self.assertIs(outro_host.escrever(op), False, "o bloco já está lá; a frase no arquivo não é callout")
+        self.assertEqual(self.kb.ler()["revision_count"], revisoes)
+        ausente = eds.Operacao("development", ".env", "marcar_ausente", op.sha256, corpo=op.corpo)
+        self.assertIs(eds.bloco_confere(ausente, self.destino.ler_corpo("development", ".env")), False,
+                      "sem o callout de verdade, o marcar_ausente não confere")
+
     def test_arquivo_que_volta_com_o_mesmo_conteudo_tira_o_callout(self):
         self.destino.escrever(self.op("criar"))
         self.destino.escrever(self.op("marcar_ausente"))

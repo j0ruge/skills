@@ -27,8 +27,8 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
   - aplicação que para na primeira falha e registra só o que o destino aceitou;
   - estado 0600, atômico, que só aceita hashes e carimbos;
   - a Página de ambientes inteira a partir do template, para a migração por `replace`.
-- **CLI mínima:** `validate`, `scan`, `plan`, `sync --to-dir` (destino local de teste) e
-  `render-page`. Nenhum subcomando imprime valor.
+- **CLI do núcleo**, no primeiro incremento (os outros subcomandos vêm abaixo): `validate`, `scan`,
+  `plan`, `sync --to-dir` (destino local de teste) e `render-page`. Nenhum subcomando imprime valor.
 - **`assets/ambientes-template.html`**: o template genérico da Página de ambientes.
 - **`assets/env-docs.example.json`**: uma config fictícia completa.
 - **`references/config.md`**: o schema da config, campo a campo, e o formato do estado.
@@ -54,8 +54,8 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
   - `flock` por repositório, estado relido sob a trava, gravado só com o que o destino aceitou, e
     `systemMessage` com caminhos, nunca valores. Toda falha sai com exit 0 e aviso;
   - estado por repositório em `CLAUDE_PLUGIN_DATA`, `PLUGIN_DATA` ou `~/.local/state/env-docs-sync`;
-  - fábrica de destino injetável por `doc.backend`. O backend `kb` recusa com o aviso "adaptador kb
-    ainda não implementado", e o estado não muda.
+  - fábrica de destino injetável por `doc.backend`, com o destino `kb` descrito mais abaixo. Uma
+    falha do destino vira aviso, e o estado não muda.
 - **`status`:** `ok`, `diverge` ou `ausente` por arquivo, comparando o hash do bloco relido no destino
   com o do arquivo; rc 3 quando algo não está `ok`. Tem caso sabotado: um byte trocado no arquivo
   ou no bloco dá `diverge`.
@@ -132,8 +132,8 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
   gravado; reinstalar o mesmo conteúdo e `remove` + `add` mantêm o trust; um byte mudado no pacote
   faz cada hook sair `Failed` até o `install --codex` rodar de novo; o `codex exec` não mostra o
   `systemMessage`. Os resultados estão na `kb.md` §5 e na `hosts.md` §4.
-- **Testes:** 38 novos (`test_codex.py`, `test_init.py`); 22 mutantes dos guardas novos deixaram a
-  suíte vermelha.
+- **Testes:** `test_codex.py` e `test_init.py`; 22 mutantes dos guardas novos, rodados à mão,
+  deixaram a suíte vermelha.
 - **Seção CI/CD** (campo `ci` da config, obrigatório, `null` desliga):
   - os workflows de `ci.workflows`, lidos sem PyYAML: uma linha por job, com workflow, arquivo, job,
     `runs-on` e `environment`. Forma que o leitor não entende sai `?`;
@@ -151,8 +151,8 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
 - **`tests/oraculo_codex.py`**: a conferência à mão da fixture dourada contra o `hooks/list` de um
   Codex novo, que monta a loja, instala num `CODEX_HOME` descartável e compara. No 0.164.0: 9/9
   iguais; com a fixture sabotada, rc 1.
-- **Testes:** 73 novos (`test_ci.py`, `test_derivadas.py` e os de config e `init`); 27 mutantes do
-  leitor de workflow, do gh e das derivadas deixaram a suíte vermelha.
+- **Testes:** `test_ci.py`, `test_derivadas.py` e os novos de config e `init`; 27 mutantes do leitor
+  de workflow, do gh e das derivadas deixaram a suíte vermelha.
 - **Codex 0.165.0**, que o próprio Codex instalou no dia da publicação: o oráculo deu 9/9 iguais
   (com a fixture sabotada, 0/9 e rc 1). O 0.165.0 entrou em `CODEX_MEDIDOS`, e o `install --codex`
   deixa de avisar nele. Teste novo e 4 mutantes vermelhos. A description ficou com 348 caracteres,
@@ -161,4 +161,23 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
   e da versão do Codex, cada um numa cópia do plugin inteiro. Sai 1 com o mutante vivo, com o
   trecho que sumiu do script ou com o mutante que não compila; um mutante que não muda nada sai
   `VIVO`. O M22 (status sem a linha das derivadas) não compilava, e a suíte ficava vermelha só pelo
-  import (16 erros): foi refeito e morre em 3 testes.
+  import (16 erros): foi refeito e morre em 3 testes. Antes dos mutantes, o rodador roda a suíte sem
+  nenhum (o controle) e sai 2 se ela já estiver vermelha, porque aí todo mutante sairia morto.
+- **Revisão de código antes da publicação** (o codereview da loja, que deu F na 1ª rodada pelo
+  portão de segredo):
+  - a senha sintética do `test_remoto.py` passa a ser gerada a cada execução, e nenhum literal de
+    senha fica no repositório;
+  - git que não responde no Checkout da verdade (anterior à 2.31, timeout, rc ≠ 0) avisa, em vez
+    de calar como se fosse worktree;
+  - pasta que a Varredura não lista levanta, em vez de sumir com os arquivos, que virariam
+    `ausente` na página;
+  - o callout "ausente desde" é reconhecido pelo `<p class="callout danger">`, não pela frase,
+    que também pode estar no conteúdo do `.env`;
+  - o sha da linha "commit" sai do `_git`, sem os `GIT_*` herdados de um hook do git;
+  - o protocolo `Destino` ganhou os métodos das Seções derivadas, e os símbolos públicos ganharam
+    docstring;
+  - o oráculo do Codex lê o `app-server` com prazo (antes travava sem resposta), encerra o processo
+    no fim e sai 1 quando nada foi comparado;
+  - a `safety.md` ganhou a seção "Confiança na config": a `.env-docs.json` nomeia o que o hook
+    executa, e mudar a config é mudar o que roda na máquina declarada;
+  - 4 testes novos e 6 mutantes (M32–M37), todos vermelhos.

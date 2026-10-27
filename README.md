@@ -4,7 +4,7 @@
 
 *Plugin marketplace for Claude Code, Cursor and Codex — CI/CD, code review, deployments, releases, and more.*
 
-[![Plugins](https://img.shields.io/badge/plugins-32-blue?style=flat-square)](#available-plugins)
+[![Plugins](https://img.shields.io/badge/plugins-33-blue?style=flat-square)](#available-plugins)
 [![Platform](https://img.shields.io/badge/platform-Claude%20Code%20%7C%20Cursor%20%7C%20Codex-blueviolet?style=flat-square)](https://code.claude.com)
 [![License](https://img.shields.io/badge/license-Proprietary-red?style=flat-square)](#)
 

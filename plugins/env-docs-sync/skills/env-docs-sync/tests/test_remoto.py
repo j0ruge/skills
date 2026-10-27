@@ -7,6 +7,7 @@ A senha é um canário: tem que chegar ao `SSHPASS` do filho e a nenhum argv, sa
 import hashlib
 import json
 import os
+import secrets
 import stat
 import subprocess
 import tempfile
@@ -17,7 +18,7 @@ from pathlib import Path
 from support import CANARIO, MAQUINA, QUANDO_ISO, config_exemplo, criar_repo, eds, fixture, rodar_cli
 from test_hook import AGORA, DestinoEspiao
 
-SENHA = "SENHA_CANARIO_93ab"
+SENHA = secrets.token_hex(10)  # gerada a cada execução: nenhuma senha, nem sintética, fica no repositório
 STAGING, PRODUCAO = "deploy@staging.internal.example", "deploy@db.internal.example"
 
 
