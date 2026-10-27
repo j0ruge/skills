@@ -16,6 +16,7 @@ vai pelo stdin.
 | trava | `content-permissions read page <id>` | JSON com `fallback_permissions` (`inheriting`, `view`, …) e `role_permissions[]` (`view`, `role.display_name`) |
 | Bloco de arquivo | `page section-set <id> --heading=<caminho> --under=[<ambiente>] --create --stdin --changelog=<…> --apply` | rc 0 e JSON (`changed`, `revision_count`, `backup`) |
 | migração | `page replace <id> --html=@- --confirm=<id> --changelog=<…> [--apply]` | sem `--apply`, rc 4 com contagens; com, rc 0 |
+| seções derivadas | `page replace <id> --html=@- --confirm=<id> --changelog=<…> --apply` | rc 0; a página relida tem as derivadas novas |
 
 - **Códigos de saída da CLI:** 0 ok · 1 API ou rede · 2 uso · 3 integridade · 4 dry-run.
 - **Erro:** a CLI escreve `{"error": {"code", "message", "backup"?}}` no stderr. O aviso do plugin
@@ -25,7 +26,8 @@ vai pelo stdin.
   que começa por `-` não vira opção, e o `@-` não depende de como o parser da CLI trata `@`.
 - **`changelog`:** `env-docs-sync: [<ambiente>] <caminho> @ <marca>`, cortado em 180 caracteres
   (o limite da API). A marca é o commit curto em development, `sha256:<12>` num ambiente remoto e
-  `ausente` no callout. A migração usa `env-docs-sync: migração ao template @ <commit curto>`.
+  `ausente` no callout. A migração usa `env-docs-sync: migração ao template @ <commit curto>`, e as
+  seções derivadas, `env-docs-sync: seções derivadas @ sha256:<12>`.
 
 ## 2. A trava (o destino menos exposto que a origem)
 
@@ -59,11 +61,35 @@ o corpo vai até o próximo heading de nível ≤ 3. h2 ou h3 repetido é erro.
 
 ## 4. A migração (`migrate`)
 
-`migrate` renderiza a Página de ambientes inteira pelo template e a publica com `page replace`.
+`migrate` renderiza a Página de ambientes inteira pelo template, com a CI/CD dos workflows e do
+gh, e a publica com `page replace`.
 Ela lê **todos** os ambientes, inclusive os ssh. Se um deles falhar, nada é enviado, porque a página
 nova perderia aqueles blocos. Ela passa pela mesma trava. Sem `--apply`, imprime o dry-run da CLI
 (contagens de unidades, bytes e sha curto, nunca texto) e sai com rc 4. Com `--apply --state <arquivo>`,
-grava o estado do que foi publicado.
+grava o estado do que foi publicado, inclusive o das seções derivadas.
+
+### As seções derivadas depois da migração
+
+A intro com os papéis, a tabela de Ambientes, a CI/CD e o Como rodar não são Blocos de arquivo, e o
+`section-set` só troca o corpo de um h3. Quando o hook ou o `sync` acham que elas mudaram (config,
+workflows, versão do plugin ou, na SessionStart depois da janela, os nomes do gh), o adaptador:
+
+1. passa pela trava, como no bloco, mesmo quando nada vai mudar: página aberta é aviso a cada vez;
+2. relê a página e a parte em três (`partes_da_pagina`): antes das Seções de ambiente, as Seções de
+   ambiente e, do h2 CI/CD em diante, o resto. Página sem os h2 Ambientes, CI/CD e Como rodar, um
+   de cada e nessa ordem, é erro ("rode `migrate`");
+3. monta a página nova com as derivadas renderizadas e as Seções de ambiente relidas, como estão,
+   menos o espaço do fim: o template já põe a quebra antes da CI/CD, e sem o corte cada volta somava
+   uma linha (`test_pagina_com_as_secoes_dadas`);
+4. compara só as derivadas, sem os ids `bkmrk-`, com as entidades resolvidas e sem espaço entre
+   tags (`derivadas_conferem`). Iguais: não escreve. Essa normalização bateu com a página real
+   guardada pelo BookStack v26.09 em 2026-10-27;
+5. senão, `page replace --apply`, relê e confere de novo antes de liberar o estado.
+
+O estado guarda o hash das derivadas: hash igual nem chama o destino. Um limite: Claude Code e Codex
+não dividem a trava (cada host tem a sua pasta de dados). Se um host refaz as derivadas no mesmo
+segundo em que o outro escreve um bloco, o `replace` pode devolver o bloco antigo; o `status` acusa
+`diverge` e o próximo gatilho daquele arquivo corrige.
 
 ## 5. Medido no KB de staging (2026-10-27)
 

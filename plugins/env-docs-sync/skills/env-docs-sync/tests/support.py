@@ -46,6 +46,28 @@ RAIZ_DAS_FIXTURES = "/home/user/my-project"
 MAQUINA = "estacao-teste"
 
 
+def gh_falso(pasta, respostas, rc=None):
+    """Um `gh` executável em `pasta`: responde por argv (sem o `gh`) e anota cada chamada em `gh.log`.
+    Chamada sem resposta sai 1, como o gh sem login."""
+    pasta = Path(pasta)
+    pasta.mkdir(parents=True, exist_ok=True)
+    (pasta / "gh.json").write_text(json.dumps({"respostas": respostas, "rc": rc or {}}), encoding="utf-8")
+    programa = pasta / "gh"
+    programa.write_text(f"""#!{sys.executable}
+import json, sys
+dados = json.load(open({str(pasta / "gh.json")!r}, encoding="utf-8"))
+chave = " ".join(sys.argv[1:])
+with open({str(pasta / "gh.log")!r}, "a", encoding="utf-8") as log:
+    log.write(chave + "\\n")
+if chave not in dados["respostas"]:
+    sys.exit(1)
+sys.stdout.write(dados["respostas"][chave])
+sys.exit(dados["rc"].get(chave, 0))
+""", encoding="utf-8")
+    programa.chmod(0o755)
+    return programa
+
+
 def git(raiz, *args):
     return subprocess.run(["git", "-C", str(raiz), *map(str, args)], capture_output=True, text=True, check=True)
 
@@ -67,6 +89,7 @@ def config_so_development(maquina=MAQUINA):
     cfg = config_exemplo()
     del cfg["environments"]["staging"], cfg["environments"]["production"], cfg["remote_check_every"]
     cfg["environments"]["development"]["machine"] = maquina
+    cfg["ci"]["secrets"] = None  # sem gh: a janela (remote_check_every) só é exigida com ssh ou gh
     return cfg
 
 

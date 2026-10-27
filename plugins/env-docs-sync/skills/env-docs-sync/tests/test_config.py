@@ -20,6 +20,17 @@ class ConfigValida(unittest.TestCase):
     def test_sem_ambiente_remoto_dispensa_remote_check_every(self):
         cfg = config_exemplo()
         del cfg["environments"]["staging"], cfg["environments"]["production"], cfg["remote_check_every"]
+        cfg["ci"]["secrets"] = None
+        eds.validar_config(cfg)
+
+    def test_ci_nulo_e_sem_ci(self):
+        cfg = config_exemplo()
+        cfg["ci"] = None
+        eds.validar_config(cfg)
+
+    def test_ci_com_workflows_nulo(self):
+        cfg = config_exemplo()
+        cfg["ci"]["workflows"] = None
         eds.validar_config(cfg)
 
     def test_exclude_e_run_podem_ser_listas_vazias(self):
@@ -47,7 +58,7 @@ class ConfigInvalida(unittest.TestCase):
         self.assertTrue(any(trecho in e for e in erros), f"{trecho!r} não está em {erros}")
 
     def test_campo_de_topo_ausente_e_erro_nao_default(self):
-        for campo in ("doc", "values", "include", "exclude", "environments", "run"):
+        for campo in ("doc", "values", "include", "exclude", "environments", "run", "ci"):
             with self.subTest(campo=campo):
                 cfg = config_exemplo()
                 del cfg[campo]
@@ -73,6 +84,28 @@ class ConfigInvalida(unittest.TestCase):
         cfg = config_exemplo()
         del cfg["remote_check_every"]
         self.assertErro(cfg, "config.remote_check_every: campo obrigatório ausente")
+
+    def test_remote_check_every_obrigatorio_com_nomes_do_gh(self):
+        cfg = config_exemplo()
+        del cfg["environments"]["staging"], cfg["environments"]["production"], cfg["remote_check_every"]
+        self.assertErro(cfg, "config.remote_check_every: campo obrigatório ausente")
+
+    def test_ci_errado(self):
+        casos = [
+            ("gh", "config.ci: precisa ser um objeto"),
+            ({"workflows": ".github/workflows"}, "config.ci.secrets: campo obrigatório ausente"),
+            ({"secrets": "gh"}, "config.ci.workflows: campo obrigatório ausente"),
+            ({"workflows": ".github/workflows", "secrets": "gitlab"}, "config.ci.secrets"),
+            ({"workflows": "/etc/workflows", "secrets": None}, "config.ci.workflows"),
+            ({"workflows": "../fora", "secrets": None}, "config.ci.workflows"),
+            ({"workflows": "", "secrets": None}, "config.ci.workflows"),
+            ({"workflows": None, "secrets": None, "x": 1}, "config.ci.x: chave desconhecida"),
+        ]
+        for valor, onde in casos:
+            with self.subTest(valor=valor):
+                cfg = config_exemplo()
+                cfg["ci"] = valor
+                self.assertErro(cfg, onde)
 
     def test_tipos_e_valores_errados(self):
         casos = [

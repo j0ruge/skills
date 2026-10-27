@@ -106,8 +106,16 @@ de que o hook rodou é o estado na pasta de dados e a revisão da página.
 **Oráculo para a próxima versão do Codex.** O `codex app-server` fala JSON-RPC por linha no stdio:
 `initialize` (com `clientInfo` e `capabilities.experimentalApi: true`), a notificação `initialized`
 e `hooks/list` com `{"cwds": [<pasta>]}`. Cada hook da resposta traz `key`, `trustStatus` e
-`currentHash` (`<declaração>/<conteúdo>`). Reinstale o pacote dourado num `CODEX_HOME` descartável,
-compare os `currentHash` com a fixture e, se mudarem, refaça a fixture e o algoritmo.
+`currentHash` (`<declaração>/<conteúdo>`). O `tests/oraculo_codex.py` faz a volta inteira: monta a
+loja com o pacote dourado da fixture, instala num `CODEX_HOME` novo (fora do `/tmp`) e compara cada
+`currentHash` com a fixture. Rode a cada versão nova do codex-cli:
+
+```bash
+python3 tests/oraculo_codex.py ~/.cache/env-docs-sync-oraculo   # pasta nova; rc 0 = tudo igual
+```
+
+No codex-cli 0.164.0 (2026-10-27): 9/9 iguais, rc 0; com a fixture sabotada num hash, rc 1 e o hook
+apontado. Se mudarem, releia o codex-rs da versão nova, ajuste o algoritmo e refaça a fixture.
 
 ## 5. Receita de captura
 

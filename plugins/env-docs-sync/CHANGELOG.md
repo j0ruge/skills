@@ -3,7 +3,8 @@
 ## [0.1.0] — em construção
 
 Em construção, por incrementos: o núcleo puro com testes offline, a entrada do hook nos dois hosts, o
-Sync remoto, o destino kb, a instalação no Codex e o `init`. O plugin ainda não está no catálogo da loja.
+Sync remoto, o destino kb, a instalação no Codex, o `init` e a seção CI/CD com as Seções derivadas.
+O plugin ainda não está no catálogo da loja.
 
 ### Por quê
 
@@ -132,3 +133,22 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
   `systemMessage`. Os resultados estão na `kb.md` §5 e na `hosts.md` §4.
 - **Testes:** 38 novos (`test_codex.py`, `test_init.py`); 22 mutantes dos guardas novos deixaram a
   suíte vermelha.
+- **Seção CI/CD** (campo `ci` da config, obrigatório, `null` desliga):
+  - os workflows de `ci.workflows`, lidos sem PyYAML: uma linha por job, com workflow, arquivo, job,
+    `runs-on` e `environment`. Forma que o leitor não entende sai `?`;
+  - com `ci.secrets: "gh"`, os **nomes** dos segredos e das variáveis do repositório e de cada
+    environment, pelo GitHub CLI rodado na raiz. Nome fora de `[A-Za-z_][A-Za-z0-9_]*` é recusado,
+    e do erro do `gh` sai só o rc. `remote_check_every` passa a ser exigido também com o gh;
+  - o `init` liga a seção quando existe `.github/workflows`.
+- **Seções derivadas** (a intro com os papéis, a tabela de Ambientes, a CI/CD e o Como rodar): o
+  hook e o `sync` as refazem quando a config, um workflow ou a versão do plugin muda, e na
+  SessionStart depois da janela, com o gh. Como o `section-set` só troca o corpo de um h3, elas vão
+  por `page replace`, com as Seções de ambiente relidas da página como estão; a comparação ignora os
+  ids `bkmrk-`, as entidades e o espaço entre tags, e bateu com a página real guardada pelo
+  BookStack. O estado ganha `derived` (só hashes e carimbo), e o `status`, a linha
+  `página	seções derivadas`. A edição da `.env-docs.json` ou de um workflow passa pelo filtro do hook.
+- **`tests/oraculo_codex.py`**: a conferência à mão da fixture dourada contra o `hooks/list` de um
+  Codex novo, que monta a loja, instala num `CODEX_HOME` descartável e compara. No 0.164.0: 9/9
+  iguais; com a fixture sabotada, rc 1.
+- **Testes:** 73 novos (`test_ci.py`, `test_derivadas.py` e os de config e `init`); 27 mutantes do
+  leitor de workflow, do gh e das derivadas deixaram a suíte vermelha.

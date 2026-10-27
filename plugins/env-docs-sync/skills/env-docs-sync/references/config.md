@@ -8,7 +8,7 @@ confere uma config real.
 Regras gerais, conferidas por `validar_config`:
 
 - **Campo faltando é erro, nunca default.** A única exceção é `remote_check_every`, que só é
-  exigido quando algum ambiente usa `source: "ssh"`.
+  exigido quando algum ambiente usa `source: "ssh"` ou quando `ci.secrets` é `"gh"`.
 - **Chave desconhecida é erro.** Assim um erro de digitação (`exlude`) não vira config ignorada.
 - **Chave duplicada no JSON é erro.** O `json` do Python ficaria só com a última.
 - **Todos os erros saem juntos**, um por linha, com o caminho JSON: `config.doc.page_id: campo
@@ -20,11 +20,12 @@ Regras gerais, conferidas por `validar_config`:
 |---|---|---|---|
 | `doc` | objeto | sim | o destino: backend, página e papéis (ver abaixo) |
 | `values` | `"full"` | sim | o conteúdo integral vai para a página restrita; é o único modo da 0.1.0 |
-| `remote_check_every` | texto `<n>m`, `<n>h` ou `<n>d` | só com ambiente ssh | intervalo mínimo entre a última leitura boa de um ambiente ssh e a próxima que a SessionStart dispara (ex.: `"24h"`). O gatilho por host citado num comando do shell e o `sync --remote` não olham a janela |
+| `remote_check_every` | texto `<n>m`, `<n>h` ou `<n>d` | só com ambiente ssh ou `ci.secrets: "gh"` | intervalo mínimo entre a última leitura boa de um ambiente ssh (ou a última consulta ao gh) e a próxima que a SessionStart dispara (ex.: `"24h"`). O gatilho por host citado num comando do shell e o `sync --remote` não olham a janela |
 | `include` | lista não vazia de padrões | sim | os arquivos que entram na Varredura |
 | `exclude` | lista de padrões (pode ser vazia) | sim | somados ao piso `EXCLUDE_PADRAO` |
 | `environments` | objeto | sim | um objeto por Ambiente (ver abaixo) |
 | `run` | lista (pode ser vazia) | sim | os comandos da seção "Como rodar" |
+| `ci` | objeto ou `null` | sim | a seção CI/CD (ver abaixo); `null` a deixa com a frase "sem CI/CD declarado" |
 
 ## `doc`
 
@@ -92,6 +93,22 @@ Os arquivos de development saem da Varredura. Não há `files`.
 Cada item é `{"label": texto, "command": texto}` e vira, na seção "Como rodar", o rótulo em
 negrito e o comando num bloco de código. Lista vazia gera uma frase dizendo que não há comando.
 
+## `ci`
+
+| Campo | Tipo | O que é |
+|---|---|---|
+| `workflows` | pasta relativa ou `null` | de onde saem os workflows (`*.yml` e `*.yaml` do topo da pasta, como no GitHub). Cada job vira uma linha: workflow, arquivo, job, `runs-on` e `environment` |
+| `secrets` | `"gh"` ou `null` | com `"gh"`, os **nomes** dos segredos e das variáveis do repositório e de cada environment, pelo GitHub CLI rodado na raiz (`gh secret list`, `gh variable list`, `gh api …/environments`). O GitHub não devolve valor de segredo, e o plugin recusa nome fora de `[A-Za-z_][A-Za-z0-9_]*` |
+
+O `init` liga `{"workflows": ".github/workflows", "secrets": "gh"}` (e a janela de 24 h) quando a
+pasta existe, e deixa `ci: null` quando não. O leitor de workflow não é um YAML completo: entende o
+`name` do topo e, em cada job, o `runs-on` (texto, expressão, lista de fluxo ou de bloco) e o
+`environment` (texto ou mapa com `name`). Forma que ele não entende, como `runs-on` em mapa de
+`group`/`labels`, sai `?`, nunca um palpite. Job sem `runs-on` (workflow reusável) sai `—`.
+
+Falha do `gh` (sem login, sem rede, sem permissão de ler segredos) não apaga nada: a seção fica como
+estava, o hook avisa, e o próximo gatilho tenta de novo.
+
 ## Como a config vira página
 
 | Placeholder do template | Sai de |
@@ -99,7 +116,7 @@ negrito e o comando num bloco de código. Lista vazia gera uma frase dizendo que
 | `$allowed_roles` | `doc.allowed_roles`, separados por vírgula |
 | `$environments_table` | `environments.*` (uma linha por ambiente, na ordem development → staging → production) |
 | `$environment_sections` | uma Seção de ambiente por ambiente configurado, com um h3 por caminho, em ordem |
-| `$ci_cd` | "a gerar" na 0.1.0 |
+| `$ci_cd` | `ci` (workflows do disco e nomes do gh) |
 | `$run` | `run[]` |
 
 ## O arquivo de estado
@@ -120,9 +137,14 @@ tem esta forma:
       "old/.env": {"sha256": "<64 hex>", "absent_since": "2026-10-27"}
     }
   },
-  "remote_checked_at": {"staging": "2026-10-27T14:05:00-03:00"}
+  "remote_checked_at": {"staging": "2026-10-27T14:05:00-03:00"},
+  "derived": {"inputs_sha256": "<64 hex>", "sha256": "<64 hex>", "checked_at": "2026-10-27T14:05:00-03:00"}
 }
 ```
+
+`derived` é opcional: o estado das seções derivadas. `inputs_sha256` resume o que elas leem do disco
+(versão do plugin, template, config e workflows), `sha256` é o hash delas renderizadas, e
+`checked_at` a última vez que foram conferidas, que é também a última consulta ao gh.
 
 O `validar_estado` recusa qualquer chave ou valor fora disso, e a mensagem de erro não repete o
 valor recusado. Um estado corrompido é erro, e não vira estado vazio em silêncio.

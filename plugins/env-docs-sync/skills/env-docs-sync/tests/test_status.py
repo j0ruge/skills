@@ -36,7 +36,8 @@ class Status(unittest.TestCase):
         linhas = self.status(0)
         self.assertIn("ok\tdevelopment\t.env", linhas)
         self.assertIn("ok\tdevelopment\tpackages/api/.env.local", linhas)
-        self.assertIn("2 ok, 0 diverge, 0 ausente", linhas[-1])
+        self.assertIn("ok\tpágina\tseções derivadas", linhas)
+        self.assertIn("3 ok, 0 diverge, 0 ausente", linhas[-1])
 
     def test_sabotado_um_byte_no_arquivo_local_diverge(self):
         arquivo = self.raiz / ".env"

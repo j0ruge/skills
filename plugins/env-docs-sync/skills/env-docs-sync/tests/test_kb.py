@@ -41,7 +41,9 @@ class KbFalso:
 
     def __init__(self, pasta, config, perms=None):
         self.caminho = Path(pasta) / "kb-falso.json"
-        html = eds.pagina_de_ambientes(config, {})
+        ci = config["ci"]  # a seção que a config renderiza num repo sem workflows e sem nomes no gh
+        ci_cd = eds.secao_ci_cd(ci, [] if ci and ci["workflows"] else None, [] if ci and ci["secrets"] else None)
+        html = eds.pagina_de_ambientes(config, {}, ci_cd=ci_cd)
         self.gravar({"id": config["doc"]["page_id"], "target": "staging", "html": html, "revision_count": 1,
                      "permissoes": perms or permissoes()})
 
@@ -406,7 +408,7 @@ class Cli(unittest.TestCase):
         self.assertEqual(set(gravado["environments"]["development"]), {".env", "api/.env.local"})
         self.assertIn("nada a sincronizar", self.cli("sync", "--root", self.raiz, "--state", self.estado,
                                                      "--now", QUANDO_ISO, "--commit", "abc1234").stdout)
-        self.assertIn("2 ok", self.cli("status", "--root", self.raiz).stdout)
+        self.assertIn("3 ok", self.cli("status", "--root", self.raiz).stdout)  # 2 blocos + as derivadas
 
     def test_migrate_passa_pela_mesma_trava(self):
         self.kb.mudar(permissoes=permissoes(fallback_view=True))

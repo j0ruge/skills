@@ -11,7 +11,7 @@ CLI real (`references/kb-cli.md` §3–5 do kb, lido em 2026-10-27):
 - `page replace <id> --html @- --confirm <id> [--changelog=C] [--apply]`.
 
 Como o BookStack, acrescenta `id="bkmrk-N"` aos blocos guardados. Botões de teste no estado:
-`falhar` ({subcomando: [rc, code, message, backup]}), `sabotar` (troca 1 byte do corpo guardado) e
+`falhar` ({subcomando: [rc, code, message, backup]}), `sabotar` (1 byte a mais no corpo ou na página guardada) e
 `chamadas` (cada argv recebido, sem o stdin). É independente do plugin de propósito: não importa nada
 dele, para o teste não confirmar o próprio código.
 """
@@ -108,6 +108,8 @@ def replace(estado, args, corpo):
         return 4
     if mudou:
         estado["html"] = com_ids(corpo, estado)
+        if estado.get("sabotar"):  # 1 byte a mais no fim da página guardada
+            estado["html"] += "X"
         estado["revision_count"] += 1
         estado.setdefault("changelogs", []).append(opcao(args, "--changelog"))
     print(json.dumps({"id": estado["id"], "revision_count": estado["revision_count"], "changed": mudou,

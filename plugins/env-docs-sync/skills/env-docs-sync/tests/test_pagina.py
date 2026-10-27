@@ -18,7 +18,7 @@ class Pagina(unittest.TestCase):
         }
 
     def pagina(self, **kw):
-        return eds.pagina_de_ambientes(self.cfg, self.blocos, **kw)
+        return eds.pagina_de_ambientes(self.cfg, self.blocos, **{"ci_cd": "<p>CI do teste</p>", **kw})
 
     def test_ordem_das_secoes(self):
         pagina = self.pagina()
@@ -65,9 +65,9 @@ class Pagina(unittest.TestCase):
         self.assertIn("Testes &amp; lint", secao)
         self.assertIn("npm test &amp;&amp; npm run lint", secao)
 
-    def test_ci_cd_fica_a_gerar(self):
+    def test_ci_cd_e_a_recebida(self):
         secao = self.pagina().split("<h2>CI/CD</h2>", 1)[1].split("<h2>", 1)[0]
-        self.assertIn("a gerar", secao)
+        self.assertEqual(secao.strip(), "<p>CI do teste</p>")
 
     def test_nenhum_placeholder_sobra(self):
         self.assertIsNone(re.search(r"\$\{?[a-z_]+", self.pagina()))

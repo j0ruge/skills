@@ -1,8 +1,8 @@
 ---
 name: env-docs-sync
-description: "Mirrors every .env* file of a repo into a restricted environments documentation page: one section per environment, one block per file, rewritten only when its hash changes. Values never reach logs or local state, which keeps only hashes. Triggers — env docs, .env sync, environments page, env-docs-sync, .env-docs.json, environment variables docs."
+description: "Mirrors every .env* file of a repo into a restricted environments documentation page: one section per environment, one block per file, rewritten only when its hash changes, plus a CI/CD section (workflows, runs-on, secret names via gh). Values never reach logs or local state, which keeps only hashes. Triggers — env docs, .env sync, environments page, env-docs-sync, .env-docs.json, environment variables docs."
 license: MIT
-compatibility: Python 3.11+, só biblioteca padrão (testado com o 3.12.3), git 2.31+. Hooks medidos em 2026-10-27 no Claude Code 2.1.309 e no codex-cli 0.164.0 (payload real capturado nos dois; trust do Codex conferido contra o hooks/list do app-server). Sync remoto com o ssh do OpenSSH (medido no 9.6p1) e, para host com senha, o sshpass (medido no 1.09). Destino kb conferido contra o KB de staging (BookStack v26.09) em 2026-10-27.
+compatibility: Python 3.11+, só biblioteca padrão (testado com o 3.12.3), git 2.31+. Hooks medidos em 2026-10-27 no Claude Code 2.1.309 e no codex-cli 0.164.0 (payload real capturado nos dois; trust do Codex conferido contra o hooks/list do app-server). Sync remoto com o ssh do OpenSSH (medido no 9.6p1) e, para host com senha, o sshpass (medido no 1.09). CI/CD pelo GitHub CLI 2.85.0, opcional. Destino kb conferido contra o KB de staging (BookStack v26.09) em 2026-10-27.
 metadata:
   author: JorUge
   version: "0.1.0"
@@ -40,16 +40,17 @@ Os mesmos nomes valem aqui, na config, no código e na página.
 | Fonte da verdade | onde vive a cópia que vale de cada ambiente | `environments.*.source_of_truth` |
 | Varredura | achar os `.env*` e comparar o hash de cada um com o estado | `varredura()`, `diferencas()` |
 | Sync remoto | ler o `.env` de staging e de production por ssh, só leitura | `ler_remoto()`, `remotos_devidos()` |
+| Seções derivadas | o que não é Bloco de arquivo: intro, Ambientes, CI/CD e Como rodar | `partes_da_pagina()`, `derivadas_devidas()` |
 
 ## O que existe na 0.1.0
 
 | Subcomando | Estado |
 |---|---|
 | `init` | existe: escreve a `.env-docs.json` inicial pela Varredura e pelo hostname, com `null` no que só a pessoa sabe; nunca sobrescreve |
-| `sync` | existe: `development` (e os ssh com `--remote`) no destino de `doc.backend` (o kb, com a trava de permissão) ou, com `--to-dir`, num diretório local (teste e inspeção) |
+| `sync` | existe: `development` (e os ssh com `--remote`) no destino de `doc.backend` (o kb, com a trava de permissão) ou, com `--to-dir`, num diretório local (teste e inspeção); refaz as Seções derivadas quando mudam (com `--remote`, sempre) |
 | `sync --remote` | existe: lê também os ambientes ssh, sem olhar a janela; rc 1 se algum não foi lido |
-| `status` | existe: por arquivo, `ok`, `diverge` ou `ausente`, comparando o hash do bloco relido no destino com o do arquivo; rc 3 se algo não está `ok`. Com `--remote`, confere também os ambientes ssh |
-| `migrate` | existe: publica a Página de ambientes inteira (`kb page replace`), com todos os ambientes e a trava; sem `--apply`, o dry-run da CLI (rc 4) |
+| `status` | existe: por arquivo, `ok`, `diverge` ou `ausente`, comparando o hash do bloco relido no destino com o do arquivo, mais uma linha `página	seções derivadas`; rc 3 se algo não está `ok`. Com `--remote`, confere também os ambientes ssh |
+| `migrate` | existe: publica a Página de ambientes inteira (`kb page replace`), com todos os ambientes, a CI/CD e a trava; sem `--apply`, o dry-run da CLI (rc 4) |
 | `install --codex` | existe: grava no `config.toml` do Codex o trust dos hooks do plugin instalado; sem `--apply`, o diff exato (rc 4) |
 | `hook` | existe: a entrada do `hooks/hooks.json` (PostToolUse de edição e de shell, Stop e SessionStart); sempre sai 0 |
 | `validate`, `scan`, `plan`, `render-page` | existem |
@@ -105,10 +106,10 @@ O `hooks/hooks.json` liga o mesmo comando a quatro gatilhos, nos dois hosts:
 
 | Gatilho | O que faz |
 |---|---|
-| PostToolUse `Write\|Edit` (no Codex, o `apply_patch` casa por alias) | se algum caminho editado é arquivo da Varredura, refaz a Varredura da raiz **do arquivo** e sincroniza; senão, calado |
+| PostToolUse `Write\|Edit` (no Codex, o `apply_patch` casa por alias) | se algum caminho editado é arquivo da Varredura, a config ou um workflow, refaz a Varredura da raiz **do arquivo** e sincroniza; senão, calado |
 | PostToolUse `Bash` | refaz a Varredura da raiz do `cwd`, sem interpretar o comando. Se o comando usa `ssh`, `scp`, `sshpass` ou `rsync` e cita o host de um ambiente da config, faz também o Sync remoto daquele ambiente |
 | `Stop` | a mesma Varredura, que pega a edição à mão. Sai calado com `stop_hook_active`. Sem ssh |
-| `SessionStart` | a mesma Varredura, mais o Sync remoto de cada ambiente cuja última leitura boa passou de `remote_check_every` |
+| `SessionStart` | a mesma Varredura, mais o Sync remoto de cada ambiente cuja última leitura boa passou de `remote_check_every`, e o gh, pela mesma janela |
 
 O fluxo de cada raiz, em ordem, sempre com exit 0:
 
@@ -118,7 +119,8 @@ O fluxo de cada raiz, em ordem, sempre com exit 0:
    um worktree, um clone em outra máquina ou uma missão headless num worktree de sobrescrever a
    página.
 3. Config inválida ou estado corrompido: um aviso, nada mais.
-4. Hashes iguais aos do estado e nenhum ambiente remoto devido: calado, e o destino nem é montado
+4. Hashes iguais aos do estado, nenhum ambiente remoto devido e as Seções derivadas em dia: calado,
+   e o destino nem é montado
    (~50 ms num repo de 2 GB com `node_modules`, medido em 2026-10-27).
 5. Trava `flock` por repositório (espera até 30 s; depois, aviso). Relê o estado, refaz o plano e
    monta o Destino pela fábrica de `doc.backend`.
@@ -159,6 +161,14 @@ No Claude Code, o plugin instalado já roda. No Codex, cada hook de plugin preci
 
 O algoritmo, as fontes no codex-rs, o oráculo `hooks/list` e o que foi medido estão em
 `references/hosts.md` §4. O aviso de versão sai quando o `codex --version` não é o `CODEX_MEDIDO`.
+
+## Seções derivadas e CI/CD
+
+O que não é Bloco de arquivo sai da config, de `ci.workflows` (uma linha por job) e dos **nomes** de
+segredo e variável pelo `gh`. O hook e o `sync` refazem essas seções por `page replace` quando a
+config, um workflow ou a versão muda, e na SessionStart depois da janela, mantendo as Seções de
+ambiente da página. Leia `references/config.md` (campo `ci`) ao configurar e `references/kb.md` ao
+depurar a escrita.
 
 ## Sync remoto
 
@@ -204,7 +214,7 @@ qualquer rota por onde passa conteúdo.
 `assets/ambientes-template.html` é a Página de ambientes genérica. O texto de introdução e o
 callout de página restrita e gerada são fixos. Os placeholders são `$allowed_roles`,
 `$environments_table`, `$environment_sections`, `$ci_cd` e `$run`, e faltar um deles é erro. A
-seção CI/CD sai como "a gerar" nesta versão.
+seção CI/CD sai de `ci`; com `ci: null`, uma frase diz que não há CI/CD declarado.
 
 ## Armadilhas
 
@@ -253,6 +263,8 @@ seção CI/CD sai como "a gerar" nesta versão.
   cada disparo do hook; o `null` faz o `validate` listar cada campo que falta.
 - **`--create` em toda escrita de bloco**, não só em `criar`: um h3 apagado à mão volta, em vez de
   travar o sync com "heading não encontrado" a cada gatilho.
+- **O `gh` acha o repositório pela pasta** (`cwd` na raiz). Sem remoto do GitHub ou sem login, sai
+  rc ≠ 0: aviso, e as derivadas ficam como estavam.
 
 ## Testes
 
@@ -267,4 +279,5 @@ anonimizadas, e o teste troca a raiz anonimizada pela de um repositório git cri
 `codex-hooks-list-dourado.json` é o oráculo do trust: um pacote sintético e o `currentHash` que o
 `hooks/list` do Codex deu para cada hook. O teste `test_sem_marcas_da_empresa.py` varre o pacote inteiro
 atrás de marcas da empresa de origem, porque o repositório é público, e prova numa cópia sabotada
-que o sensor reprova.
+que o sensor reprova. O `tests/oraculo_codex.py`, fora do `discover`, confere à mão a fixture
+dourada contra o `hooks/list` de um Codex novo.

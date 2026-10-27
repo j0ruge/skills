@@ -24,6 +24,7 @@ STAGING, PRODUCAO = "deploy@staging.internal.example", "deploy@db.internal.examp
 def config_com_remotos(maquina=MAQUINA):
     cfg = config_exemplo()
     cfg["environments"]["development"]["machine"] = maquina
+    cfg["ci"]["secrets"] = None  # sem gh: estes testes são do ssh; o gh tem os dele em test_ci e test_derivadas
     return cfg
 
 

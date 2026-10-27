@@ -20,6 +20,8 @@ conteúdo. Uma rota nova precisa de uma linha nesta tabela e de um teste.
 | arquivos locais | estado, página renderizada e blocos do destino de diretório são 0600, gravados atomicamente | `test_estado`, `test_cli` |
 | destino | tem que ser menos exposto que a origem: o adaptador kb lê as permissões antes da primeira escrita e recusa a página que herda do livro, que tem fallback `view` ou que é visível a papel fora de `doc.allowed_roles`. Falha fechado (campo faltando conta como visível) | `test_kb.Permissao`, `test_kb.DestinoKbTestes.test_trava_recusa_sem_escrever`, `test_kb.HookComKb.test_pagina_aberta_recusa_avisa_e_nao_grava`, `test_kb.Cli.test_migrate_passa_pela_mesma_trava` |
 | saída da CLI kb | o adaptador nunca imprime `pages read`; do erro da CLI repete só `rc`, `code`, a mensagem e o `backup`; stderr fora desse JSON não é ecoado | `test_kb.DestinoKbTestes.test_erros_do_kb_viram_aviso_com_codigo_e_backup`, `test_kb_que_nao_roda_vira_erro_sem_eco` |
+| seções derivadas | refazê-las relê a página inteira e devolve as Seções de ambiente como estão, com os valores, num `replace`: a página vai pelo stdin da CLI kb, e o changelog leva só o sha256 das derivadas. Nada da página relida vai para mensagem, estado ou argv | `test_derivadas.DestinoKbDerivadas.test_ci_cd_nova_troca_so_as_derivadas` (canário fora do argv de toda chamada) |
+| nomes do CI | o `gh` só devolve **nomes** de segredo e de variável, e o plugin recusa nome fora de `[A-Za-z_][A-Za-z0-9_]*`. Do erro do `gh` sai só o rc; o stderr não é ecoado | `test_ci.NomesDoGh` (canário no stderr do gh falso) |
 | fixtures | os payloads são capturas reais de um `.env` **sintético**, anonimizadas. O probe grava o stdin cru: capturar contra um `.env` real grava o segredo em disco | `test_sem_marcas_da_empresa` (pacote público) |
 
 ## Falha
@@ -45,4 +47,13 @@ cópia do script, deixou a suíte vermelha (2026-10-27):
 - **destino kb:** herdar aceito, fallback `view` aceito, papel extra aceito, `view` nulo tratado como
   sem `view`, escrita sem trava, `replace` sem trava, releitura sempre aceita, corpo em argv,
   `--create` tirado, estado gravado só no fim da rodada, faixa do h2 aberta e migração com ambiente
-  remoto faltando.
+  remoto faltando;
+- **CI/CD e seções derivadas** (27 mutantes, todos vermelhos): leitor de workflow (lista de fluxo
+  crua, `runs-on` em qualquer profundidade, comentário mantido), gh (nome sem validar, rc ignorado,
+  chamado sem `ci.secrets`), escape do nome do workflow, janela sem exigir `remote_check_every`,
+  h2 repetido aceito, sufixo ou ids `bkmrk-` na comparação, entradas sem os workflows, janela em
+  todo gatilho e em nenhum, destino chamado com hash igual, falha que carimba, derivadas sem trava,
+  `replace` sem conferir antes nem reler depois, a quebra antes da CI/CD somando a cada volta,
+  workflow editado não vigiado e `.yml` de qualquer pasta vigiado, derivadas depois de um bloco que
+  falhou, estado com `derived` qualquer, `status` sem a linha das derivadas e `migrate` sem elas no
+  estado.

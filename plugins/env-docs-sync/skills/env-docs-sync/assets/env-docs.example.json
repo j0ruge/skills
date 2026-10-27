@@ -53,6 +53,10 @@
       }
     }
   },
+  "ci": {
+    "workflows": ".github/workflows",
+    "secrets": "gh"
+  },
   "run": [
     {
       "label": "Instalar as dependências",

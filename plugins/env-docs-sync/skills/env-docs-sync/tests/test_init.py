@@ -39,6 +39,17 @@ class Init(unittest.TestCase):
         self.assertEqual(dev["source_of_truth"], "checkout principal em estacao-x")
         self.assertEqual(config["include"], ["**/.env", "**/.env.*"])
         self.assertIsNone(config["doc"]["page_id"])
+        self.assertIsNone(config["ci"])
+        self.assertNotIn("remote_check_every", config)
+
+    def test_com_workflows_do_github_liga_o_ci_e_a_janela(self):
+        (self.raiz / ".github" / "workflows").mkdir(parents=True)
+        config = eds.config_inicial(self.raiz, "estacao-x")
+        self.assertEqual(config["ci"], {"workflows": ".github/workflows", "secrets": "gh"})
+        self.assertEqual(config["remote_check_every"], "24h")
+        config["doc"].update(cli="~/kb.py", python="python3", target="staging", page_id=7, allowed_roles=["Admin"])
+        config["environments"]["development"].update(server="estacao-x", domain="localhost")
+        eds.validar_config(config)
 
     def test_preenchidos_os_nulls_a_config_vale(self):
         config = eds.config_inicial(self.raiz, "estacao-x")

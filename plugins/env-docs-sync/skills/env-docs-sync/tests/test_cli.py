@@ -18,7 +18,9 @@ class Cli(unittest.TestCase):
             "packages/api/.env.example": "DB_PASSWORD=\n",
             "node_modules/x/.env": f"DB_PASSWORD={CANARIO}_nm\n",
         })
-        (self.raiz / ".env-docs.json").write_text(json.dumps(config_exemplo()), encoding="utf-8")
+        cfg = config_exemplo()
+        cfg["ci"]["secrets"] = None  # sem gh real; a seção CI/CD tem os testes dela em test_ci.py
+        (self.raiz / ".env-docs.json").write_text(json.dumps(cfg), encoding="utf-8")
         self.saidas = []
 
     def tearDown(self):

@@ -104,7 +104,8 @@ _CAMPOS_DOC = ("backend", "cli", "python", "target", "page_id", "allowed_roles")
 _CAMPOS_AMBIENTE = ("source", "server", "domain", "where", "source_of_truth")
 _CAMPOS_LOCAL = _CAMPOS_AMBIENTE + ("machine",)
 _CAMPOS_SSH = _CAMPOS_AMBIENTE + ("host", "auth_env", "files")
-_CAMPOS_TOPO = ("doc", "values", "include", "exclude", "environments", "run")
+_CAMPOS_TOPO = ("doc", "values", "include", "exclude", "environments", "run", "ci")
+_CAMPOS_CI = ("workflows", "secrets")
 
 
 def intervalo_em_segundos(texto) -> int:
@@ -164,7 +165,8 @@ def validar_config(dados) -> dict:
     c = _Coletor()
     tem_ssh = isinstance(dados, dict) and isinstance(dados.get("environments"), dict) and any(
         isinstance(a, dict) and a.get("source") == "ssh" for a in dados["environments"].values())
-    obrigatorias = _CAMPOS_TOPO + (("remote_check_every",) if tem_ssh else ())
+    tem_gh = isinstance(dados, dict) and isinstance(dados.get("ci"), dict) and dados["ci"].get("secrets") == "gh"
+    obrigatorias = _CAMPOS_TOPO + (("remote_check_every",) if tem_ssh or tem_gh else ())
     if not c.objeto(dados, "config", obrigatorias, ("remote_check_every",)):
         raise ErroDeConfig(c.erros)
 
@@ -201,6 +203,15 @@ def validar_config(dados) -> dict:
         for nome, amb in ambientes.items():
             if nome in AMBIENTES:
                 _validar_ambiente(c, nome, amb)
+
+    ci = dados.get("ci")
+    if ci is not None and c.objeto(ci, "config.ci", _CAMPOS_CI):
+        pasta = ci.get("workflows")
+        if "workflows" in ci and pasta is not None and (
+                not isinstance(pasta, str) or not pasta.strip() or not caminho_relativo_valido(pasta)):
+            c.erro("config.ci.workflows", "precisa ser null ou uma pasta relativa à raiz, com /, sem ..")
+        if "secrets" in ci and ci["secrets"] not in (None, "gh"):
+            c.erro("config.ci.secrets", "precisa ser null ou \"gh\" (os nomes pelo GitHub CLI)")
 
     if "run" in dados:
         if not isinstance(dados["run"], list):
@@ -274,16 +285,20 @@ def carregar_config(caminho) -> dict:
 
 
 INCLUDE_INICIAL = ("**/.env", "**/.env.*")
+WORKFLOWS_DO_GITHUB = ".github/workflows"
 
 
 def config_inicial(raiz, hostname: str) -> dict:
     """A `.env-docs.json` do `init`: development pela Varredura e pelo hostname; o que só a pessoa sabe
-    (destino, página, papéis, servidor e domínio) fica null, e o `validate` lista cada um."""
+    (destino, página, papéis, servidor e domínio) fica null, e o `validate` lista cada um. Com
+    `.github/workflows`, liga a seção CI/CD com os nomes pelo `gh`, e com ela a janela de 24 h."""
     pastas = sorted({str(Path(c).parent) for c in varredura(raiz, list(INCLUDE_INICIAL), [])})
     onde = ", ".join("raiz" if pasta == "." else pasta for pasta in pastas)
+    github = (Path(raiz) / WORKFLOWS_DO_GITHUB).is_dir()
     return {
         "doc": {"backend": "kb", "cli": None, "python": None, "target": None, "page_id": None, "allowed_roles": None},
         "values": "full",
+        **({"remote_check_every": "24h"} if github else {}),
         "include": list(INCLUDE_INICIAL),
         "exclude": [],
         "environments": {"development": {
@@ -291,6 +306,7 @@ def config_inicial(raiz, hostname: str) -> dict:
             "where": f"checkout principal: {onde}" if onde else "checkout principal",
             "source_of_truth": f"checkout principal em {hostname}",
         }},
+        "ci": {"workflows": WORKFLOWS_DO_GITHUB, "secrets": "gh"} if github else None,
         "run": [],
     }
 
@@ -581,7 +597,8 @@ def validar_estado(estado) -> None:
     def falha(onde):
         raise ErroDeEstado(f"estado inválido em {onde}: o estado só guarda hashes sha256 e carimbos")
 
-    if not isinstance(estado, dict) or set(estado) != {"version", "environments", "remote_checked_at"}:
+    obrigatorias = {"version", "environments", "remote_checked_at"}
+    if not isinstance(estado, dict) or not obrigatorias <= set(estado) <= obrigatorias | {"derived"}:
         falha("topo")
     if estado["version"] != ESTADO_VERSAO:
         falha("version")
@@ -610,6 +627,13 @@ def validar_estado(estado) -> None:
     for ambiente, quando in checados.items():
         if ambiente not in AMBIENTES or not _e_carimbo(quando):
             falha("remote_checked_at")
+    if "derived" in estado:
+        derivadas = estado["derived"]
+        if (not isinstance(derivadas, dict) or set(derivadas) != {"inputs_sha256", "sha256", "checked_at"}
+                or not all(isinstance(derivadas[k], str) and _RE_HEX64.fullmatch(derivadas[k])
+                           for k in ("inputs_sha256", "sha256"))
+                or not _e_carimbo(derivadas["checked_at"])):
+            falha("derived")
 
 
 def _e_carimbo(valor) -> bool:
@@ -710,6 +734,152 @@ def aplicar(estado: Mapping, operacoes, destino: Destino, *, quando: datetime,
 
 
 # ---------------------------------------------------------------------------------------------
+# CI/CD: os workflows do repositório, lidos sem PyYAML
+# ---------------------------------------------------------------------------------------------
+# O leitor entende só o que a seção mostra: o `name` do topo e, em cada job de `jobs`, o `runs-on`
+# e o `environment`. Ele anda por indentação e olha apenas a chave no nível dos filhos diretos do
+# job, então um `runs-on:` dentro de um passo, de um script ou de `on:` não conta. Forma que ele não
+# entende vira `?`, nunca um palpite.
+
+@dataclass(frozen=True)
+class JobDoCi:
+    id: str
+    runs_on: str | None
+    """`a, b` para lista; o texto como está para escalar ou expressão; `?` para forma não lida;
+    None para job sem `runs-on` (workflow reusável)."""
+    environment: str | None
+
+
+@dataclass(frozen=True)
+class WorkflowDoCi:
+    arquivo: str
+    nome: str
+    jobs: tuple
+
+
+_RE_CHAVE_YAML = re.compile(r"""([A-Za-z0-9_.-]+|"[^"]*"|'[^']*')\s*:(?:\s+(.*))?$""")
+_RE_COMENTARIO_YAML = re.compile(r"\s#")
+
+
+def _linhas_yaml(texto: str) -> list[tuple[int, str]]:
+    """(indentação, conteúdo) de cada linha que não é vazia nem só comentário."""
+    linhas = []
+    for bruta in texto.splitlines():
+        conteudo = bruta.lstrip(" ")
+        if conteudo.strip() and not conteudo.startswith("#"):
+            linhas.append((len(bruta) - len(conteudo), conteudo.rstrip()))
+    return linhas
+
+
+def _chave_yaml(conteudo: str) -> tuple[str | None, str]:
+    casou = _RE_CHAVE_YAML.match(conteudo)
+    if not casou:
+        return None, ""
+    return casou.group(1).strip("\"'"), casou.group(2) or ""
+
+
+def _escalar(valor: str) -> str:
+    """O escalar sem aspas e sem o comentário do fim (` #` fora de aspas)."""
+    valor = valor.strip()
+    if valor[:1] in ("'", '"'):
+        fim = valor.find(valor[0], 1)
+        if fim > 0:
+            return valor[1:fim]
+    casou = _RE_COMENTARIO_YAML.search(valor)
+    return (valor[:casou.start()] if casou else valor).strip()
+
+
+def _filhos(linhas, i) -> list[int]:
+    """Os índices dos filhos diretos da linha `i`: as linhas mais indentadas logo abaixo dela, no
+    nível do primeiro filho."""
+    fim = i + 1
+    while fim < len(linhas) and linhas[fim][0] > linhas[i][0]:
+        fim += 1
+    if fim == i + 1:
+        return []
+    nivel = linhas[i + 1][0]
+    return [j for j in range(i + 1, fim) if linhas[j][0] == nivel]
+
+
+def _lista(linhas, k) -> list[str] | None:
+    """Os itens de uma lista de bloco sob a chave da linha `k` (mais indentada ou no mesmo nível)."""
+    filhos = _filhos(linhas, k)
+    if not filhos:
+        filhos = []
+        for j in range(k + 1, len(linhas)):
+            if linhas[j][0] != linhas[k][0] or not linhas[j][1].startswith("- "):
+                break
+            filhos.append(j)
+    itens = [linhas[j][1] for j in filhos]
+    if not itens or not all(item.startswith("- ") for item in itens):
+        return None
+    return [_escalar(item[2:]) for item in itens]
+
+
+def _valor_runs_on(linhas, k, valor: str) -> str:
+    valor = _escalar(valor)
+    if valor.startswith("{"):
+        return "?"
+    if valor.startswith("["):
+        if not valor.endswith("]"):
+            return "?"
+        return ", ".join(_escalar(item) for item in valor[1:-1].split(",") if item.strip())
+    if valor:
+        return valor
+    itens = _lista(linhas, k)
+    return ", ".join(itens) if itens else "?"
+
+
+def _valor_environment(linhas, k, valor: str) -> str:
+    valor = _escalar(valor)
+    if valor:
+        return valor
+    for j in _filhos(linhas, k):
+        chave, resto = _chave_yaml(linhas[j][1])
+        if chave == "name" and _escalar(resto):
+            return _escalar(resto)
+    return "?"
+
+
+def _ler_job(linhas, j, job_id: str) -> JobDoCi:
+    runs_on = environment = None
+    for k in _filhos(linhas, j):
+        chave, valor = _chave_yaml(linhas[k][1])
+        if chave == "runs-on":
+            runs_on = _valor_runs_on(linhas, k, valor)
+        elif chave == "environment":
+            environment = _valor_environment(linhas, k, valor)
+    return JobDoCi(job_id, runs_on, environment)
+
+
+def ler_workflow(texto: str, arquivo: str) -> WorkflowDoCi:
+    """O nome do workflow (o `arquivo`, sem `name`) e os jobs, na ordem do arquivo."""
+    linhas, nome, jobs = _linhas_yaml(texto), arquivo, []
+    for i, (indentacao, conteudo) in enumerate(linhas):
+        if indentacao:
+            continue
+        chave, valor = _chave_yaml(conteudo)
+        if chave == "name" and _escalar(valor):
+            nome = _escalar(valor)
+        elif chave == "jobs" and not _escalar(valor):
+            for j in _filhos(linhas, i):
+                job_id, _ = _chave_yaml(linhas[j][1])
+                if job_id is not None:
+                    jobs.append(_ler_job(linhas, j, job_id))
+    return WorkflowDoCi(arquivo, nome, tuple(jobs))
+
+
+def workflows_do_repo(raiz, pasta: str) -> list[WorkflowDoCi]:
+    """Os `*.yml` e `*.yaml` do topo de `pasta` (o GitHub não lê subpastas), em ordem de nome."""
+    base = Path(raiz) / pasta
+    if not base.is_dir():
+        return []
+    rel = Path(pasta).as_posix().rstrip("/")
+    return [ler_workflow(p.read_text(encoding="utf-8", errors="replace"), f"{rel}/{p.name}")
+            for p in sorted(base.iterdir()) if p.suffix in (".yml", ".yaml") and p.is_file()]
+
+
+# ---------------------------------------------------------------------------------------------
 # Página de ambientes (inteira, para a migração por replace)
 # ---------------------------------------------------------------------------------------------
 
@@ -748,20 +918,52 @@ def secao_como_rodar(config: Mapping) -> str:
                      for item in config["run"])
 
 
-def secao_ci_cd(conteudo: str | None = None) -> str:
-    if conteudo is not None:
-        return conteudo
-    return ("<p><em>a gerar</em>: esta versão do env-docs-sync ainda não gera a seção "
-            "(nomes dos segredos do CI e runs-on dos workflows).</p>")
+def _tabela(cabecalho, linhas) -> str:
+    """Tabela com as células já em html (quem chama escapa)."""
+    return ("<table>\n<thead><tr>" + "".join(f"<th>{c}</th>" for c in cabecalho) + "</tr></thead>\n<tbody>\n"
+            + "\n".join("<tr>" + "".join(f"<td>{c}</td>" for c in linha) + "</tr>" for linha in linhas)
+            + "\n</tbody>\n</table>")
+
+
+def _codigos(nomes) -> str:
+    return ", ".join(f"<code>{_esc(n)}</code>" for n in nomes) or "—"
+
+
+def secao_ci_cd(ci: Mapping | None, workflows, nomes) -> str:
+    """A seção CI/CD: um job por linha (workflow, arquivo, job, runs-on, environment) e os nomes dos
+    segredos e variáveis por escopo. `workflows` e `nomes` já lidos; aqui não há E/S."""
+    if ci is None:
+        return "<p>Sem CI/CD declarado (<code>ci: null</code> na <code>.env-docs.json</code>).</p>"
+    partes = ["<h3>Workflows</h3>"]
+    if ci["workflows"] is None:
+        partes.append("<p>Workflows não declarados (<code>ci.workflows: null</code>).</p>")
+    elif not workflows:
+        partes.append(f"<p>Nenhum workflow em <code>{_esc(ci['workflows'])}</code>.</p>")
+    else:
+        partes.append(_tabela(("Workflow", "Arquivo", "Job", "runs-on", "Environment"), [
+            (_esc(wf.nome), f"<code>{_esc(wf.arquivo)}</code>", _esc(job.id), _esc(job.runs_on or "—"),
+             _esc(job.environment or "—"))
+            for wf in workflows for job in wf.jobs]))
+    partes.append("<h3>Segredos e variáveis (só nomes)</h3>")
+    if ci["secrets"] is None:
+        partes.append("<p>Nomes não consultados (<code>ci.secrets: null</code>).</p>")
+    elif nomes is None:
+        raise ErroEnvDocs("ci.secrets declarado, mas os nomes não foram lidos")
+    else:
+        partes.append(_tabela(("Escopo", "Segredos", "Variáveis"), [
+            (_esc(n.escopo), _codigos(n.segredos), _codigos(n.variaveis)) for n in nomes]))
+    return "\n".join(partes)
 
 
 def carregar_template(caminho=TEMPLATE_PADRAO) -> str:
     return Path(caminho).read_text(encoding="utf-8")
 
 
-def pagina_de_ambientes(config: Mapping, blocos: Mapping[str, Mapping[str, str]], *,
-                        template: str | None = None, ci_cd: str | None = None) -> str:
-    """A Página de ambientes inteira, do template, para o `replace`. `blocos`: {ambiente: {caminho: corpo}}."""
+def pagina_de_ambientes(config: Mapping, blocos: Mapping[str, Mapping[str, str]], *, ci_cd: str,
+                        template: str | None = None, secoes: str | None = None) -> str:
+    """A Página de ambientes inteira, do template, para o `replace`. `blocos`: {ambiente: {caminho: corpo}};
+    `ci_cd`: a seção já renderizada (`ci_cd_do_repo`), porque ela sai do disco e do gh. `secoes`, quando
+    vem, entra no lugar das Seções de ambiente como está (as da página atual, ao refazer só as derivadas)."""
     configurados = config["environments"]
     sobra = sorted(set(blocos) - set(configurados))
     if sobra:
@@ -770,17 +972,125 @@ def pagina_de_ambientes(config: Mapping, blocos: Mapping[str, Mapping[str, str]]
     faltam = PLACEHOLDERS - set(modelo.get_identifiers())  # get_identifiers/is_valid: Python 3.11+
     if faltam or not modelo.is_valid():
         raise ErroEnvDocs(f"template inválido; placeholders ausentes: {', '.join(sorted(faltam)) or '-'}")
-    secoes = "\n".join(secao_de_ambiente(a, blocos.get(a, {})) for a in AMBIENTES if a in configurados)
+    if secoes is None:
+        secoes = "\n".join(secao_de_ambiente(a, blocos.get(a, {})) for a in AMBIENTES if a in configurados)
+    else:
+        secoes = secoes.rstrip()  # o template já põe a quebra antes da CI/CD; sem isto, cada volta soma uma
     try:
         return modelo.substitute(
             allowed_roles=_esc(", ".join(config["doc"]["allowed_roles"])),
             environments_table=tabela_de_ambientes(config),
             environment_sections=secoes,
-            ci_cd=secao_ci_cd(ci_cd),
+            ci_cd=ci_cd,
             run=secao_como_rodar(config),
         )
     except (KeyError, ValueError) as erro:
         raise ErroEnvDocs(f"template inválido: placeholder desconhecido {erro}") from None
+
+
+# ---------------------------------------------------------------------------------------------
+# Seções derivadas: o que na página não é Bloco de arquivo
+# ---------------------------------------------------------------------------------------------
+# A intro com os papéis, a tabela de Ambientes, a CI/CD e o Como rodar saem da config, dos workflows
+# e dos nomes do gh. O `section-set` só troca o corpo de um h3, então elas são refeitas por `replace`
+# da página inteira, levando as Seções de ambiente da página atual como estão.
+
+_RE_H2 = re.compile(r"<h2\b[^>]*>(.*?)</h2\s*>", re.S | re.I)
+_RE_ID_BKMRK = re.compile(r'\s+id="bkmrk-[^"]*"')
+
+
+def partes_da_pagina(pagina: str) -> tuple[str, str, str]:
+    """(antes das Seções de ambiente, as Seções de ambiente, a partir do h2 CI/CD). A página precisa ter
+    os h2 Ambientes, CI/CD e Como rodar, um de cada, nessa ordem; senão é ErroEnvDocs."""
+    h2 = [(casou.start(), _texto_de_heading(casou.group(1))) for casou in _RE_H2.finditer(pagina)]
+    fixos = {nome: [ini for ini, texto in h2 if texto == nome] for nome in ("Ambientes", "CI/CD", "Como rodar")}
+    if any(len(v) != 1 for v in fixos.values()) or not (
+            fixos["Ambientes"][0] < fixos["CI/CD"][0] < fixos["Como rodar"][0]):
+        raise ErroEnvDocs("a página não segue o template (h2 Ambientes, CI/CD e Como rodar, um de cada); "
+                          "rode `migrate`")
+    fim = fixos["CI/CD"][0]
+    secoes = [ini for ini, texto in h2 if texto in {f"[{a}]" for a in AMBIENTES} and fixos["Ambientes"][0] < ini < fim]
+    ini = secoes[0] if secoes else fim
+    return pagina[:ini], pagina[ini:fim], pagina[fim:]
+
+
+def _normalizado(fragmento: str) -> str:
+    """Sem os ids `bkmrk-` que o BookStack põe, com as entidades resolvidas e sem espaço entre tags."""
+    return re.sub(r">\s+<", "><", html.unescape(_RE_ID_BKMRK.sub("", fragmento))).strip()
+
+
+def derivadas_conferem(atual: str, nova: str) -> bool:
+    """As seções derivadas de `atual` (relida do destino) são as de `nova`? As Seções de ambiente não
+    contam. Página fora do template não confere."""
+    try:
+        antes_a, _, depois_a = partes_da_pagina(atual)
+    except ErroEnvDocs:
+        return False
+    antes_n, _, depois_n = partes_da_pagina(nova)
+    return (_normalizado(antes_a) == _normalizado(antes_n)) and (_normalizado(depois_a) == _normalizado(depois_n))
+
+
+def pagina_das_derivadas(config: Mapping, ci_cd: str) -> str:
+    """A página só com as derivadas (Seções de ambiente vazias): o que o estado guarda por hash."""
+    return pagina_de_ambientes(config, {}, ci_cd=ci_cd, secoes="")
+
+
+def entradas_derivadas(raiz, config: Mapping) -> str:
+    """sha256 do que as derivadas leem do disco: versão, template, config e os workflows de
+    `ci.workflows`. Barato (sem gh): é o que o hook compara a cada gatilho."""
+    soma = hashlib.sha256()
+
+    def parte(rotulo: str, dados: bytes):
+        soma.update(f"{rotulo}\0{len(dados)}\0".encode("utf-8") + dados)
+
+    parte("versão", __version__.encode("utf-8"))
+    parte("template", carregar_template().encode("utf-8"))
+    parte("config", json.dumps(config, sort_keys=True, ensure_ascii=False).encode("utf-8"))
+    ci = config["ci"]
+    if ci is not None and ci["workflows"] is not None:
+        base = Path(raiz) / ci["workflows"]
+        if base.is_dir():
+            for arquivo in sorted(base.iterdir()):
+                if arquivo.suffix in (".yml", ".yaml") and arquivo.is_file():
+                    parte(f"workflow {arquivo.name}", arquivo.read_bytes())
+    return soma.hexdigest()
+
+
+def derivadas_devidas(config: Mapping, estado: Mapping, entradas: str, agora: datetime, *,
+                      olhar_janela: bool) -> bool:
+    """Refazer as derivadas neste gatilho? Sim se o estado não as tem ou se as entradas do disco mudaram.
+    Com `olhar_janela` (a SessionStart) e `ci.secrets: "gh"`, também quando a última consulta ao gh
+    passou de `remote_check_every`: os nomes mudam fora do repositório."""
+    anterior = estado.get("derived")
+    if not anterior or anterior["inputs_sha256"] != entradas:
+        return True
+    ci = config["ci"]
+    if olhar_janela and ci is not None and ci["secrets"] == "gh":
+        return _vencido(anterior["checked_at"], intervalo_em_segundos(config["remote_check_every"]), agora)
+    return False
+
+
+@dataclass(frozen=True)
+class PedidoDeDerivadas:
+    entradas: str
+    ler_ci_cd: Callable[[], str]
+    """Lê os workflows e o gh só quando a rodada chega às derivadas."""
+
+
+def aplicar_derivadas(estado: Mapping, config: Mapping, destino: "Destino", pedido: PedidoDeDerivadas,
+                      quando: datetime) -> tuple[dict, str | None, str | None]:
+    """(novo estado, "escrita" | "já no destino" | None, aviso | None). Hash igual ao do estado: nem
+    chama o destino. Falha (gh, trava, página fora do template): aviso, e o estado delas não muda."""
+    try:
+        ci_cd = pedido.ler_ci_cd()
+        sha = hash_sha256(pagina_das_derivadas(config, ci_cd).encode("utf-8"))
+        anterior = estado.get("derived") or {}
+        escreveu = anterior.get("sha256") != sha and destino.escrever_derivadas(config, ci_cd) is not False
+    except Exception as erro:  # o adaptador decide o tipo; o aviso não carrega valor
+        return dict(estado), None, _detalhe(erro)
+    novo = copy.deepcopy(dict(estado))
+    novo["derived"] = {"inputs_sha256": pedido.entradas, "sha256": sha, "checked_at": _carimbo(quando)}
+    return novo, ("escrita" if escreveu else "já no destino"), None
 
 
 # ---------------------------------------------------------------------------------------------
@@ -804,6 +1114,21 @@ class DestinoDiretorio:
 
     def escrever(self, op):
         _gravar_privado(self._arquivo(op.ambiente, op.caminho), op.corpo)
+
+    def ler_derivadas(self) -> str | None:
+        arquivo = self.pasta / "derivadas.html"
+        return arquivo.read_text(encoding="utf-8") if arquivo.is_file() else None
+
+    def conferir_derivadas(self, config, ci_cd) -> bool | None:
+        atual = self.ler_derivadas()
+        return None if atual is None else atual == pagina_das_derivadas(config, ci_cd)
+
+    def escrever_derivadas(self, config, ci_cd) -> bool:
+        nova = pagina_das_derivadas(config, ci_cd)
+        if self.ler_derivadas() == nova:
+            return False
+        _gravar_privado(self.pasta / "derivadas.html", nova)
+        return True
 
 
 # ---------------------------------------------------------------------------------------------
@@ -998,6 +1323,24 @@ class DestinoKb:
                               "enviado; o estado não muda")
         return True
 
+    def conferir_derivadas(self, config, ci_cd) -> bool:
+        return derivadas_conferem(self._html(), pagina_das_derivadas(config, ci_cd))
+
+    def escrever_derivadas(self, config, ci_cd) -> bool:
+        """Refaz as seções derivadas por `replace`, com as Seções de ambiente da página atual como estão.
+        Já iguais (relidas e normalizadas): `False`, sem escrita. Passa pela trava e relê depois."""
+        self.conferir_permissao()
+        atual = self._html()
+        nova = pagina_de_ambientes(config, {}, ci_cd=ci_cd, secoes=partes_da_pagina(atual)[1])
+        if derivadas_conferem(atual, nova):
+            return False
+        marca = hash_sha256(pagina_das_derivadas(config, ci_cd).encode("utf-8"))[:12]
+        self.substituir_pagina(nova, aplicar=True, changelog=f"env-docs-sync: seções derivadas @ sha256:{marca}")
+        if not derivadas_conferem(self._html(), nova):
+            raise ErroEnvDocs("releitura: as seções derivadas da página não conferem com as enviadas; "
+                              "o estado não muda")
+        return True
+
     def substituir_pagina(self, pagina: str, *, aplicar: bool, changelog: str):
         """`kb page replace` com a página inteira pelo stdin. Sem `aplicar`, o dry-run do kb (rc 4)."""
         self.conferir_permissao()
@@ -1035,15 +1378,16 @@ class ResultadoComando:
     stderr: bytes = field(default=b"", repr=False)
 
 
-def rodar_comando(argv, *, env: Mapping[str, str], timeout: float, entrada: bytes | None = None) -> ResultadoComando:
+def rodar_comando(argv, *, env: Mapping[str, str], timeout: float, entrada: bytes | None = None,
+                  cwd: Path | None = None) -> ResultadoComando:
     """O runner padrão: argv sem shell, ambiente explícito, stdin = `entrada` (ou /dev/null).
 
     Timeout e programa ausente viram ErroEnvDocs, sem ecoar argv nem saída. Os testes injetam outro
-    runner com a mesma assinatura.
+    runner com a mesma assinatura. `cwd` só o `gh` usa: ele acha o repositório pela pasta.
     """
     opcoes = {"input": entrada} if entrada is not None else {"stdin": subprocess.DEVNULL}
     try:
-        saida = subprocess.run(list(argv), env=dict(env), capture_output=True, timeout=timeout, **opcoes)
+        saida = subprocess.run(list(argv), env=dict(env), capture_output=True, timeout=timeout, cwd=cwd, **opcoes)
     except subprocess.TimeoutExpired:
         raise ErroEnvDocs(f"{Path(argv[0]).name}: tempo esgotado ({timeout:g} s)") from None
     except FileNotFoundError:
@@ -1173,6 +1517,71 @@ def carimbar_remotos(estado: Mapping, ambientes, quando: datetime) -> dict:
     for ambiente in ambientes:
         novo.setdefault("remote_checked_at", {})[ambiente] = _carimbo(quando)
     return novo
+
+
+# ---------------------------------------------------------------------------------------------
+# Fonte gh: os nomes dos segredos e das variáveis do CI (nunca valores; o GitHub não os devolve)
+# ---------------------------------------------------------------------------------------------
+
+GH_TIMEOUT = 30
+
+
+@dataclass(frozen=True)
+class NomesDoCi:
+    escopo: str
+    """`repositório` ou o nome de um environment do GitHub."""
+    segredos: tuple
+    variaveis: tuple
+
+
+def _gh(ctx: "Contexto", raiz, *args) -> str:
+    resultado = ctx.runner(["gh", *args], env=ctx.ambiente, timeout=GH_TIMEOUT, cwd=Path(raiz))
+    if resultado.returncode != 0:
+        raise ErroEnvDocs(f"gh {' '.join(args[:2])}: rc {resultado.returncode} (o `gh auth status` vale "
+                          "para este repositório?)")
+    try:
+        return resultado.stdout.decode("utf-8")
+    except UnicodeDecodeError:
+        raise ErroEnvDocs(f"gh {' '.join(args[:2])}: saída ilegível") from None
+
+
+def _nomes(texto: str, onde: str) -> tuple:
+    try:
+        dados = json.loads(texto)
+    except ValueError:
+        raise ErroEnvDocs(f"{onde}: a saída não é JSON") from None
+    if not isinstance(dados, list) or not all(
+            isinstance(item, dict) and isinstance(item.get("name"), str)
+            and _RE_NOME_DE_VARIAVEL.fullmatch(item["name"]) for item in dados):
+        raise ErroEnvDocs(f"{onde}: a saída não é uma lista de nomes")
+    return tuple(sorted(item["name"] for item in dados))
+
+
+def nomes_do_gh(raiz, ctx: "Contexto") -> list[NomesDoCi]:
+    """Os nomes do repositório e de cada environment, pelo `gh` rodado na raiz. Falha é erro: quem
+    chama não escreve a seção, para um `gh` sem login não apagar os nomes da página."""
+    def escopo(nome, *env):
+        return NomesDoCi(nome,
+                         _nomes(_gh(ctx, raiz, "secret", "list", *env, "--json", "name"), "gh secret list"),
+                         _nomes(_gh(ctx, raiz, "variable", "list", *env, "--json", "name"), "gh variable list"))
+
+    saida = _gh(ctx, raiz, "api", "repos/{owner}/{repo}/environments", "--paginate", "--jq",
+                ".environments[].name")
+    ambientes = sorted({linha.strip() for linha in saida.splitlines() if linha.strip()})
+    for nome in ambientes:
+        if nome.startswith("-") or any(ord(ch) < 32 for ch in nome):
+            raise ErroEnvDocs("gh api environments: nome de environment inválido")
+    return [escopo("repositório")] + [escopo(nome, "--env", nome) for nome in ambientes]
+
+
+def ci_cd_do_repo(raiz, config: Mapping, ctx: "Contexto") -> str:
+    """A seção CI/CD do repositório: os workflows de `ci.workflows` e, com `ci.secrets: "gh"`, os nomes."""
+    ci = config["ci"]
+    if ci is None:
+        return secao_ci_cd(None, None, None)
+    workflows = workflows_do_repo(raiz, ci["workflows"]) if ci["workflows"] is not None else None
+    nomes = nomes_do_gh(raiz, ctx) if ci["secrets"] == "gh" else None
+    return secao_ci_cd(ci, workflows, nomes)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -1387,7 +1796,15 @@ def _algum_vigiado(raiz: Path, editados, config) -> bool:
             continue
         if casa_padrao(rel, config["include"]) and not casa_padrao(rel, exclusoes):
             return True
+        if rel == NOME_DA_CONFIG or _e_workflow(rel, config):
+            return True  # entrada das seções derivadas
     return False
+
+
+def _e_workflow(rel: str, config) -> bool:
+    ci = config["ci"]
+    return (ci is not None and ci["workflows"] is not None and rel.endswith((".yml", ".yaml"))
+            and rel.rsplit("/", 1)[0] == Path(ci["workflows"]).as_posix().rstrip("/"))
 
 
 def _raizes(gatilho: Gatilho) -> list[tuple[Path, list | None]]:
@@ -1424,10 +1841,13 @@ class Rodada:
     avisos_remotos: list = field(default_factory=list)
     carimbados: list = field(default_factory=list)
     sem_escrita: list = field(default_factory=list)
+    derivadas: str | None = None
+    """"escrita", "já no destino" ou None (não pedidas, ou falharam: ver `aviso_derivadas`)."""
+    aviso_derivadas: str | None = None
 
     @property
     def mudou_estado(self) -> bool:
-        return bool(self.aplicadas or self.carimbados)
+        return bool(self.aplicadas or self.carimbados or self.derivadas)
 
     @property
     def escritas(self) -> list:
@@ -1438,19 +1858,21 @@ class Rodada:
 
 def rodada(estado: Mapping, config: Mapping, raiz: Path, *, remotos, ctx: Contexto, quando: datetime,
            commit: str | None, montar_destino: Callable[[], Destino],
-           ao_aceitar: Callable[[dict], None] | None = None) -> tuple[dict, Rodada]:
+           ao_aceitar: Callable[[dict], None] | None = None,
+           derivadas: PedidoDeDerivadas | None = None) -> tuple[dict, Rodada]:
     """Uma rodada de sync: lê development (Varredura) e os `remotos` (ssh), planeja e aplica.
 
     Devolve (novo estado, Rodada). Quem chama grava o estado se `Rodada.mudou_estado`. Ambiente
     remoto que falhou ao ler fica fora de `atuais` (intocado, não vira ausente). O carimbo
     `remote_checked_at` só vai para o ambiente lido sem nenhuma operação pendente, para a falha de
-    escrita ser tentada de novo no próximo gatilho e não só depois da janela.
+    escrita ser tentada de novo no próximo gatilho e não só depois da janela. Com `derivadas`, depois dos
+    blocos e no mesmo destino, refaz as seções derivadas, se nenhum bloco falhou.
     """
     atuais = {"development": _locais(raiz, config)}
     lidos, avisos = ler_remotos(config, remotos, ctx)
     atuais.update(lidos)
     mudancas = diferencas(estado, {ambiente: _hashes(arquivos) for ambiente, arquivos in atuais.items()})
-    if not mudancas:
+    if not mudancas and derivadas is None:
         return carimbar_remotos(estado, lidos, quando), Rodada(avisos_remotos=avisos, carimbados=list(lidos))
     sem_pendencia = [a for a in lidos if a not in {m.ambiente for m in mudancas}]
     try:
@@ -1462,9 +1884,12 @@ def rodada(estado: Mapping, config: Mapping, raiz: Path, *, remotos, ctx: Contex
     resultado = aplicar(estado, operacoes, destino, quando=quando, ao_aceitar=ao_aceitar)
     pendentes = operacoes[len(resultado.aplicadas):]
     prontos = [a for a in lidos if a not in {op.ambiente for op in pendentes}]
-    return (carimbar_remotos(resultado.estado, prontos, quando),
-            Rodada(resultado.aplicadas, pendentes, resultado.falhou, resultado.erro, None, avisos, prontos,
-                   resultado.sem_escrita))
+    r = Rodada(resultado.aplicadas, pendentes, resultado.falhou, resultado.erro, None, avisos, prontos,
+               resultado.sem_escrita)
+    novo = resultado.estado
+    if derivadas is not None and resultado.falhou is None:
+        novo, r.derivadas, r.aviso_derivadas = aplicar_derivadas(novo, config, destino, derivadas, quando)
+    return carimbar_remotos(novo, prontos, quando), r
 
 
 def _linhas_da_rodada(nome: str, r: Rodada) -> list[str]:
@@ -1475,6 +1900,11 @@ def _linhas_da_rodada(nome: str, r: Rodada) -> list[str]:
                       "O estado não mudou; o próximo gatilho tenta de novo.")
     if r.escritas:
         linhas.append(f"Página de ambientes atualizada ({nome}) — {_listar(r.escritas)}")
+    if r.derivadas == "escrita":
+        linhas.append(f"Página de ambientes atualizada ({nome}) — seções derivadas (Ambientes, CI/CD, Como rodar)")
+    if r.aviso_derivadas is not None:
+        linhas.append(f"aviso — {nome}: seções derivadas não atualizadas ({r.aviso_derivadas}). "
+                      "O próximo gatilho tenta de novo.")
     if r.falhou is not None:
         linhas.append(f"aviso — {nome}: falhou em {r.falhou.ambiente} {r.falhou.caminho} ({_detalhe(r.erro)}). "
                       f"Pendente: {_listar(r.pendentes)}. O estado dessas operações não mudou; o próximo "
@@ -1504,17 +1934,21 @@ def sincronizar_repo(raiz: Path, gatilho: Gatilho, editados, ctx: Contexto) -> l
     pasta = ctx.pasta_de_estado or pasta_de_estado(ctx.ambiente)
     arquivo = arquivo_de_estado(raiz, pasta)
     estado = carregar_estado(arquivo)
+    entradas, janela = entradas_derivadas(raiz, config), gatilho.evento == "SessionStart"
     if (not remotos_devidos(config, estado, gatilho, ctx.agora())
-            and not diferencas(estado, {"development": _hashes(_locais(raiz, config))})):
+            and not diferencas(estado, {"development": _hashes(_locais(raiz, config))})
+            and not derivadas_devidas(config, estado, entradas, ctx.agora(), olhar_janela=janela)):
         return []
 
     with trava_do_repo(raiz, pasta, ctx.espera_da_trava):
         estado = carregar_estado(arquivo)  # outro processo pode ter sincronizado enquanto esperávamos
         quando = ctx.agora()
+        pedido = (PedidoDeDerivadas(entradas, lambda: ci_cd_do_repo(raiz, config, ctx))
+                  if derivadas_devidas(config, estado, entradas, quando, olhar_janela=janela) else None)
         novo, r = rodada(estado, config, raiz, remotos=remotos_devidos(config, estado, gatilho, quando), ctx=ctx,
                          quando=quando, commit=_commit(None, raiz),
                          montar_destino=lambda: ctx.fabrica_destino(config, raiz, ctx),
-                         ao_aceitar=lambda parcial: gravar_estado(arquivo, parcial))
+                         ao_aceitar=lambda parcial: gravar_estado(arquivo, parcial), derivadas=pedido)
         if r.mudou_estado:
             gravar_estado(arquivo, novo)
     return _linhas_da_rodada(raiz.name, r)
@@ -1981,14 +2415,21 @@ def _cmd_sync(args):
     remotos = _remotos(config) if args.remote else []
     if remotos == [] and _remotos(config):
         print(f"ambientes remotos fora desta rodada: {', '.join(_remotos(config))} (use --remote)")
+    entradas = entradas_derivadas(raiz, config)
+    pedido = (PedidoDeDerivadas(entradas, lambda: ci_cd_do_repo(raiz, config, Contexto()))
+              if args.remote or derivadas_devidas(config, estado, entradas, quando, olhar_janela=False) else None)
     novo, r = rodada(estado, config, raiz, remotos=remotos, ctx=Contexto(), quando=quando, commit=commit,
-                     montar_destino=lambda: _destino_da_cli(args, config, raiz))
+                     montar_destino=lambda: _destino_da_cli(args, config, raiz), derivadas=pedido)
     for aviso in r.avisos_remotos:
         print(f"env-docs-sync: aviso — {aviso}; o ambiente fica como estava", file=sys.stderr)
     for op in r.escritas:
         print(f"aplicado: {op.resumo()}")
     for op in r.sem_escrita:
         print(f"já no destino: {op.resumo()}")
+    if r.derivadas is not None:
+        print(f"{'aplicado' if r.derivadas == 'escrita' else 'já no destino'}: seções derivadas")
+    if r.aviso_derivadas is not None:
+        print(f"env-docs-sync: aviso — seções derivadas não atualizadas: {r.aviso_derivadas}", file=sys.stderr)
     if r.mudou_estado:
         gravar_estado(args.state, novo)
     if r.erro_do_destino is not None:
@@ -1996,9 +2437,9 @@ def _cmd_sync(args):
     if r.falhou is not None:
         print(f"env-docs-sync: falhou em {r.falhou.resumo()}: {_detalhe(r.erro)}", file=sys.stderr)
         return 1
-    if not r.aplicadas:
+    if not r.aplicadas and r.derivadas is None and r.aviso_derivadas is None:
         print("nada a sincronizar")
-    return 1 if r.avisos_remotos else 0
+    return 1 if r.avisos_remotos or r.aviso_derivadas else 0
 
 
 def _destino_da_cli(args, config, raiz):
@@ -2020,6 +2461,12 @@ def _cmd_status(args):
         lidos, avisos = ler_remotos(config, _remotos(config), Contexto())
         atuais.update(lidos)
     linhas = status_dos_arquivos(atuais, destino)
+    try:
+        conferem = destino.conferir_derivadas(config, ci_cd_do_repo(raiz, config, Contexto()))
+        linhas.append(("página", "seções derivadas",
+                       "ausente" if conferem is None else ("ok" if conferem else "diverge")))
+    except ErroEnvDocs as erro:
+        avisos.append(f"seções derivadas: {erro}")
     for ambiente, caminho, situacao in linhas:
         print(f"{situacao}\t{ambiente}\t{caminho}")
     contagem = {s: sum(1 for *_, x in linhas if x == s) for s in ("ok", "diverge", "ausente")}
@@ -2060,7 +2507,9 @@ def _cmd_migrate(args):
                 raise ErroEnvDocs(f"{ambiente} {caminho}: {erro}") from None
     marca = commit_curto(commit) if commit else f"{quando:%Y-%m-%d %H:%M}"
     destino = DestinoKb(config, ctx, commit=commit)
-    rc, saida = destino.substituir_pagina(pagina_de_ambientes(config, blocos), aplicar=args.apply,
+    ci_cd = ci_cd_do_repo(raiz, config, ctx)
+    pagina = pagina_de_ambientes(config, blocos, ci_cd=ci_cd)
+    rc, saida = destino.substituir_pagina(pagina, aplicar=args.apply,
                                           changelog=f"env-docs-sync: migração ao template @ {marca}")
     contagem = sum(len(a) for a in atuais.values())
     if not args.apply:
@@ -2074,6 +2523,8 @@ def _cmd_migrate(args):
         for ambiente, arquivos in atuais.items():
             estado["environments"][ambiente] = {c: {"sha256": hash_sha256(d), "synced_at": _carimbo(quando)}
                                                 for c, d in arquivos.items()}
+        estado["derived"] = {"inputs_sha256": entradas_derivadas(raiz, config), "checked_at": _carimbo(quando),
+                             "sha256": hash_sha256(pagina_das_derivadas(config, ci_cd).encode("utf-8"))}
         gravar_estado(args.state, carimbar_remotos(estado, lidos, quando))
     return 0
 
@@ -2158,7 +2609,7 @@ def _cmd_render_page(args):
             blocos["development"][caminho] = bloco_de_arquivo(dados, sincronizado_em=quando, commit=commit)
         except ErroEnvDocs as erro:
             raise ErroEnvDocs(f"development {caminho}: {erro}") from None
-    _gravar_privado(args.out, pagina_de_ambientes(config, blocos))
+    _gravar_privado(args.out, pagina_de_ambientes(config, blocos, ci_cd=ci_cd_do_repo(raiz, config, Contexto())))
     com_blocos = sum(1 for b in blocos.values() if b)
     print(f"página gravada em {args.out}: {com_blocos} ambiente(s) com blocos, {len(locais)} bloco(s)")
     return 0
