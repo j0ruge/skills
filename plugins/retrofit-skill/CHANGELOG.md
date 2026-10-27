@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.10.0] — 2026-10-27
+
+### Plugin com `codex` em `platforms`: a metade Codex do ciclo
+
+O retrofit do `hook-builder` 0.2.0 deu `codex` a um plugin da loja. O ciclo Claude (versão,
+CHANGELOG, `marketplace.json`, README) passou limpo, mas ainda faltavam quatro coisas do lado
+Codex, e o comando não citava nenhuma. Medido no próprio retrofit e no code review de seis
+rodadas que veio depois.
+
+- **Comando, passo 4:** um bloco para plugin com `codex`.
+  - `platforms` tem duas cópias, no `plugin.json` e no `marketplace.json`. Mudar só uma faz o
+    `codex-marketplace.py --write` sair 1 com `platforms divergente entre catálogo e plugin.json`.
+  - A linha do `compatibility.md`, o `smokes.json` e a coluna Codex do README mudam junto.
+  - O gate é `python3 -m unittest discover -s tests`, e uma falha só conta como regressão se não
+    aparece também no base.
+- **`check_release_sync.py`** imprime as duas cópias de `platforms`. Com `codex` em alguma delas,
+  imprime também:
+  - a entrada no catálogo Codex;
+  - a linha do `compatibility.md` contra a contagem medida;
+  - a versão do smoke contra a do plugin.
+
+  No caso sabotado (`platforms` só no `plugin.json`, linha com 27, uma reference nova não
+  rastreada), ele imprimiu `iguais: False` e `27 / 30`.
+- **A regra da contagem foi medida, não copiada.** O handoff trazia `find <skill> -type f ! -name
+  SKILL.md`, que divergiu em 19 das 32 linhas do `compatibility.md`. A coluna conta os arquivos
+  do git em `scripts/`, `references/`, `templates/` e `assets/`, sem `codex-skills/`, e essa regra
+  bateu nas 32. A fórmula errada já tinha levado a linha do `hook-builder` a 31, consertada no
+  `c6fe82c`.
+- **`claude plugin validate`** entra como conferência. O `LICENSE_MISSING` vai para o resumo como
+  dívida da loja.
+- **Depois do push, no Codex:** `codex plugin marketplace list` e, se a loja for origem Git,
+  `codex plugin marketplace upgrade <loja>`.
+- **`--stat`:** um JSON reescrito por `json.dumps` sai reformatado inteiro. Foram 102 linhas do
+  `trigger-evals.json` do `hook-builder`.
+- **`references/armadilhas-medidas.md`:** §10 nova, com a receita do smoke num `CODEX_HOME`
+  descartável (fora do `/tmp` e com `< /dev/null`), e um segundo caso na §5.
+
+Ficou de fora o "pytest pelo venv do hermes", que é detalhe de uma máquina, porque o gate do
+repo é o `unittest` do CLAUDE.md. As "3 falhas pré-existentes" também ficaram de fora como fato:
+são estado do repo, que apodrece. Entrou só a técnica de provar no base.
+
+Dívida vista no caminho, sem conserto aqui: o `smokes.json` está atrás da versão do plugin em
+`kaizen-software` (1.4.3 contra 1.4.7) e em `criar-prd` (0.1.0 contra 0.1.1), e a loja não tem
+`LICENSE`.
+
 ## [0.9.0] — 2026-10-23
 
 ### `tem sensor` exige o sensor rodado

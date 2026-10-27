@@ -1,7 +1,7 @@
 ---
 description: Apply non-obvious session lessons to a target skill in two modes — full (marketplace skill: bumps version, updates CHANGELOG/marketplace.json/README, commits and pushes) or lean (local skill in another repo: edits files + CHANGELOG and commits there, no bump or marketplace changes). Triggers — retrofit, skill-maintenance, session-lessons, lean-retrofit, local-skill.
 metadata:
-  version: 0.9.0
+  version: 0.10.0
 ---
 
 A régua deste retrofit é a família `skill-quality-audit`: um baseline antes de
@@ -212,6 +212,15 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
    - Atualize `<REPO>/README.md`: a **versão na tabela de plugins sempre** muda
      junto com o bump — não é condicional. Se a linha da skill descreve o que
      cada versão trouxe, acrescente uma frase; não um parágrafo.
+   - **Plugin com `codex` em `platforms`** (ou que passa a ter) pede mais que o ciclo Claude:
+     - `platforms` tem duas cópias, no `plugin.json` e no bloco do plugin no
+       `.claude-plugin/marketplace.json`. Mude as duas e rode
+       `python3 scripts/codex-marketplace.py --write` e depois `--check`.
+     - A linha do `docs/codex/compatibility.md` (estado e contagem de recursos), a entrada em
+       `docs/codex/smokes.json` e a coluna Codex do README mudam junto. A regra da contagem e o
+       smoke num `CODEX_HOME` descartável estão em *Armadilhas*, §10.
+     - Rode `python3 -m unittest discover -s tests`. Falha que também aparece no base é dívida,
+       não regressão. Prove isso no base, sem `checkout` (*Armadilhas*, §10).
    - Rode o **gate da auditoria** (seção abaixo) em cada skill tocada.
    - **Verifique por releitura, não por ter editado.** Ter rodado o `sed` não
      prova que o arquivo mudou: um padrão que não casou falha em silêncio, e a
@@ -238,7 +247,13 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
      `SKILL.md` (o canônico é o `plugin.json`); plugin multi-skill imprime uma linha
      por skill, cuja description pode diferir de propósito, e você julga. Os
      falsos verdes que o cheque já teve, e por que ele é assim, estão em
-     *Armadilhas*, §4.
+     *Armadilhas*, §4. Ele também imprime as duas cópias de `platforms`. Com `codex`
+     nelas, mostra ainda a entrada no catálogo Codex, a contagem da linha do
+     `compatibility.md` contra a medida e a versão do smoke.
+
+     `claude plugin validate plugins/<plugin>` confere o manifesto pelo cliente. O
+     `LICENSE_MISSING` que ele acusa é dívida da loja inteira: vai para o resumo, não
+     para este commit.
    - **Antes do commit, leia o `--stat` e responda por cada arquivo.**
 
      ```bash
@@ -251,7 +266,9 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
 
      Um arquivo que você não pretendia tocar é **sinal, não ruído**: os gates olham
      o que você mudou de propósito, e só o `--stat` olha o que mudou sem querer. Já
-     foi o único sensor a pegar um clobber (*Armadilhas*, §5).
+     foi o único sensor a pegar um clobber (*Armadilhas*, §5). Um JSON reescrito
+     por `json.dumps` sai reformatado inteiro. Acrescente texto em vez de passar o
+     arquivo pelo parser.
 
    - Commit: `feat|fix($ARGUMENTS): vX.Y.Z — <resumo>`. **Sem trailer
      `Co-Authored-By`** — ver *Autoria dos commits* abaixo. Push pra origin/main.
@@ -272,6 +289,10 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
      ```bash
      diff -r --exclude=.in_use <REPO>/plugins/<plugin> ~/.claude/plugins/cache/<loja>/<plugin>/<versão> && echo idêntico
      ```
+
+     No Codex (plugin com `codex` em `platforms`), confira a loja à parte com
+     `codex plugin marketplace list`. Se ela for origem Git, `codex plugin marketplace
+     upgrade <loja>` atualiza a cópia e os plugins instalados (*Armadilhas*, §10).
 
      Plugin que não está instalado não tem o que atualizar: diga isso. O agente não
      roda comando de barra, então termine pedindo ao usuário `/reload-plugins`, que

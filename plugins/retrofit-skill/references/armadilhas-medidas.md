@@ -2,12 +2,13 @@
 
 O comando `retrofit-skill` traz cada regra em uma ou duas linhas. Aqui está a história medida
 que a justifica, movida do comando na 0.7.1 sem reescrita (as seções 7 e 8 nasceram aqui, na
-0.7.3, e a 9, na 0.9.0). Leia a seção quando quiser contestar
+0.7.3, a 9, na 0.9.0, e a 10, na 0.10.0). Leia a seção quando quiser contestar
 ou afrouxar a regra correspondente: é o que se perde se ela sair.
 
 Sumário: 1. Symlink, não cópia · 2. Repo atrás do remoto · 3. Outra sessão no mesmo checkout ·
 4. Cheque dos quatro lugares · 5. O `--stat` como último sensor · 6. Orçamento da spec ·
-7. Windows chamando o WSL · 8. A cópia instalada atrás da fonte · 9. Sensor citado não é sensor rodado
+7. Windows chamando o WSL · 8. A cópia instalada atrás da fonte · 9. Sensor citado não é sensor rodado ·
+10. Plugin que também vai para o Codex
 
 ## 1. `~/.claude/skills/<nome>` costuma ser um symlink, não uma cópia
 
@@ -100,6 +101,12 @@ no commit: os gates olham o que você mudou de propósito, e nenhum deles
 olha o que você mudou sem querer. Contar arquivos é barato e é a última
 chance antes de o erro virar histórico.
 
+O segundo caso foi medido em 27/10/2026, no retrofit do `hook-builder` 0.2.0. Para acrescentar 3
+casos ao `assets/trigger-evals.json`, o arquivo passou por `json.load` e `json.dumps(indent=2)`, e
+saiu reformatado inteiro (102 linhas), porque o original guarda um caso por linha. Os gates
+passaram e só o `--stat` mostrou. Acrescente as linhas como texto, no formato do arquivo, e confira
+que o `--stat` conta só o que você somou.
+
 ## 6. Orçamento da spec
 
 Retrofit só soma texto, e é assim que uma skill passa do orçamento: a auditoria de 2026-09-28
@@ -181,3 +188,57 @@ só pelo B5: no marketplace, o CHANGELOG fica em `<plugin>/`, fora da pasta da s
 gate normal (CHANGELOG 0.7.2). E o `diff -r` do plugin contra o cache instalado mostrou que o
 Claude Code acrescenta um marcador `.in_use` à pasta: sem `--exclude=.in_use`, o diff nunca sai
 vazio.
+
+## 10. Plugin que também vai para o Codex
+
+Medido em 27/10/2026, no retrofit do `hook-builder` 0.2.0, que ganhou `codex` em `platforms`, e no
+code review que veio depois. O ciclo Claude (versão, CHANGELOG, `marketplace.json`, README) passou
+limpo, e o Codex ainda tinha quatro lugares por fazer.
+
+- **Duas cópias de `platforms`.** Uma está no `plugin.json` e a outra no bloco do plugin no
+  `.claude-plugin/marketplace.json`. Mudar só a primeira faz o `scripts/codex-marketplace.py
+  --write` sair 1 com `platforms divergente entre catálogo e plugin.json`. Mude as duas, rode
+  `--write`, que regenera o `.agents/plugins/marketplace.json`, e depois `--check`. Até a 0.10.0,
+  o `check_release_sync.py` não olhava `platforms`. Agora ele imprime as duas cópias.
+- **A contagem do `docs/codex/compatibility.md`.** "N arquivos de scripts/referências/templates/
+  assets" conta os arquivos do git sob `plugins/<p>` com `/scripts/`, `/references/`,
+  `/templates/` ou `/assets/` no caminho, sem os derivados de `codex-skills/`.
+  - Essa regra bateu nas 32 linhas do arquivo.
+  - O `find <skill> -type f ! -name SKILL.md | wc -l`, que veio no handoff da sessão, divergiu em
+    19, porque conta também o `CHANGELOG.md`, `tests/`, `evals/` e `agents/` da pasta da skill,
+    e não vê as references de um plugin só de comandos.
+  - Ele acertou o `hook-builder` por coincidência e errou quando a skill ganhou `tests/`: a linha
+    foi a 31 e voltou a 29 (`c6fe82c`).
+  - O `check_release_sync.py` deriva a contagem e imprime os dois números.
+- **O smoke.** Cada plugin com `codex` tem uma entrada em `docs/codex/smokes.json`, no formato das
+  outras: `plugin`, `version`, `skills`, `paths`, `read_commands` e `conclusion`. Um smoke com
+  versão atrás do plugin é evidência de uma versão anterior. Refaça o smoke ou diga isso no resumo.
+  Para não tocar no `~/.codex` de quem usa:
+
+  ```bash
+  T=~/.wt/codex-smoke-<plugin>; mkdir -p "$T/home"   # sob /tmp: "Refusing to create helper binaries"
+  ln -s ~/.codex/auth.json "$T/home/auth.json"       # só a credencial; o config.toml leva só o model
+  export CODEX_HOME="$T/home"
+  codex plugin marketplace add <REPO> --json
+  codex plugin add <plugin>@<loja> --json
+  codex plugin list --marketplace <loja> --json      # installed[].name / version / enabled
+  codex exec --yolo --skip-git-repo-check -C "$T" "<liste as skills e leia references/x do local instalado>" < /dev/null
+  ```
+
+  Sem o `< /dev/null`, o `codex exec` fica em `Reading additional input from stdin...` até o
+  timeout. O `--yolo` desliga aprovações e sandbox. Por isso, use-o só numa pasta descartável e
+  com um prompt que só lê. O pacote instalado fica em `$CODEX_HOME/plugins/cache/<loja>/<plugin>/<versão>/`.
+- **A coluna Codex do README** (a tabela de plataformas) muda junto com o estado do
+  `compatibility.md`.
+- **Os testes do repo.** O gate é `python3 -m unittest discover -s tests`, como no CLAUDE.md. Em
+  27/10, rodaram 61 testes, com 3 falhas em `test_codex_distribution.py`. As 3 se repetiram no
+  base, extraído com `git archive <base> | tar -x -C <pasta>` e testado lá, sem `checkout` na
+  árvore de trabalho: eram dívida, não regressão. A causa, naquela máquina, era `bwrap: setting up
+  uid map: Permission denied`, do sandbox, e não a versão do codex que o handoff supunha.
+- **`claude plugin validate plugins/<p>`** acusa `LICENSE_MISSING`, porque o diretório oficial de
+  plugins exige `LICENSE` ou `license`. É dívida da loja inteira e vai para o resumo, como manda o
+  *Princípio* do comando.
+- **Depois do push.** O `codex plugin marketplace list` diz se a loja está configurada. Com origem
+  Git, `codex plugin marketplace upgrade <loja>` atualiza a cópia e também os plugins instalados
+  (`docs/codex/verification.md`, CLI 0.163.0). Em 27/10, a loja não estava configurada no `~/.codex`
+  desta máquina, e não havia o que atualizar.
