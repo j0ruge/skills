@@ -2,6 +2,26 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.13] — 2026-10-27
+
+### O `rc=` de uma evidência gravada depois de um pipe é o do último comando (codereview 2.27.13)
+
+Uma lição da rodada 3 do codereview do plugin `env-docs-sync` (branch `feat/env-docs-sync` deste
+repositório). Só a `references/configuration.md` ganha texto. O `SKILL.md` está a 5 caracteres do teto
+do C1 (19.995 de 20.000) e muda só no `metadata.version` da `codereview`, de 2.27.11 para 2.27.13, com o
+mesmo tamanho.
+
+- **`references/configuration.md`, *Docs this session wrote*: "An `rc=` line saved after a pipe is the
+  last command's status, not the script's".**
+  - **O quê:** grave o script sem pipe, ou leia o status dele na mesma linha: `${pipestatus[1]}` no zsh,
+    `${PIPESTATUS[0]}` no bash. Fica num bullet próprio, logo depois do "Read each evidence file before
+    the launch, too", que trata da linha plausível e não do `rc=`.
+  - **Por quê:** a evidência das sondas do rodador de mutantes foi gravada com `sonda | tail -5; echo
+    "rc=$?"`, e o `rc=0` era o do `tail`. Estava certo só porque as sondas passaram. O agente de DOCS lê
+    o `rc=` como o resultado medido, e um script que falhou viraria uma afirmação comprovada. Medido no
+    zsh 5.9 e no bash 5.2.21: um script que sai 3, passado ao `tail -1`, dá `rc=0` com `$?` nos dois
+    shells e `rc=3` com as formas do pipestatus.
+
 ## [2.27.12] — 2026-10-26
 
 ### A cobertura por commit dos bots: o `findings=true` do Codex sem nada postado, o review do CodeRabbit sem objeto e a linha de cota que prevê o limite (codereview 2.27.12)

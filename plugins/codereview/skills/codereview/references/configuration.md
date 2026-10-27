@@ -250,6 +250,13 @@ phase, and step 7 checks the doc against the diff, not against code the range le
   Measured 2026-10-25 (magic_tutor, PR #107): `git show $ref:conhecimento/decks/x.md | wc -c`
   sent `5a42767^onhecimento/…` to git, which failed, and the evidence file said `5a42767^: 0` for
   a page of 20708 bytes; braced, it said 20708 and 22391.
+- **An `rc=` line saved after a pipe is the last command's status, not the script's.**
+  `script | tail -5; echo "rc=$?"` writes the `tail`'s 0 even when the script failed, and the
+  agent reads that `rc=` as the measured result. Save the script unpiped, or read its own status in
+  the same line: `${pipestatus[1]}` in zsh, `${PIPESTATUS[0]}` in bash. Measured 2026-10-27 (zsh
+  5.9, bash 5.2.21): a script exiting 3 piped into `tail -1` gave `rc=0` with `$?` in both shells
+  and `rc=3` with the pipestatus forms. The same day, an evidence file of two mutant-runner probes
+  recorded the `tail`'s `rc=0`, right only because the probes passed.
 - **The evidence of a pipeline's doc is the folder its phase saved, not your re-run.** A handoff
   or report a phase wrote cites the measurements that phase made, at the head it reviewed. Pass
   that folder, and each artifact a doc cites by its exact path: given only a parent folder, the
