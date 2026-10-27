@@ -127,6 +127,7 @@ def rodar(antes, depois):
 
 
 def main(argv):
+    """Roda o controle e os mutantes pedidos (todos, sem argumento); 0 quando todos morrem."""
     escolhidos = [m for m in MUTANTES if not argv or m[0].split()[0] in argv]
     desconhecidos = set(argv) - {m[0].split()[0] for m in MUTANTES}
     if desconhecidos:

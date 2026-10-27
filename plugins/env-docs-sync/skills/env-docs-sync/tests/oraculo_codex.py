@@ -69,6 +69,7 @@ def hooks_list(home: Path, cwd: Path) -> dict:
     linhas = queue.Queue()
 
     def ler():
+        """Põe cada linha do stdout na fila e, no fim, um None."""
         for linha in proc.stdout:
             linhas.put(linha)
         linhas.put(None)
