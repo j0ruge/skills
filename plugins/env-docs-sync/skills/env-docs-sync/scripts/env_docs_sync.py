@@ -7,10 +7,13 @@ Este arquivo tem três camadas, nesta ordem:
    Página de ambientes inteira. Não abre rede, não chama o backend de documentação nem o ssh.
    Relógio, sha do commit, conteúdo dos ambientes remotos e o leitor do corpo atual entram por
    parâmetro.
-2. **Adaptadores.** Nesta versão só existe o `DestinoDiretorio`, um destino local para teste e
-   inspeção. O destino `kb`, a fonte ssh e a entrada do hook chegam depois e se encaixam pelas
-   mesmas costuras: `Destino` (ler_corpo/escrever) e o mapa `atuais` de `planejar`.
-3. **CLI mínima** (`validate`, `scan`, `plan`, `sync --to-dir`, `render-page`).
+2. **Adaptadores.** O `DestinoDiretorio`, um destino local para teste e inspeção, e a fábrica que
+   escolhe o destino por `doc.backend`. Todos se encaixam pelas mesmas costuras: `Destino`
+   (ler_corpo/escrever) e o mapa `atuais` de `planejar`.
+3. **Entrada do hook.** Lê o payload do Claude Code ou do Codex CLI, acha a raiz pelo git, aplica o
+   filtro do Checkout da verdade, refaz a Varredura e sincroniza sob trava, com o estado por
+   repositório na pasta de dados do plugin. Sempre sai com 0.
+4. **CLI** (`validate`, `scan`, `plan`, `sync`, `status`, `render-page`, `hook`).
 
 Regra de segredo, em todas as camadas: nenhum valor de arquivo .env* vai para stdout, stderr,
 mensagem de erro, `repr` ou estado. O valor só vai para o corpo do Bloco de arquivo, que é o destino.
@@ -19,17 +22,21 @@ Só biblioteca padrão; Python 3.11+.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import copy
+import fcntl
 import functools
 import hashlib
 import html
 import json
 import os
 import re
+import socket
 import string
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from html.parser import HTMLParser
@@ -761,8 +768,341 @@ class DestinoDiretorio:
         _gravar_privado(self._arquivo(op.ambiente, op.caminho), op.corpo)
 
 
+def destino_da_config(config: Mapping, raiz: Path, ctx: "Contexto") -> Destino:
+    """A fábrica padrão: o Destino do `doc.backend` da config."""
+    backend = config["doc"]["backend"]
+    if backend == "kb":
+        raise ErroEnvDocs("adaptador kb ainda não implementado nesta versão; nada foi escrito")
+    raise ErroEnvDocs(f"backend sem adaptador: {backend!r}")
+
+
 # ---------------------------------------------------------------------------------------------
-# CLI mínima
+# Entrada do hook: gatilho, Checkout da verdade, estado por repositório, trava
+# ---------------------------------------------------------------------------------------------
+
+NOME_DA_CONFIG = ".env-docs.json"
+EVENTOS_DO_HOOK = ("PostToolUse", "Stop", "SessionStart")
+FERRAMENTAS_DE_EDICAO = ("Write", "Edit")
+"""As do Claude Code. No Codex, a edição chega como `apply_patch`, que o matcher `Write|Edit` casa
+por alias; `MultiEdit` não existe no Claude Code 2.1.309."""
+MARCADORES_DO_PATCH = ("*** Add File: ", "*** Update File: ", "*** Delete File: ", "*** Move to: ")
+ESPERA_DA_TRAVA = 30.0
+_VARIAVEIS_DO_GIT = ("GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_INDEX_FILE")
+
+
+class TravaOcupada(ErroEnvDocs):
+    """Outro processo segura a trava do repositório além da espera."""
+
+
+@dataclass(frozen=True)
+class Gatilho:
+    """O que o hook usa do payload. O conteúdo do arquivo, que o payload também traz, fica de fora.
+
+    `caminhos` (absolutos) só nas ferramentas de edição; None pede a Varredura completa da raiz do
+    `cwd`. `comando` só no shell.
+    """
+    evento: str
+    cwd: Path
+    caminhos: tuple | None = None
+    comando: str | None = None
+
+
+def caminhos_do_patch(patch: str, cwd: Path) -> list[Path]:
+    """Os caminhos das linhas `*** Add/Update/Delete File:` e `*** Move to:` de um `apply_patch`.
+
+    O Codex 0.164.0 manda o caminho absoluto; relativo é resolvido contra o `cwd`.
+    """
+    caminhos = []
+    for linha in patch.splitlines():
+        for marcador in MARCADORES_DO_PATCH:
+            if linha.startswith(marcador) and linha[len(marcador):].strip():
+                bruto = linha[len(marcador):].strip()
+                caminhos.append(Path(bruto) if os.path.isabs(bruto) else Path(cwd) / bruto)
+    return caminhos
+
+
+def ler_gatilho(payload) -> Gatilho | None:
+    """O Gatilho do payload, ou None quando o payload não pede nada (inclusive Stop com
+    `stop_hook_active`, a guarda de loop). Nunca lê o conteúdo que o payload carrega."""
+    if not isinstance(payload, dict):
+        return None
+    evento, cwd = payload.get("hook_event_name"), payload.get("cwd")
+    if evento not in EVENTOS_DO_HOOK or not isinstance(cwd, str) or not os.path.isabs(cwd):
+        return None
+    cwd = Path(cwd)
+    if evento == "Stop":
+        return None if payload.get("stop_hook_active") else Gatilho(evento, cwd)
+    if evento == "SessionStart":
+        return Gatilho(evento, cwd)
+    ferramenta, entrada = payload.get("tool_name"), payload.get("tool_input")
+    if not isinstance(entrada, dict):
+        return None
+    if ferramenta in FERRAMENTAS_DE_EDICAO:
+        caminho = entrada.get("file_path")
+        if not isinstance(caminho, str) or not caminho:
+            return None
+        return Gatilho(evento, cwd, caminhos=(Path(caminho) if os.path.isabs(caminho) else cwd / caminho,))
+    comando = entrada.get("command")
+    if not isinstance(comando, str):
+        return None
+    if ferramenta == "apply_patch":
+        caminhos = caminhos_do_patch(comando, cwd)
+        return Gatilho(evento, cwd, caminhos=tuple(caminhos)) if caminhos else None
+    if ferramenta == "Bash":
+        return Gatilho(evento, cwd, comando=comando)
+    return None
+
+
+def _git(pasta, *args) -> str | None:
+    env = {k: v for k, v in os.environ.items() if k not in _VARIAVEIS_DO_GIT}
+    try:
+        saida = subprocess.run(["git", "-C", str(pasta), *args], capture_output=True, text=True,
+                               timeout=10, env=env)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return saida.stdout if saida.returncode == 0 else None
+
+
+def raiz_do_repositorio(pasta) -> Path | None:
+    """A raiz do checkout que contém `pasta` (a 1ª pasta existente subindo, se ela sumiu), ou None."""
+    pasta = Path(pasta)
+    while not pasta.is_dir():
+        if pasta.parent == pasta:
+            return None
+        pasta = pasta.parent
+    saida = (_git(pasta, "rev-parse", "--show-toplevel") or "").strip()
+    return Path(saida) if saida else None
+
+
+def checkout_da_verdade(pasta) -> bool:
+    """`pasta` está num checkout principal, não num worktree? (`--git-dir` == `--git-common-dir`)
+
+    O `--path-format=absolute` (git 2.31+) é obrigatório: sem ele, numa subpasta do checkout
+    principal o `--git-common-dir` sai relativo e o checkout parece worktree.
+    """
+    saida = _git(pasta, "rev-parse", "--path-format=absolute", "--git-dir", "--git-common-dir")
+    linhas = saida.splitlines() if saida else []
+    return len(linhas) == 2 and os.path.realpath(linhas[0]) == os.path.realpath(linhas[1])
+
+
+def maquina_confere(maquina: str, hostname: str) -> bool:
+    """O hostname bate com `environments.development.machine`? Sem caixa; aceita o nome curto."""
+    esperado, real = maquina.strip().lower(), hostname.strip().lower()
+    return bool(esperado) and esperado in (real, real.split(".", 1)[0])
+
+
+def pasta_de_estado(ambiente: Mapping[str, str]) -> Path:
+    """Onde o estado mora: `CLAUDE_PLUGIN_DATA` (Claude Code e Codex), `PLUGIN_DATA` (Codex) ou,
+    fora de um hook de plugin, `$XDG_STATE_HOME/env-docs-sync` (padrão `~/.local/state/env-docs-sync`).
+    Valor vazio ou relativo não conta."""
+    for chave in ("CLAUDE_PLUGIN_DATA", "PLUGIN_DATA"):
+        valor = ambiente.get(chave) or ""
+        if os.path.isabs(valor):
+            return Path(valor)
+    xdg = ambiente.get("XDG_STATE_HOME") or ""
+    if not os.path.isabs(xdg):
+        xdg = str(Path(ambiente.get("HOME") or Path.home()) / ".local" / "state")
+    return Path(xdg) / "env-docs-sync"
+
+
+def arquivo_de_estado(raiz, pasta) -> Path:
+    """Um arquivo por repositório: `<pasta>/repos/<sha256 do caminho absoluto da raiz>.json`."""
+    return Path(pasta) / "repos" / f"{hash_sha256(str(Path(raiz).resolve()).encode('utf-8'))}.json"
+
+
+@contextlib.contextmanager
+def trava_do_repo(raiz, pasta, espera: float = ESPERA_DA_TRAVA):
+    """`flock` exclusivo por repositório, ao lado do arquivo de estado. Duas sessões, ou o PostToolUse
+    e o Stop do mesmo turno, nunca sincronizam o mesmo repositório ao mesmo tempo."""
+    arquivo = arquivo_de_estado(raiz, pasta).with_suffix(".lock")
+    arquivo.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    descritor = os.open(arquivo, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        limite = time.monotonic() + espera
+        while True:
+            try:
+                fcntl.flock(descritor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= limite:
+                    raise TravaOcupada("outro sync deste repositório ainda roda; "
+                                       "o próximo gatilho tenta de novo") from None
+                time.sleep(0.05)
+        yield
+    finally:
+        os.close(descritor)  # fechar solta a trava
+
+
+def _agora_local() -> datetime:
+    return datetime.now().astimezone()
+
+
+@dataclass
+class Contexto:
+    """O que o hook usa do mundo, injetável nos testes."""
+    hostname: Callable[[], str] = socket.gethostname
+    agora: Callable[[], datetime] = _agora_local
+    fabrica_destino: Callable[..., Destino] = destino_da_config
+    pasta_de_estado: Path | None = None
+    """None: resolve por `pasta_de_estado(ambiente)`."""
+    ambiente: Mapping[str, str] = field(default_factory=lambda: dict(os.environ))
+    espera_da_trava: float = ESPERA_DA_TRAVA
+
+
+@dataclass
+class RespostaHook:
+    mensagem: str | None = None
+    """O `systemMessage`: caminhos, ações e avisos. Nunca valores."""
+    log: list = field(default_factory=list)
+    """Linhas para o stderr (o debug log do host)."""
+
+
+def saida_do_hook(resposta: RespostaHook) -> str:
+    """O stdout do hook: só o objeto JSON, em ASCII (o locale do host pode não ser UTF-8), ou nada."""
+    return json.dumps({"systemMessage": resposta.mensagem}) if resposta.mensagem else ""
+
+
+def _hashes(arquivos: Mapping[str, bytes]) -> dict[str, str]:
+    return {caminho: hash_sha256(dados) for caminho, dados in arquivos.items()}
+
+
+def _listar(itens) -> str:
+    """`development: .env (criar), app/.env (trocar)` — ambiente, caminho e ação; nunca o corpo."""
+    por_ambiente = {}
+    for item in itens:
+        por_ambiente.setdefault(item.ambiente, []).append(f"{item.caminho} ({item.acao})")
+    return "; ".join(f"{amb}: {', '.join(itens)}" for amb, itens in por_ambiente.items())
+
+
+def _algum_vigiado(raiz: Path, editados, config) -> bool:
+    """Algum caminho editado é um arquivo da Varredura (casa `include`, não casa o exclude)?"""
+    raiz_real = Path(os.path.realpath(raiz))
+    exclusoes = (*EXCLUDE_PADRAO, *config["exclude"])
+    for caminho in editados:
+        real = Path(os.path.realpath(caminho.parent)) / caminho.name
+        try:
+            rel = real.relative_to(raiz_real).as_posix()
+        except ValueError:
+            continue
+        if casa_padrao(rel, config["include"]) and not casa_padrao(rel, exclusoes):
+            return True
+    return False
+
+
+def _raizes(gatilho: Gatilho) -> list[tuple[Path, list | None]]:
+    """[(raiz, caminhos editados nela)]. Edição: a raiz de cada arquivo, que pode não ser a do `cwd`.
+    Shell, Stop e SessionStart: a raiz do `cwd`, com Varredura completa (caminhos None)."""
+    if gatilho.caminhos is None:
+        raiz = raiz_do_repositorio(gatilho.cwd)
+        return [(raiz, None)] if raiz else []
+    grupos = {}
+    for caminho in gatilho.caminhos:
+        raiz = raiz_do_repositorio(caminho.parent)
+        if raiz:
+            grupos.setdefault(raiz, []).append(caminho)
+    return list(grupos.items())
+
+
+def _detalhe(erro: BaseException) -> str:
+    """A mensagem de um erro esperado (que nunca carrega valor); de um inesperado, só o tipo."""
+    if isinstance(erro, ErroEnvDocs):
+        return str(erro)
+    if isinstance(erro, OSError):
+        return f"erro de E/S ({type(erro).__name__})"
+    return f"erro inesperado ({type(erro).__name__})"
+
+
+def sincronizar_repo(raiz: Path, gatilho: Gatilho, editados, ctx: Contexto) -> list[str]:
+    """Uma raiz, um gatilho: as linhas do `systemMessage` (vazio = calado).
+
+    Calado quando: sem config; fora do Checkout da verdade (worktree ou outra máquina); edição que
+    não toca arquivo da Varredura; nada mudou. O estado só é gravado com o que o destino aceitou.
+    """
+    caminho_config = raiz / NOME_DA_CONFIG
+    if not caminho_config.is_file() or not checkout_da_verdade(raiz):
+        return []
+    try:
+        config = carregar_config(caminho_config)
+    except ErroDeConfig as erro:
+        return [f"aviso — {raiz.name}: {NOME_DA_CONFIG} inválida ({len(erro.erros)} erro(s), o 1º: "
+                f"{erro.erros[0]}); rode `env_docs_sync.py validate`. Nada foi sincronizado."]
+    if not maquina_confere(config["environments"]["development"]["machine"], ctx.hostname()):
+        return []
+    if editados is not None and not _algum_vigiado(raiz, editados, config):
+        return []
+    pasta = ctx.pasta_de_estado or pasta_de_estado(ctx.ambiente)
+    arquivo = arquivo_de_estado(raiz, pasta)
+    if not diferencas(carregar_estado(arquivo), {"development": _hashes(_locais(raiz, config))}):
+        return []
+
+    with trava_do_repo(raiz, pasta, ctx.espera_da_trava):
+        estado = carregar_estado(arquivo)  # outro processo pode ter sincronizado enquanto esperávamos
+        locais = _locais(raiz, config)
+        mudancas = diferencas(estado, {"development": _hashes(locais)})
+        if not mudancas:
+            return []
+        try:
+            destino = ctx.fabrica_destino(config, raiz, ctx)
+        except ErroEnvDocs as erro:
+            return [f"aviso — {raiz.name}: {erro}. Pendente: {_listar(mudancas)}. "
+                    "O estado não mudou; o próximo gatilho tenta de novo."]
+        quando = ctx.agora()
+        operacoes = planejar(estado, {"development": locais}, sincronizado_em=quando,
+                             commit=_commit(None, raiz), ler_corpo=destino.ler_corpo)
+        resultado = aplicar(estado, operacoes, destino, quando=quando)
+        if resultado.aplicadas:
+            gravar_estado(arquivo, resultado.estado)
+
+    linhas = []
+    if resultado.aplicadas:
+        linhas.append(f"Página de ambientes atualizada ({raiz.name}) — {_listar(resultado.aplicadas)}")
+    if resultado.falhou is not None:
+        pendentes = operacoes[len(resultado.aplicadas):]
+        linhas.append(f"aviso — {raiz.name}: falhou em {resultado.falhou.ambiente} {resultado.falhou.caminho} "
+                      f"({_detalhe(resultado.erro)}). Pendente: {_listar(pendentes)}. O estado dessas "
+                      "operações não mudou; o próximo gatilho tenta de novo.")
+    return linhas
+
+
+def executar_hook(texto: str, ctx: Contexto | None = None) -> RespostaHook:
+    """O hook inteiro, sem E/S de processo: payload em texto → resposta. Nunca levanta."""
+    ctx = ctx or Contexto()
+    try:
+        payload = json.loads(texto)
+    except (ValueError, RecursionError):
+        return RespostaHook(log=["env-docs-sync: o stdin do hook não é JSON; ignorado"])
+    gatilho = ler_gatilho(payload)
+    if gatilho is None:
+        return RespostaHook()
+    linhas = []
+    for raiz, editados in _raizes(gatilho):
+        try:
+            linhas += sincronizar_repo(raiz, gatilho, editados, ctx)
+        except Exception as erro:  # hook de conveniência: avisa e sai 0; a mensagem não carrega valor
+            linhas.append(f"aviso — {raiz.name}: {_detalhe(erro)}. O próximo gatilho tenta de novo.")
+    return RespostaHook(mensagem="env-docs-sync: " + "\n".join(linhas) if linhas else None)
+
+
+def status_dos_arquivos(atuais: Mapping[str, Mapping[str, bytes]], destino: Destino) -> list[tuple[str, str, str]]:
+    """[(ambiente, caminho, situação)]: `ok` (hash do bloco relido = hash do arquivo), `diverge` ou
+    `ausente` (o destino não tem o bloco). Só hashes: nenhum valor sai daqui."""
+    linhas = []
+    for ambiente in AMBIENTES:
+        for caminho in sorted(atuais.get(ambiente, {})):
+            corpo = destino.ler_corpo(ambiente, caminho)
+            texto = conteudo_do_bloco(corpo) if corpo is not None else None
+            if corpo is None:
+                situacao = "ausente"
+            elif texto is not None and hash_sha256(texto.encode("utf-8")) == hash_sha256(atuais[ambiente][caminho]):
+                situacao = "ok"
+            else:
+                situacao = "diverge"
+            linhas.append((ambiente, caminho, situacao))
+    return linhas
+
+
+# ---------------------------------------------------------------------------------------------
+# CLI
 # ---------------------------------------------------------------------------------------------
 
 def _agora(texto):
@@ -833,7 +1173,7 @@ def _cmd_sync(args):
     raiz, config = _contexto(args)
     quando, commit = _agora(args.now), _commit(args.commit, raiz)
     estado = carregar_estado(args.state)
-    destino = DestinoDiretorio(args.to_dir)
+    destino = _destino_da_cli(args, config, raiz)
     operacoes = planejar(estado, {"development": _locais(raiz, config)}, sincronizado_em=quando,
                          commit=commit, ler_corpo=destino.ler_corpo)
     _remotos_ignorados(config)
@@ -849,6 +1189,39 @@ def _cmd_sync(args):
         detalhe = str(resultado.erro) if isinstance(resultado.erro, ErroEnvDocs) else type(resultado.erro).__name__
         print(f"env-docs-sync: falhou em {resultado.falhou.resumo()}: {detalhe}", file=sys.stderr)
         return 1
+    return 0
+
+
+def _destino_da_cli(args, config, raiz):
+    """`--to-dir` (destino de diretório, para teste) ou o Destino de `doc.backend`."""
+    if args.to_dir:
+        return DestinoDiretorio(args.to_dir)
+    return destino_da_config(config, raiz, Contexto())
+
+
+def _cmd_status(args):
+    raiz, config = _contexto(args)
+    destino = _destino_da_cli(args, config, raiz)
+    linhas = status_dos_arquivos({"development": _locais(raiz, config)}, destino)
+    for ambiente, caminho, situacao in linhas:
+        print(f"{situacao}\t{ambiente}\t{caminho}")
+    contagem = {s: sum(1 for *_, x in linhas if x == s) for s in ("ok", "diverge", "ausente")}
+    print(f"{contagem['ok']} ok, {contagem['diverge']} diverge, {contagem['ausente']} ausente")
+    return 0 if contagem["ok"] == len(linhas) else 3
+
+
+def _cmd_hook(args):
+    """Sempre sai 0: um hook de conveniência nunca derruba nem prende a sessão (Stop + exit 2 = loop)."""
+    try:
+        texto = sys.stdin.buffer.read().decode("utf-8", errors="replace")
+        resposta = executar_hook(texto)
+        saida = saida_do_hook(resposta)
+        if saida:
+            print(saida)
+        for linha in resposta.log:
+            print(linha, file=sys.stderr)
+    except Exception as erro:  # nem a E/S do processo derruba o hook; só o tipo, nunca a mensagem
+        print(f"env-docs-sync: erro inesperado no hook ({type(erro).__name__})", file=sys.stderr)
     return 0
 
 
@@ -871,7 +1244,7 @@ def _cmd_render_page(args):
 def _parser():
     parser = argparse.ArgumentParser(
         prog="env_docs_sync.py",
-        description="env-docs-sync (núcleo): Varredura, plano e Página de ambientes. Nunca imprime valores.")
+        description="env-docs-sync: Varredura, plano, sync, status e a entrada do hook. Nunca imprime valores.")
     parser.add_argument("--version", action="version", version=f"env-docs-sync {__version__}")
     sub = parser.add_subparsers(dest="comando", required=True)
 
@@ -890,9 +1263,14 @@ def _parser():
     comando("validate", "valida a .env-docs.json", _cmd_validate)
     comando("scan", "Varredura: caminhos e hash curto", _cmd_scan)
     comando("plan", "mudanças desde o último sync (só caminhos e hashes)", _cmd_plan, estado=True)
-    sync = comando("sync", "aplica o plano de development num destino de diretório", _cmd_sync,
+    sync = comando("sync", "aplica o plano de development no destino", _cmd_sync,
                    estado=True, relogio=True)
-    sync.add_argument("--to-dir", required=True, help="destino local de teste (o destino kb chega depois)")
+    sync.add_argument("--to-dir", help="destino de diretório, para teste (padrão: o de doc.backend)")
+    status = comando("status", "hash do bloco relido no destino x hash do arquivo (rc 3 se algo diverge)",
+                     _cmd_status)
+    status.add_argument("--to-dir", help="destino de diretório, para teste (padrão: o de doc.backend)")
+    hook = sub.add_parser("hook", help="entrada do hook do Claude Code e do Codex CLI (payload no stdin; sai 0)")
+    hook.set_defaults(funcao=_cmd_hook)
     render = comando("render-page", "grava a Página de ambientes inteira (0600) para o replace",
                      _cmd_render_page, relogio=True)
     render.add_argument("--out", required=True, help="arquivo HTML de saída (0600)")

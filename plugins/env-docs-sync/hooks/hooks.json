@@ -1,0 +1,49 @@
+{
+  "description": "env-docs-sync: espelha os .env* do repositório na Página de ambientes quando um deles muda (ferramenta de edição, shell ou edição à mão) e lê por ssh o .env dos servidores quando um comando cita o host ou a janela venceu",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"${CLAUDE_PLUGIN_ROOT}/skills/env-docs-sync/scripts/env_docs_sync.py\"; [ -f \"$f\" ] || { echo \"env-docs-sync: script ausente: $f\" >&2; exit 0; }; python3 \"$f\" hook",
+            "timeout": 120
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"${CLAUDE_PLUGIN_ROOT}/skills/env-docs-sync/scripts/env_docs_sync.py\"; [ -f \"$f\" ] || { echo \"env-docs-sync: script ausente: $f\" >&2; exit 0; }; python3 \"$f\" hook",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"${CLAUDE_PLUGIN_ROOT}/skills/env-docs-sync/scripts/env_docs_sync.py\"; [ -f \"$f\" ] || { echo \"env-docs-sync: script ausente: $f\" >&2; exit 0; }; python3 \"$f\" hook",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"${CLAUDE_PLUGIN_ROOT}/skills/env-docs-sync/scripts/env_docs_sync.py\"; [ -f \"$f\" ] || { echo \"env-docs-sync: script ausente: $f\" >&2; exit 0; }; python3 \"$f\" hook",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

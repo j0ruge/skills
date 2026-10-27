@@ -1,0 +1,40 @@
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "transcript_path": "/home/user/.claude/projects/-home-user-my-project/00000000-0000-4000-8000-000000000001.jsonl",
+  "cwd": "/home/user/my-project",
+  "prompt_id": "00000000-0000-4000-8000-0000000000aa",
+  "permission_mode": "default",
+  "effort": {
+    "level": "medium"
+  },
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/home/user/my-project/app.txt",
+    "old_string": "qualquer",
+    "new_string": "outro",
+    "replace_all": false
+  },
+  "tool_response": {
+    "filePath": "/home/user/my-project/app.txt",
+    "oldString": "qualquer",
+    "newString": "outro",
+    "originalFile": "texto qualquer\n",
+    "structuredPatch": [
+      {
+        "oldStart": 1,
+        "oldLines": 1,
+        "newStart": 1,
+        "newLines": 1,
+        "lines": [
+          "-texto qualquer",
+          "+texto outro"
+        ]
+      }
+    ],
+    "userModified": false,
+    "replaceAll": false
+  },
+  "tool_use_id": "toolu_01EXAMPLE",
+  "duration_ms": 11
+}

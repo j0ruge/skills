@@ -74,7 +74,7 @@ obrigatório. Todo ambiente tem estes campos, que formam a tabela da seção "Am
 | Campo | O que é |
 |---|---|
 | `source` | sempre `"local"` |
-| `machine` | o hostname da estação do Checkout da verdade. O hook só age no checkout principal dessa máquina |
+| `machine` | o hostname da estação do Checkout da verdade, comparado sem caixa e aceitando o nome curto (`estacao` casa `estacao.lan`). O hook só age no checkout principal dessa máquina |
 
 Os arquivos de development saem da Varredura. Não há `files`.
 
@@ -104,8 +104,11 @@ negrito e o comando num bloco de código. Lista vazia gera uma frase dizendo que
 
 ## O arquivo de estado
 
-O estado não é config, mas é o outro arquivo que o plugin lê. O caminho é injetado: a CLI recebe
-`--state`, e o hook vai usar a pasta de dados do plugin. Ele é gravado em 0600, atomicamente, e
+O estado não é config, mas é o outro arquivo que o plugin lê. A CLI recebe o caminho em
+`--state`. O hook usa um arquivo por repositório, `<pasta>/repos/<sha256 do caminho absoluto da
+raiz>.json`, com a trava `.lock` ao lado. A `<pasta>` é `CLAUDE_PLUGIN_DATA`, depois `PLUGIN_DATA`
+e, fora de hook de plugin, `$XDG_STATE_HOME/env-docs-sync` (padrão `~/.local/state/env-docs-sync`);
+os caminhos medidos em cada host estão em `hosts.md`. O estado é gravado em 0600, atomicamente, e
 tem esta forma:
 
 ```json
