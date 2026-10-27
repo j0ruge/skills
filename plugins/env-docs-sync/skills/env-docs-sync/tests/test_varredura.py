@@ -1,5 +1,6 @@
 """Varredura: quais .env* entram (include/exclude, exclude padrão, outro checkout, symlink) e o hash."""
 import os
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -74,6 +75,28 @@ class Varredura(unittest.TestCase):
         self.assertIn("fechada", str(ctx.exception))
         self.assertIn("exclude", str(ctx.exception), "o aviso diz como calar uma pasta que não interessa")
         self.assertIn("fechada/.env", eds.varredura(self.raiz, INCLUDE, []), "controle: legível, entra")
+
+    def test_a_dica_do_exclude_cala_a_pasta_e_falta_na_raiz(self):
+        # só padrão com `/**` poda a descida: `exclude: ["packages/fechada"]` deixaria o mesmo erro
+        fechada = self.raiz / "packages" / "fechada"
+        fechada.mkdir()
+        (fechada / ".env").write_text("X=1\n", encoding="utf-8")
+        fechada.chmod(0)
+        try:
+            with self.assertRaises(eds.ErroEnvDocs) as ctx:
+                eds.varredura(self.raiz, INCLUDE, [])
+            dica = re.search(r"`([^`]+)` em `exclude`", str(ctx.exception))
+            self.assertIsNotNone(dica, str(ctx.exception))
+            self.assertEqual(dica[1], "packages/fechada/**", "relativo à raiz, como os padrões da config")
+            achados = eds.varredura(self.raiz, INCLUDE, [dica[1]])
+        finally:
+            fechada.chmod(0o755)
+        self.assertNotIn("packages/fechada/.env", achados)
+        self.assertIn("packages/api/.env", achados, "controle: o resto da Varredura segue")
+        # a raiz não se exclui: ali a dica mandaria o usuário a um beco
+        with self.assertRaises(eds.ErroEnvDocs) as ctx:
+            eds._ao_listar(self.raiz)(PermissionError(13, "Permission denied", str(self.raiz)))
+        self.assertNotIn("exclude", str(ctx.exception))
 
     def test_subpasta_que_some_no_meio_passa_e_a_raiz_nao(self):
         # pasta de build apagada entre a listagem do pai e a dela: não tem arquivo a perder

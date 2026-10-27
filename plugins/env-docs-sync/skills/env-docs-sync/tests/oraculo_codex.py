@@ -84,8 +84,8 @@ def hooks_list(home: Path, cwd: Path) -> dict:
 
     def esperar(ident, limite=60):
         """A resposta com este id, ou SystemExit quando o prazo acaba ou o app-server sai."""
-        fim = time.time() + limite
-        while (restante := fim - time.time()) > 0:
+        fim = time.monotonic() + limite
+        while (restante := fim - time.monotonic()) > 0:
             try:
                 linha = linhas.get(timeout=restante)
             except queue.Empty:
@@ -97,7 +97,7 @@ def hooks_list(home: Path, cwd: Path) -> dict:
             except ValueError:
                 continue
             # uma requisição do servidor (tem `method`) pode trazer o mesmo id; só resposta conta
-            if msg.get("id") == ident and ("result" in msg or "error" in msg):
+            if isinstance(msg, dict) and msg.get("id") == ident and ("result" in msg or "error" in msg):
                 return msg
         raise SystemExit(f"codex app-server: sem resposta para o id {ident} em {limite} s")
 
@@ -105,7 +105,8 @@ def hooks_list(home: Path, cwd: Path) -> dict:
         enviar({"method": "initialize", "id": 1, "params": {
             "clientInfo": {"name": "env_docs_sync_oraculo", "title": "oráculo", "version": "0.0.1"},
             "capabilities": {"experimentalApi": True}}})
-        esperar(1)
+        if "error" in (inicio := esperar(1)):
+            raise SystemExit(f"initialize: {json.dumps(inicio['error'])}")
         enviar({"method": "initialized"})
         enviar({"method": "hooks/list", "id": 2, "params": {"cwds": [str(cwd)]}})
         resposta = esperar(2)
@@ -127,8 +128,9 @@ def hooks_list(home: Path, cwd: Path) -> dict:
 
 
 def main(argv) -> int:
-    """Monta, instala e compara; 0 quando todo hook da fixture bate com o `hooks/list`, 1 senão."""
-    if not argv or argv[0].startswith("-"):
+    """Monta, instala e compara; 0 quando o `hooks/list` mostra exatamente os hooks da fixture, com os
+    mesmos hashes, 1 senão e 2 quando falta a pasta ou o arquivo do `--fixture`."""
+    if not argv or argv[0].startswith("-") or argv[-1] == "--fixture":
         print(__doc__, file=sys.stderr)
         return 2
     pasta = Path(argv[0]).expanduser().resolve()

@@ -9,7 +9,8 @@ plugin inteiro, e a suíte tem de ficar vermelha. Rodado à mão depois de mexer
 Antes dos mutantes, roda a suíte sem nenhum (o controle): vermelha, sai 2, porque todo mutante
 sairia morto sem provar nada. Sai 0 quando todos morrem e 1 com a lista dos vivos, de um trecho que
 não está mais no script (aí o guarda mudou, e o mutante precisa ser refeito) ou de um mutante que
-não compila. A cópia é do plugin inteiro porque os testes leem o `hooks/hooks.json` e o sensor
+não compila. O que só estourou o prazo conta como morto (um laço infinito é o caso), mas a linha
+final o nomeia, porque carga na máquina também estoura. A cópia é do plugin inteiro porque os testes leem o `hooks/hooks.json` e o sensor
 anti-marca varre `SKILL.parent.parent`: com só a pasta da skill, ele varreria a pasta temporária
 inteira. Cobre os mutantes da seção CI/CD, das seções derivadas, da versão do Codex e dos guardas da
 revisão de código antes da publicação; os dos incrementos anteriores, listados em
@@ -84,13 +85,17 @@ MUTANTES = [
      "(\"ausente desde\" in atual) == (op.acao"),
     ("M36 callout por substring no bloco_confere", "return bool(_RE_CALLOUT_AUSENTE.search(corpo)) and texto",
      "return \"ausente desde\" in corpo and texto"),
+    ("M37 _commit com os GIT_* herdados", "    sha = (_git(raiz, \"rev-parse\", \"HEAD\") or \"\").strip()",
+     "    sha = subprocess.run([\"git\", \"-C\", str(raiz), \"rev-parse\", \"HEAD\"], capture_output=True,\n"
+     "                         text=True).stdout.strip()"),
     ("M38 subpasta que sumiu levanta", "FileNotFoundError) and os.path.normpath(erro.filename) != os.path.normpath(raiz):\n            return",
      "FileNotFoundError) and os.path.normpath(erro.filename) != os.path.normpath(raiz):\n            pass"),
     ("M39 raiz que sumiu passa", "FileNotFoundError) and os.path.normpath(erro.filename) != os.path.normpath(raiz):",
      "FileNotFoundError):"),
-    ("M37 _commit com os GIT_* herdados", "    sha = (_git(raiz, \"rev-parse\", \"HEAD\") or \"\").strip()",
-     "    sha = subprocess.run([\"git\", \"-C\", str(raiz), \"rev-parse\", \"HEAD\"], capture_output=True,\n"
-     "                         text=True).stdout.strip()"),
+    ("M40 dica do exclude sem /**", "ponha `{rel}/**` em `exclude`", "ponha `{rel}` em `exclude`"),
+    ("M41 dica do exclude na raiz", 'dica = "" if rel == "." else f"', 'dica = f"'),
+    ("M42 dica com o caminho absoluto", "rel = Path(os.path.relpath(erro.filename, raiz)).as_posix()",
+     "rel = erro.filename"),
 ]
 
 
@@ -122,8 +127,8 @@ def _suite(antes=None, depois=None):
 
 
 def rodar(antes, depois):
-    """Aplica um mutante numa cópia e roda a suíte; devolve `morto`, `VIVO`, `ALVO NÃO ACHADO` ou
-    `NÃO COMPILA`. Mutante que quebra a sintaxe derruba o import de todo módulo de teste: a suíte fica
+    """Aplica um mutante numa cópia e roda a suíte; devolve `morto`, `morto?` (só estourou o prazo),
+    `VIVO`, `ALVO NÃO ACHADO` ou `NÃO COMPILA`. Mutante que quebra a sintaxe derruba o import de todo módulo de teste: a suíte fica
     vermelha sem que nenhum teste tenha olhado o guarda, por isso ele não conta como morto."""
     estado, detalhe = _suite(antes, depois)
     # estourar o prazo conta como morto (um laço infinito é o caso), mas com `?`: carga na máquina também estoura
@@ -144,13 +149,16 @@ def main(argv):
         print(f"controle: a suíte sem mutante não passou ({estado}: {detalhe}); nenhum mutante conta",
               file=sys.stderr)
         return 2
-    vivos = []
+    vivos, por_prazo = [], []
     for nome, antes, depois in escolhidos:
         estado = rodar(antes, depois)
         if not estado.startswith("morto"):
             vivos.append(nome)
+        elif estado.startswith("morto?"):
+            por_prazo.append(nome.split()[0])
         print(f"{nome}: {estado}", flush=True)
-    print(f"\n{len(escolhidos) - len(vivos)}/{len(escolhidos)} mortos; vivos: {vivos or '-'}")
+    prazo = f" ({len(por_prazo)} só por prazo: {', '.join(por_prazo)})" if por_prazo else ""
+    print(f"\n{len(escolhidos) - len(vivos)}/{len(escolhidos)} mortos{prazo}; vivos: {vivos or '-'}")
     return 1 if vivos else 0
 
 

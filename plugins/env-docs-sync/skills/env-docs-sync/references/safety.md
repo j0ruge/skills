@@ -26,11 +26,10 @@ conteúdo. Uma rota nova precisa de uma linha nesta tabela e de um teste.
 
 ## Confiança na config
 
-A `.env-docs.json` é código. Ela nomeia o programa que recebe pelo stdin a página inteira, com os
-valores de todo `.env*` (`doc.python` e `doc.cli`), os hosts que o ssh lê e a variável cujo valor
-vira a senha do ssh para esses hosts (`auth_env`). Quem muda a config no repositório muda o que roda
-na máquina declarada e para onde vão os segredos, sem nova aprovação. Revise uma mudança nela como a
-de um script, olhando `doc.python`, `doc.cli`, os `host` e os `auth_env`. O filtro do Checkout da
+A `.env-docs.json` é código: ela decide o que roda na máquina declarada, que segredos são lidos e
+para onde vão. O programa de `doc.python` e `doc.cli`, por exemplo, recebe pelo stdin a página
+inteira, com os valores de todo `.env*`. Quem muda a config no repositório muda isso sem nova
+aprovação: revise uma mudança nela como a de um script, no arquivo inteiro. O filtro do Checkout da
 verdade limita **onde** o hook age (o checkout principal da máquina declarada), não **o que** ele
 roda. Aprovar a config por hash, como o Codex faz com o hook, fica para uma versão seguinte.
 
@@ -52,11 +51,10 @@ uma pasta que a Varredura não lista levanta, porque os arquivos dali virariam `
 
 Uma suíte que passa com o guarda quebrado não prova o guarda. Cada mutante abaixo, aplicado numa
 cópia do script, deixou a suíte vermelha (2026-10-27). Os de CI/CD, seções derivadas, versão do
-Codex e revisão estão em `tests/mutantes.py`, fora do `discover`: `python3 -B tests/mutantes.py [M1 …]` roda antes a suíte sem
-mutante, o controle: se ela não passar, sai 2 e nenhum mutante conta. Depois sai 0 quando todos
-morrem e 1 com o mutante vivo, com o que perdeu o trecho no script ou com o que não compila (este
-derruba o import de todo módulo e deixaria a suíte vermelha sem teste nenhum). Os de hook, Sync remoto e destino
-kb foram rodados à mão nos incrementos anteriores e não estão nele.
+Codex e revisão estão em `tests/mutantes.py`, fora do `discover`: `python3 -B tests/mutantes.py
+[M1 …]`. O controle (a suíte sem mutante) e o que cada código de saída quer dizer estão no docstring
+dele. Os de hook, Sync remoto e destino kb foram rodados à mão nos incrementos anteriores e não
+estão nele.
 
 - **hook:** filtro de worktree desligado, máquina sempre aceita, `stop_hook_active` ignorado,
   filtro de edição aceitando qualquer arquivo, estado gravado sem o destino aceitar, `status`
@@ -80,7 +78,8 @@ kb foram rodados à mão nos incrementos anteriores e não estão nele.
   estado;
 - **versão do Codex** (4 mutantes, todos vermelhos): nunca avisar, conferir só a primeira versão
   medida, aviso que cita só a primeira e a lista sem o 0.165.0;
-- **revisão de código antes da publicação** (8 mutantes, todos vermelhos): git que falha tratado como
-  worktree, o aviso dele trocado por silêncio, o `os.walk` sem `onerror`, a subpasta que sumiu no
-  meio levantando e a raiz que sumiu passando, o callout achado por
-  substring no `escrever` e, à parte, no `bloco_confere`, e o `_commit` com os `GIT_*` herdados.
+- **revisão de código antes da publicação** (11 mutantes, todos vermelhos): git que falha tratado
+  como worktree, o aviso dele trocado por silêncio, o `os.walk` sem `onerror`, a subpasta que sumiu
+  no meio levantando e a raiz que sumiu passando, a dica do `exclude` sem o `/**`, na raiz ou com o
+  caminho absoluto, o callout achado por substring no `escrever` e, à parte, no `bloco_confere`, e o
+  `_commit` com os `GIT_*` herdados.
