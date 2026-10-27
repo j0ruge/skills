@@ -6,6 +6,56 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-10-27 — env-docs-sync 0.1.0: hook que documenta segredo, provado nos dois hosts antes de publicar
+
+- **Antes:** a loja não tinha plugin que mantivesse uma página de documentação a partir de arquivos
+  vigiados. No Codex, um hook de plugin só rodava depois de aprovado à mão em `/hooks`.
+- **Depois:**
+  - **Publicação:** env-docs-sync 0.1.0 (`cfdcb44..d3d812b`), com o hook nos dois hosts e o
+    `install --codex`, que grava o trust conferido contra o `hooks/list` do próprio Codex.
+  - **Testes:** 310 (rodados de novo em `d3d812b` no fechamento), 43/43 mutantes (`tests/mutantes.py`)
+    e o oráculo do Codex 9/9 no 0.165.0 (`tests/oraculo_codex.py`).
+  - **Primeiro consumidor:** um repositório privado, com 9 arquivos locais e 2 remotos `ok` e a
+    SessionStart calada quando nada muda.
+- **Check:**
+  - **codereview:** 6 rodadas (F, B, A, A, A e A sem achado);
+  - **gates:** `validate-versions`, catálogo Codex, `check_release_sync` e `claude plugin validate` com
+    rc 0;
+  - **sensor anti-marca:** vermelho com a fixture sabotada;
+  - **CA9:** pela cópia instalada nos dois hosts.
+- **O que aprendemos:**
+  - **O trust do Codex é preso ao conteúdo do pacote.** Um byte mudado deixa o hook `modified` até o
+    `install --codex` rodar de novo, e o `remove` não apaga o `[hooks.state]`. Por isso a seção CI/CD
+    entrou antes da 0.1.0: cada update desliga o hook no Codex.
+  - **Hook com efeito colateral visível é síncrono.** O C5 do plano pedia `async`. Mas num `async` o
+    `systemMessage` vai para o Claude, e não para a pessoa, e o processo morre no fim de um `claude -p`.
+  - **Um hook de Stop não pode sair 2 por acidente.** `python3 <script ausente>` sai 2, e um Stop com
+    exit 2 entra em loop. O `command` confere o arquivo antes (`[ -f "$f" ] || exit 0`).
+  - **Uma linha de carimbo cria uma revisão por gatilho.** A linha "sincronizado em" mudava a cada host
+    ou estado perdido. Agora a escrita pula o bloco que a página já tem com o mesmo hash.
+  - **O rodador de mutantes copia o plugin inteiro.** Com só a pasta da skill, o sensor anti-marca
+    (`SKILL.parent.parent`) varreu a pasta temporária inteira, e o primeiro mutante travou 600 s.
+- **Padronizado em:**
+  - **no pacote:** `references/hosts.md` §4 (trust, com fonte e oráculo), `references/safety.md`
+    (superfícies × testes × mutantes), `references/kb.md` §3 (pular o bloco igual), o `command` do
+    `hooks/hooks.json`, os docstrings de
+    `tests/mutantes.py` e o CHANGELOG [0.1.0];
+  - **na loja:** a lição do `rc=` depois de um pipe, no codereview 2.27.13 (`cfdcb44`).
+  - **Pendente:** as lições do trust e do `hooks/list` no `hook-builder`, ainda sem retrofit.
+- **Oportunidades** (cada uma com o próximo passo pequeno):
+  - **ACL incompleta:** a normalização dos ids `bkmrk-` do BookStack mora no núcleo
+    (`env_docs_sync.py:1034-1053`), e não no adaptador kb. Próximo passo: movê-la quando entrar um
+    segundo backend.
+  - **`SKILL.md` com 19 861 caracteres,** a 139 do aviso do audit. Próximo passo: a próxima edição move
+    texto para `references/` antes de acrescentar.
+  - **Retrofit do `hook-builder`:** trust por conteúdo, o oráculo `hooks/list`, o `codex exec` que não
+    mostra o `systemMessage`, o `PLUGIN_DATA` sem a pasta criada e `NumberOfPasswordPrompts` com
+    `sshpass`.
+  - **Retrofit do `skill-quality-audit`:** o F1 lê só a linha da referência e a anterior.
+  - **Nenhum plugin da loja tem `LICENSE`** (`LICENSE_MISSING` no `claude plugin validate`).
+
+---
+
 ## 2026-10-22 — Consolidar worktrees e integrar o Check incremental preservado
 
 - **Antes:** a worktree Kaizen guardava `9e53c38`, não integrado, enquanto a loja
