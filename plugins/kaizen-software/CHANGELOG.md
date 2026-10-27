@@ -2,6 +2,24 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.7] — 2026-10-27
+
+Patch: uma lição do planejamento de um sync automático de arquivos de segredo para uma wiki
+interna, em `references/kaizen-conceitos.md` e `references/templates.md`. O `SKILL.md` ficou
+igual, salvo a versão, porque está a 132 caracteres do teto de 20 mil, e já roteia as duas
+referências.
+
+- **Rótulo ≠ artefato vale para a premissa do pedido.** O pedido dizia que o destino era o lugar
+  para dado sensível. A permissão lida pela API mostrou que a página herdava a leitura de todos
+  os papéis com acesso geral (dezenas de contas), e o plano ia automatizar a exposição. O Gemba
+  da skill mandava reler código, memória e thread, mas não conferir no artefato a premissa de
+  acesso do próprio pedido.
+  - Agora o verbete traz o caso.
+  - O "Gemba — situação atual" do Plano PDCA pede essas premissas.
+  - O checklist da Validação de plano ganhou o item.
+  - O que resolveu na sessão: o primeiro incremento virou restringir o destino, e o script
+    ganhou um poka-yoke que recusa destino mais exposto que a origem.
+
 ## [1.4.6] — 2026-10-25
 
 Patch: duas lições de uma sessão no `magic_tutor` (um alvo do kit sdd), em

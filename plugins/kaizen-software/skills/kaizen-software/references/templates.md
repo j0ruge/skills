@@ -18,7 +18,8 @@ Salve como `docs/planos/PLANO-<slug-curto>.md` (ou onde o projeto guardar planos
 <Como saberemos que melhorou — número, comportamento observável ou teste que passa.>
 
 ## Gemba — situação atual
-<O que foi observado no código/sistema real: arquivos afetados, fluxo atual, dados.>
+<O que foi observado no código/sistema real: arquivos afetados, fluxo atual, dados. E as premissas do
+pedido sobre acesso ou exposição ("é interno", "é restrito"), conferidas no artefato (permissão, ACL).>
 
 ## Desperdícios evitados
 <Itens cortados/adiados do escopo e por quê (superprodução, superprocessamento...).>
@@ -71,6 +72,7 @@ escrita na tabela de desperdícios.
 - [ ] Primeira entrega verificável no primeiro incremento
 - [ ] Todo incremento com Check; teste visto vermelho antes; sonda nova com caso sabotado montado do zero, cache da ferramenta incluído
 - [ ] Check no artefato que chega ao destino, não no rótulo nem na cópia local
+- [ ] Premissa do pedido sobre acesso ou exposição ("é interno", "é restrito") conferida na permissão do destino, não na palavra de quem pediu
 - [ ] Poka-yoke antes de regra escrita; a regra que sobrar diz por que nenhum degrau acima coube
 - [ ] Ação irreversível com o passo reversível antes, a confirmação de quem decide e os identificadores anotados
 - [ ] Espera no caminho crítico nomeada, com dono e momento
