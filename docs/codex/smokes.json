@@ -170,6 +170,20 @@
       ]
     },
     {
+      "plugin": "hook-builder",
+      "version": "0.2.0",
+      "skills": [
+        "hook-builder:hook-builder"
+      ],
+      "paths": [
+        "/home/joruge/.wt/codex-smoke-hb/home/plugins/cache/chewiesoft-marketplace/hook-builder/0.2.0/skills/hook-builder/references/codex.md"
+      ],
+      "read_commands": [
+        "/usr/bin/zsh -lc 'head -n 30 /home/joruge/.wt/codex-smoke-hb/home/plugins/cache/chewiesoft-marketplace/hook-builder/0.2.0/skills/hook-builder/references/codex.md'"
+      ],
+      "conclusion": "NAMES: hook-builder:hook-builder\nHEADING: # Codex CLI — o mesmo contrato, com diferenças que mordem\n(codex-cli 0.164.0, 2026-10-27, CODEX_HOME descartável; a cobertura do topo deste arquivo é a do lote de 2026-10-22)"
+    },
+    {
       "plugin": "html-presentation",
       "version": "1.4.0",
       "skills": [

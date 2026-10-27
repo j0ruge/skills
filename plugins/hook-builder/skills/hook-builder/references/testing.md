@@ -96,6 +96,12 @@ O `claude plugin validate` pega o formato do plugin.
    - o `systemMessage` apareceu para você?
    - o bloqueio bloqueou?
 5. **Caso negativo ao vivo:** a mesma sessão, sem a condição, não dispara.
+6. **No Codex**, se o hook também roda lá:
+   - capture o payload com `capture_payload.py --print-config … --host codex` num `CODEX_HOME`
+     temporário (fora do `/tmp`) e `codex exec --dangerously-bypass-hook-trust … < /dev/null`.
+     Sem o `/dev/null`, ele espera o stdin até o timeout;
+   - depois, numa sessão normal, confira em `/hooks` que o hook aparece e está confiável. Sem
+     trust, ele é pulado sem erro.
 
 ## Mensagens do debug log e o que significam
 

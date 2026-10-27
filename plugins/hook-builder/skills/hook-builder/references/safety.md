@@ -12,7 +12,8 @@ Regras oficiais (https://code.claude.com/docs/en/hooks#security-best-practices, 
 - ponha aspas nas variáveis (`"$VAR"`);
 - barre `..` em path;
 - use path absoluto (`${CLAUDE_PROJECT_DIR}`, com forma exec ou entre aspas);
-- não toque em `.env`, `.git/` e chaves.
+- não toque em `.env`, `.git/` e chaves. Se o hook existe justamente para tratar um desses
+  (sincronizar, fazer backup, auditar), siga o §9.
 
 Um command hook roda com **todas as suas permissões de usuário**.
 
@@ -126,3 +127,30 @@ Relate:
 - o resultado do rollback.
 
 Sem acesso ao runtime, diga isso e liste as sondas que faltam.
+
+## 9. Hook que trata arquivo de segredo de propósito
+
+A regra oficial ("não toque em `.env`") é o padrão. Há hook que existe para isso: sincronizar um
+`.env` com a documentação, fazer backup de uma chave, auditar quem mudou um segredo. Nesse caso,
+a regra vira desenho:
+
+- **O payload já traz o conteúdo.** No Claude, o `PostToolUse` de `Write`/`Edit` traz
+  `tool_input.content`/`new_string` e `tool_response.originalFile`. No Codex, o `apply_patch` traz
+  as linhas do patch em `tool_input.command`. Não logue o stdin, nem no debug.
+- **Leia o arquivo do disco, não do payload.** Do payload, use só o caminho. O conteúdo vem do
+  arquivo, que é a fonte depois da edição.
+- **O estado guarda só o hash** (sha256 do conteúdo, por caminho), nunca o valor. Ele basta para
+  saber "mudou desde o último envio".
+- **O conteúdo segue por stdin** ou por um arquivo 0600 apagado no `finally`, nunca em argv:
+  com o `/proc` padrão (sem `hidepid`, `man 5 proc`), o `ps` mostra o argv aos outros usuários
+  da máquina.
+- **A saída diz o que mudou, não como.** Caminhos e contagens no `systemMessage` ou no
+  `additionalContext`, nunca valores.
+- **A captura e as fixtures usam arquivo sintético.** O `capture_payload.py` grava o stdin cru.
+  Capturar contra um `.env` real grava o segredo em disco.
+- **Canário obrigatório** na matriz do §6: um valor sintético no arquivo vigiado que não pode
+  aparecer em stdout, stderr, estado, log nem no transcript.
+- **O destino precisa ser menos exposto que a origem.** Confira a permissão do destino (página,
+  bucket, repositório) antes de escrever, e recuse quando ela for maior do que deveria. Destino
+  aberto transforma o hook num vazamento automático.
+

@@ -1,5 +1,59 @@
 # Changelog — hook-builder
 
+## [0.2.0] — 2026-10-27
+
+Suporte ao Codex CLI. Um hook que precisava rodar igual no Claude Code e no Codex mostrou que a
+skill só sabia do Claude, e que o caminho natural dela (forma exec com `args`) deixa o hook mudo
+no Codex.
+
+### Por quê
+
+O Codex CLI 0.164.0 tem hooks com o mesmo contrato, mas com diferenças que não aparecem num teste
+por pipe:
+
+- não existe `args`, e a chave é ignorada sem erro;
+- o hook novo ou alterado é pulado até receber trust por hash;
+- a edição chega como `apply_patch`, que o matcher `Write|Edit` casa por alias.
+
+Tudo isso foi conferido no código da tag `rust-v0.164.0` (arquivo e linha na reference nova) e
+num probe ao vivo com `codex exec`. O mesmo probe, e outro com `claude -p` na 2.1.309, mostrou
+que o payload de uma edição traz o conteúdo do arquivo, e que o próprio `capture_payload.py`
+gravaria um segredo em disco se a captura fosse feita contra um `.env` real.
+
+### Added
+
+- **`references/codex.md`:** onde mora a config e o trust de projeto, os 14 eventos (12 na doc),
+  o handler sem `args`, as variáveis e a substituição no plugin, o trust por hash, os aliases de
+  matcher, o payload real, um `hooks.json` para os dois hosts e a receita de captura com
+  `codex exec --dangerously-bypass-hook-trust`.
+- **`lint_hooks.py --host codex|both`:** acusa `args`, `if`, type `http`, handler
+  `prompt`/`agent`, timeout não inteiro, chave de topo além de `description`/`hooks`, evento fora
+  dos 14 e `${CLAUDE_PROJECT_DIR}`.
+- **`capture_payload.py --host codex`:** imprime um `hooks.json` do Codex na forma shell. O env
+  capturado agora inclui `CODEX*` e `PLUGIN_*`.
+- **Fixtures capturadas e normalizadas:**
+  - no Codex 0.164.0, `codex-posttooluse-apply_patch.json`, `codex-posttooluse-bash.json`,
+    `codex-stop.json` e `codex-sessionstart.json`;
+  - no Claude 2.1.309, `posttooluse-write.json` e `posttooluse-edit.json`.
+- **`patterns.md` §8, "arquivo vigiado mudou":** `PostToolUse` com `Write|Edit` + `Bash` refazendo
+  o hash (sem interpretar o comando) + varredura no `SessionStart`/`Stop`. Vale nos dois hosts.
+- **`safety.md` §9, hook que trata arquivo de segredo de propósito:** conteúdo lido do disco,
+  estado só com hash, stdin em vez de argv, saída sem valores, captura sintética, canário e
+  destino menos exposto que a origem.
+- **3 casos em `trigger-evals.json`:** dois de Codex e um de `UserPromptExpansion`.
+
+### Changed
+
+- **Description e `plugin.json`:** citam o Codex CLI, e `platforms` ganhou `codex`. Nos Triggers,
+  `UserPromptExpansion` deu lugar a `Codex hooks`, para caber nos 8 termos. O evento continua no
+  corpo (passo 1, gotchas) e ganhou um caso de gatilho.
+- **Passo 6 do `SKILL.md`:** a recomendação da forma exec agora tem a ressalva "se o hook também
+  roda no Codex, só a forma shell".
+- **`safety.md:15`:** a regra "não toque em `.env`" continua e aponta o §9 para o caso que existe
+  justamente para isso.
+- **Gotchas:** +5 linhas: trust no Codex, `args` ignorado, `apply_patch`, payload com conteúdo e
+  `MultiEdit`, que não existe na 2.1.309.
+
 ## [0.1.2] — 2026-10-07
 
 Reparo da dívida que a `skill-quality-audit` apontava desde a 0.1.0: D1 (afirmações factuais sem

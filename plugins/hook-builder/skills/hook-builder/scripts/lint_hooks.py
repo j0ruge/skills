@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Valida a configuração de hooks do Claude Code contra a referência oficial.
+"""Valida a configuração de hooks do Claude Code (e do Codex CLI) contra a referência oficial.
 
 Uso:
-  python3 lint_hooks.py <hooks.json|settings.json> [--plugin-json <plugin.json>]
+  python3 lint_hooks.py <hooks.json|settings.json> [--plugin-json <plugin.json>] [--host claude|codex|both]
 
 Aceita o hooks.json de plugin ({"description", "hooks": {...}}) e o settings.json
 (chave "hooks"). Com --plugin-json, também confere o manifesto do plugin.
@@ -13,7 +13,14 @@ matcher em evento sem suporte (ignorado em silêncio); `if` fora de evento de fe
 forma shell; Stop/SubagentStop sem guarda de `stop_hook_active` no script referenciado;
 `"hooks": "./hooks"` (diretório) no plugin.json, que quebra `claude plugin install`.
 
-Fonte: https://code.claude.com/docs/en/hooks (lido em 2026-09-30, Claude Code 2.1.283).
+Com --host codex (ou both, para um hooks.json que serve aos dois), também confere o contrato do
+Codex: evento entre os 14 do config; `args` (o Codex não tem e ignora a chave, então o command roda
+sem os argumentos); `if` (ignorado: o hook roda em toda chamada do matcher); type `http` (não
+existe lá); `prompt`/`agent` (lidos e pulados); timeout inteiro; chave de topo além de
+`description` e `hooks` (o arquivo é recusado); `${CLAUDE_PROJECT_DIR}` (o Codex não define).
+
+Fonte: https://code.claude.com/docs/en/hooks (lido em 2026-09-30, Claude Code 2.1.283) e, para o
+Codex, codex-rs/config/src/hook_config.rs e hooks/src/engine/discovery.rs na tag rust-v0.164.0.
 Exit: 0 sem erro (avisos permitidos), 1 com erro, 2 uso inválido. Só biblioteca padrão.
 """
 import json
@@ -47,7 +54,18 @@ TOOL_EVENTS = {"PreToolUse", "PostToolUse", "PostToolUseFailure", "PermissionReq
                "PermissionDenied"}
 REQUIRED = {"command": "command", "http": "url", "mcp_tool": "tool", "prompt": "prompt",
             "agent": "prompt"}
-PLACEHOLDER = re.compile(r"\$\{(CLAUDE_PLUGIN_ROOT|CLAUDE_PLUGIN_DATA|CLAUDE_PROJECT_DIR)\}")
+PLACEHOLDER = re.compile(r"\$\{(CLAUDE_PLUGIN_ROOT|CLAUDE_PLUGIN_DATA|CLAUDE_PROJECT_DIR|PLUGIN_ROOT|PLUGIN_DATA)\}")
+
+# Codex CLI 0.164.0: HookEventsToml, MatcherGroup e HookHandlerConfig em
+# codex-rs/config/src/hook_config.rs (tag rust-v0.164.0).
+CODEX_EVENTS = {
+    "PreModelRequest", "PostModelRequest", "PreToolUse", "PermissionRequest", "PostToolUse",
+    "PreCompact", "PostCompact", "SessionStart", "SessionEnd", "UserPromptSubmit",
+    "SubagentStart", "SubagentStop", "Stop", "Interrupt",
+}
+CODEX_UNDOCUMENTED = {"PreModelRequest", "PostModelRequest"}
+CODEX_NO_MATCHER = {"UserPromptSubmit", "Stop", "Interrupt"}
+CODEX_TOP_KEYS = {"description", "hooks"}
 
 
 class Report:
@@ -116,6 +134,73 @@ def lint_handler(rep, where, event, handler, plugin_root):
                 rep.warn(where, f"{os.path.basename(path)} não menciona stop_hook_active (risco de loop)")
 
 
+def lint_codex_handler(rep, where, event, handler, plugin_root):
+    if not isinstance(handler, dict):
+        rep.err(where, "handler precisa ser um objeto")
+        return
+    htype = handler.get("type")
+    if htype not in {"command", "mcp_tool", "prompt", "agent"}:
+        rep.err(where, f"o Codex não conhece type {htype!r} (aceita command, mcp_tool, prompt, agent)")
+        return
+    if htype in {"prompt", "agent"}:
+        rep.warn(where, f"o Codex lê o handler {htype!r} e pula: ele nunca roda lá")
+        return
+    if htype == "mcp_tool":
+        for field in ("server", "tool"):
+            if not handler.get(field):
+                rep.err(where, f"no Codex, mcp_tool exige {field!r}")
+    if "timeout" in handler and (isinstance(handler["timeout"], bool)
+                                 or not isinstance(handler["timeout"], int)):
+        rep.err(where, "no Codex, timeout é inteiro em segundos")
+    if "if" in handler:
+        rep.warn(where, "o Codex ignora 'if': o hook roda em toda chamada que casar o matcher")
+    if htype != "command":
+        return
+    if "args" in handler:
+        rep.err(where, "o Codex não tem 'args' e ignora a chave: o command roda sem os argumentos; "
+                "use a forma shell com o placeholder entre aspas, que serve aos dois hosts")
+    command = handler.get("command", "")
+    if "${CLAUDE_PROJECT_DIR}" in command:
+        rep.warn(where, "o Codex não define CLAUDE_PROJECT_DIR; lá o comando roda no cwd da sessão")
+    if "args" not in handler and unquoted_placeholder(command):
+        rep.warn(where, "placeholder sem aspas na forma shell; ponha aspas duplas")
+    if event == "Stop":
+        for path in script_paths(handler, plugin_root):
+            try:
+                text = open(path, encoding="utf-8", errors="ignore").read()
+            except OSError:
+                continue
+            if "stop_hook_active" not in text:
+                rep.warn(where, f"{os.path.basename(path)} não menciona stop_hook_active (risco de loop)")
+
+
+def lint_codex(rep, data, plugin_root):
+    extra = sorted(set(data) - CODEX_TOP_KEYS)
+    if extra:
+        rep.err("codex", f"o hooks.json do Codex só aceita description e hooks no topo (deny_unknown_fields); "
+                f"sobra {extra}")
+    hooks = data.get("hooks")
+    if not isinstance(hooks, dict):
+        return
+    for event, groups in hooks.items():
+        where_event = f"codex:{event}"
+        if event not in CODEX_EVENTS:
+            rep.err(where_event, "o Codex não tem esse evento (são 14 no config da 0.164.0)")
+            continue
+        if event in CODEX_UNDOCUMENTED:
+            rep.warn(where_event, "evento existe no código do Codex, mas não na doc: pode mudar sem aviso")
+        if not isinstance(groups, list):
+            continue
+        for gi, group in enumerate(groups):
+            where = f"{where_event}[{gi}]"
+            if not isinstance(group, dict):
+                continue
+            if group.get("matcher") not in (None, "", "*") and event in CODEX_NO_MATCHER:
+                rep.warn(where, f"o Codex ignora o matcher em {event}")
+            for hi, handler in enumerate(group.get("hooks") or []):
+                lint_codex_handler(rep, f"{where}.hooks[{hi}]", event, handler, plugin_root)
+
+
 def lint_hooks(rep, hooks, plugin_root):
     if not isinstance(hooks, dict):
         rep.err("hooks", "precisa ser um objeto {Evento: [grupos]}")
@@ -163,6 +248,10 @@ def main(argv):
         return 2
     path = argv[0]
     plugin_json = argv[argv.index("--plugin-json") + 1] if "--plugin-json" in argv else None
+    host = argv[argv.index("--host") + 1] if "--host" in argv and argv.index("--host") + 1 < len(argv) else "claude"
+    if host not in {"claude", "codex", "both"}:
+        print("ERRO   --host aceita claude, codex ou both", file=sys.stderr)
+        return 2
     try:
         data = json.load(open(path, encoding="utf-8"))
     except (OSError, ValueError) as exc:
@@ -175,7 +264,10 @@ def main(argv):
     if "hooks" not in data:
         rep.err(path, "sem chave 'hooks' (settings.json e hooks.json usam {\"hooks\": {...}})")
     else:
-        lint_hooks(rep, data["hooks"], plugin_root)
+        if host in {"claude", "both"}:
+            lint_hooks(rep, data["hooks"], plugin_root)
+        if host in {"codex", "both"}:
+            lint_codex(rep, data, plugin_root)
     if plugin_json:
         lint_plugin_json(rep, plugin_json)
     for line in rep.errors + rep.warnings:

@@ -52,6 +52,11 @@ meu-plugin/
   `Reloaded: N plugins · … · N hooks`.
 - **Erros de carga:** aparecem como `Failed to load hooks from <path>` na aba Errors do
   `/plugin`.
+- **Plugin que também roda no Codex:** o Codex lê o mesmo `hooks/hooks.json` e substitui
+  `${CLAUDE_PLUGIN_ROOT}`/`${CLAUDE_PLUGIN_DATA}` na string do `command`, mas não tem `args`.
+  Escreva só a forma shell, com o placeholder entre aspas, e confira com
+  `lint_hooks.py hooks/hooks.json --host both`. Lá cada hook ainda precisa de trust em `/hooks`,
+  e o hook sem trust é pulado sem erro.
 
 ## Frontmatter de skill
 

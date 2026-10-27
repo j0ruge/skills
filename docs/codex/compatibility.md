@@ -3,7 +3,7 @@
 Inventário dos 32 plugins: 31 auditados em 2026-10-22; `windows-games-linux` entrou em 2026-10-23 sem avaliação Codex (`not_checked`). Apenas `supported` entra no catálogo.
 Os smokes cobrem instalação, descoberta, leitura no cache e entrada de cada workflow;
 operações integrais de domínio e dependências autenticadas não fazem parte do smoke.
-Ubuntu 24.04/CLI 0.163.0 é a cobertura medida; desktop, macOS e Windows permanecem
+Ubuntu 24.04/CLI 0.163.0 é a cobertura medida (o `hook-builder` 0.2.0, em 2026-10-27, na 0.164.0); desktop, macOS e Windows permanecem
 `not_checked`. Isso inclui a execução Windows de WPF/limpeza/WSL, mesmo quando o pacote carrega.
 Versão mínima ainda não estabelecida. Veja [verification.md](verification.md).
 
@@ -22,7 +22,7 @@ Versão mínima ainda não estabelecida. Veja [verification.md](verification.md)
 | dotnet-wpf | `partial` | `skills/dotnet-desktop-setup/SKILL.md`<br>`skills/dotnet-wpf-design/SKILL.md`<br>`skills/dotnet-wpf-e2e-testing/SKILL.md`<br>`skills/dotnet-wpf-mvvm/SKILL.md` | 28 arquivos de scripts/referências/templates/assets | Windows, .NET, ferramentas WPF/FlaUI. Agrupamento preservado: setup exige regras, hooks e configuração Claude; três skills isoladas não autorizam publicar o pacote inteiro. |
 | executar-task | `supported` | `commands/executar-task.md` | 0 arquivos de scripts/referências/templates/assets | Projeto com tarefas e ferramentas da stack. Testes e convenções dependem do projeto consumidor. |
 | git-housekeeping | `supported` | `skills/git-housekeeping/SKILL.md` | 4 arquivos de scripts/referências/templates/assets | Python 3, Git; gh opcional para comprovar squash. Planejamento/análise são separados da aplicação autorizada. |
-| hook-builder | `unsupported` | `skills/hook-builder/SKILL.md` | 22 arquivos de scripts/referências/templates/assets | Claude Code, seus eventos, payloads e protocolo de hooks. Sem equivalência do protocolo Claude comprovada dentro desta missão. |
+| hook-builder | `supported` | `skills/hook-builder/SKILL.md` | 29 arquivos de scripts/referências/templates/assets | Python 3 (stdlib); Claude Code e/ou Codex CLI, conforme o host do hook. Contrato Codex conferido no código da tag rust-v0.164.0 e em probe com `codex exec` (`references/codex.md`); smoke de 2026-10-27 no codex-cli 0.164.0: instalação, descoberta `hook-builder:hook-builder`, leitura de `references/codex.md` pelo cache e fixtures Codex no `hook_test.py`. |
 | html-presentation | `supported` | `skills/html-presentation/SKILL.md` | 7 arquivos de scripts/referências/templates/assets | Python, navegador/Playwright, ferramentas de PDF conforme a origem. Reviewer deck-reviewer é específico do Claude; no Codex use revisor nativo de contexto independente conforme references/review.md. |
 | kaizen-software | `supported` | `skills/kaizen-software/SKILL.md` | 4 arquivos de scripts/referências/templates/assets | Leitura/escrita de Markdown e ferramentas do projeto. Referências e templates PDCA locais; sem dependência de runtime Claude. |
 | n8n-ops | `supported` | `skills/n8n-ops/SKILL.md` | 4 arquivos de scripts/referências/templates/assets | n8n, ferramentas do projeto, API/autenticação quando usada. MCP é opcional; o alvo precisa de URL/credenciais próprias. |
@@ -79,7 +79,7 @@ o disparo; a leitura da configuração confirma qual implementação os produziu
 Já `plugins/retrofit-watch/hooks/hooks.json` usa `${CLAUDE_PLUGIN_ROOT}` e o
 motor `retrofit_watch.py`; o plugin 0.3.3 declara apenas `claude-code`. A camada
 `codex_retrofit_watch.py` e seu template `assets/hooks.json` existem na instalação
-local, sem fazer parte desse pacote. O catálogo Codex permanece com 25 plugins:
+local, sem fazer parte desse pacote. O catálogo Codex tem 26 plugins desde a entrada do `hook-builder` 0.2.0 (2026-10-27), e o watcher continua fora:
 publicar o watcher nele exige integrar essa camada e provar instalação/confiança
 e execução pelo pacote instalado. Esta correção documental não certifica desktop,
 macOS, Windows ou equivalência completa entre os dois watchers.

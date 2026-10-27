@@ -1,11 +1,11 @@
 ---
 name: hook-builder
-description: "Build, package and prove Claude Code hooks against the current official reference: right event and output channel, real payload capture, loop guards, plugin-data state, fixture tests and a live firing check. Triggers — hook, hooks.json, PreToolUse, PostToolUseFailure, Stop hook, UserPromptExpansion, SessionStart, plugin hook."
+description: "Build, package and prove hooks for Claude Code and Codex CLI against the current official references: right event and output channel, real payload capture, loop guards, plugin-data state, fixture tests and a live firing check. Triggers — hook, hooks.json, PreToolUse, PostToolUseFailure, Stop hook, SessionStart, plugin hook, Codex hooks."
 license: MIT
-compatibility: Claude Code 2.1.163+ (Stop additionalContext); verificado contra a 2.1.283 em 2026-09-30; tempos, limites e canais reconferidos contra a doc em 2026-10-07 (2.1.291). Scripts em Python 3, só biblioteca padrão.
+compatibility: Claude Code 2.1.163+ (Stop additionalContext); verificado contra a 2.1.283 em 2026-09-30; tempos, limites e canais reconferidos contra a doc em 2026-10-07 (2.1.291). Codex CLI 0.164.0 conferido contra o código (tag rust-v0.164.0) e um probe ao vivo em 2026-10-27. Scripts em Python 3, só biblioteca padrão.
 metadata:
   author: JorUge
-  version: "0.1.2"
+  version: "0.2.0"
 ---
 
 # hook-builder
@@ -21,12 +21,17 @@ Fonte de verdade: https://code.claude.com/docs/en/hooks e `/en/hooks-guide` (lid
 local: `claude --version`). Quando algo aqui divergir da doc, vale a doc. Registre a
 divergência, quando achar uma, em `references/outdated-sources.md`.
 
+O **Codex CLI** segue o mesmo contrato (evento, JSON no stdin, `hooks.json`). As diferenças que
+deixam o hook mudo lá são: não existe `args`, o trust é por hash e a edição chega como
+`apply_patch`. Leia `references/codex.md` quando o hook também for rodar no Codex.
+
 ## Quando usar
 
 - "Sempre que X, faça Y" no Claude Code: formatar depois de editar, barrar um comando, injetar
   contexto no início da sessão, revisar algo no fim do turno, avisar quando uma skill roda.
 - Empacotar um hook num plugin (`hooks/hooks.json`) ou no frontmatter de uma skill.
 - Diagnosticar um hook que "não dispara", dispara em loop ou mostra "hook error".
+- Fazer o mesmo hook rodar no Codex CLI (`~/.codex/hooks.json`, `.codex/hooks.json` ou plugin).
 
 **Não use hook para:**
 
@@ -88,7 +93,9 @@ claude -p --settings "$(python3 scripts/capture_payload.py --print-config Stop /
 ls /tmp/probe    # stdin-*.json e env-*.txt reais
 ```
 
-O arquivo capturado vira a fixture do passo 6.
+O arquivo capturado vira a fixture do passo 6. No Codex, o probe vai num `CODEX_HOME` temporário
+com `--host codex` (receita em `references/codex.md` §9). O stdin é gravado **cru**, e o
+`PostToolUse` de uma edição traz o conteúdo do arquivo: capture só com arquivo sintético.
 
 ### 5. Escreva o script pelo template
 
@@ -125,7 +132,8 @@ exemplos oficiais estão em `references/patterns.md`, para ler quando o hook tiv
 | frontmatter de skill | só depois que a skill roda | `once: true` só vale aqui |
 
 Com path placeholder, use a **forma exec** (`command` + `args`), ou aspas duplas em volta do
-placeholder na forma shell. Os detalhes de settings, plugin, trust, `disableAllHooks` e
+placeholder na forma shell. **Se o hook também roda no Codex, use só a forma shell**: lá não existe
+`args`, e a chave é ignorada (`references/codex.md` §3). Os detalhes de settings, plugin, trust, `disableAllHooks` e
 `CLAUDE_PLUGIN_OPTION_*` estão em `references/packaging.md`, para ler antes de empacotar.
 
 ### 7. Teste e prove que dispara
@@ -133,6 +141,7 @@ placeholder na forma shell. Os detalhes de settings, plugin, trust, `disableAllH
 1. **Unidade:** `python3 scripts/hook_test.py <hook-cmd> <fixture.json> --expect-exit 0 --expect-json-key hookSpecificOutput.additionalContext`.
    Cubra um caso positivo e um negativo, e o `stop_hook_active` se for Stop.
 2. **Config:** `python3 scripts/lint_hooks.py <hooks.json|settings.json> [--plugin-json <plugin.json>]`.
+   Para um `hooks.json` que também roda no Codex, use `--host both`.
 3. **Ao vivo:**
    - carregue: `/reload-plugins` para plugin, ou o watcher para settings;
    - confira `/hooks`: o hook aparece com a origem certa;
@@ -140,6 +149,7 @@ placeholder na forma shell. Os detalhes de settings, plugin, trust, `disableAllH
    - procure o hook no debug log. `Hook JSON output had unrecognized keys` significa campo no
      lugar errado.
    - O `--debug` **não** imprime no terminal: grava em `~/.claude/debug/<session-id>.txt`.
+   - No Codex: `/hooks` precisa mostrar o hook como confiável. Sem trust, ele é pulado sem erro.
 4. Veja a saída com os olhos: o `additionalContext` chegou ao Claude? O `systemMessage` chegou
    a você?
 
@@ -166,6 +176,11 @@ Threat model, matriz comportamental (loop, dupla execução, segredo, falha) e r
 | Script lê `$CLAUDE_TOOL_OUTPUT` e nunca age | ela não aparece no ambiente do hook (o `capture_payload.py` grava o real) | o input vem no stdin |
 | Hook dispara em `claude -p` de cron ou CI | o hook não distingue sessão desassistida | gate por sessão assistida (se precisar, leia `references/patterns.md` §7) |
 | Resposta velha depois de `--resume` | o `additionalContext` de eventos do meio da sessão é regravado, não recalculado | recalcule no `SessionStart` (`source: resume`) |
+| Hook não roda no Codex, sem erro | trust por hash: hook novo ou alterado é pulado até ser aprovado | `/hooks` no Codex; na automação, `codex exec --dangerously-bypass-hook-trust` |
+| No Codex, o script roda sem argumentos | `args` não existe lá e é ignorado | forma shell, com o placeholder entre aspas |
+| `Write\|Edit` dispara no Codex com `tool_name: "apply_patch"` | alias de compatibilidade do Codex | trate os dois nomes; os caminhos estão nas linhas `*** … File:` do patch |
+| O log do hook vazou o conteúdo do arquivo | o `PostToolUse` de `Write`/`Edit`/`apply_patch` traz o conteúdo | não logue o stdin; leia `references/safety.md` §9 |
+| Matcher com `MultiEdit` nunca casa | a ferramenta não aparece na 2.1.309 (nem na doc, nem na lista de ferramentas) | `Write\|Edit` |
 
 As 11 divergências entre a skill oficial `plugin-dev/hook-development` e a doc atual estão em
 `references/outdated-sources.md`, para ler antes de copiar de lá.
@@ -178,13 +193,16 @@ As 11 divergências entre a skill oficial `plugin-dev/hook-development` e a doc 
 | `references/io-schema.md` | ao escrever o parser ou a saída: campos comuns, campos por evento, decision control |
 | `references/handler-types.md` | quando considerar `prompt`, `agent`, `http`, `mcp_tool`, `async` ou `asyncRewake` |
 | `references/packaging.md` | ao decidir onde o hook mora, ou ao mexer em trust e variáveis de plugin |
-| `references/patterns.md` | quando o hook tem estado, lê transcript ou revisa no fim do turno |
+| `references/patterns.md` | quando o hook tem estado, lê transcript, revisa no fim do turno ou vigia arquivo que muda (§8, nos dois hosts) |
 | `references/testing.md` | ao testar: harness, fixtures, debug log, E2E |
-| `references/safety.md` | quando o hook é gate de política, tem efeito colateral ou toca segredo |
+| `references/safety.md` | quando o hook é gate de política, tem efeito colateral ou toca segredo (§9: hook que trata arquivo de segredo de propósito) |
 | `references/outdated-sources.md` | antes de reaproveitar exemplo de terceiros ou do `plugin-dev` |
+| `references/codex.md` | quando o hook também roda no Codex CLI: config, eventos, handler sem `args`, trust, `apply_patch`, payload real e o `hooks.json` para os dois hosts |
 | `scripts/capture_payload.py` | passo 4: gravar o payload e o ambiente reais |
 | `scripts/hook_test.py` | passo 7: rodar o hook contra uma fixture e checar exit e JSON |
 | `scripts/lint_hooks.py` | passo 7: validar `hooks.json`/settings e o `plugin.json` |
 | `assets/templates/command-hook.py`, `assets/templates/command-hook.sh`, `assets/templates/hooks.json` | passo 5: ponto de partida do script e da config |
 | `assets/fixtures/pretooluse-bash.json`, `assets/fixtures/posttooluse-bash.json`, `assets/fixtures/posttoolusefailure-bash.json`, `assets/fixtures/userpromptexpansion.json`, `assets/fixtures/sessionstart-resume.json`, `assets/fixtures/stop.json`, `assets/fixtures/stop-active.json` | passo 7: payloads **capturados** na 2.1.283, com paths genéricos |
+| `assets/fixtures/posttooluse-write.json`, `assets/fixtures/posttooluse-edit.json` | passo 7: `Write`/`Edit` capturados na 2.1.309 (paths, ids e `permission_mode` normalizados) |
+| `assets/fixtures/codex-posttooluse-apply_patch.json`, `assets/fixtures/codex-posttooluse-bash.json`, `assets/fixtures/codex-stop.json`, `assets/fixtures/codex-sessionstart.json` | passo 7, no Codex: capturados no `codex-cli 0.164.0` (paths, ids e `permission_mode` normalizados) |
 | `assets/trigger-evals.json` | ao medir o gatilho da skill: casos que devem e que não devem disparar (hook do git, webhook, `useEffect`, permissões), no formato de eval set do `skill-creator` |

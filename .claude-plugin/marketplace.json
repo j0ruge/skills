@@ -1023,8 +1023,8 @@
     {
       "name": "hook-builder",
       "source": "./plugins/hook-builder",
-      "version": "0.1.2",
-      "description": "Build, package and prove Claude Code hooks against the current official reference: right event and output channel, real payload capture, loop guards, plugin-data state, fixture tests and a live firing check. Triggers — hook, hooks.json, PreToolUse, PostToolUseFailure, Stop hook, UserPromptExpansion, SessionStart, plugin hook.",
+      "version": "0.2.0",
+      "description": "Build, package and prove hooks for Claude Code and Codex CLI against the current official references: right event and output channel, real payload capture, loop guards, plugin-data state, fixture tests and a live firing check. Triggers — hook, hooks.json, PreToolUse, PostToolUseFailure, Stop hook, SessionStart, plugin hook, Codex hooks.",
       "category": "development",
       "keywords": [
         "hooks",
@@ -1038,10 +1038,13 @@
         "plugin-hooks",
         "stop_hook_active",
         "hook-testing",
-        "hook-debugging"
+        "hook-debugging",
+        "codex-hooks",
+        "apply_patch"
       ],
       "platforms": [
-        "claude-code"
+        "claude-code",
+        "codex"
       ]
     },
     {

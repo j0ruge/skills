@@ -16,5 +16,8 @@
   {"query": "muda a status line do claude code pra mostrar a branch e o custo da sessão", "should_trigger": false},
   {"query": "agenda um job diário às 7h que roda o relatório e manda por e-mail", "should_trigger": false},
   {"query": "o webhook do n8n que recebe os pedidos do site parou de responder", "should_trigger": false},
-  {"query": "troca o atalho de enviar mensagem do claude code para ctrl+enter", "should_trigger": false}
+  {"query": "troca o atalho de enviar mensagem do claude code para ctrl+enter", "should_trigger": false},
+  {"query": "quero que o codex cli rode um script toda vez que ele editar um arquivo do repo; como monto o hooks.json do codex pra isso?", "should_trigger": true},
+  {"query": "o hook do meu plugin funciona no claude code, mas no codex ele nunca dispara e não aparece erro nenhum", "should_trigger": true},
+  {"query": "meu hook com /skill digitado no claude code não vê o comando, como pego o UserPromptExpansion?", "should_trigger": true}
 ]

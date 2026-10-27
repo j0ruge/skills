@@ -13,6 +13,7 @@ oficiais citados estão em https://github.com/anthropics/claude-plugins-official
 5. Revisão no fim do turno com estado (o mais delicado)
 6. Revisão em background com `asyncRewake`
 7. Sessão assistida × desassistida
+8. Arquivo vigiado mudou (Claude e Codex)
 
 ## 1. Contexto no início da sessão
 
@@ -172,3 +173,32 @@ um uso de "erro a corrigir", no sentido literal.
 - **Gate sugerido:** rode só com `ATTENDED == "1"`. Se a variável não existir, caia para
   `ENTRYPOINT == "cli"`. Ofereça uma variável própria (`MEUHOOK=force`) para os testes E2E com
   `-p`.
+
+## 8. Arquivo vigiado mudou (Claude e Codex)
+
+- **O problema:** reagir quando um arquivo, ou um padrão como `**/.env*`, muda. A edição pode vir
+  de ferramenta de edição, de comando de shell ou de uma pessoa no editor.
+- **Os três gatilhos, juntos:**
+
+  | Origem da mudança | Gatilho | Como achar o arquivo |
+  |---|---|---|
+  | ferramenta de edição | `PostToolUse`, matcher `Write\|Edit` (no Codex, o alias pega o `apply_patch`) | Claude: `tool_input.file_path`. Codex: linhas `*** Add/Update/Delete File:` e `*** Move to:` de `tool_input.command`, com caminho absoluto ou relativo ao `cwd` |
+  | shell (`sed -i`, `cat >`, `printf >>`) | `PostToolUse`, matcher `Bash` | **não interprete o comando:** refaça o hash dos arquivos vigiados e compare com o estado |
+  | pessoa no editor, entre sessões | `SessionStart` e `Stop` | a mesma varredura de hash |
+
+- **Por que não interpretar o Bash:** redirecionamento, variável, `xargs`, script chamado e
+  heredoc derrotam qualquer parser, e o erro é silencioso. Refazer o hash de um conjunto pequeno
+  custa milissegundos e não erra.
+- **Estado:** um mapa caminho → sha256 em `${CLAUDE_PLUGIN_DATA}`, que o Codex também define
+  para hook de plugin. O hash só é gravado **depois** que o efeito (envio, sync) foi
+  conferido. Assim, uma falha deixa o estado velho, e o próximo gatilho tenta de novo.
+- **Dedupe e concorrência:** `flock` por alvo, porque duas sessões podem disparar juntas. Mudança
+  sem diferença de hash não faz nada.
+- **Só no Claude:** o `FileChanged` vigia nomes literais no disco durante a sessão. Ele não
+  existe no Codex, e por isso a varredura no `SessionStart`/`Stop` é a parte portável.
+- **Worktree e clone:** o hook dispara em todo checkout que tenha a config. Se o efeito vale para
+  um checkout só (o "da verdade"), confira-o no script, comparando `git rev-parse --git-dir` com
+  `--git-common-dir` para saber se é worktree, e saia cedo nos outros.
+- **Arquivo com segredo:** o payload da edição traz o conteúdo. Siga o §9 da reference de
+  segurança (hook que trata arquivo de segredo de propósito).
+
