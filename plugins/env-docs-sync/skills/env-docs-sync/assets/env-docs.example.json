@@ -1,0 +1,66 @@
+{
+  "doc": {
+    "backend": "kb",
+    "cli": "~/tools/kb/kb.py",
+    "python": "~/tools/kb/.venv/bin/python",
+    "target": "prod",
+    "page_id": 4242,
+    "allowed_roles": [
+      "platform-team",
+      "Admin"
+    ]
+  },
+  "values": "full",
+  "remote_check_every": "24h",
+  "include": [
+    "**/.env",
+    "**/.env.*"
+  ],
+  "exclude": [
+    "**/fixtures/**"
+  ],
+  "environments": {
+    "development": {
+      "source": "local",
+      "machine": "dev-workstation",
+      "server": "estação de desenvolvimento (dev-workstation)",
+      "domain": "localhost:5173",
+      "where": "checkout principal: raiz e packages/*",
+      "source_of_truth": "checkout principal em dev-workstation"
+    },
+    "staging": {
+      "source": "ssh",
+      "host": "deploy@staging.internal.example",
+      "auth_env": null,
+      "server": "staging.internal.example",
+      "domain": "staging.example.com",
+      "where": "/srv/app/infra/staging/.env",
+      "source_of_truth": "o .env do servidor, materializado pelo job de deploy",
+      "files": {
+        "infra/staging/.env": "/srv/app/infra/staging/.env"
+      }
+    },
+    "production": {
+      "source": "ssh",
+      "host": "deploy@db.internal.example",
+      "auth_env": "EXAMPLE_SSH_PASSWORD",
+      "server": "db.internal.example",
+      "domain": "app.example.com",
+      "where": "~/app/infra/prod/.env",
+      "source_of_truth": "o .env do servidor de produção (cópia real; o repositório só tem o .env.example)",
+      "files": {
+        "infra/prod/.env": "~/app/infra/prod/.env"
+      }
+    }
+  },
+  "run": [
+    {
+      "label": "Instalar as dependências",
+      "command": "npm ci"
+    },
+    {
+      "label": "Subir o ambiente de desenvolvimento",
+      "command": "npm run dev"
+    }
+  ]
+}

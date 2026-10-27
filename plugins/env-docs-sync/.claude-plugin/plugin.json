@@ -1,0 +1,24 @@
+{
+  "name": "env-docs-sync",
+  "description": "Mirrors every .env* file of a repo into a restricted environments documentation page: one section per environment, one block per file, rewritten only when its hash changes. Values never reach logs or local state, which keeps only hashes. Triggers — env docs, .env sync, environments page, env-docs-sync, .env-docs.json, environment variables docs.",
+  "author": {
+    "name": "Chewiesoft"
+  },
+  "version": "0.1.0",
+  "category": "development",
+  "keywords": [
+    "env",
+    "dotenv",
+    "environments",
+    "documentation",
+    "bookstack",
+    "secrets",
+    "hooks",
+    "codex"
+  ],
+  "platforms": [
+    "claude-code",
+    "codex"
+  ],
+  "skills": "./skills"
+}
