@@ -14,7 +14,9 @@ Dois modos:
       stderr, que aparece no debug log do host.
 
 Grava as variáveis CLAUDE*, CODEX* e PLUGIN_*. Valores de variáveis cujo nome casa SENSITIVE
-(TOKEN, SECRET, KEY, PASS fora de BYPASS, AUTH, CRED, COOKIE, PRIVATE, SOCKET) saem <redacted>. Num Codex
+(TOKEN, SECRET, KEY, PASS fora de BYPASS, AUTH, CRED, COOKIE, PRIVATE, SOCKET) saem <redacted>.
+A redação é pelo nome e de melhor esforço: um segredo com outro nome sai em claro, e por isso o
+env-*.txt é 0600 e não vira fixture. Num Codex
 lançado de dentro do Claude Code, as CLAUDE* vêm herdadas do processo pai: não leia como se o
 Codex as definisse.
 

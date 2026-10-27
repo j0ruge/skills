@@ -60,8 +60,9 @@ PLACEHOLDER = re.compile(
 # O Codex substitui as duas formas na string do command (hooks/src/engine/discovery.rs).
 ROOT_PLACEHOLDERS = ("${CLAUDE_PLUGIN_ROOT}", "${PLUGIN_ROOT}")
 STOP_EVENTS = {"Stop", "SubagentStop"}
-# Token de path num command: corta em espaço, aspas, `=` de flag e operadores de shell.
-PATH_TOKEN = re.compile(r"[^\s\"'=;&|()]+")
+# Token de path num command: corta em espaço, aspas, `=` de flag, `:`/`,` de lista e operadores de
+# shell. Path com espaço dentro de aspas fica de fora (limite conhecido).
+PATH_TOKEN = re.compile(r"[^\s\"'=:,;&|()]+")
 
 # Codex CLI 0.164.0: HookEventsToml, MatcherGroup e HookHandlerConfig em
 # codex-rs/config/src/hook_config.rs (tag rust-v0.164.0).
@@ -134,9 +135,10 @@ def check_stop_guard(rep, where, event, handler, plugin_root):
     if event not in STOP_EVENTS:
         return
     found, missing, cited = script_paths(handler, plugin_root)
-    if cited and not plugin_root:
-        rep.warn(where, "guarda de stop_hook_active não conferida: o placeholder só resolve com o "
-                 "lint rodando no hooks/hooks.json do plugin")
+    if cited and not found and not missing:
+        why = ("o command cita só diretório do plugin, não o script" if plugin_root else
+               "o placeholder só resolve com o lint rodando no hooks/hooks.json do plugin")
+        rep.warn(where, f"guarda de stop_hook_active não conferida: {why}")
     for path in found:
         try:
             with open(path, encoding="utf-8", errors="ignore") as fh:

@@ -33,8 +33,8 @@ gravaria um segredo em disco se a captura fosse feita contra um `.env` real.
     dois hosts.
   - A guarda de `stop_hook_active` vale em `Stop` e `SubagentStop`, que no Codex também traz o
     campo, e com `${CLAUDE_PLUGIN_ROOT}` ou `${PLUGIN_ROOT}`. Quando a guarda não pode ser
-    conferida (script ausente ou ilegível, ou o lint fora do `hooks/hooks.json` do plugin), sai um
-    aviso, em vez de a conferência sumir.
+    conferida (script ausente ou ilegível, command que só cita diretório do plugin, ou o lint fora
+    do `hooks/hooks.json` do plugin), sai um aviso, em vez de a conferência sumir.
   - `command` que não é texto, `args` que não é lista e JSON de topo que não é objeto dão erro, sem
     traceback.
   - No Codex, `once` e `CLAUDE_PLUGIN_OPTION_*` também dão aviso.
@@ -42,14 +42,14 @@ gravaria um segredo em disco se a captura fosse feita contra um `.env` real.
 - **`capture_payload.py --host codex`:** imprime um `hooks.json` do Codex na forma shell POSIX. O
   env capturado agora inclui `CODEX*` e `PLUGIN_*`.
   - A lista do `<redacted>` ganhou `PASS` (fora de `BYPASS`, que fica visível), `AUTH`, `CRED`,
-    `COOKIE` e `PRIVATE`.
+    `COOKIE` e `PRIVATE`. A redação continua pelo nome e de melhor esforço, e o docstring diz isso.
   - Os arquivos saem 0600, porque o stdin cru traz conteúdo de arquivo. O DIR que a captura cria
     sai 0700, e um DIR que já existe fica como está. A escrita usa `O_EXCL`, então um symlink
     plantado no nome faz a captura falhar, em vez de ser seguido.
   - O nome do evento é saneado antes de virar nome de arquivo.
   - Uma falha da captura vai para o stderr, em vez de sumir.
-- **`tests/`:** 21 testes (`python3 -m unittest discover -s tests`, na pasta da skill) para os dois
-  scripts. Contra os scripts do `b0d5c6c`, o primeiro commit da 0.2.0, 28 deles ou dos seus
+- **`tests/`:** 23 testes (`python3 -m unittest discover -s tests`, na pasta da skill) para os dois
+  scripts. Contra os scripts do `b0d5c6c`, o primeiro commit da 0.2.0, 32 deles ou dos seus
   subtestes ficam vermelhos.
 - **Fixtures capturadas e normalizadas:**
   - no Codex 0.164.0, `codex-posttooluse-apply_patch.json`, `codex-posttooluse-bash.json`,
@@ -82,7 +82,8 @@ gravaria um segredo em disco se a captura fosse feita contra um `.env` real.
 
 O `/codereview` da faixa, antes do push, achou 4 MEDIUM e 15 LOW na primeira rodada. As rodadas
 seguintes revisaram só o conserto anterior: 4 MEDIUM e 5 LOW na segunda, 1 MEDIUM e 8 LOW na
-terceira. Os consertos entraram nesta mesma versão, que ainda não tinha saído:
+terceira, 1 MEDIUM e 6 LOW na quarta. Os consertos entraram nesta mesma versão, que ainda não
+tinha saído:
 
 - **O `lint_hooks.py --host codex` aprovava um `hooks.json` malformado.** `{"hooks": []}` dava
   rc 0, e o caminho Claude dava rc 1.

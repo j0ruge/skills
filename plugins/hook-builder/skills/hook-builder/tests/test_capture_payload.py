@@ -45,7 +45,8 @@ class CaptureTest(unittest.TestCase):
     def test_sensitive_names_are_redacted(self):
         canary = "canario-7f3a"
         names = ["CODEX_AUTH_JSON", "PLUGIN_DB_PASSWD", "PLUGIN_DB_PASS", "CLAUDE_X_CREDENTIALS",
-                 "CODEX_COOKIE", "PLUGIN_PRIVATE_PEM", "CLAUDE_API_KEY", "CODEX_PASSPHRASE"]
+                 "CODEX_COOKIE", "PLUGIN_PRIVATE_PEM", "CLAUDE_API_KEY", "CODEX_PASSPHRASE",
+                 "CLAUDE_BYPASS_PASSWORD"]
         self.capture(json.dumps({"hook_event_name": "Stop"}),
                      {**{name: canary for name in names}, "CODEX_HOME": "/visivel",
                       "CLAUDE_CODE_BYPASS_X": "1"})
