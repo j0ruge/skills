@@ -53,10 +53,13 @@ meu-plugin/
 - **Erros de carga:** aparecem como `Failed to load hooks from <path>` na aba Errors do
   `/plugin`.
 - **Plugin que também roda no Codex:** o Codex lê o mesmo `hooks/hooks.json` e substitui
-  `${CLAUDE_PLUGIN_ROOT}`/`${CLAUDE_PLUGIN_DATA}` na string do `command`, mas não tem `args`.
-  Escreva só a forma shell, com o placeholder entre aspas, e confira com
-  `lint_hooks.py hooks/hooks.json --host both`. Lá cada hook ainda precisa de trust em `/hooks`,
-  e o hook sem trust é pulado sem erro.
+  `${CLAUDE_PLUGIN_ROOT}`/`${CLAUDE_PLUGIN_DATA}` na string do `command`, mas não tem `args`
+  (a reference do Codex, roteada pelo SKILL.md, cita o arquivo e a linha do código de cada fato).
+  Também não valem lá: `if`, type `http`, `${CLAUDE_PROJECT_DIR}`, o `CLAUDE_PLUGIN_OPTION_*` da
+  tabela acima (o Codex põe no ambiente só `PLUGIN_ROOT`, `PLUGIN_DATA`, `CLAUDE_PLUGIN_ROOT` e
+  `CLAUDE_PLUGIN_DATA`) e chave de topo além de `description` e `hooks`. Escreva só a forma shell, com o placeholder entre aspas,
+  e confira com `lint_hooks.py hooks/hooks.json --host both`, que acusa cada um. Lá cada hook
+  ainda precisa de trust em `/hooks`, e o hook sem trust é pulado sem erro.
 
 ## Frontmatter de skill
 

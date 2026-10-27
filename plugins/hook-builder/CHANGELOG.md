@@ -29,8 +29,19 @@ gravaria um segredo em disco se a captura fosse feita contra um `.env` real.
 - **`lint_hooks.py --host codex|both`:** acusa `args`, `if`, type `http`, handler
   `prompt`/`agent`, timeout não inteiro, chave de topo além de `description`/`hooks`, evento fora
   dos 14 e `${CLAUDE_PROJECT_DIR}`.
-- **`capture_payload.py --host codex`:** imprime um `hooks.json` do Codex na forma shell. O env
-  capturado agora inclui `CODEX*` e `PLUGIN_*`.
+  - A forma (`hooks` objeto, eventos com lista de grupos, grupo com `hooks`) é conferida igual nos
+    dois hosts.
+  - A guarda de `stop_hook_active` vale em `Stop` e `SubagentStop`, que no Codex também traz o
+    campo, e com `${CLAUDE_PLUGIN_ROOT}` ou `${PLUGIN_ROOT}`.
+  - Com `--host both`, nenhum aviso sai duas vezes.
+- **`capture_payload.py --host codex`:** imprime um `hooks.json` do Codex na forma shell POSIX. O
+  env capturado agora inclui `CODEX*` e `PLUGIN_*`.
+  - A lista do `<redacted>` ganhou `PASS`, `AUTH`, `CRED`, `COOKIE` e `PRIVATE`.
+  - O diretório sai 0700 e os arquivos 0600, porque o stdin cru traz conteúdo de arquivo.
+  - O nome do evento é saneado antes de virar nome de arquivo.
+  - Uma falha da captura vai para o stderr, em vez de sumir.
+- **`tests/`:** 14 testes (`python3 -m unittest discover -s tests`, na pasta da skill) para os dois
+  scripts. Contra o código sem os consertos acima, 16 subtestes ficam vermelhos.
 - **Fixtures capturadas e normalizadas:**
   - no Codex 0.164.0, `codex-posttooluse-apply_patch.json`, `codex-posttooluse-bash.json`,
     `codex-stop.json` e `codex-sessionstart.json`;
@@ -49,10 +60,27 @@ gravaria um segredo em disco se a captura fosse feita contra um `.env` real.
   corpo (passo 1, gotchas) e ganhou um caso de gatilho.
 - **Passo 6 do `SKILL.md`:** a recomendação da forma exec agora tem a ressalva "se o hook também
   roda no Codex, só a forma shell".
-- **`safety.md:15`:** a regra "não toque em `.env`" continua e aponta o §9 para o caso que existe
-  justamente para isso.
+- **`safety.md`:** a regra oficial "não toque em `.env`" continua na lista. Logo abaixo, numa linha
+  própria e marcada como desta skill, vem a exceção que aponta o §9.
+- **Opção sem valor nos dois scripts** (`--host`, `--plugin-json`, `--matcher`): agora é uso
+  inválido, com rc 2. Antes, `lint_hooks.py x --host` caía em `claude` sem avisar, e `--matcher` no
+  fim dava `IndexError`.
 - **Gotchas:** +5 linhas: trust no Codex, `args` ignorado, `apply_patch`, payload com conteúdo e
-  `MultiEdit`, que não existe na 2.1.309.
+  `MultiEdit`, que não existe na 2.1.309. A linha do trust limita o
+  `--dangerously-bypass-hook-trust` a captura e E2E num `CODEX_HOME` descartável.
+
+### Revisão antes da publicação
+
+O `/codereview` da faixa, antes do push, achou 4 MEDIUM e 15 LOW. Os consertos entraram nesta
+mesma versão, que ainda não tinha saído:
+
+- **O `lint_hooks.py --host codex` aprovava um `hooks.json` malformado.** `{"hooks": []}` dava
+  rc 0, e o caminho Claude dava rc 1.
+- **A receita de worktree do `patterns.md` §8 errava a partir de um subdiretório.**
+  `git rev-parse --git-dir` sai absoluto e `--git-common-dir` sai relativo (`../../.git`), então o
+  checkout principal parecia worktree. Agora a receita usa `--path-format=absolute`.
+- **O gotcha mandava usar o bypass de trust "na automação", sem escopo.**
+- **Os scripts não tinham teste.** Os demais itens são ponteiros e fontes nas references.
 
 ## [0.1.2] — 2026-10-07
 

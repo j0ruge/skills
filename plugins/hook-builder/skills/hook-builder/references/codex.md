@@ -11,7 +11,8 @@ Fontes:
 - dois probes ao vivo (`codex-cli 0.164.0` e `Claude Code 2.1.309`, 2026-10-27), que viraram as fixtures `assets/fixtures/codex-*.json`.
 
 Versão local: `codex --version`. Quando a doc e o código divergirem do que está aqui, vale o código
-da versão instalada. Registre a divergência no arquivo de fontes desatualizadas da skill.
+da versão instalada. Registre a divergência na reference de fontes desatualizadas da skill (a
+que o SKILL.md roteia "antes de reaproveitar exemplo de terceiros").
 
 ## 1. Onde mora a config
 
@@ -110,6 +111,7 @@ Campos comuns: `session_id`, `transcript_path`, `cwd`, `hook_event_name`, `model
 | `PostToolUse` + `apply_patch` | `tool_input` = `{"command": "<texto do patch>"}`; `tool_response` é **texto** (`Exit code: 0 … Success. Updated the following files:\nA <caminho>`) |
 | `PostToolUse` + `Bash` | `tool_input` = `{"command": "…"}`; `tool_response` é texto (vazio quando o comando não imprime) |
 | `Stop` | `stop_hook_active` e `last_assistant_message`, como no Claude |
+| `SubagentStop` | também traz `stop_hook_active`, além de `agent_id` e `agent_transcript_path` (schema `hooks/schema/generated/subagent-stop.command.input.schema.json`, não capturado) |
 | `SessionStart` | `source` (`startup`, …) |
 
 Os caminhos editados ficam nas linhas `*** Add File: `, `*** Update File: `, `*** Delete File: `
@@ -117,6 +119,8 @@ e `*** Move to: ` do patch (`apply-patch/src/parser.rs:39-42`). No probe, o cami
 **absoluto**. Aceite absoluto e relativo ao `cwd`:
 
 ```python
+import os
+
 MARKERS = ("*** Add File: ", "*** Update File: ", "*** Delete File: ", "*** Move to: ")
 def patch_paths(patch, cwd):
     for line in patch.splitlines():
@@ -135,7 +139,8 @@ No Claude, o caminho é `tool_input.file_path`, absoluto, em `Write` e `Edit` (f
 - No Codex: as linhas `+…` do patch.
 
 Um hook que loga o stdin grava o arquivo inteiro. Para vigiar arquivo com segredo, use a receita
-de "hook que trata arquivo de segredo de propósito" da reference de segurança (§9).
+"hook que trata arquivo de segredo de propósito", na seção 9 da reference de segurança da skill
+(não no §9 deste arquivo).
 
 ## 8. Um `hooks.json` para os dois hosts
 
@@ -158,6 +163,8 @@ CODEX_HOME="$T/home" codex exec --yolo --dangerously-bypass-hook-trust --skip-gi
 ls "$T/out"    # stdin-PostToolUse-*.json reais
 ```
 
+- **Pasta vazia é falha, não "não disparou".** Confira o `hooks.json` com
+  `lint_hooks.py --host codex`, o matcher e a flag de trust antes de concluir algo do evento.
 - **`< /dev/null` é obrigatório.** Sem ele, o `codex exec` fica em `Reading additional input from
   stdin...` até o timeout (medido: rc 124).
 - **`CODEX_HOME` sob `/tmp`** dá `Refusing to create helper binaries under temporary dir`.

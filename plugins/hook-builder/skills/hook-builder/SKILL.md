@@ -2,7 +2,7 @@
 name: hook-builder
 description: "Build, package and prove hooks for Claude Code and Codex CLI against the current official references: right event and output channel, real payload capture, loop guards, plugin-data state, fixture tests and a live firing check. Triggers — hook, hooks.json, PreToolUse, PostToolUseFailure, Stop hook, SessionStart, plugin hook, Codex hooks."
 license: MIT
-compatibility: Claude Code 2.1.163+ (Stop additionalContext); verificado contra a 2.1.283 em 2026-09-30; tempos, limites e canais reconferidos contra a doc em 2026-10-07 (2.1.291). Codex CLI 0.164.0 conferido contra o código (tag rust-v0.164.0) e um probe ao vivo em 2026-10-27. Scripts em Python 3, só biblioteca padrão.
+compatibility: Claude Code 2.1.163+ (Stop additionalContext); verificado contra a 2.1.283 em 2026-09-30; tempos, limites e canais reconferidos contra a doc em 2026-10-07 (2.1.291). Fixtures Write/Edit capturadas na 2.1.309 em 2026-10-27. Codex CLI 0.164.0 conferido contra o código (tag rust-v0.164.0) e um probe ao vivo em 2026-10-27. Scripts em Python 3, só biblioteca padrão.
 metadata:
   author: JorUge
   version: "0.2.0"
@@ -133,8 +133,9 @@ exemplos oficiais estão em `references/patterns.md`, para ler quando o hook tiv
 
 Com path placeholder, use a **forma exec** (`command` + `args`), ou aspas duplas em volta do
 placeholder na forma shell. **Se o hook também roda no Codex, use só a forma shell**: lá não existe
-`args`, e a chave é ignorada (`references/codex.md` §3). Os detalhes de settings, plugin, trust, `disableAllHooks` e
-`CLAUDE_PLUGIN_OPTION_*` estão em `references/packaging.md`, para ler antes de empacotar.
+`args`, e a chave é ignorada (`references/codex.md` §3). Os detalhes de settings, plugin, trust,
+`disableAllHooks` e `CLAUDE_PLUGIN_OPTION_*` estão em `references/packaging.md`, para ler antes de
+empacotar.
 
 ### 7. Teste e prove que dispara
 
@@ -176,7 +177,7 @@ Threat model, matriz comportamental (loop, dupla execução, segredo, falha) e r
 | Script lê `$CLAUDE_TOOL_OUTPUT` e nunca age | ela não aparece no ambiente do hook (o `capture_payload.py` grava o real) | o input vem no stdin |
 | Hook dispara em `claude -p` de cron ou CI | o hook não distingue sessão desassistida | gate por sessão assistida (se precisar, leia `references/patterns.md` §7) |
 | Resposta velha depois de `--resume` | o `additionalContext` de eventos do meio da sessão é regravado, não recalculado | recalcule no `SessionStart` (`source: resume`) |
-| Hook não roda no Codex, sem erro | trust por hash: hook novo ou alterado é pulado até ser aprovado | `/hooks` no Codex; na automação, `codex exec --dangerously-bypass-hook-trust` |
+| Hook não roda no Codex, sem erro | trust por hash: hook novo ou alterado é pulado até ser aprovado | `/hooks` no Codex. A flag `--dangerously-bypass-hook-trust` desliga o trust: só para captura ou E2E do seu hook, num `CODEX_HOME` descartável (`references/codex.md` §5 e §9) |
 | No Codex, o script roda sem argumentos | `args` não existe lá e é ignorado | forma shell, com o placeholder entre aspas |
 | `Write\|Edit` dispara no Codex com `tool_name: "apply_patch"` | alias de compatibilidade do Codex | trate os dois nomes; os caminhos estão nas linhas `*** … File:` do patch |
 | O log do hook vazou o conteúdo do arquivo | o `PostToolUse` de `Write`/`Edit`/`apply_patch` traz o conteúdo | não logue o stdin; leia `references/safety.md` §9 |
@@ -201,6 +202,7 @@ As 11 divergências entre a skill oficial `plugin-dev/hook-development` e a doc 
 | `scripts/capture_payload.py` | passo 4: gravar o payload e o ambiente reais |
 | `scripts/hook_test.py` | passo 7: rodar o hook contra uma fixture e checar exit e JSON |
 | `scripts/lint_hooks.py` | passo 7: validar `hooks.json`/settings e o `plugin.json` |
+| `tests/test_lint_hooks.py`, `tests/test_capture_payload.py` | ao mudar um dos scripts: `python3 -m unittest discover -s tests`, na pasta da skill |
 | `assets/templates/command-hook.py`, `assets/templates/command-hook.sh`, `assets/templates/hooks.json` | passo 5: ponto de partida do script e da config |
 | `assets/fixtures/pretooluse-bash.json`, `assets/fixtures/posttooluse-bash.json`, `assets/fixtures/posttoolusefailure-bash.json`, `assets/fixtures/userpromptexpansion.json`, `assets/fixtures/sessionstart-resume.json`, `assets/fixtures/stop.json`, `assets/fixtures/stop-active.json` | passo 7: payloads **capturados** na 2.1.283, com paths genéricos |
 | `assets/fixtures/posttooluse-write.json`, `assets/fixtures/posttooluse-edit.json` | passo 7: `Write`/`Edit` capturados na 2.1.309 (paths, ids e `permission_mode` normalizados) |

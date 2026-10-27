@@ -197,8 +197,10 @@ um uso de "erro a corrigir", no sentido literal.
 - **Só no Claude:** o `FileChanged` vigia nomes literais no disco durante a sessão. Ele não
   existe no Codex, e por isso a varredura no `SessionStart`/`Stop` é a parte portável.
 - **Worktree e clone:** o hook dispara em todo checkout que tenha a config. Se o efeito vale para
-  um checkout só (o "da verdade"), confira-o no script, comparando `git rev-parse --git-dir` com
-  `--git-common-dir` para saber se é worktree, e saia cedo nos outros.
+  um checkout só (o "da verdade"), confira-o no script e saia cedo nos outros. É worktree quando
+  `git rev-parse --path-format=absolute --git-dir --git-common-dir` imprime duas linhas diferentes.
+  Sem o `--path-format=absolute` (git 2.31+), a comparação erra: num subdiretório do checkout
+  principal, o `--git-dir` sai absoluto e o `--git-common-dir` sai relativo ao diretório atual, e
+  o checkout da verdade parece worktree.
 - **Arquivo com segredo:** o payload da edição traz o conteúdo. Siga o §9 da reference de
   segurança (hook que trata arquivo de segredo de propósito).
-

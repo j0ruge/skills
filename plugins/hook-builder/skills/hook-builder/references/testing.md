@@ -97,9 +97,11 @@ O `claude plugin validate` pega o formato do plugin.
    - o bloqueio bloqueou?
 5. **Caso negativo ao vivo:** a mesma sessão, sem a condição, não dispara.
 6. **No Codex**, se o hook também roda lá:
-   - capture o payload com `capture_payload.py --print-config … --host codex` num `CODEX_HOME`
-     temporário (fora do `/tmp`) e `codex exec --dangerously-bypass-hook-trust … < /dev/null`.
-     Sem o `/dev/null`, ele espera o stdin até o timeout;
+   - capture o payload pela receita "Capturar e testar no Codex" da reference do Codex (a que o
+     SKILL.md roteia para hook que também roda lá): `capture_payload.py --print-config EVENTO DIR
+     --host codex > "$CODEX_HOME/hooks.json"` num `CODEX_HOME` descartável, e
+     `codex exec --dangerously-bypass-hook-trust … < /dev/null`. A receita traz o comando inteiro
+     e o motivo de cada parte: `CODEX_HOME` fora do `/tmp`, `/dev/null` e flag de trust;
    - depois, numa sessão normal, confira em `/hooks` que o hook aparece e está confiável. Sem
      trust, ele é pulado sem erro.
 

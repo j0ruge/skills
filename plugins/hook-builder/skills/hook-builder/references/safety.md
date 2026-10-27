@@ -12,8 +12,10 @@ Regras oficiais (https://code.claude.com/docs/en/hooks#security-best-practices, 
 - ponha aspas nas variáveis (`"$VAR"`);
 - barre `..` em path;
 - use path absoluto (`${CLAUDE_PROJECT_DIR}`, com forma exec ou entre aspas);
-- não toque em `.env`, `.git/` e chaves. Se o hook existe justamente para tratar um desses
-  (sincronizar, fazer backup, auditar), siga o §9.
+- não toque em `.env`, `.git/` e chaves.
+
+Se o hook existe justamente para tratar um desses (sincronizar, fazer backup, auditar), siga o §9.
+Essa exceção é desta skill, não da doc.
 
 Um command hook roda com **todas as suas permissões de usuário**.
 
@@ -140,7 +142,9 @@ a regra vira desenho:
 - **Leia o arquivo do disco, não do payload.** Do payload, use só o caminho. O conteúdo vem do
   arquivo, que é a fonte depois da edição.
 - **O estado guarda só o hash** (sha256 do conteúdo, por caminho), nunca o valor. Ele basta para
-  saber "mudou desde o último envio".
+  saber "mudou desde o último envio". O arquivo de estado é 0600. Hash de um valor curto (uma
+  senha, um PIN) se quebra por força bruta: aí use HMAC com uma chave local, ou hash do arquivo
+  inteiro.
 - **O conteúdo segue por stdin** ou por um arquivo 0600 apagado no `finally`, nunca em argv:
   com o `/proc` padrão (sem `hidepid`, `man 5 proc`), o `ps` mostra o argv aos outros usuários
   da máquina.
@@ -153,4 +157,3 @@ a regra vira desenho:
 - **O destino precisa ser menos exposto que a origem.** Confira a permissão do destino (página,
   bucket, repositório) antes de escrever, e recuse quando ela for maior do que deveria. Destino
   aberto transforma o hook num vazamento automático.
-
