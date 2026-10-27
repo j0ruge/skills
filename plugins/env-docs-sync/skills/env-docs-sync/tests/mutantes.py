@@ -79,11 +79,15 @@ MUTANTES = [
      "    if saida is None:\n        return False\n        raise ErroEnvDocs(\"o git não respondeu"),
     ("M33 aviso do git vira silêncio", "    except ErroEnvDocs as erro:\n        return [f\"aviso — {raiz.name}: não deu para decidir",
      "    except ErroEnvDocs as erro:\n        return [] and [f\"aviso — {raiz.name}: não deu para decidir"),
-    ("M34 os.walk sem onerror", "os.walk(raiz, followlinks=False, onerror=_pasta_ilegivel)", "os.walk(raiz, followlinks=False)"),
+    ("M34 os.walk sem onerror", "os.walk(raiz, followlinks=False, onerror=_ao_listar(raiz))", "os.walk(raiz, followlinks=False)"),
     ("M35 callout por substring no escrever", "bool(_RE_CALLOUT_AUSENTE.search(atual)) == (op.acao",
      "(\"ausente desde\" in atual) == (op.acao"),
     ("M36 callout por substring no bloco_confere", "return bool(_RE_CALLOUT_AUSENTE.search(corpo)) and texto",
      "return \"ausente desde\" in corpo and texto"),
+    ("M38 subpasta que sumiu levanta", "FileNotFoundError) and os.path.normpath(erro.filename) != os.path.normpath(raiz):\n            return",
+     "FileNotFoundError) and os.path.normpath(erro.filename) != os.path.normpath(raiz):\n            pass"),
+    ("M39 raiz que sumiu passa", "FileNotFoundError) and os.path.normpath(erro.filename) != os.path.normpath(raiz):",
+     "FileNotFoundError):"),
     ("M37 _commit com os GIT_* herdados", "    sha = (_git(raiz, \"rev-parse\", \"HEAD\") or \"\").strip()",
      "    sha = subprocess.run([\"git\", \"-C\", str(raiz), \"rev-parse\", \"HEAD\"], capture_output=True,\n"
      "                         text=True).stdout.strip()"),
@@ -122,7 +126,8 @@ def rodar(antes, depois):
     `NÃO COMPILA`. Mutante que quebra a sintaxe derruba o import de todo módulo de teste: a suíte fica
     vermelha sem que nenhum teste tenha olhado o guarda, por isso ele não conta como morto."""
     estado, detalhe = _suite(antes, depois)
-    rotulo = {"vermelho": "morto", "estourou": "morto", "verde": "VIVO"}.get(estado, estado)
+    # estourar o prazo conta como morto (um laço infinito é o caso), mas com `?`: carga na máquina também estoura
+    rotulo = {"vermelho": "morto", "estourou": "morto?", "verde": "VIVO"}.get(estado, estado)
     return f"{rotulo} ({detalhe})"
 
 

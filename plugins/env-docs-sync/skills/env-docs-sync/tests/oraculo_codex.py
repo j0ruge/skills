@@ -12,8 +12,9 @@ próprio Codex. Rodado à mão a cada versão nova do codex-cli; não entra no `
    com `declaracoes` + `conteudo` da fixture.
 
 Sai 0 quando tudo bate e 1 com o que mudou: aí releia o codex-rs da versão nova, ajuste o algoritmo
-(`references/hosts.md` §4) e refaça a fixture. O Codex recusa os binários auxiliares com o
-CODEX_HOME sob /tmp, daí a pasta fora dele.
+(`references/hosts.md` §4) e refaça a fixture. Sai 1 também quando não há nada a comparar (0 hook na
+fixture ou no `hooks/list`). O Codex recusa os binários auxiliares com o CODEX_HOME sob /tmp, daí a
+pasta fora dele.
 """
 import json
 import os
@@ -90,14 +91,15 @@ def hooks_list(home: Path, cwd: Path) -> dict:
             except queue.Empty:
                 break
             if linha is None:
-                break
+                raise SystemExit(f"codex app-server: saiu antes de responder ao id {ident}")
             try:
                 msg = json.loads(linha)
             except ValueError:
                 continue
-            if msg.get("id") == ident:
+            # uma requisição do servidor (tem `method`) pode trazer o mesmo id; só resposta conta
+            if msg.get("id") == ident and ("result" in msg or "error" in msg):
                 return msg
-        raise SystemExit(f"codex app-server: sem resposta para o id {ident}")
+        raise SystemExit(f"codex app-server: sem resposta para o id {ident} em {limite} s")
 
     try:
         enviar({"method": "initialize", "id": 1, "params": {
@@ -145,11 +147,16 @@ def main(argv) -> int:
     vistos = hooks_list(home, pasta)
     esperados = {chave: f"{declaracao}/{dourado['conteudo']}" for chave, declaracao in dourado["declaracoes"].items()}
     diferentes = sorted(k for k in esperados.keys() | vistos.keys() if esperados.get(k) != vistos.get(k))
-    r = subprocess.run(["codex", "--version"], capture_output=True, text=True, timeout=30)
-    versao = r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else "codex-cli de versão desconhecida"
+    try:
+        r = subprocess.run(["codex", "--version"], capture_output=True, text=True, timeout=30)
+        versao = r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else ""
+    except (OSError, subprocess.TimeoutExpired):
+        versao = ""
+    versao = versao or "codex-cli de versão desconhecida"
     for chave in diferentes:
         print(f"DIFERENTE {chave}\n  fixture: {esperados.get(chave)}\n  codex:   {vistos.get(chave)}")
-    print(f"{versao}: {len(esperados) - len(diferentes)}/{len(esperados)} hooks iguais à fixture "
+    iguais = sum(1 for chave in esperados if esperados[chave] == vistos.get(chave))
+    print(f"{versao}: {iguais}/{len(esperados)} hooks iguais à fixture "
           f"({fixture.name}); {len(vistos)} vistos pelo hooks/list")
     if not esperados or not vistos:
         # 0/0 não confere nada: fixture sem hook ou um hooks/list que não mostra hook de plugin

@@ -72,7 +72,18 @@ class Varredura(unittest.TestCase):
         finally:
             fechada.chmod(0o755)
         self.assertIn("fechada", str(ctx.exception))
+        self.assertIn("exclude", str(ctx.exception), "o aviso diz como calar uma pasta que não interessa")
         self.assertIn("fechada/.env", eds.varredura(self.raiz, INCLUDE, []), "controle: legível, entra")
+
+    def test_subpasta_que_some_no_meio_passa_e_a_raiz_nao(self):
+        # pasta de build apagada entre a listagem do pai e a dela: não tem arquivo a perder
+        ao_listar = eds._ao_listar(self.raiz)
+        self.assertIsNone(ao_listar(FileNotFoundError(2, "No such file or directory", str(self.raiz / "dist"))))
+        # já a raiz que some faria todo arquivo parecer ausente
+        with self.assertRaises(eds.ErroEnvDocs):
+            ao_listar(FileNotFoundError(2, "No such file or directory", str(self.raiz)))
+        with self.assertRaises(eds.ErroEnvDocs):
+            ao_listar(PermissionError(13, "Permission denied", str(self.raiz / "fechada")))
 
     def test_caminhos_relativos_com_barra_e_ordenados(self):
         achados = eds.varredura(self.raiz, INCLUDE, [])

@@ -117,8 +117,8 @@ O fluxo de cada raiz, em ordem, sempre com exit 0:
 2. **Checkout da verdade:** worktree (`--git-dir` ≠ `--git-common-dir`) ou hostname diferente de
    `environments.development.machine` (sem caixa; aceita o nome curto), calado. É isso que impede
    um worktree, um clone em outra máquina ou uma missão headless num worktree de sobrescrever a
-   página.
-3. Config inválida, estado corrompido ou git que não responde: um aviso, nada mais.
+   página. Git que não responde aqui não é worktree: avisa.
+3. Config inválida ou estado corrompido: um aviso, nada mais.
 4. Hashes iguais aos do estado, nenhum ambiente remoto devido e as Seções derivadas em dia: calado,
    e o destino nem é montado
    (~50 ms num repo de 2 GB com `node_modules`, medido em 2026-10-27).
@@ -237,10 +237,9 @@ seção CI/CD sai de `ci`; com `ci: null`, uma frase diz que não há CI/CD decl
   cria). O estado nasce com `mkdir -p` e 0700.
 - **O stdout do hook é JSON em ASCII, só com `systemMessage`.** O schema de saída do Codex 0.164.0
   tem `additionalProperties: false`, e o locale do host pode não ser UTF-8.
-- **Com `sshpass`, nem `BatchMode=yes` nem `NumberOfPasswordPrompts=1`.** Os dois fazem a senha
-  errada sair com rc 255, o mesmo da rede fora. Com o padrão, o sshpass vê o 2º prompt, desiste
-  depois de uma tentativa e sai 5 (medido no sshpass 1.09 com OpenSSH 9.6p1). O aviso traduz o rc:
-  255 conexão ou autenticação, 5 senha, 6 chave do host desconhecida, 1 arquivo ausente ou ilegível.
+- **Com `sshpass`, nem `BatchMode=yes` nem `NumberOfPasswordPrompts=1`**, que confundem senha
+  errada com rede fora. O porquê e o rc de cada aviso: `references/config.md`, *`staging` e
+  `production`*, ao depurar um host com senha.
 - **A variável de `auth_env` precisa estar no ambiente do host do agente** (o shell que abriu o
   Claude Code ou o Codex). Uma senha que só existe num arquivo `.env` não é vista, e o ambiente
   fica de fora com o aviso "a variável … não está definida".

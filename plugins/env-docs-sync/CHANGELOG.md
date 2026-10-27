@@ -157,8 +157,8 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
   (com a fixture sabotada, 0/9 e rc 1). O 0.165.0 entrou em `CODEX_MEDIDOS`, e o `install --codex`
   deixa de avisar nele. Teste novo e 4 mutantes vermelhos. A description ficou com 348 caracteres,
   igual no `SKILL.md`, no `plugin.json` e no catálogo.
-- **`tests/mutantes.py`**, rodado à mão como o oráculo: os 31 mutantes da CI/CD, das seções derivadas
-  e da versão do Codex, cada um numa cópia do plugin inteiro. Sai 1 com o mutante vivo, com o
+- **`tests/mutantes.py`**, rodado à mão como o oráculo: os mutantes da CI/CD, das seções derivadas,
+  da versão do Codex e da revisão (M1–M39), cada um numa cópia do plugin inteiro. Sai 1 com o mutante vivo, com o
   trecho que sumiu do script ou com o mutante que não compila; um mutante que não muda nada sai
   `VIVO`. O M22 (status sem a linha das derivadas) não compilava, e a suíte ficava vermelha só pelo
   import (16 erros): foi refeito e morre em 3 testes. Antes dos mutantes, o rodador roda a suíte sem
@@ -170,14 +170,17 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
   - git que não responde no Checkout da verdade (anterior à 2.31, timeout, rc ≠ 0) avisa, em vez
     de calar como se fosse worktree;
   - pasta que a Varredura não lista levanta, em vez de sumir com os arquivos, que virariam
-    `ausente` na página;
+    `ausente` na página, e o aviso sugere o `exclude`. Só a subpasta que sumiu no meio da
+    Varredura passa;
   - o callout "ausente desde" é reconhecido pelo `<p class="callout danger">`, não pela frase,
     que também pode estar no conteúdo do `.env`;
   - o sha da linha "commit" sai do `_git`, sem os `GIT_*` herdados de um hook do git;
   - o protocolo `Destino` ganhou os métodos das Seções derivadas, e os símbolos públicos ganharam
     docstring;
-  - o oráculo do Codex lê o `app-server` com prazo (antes travava sem resposta), encerra o processo
+  - o oráculo do Codex lê o `app-server` com prazo (antes travava sem resposta), separa o servidor
+    que saiu do que não respondeu, só aceita resposta (não requisição) com o id, encerra o processo
     no fim e sai 1 quando nada foi comparado;
-  - a `safety.md` ganhou a seção "Confiança na config": a `.env-docs.json` nomeia o que o hook
-    executa, e mudar a config é mudar o que roda na máquina declarada;
-  - 4 testes novos e 6 mutantes (M32–M37), todos vermelhos.
+  - a `safety.md` ganhou a seção "Confiança na config": a `.env-docs.json` nomeia o programa que
+    recebe a página com os valores e a variável que vira a senha do ssh, e mudar a config é mudar o
+    que roda e para onde vão os segredos;
+  - 5 testes novos e 8 mutantes (M32–M39) no mesmo `tests/mutantes.py`, todos vermelhos.

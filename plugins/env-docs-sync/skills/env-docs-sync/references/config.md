@@ -89,6 +89,12 @@ Os arquivos de development saem da Varredura. Não há `files`.
 | `auth_env` | `null` quando o host aceita chave (`ssh -o BatchMode=yes`, sem sshpass); senão, o **nome** da variável de ambiente com a senha, que o Sync remoto entrega ao `sshpass -e` em `SSHPASS`, no ambiente do filho e nunca em argv. Nunca a senha. A variável precisa estar no ambiente do processo que roda o hook |
 | `files` | objeto não vazio `{"caminho na página": "caminho remoto"}`. A chave é o h3 do Bloco de arquivo (relativa, com `/`, sem `..`); o valor começa por `/` ou `~/`, e o `~/` expande do lado do servidor. Cada arquivo é lido com `cat -- <caminho>`, até 1 MiB |
 
+**Host com senha (`auth_env`).** Com `sshpass`, nem `BatchMode=yes` nem `NumberOfPasswordPrompts=1`:
+os dois fazem a senha errada sair com rc 255, o mesmo da rede fora. Com o padrão, o sshpass vê o 2º
+prompt, desiste depois de uma tentativa e sai 5 (medido no sshpass 1.09 com OpenSSH 9.6p1). O aviso
+traduz o rc: 255 conexão ou autenticação, 5 senha, 6 chave do host desconhecida, 1 arquivo ausente
+ou ilegível.
+
 ## `run`
 
 Cada item é `{"label": texto, "command": texto}` e vira, na seção "Como rodar", o rótulo em

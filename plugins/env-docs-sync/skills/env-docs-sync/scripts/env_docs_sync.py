@@ -352,10 +352,16 @@ def casa_padrao(caminho: str, padroes) -> bool:
     return any(_compilar(p).fullmatch(caminho) for p in padroes)
 
 
-def _pasta_ilegivel(erro: OSError):
-    """`onerror` do os.walk: pasta que não lista levanta, em vez de sumir com os arquivos dela."""
-    raise ErroEnvDocs(f"Varredura: não deu para listar {erro.filename} ({erro.strerror}); os arquivos dali "
-                      "pareceriam ausentes") from None
+def _ao_listar(raiz):
+    """O `onerror` do os.walk da Varredura de `raiz`: pasta que não lista levanta, em vez de sumir com os
+    arquivos dela (que pareceriam ausentes). Subpasta que sumiu no meio da Varredura (uma pasta de build
+    apagada) não tem arquivo a perder e passa; a raiz que some, não."""
+    def ao_listar(erro: OSError):
+        if isinstance(erro, FileNotFoundError) and os.path.normpath(erro.filename) != os.path.normpath(raiz):
+            return
+        raise ErroEnvDocs(f"Varredura: não deu para listar {erro.filename} ({erro.strerror}); os arquivos "
+                          "dali pareceriam ausentes. Se a pasta não interessa, ponha-a em `exclude`") from None
+    return ao_listar
 
 
 def varredura(raiz, include, exclude) -> list[str]:
@@ -370,7 +376,7 @@ def varredura(raiz, include, exclude) -> list[str]:
     exclusoes = (*EXCLUDE_PADRAO, *exclude)
     podas = tuple(p[:-3] for p in exclusoes if p.endswith("/**"))
     achados = []
-    for pasta, subpastas, arquivos in os.walk(raiz, followlinks=False, onerror=_pasta_ilegivel):
+    for pasta, subpastas, arquivos in os.walk(raiz, followlinks=False, onerror=_ao_listar(raiz)):
         rel_pasta = Path(pasta).relative_to(raiz).as_posix()
         prefixo = "" if rel_pasta == "." else rel_pasta + "/"
         subpastas[:] = sorted(
