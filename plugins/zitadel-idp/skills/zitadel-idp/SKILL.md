@@ -1,7 +1,7 @@
 ---
 name: zitadel-idp
 metadata:
-  version: 0.20.0
+  version: 0.20.2
 description: "Self-hosted Zitadel v4 OIDC field guide — a numbered quirk catalogue, working docker-compose and an idempotent TypeScript bootstrap. High-friction traps: FirstInstance env placement, JWT/JWKS over self-signed HTTPS, `--tlsMode external` and the console's mixed-content `Failed to fetch`, v2.66→v4, API v1→v2, silent-renew, 401 storms, UI language from the `locale` claim. Triggers — zitadel, oidc self-hosted, JWKS, masterkey, v2.66→v4, tlsMode external, pre-cutover check, locale claim."
 ---
 
@@ -48,7 +48,7 @@ If you are merely calling a pre-existing Zitadel deployment from your code, you 
 | When running a role rename/migration across environments (declare-first, the grant tool, per-environment state) | `references/role-migration.md` |
 | When a Gotchas line below matches and you need its symptom, cause, fix and evidence | `references/quirks.md` |
 | When you hit a confusing error and want a quick lookup | `references/troubleshooting.md` |
-| When proving a bootstrap actually wrote what the YAML declares, or reading who holds which role (no PAT needed) | `references/troubleshooting.md` §"The bootstrap logs `reuse` for everything" |
+| When proving a bootstrap actually wrote what the YAML declares, or reading who holds which role, with each account's e-mail (no PAT needed) | `references/troubleshooting.md` §"The bootstrap logs `reuse` for everything" |
 | When one account loops back to the login screen while others log in fine | `references/troubleshooting.md` §"One account loops back…" |
 | When creating a test/seed user and proving its password works, with no browser | `references/api-cheatsheet.md` §"Seed an admin user" + §"Prove a user's password without a browser" |
 | When driving the SPA's UI language from the user's IdP language (`locale` claim) | `references/spa-recipes.md` §"Recipe — UI language from the IdP" |
@@ -81,7 +81,7 @@ These bite first-time Zitadel integrators consistently. One line per quirk; the 
 21. In v4 the asset path is `/assets/v1/org/policy/label/...`; the old `orgs/me` path answers `405`.
 22. Login texts live at `/management/v1/text/login/{lang}` and accept short codes only (`pt-BR` → `LANG-lg4DP`).
 23. After a single-app → multi-app YAML refactor, env from `dev.sh` must win over the YAML (`redirect_uri is missing in the client configuration`).
-24. v2.66.x `start-from-init` does not reliably read `ZITADEL_MASTERKEY` (`panic: No master key provided`); pass `--masterkey`.
+24. v2.66.x `start-from-init` does not reliably read `ZITADEL_MASTERKEY` (`panic: No master key provided`); pass `--masterkey`, and from then on read `ps` and `docker inspect` (`Args`, `Config.Cmd`, `Config.Env`) by count or length: dumped whole, they print the key.
 25. Login UI v2 in v4 is a separate container (`ghcr.io/zitadel/zitadel-login`): deploy it or turn `loginV2.required` off, and pick one.
 26. v2 idempotence uses deterministic IDs and treats `ALREADY_EXISTS` as success.
 27. v2 moves the contextual org id from the header into the body (`missing organization_id`).

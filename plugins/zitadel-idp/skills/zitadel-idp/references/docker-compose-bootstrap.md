@@ -209,13 +209,15 @@ error="masterkey must either be provided by file path, value or environment vari
 
 Container em loop de restart, `RestartCount` crescendo, exit code 2 a cada ~60s. Log idêntico a cada ciclo.
 
-**O que confunde**: `docker inspect <ctr> --format '{{range .Config.Env}}{{println .}}{{end}}'` mostra a variável presente e correta:
+**O que confunde**: o `.Config.Env` do container mostra a variável presente, com o comprimento certo. Leia o comprimento, e não o valor (ver o trade-off abaixo):
 
-```text
-ZITADEL_MASTERKEY=qMnP1D5gM0oclBSJKFmdifWlpfAnTvwR
+```bash
+docker inspect <ctr> --format '{{range .Config.Env}}{{println .}}{{end}}' \
+  | awk -F= '$1=="ZITADEL_MASTERKEY" {print length(substr($0, index($0, "=") + 1))}' | grep -E '^[0-9]+$'
+# 32
 ```
 
-— exatos 32 chars, sem CR/LF, sem leading whitespace, sem null bytes (validável com `xxd`). `docker compose config` também resolve o valor literal corretamente. E mesmo assim `start-from-init` panic'a.
+— exatos 32: um CR ou um espaço a mais sairia 33. `docker compose config` também resolve o valor literal corretamente. E mesmo assim `start-from-init` panic'a.
 
 **Causa raiz**: `cmd/key/key.go` em v2.66.x lê `os.Getenv("ZITADEL_MASTERKEY")` como fallback quando a flag CLI `--masterkey` está ausente — mas o caminho de leitura **não é confiável** sob certas combinações de cobra/viper bindings na linha 2.66. (Em v4 o caminho foi reescrito.) Quando isso falha, o erro é genérico ("masterkey must either be provided") e não distingue "ausente" de "presente mas não-lida", o que mata o sinal.
 
@@ -239,13 +241,22 @@ zitadel:
 
 A flag tem precedência sobre env quando ambas existem, então é seguro deixar a env também (útil pra ferramentas que inspecionam o container e esperam a env).
 
-**Trade-off de segurança**: a flag aparece em `docker inspect <ctr>` (campo `Args`/`Cmd`) e em `ps aux` no host. Aceitável quando:
+**Trade-off de segurança**: com a flag, a chave fica nos args do processo, que o `ps aux` do host mostra, e em três campos do `docker inspect <ctr>`: `Args`, `Config.Cmd` e `Config.Env`. Medido em 2026-10-27 num `v4.15.0` que manteve a flag: `--masterkey` uma vez em cada um dos dois primeiros e nos args do processo, e o valor do `Args` igual ao do `Env`. Todo diagnóstico que despeja um desses campos inteiro (`ps aux`, `ps -eo …,args`, `--format '{{json .Args}}'`, o `range .Config.Env` sem filtro) imprime a chave no terminal, no log de CI ou na transcrição de um agente. Foi assim que, em 2026-10-26, um `ps` de diagnóstico de carga despejou o masterkey de um IdP de staging na transcrição de um agente. Leia só o que a pergunta precisa:
+
+```bash
+docker inspect <ctr> --format '{{json .Args}}' | grep -o '"--tlsMode","[^"]*"'   # uma flag, sem o resto do Args
+docker inspect <ctr> --format '{{range .Config.Env}}{{println .}}{{end}}' \
+  | awk -F= '$1=="ZITADEL_MASTERKEY" {print length(substr($0, index($0, "=") + 1))}' | grep -E '^[0-9]+$'   # o comprimento
+ps -eo pid,pcpu,etime,comm --sort=-pcpu   # carga por processo: comm, sem os args
+```
+
+A flag é aceitável quando:
 
 - O `.env` está com `chmod 600` no host (já é boa prática).
 - O VPS é dedicado (acesso SSH restrito a operadores).
 - Você não tem agentes de inventário de terceiros enviando `docker inspect` para fora.
 
-Se algum desses não for verdade, troque pelo arquivo:
+Se algum desses não for verdade, troque pelo arquivo (e tire também a `ZITADEL_MASTERKEY` do `environment:`, porque enquanto ela estiver lá o `Config.Env` mostra a chave, com ou sem a flag):
 
 ```yaml
 command:

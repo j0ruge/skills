@@ -1,5 +1,43 @@
 # Changelog — zitadel-idp
 
+## [0.20.2] — 2026-10-27
+
+### Fixed
+
+- **As leituras da Quirk 24 não imprimem mais o masterkey** (`references/docker-compose-bootstrap.md`
+  §Quirk 24, a entrada 24 de `references/quirks.md`, `references/troubleshooting.md` §Console
+  `Failed to fetch` e a linha 24 do índice do `SKILL.md`). Com `--masterkey`, a chave fica nos args do
+  processo e em `Args`, `Config.Cmd` e `Config.Env` do `docker inspect`, e três receitas da própria
+  skill despejavam um desses campos inteiro: o `{{json .Args}}` do diagnóstico do `--tlsMode` (duas
+  vezes) e o `range .Config.Env` que conferia os 32 chars. Agora a flag sai por `grep -o`, o
+  comprimento por `awk` e a carga por `ps -o comm`. O exemplo de valor que ilustrava a leitura do
+  `Config.Env` saiu junto, porque a receita nova imprime `32`; o `xxd`, que também imprimiria o valor,
+  deu lugar ao comprimento. Com `--masterkeyFile`, a seção agora pede tirar a env também.
+- **A consulta "quem tem qual papel" traz o e-mail** (`references/troubleshooting.md` §"The bootstrap
+  logs `reuse` for everything" e a linha da tabela de tarefas do `SKILL.md`): `users14_humans` entra na
+  descoberta (`(_humans)?`) e num `left join`, com `email`, `is_email_verified` e `state`, e o filtro
+  passa a ser o prefixo do papel, porque um projeto pode guardar os papéis de vários apps. O
+  `change_date` da consulta anterior continua.
+- **Por quê:** na promoção da 0.4.4 do `lighthouse_project` a staging, em 26/10/2026, o login novo
+  passou a recusar e-mail fora do domínio da empresa, e era preciso conferir antes o domínio de toda
+  conta com papel `lighthouse.*`. A consulta da skill não trazia o e-mail, e o filtro por `project_id`
+  traria também os grants de `battery.*` e `quote.*`. No mesmo dia, um `ps -eo …,args` de diagnóstico
+  de carga no kratos despejou o masterkey do IdP de staging na transcrição do agente.
+- **Evidência:** relido em 27/10/2026 no IdP de staging (`v4.15.0`), só por contagem e comprimento.
+  `--masterkey` aparece 1× em `Args`, 1× em `Config.Cmd` e 1× nos args do processo, e a
+  `ZITADEL_MASTERKEY` tem 32 chars no `Config.Env`, igual ao valor do `Args`. O `grep -o` devolve
+  `"--tlsMode","external"`, e o `ps -o comm` mostra `zitadel` sem args. A consulta nova devolve 7
+  linhas: 7 com o domínio no nome e no e-mail, 7 verificadas, todas com `state` 1. O projeto delas tem
+  18 grants, e o único usuário de máquina da instância não tem linha em `users14_humans`. O significado
+  de `state` foi lido em `internal/domain/user.go` e `internal/query/projection/user.go`, na tag
+  `v4.15.0`.
+- **Versão:** o `metadata.version` do `SKILL.md` ficou em 0.20.0 na 0.20.1, e volta a bater com o
+  `plugin.json`.
+- **Dívida pré-existente que a auditoria aponta e este retrofit não toca:** INFO F4 e INFO D1, como
+  na 0.20.0. O `README.md` ainda diz "50 gotchas" na tabela de plataformas e "54 documented quirks"
+  na de skills, contra 56 no índice.
+- **Como reverter:** `git revert` do commit que traz esta entrada.
+
 ## [0.20.1] — 2026-10-22
 
 Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.

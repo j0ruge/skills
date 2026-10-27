@@ -677,7 +677,8 @@ See `docker-compose-bootstrap.md §"TLS terminated by reverse proxy"` for a full
 # 1) the smoking gun — compare api vs issuer scheme
 curl -sk https://<host>/ui/console/assets/environment.json
 # 2) is the running container actually on --tlsMode external?
-docker inspect <container> --format '{{json .Args}}'      # expect ...,"--tlsMode","external"
+docker inspect <container> --format '{{json .Args}}' | grep -o '"--tlsMode","[^"]*"'   # expect "--tlsMode","external"
+#    never print the whole Args: with Quirk 24's --masterkey, the key is in it
 # 3) reproduce the mixed-content block from the page origin (browser devtools console):
 #    fetch('http://<host>/oauth/v2/keys')  -> TypeError: Failed to fetch
 #    fetch('https://<host>/oauth/v2/keys') -> 200
@@ -687,7 +688,7 @@ docker inspect <container> --format '{{json .Args}}'      # expect ...,"--tlsMod
 
 ```bash
 docker compose -f base.yml -f override.yml up -d --force-recreate zitadel
-docker inspect <container> --format '{{json .Args}}'            # verify --tlsMode external
+docker inspect <container> --format '{{json .Args}}' | grep -o '"--tlsMode","[^"]*"'   # verify "--tlsMode","external"
 curl -sk https://<host>/ui/console/assets/environment.json     # api now https, matches issuer
 ```
 
@@ -958,20 +959,28 @@ The `creation_date` is what makes this decisive rather than merely informative: 
 **Who holds which role, same path.** The API answer is the global grants search (Quirk 8), and it needs a PAT too. On a host where the deploy wipes its `.env` after each run, there is no PAT to borrow, and the projections answer this question as well — read-only, no token:
 
 ```bash
-# Both suffixes change across releases (`user_grants5`, `users14` in v4.15.0) —
-# discover them like the roles table above.
+# The suffixes change across releases (`user_grants5`, `users14`, `users14_humans` in v4.15.0) —
+# discover them like the roles table above. The e-mail lives in `users14_humans`, not in `users14`.
 docker exec -i <postgres-idp-ctr> psql -U zitadel -d zitadel -Atc \
   "select table_name from information_schema.tables
-    where table_schema='projections' and table_name ~ '^(user_grants|users)[0-9]+$';"
+    where table_schema='projections' and table_name ~ '^(user_grants|users)[0-9]+(_humans)?$';"
 
 docker exec -i <postgres-idp-ctr> psql -U zitadel -d zitadel -c \
-  "select u.username, g.roles, g.change_date
+  "select u.username, h.email, h.is_email_verified, u.state, g.roles, g.change_date
      from projections.user_grants5 g
      join projections.users14 u on u.id = g.user_id and u.instance_id = g.instance_id
-    where g.project_id = '<projectId>' order by 1;"
+     left join projections.users14_humans h on h.user_id = u.id and h.instance_id = u.instance_id
+    where exists (select 1 from unnest(g.roles) r where r like '<prefix>.%')
+    order by 1;"
 ```
 
-Compare against these two projections, never against a report rendered from the YAML catalog: such a report prints a column for every **declared** role, whether the instance has it or not. Measured 2026-10-05 on a v4.15.0 production instance: the generated matrix showed a `quote.consultor` column, and `project_roles4` had no such role — the bootstrap that would create it had never reached that environment.
+Three choices in that query are not cosmetic:
+
+- **Filter by the role prefix, not by `project_id`, when several apps share one project.** Measured 2026-10-27 on a v4.15.0 staging instance: the project holding `lighthouse.*` also holds `battery.*` and `quote.*`, 18 grants in all, 7 of them `lighthouse.*`. `where g.project_id = '<projectId>'` answers for the project and the prefix answers for the app; when the project belongs to one app alone, they are the same filter.
+- **Read the e-mail and `is_email_verified` whenever the login or the backend decides by e-mail.** The username can differ from the e-mail (Quirks 33 and 34), and an unverified e-mail proves nothing about the address (Quirks 35 and 54). Before a release that rejects every domain but the company's, this query is the census: in the measurement above, 7 of 7 rows carried the domain in both columns, all verified.
+- **`left join`, because a machine user has no row in `users14_humans`** (the instance's only machine user had none): an inner join would drop it from the census in silence. `state` is `domain.UserState`, read at the `v4.15.0` tag (`internal/domain/user.go`): `1` active, `2` inactive, `3` deleted, `4` locked, `5` suspend, `6` initial (Quirk 6).
+
+Compare against these projections, never against a report rendered from the YAML catalog: such a report prints a column for every **declared** role, whether the instance has it or not. Measured 2026-10-05 on a v4.15.0 production instance: the generated matrix showed a `quote.consultor` column, and `project_roles4` had no such role — the bootstrap that would create it had never reached that environment.
 
 ⚠️ **Do not run this through a templating layer that eats `{{ }}`** (Ansible's `shell` module does, and `docker ps --format '{{.Names}}'` blows up there) — put the SQL in a file, or wrap it in `{% raw %}`.
 
