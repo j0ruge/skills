@@ -7,14 +7,16 @@ plugin inteiro, e a suíte tem de ficar vermelha. Rodado à mão depois de mexer
     python3 -B tests/mutantes.py M28 M31    # só esses
 
 Antes dos mutantes, roda a suíte sem nenhum (o controle): vermelha, sai 2, porque todo mutante
-sairia morto sem provar nada. Sai 0 quando todos morrem e 1 com a lista dos vivos, de um trecho que
-não está mais no script (aí o guarda mudou, e o mutante precisa ser refeito) ou de um mutante que
-não compila. O que só estourou o prazo conta como morto (um laço infinito é o caso), mas a linha
-final o nomeia, porque carga na máquina também estoura. A cópia é do plugin inteiro porque os testes leem o `hooks/hooks.json` e o sensor
-anti-marca varre `SKILL.parent.parent`: com só a pasta da skill, ele varreria a pasta temporária
-inteira. Cobre os mutantes da seção CI/CD, das seções derivadas, da versão do Codex e dos guardas da
-revisão de código antes da publicação; os dos incrementos anteriores, listados em
-`references/safety.md`, foram rodados à mão.
+sairia morto sem provar nada. Sai 0 quando todos deixam a suíte vermelha e 1 com a lista dos vivos,
+de um trecho que não está mais no script (aí o guarda mudou, e o mutante precisa ser refeito) ou de
+um mutante que não compila. O que só estourou o prazo conta como morto (um laço infinito é o caso),
+mas sai 3 e é nomeado na linha final, porque carga na máquina também estoura: rode-o de novo.
+A cópia é do plugin inteiro porque os testes leem o `hooks/hooks.json` e o sensor anti-marca varre
+`SKILL.parent.parent`: com só a pasta da skill, ele varreria a pasta temporária inteira.
+
+Cobre os mutantes da seção CI/CD, das seções derivadas, da versão do Codex e dos guardas da revisão
+de código antes da publicação; os dos incrementos anteriores, listados em `references/safety.md`,
+foram rodados à mão.
 """
 import shutil
 import subprocess
@@ -93,9 +95,10 @@ MUTANTES = [
     ("M39 raiz que sumiu passa", "FileNotFoundError) and os.path.normpath(erro.filename) != os.path.normpath(raiz):",
      "FileNotFoundError):"),
     ("M40 dica do exclude sem /**", "ponha `{rel}/**` em `exclude`", "ponha `{rel}` em `exclude`"),
-    ("M41 dica do exclude na raiz", 'dica = "" if rel == "." else f"', 'dica = f"'),
+    ("M41 dica sem conferir o caminho", 'if caminho_relativo_valido(rel) and not set("*?[")', 'if not set("*?[")'),
     ("M42 dica com o caminho absoluto", "rel = Path(os.path.relpath(erro.filename, raiz)).as_posix()",
      "rel = erro.filename"),
+    ("M43 dica com glob cru", 'caminho_relativo_valido(rel) and not set("*?[") & set(rel):', "caminho_relativo_valido(rel):"),
 ]
 
 
@@ -128,8 +131,9 @@ def _suite(antes=None, depois=None):
 
 def rodar(antes, depois):
     """Aplica um mutante numa cópia e roda a suíte; devolve `morto`, `morto?` (só estourou o prazo),
-    `VIVO`, `ALVO NÃO ACHADO` ou `NÃO COMPILA`. Mutante que quebra a sintaxe derruba o import de todo módulo de teste: a suíte fica
-    vermelha sem que nenhum teste tenha olhado o guarda, por isso ele não conta como morto."""
+    `VIVO`, `ALVO NÃO ACHADO` ou `NÃO COMPILA`. Mutante que quebra a sintaxe derruba o import de todo
+    módulo de teste: a suíte fica vermelha sem que nenhum teste tenha olhado o guarda, por isso ele não
+    conta como morto."""
     estado, detalhe = _suite(antes, depois)
     # estourar o prazo conta como morto (um laço infinito é o caso), mas com `?`: carga na máquina também estoura
     rotulo = {"vermelho": "morto", "estourou": "morto?", "verde": "VIVO"}.get(estado, estado)
@@ -137,7 +141,8 @@ def rodar(antes, depois):
 
 
 def main(argv):
-    """Roda o controle e os mutantes pedidos (todos, sem argumento); 0 quando todos morrem."""
+    """Roda o controle e os mutantes pedidos (todos, sem argumento); os códigos de saída estão no
+    docstring do módulo."""
     escolhidos = [m for m in MUTANTES if not argv or m[0].split()[0] in argv]
     desconhecidos = set(argv) - {m[0].split()[0] for m in MUTANTES}
     if desconhecidos:
@@ -159,7 +164,7 @@ def main(argv):
         print(f"{nome}: {estado}", flush=True)
     prazo = f" ({len(por_prazo)} só por prazo: {', '.join(por_prazo)})" if por_prazo else ""
     print(f"\n{len(escolhidos) - len(vivos)}/{len(escolhidos)} mortos{prazo}; vivos: {vivos or '-'}")
-    return 1 if vivos else 0
+    return 1 if vivos else 3 if por_prazo else 0
 
 
 if __name__ == "__main__":

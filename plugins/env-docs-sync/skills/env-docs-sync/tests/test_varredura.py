@@ -98,6 +98,16 @@ class Varredura(unittest.TestCase):
             eds._ao_listar(self.raiz)(PermissionError(13, "Permission denied", str(self.raiz)))
         self.assertNotIn("exclude", str(ctx.exception))
 
+    def test_sem_dica_quando_o_nome_nao_vira_padrao_literal(self):
+        # `[1]` é classe no glob e não casa com a pasta; barra invertida a config recusa
+        for nome in ("b[1]", "c*d", "e\\f"):
+            with self.subTest(nome=nome), self.assertRaises(eds.ErroEnvDocs) as ctx:
+                eds._ao_listar(self.raiz)(PermissionError(13, "Permission denied", str(self.raiz / "a" / nome)))
+            self.assertNotIn("exclude", str(ctx.exception))
+        with self.assertRaises(eds.ErroEnvDocs) as ctx:
+            eds._ao_listar(self.raiz)(PermissionError(13, "Permission denied", str(self.raiz / "a" / "b1")))
+        self.assertIn("`a/b1/**` em `exclude`", str(ctx.exception), "controle: nome comum ganha a dica")
+
     def test_subpasta_que_some_no_meio_passa_e_a_raiz_nao(self):
         # pasta de build apagada entre a listagem do pai e a dela: não tem arquivo a perder
         ao_listar = eds._ao_listar(self.raiz)

@@ -13,8 +13,8 @@ próprio Codex. Rodado à mão a cada versão nova do codex-cli; não entra no `
 
 Sai 0 quando tudo bate e 1 com o que mudou: aí releia o codex-rs da versão nova, ajuste o algoritmo
 (`references/hosts.md` §4) e refaça a fixture. Sai 1 também quando não há nada a comparar (0 hook na
-fixture ou no `hooks/list`). O Codex recusa os binários auxiliares com o CODEX_HOME sob /tmp, daí a
-pasta fora dele.
+fixture ou no `hooks/list`), e 2, com este texto, quando falta a pasta ou o valor do `--fixture`.
+O Codex recusa os binários auxiliares com o CODEX_HOME sob /tmp, daí a pasta fora dele.
 """
 import json
 import os
@@ -128,8 +128,8 @@ def hooks_list(home: Path, cwd: Path) -> dict:
 
 
 def main(argv) -> int:
-    """Monta, instala e compara; 0 quando o `hooks/list` mostra exatamente os hooks da fixture, com os
-    mesmos hashes, 1 senão e 2 quando falta a pasta ou o arquivo do `--fixture`."""
+    """Monta, instala e compara: o `hooks/list` tem de mostrar exatamente os hooks da fixture, com os
+    mesmos hashes. Os códigos de saída estão no docstring do módulo."""
     if not argv or argv[0].startswith("-") or argv[-1] == "--fixture":
         print(__doc__, file=sys.stderr)
         return 2

@@ -78,8 +78,8 @@ estão nele.
   estado;
 - **versão do Codex** (4 mutantes, todos vermelhos): nunca avisar, conferir só a primeira versão
   medida, aviso que cita só a primeira e a lista sem o 0.165.0;
-- **revisão de código antes da publicação** (11 mutantes, todos vermelhos): git que falha tratado
+- **revisão de código antes da publicação** (12 mutantes, todos vermelhos): git que falha tratado
   como worktree, o aviso dele trocado por silêncio, o `os.walk` sem `onerror`, a subpasta que sumiu
-  no meio levantando e a raiz que sumiu passando, a dica do `exclude` sem o `/**`, na raiz ou com o
-  caminho absoluto, o callout achado por substring no `escrever` e, à parte, no `bloco_confere`, e o
+  no meio levantando e a raiz que sumiu passando, a dica do `exclude` sem o `/**`, sem conferir o
+  caminho, com o caminho absoluto ou com glob cru, o callout achado por substring no `escrever` e, à parte, no `bloco_confere`, e o
   `_commit` com os `GIT_*` herdados.

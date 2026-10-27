@@ -158,10 +158,11 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
   deixa de avisar nele. Teste novo e 4 mutantes vermelhos. A description ficou com 348 caracteres,
   igual no `SKILL.md`, no `plugin.json` e no catálogo.
 - **`tests/mutantes.py`**, rodado à mão como o oráculo: os mutantes da CI/CD, das seções derivadas,
-  da versão do Codex e da revisão (M1–M42), cada um numa cópia do plugin inteiro. Sai 1 com o
+  da versão do Codex e da revisão (M1–M43), cada um numa cópia do plugin inteiro. Sai 1 com o
   mutante vivo, com o trecho que sumiu do script ou com o mutante que não compila; um mutante que
-  não muda nada sai `VIVO`, e a linha final nomeia o que só estourou o prazo. O M22 (status sem a linha das derivadas) não compilava, e a suíte ficava vermelha só pelo
-  import (16 erros): foi refeito e morre em 3 testes. Antes dos mutantes, o rodador roda a suíte sem
+  não muda nada sai `VIVO`, e o que só estourou o prazo sai 3, nomeado na linha final. O M22
+  (status sem a linha das derivadas) não compilava, e a suíte ficava vermelha só pelo import (16
+  erros): foi refeito e morre em 3 testes. Antes dos mutantes, o rodador roda a suíte sem
   nenhum (o controle) e sai 2 se ela já estiver vermelha, porque aí todo mutante sairia morto.
 - **Revisão de código antes da publicação** (o codereview da loja, que deu F na 1ª rodada pelo
   portão de segredo):
@@ -170,8 +171,8 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
   - git que não responde no Checkout da verdade (anterior à 2.31, timeout, rc ≠ 0) avisa, em vez
     de calar como se fosse worktree;
   - pasta que a Varredura não lista levanta, em vez de sumir com os arquivos, que virariam
-    `ausente` na página, e o aviso dá o padrão `<pasta>/**` do `exclude`, menos na raiz. Só a
-    subpasta que sumiu no meio da Varredura passa;
+    `ausente` na página, e o aviso dá o padrão `<pasta>/**` do `exclude` quando o nome cabe num
+    padrão literal (não na raiz). Só a subpasta que sumiu no meio da Varredura passa;
   - o callout "ausente desde" é reconhecido pelo `<p class="callout danger">`, não pela frase,
     que também pode estar no conteúdo do `.env`;
   - o sha da linha "commit" sai do `_git`, sem os `GIT_*` herdados de um hook do git;
@@ -182,4 +183,4 @@ para que hook, destino e ssh se encaixem por injeção e sejam testados um a um.
     `initialize` recusado, encerra o processo no fim e sai 1 quando nada foi comparado;
   - a `safety.md` ganhou a seção "Confiança na config": a `.env-docs.json` decide o que roda, que
     segredos são lidos e para onde vão, e uma mudança nela se revisa como a de um script;
-  - 6 testes novos e 11 mutantes (M32–M42) no mesmo `tests/mutantes.py`, todos vermelhos.
+  - 7 testes novos e 12 mutantes (M32–M43) no mesmo `tests/mutantes.py`, todos vermelhos.
