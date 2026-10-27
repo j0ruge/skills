@@ -11,10 +11,11 @@ próprio Codex. Rodado à mão a cada versão nova do codex-cli; não entra no `
 3. pergunta o `hooks/list` ao `codex app-server` e compara o `currentHash` de cada hook de plugin
    com `declaracoes` + `conteudo` da fixture.
 
-Sai 0 quando tudo bate e 1 com o que mudou: aí releia o codex-rs da versão nova, ajuste o algoritmo
-(`references/hosts.md` §4) e refaça a fixture. Sai 1 também quando não há nada a comparar (0 hook na
-fixture ou no `hooks/list`), e 2, com este texto, quando falta a pasta ou o valor do `--fixture`.
-O Codex recusa os binários auxiliares com o CODEX_HOME sob /tmp, daí a pasta fora dele.
+Sai 0 quando tudo bate; 2, com este texto, quando falta a pasta ou o valor do `--fixture`; e 1 em
+qualquer outro caso, com o motivo na saída. Por exemplo: o que mudou (aí releia o codex-rs da versão
+nova, ajuste o algoritmo de `references/hosts.md` §4 e refaça a fixture), nada a comparar (0 hook na
+fixture ou no `hooks/list`), a pasta que não serve ou o `codex` que falha. O Codex recusa os binários
+auxiliares com o CODEX_HOME sob /tmp, daí a pasta fora dele.
 """
 import json
 import os

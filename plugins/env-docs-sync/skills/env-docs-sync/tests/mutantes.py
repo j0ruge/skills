@@ -10,7 +10,8 @@ Antes dos mutantes, roda a suíte sem nenhum (o controle): vermelha, sai 2, porq
 sairia morto sem provar nada. Sai 0 quando todos deixam a suíte vermelha e 1 com a lista dos vivos,
 de um trecho que não está mais no script (aí o guarda mudou, e o mutante precisa ser refeito) ou de
 um mutante que não compila. O que só estourou o prazo conta como morto (um laço infinito é o caso),
-mas sai 3 e é nomeado na linha final, porque carga na máquina também estoura: rode-o de novo.
+mas sai 3 e é nomeado na linha final, porque carga na máquina também estoura: rode-o de novo. Um id
+de mutante desconhecido também sai 2, antes de rodar qualquer coisa.
 A cópia é do plugin inteiro porque os testes leem o `hooks/hooks.json` e o sensor anti-marca varre
 `SKILL.parent.parent`: com só a pasta da skill, ele varreria a pasta temporária inteira.
 

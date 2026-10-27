@@ -355,9 +355,10 @@ def casa_padrao(caminho: str, padroes) -> bool:
 def _ao_listar(raiz):
     """O `onerror` do os.walk da Varredura de `raiz`: pasta que não lista levanta, em vez de sumir com os
     arquivos dela (que pareceriam ausentes). Subpasta que sumiu no meio da Varredura (uma pasta de build
-    apagada) não tem arquivo a perder e passa; a raiz que some, não. Fora da raiz, o aviso dá o padrão
-    `<pasta>/**`, a única forma de `exclude` que poda a descida, quando o nome vira padrão literal: sem
-    `*`, `?` ou `[`, e aceito como caminho da config, o que já deixa a raiz (`.`) de fora."""
+    apagada) não tem arquivo a perder e passa; a raiz que some, não. O aviso dá o padrão `<pasta>/**`,
+    a única forma de `exclude` que poda a descida, só quando o nome vira padrão literal: aceito pelo
+    `caminho_relativo_valido` e sem `*`, `?` ou `[`. A raiz (`.`) nunca ganha a dica, porque o
+    validador a recusa."""
     def ao_listar(erro: OSError):
         if isinstance(erro, FileNotFoundError) and os.path.normpath(erro.filename) != os.path.normpath(raiz):
             return
