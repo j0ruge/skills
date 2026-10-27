@@ -32,22 +32,24 @@ gravaria um segredo em disco se a captura fosse feita contra um `.env` real.
   - A forma (`hooks` objeto, eventos com lista de grupos, grupo com `hooks`) é conferida igual nos
     dois hosts.
   - A guarda de `stop_hook_active` vale em `Stop` e `SubagentStop`, que no Codex também traz o
-    campo, e com `${CLAUDE_PLUGIN_ROOT}` ou `${PLUGIN_ROOT}`. Um script citado que o lint não
-    acha vira aviso, em vez de sumir da conferência.
-  - `command` que não é texto e `args` que não é lista dão erro, sem traceback.
+    campo, e com `${CLAUDE_PLUGIN_ROOT}` ou `${PLUGIN_ROOT}`. Quando a guarda não pode ser
+    conferida (script ausente ou ilegível, ou o lint fora do `hooks/hooks.json` do plugin), sai um
+    aviso, em vez de a conferência sumir.
+  - `command` que não é texto, `args` que não é lista e JSON de topo que não é objeto dão erro, sem
+    traceback.
   - No Codex, `once` e `CLAUDE_PLUGIN_OPTION_*` também dão aviso.
   - Com `--host both`, nenhum aviso sai duas vezes.
 - **`capture_payload.py --host codex`:** imprime um `hooks.json` do Codex na forma shell POSIX. O
   env capturado agora inclui `CODEX*` e `PLUGIN_*`.
-  - A lista do `<redacted>` ganhou `PASSW`, `PASSPHRASE`, `AUTH`, `CRED`, `COOKIE` e `PRIVATE`.
-    Não ganhou `PASS`, que esconderia um `BYPASS`.
+  - A lista do `<redacted>` ganhou `PASS` (fora de `BYPASS`, que fica visível), `AUTH`, `CRED`,
+    `COOKIE` e `PRIVATE`.
   - Os arquivos saem 0600, porque o stdin cru traz conteúdo de arquivo. O DIR que a captura cria
     sai 0700, e um DIR que já existe fica como está. A escrita usa `O_EXCL`, então um symlink
     plantado no nome faz a captura falhar, em vez de ser seguido.
   - O nome do evento é saneado antes de virar nome de arquivo.
   - Uma falha da captura vai para o stderr, em vez de sumir.
-- **`tests/`:** 19 testes (`python3 -m unittest discover -s tests`, na pasta da skill) para os dois
-  scripts. Contra os scripts do `b0d5c6c`, o primeiro commit da 0.2.0, 26 deles ou dos seus
+- **`tests/`:** 21 testes (`python3 -m unittest discover -s tests`, na pasta da skill) para os dois
+  scripts. Contra os scripts do `b0d5c6c`, o primeiro commit da 0.2.0, 28 deles ou dos seus
   subtestes ficam vermelhos.
 - **Fixtures capturadas e normalizadas:**
   - no Codex 0.164.0, `codex-posttooluse-apply_patch.json`, `codex-posttooluse-bash.json`,
@@ -78,9 +80,9 @@ gravaria um segredo em disco se a captura fosse feita contra um `.env` real.
 
 ### Revisão antes da publicação
 
-O `/codereview` da faixa, antes do push, achou 4 MEDIUM e 15 LOW na primeira rodada e 4 MEDIUM e
-5 LOW na segunda, que revisou só o conserto. Os consertos entraram nesta mesma versão, que ainda
-não tinha saído:
+O `/codereview` da faixa, antes do push, achou 4 MEDIUM e 15 LOW na primeira rodada. As rodadas
+seguintes revisaram só o conserto anterior: 4 MEDIUM e 5 LOW na segunda, 1 MEDIUM e 8 LOW na
+terceira. Os consertos entraram nesta mesma versão, que ainda não tinha saído:
 
 - **O `lint_hooks.py --host codex` aprovava um `hooks.json` malformado.** `{"hooks": []}` dava
   rc 0, e o caminho Claude dava rc 1.
@@ -91,6 +93,8 @@ não tinha saído:
 - **Os scripts não tinham teste.** Os demais itens são ponteiros e fontes nas references.
 - **Na segunda rodada, o lint dava traceback** com `"args": 5` ou `"command": 123`, e saía com o
   mesmo rc 1 de "achou erro".
+- **Na terceira, o `PASSW` da segunda rodada tinha deixado `PLUGIN_DB_PASS` em claro.** Agora
+  `(?<!BY)PASS` esconde a senha e deixa o `BYPASS` à vista, e há um teste para cada lado.
 
 ## [0.1.2] — 2026-10-07
 

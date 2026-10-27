@@ -54,7 +54,7 @@ class LintTest(unittest.TestCase):
                 with self.subTest(name, host=host):
                     result = run(self.config(data), "--host", host)
                     self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-                    self.assertIn(fragment, result.stdout)
+                    self.assertEqual(result.stdout.count(fragment), 1, result.stdout)
                     self.assertNotIn("Traceback", result.stderr)
 
     def test_args_not_a_list_does_not_crash(self):
@@ -64,13 +64,27 @@ class LintTest(unittest.TestCase):
                 result = run(self.config(data), "--host", host)
                 self.assertEqual(result.returncode, 1, result.stderr)
                 self.assertNotIn("Traceback", result.stderr)
+                self.assertIn("args", result.stdout)
 
-    def test_unresolved_stop_script_is_a_warning(self):
+    def test_unchecked_stop_guard_is_a_warning(self):
         data = {"hooks": {"Stop": [{"hooks": [
             {"type": "command", "command": 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/nao-existe.py"'}]}]}}
-        for path in (self.config(data, "solto.json"), self.config(data, "p/hooks/hooks.json")):
-            with self.subTest(path=path.name):
-                self.assertIn("não achei", run(path, "--host", "both").stdout)
+        for name, fragment in (("solto.json", "só resolve"), ("p/hooks/hooks.json", "não existe")):
+            with self.subTest(name):
+                result = run(self.config(data, name), "--host", "both")
+                self.assertEqual(result.stdout.count(fragment), 1, result.stdout)
+
+    def test_plugin_directory_is_not_a_missing_script(self):
+        command = 'cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 stop.py; true'
+        result = run(self.plugin(command, guard=True), "--host", "both")
+        self.assertIn("0 erro(s), 0 aviso(s)", result.stdout)
+
+    def test_non_object_json_is_an_error(self):
+        for data in (None, 3, []):
+            with self.subTest(data=data):
+                result = run(self.config(data))
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
 
     def test_codex_warns_on_claude_only_fields(self):
         data = {"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [
@@ -78,6 +92,8 @@ class LintTest(unittest.TestCase):
         result = run(self.config(data), "--host", "codex")
         self.assertIn("'once'", result.stdout)
         self.assertIn("CLAUDE_PLUGIN_OPTION_", result.stdout)
+        both = run(self.config(data), "--host", "both").stdout
+        self.assertEqual(both.count("'once'"), 1, both)
 
     def test_codex_valid_shell_form_passes(self):
         command = 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/stop.py"'

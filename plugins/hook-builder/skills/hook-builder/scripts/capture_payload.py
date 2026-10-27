@@ -13,8 +13,8 @@ Dois modos:
       Sai sempre com exit 0 e stdout vazio, para não interferir na sessão; uma falha vai para o
       stderr, que aparece no debug log do host.
 
-Grava as variáveis CLAUDE*, CODEX* e PLUGIN_*. Valores de variáveis com TOKEN, SECRET, KEY,
-PASSW, PASSPHRASE, AUTH, CRED, COOKIE, PRIVATE ou SOCKET no nome são gravados como <redacted>. Num Codex
+Grava as variáveis CLAUDE*, CODEX* e PLUGIN_*. Valores de variáveis cujo nome casa SENSITIVE
+(TOKEN, SECRET, KEY, PASS fora de BYPASS, AUTH, CRED, COOKIE, PRIVATE, SOCKET) saem <redacted>. Num Codex
 lançado de dentro do Claude Code, as CLAUDE* vêm herdadas do processo pai: não leia como se o
 Codex as definisse.
 
@@ -30,7 +30,7 @@ import shlex
 import sys
 import time
 
-SENSITIVE = re.compile(r"TOKEN|SECRET|KEY|PASSW|PASSPHRASE|AUTH|CRED|COOKIE|PRIVATE|SOCKET", re.I)
+SENSITIVE = re.compile(r"TOKEN|SECRET|KEY|(?<!BY)PASS|AUTH|CRED|COOKIE|PRIVATE|SOCKET", re.I)
 
 
 def print_config(events, out_dir, matcher=None, host="claude"):

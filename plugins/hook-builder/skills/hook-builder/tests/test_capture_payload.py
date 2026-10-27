@@ -44,8 +44,8 @@ class CaptureTest(unittest.TestCase):
 
     def test_sensitive_names_are_redacted(self):
         canary = "canario-7f3a"
-        names = ["CODEX_AUTH_JSON", "PLUGIN_DB_PASSWD", "CLAUDE_X_CREDENTIALS", "CODEX_COOKIE",
-                 "PLUGIN_PRIVATE_PEM", "CLAUDE_API_KEY", "CODEX_PASSPHRASE"]
+        names = ["CODEX_AUTH_JSON", "PLUGIN_DB_PASSWD", "PLUGIN_DB_PASS", "CLAUDE_X_CREDENTIALS",
+                 "CODEX_COOKIE", "PLUGIN_PRIVATE_PEM", "CLAUDE_API_KEY", "CODEX_PASSPHRASE"]
         self.capture(json.dumps({"hook_event_name": "Stop"}),
                      {**{name: canary for name in names}, "CODEX_HOME": "/visivel",
                       "CLAUDE_CODE_BYPASS_X": "1"})
@@ -88,6 +88,8 @@ class CaptureTest(unittest.TestCase):
             return real_open(path, flags, mode)
 
         sys.path.insert(0, str(CAPTURE.parent))
+        self.addCleanup(sys.path.remove, str(CAPTURE.parent))
+        self.addCleanup(sys.modules.pop, "capture_payload", None)
         import capture_payload
         stdin, sys.stdin = sys.stdin, io.StringIO("{}")
         try:

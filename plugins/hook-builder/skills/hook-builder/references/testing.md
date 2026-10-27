@@ -16,8 +16,8 @@ ls /tmp/probe   # stdin-<Evento>-*.json e env-<Evento>-*.txt
 ```
 
 - **Como funciona:** `--settings '<json>'` soma hooks só para aquela execução, sem tocar nos
-  seus settings. Os valores de variáveis com `TOKEN`, `SECRET`, `KEY` ou `PASSWORD` no nome são
-  gravados como `<redacted>`.
+  seus settings. Os valores de variáveis cujo nome casa a constante `SENSITIVE` do script (token,
+  segredo, chave, senha, credencial, cookie…) são gravados como `<redacted>`.
 - **Para `UserPromptExpansion`:** crie uma skill de projeto descartável em
   `.claude/skills/probe-skill/` e rode `claude -p "/probe-skill"`.
 - **Depois:** troque os paths da máquina por genéricos e salve como fixture.
