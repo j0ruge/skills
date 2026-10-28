@@ -2,6 +2,22 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.14] — 2026-10-27
+
+### A quebra de linha refeita vai até o fim do parágrafo (codereview 2.27.14)
+
+Uma lição do codereview em modo worktree do PR #127 do `magic_tutor` (três rodadas sobre consertos sem commit). Só a
+`references/configuration.md` ganha texto. O `SKILL.md` está a 5 caracteres do teto do C1 (19.995 de 20.000) e muda
+só no `metadata.version`, de 2.27.13 para 2.27.14, com o mesmo tamanho.
+
+- **`references/configuration.md`, *Re-review rounds*, "Reflow prose by script, never by hand": o trecho que se
+  refaz.**
+  - **O quê:** a quebra vai da 1ª linha mudada até o fim do parágrafo ou do item da lista, nunca só até a última
+    linha que o conserto escreveu. Fica no mesmo bullet, depois do `reflow()`, porque diz até onde ele roda.
+  - **Por quê:** o conserto da rodada 1 refez só as suas 6 linhas de um item do `docs/monitor.md`, e a última saiu
+    com 52 colunas antes do texto antigo: a rodada 2 deu um LOW de quebra de linha. Refeito uma linha a mais, o
+    trecho terminou com 20 colunas. Refeito até o fim do item (18 linhas), a rodada 3 voltou limpa.
+
 ## [2.27.13] — 2026-10-27
 
 ### O `rc=` de uma evidência gravada depois de um pipe é o do último comando (codereview 2.27.13)

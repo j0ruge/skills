@@ -552,6 +552,13 @@ These decide whether the rounds converge:
       assert out.split() == first.split() + par.split(), "the reflow changed the words"
       return out
   ```
+  Reflow the paragraph, not the lines the fix wrote: from the first changed line to the end of the
+  paragraph or list item. A span that stops at the last line written leaves a short line where it
+  meets the old text, and that line is the next round's LOW. Measured 2026-10-27 (magic_tutor,
+  `docs/monitor.md`): the fix reflowed its own six lines of a list item, and the last came out at 52
+  columns before the untouched text; the next round gave it a readability LOW. Reflowed one line
+  further, it ended at 20 columns; reflowed to the end of the item, 18 lines, the round after came
+  back clean.
 - **Rename identifiers by syntax position, never by `sed`.** A naming finding is the fix that
   touches the most lines, and a text substitution also rewrites strings, comments, attributes
   (`x.name`) and keyword arguments (`f(name=…)`). Rename the `ast.Name` and `ast.arg` nodes of the
