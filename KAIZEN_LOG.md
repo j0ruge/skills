@@ -44,7 +44,7 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
   - **Pendente:** as lições do trust e do `hooks/list` no `hook-builder`, ainda sem retrofit.
 - **Oportunidades** (cada uma com o próximo passo pequeno):
   - **ACL incompleta:** a normalização dos ids `bkmrk-` do BookStack mora no núcleo
-    (`env_docs_sync.py:1034-1053`), e não no adaptador kb. Próximo passo: movê-la quando entrar um
+    (`env_docs_sync.py:1034-1054`), e não no adaptador kb. Próximo passo: movê-la quando entrar um
     segundo backend.
   - **`SKILL.md` com 19 861 caracteres,** a 139 do aviso do audit. Próximo passo: a próxima edição move
     texto para `references/` antes de acrescentar.
