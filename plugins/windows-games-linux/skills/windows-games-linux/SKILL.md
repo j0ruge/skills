@@ -5,7 +5,7 @@ license: MIT
 compatibility: Linux. Verificado em Ubuntu 24.04 (X11/GNOME, Intel/Mesa) com Lutris 0.5.22, umu-launcher 1.4.4 e GE-Proton11-11 em 2026-10-23. Scripts em bash e python3; diagnose.sh importa os módulos Python do próprio Lutris (/usr/lib/python3/dist-packages).
 metadata:
   author: JorUge
-  version: "1.0.1"
+  version: "1.1.0"
   hermes:
     tags:
       - Gaming
@@ -45,11 +45,15 @@ tempo e esconde a causa.
 1. **Coletar o estado** com um comando só:
    `scripts/diagnose.sh <parte-do-slug>` (ex.: `magic`). O script é somente leitura e mostra a
    versão do Lutris, a config do jogo, o runner efetivo, o estado das DLLs gráficas no prefixo
-   (symlink, `.orig`, origem), os logs de crash e o que faltar de i386.
+   (symlink, `.orig`, origem), os logs de crash, a saída do umu no journal, o que faltar de i386
+   e se o bwrap do umu consegue criar o user namespace.
 2. **Achar onde o jogo morre.** Leia o log da camada mais funda que chegou a escrever algo. Se
    não souber onde fica o log de uma camada, leia `references/onde-ficam-os-logs.md`. Num jogo Unity, a
    última linha do `Player.log` antes de `Crash!!!` e a lista de módulos carregados dizem qual
    API gráfica estava em uso (`wined3d.dll` = wined3d; `d3d11.dll` sem `wined3d.dll` = DXVK).
+   Se o log do jogo for **mais velho que o último lançamento** (o `diagnose.sh` alerta), o jogo
+   nem foi chamado. A causa está na saída do umu, que vai para o journal quando o Lutris é aberto
+   pelo menu.
 3. **Teste A/B fora do Lutris.** Rode o `.exe` do jogo direto pelo umu com
    `scripts/ab-launch.sh`, com o mesmo `PROTONPATH` e o mesmo modo gráfico. Ele responde
    `RUNNING`, `CRASH` ou `EXITED`.
@@ -73,6 +77,7 @@ tempo e esconde a causa.
 | Sintoma | Causa provável | Detalhe |
 |---|---|---|
 | Abre e fecha em segundos pelo Lutris (6 a 14 s no caso de origem), mas roda direto pelo umu | Lutris 0.5.20 a 0.5.22 com runner "GE-Proton (Latest)" aplica os managers DXVK/VKD3D/NVAPI dele num prefixo Proton (código igual nas três; execução testada na 0.5.22) | Ao confirmar, leia `references/lutris-umu-dll-managers.md` |
+| "Nada acontece": o Lutris para em ~1 s e o log do jogo não ganha data nova; no journal, `bwrap: setting up uid map: Permission denied` | O AppArmor do Ubuntu 24.04 (`kernel.apparmor_restrict_unprivileged_userns=1`) barra o `srt-bwrap` do umu, e o container não sobe. Se funcionava antes, procure um reboot no meio | Antes de corrigir, leia `references/umu-bwrap-userns-apparmor.md` (a correção mexe numa proteção do sistema: o usuário escolhe) |
 | Unity: `Crash!!!` logo após `[Subsystems] Discovering subsystems` | Sonda de D3D12 quebrando (mistura de vkd3d com dxgi do wined3d ou override `d3d12=n`) | idem |
 | Lutris avisa `i386 libGL.so.1 missing` / `libgnutls.so.30 missing` | Faltam libs de 32 bits; no Ubuntu 24.04 o pacote é `libgnutls30t64:i386` | Ao instalar, leia `references/instalar-atualizar-lutris.md` |
 | `Battle.net source is unavailable … protobuf` ao abrir o Lutris | Falta `python3-protobuf` (só aviso) | idem |
@@ -83,7 +88,8 @@ tempo e esconde a causa.
 
 - **MTG Arena, Intel UHD 770, Lutris 0.5.22, GE-Proton11-11, out/2026:** se o jogo for Unity ou o
   sintoma for parecido, leia `references/caso-mtg-arena-2026-10.md`, com a sequência de
-  evidências, os comandos e o que ficou em aberto.
+  evidências, os comandos e o que ficou em aberto. São dois episódios: os managers do Lutris
+  (23/10) e o AppArmor barrando o bwrap depois de um reboot (27/10).
 
 Ao resolver um jogo novo com causa nova, registre o caso em `references/caso-<jogo>-<aaaa-mm>.md`,
 acrescente a linha na tabela acima e anote no `CHANGELOG.md` do plugin.

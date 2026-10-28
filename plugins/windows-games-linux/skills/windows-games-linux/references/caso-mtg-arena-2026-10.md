@@ -57,3 +57,28 @@ O Lutris devolveu o `d3d12core.dll` original sozinho.
   o bug tinha voltado.
 - Um `pkill -f 'MTGA.exe'` casou com o próprio shell do agente e o matou (exit 144).
 - O `! sudo …` falhou por falta de TTY; o `pkexec` resolveu.
+
+## Episódio 2 (2026-10-27): "tentei rodar e nada aconteceu"
+
+Mesma máquina, kernel 7.0.0-38, `apparmor` 4.0.1-0ubuntu0.24.04.9. A correção do episódio 1
+continuava no yml. A máquina tinha reiniciado em 26/10.
+
+1. O `diagnose.sh` mostrou o `Player.log` de 23/10 e o `lutris.log` com três tentativas de 27/10
+   (`Game still running … very short time`). O `MTGAInstall.log` também parou em 23/10: nem o
+   launcher foi chamado.
+2. O Lutris tinha sido aberto pelo menu do GNOME. A saída do umu estava no
+   `journalctl --user`: `pressure-vessel-wrap: E: … bwrap: setting up uid map: Permission denied`,
+   e `Child … exited with wait status: 1` cerca de 1 s depois do lançamento.
+3. O `srt-bwrap` do runtime, rodado sozinho com `--unshare-user --ro-bind / / true`, reproduziu o
+   erro (`rc=1`), e o `/usr/bin/bwrap` também. Valor do sysctl: `kernel.apparmor_restrict_unprivileged_userns = 1`.
+4. No boot anterior (`journalctl -b -1`), em 23/10, o mesmo container subia (`Child … exited with
+   wait status: 0`). O reboot de 26/10 ficou entre o "funcionava" e o "quebrou".
+5. Correção escolhida pelo usuário: o perfil `umu-srt-bwrap` do AppArmor
+   (`umu-bwrap-userns-apparmor.md`). O `srt-bwrap` passou a dar `rc=0`. Pelo Lutris, o jogo subiu
+   em `Direct3D 11.0 [level 11.1]`, conectou no Front Door e rodou das 20:46:49 às 21:29:09 até o
+   usuário fechar. O journal registrou `Child … exited with wait status: 0`, e o `Player.log`
+   terminou em `Input System module state changed to: Shutdown`.
+
+**Em aberto:** não ficou registrado quem desligou a restrição antes do reboot. Não há rastro no
+journal do boot anterior, no histórico do shell, nem no `/etc/sysctl.d` (o `50-cursor.conf` traz a
+linha comentada).

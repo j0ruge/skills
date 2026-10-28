@@ -2,6 +2,7 @@
 # diagnose.sh — retrato somente leitura de um jogo Windows instalado pelo Lutris.
 # Uso: diagnose.sh <parte-do-slug-ou-nome-do-yml>     ex.: diagnose.sh magic
 # Não altera nada: lê config, prefixo, logs e pacotes. Pode rodar com o jogo aberto.
+# O único processo que ele cria é o teste do bwrap do umu, que monta um namespace vazio e sai.
 set -u
 
 needle="${1:-}"
@@ -111,6 +112,27 @@ done
 section "lutris.log (fim)"
 tail -8 "$CACHE/lutris.log" 2>/dev/null
 
+# Com o Lutris aberto pelo menu do GNOME, a saída do umu vai para o journal do usuário.
+section "umu no journal (último lançamento deste jogo)"
+# -r (mais novo primeiro): com -g, o -n sem -r devolveu linhas fora de ordem e sem as do boot atual
+# (systemd 255.4-1ubuntu8.18, medido em 2026-10-27).
+jl=$(journalctl --user -t net.lutris.Lutris.desktop -g 'Started initial process' -o short-unix \
+  --no-pager -r -n 50 2>/dev/null | grep -F "$prefix" | head -1)
+if [ -z "$jl" ]; then
+  echo "nenhum lançamento deste jogo no journal (Lutris aberto pelo terminal? a saída foi para lá)"
+else
+  t0=${jl%% *}; t0=${t0%.*}
+  echo "último lançamento: $(date -d "@$t0" '+%F %T')"
+  journalctl --user -t net.lutris.Lutris.desktop --since "@$t0" --no-pager \
+    -g 'bwrap:|E: |Child [0-9]+ exited|Exit with return code|using runtime' 2>/dev/null \
+    | head -8 | sed "s|$HOME|~|g"
+  pl=$(find "$users" -path '*LocalLow*' -name 'Player.log' -printf '%T@\n' 2>/dev/null | sort -n | tail -1)
+  if [ -n "$pl" ] && [ "${pl%.*}" -lt "$t0" ]; then
+    echo "ALERTA: o Player.log é mais velho que o último lançamento: o jogo nem chegou ao Unity."
+    echo "        A causa está antes (Lutris, umu ou container). Veja as linhas acima."
+  fi
+fi
+
 section "Sistema"
 echo "arquiteturas extras: $(dpkg --print-foreign-architectures 2>/dev/null | tr '\n' ' ')"
 for p in libgl1:i386 libgnutls30t64:i386 mesa-vulkan-drivers:i386 libvulkan1:i386 python3-protobuf; do
@@ -118,3 +140,13 @@ for p in libgl1:i386 libgnutls30t64:i386 mesa-vulkan-drivers:i386 libvulkan1:i38
   case "$st" in *"install ok installed"*) echo "ok      $p";; *) echo "FALTA   $p";; esac
 done
 vulkaninfo --summary 2>/dev/null | grep -E 'deviceName|driverName' | head -4
+echo "kernel.apparmor_restrict_unprivileged_userns = $(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null || echo '<não existe neste kernel>')"
+# Container do umu: o srt-bwrap precisa criar um user namespace (ver references/umu-bwrap-userns-apparmor.md).
+for b in "${XDG_DATA_HOME:-$HOME/.local/share}"/umu/steamrt*/pressure-vessel/libexec/steam-runtime-tools-0/srt-bwrap; do
+  [ -x "$b" ] || continue
+  if err=$("$b" --unshare-user --ro-bind / / true 2>&1); then
+    echo "ok      userns  $b"
+  else
+    echo "FALHA   userns  $b: $err"
+  fi
+done | sed "s|$HOME|~|"
