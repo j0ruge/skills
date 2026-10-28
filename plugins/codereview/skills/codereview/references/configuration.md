@@ -257,6 +257,15 @@ phase, and step 7 checks the doc against the diff, not against code the range le
   5.9, bash 5.2.21): a script exiting 3 piped into `tail -1` gave `rc=0` with `$?` in both shells
   and `rc=3` with the pipestatus forms. The same day, an evidence file of two mutant-runner probes
   recorded the `tail`'s `rc=0`, right only because the probes passed.
+- **A "before → after" claim needs its before measured at the commit before the change.** A script
+  that labels the code "as it is" as the before and patches the after in memory measures the after
+  twice once the change lands on HEAD. Extract a commit from before the change
+  (`git archive <sha> | tar -x -C <tmp>`), put that folder first on the import path, and save both
+  runs as the evidence. Measured 2026-10-28 (magic_tutor, PR #128): a doc said a zero floor in a
+  score moved a replayed draft from B/R at pick 15 (13 cards) to W/B at pick 6. Re-run on HEAD, the
+  measuring script printed its "as is" block identical to its "floor" block (W/B at pick 6 in both);
+  on the archive of `3678343`, a commit from before the change, it printed B/R at pick 15, the doc's
+  before.
 - **The evidence of a pipeline's doc is the folder its phase saved, not your re-run.** A handoff
   or report a phase wrote cites the measurements that phase made, at the head it reviewed. Pass
   that folder, and each artifact a doc cites by its exact path: given only a parent folder, the

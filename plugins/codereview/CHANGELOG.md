@@ -2,6 +2,28 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.15] — 2026-10-28
+
+### O "antes" de uma afirmação "antes → depois" se mede no commit de antes da mudança (codereview 2.27.15)
+
+Uma lição do codereview da missão `20261027-painel-do-pick-por-plano` (PR #128 do `magic_tutor`). Só a
+`references/configuration.md` ganha texto. O `SKILL.md` segue a 5 caracteres do teto do C1 (19.995 de 20.000) e muda
+só no `metadata.version`, de 2.27.14 para 2.27.15, com o mesmo tamanho.
+
+- **`references/configuration.md`, *Docs this session wrote*: "A \"before → after\" claim needs its before measured
+  at the commit before the change".**
+  - **O quê:** a evidência do "antes" sai de um commit de antes da mudança, extraído com
+    `git archive <sha> | tar -x -C <tmp>` e posto primeiro no caminho de import, e não de um script que chama o código
+    "como está" de antes e aplica o depois em memória. Fica depois do bullet do `rc=`, entre os que dizem o que a
+    evidência precisa ser.
+  - **Por quê:** o `docs/draft.md` dizia que o piso em zero do placar tirou um draft de B/R no pick 15 para W/B no
+    pick 6. O script de medida, rodado de novo no HEAD (que já tinha o piso), imprimiu o bloco "como está" igual ao
+    bloco "com piso" (W/B no pick 6 nos dois). Rodado sobre o `git archive` do `3678343`, um commit de antes da
+    mudança (o pai dela é o `039b7fa`, que não mexe no placar), deu B/R no pick 15, o "antes" do doc.
+- **Não aplicada:** a regra "o prompt de lançamento sem nada acrescentado" esbarrou quando o alvo era um worktree
+  diferente do cwd, mas a seção *Several repositories* já cobre o caso ("One repo that is not the cwd is this case
+  too") e a sessão não verificou conserto. Sem medida, nada foi escrito.
+
 ## [2.27.14] — 2026-10-27
 
 ### A quebra de linha refeita vai até o fim do parágrafo (codereview 2.27.14)
