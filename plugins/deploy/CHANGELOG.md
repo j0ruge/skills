@@ -2,6 +2,23 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## 2026-10-30 — A prova de um build estático copiado à mão — bump 3.3.3 → [3.3.4]
+
+**Por quê:** na homologação do `warehouse_explorer_web` (sem CI: o deploy é copiar o `build/` para o
+volume do container), os três testes do Step 7 não diziam nada. Não roda migration, o container é o
+mesmo de antes (`Created` e `Image` não mudam), e o hostname já respondia 200 com o build anterior.
+O que provou as duas cópias de 30/10 (17:42 e 17:51) foi o bundle: o `index.html` servido citava o
+chunk do build local, e o chunk baixado por HTTPS, sem `-k`, batia byte a byte com o arquivo local
+(`cmp`). No mesmo deploy, um glob em `build/static/js/main.*` pegou dois arquivos: um build antigo
+versionado em `public/` vai junto em todo build.
+
+**O quê:** `skills/staging/references/red-runs-and-proof.md` ganha a subseção "A static build copied
+by hand: prove it by the bundle", com os três comandos, o nome do chunk tirado do `index.html`
+(nunca de um glob) e o aviso de que o hash sozinho não diz o commit, porque o Node e o
+`update-browserslist-db` mudam a saída do build. O Step 7 do `SKILL.md` ganha uma frase que aponta
+para ela. O `metadata.version` do `SKILL.md`, que tinha ficado em 3.3.2 na 3.3.3 (que só mexeu na
+distribuição Codex), fica alinhado em 3.3.4. O smoke Codex registrado continua o da 3.3.1.
+
 ## [3.3.3] — 2026-10-22
 
 Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.

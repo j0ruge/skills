@@ -2,7 +2,7 @@
 name: staging
 description: "Promote code to staging (and on to production) through the repo's real CD pipeline. Reads each workflow's `on.push.branches` and `runs-on` instead of assuming — the wrong branch can deploy production, and a hosted job under a billing block never starts. Waits for CI green on the exact commit, promotes by PR merge commit, watches the run, then proves the deploy by the data. Triggers — deploy staging, promote to staging, subir para staging, CD pipeline, cd-staging, promover para produção."
 metadata:
-  version: 3.3.2
+  version: 3.3.4
 ---
 
 ## Deploy to Staging
@@ -239,6 +239,9 @@ DATABASE_URL="<target env DB, read-only credentials>" npx prisma migrate status 
 ssh <host> 'docker inspect <container> --format "{{.Created}} {{.Config.Image}}"'  # BOTH fields, against the run
 curl -s -o /dev/null -w '%{http_code}\n' https://<staging hostname>/
 ```
+
+A static build copied into a volume by hand changes none of the three: prove it by the bundle the
+site serves (`references/red-runs-and-proof.md`).
 
 A red e2e after the deploy is triaged before it becomes a verdict: hard versus flaky, the hard set
 compared with the last run on the previous image by test title, and only what is new reproduced

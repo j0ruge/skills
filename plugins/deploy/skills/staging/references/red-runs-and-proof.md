@@ -76,6 +76,34 @@ Measured on one deploy: four migrations stamped 18:49:18, container `Created` 18
 API answering `401 Access Token required` — that is a verified deploy. A green run whose
 container is still `Up 5 days` is not.
 
+#### A static build copied by hand: prove it by the bundle
+
+When the deploy copies a `build/` folder into the volume a running container serves (`serve -s`,
+nginx), the three probes above stay as they were: no migration ran, `Created` and `Image` are the
+container's from before, and the hostname was already answering 200 with the previous build. The
+proof is the bundle: the `index.html` the site serves cites the entry chunk of the local build, and
+that chunk, fetched over HTTPS without `-k`, matches the local file byte for byte.
+
+```bash
+M=$(grep -o 'main\.[0-9a-f]*\.chunk\.js' build/index.html)   # the name from index.html, never a glob
+curl -s https://<host>/ | grep -qF "$M" && echo "index cites the local chunk"
+curl -s "https://<host>/static/js/$M" | cmp - "build/static/js/$M" && echo "served chunk identical"
+```
+
+- **Take the name from `build/index.html`.** A glob over `build/static/js/main.*` can match two
+  files: an old build committed under `public/` is copied into every `build/`, unreferenced.
+  Measured 2026-10-30 (`warehouse_explorer_web`): `main.83dc85fa`, from a commit called "versão em
+  produção", sat beside the real chunk in every build.
+- **The hash alone does not name the commit.** The Node version and an `update-browserslist-db`
+  change the build's output, so compare against a build of the promoted sha made now, not against a
+  hash written down earlier. Measured on the same repo (PR #13, 2026-10-30): production serves the
+  code of `cac59e4`, by its style marks, under a chunk hash that a local build of `cac59e4` does not
+  produce.
+
+Measured 2026-10-30 (`warehouse_explorer_web`, staging copies at 17:42 and 17:51): before the first
+copy the served `index.html` cited `main.9a0629c3`, the previous build; after each copy both checks
+passed, for `main.8f4f31eb` and then `main.b68dfb71`.
+
 #### A red e2e after the deploy is not yet a verdict on the deploy
 
 A suite that runs against a shared environment carries its own debt: a test account with the wrong
