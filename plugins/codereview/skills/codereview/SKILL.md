@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.27.15
+  version: 2.27.16
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -55,12 +55,13 @@ reads a file only at the step that needs it:
 | Phase | Task | Runs in | Why |
 |-------|------|---------|-----|
 | A | Git context, file classification, test mapping, secrets pre-scan | **inline** (main session) | Fixed commands with one right answer |
-| B | Per-file analysis (detection passes) | **sonnet** agents, in parallel | Pattern matching on code, no deep reasoning |
+| B | Per-file analysis (detection passes) | **review-model** agents, in parallel | Pattern matching on code, no deep reasoning |
 | C | Cross-file review, severity calibration, report | **Main model** (whatever the session runs) | Judgment, cross-references, a coherent report |
 
 **≤3 CODE files** → skip routing and run Phase B inline too; the agent overhead isn't worth it.
 
-**The `model` field makes the routing real.** An Agent call without it inherits the main model and bills the same per-file analysis at 2× Sonnet's rate on Opus 5.5 (2026-10 prices). Pass `model: "sonnet"` on every Phase B and B2 call, and read the model back in the report's Cost footprint line.
+Before B/B2, read `references/runtime-routing.md` for model selection and complete result capture.
+Bind `REVIEW_MODEL`: Codex → `gpt-6.1-terra`; Claude Code → `sonnet`. Pass it explicitly.
 
 ---
 
@@ -116,14 +117,14 @@ If CHANGED_FILES empty, dirty `git status --porcelain` → `worktree` mode (`ref
 
 More than 15 CODE files: order the groups by change size (diff stat lines); every file still gets an agent, none is cut.
 
-### Phase B: Per-File Analysis (sonnet agents, parallel)
+### Phase B: Per-File Analysis (review-model agents, parallel)
 
-For each CODE file (or group of 2-3 small files sharing imports), each changed TESTS file on a test-quality focus (6.12) and each DOCS file this session, its pipeline or the handoff it continues wrote (configuration.md, *Docs this session wrote*), **spawn a sonnet agent** to analyze it. Launch all agents **in parallel**, in one message.
+For each CODE file (or group of 2-3 small files sharing imports), each changed TESTS file on a test-quality focus (6.12) and each DOCS file this session, its pipeline or the handoff it continues wrote (configuration.md, *Docs this session wrote*), **spawn a review-model agent** to analyze it. Launch all agents **in parallel**, in one message.
 
-Each agent reads its instructions itself from `{SKILL_DIR}/references/per-file-agent.md`, so every agent gets the same contract. Emit only the launch prompt below, placeholders filled — nothing added (no themes, framing or reproduction requests: those come back marked `needs reproduction`), nothing removed. `model: "sonnet"` on every call.
+Each agent reads its instructions itself from `{SKILL_DIR}/references/per-file-agent.md`, so every agent gets the same contract. Emit only the launch prompt below, placeholders filled — nothing added (no themes, framing or reproduction requests: those come back marked `needs reproduction`), nothing removed. `model: REVIEW_MODEL` on every call.
 
 ```
-Agent(model: "sonnet", prompt: "
+Agent(model: REVIEW_MODEL, prompt: "
 Start with ONE batch of parallel tool calls: Read {SKILL_DIR}/references/per-file-agent.md,
 Read {SKILL_DIR}/references/detection-passes.md, run `git -P diff {MERGE_BASE}...HEAD -- {FILE_PATH}`,
 and Read {FILE_PATH}. Then follow per-file-agent.md exactly — it carries your instructions,
@@ -144,7 +145,7 @@ The agent returns a numbered findings list (`N. [SEVERITY] {category} — {file}
 
 **Grouping**: files that import from each other share an agent when possible (max 3), catching intra-group issues without the main model. A **TOCTOU** race spanning files (service reads, controller acts) is flagged single-file with "cross-file verification needed"; Phase C judges it.
 
-### Phase B2: Dead Code Sweep (sonnet agent, parallel)
+### Phase B2: Dead Code Sweep (review-model agent, parallel)
 
 Spawn **one dedicated agent** for pass 6.9 (Dead Code & Unused Symbols), **in the same parallel batch** as the Phase B agents. It is separate because dead code is a **whole-repo reference-graph** question: a per-file agent sees one file and cannot tell whether an exported symbol is referenced elsewhere. This agent gets the changed-file list, the diff, and grep/tooling access to the whole repo.
 
@@ -158,7 +159,7 @@ Spawn **one dedicated agent** for pass 6.9 (Dead Code & Unused Symbols), **in th
 **Output discipline**: the orchestrator sees only the agent's **final assistant message**, never its grep/tool outputs — so that message is the filled return template from `sweep-agent.md` (ending in `END_OF_DEAD_CODE_SWEEP`), not "done". Launch prompt, placeholders filled:
 
 ```
-Agent(model: "sonnet", prompt: "
+Agent(model: REVIEW_MODEL, prompt: "
 Start with ONE batch of parallel tool calls: Read {SKILL_DIR}/references/sweep-agent.md,
 Read {SKILL_DIR}/references/detection-passes.md (pass 6.9), and run `git -P diff {MERGE_BASE}...HEAD`.
 Then follow sweep-agent.md exactly — it carries the two buckets, the guardrails and the
@@ -180,13 +181,13 @@ Under-report (no `END_OF_DEAD_CODE_SWEEP`, or a bare status sentence) → re-run
 
 ### Phase C: Cross-File Review & Final Report (main model)
 
-After all sonnet agents return, the main model:
+After all review-model agents return, the main model:
 
-1. **Collects all findings** from sonnet agents into a unified list. A per-file message without its `END_OF_FILE_REVIEW` line is partial: keep what it reports and mark the file `partially analyzed` in the report
+1. **Collects all findings** from review-model agents into a unified list. A per-file message without its `END_OF_FILE_REVIEW` line is partial: keep what it reports and mark the file `partially analyzed` in the report
 2. **Merges the Phase A secrets pre-scan with pass-6.10 findings from the per-file agents.**
    - `secrets_prescan.findings` is **authoritative** — every entry is real (regex matched + exception filter applied) and goes straight into the Secrets Detection table.
    - Agent 6.10 findings are **supplemental** (context the regex missed, e.g. a custom DSL with a non-standard keyword). One NOT already in `secrets_prescan` (by `{file, line, kind}`) enters the table only if (a) it shows a concrete literal credential, not a category like "potential leak", AND (b) it matches a 6.10 category or a clear equivalent; otherwise drop it as low-signal speculation.
-   - Dedup remaining entries by `{file, line, kind}`; on collision, keep the higher severity and prefer `source=ggshield` > `gitleaks` > `regex` > `sonnet` for provenance.
+   - Dedup remaining entries by `{file, line, kind}`; on collision, keep the higher severity and prefer `source=ggshield` > `gitleaks` > `regex` > `agent` for provenance.
 3. **Cross-file analysis** — only the main model has the whole picture: races spanning files (check in controller, act in service), schema consistency across related endpoints, import-chain coherence (producer and consumer types match). Code that already runs (cron, service): read its latest outputs (configuration.md §Runtime evidence). Add what you find to the list.
 4. **Severity recalibration** — review each finding's severity:
    - Per-file agents may over-flag memoization issues (React.memo, useCallback) — downgrade per the rules in detection-passes.md
@@ -197,7 +198,7 @@ After all sonnet agents return, the main model:
 5. **Deduplication** — remove findings that overlap or repeat the same root cause (does not apply to pass 6.10 — each occurrence is reported, then aggregated if ≥3 in one file or ≥5 across PR).
 6. **Test coverage summary** — compile from Phase A results
 7. **Documentation sync check** — verify docs files in CHANGED_FILES per 6.5.2 rules
-8. **Secrets gate** — if the merged Secrets Detection list has **≥1 entry from `secrets_prescan` OR ≥1 entry from sonnet that survived the supplemental filter in step 2**:
+8. **Secrets gate** — if the merged Secrets Detection list has **≥1 entry from `secrets_prescan` OR ≥1 entry from an agent that survived the supplemental filter in step 2**:
    - Set overall grade to **F** regardless of any other signal.
    - Prepend a BLOCKED banner to the report (see report template).
    - Add an entry under "Must Fix (CRITICAL)" per file with the remediation block from detection-passes.md pass 6.10.
@@ -222,9 +223,9 @@ in full even with little to say: the template's fallbacks, never prose in place 
 ### Special Cases
 
 - **Zero findings**: Output a congratulatory report. Grade A. Still show header, test coverage, and grade.
-- **Focus area specified**: Only the matching detection passes were applied by sonnet agents. Mark non-analyzed sections as "Not analyzed (focused review on {area})".
+- **Focus area specified**: Only the matching detection passes were applied by review-model agents. Mark non-analyzed sections as "Not analyzed (focused review on {area})".
 - **File path/glob specified**: Only matching files were analyzed. Report shows only those files.
-- **UI_LIB files**: Sonnet agents only flagged CRITICAL/HIGH. Note "(UI_LIB — reduced rigor)" in findings.
+- **UI_LIB files**: Review-model agents only flagged CRITICAL/HIGH. Note "(UI_LIB — reduced rigor)" in findings.
 - **More than 50 findings**: Show all CRITICAL/HIGH/MEDIUM first, then LOW up to 50 total; the rest one line each below it (report-template.md).
 
 ---

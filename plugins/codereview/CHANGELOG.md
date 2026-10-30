@@ -2,6 +2,22 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.16] — 2026-10-30
+
+### Roteamento nativo e coleta integral dos revisores
+
+- Codex usa agentes nativos `gpt-6.1-terra`; Claude Code mantém `sonnet`.
+  O usuário pode escolher outro modelo. Indisponibilidade é explícita e usa
+  revisão inline, sem iniciar outro CLI nem herdar um modelo silenciosamente.
+- Cada resposta é capturada e validada por tarefa, escopo e marcador final antes
+  de resumir. Recuperação e relançamento atingem somente os resultados afetados.
+- Evidência da sessão: um lote com limite de 7.000 tokens cortou 8.788 tokens de
+  respostas; quatro grupos precisaram de nova execução. Um JSON ainda válido
+  misturava resultados de dois grupos. O roteamento anterior exigia Sonnet num
+  runtime que só expunha modelos Codex, levando ao uso de outro CLI.
+- Os detalhes ficam em `references/runtime-routing.md`; o `SKILL.md` mantém
+  somente o vínculo e a seleção do modelo, abaixo do teto de 20.000 caracteres.
+
 ## [2.27.15] — 2026-10-28
 
 ### O "antes" de uma afirmação "antes → depois" se mede no commit de antes da mudança (codereview 2.27.15)
