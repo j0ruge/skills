@@ -131,6 +131,17 @@ If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, th
 
 ### Test Coverage
 
+**The tests' types are checked by no one unless the review runs the typecheck.** A full review
+sends no TESTS file to an agent, the build may leave tests out of its type report, and jest can run
+them through babel, which strips the types. When the `tsconfig` `include` covers the tests, run
+`npx tsc --noEmit -p .` (a pure read) before this table: an error in a changed test file is a 6.4
+finding; an error only in unchanged files is pre-existing and goes to the Notes. Measured
+2026-10-30 (warehouse_explorer_web PR #11, `react-scripts` 3.4.1, whose
+`config/webpack.config.js:694` keeps `'!**/?(*.)(spec|test).*'` out of the type report): round 1, a
+full review, reported none of the 4 `TS2305` errors in three new tests (`screen` and `fireEvent` are
+not in the types of `@testing-library/react` 9.5); `tsc --noEmit -p .` printed them, the build and
+jest stayed green, and the fix took the count to 0.
+
 | Production File | Test Status | Test File | Notes |
 |----------------|------------|-----------|-------|
 | src/components/Quote.tsx | WITH_TESTS | src/test/Quote.test.tsx | Updated in this branch |

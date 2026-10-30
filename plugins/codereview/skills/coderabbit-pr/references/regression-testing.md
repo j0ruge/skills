@@ -69,6 +69,26 @@ PR #103): the `TEST_CMD` ran, 952 passed, on a scratch cherry-pick of the branch
 rebased head `ee81a77` had the same tree, `9937589`, and after the fix 4.2 ran 955 passed: the 952
 and the 3 new tests.
 
+**A fresh worktree has none of the ignored files the suite needs.** `git worktree add` checks out
+tracked files only: no `.env`, no `node_modules`. Install the dependencies from the branch's own
+lockfile, since an older branch can pin other versions than the main checkout (compare
+`package.json` and the lockfile before reusing a `node_modules`), and copy the env file from the
+main checkout without printing it; delete the copy once 4.2 has run. A suite that fails to load
+for a missing variable ("Test suite failed to run", `ZodError … APP_SECRET`) is missing setup, not
+a pre-existing failure: never write it into the baseline. Measured 2026-10-30
+(warehouse_explorer_api): a `git archive` copy of `78018ca`, which carries tracked files only like
+a worktree, failed to run 5 of 33 suites while 171 tests passed; with the `.env` copied in, 33/33
+suites and 208 tests. On PR #4's worktree, whose `package.json` and `yarn.lock` differed from the
+main checkout, `yarn install --frozen-lockfile` and the copied `.env` gave a baseline of 63/63.
+
+**A suite can rewrite tracked files.** Coverage reports, snapshots or generated fixtures committed
+to the repo come back modified after a run and land in the diff next to the fixes, where a
+`git add -A` takes them into the commit. After 4.0 and after 4.2, `git status --porcelain` lists
+only the files the fixes touched and the untracked checklists; restore anything else with
+`git restore -- <paths>` before staging. Measured 2026-10-30 (warehouse_explorer_api PR #4, a branch
+cut before `coverage/` was untracked): `jest` rewrote 11 tracked `coverage/lcov-report/*.html`, and
+`git diff --stat` read 18 files; after `git restore -- coverage`, the 7 spec files of the fix.
+
 **Save the baseline as:**
 
 ```
@@ -98,7 +118,8 @@ If the baseline already shows N>0 failures, document them in each `{reviewer}-re
 
 ## 4.2 Run and Compare Against Baseline
 
-Execute the test command after applying fixes. Compare against the Phase 4.0 baseline:
+Execute the test command after applying fixes, then restore the tracked files the run rewrote (4.0,
+*A suite can rewrite tracked files*). Compare against the Phase 4.0 baseline:
 
 - **All pass and baseline was 0**: update all checklists with "All tests passed ({n} tests)."
 - **Same failures as baseline (no new fails, no fewer fails)**: pre-existing latent — note in checklists, **do NOT attempt to fix in this PR**. Open a follow-up issue with the error signature and a link to this PR. Scope discipline is the priority.

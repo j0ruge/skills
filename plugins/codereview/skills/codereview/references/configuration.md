@@ -181,8 +181,11 @@ compare the two versions first, the one Phase A read and that record's `version`
   A hunk that changes a step: follow the installed text, not the loaded one. The hunk and every
   section it points to, read from the installed folder, are that text (the lines around it are
   equal); with hunks in several phases, Read the installed `SKILL.md` whole. Go on from there, list
-  the hunks in the Cost footprint, and say in the closing report that `/reload-plugins` makes the
-  next run load the installed copy.
+  the hunks in the Cost footprint, and say in the closing report that `/reload-plugins` can make the
+  next run load the installed copy, which checks again. Measured 2026-10-30 (warehouse_explorer_web
+  PR #11, round 2): with 2.27.18 installed, after a `/reload-plugins` typed while the agent was
+  mid-turn and delivered to it as a queued message, the round still loaded `…/codereview/2.27.17/`,
+  two step hunks apart; it followed the installed text and closed at grade A one round later.
 - Measured 2026-10-18 (ui24_agent, rounds 4 to 10): the session had loaded 2.18.4 with 2.19.0
   installed, and the 2.18.4 folder carried an `.orphaned_at` file. The folders differed in the
   references and in `scan_secrets.py` (2.19.0 added `scanned`), the two `SKILL.md` only in the

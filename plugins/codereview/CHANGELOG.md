@@ -2,6 +2,63 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.19] — 2026-10-30
+
+### Linha de base numa worktree, testes que regravam arquivos versionados, tipos dos testes e o reload
+
+Lições do mesmo dia: o `/codereview:coderabbit-pr` no PR #4 do `warehouse_explorer_api` e as
+rodadas 2 e 3 do PR #11 do `warehouse_explorer_web`. Os dois `SKILL.md` estão a menos de 15
+caracteres do aviso do C1 (codereview 19.999, coderabbit-pr 19.986), então tudo foi para as
+references, e os `SKILL.md` só mudaram a versão.
+
+- **`coderabbit-pr`, `references/regression-testing.md` 4.0: uma worktree nova não tem o que o
+  git ignora.**
+  - **O quê:** antes da linha de base, instalar as dependências pelo lockfile do próprio branch e
+    copiar o `.env` sem imprimir, apagando a cópia depois. Uma suíte que nem carrega por falta de
+    variável é falta de preparo, não falha anterior. O `pr-branch.md` (*Where the fixes are made*)
+    aponta para a regra.
+  - **Por quê:** numa cópia do `78018ca` com só os arquivos versionados, 5 de 33 suítes não rodaram
+    (`ZodError … APP_SECRET`) com 171 testes passando. Com o `.env`, deu 33/33 e 208 testes. No PR
+    #4, o `package.json` e o `yarn.lock` do branch diferiam do checkout principal; com
+    `yarn install --frozen-lockfile` e o `.env`, a linha de base deu 63/63.
+- **`coderabbit-pr`, `references/regression-testing.md` 4.0 e 4.2: a suíte pode regravar arquivos
+  versionados.**
+  - **O quê:** depois de cada execução, só os arquivos do conserto ficam no `git status`. O resto
+    volta com `git restore -- <caminhos>`, antes do stage.
+  - **Por quê:** no branch do PR #4, cortado antes de o `coverage/` sair do git, o `jest` regravou
+    11 `coverage/lcov-report/*.html`. O `git diff --stat` leu 18 arquivos; depois do
+    `git restore -- coverage`, os 7 da spec. Um `git add -A` teria levado os 11 ao commit de
+    conserto.
+- **`codereview`, `references/report-template.md`, *Test Coverage*: rodar o typecheck quando o
+  `tsconfig` inclui os testes.**
+  - **O quê:** `npx tsc --noEmit -p .` antes da tabela. Erro em teste alterado é achado do 6.4, e
+    erro só em arquivo não alterado vai para as Notes. O `report-template.md` é lido em todo
+    relatório, e por isso a regra mora nele e não no `SKILL.md`.
+  - **Por quê:** a rodada 1, completa, do PR #11 não reportou os 4 `TS2305` de três testes novos
+    (`screen` e `fireEvent` fora dos tipos do RTL 9.5). Testes não vão para os agentes, o
+    `react-scripts` 3.4.1 tira `'!**/?(*.)(spec|test).*'` do relatório de tipos
+    (`config/webpack.config.js:694`), e o jest roda pelo babel. O `tsc` os mostrou, e o conserto
+    levou a contagem a 0.
+- **`codereview`, `references/configuration.md` (*Stale copy*), e `coderabbit-pr`,
+  `references/pr-branch.md` (*Is this run the installed copy?*): o `/reload-plugins` "pode" trocar
+  a cópia.**
+  - **O quê:** as duas references diziam que o `/reload-plugins` faz a próxima execução carregar a
+    cópia instalada. Agora dizem que pode fazer, e que a próxima execução confere de novo, com a
+    medição. Nenhum mecanismo foi afirmado.
+  - **Por quê:** com a 2.27.18 instalada, depois de dois `/reload-plugins` e um `/reload-skills`,
+    digitados com o agente no meio de um turno e entregues a ele como mensagens na fila, a rodada 2
+    da `codereview` e o `/codereview:coderabbit-pr` ainda carregaram `…/codereview/2.27.17/`.
+- **Descartado: glob sem correspondência no zsh nos comandos da Fase 1.1 e da Fase 6.**
+  - Medido com `zsh -c` e `bash -c` numa pasta sem `*-review.md` e numa com um. No zsh vazio, os
+    dois comandos imprimem `no matches found`, mas o pipeline sai com rc=0 e o `&&` seguinte roda.
+    Com um arquivo, os dois shells apagam só o checklist do PR certo e deixam o `security-review.md`.
+    É ruído sem efeito, e não há o que consertar.
+- **Descartado: aplicar consertos mecânicos num script em vez de delegar acima de 5.** Não há
+  medição de custo.
+- **Dívida que fica:** os 3 C2 (INFO) da `codereview`, que são as instruções que os subagentes
+  leem por caminho absoluto e são assim de propósito. E os dois `SKILL.md` encostados no aviso do
+  C1: o próximo retrofit que precisar de texto neles passa antes pela `skill-refactoring`.
+
 ## [2.27.18] — 2026-10-30
 
 ### Sondagem de testes por import resolvido, servidor lido como está no ar e o Bearer de teste

@@ -9,7 +9,8 @@ of leftover checklists. SKILL.md keeps the decision; this file carries the comma
 
 When the skill was loaded from a plugin cache (`~/.claude/plugins/cache/…`), the harness names the
 directory it loaded ("Base directory for this skill"). A session opened before a plugin update
-keeps loading the old directory until `/reload-plugins`, and nothing else says so:
+keeps loading the old directory, and nothing else says so; `/reload-plugins` can switch it, but did
+not in the 2026-10-30 run below:
 
 ```bash
 python3 - "<base directory>" <<'EOF'
@@ -58,7 +59,11 @@ comes from it. Then compare the two `SKILL.md`:
   loaded in context.
 
 In the closing report, name both versions (`loaded 4.5.2, ran from installed 4.5.5`) and say that
-`/reload-plugins` makes the next run load the installed copy. Measured 2026-10-21
+`/reload-plugins` can make the next run load the installed copy, which checks again. Measured
+2026-10-30 (warehouse_explorer_api PR #4): with 2.27.18 installed, after two `/reload-plugins` and a
+`/reload-skills`, typed while the agent was mid-turn and delivered to it as queued messages,
+`/codereview:coderabbit-pr` still loaded `…/codereview/2.27.17/`; the two `coderabbit-pr` folders
+compared `same`, and the run went on. Measured 2026-10-21
 (lighthouse_project PR #107): loaded from `…/codereview/2.26.0/` with 2.26.8 installed; the two
 `SKILL.md` differed only in `version:` (4.5.2 → 4.5.5), while `fix-loop.md`,
 `regression-testing.md` and `reviewer-registry.md` differed, and only the installed `fix-loop.md`
@@ -92,7 +97,9 @@ HEAD_REF=$(gh pr view "$PR" --json headRefName -q .headRefName)
   cd "$WT"
   ```
 
-  At the end (after Phase 6): `git worktree remove "$WT"` from the original checkout. If the branch
+  The worktree carries tracked files only: set up the suite's ignored inputs (`.env`,
+  `node_modules`) as `regression-testing.md` 4.0 says. At the end (after Phase 6):
+  `git worktree remove "$WT"` from the original checkout. If the branch
   is already checked out in another worktree, `git worktree add` refuses — work in that worktree.
 
 **Why a worktree and not a checkout.** A clean tree is not an idle tree. Measured on 2026-10-02
