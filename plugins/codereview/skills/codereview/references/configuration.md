@@ -615,6 +615,15 @@ These decide whether the rounds converge:
   case for two guards*), and give the mutant count in the Test Coverage row. Measured 2026-10-17: round
   2 diffed 14 new test files (788 lines) and launched no agent for them; the 24 mutants run after round
   1's fixes and the 12 after round 2's, all killed, were what the two A grades stood on.
+- **A CSS fix has no guard to mutate: measure it.** A style fix (a color, a selector, a size) adds
+  no branch for a mutant to kill, and a unit test of its value is a change detector. Back its grade
+  with two readings in a headless browser, over builds of the head the last round reviewed and of
+  the fix: the element's `getComputedStyle` before and after, and the bounding box of the pixel
+  difference between full-page screenshots, which must enclose only what the fix named. Measured
+  2026-10-30 (warehouse_explorer_web PR #13, round 2): the chip label went from `rgb(168, 168, 179)`
+  to `rgb(108, 108, 128)` and the focused action from `rgb(197, 48, 48)` to `rgb(155, 44, 44)`; on
+  six screens (three pages at 1440 and 390 px) the difference box was 27×10 px around the label,
+  with the page sizes unchanged.
 - **The code a fix round wrote goes to an agent, as a doc does** (*Docs this session wrote*). With
   ≤3 CODE files the inline shortcut has the orchestrator grade its own fix: send those files to
   Phase B agents, launch prompt unchanged. Measured 2026-10-19 (magic_tutor, rounds 2–4 over a

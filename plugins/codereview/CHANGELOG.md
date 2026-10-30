@@ -2,6 +2,46 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.20] — 2026-10-30
+
+### CSS medido no navegador, e restauração que não é regressão
+
+Lições do `codereview` no PR #13 do `warehouse_explorer_web` (as telas de item voltando ao visual da
+produção, o `cac59e4`), rodadas 1 e 2. O `SKILL.md` segue em 19.999 caracteres, encostado no aviso
+do C1: tudo foi para as references, e ele só mudou a versão. A terceira lição da retro (as decisões
+do handoff contam na recalibração) já estava na 6.5, em "A decision already on record settles what
+it covers", e não entrou de novo.
+
+- **`references/detection-passes.md` 6.7: a afirmação de CSS sobre tamanho, deslocamento ou estouro
+  é de tempo de execução.**
+  - **O quê:** um arquivo de estilo sozinho não traz o reset global (`box-sizing`) nem a fonte que
+    dá a largura. O agente que não leu o CSS global marca `needs reproduction`, e a Fase C lê o
+    reset e mede a caixa num navegador headless, com a fonte da página carregada, antes de manter a
+    severidade.
+  - **Por quê:** um MEDIUM dizia que a borda de foco de 10px "aumenta o input uns 8px" e desloca o
+    layout; o `* { box-sizing: border-box }` e a altura fixa do input fazem a borda crescer para
+    dentro. Um LOW dizia que o "Enviando…" estourava o form de 180px; no Chromium com a Roboto 700
+    carregada, o botão mediu 101,4px, 2,6px dentro dele. Os dois caíram.
+- **`references/detection-passes.md` 6.5: restauração não é regressão.**
+  - **O quê:** quando o PR diz que restaura uma referência (commit ou tag no comentário, no corpo ou
+    no handoff), "pior que o merge base" é a régua errada. Antes de manter a severidade de
+    regressão, ler a referência com `git show <ref>:<path>`: um valor igual a ela vai para a regra
+    da decisão registrada, e só o elemento que a referência não tem é julgado por conta própria.
+  - **Por quê:** dois agentes deram MEDIUM contra o merge base: a descrição que foi para o
+    `gray-300` ("uma regressão do próprio PR") e os rótulos que foram do `gray-450` para o
+    `gray-400`. O `cac59e4` tinha os dois tokens (linhas 67 e 94 do `Warehouse/styles.ts`). O MEDIUM
+    que ficou foi o "JDB" do chip, que a referência não tem, com 2,36:1.
+- **`references/configuration.md`, *Re-review rounds*: o conserto de CSS não tem guarda para
+  mutar.**
+  - **O quê:** a nota de um conserto de estilo se apoia em duas leituras num navegador headless,
+    sobre os builds do head revisado e do conserto: o `getComputedStyle` do elemento antes e depois,
+    e a caixa da diferença de pixels das páginas inteiras, que só pode cercar o que o conserto
+    nomeou.
+  - **Por quê:** na rodada 2, o "JDB" foi de `rgb(168, 168, 179)` para `rgb(108, 108, 128)`, e o
+    "Copiar" em foco de `rgb(197, 48, 48)` para `rgb(155, 44, 44)`. Nas seis telas (três páginas, em
+    1440 e 390px), a caixa ficou em 27×10px, só no rótulo, com o tamanho das páginas igual. O A da
+    linha de Testes se apoiou nisso e nos 2 mutantes das guardas.
+
 ## [2.27.19] — 2026-10-30
 
 ### Linha de base numa worktree, testes que regravam arquivos versionados, tipos dos testes e o reload
