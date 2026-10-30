@@ -2,6 +2,31 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.17] — 2026-10-30
+
+### Afirmação de comportamento marcada `needs reproduction` se confere nos testes alterados
+
+Uma lição do codereview da r3 da missão `20261028-whf-162-jdb-na-descricao` (PR #8 do
+`warehouse_explorer_web`). Só a `references/report-template.md` ganha texto. O `SKILL.md` segue a 51
+caracteres do teto do C1 (19.949 de 20.000) e muda só no `metadata.version`, com o mesmo tamanho.
+
+- **`references/report-template.md`, *Findings Table*: "A behavior claim marked `needs reproduction`
+  may already be settled by a changed test".**
+  - **O quê:** antes de manter um achado em que o agente por arquivo deduz comportamento em execução
+    (onde o foco cai, qual ref vence, o que aparece durante a carga), o orquestrador procura nos testes
+    alterados uma asserção sobre esse comportamento. Teste verde que afirma o contrário refuta o achado,
+    citado por `teste:linha`; teste que afirma o mesmo confirma sem reprodução. Fica depois do
+    parágrafo "No test covers it", que é a mesma família de regra.
+  - **Por quê:** dois agentes, em grupos diferentes, disseram que um `focusRef` ligado a uma região e
+    ao `<h1>` dentro dela "provavelmente" deixava o foco na região depois de "Tentar de novo" (um
+    MEDIUM, um LOW). Os testes de página já afirmavam `document.activeElement` na região durante a
+    carga e no `<h1>` depois (`src/pages/Warehouse/index.test.tsx:178`, e o mesmo no Service e no
+    Shelfs), verdes no head revisado. A skill só mandava procurar o teste no 6.11, no "No test covers
+    it" e no mutante de vacuidade, e numa revisão completa nenhum agente lê arquivo de teste.
+- **Não aplicada:** um agente de DOCS levantou de novo um achado que a rodada anterior tinha refutado,
+  e dois leitores independentes terem lido o mesmo trecho errado foi a evidência nova que o reabriu. A
+  seção *Re-review rounds* da `configuration.md` já diz que evidência nova reabre o achado.
+
 ## [2.27.16] — 2026-10-30
 
 ### Roteamento nativo e coleta integral dos revisores

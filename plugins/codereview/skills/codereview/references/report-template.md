@@ -83,6 +83,18 @@ and the Test Coverage Notes name it as a test the fix changes, not as a missing 
 between two equal triggers; `test_gatilho_repetido_do_oponente_vira_uma_linha` had a Shock between
 them and asserted the merged `(×3)`, and the fix had to rewrite it.
 
+**A behavior claim marked `needs reproduction` may already be settled by a changed test.** A per-file
+agent infers runtime behavior (where the focus lands, which ref wins, what renders while loading) from
+one file, and a full review sends it no TESTS file. Before keeping such a finding, grep the changed
+tests for an assertion on that behavior (`/usr/bin/grep -n` on the element, state or call the claim
+names). A passing test that asserts the opposite refutes it: cite `test:line` under the Findings
+Table. One that asserts the same confirms it without a reproduction. Measured 2026-10-30
+(warehouse_explorer_web, round 3 of an sdd mission): two agents on different files said that a focus
+ref on a region and on the heading inside it "probably" leaves the focus on the region after a retry
+(one MEDIUM, one LOW); the page tests already asserted `document.activeElement` is the region while
+loading and the `<h1>` once the item loads (`Warehouse/index.test.tsx:178`, the same in Service and
+Shelfs), green at the reviewed head.
+
 If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, then as many LOW findings as fit within the 50-finding cap. Below the table, list every LOW the cap cut, one line per finding (`file:line — finding`), under "_{n} additional LOW findings, one line each:_". The list stays in the report, the skill's only output (it writes no file, SKILL.md *Operating Constraints*): a flow that lists the deferred LOWs in the PR body takes them from there, and re-running per file path to see them costs a review. Measured 2026-10-17 (a .NET rules engine, PR #6): round 1 had 65 LOW, and the 18 the cap cut were missing from the report.
 
 ---
