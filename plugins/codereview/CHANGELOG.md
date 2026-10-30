@@ -2,6 +2,53 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.18] — 2026-10-30
+
+### Sondagem de testes por import resolvido, servidor lido como está no ar e o Bearer de teste
+
+Quatro lições do codereview do PR #11 do `warehouse_explorer_web` (WHF-175, sessão que vence). O
+detalhe vai para as references. O `SKILL.md` ganha só duas rotas e fica com 19.999 caracteres, 1
+abaixo do aviso do C1 (20.000): o próximo retrofit precisa da `skill-refactoring` antes.
+
+- **`references/configuration.md`, seção nova *Test probe*; o `SKILL.md` da Fase A roteia para ela.**
+  - **O quê:** o loop do mapa de testes é um script no scratchpad, rodado com `bash <arquivo>`, com
+    glob entre aspas também nas flags. Além disso, "um teste alterado que o importa" passa a querer
+    dizer um import que resolve para o arquivo: o relativo contra a pasta do teste, o puro contra o
+    `baseUrl`, tentando `<stem>.{ext}` e `<stem>/index.{ext}`. O `jest.mock` não conta.
+  - **Por quê:**
+    - Escrito inline como `bash -c '…'` a partir do zsh, o `['\"]` do regex fechou as aspas simples
+      e o loop morreu com `(eval):1: bad pattern` e `basename: falta operando`. Salvo no scratchpad,
+      rodou na primeira chamada.
+    - Um `--include=*.ts` sem aspas abortou com `no matches found`.
+    - A sondagem por nome deixou o `src/hooks/index.tsx` em `NO_TESTS`, mas o
+      `src/hooks/auth.test.tsx` importa `AppProvider from '.'`. Uma sondagem que resolve o import o
+      achou (medida num script no scratchpad).
+    - Contar o `jest.mock` dava 3 testes ao `src/hooks/auth.tsx`, que só 1 importa.
+    - Sem o `baseUrl`, o `src/services/api.ts` perdia o `src/components/buscas.test.tsx`.
+- **`references/configuration.md`, *Runtime evidence*: o servidor que o cliente chama roda como está
+  no ar, não como está no fonte. O passo 3 da Fase C roteia para ela com "an API it calls".**
+  - **O quê:** quando o comportamento do diff depende da resposta de um servidor, a revisão lê o build
+    implantado e o data contra os commits de conserto do repo do servidor.
+  - **Por quê:**
+    - O `master` da API já gravava o token novo na rotação (`1063062`, 14:50).
+    - O `dist` de staging, das 10:05 do mesmo dia, gravava o antigo e já tinha a checagem de
+      revogação ativa (`35a1ca1`, 08:35). Com isso, toda renovação derrubava a sessão lá.
+    - Foi o HIGH principal da revisão, e nem o diff nem o fonte da API o mostravam.
+    - A seção só cobria as saídas do código revisado.
+- **`references/detection-passes.md`, 6.10: "A word after `Bearer` in a test is a placeholder".**
+  - **O quê:** a linha fica, com a prova. O conserto no repo é o valor numa constante, com o cabeçalho
+    esperado montado em template string.
+  - **Por quê:**
+    - `'Bearer token-da-sessao-…'`, 22 caracteres de palavras, foi a única linha de um branch sem
+      segredo nenhum, e impôs o F.
+    - Medido no `scan_secrets.sh` com diffs de uma linha (`regex` e `gitleaks`): o literal dá
+      `Bearer Token`; o template, `findings: []`; um canário de 24 alfanuméricos aleatórios continua
+      dando `Bearer Token`.
+    - O mesmo formato do parágrafo do regex de validação.
+- **Linha fundida, nada removido:** na Fase A, "in one shell loop (one Bash call, `path|status` per
+  file), in bash with `nullglob`" virou "in one Bash call (`path|status` each), a scratchpad script
+  in bash with `nullglob`". O loop agora é o script, e os avisos do zsh ficam.
+
 ## [2.27.17] — 2026-10-30
 
 ### Afirmação de comportamento marcada `needs reproduction` se confere nos testes alterados

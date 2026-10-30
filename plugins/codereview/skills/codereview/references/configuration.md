@@ -5,7 +5,8 @@
 ## Contents
 
 - [Default Values](#default-values) · [Override Syntax](#override-syntax) (presets per stack, the
-  C# probe by type and by registration literal)
+  C# probe by type and by registration literal) · [Test probe](#test-probe) (a scratchpad script,
+  an import resolved to its file)
 - [Base and batching](#base-and-batching) (a stale local base, a branch already merged, an isolated
   worktree) · [Stale copy](#stale-copy) · [Docs this session wrote](#docs-this-session-wrote)
 - [Several repositories](#several-repositories) (or one that is not the cwd) ·
@@ -93,6 +94,26 @@ test files, quoted 2. For 4 of the 14 the only hit was the registry listing, whi
 tests load fixture cards.
 
 Overrides are applied on top of defaults — only the specified values change; unmentioned values keep their defaults.
+
+## Test probe
+
+Read this in Phase A, before writing the loop that maps each CODE file to its tests.
+
+- **The loop is a scratchpad script, run as `bash <file>`.** Inline as `bash -c '…'` from zsh, a
+  regex with `['\"]` closes the single quotes and zsh parses the rest. A glob in a flag goes quoted
+  too: unquoted, `--include=*.ts` aborts the zsh command with `no matches found`. Measured
+  2026-10-30 (Claude Code, zsh): the inline loop died with `(eval):1: bad pattern: shopt -s
+  nullglob; …` and `basename: falta operando`, and the same loop saved to the scratchpad ran on the
+  first call.
+- **"A changed test that imports it" means an import that resolves to it.** The CODE file's name in
+  the test's text misses `from '.'` and `from './'`, which name the folder's `index.*`. Resolve each
+  specifier of the changed tests: a relative one against the test's folder, a bare one against
+  `baseUrl` (`tsconfig.json` or `jsconfig.json`), then try `<stem>.{ts,tsx,js,jsx}` and
+  `<stem>/index.{ts,tsx,js,jsx}`. A `jest.mock('x')` does not count: a mocked module is not
+  exercised. Measured 2026-10-30 (warehouse_explorer_web, 9 CODE files): the name probe left
+  `src/hooks/index.tsx` at `NO_TESTS`, though `src/hooks/auth.test.tsx` imports `AppProvider from
+  '.'`; counting `jest.mock` gave `src/hooks/auth.tsx` 3 tests where 1 imports it; and without
+  `baseUrl`, `src/services/api.ts` lost `src/components/buscas.test.tsx` (`from 'services/api'`).
 
 ## Base and batching
 
@@ -628,7 +649,7 @@ These decide whether the rounds converge:
 
 ## Runtime evidence
 
-Read this in Phase C when the reviewed code already runs (a cron job, a deployed service, a scheduled script) — a diff review cannot see behavior that only shows up on real data.
+Read this in Phase C when the reviewed code already runs (a cron job, a deployed service, a scheduled script), or calls a server that does and relies on its answer — a diff review cannot see behavior that only shows up on real data.
 
 - Look for the latest 2–3 run outputs: the scheduler's output dir (e.g. `cron/output/<job>/`), the service log, the job's last status. Read them, don't summarize them from memory.
 - Read the data the code writes or reads too — an audit trail, a telemetry JSONL, a state file — not only its logs: count its events by origin and time window. Measured 2026-10-05: a per-file LOW ("a new client would be miscounted, if it ever wrote events") became MEDIUM when the audit trail showed 6 real events from that client, and the same trail showed two test runs writing to production where the handoff declared one.
@@ -645,6 +666,16 @@ Read this in Phase C when the reviewed code already runs (a cron job, a deployed
   in the Google Drive copy became HIGH. `/mnt/g` answered `PermissionError [Errno 1]` (drvfs files
   owned by root), while `/mnt/j` and ext4 accepted it, so every copy to the Drive had failed since
   the commit.
+- **A server the client calls runs as deployed, not as its source.** When the diff's behavior
+  depends on that server's answer (a token rotation, a status code, a response shape), read the
+  deployed build (the `dist/` in its volume, the image) and date it against the server repo's fix
+  commits (`git log -1 --format=%ci <sha>`): the server's `master` can carry a fix its deployment
+  lacks. Reads only, on hosts the session may read; for a host the user reserved, hand over the
+  command. Measured 2026-10-30 (warehouse_explorer_web PR #11, a client that renews its session
+  token): the API's `master` stored the new token on rotation (`1063062`, 14:50), while the staging
+  `dist` (10:05 the same day) stored the old one with its revocation check (`35a1ca1`, 08:35) live,
+  so every renewal signed the user out there. It was the review's top HIGH, and neither the diff
+  nor the API source showed it.
 - Compare each output with what the diff says should happen: a message that contradicts the code's intent, an event firing for the wrong records, a warning that repeats daily. File the mismatch as a finding with the output path and line as evidence.
 - Measured: a review of a daily cron missed, in all per-file agents, an event that re-announced 9 records lost years earlier — it showed only in that morning's output.
 - Never paste client data or credentials from the output into the report: cite the file and summarize.

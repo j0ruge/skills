@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.27.17
+  version: 2.27.18
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -109,7 +109,7 @@ Classify each changed file:
 - DOCS: *.md, *.txt
 - STYLES: CSS/SCSS/LESS
 
-For each CODE file, probe candidate test file paths — same dir (`{Base}.test.{ext}`, `{Base}.spec.{ext}`), a `__tests__` sibling, then the project test root, then a changed test that imports it — and record it as WITH_TESTS / STALE_TESTS / NO_TESTS. Probe all CODE files in one shell loop (one Bash call, `path|status` per file), in bash with `nullglob`: zsh aborts an unmatched glob, and a bare `==` as `= not found`.
+For each CODE file, probe candidate test file paths — same dir (`{Base}.test.{ext}`, `{Base}.spec.{ext}`), a `__tests__` sibling, then the project test root, then a changed test that imports it — and record it as WITH_TESTS / STALE_TESTS / NO_TESTS. Probe all CODE files in one Bash call (`path|status` each), a scratchpad script in bash with `nullglob` (configuration.md, *Test probe*): zsh aborts an unmatched glob, and a bare `==` as `= not found`.
 
 Phase A hands Phases B and C: BASE_BRANCH, BRANCH_NAME, MERGE_BASE, DIFF_STAT, COMMIT_LOG, the FILES list (path, category, test_status), COUNTS per category, and SECRETS_PRESCAN.
 
@@ -188,7 +188,7 @@ After all review-model agents return, the main model:
    - `secrets_prescan.findings` is **authoritative** — every entry is real (regex matched + exception filter applied) and goes straight into the Secrets Detection table.
    - Agent 6.10 findings are **supplemental** (context the regex missed, e.g. a custom DSL with a non-standard keyword). One NOT already in `secrets_prescan` (by `{file, line, kind}`) enters the table only if (a) it shows a concrete literal credential, not a category like "potential leak", AND (b) it matches a 6.10 category or a clear equivalent; otherwise drop it as low-signal speculation.
    - Dedup remaining entries by `{file, line, kind}`; on collision, keep the higher severity and prefer `source=ggshield` > `gitleaks` > `regex` > `agent` for provenance.
-3. **Cross-file analysis** — only the main model has the whole picture: races spanning files (check in controller, act in service), schema consistency across related endpoints, import-chain coherence (producer and consumer types match). Code that already runs (cron, service): read its latest outputs (configuration.md §Runtime evidence). Add what you find to the list.
+3. **Cross-file analysis** — only the main model has the whole picture: races spanning files (check in controller, act in service), schema consistency across related endpoints, import-chain coherence (producer and consumer types match). Code that already runs (cron, service, an API it calls): read its latest outputs (configuration.md §Runtime evidence). Add what you find to the list.
 4. **Severity recalibration** — review each finding's severity:
    - Per-file agents may over-flag memoization issues (React.memo, useCallback) — downgrade per the rules in detection-passes.md
    - Ambiguous TOCTOU patterns in single-user contexts — downgrade to LOW
