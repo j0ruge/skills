@@ -1,5 +1,44 @@
 # Changelog — ticket
 
+## [1.14.0] — 2026-10-30
+
+### Por quê
+
+No `warehouse_explorer_web` (30/10/2026), o PR #13 foi mergeado e foi para produção sem cartão, e o
+dev pediu o cartão depois. A skill tinha dois caminhos, e nenhum servia: o sub-fluxo B cria branch e
+põe em "Em andamento" o que já acabou, e o "registrar sem começar" deixa em "Tarefas pendentes" o que
+já foi entregue. O que funcionou no WHF-176 foi o seguinte:
+
+- só a criação do B, numa chamada (`POST /issue` `201`, com sprint, pontos e responsável na releitura);
+- o vínculo `Relates` ao WHF-162 (`201`);
+- os steps 3 a 7 do `close`: comentário `201` (`dict 8`) e transição `204` para `Concluido`.
+
+No `close` do WHF-175 (PR #11, merge `743cfc1`), o resumo precisava da contagem de testes, e a
+única receita do step 3 era a do pytest (`def test_`), num repo com Jest. A contagem dos `it(` e
+`test(` no diff do merge deu 27 adicionados e 0 removidos, o mesmo total da contagem por arquivo
+(18 + 6 + 2 + 1).
+
+As transições do WHF listaram `21 Concluido -> Concluido done`, sem acento. O exemplo do SQ
+(`acli --status "Concluído"`) traz o nome com acento, e quem copia o nome de outro projeto erra o
+alvo. A escolha pela categoria `done`, que o step 6 já fazia no REST, acertou nos dois cartões.
+
+### O quê
+
+- `references/start.md`: seção nova **Cartão retroativo: trabalho já mergeado**, no sumário.
+- `references/close.md`, step 3: a contagem de testes do Jest no recorte do merge. Step 6: o item WHF.
+- `references/workflow.md`: a linha do WHF na tabela de exemplos conhecidos.
+- `SKILL.md`: uma frase em *Registrar cartão sem começar o trabalho* roteia para a seção nova
+  (19.836 → 19.911 chars). O `metadata.version` estava em 1.13.0 desde a 1.13.1 e volta a bater com
+  o `plugin.json`.
+
+### Dívida que fica
+
+- Passou de novo sem `skill-refactoring` o `SKILL.md`, a 89 chars do aviso C1 (20 mil). A nota da
+  1.13.0 continua valendo.
+- `A4 AVISO` e `G2 ERRO` pelo `argument-hint`, mantido no topo de propósito desde a 1.8.2.
+- O smoke do Codex em `docs/codex/smokes.json` é o da 1.13.0. Esta versão só acrescenta texto a
+  arquivos existentes, e o smoke não foi refeito.
+
 ## [1.13.1] — 2026-10-22
 
 Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. argument-hint permanece no topo para Claude; Codex o ignora e o auditor local mantém `A4 AVISO`; com validação externa estrita há `G2 ERRO` e retorno 1. O workflow usa entrada textual. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.

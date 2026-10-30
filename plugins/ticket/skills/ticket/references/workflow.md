@@ -20,6 +20,7 @@
 |---|---|---|---|---|
 | RS | 10 | `Tarefas pendentes → Em andamento → Aprovação → Finished` | `Finished` | duas transições (`Aprovação`, depois `Finished`) — **por convenção do time, não por restrição do board** (ver abaixo) |
 | SQ | 51 | `Tarefas pendentes → Em andamento → Concluído` (**sem `Aprovação`**) | `Concluído` | `acli --status "Concluído"` direto (ou MCP transição **id `31`**) |
+| WHF | 2 | `A Fazer → Em andamento → Concluido` (**sem acento**) | `Concluido` | REST transição **id `21`**, direto de `A Fazer` ou de `Em andamento` (medido em 30/10/2026) |
 
 ### ⚠️ O caminho documentado é convenção; o board costuma ser mais permissivo
 

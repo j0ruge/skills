@@ -13,6 +13,7 @@
 - [Sub-fluxo B: Nova issue](#sub-fluxo-b-nova-issue)
 - [Trabalho em dois repos (um sem `.jira-project`)](#trabalho-em-dois-repos-um-sem-jira-project)
 - [Registrar cartão SEM começar o trabalho](#registrar-cartão-sem-começar-o-trabalho)
+- [Cartão retroativo: trabalho já mergeado](#cartão-retroativo-trabalho-já-mergeado)
 - [Missão `sdd`: abrir à mão sem duplicar a fase TICKET](#missão-sdd-abrir-à-mão-sem-duplicar-a-fase-ticket)
 
 ## Sub-fluxo A: Issue existente
@@ -379,6 +380,31 @@ bloqueiam (ver `workflow.md` §Vínculos entre issues).
 Pergunte ao dev qual dos dois é o caso quando não estiver claro pelo pedido:
 "abrir para já começar" e "registrar para o time priorizar" produzem cartões
 diferentes.
+
+## Cartão retroativo: trabalho já mergeado
+
+O terceiro caso: o trabalho terminou sem cartão (um PR já mergeado, às vezes já
+em produção), e o dev pede o cartão depois. Nenhum dos dois caminhos acima serve
+como está. O B cria branch e põe em "Em andamento" o que já acabou, e o registro
+deixa em "Tarefas pendentes" o que já foi entregue.
+
+1. **Do B, só o que descreve o cartão:** as perguntas do B1 (summary, tipo,
+   pontos, sprint, responsável) e a criação numa chamada só (`campos.md` §Criar
+   a issue numa chamada só), com o link do PR no "Contexto" da descrição. A
+   releitura do B4 vale igual.
+2. **Sem branch e sem "Em andamento".**
+3. **Vínculo** ao cartão de que o trabalho é continuação (`workflow.md`
+   §Vínculos entre issues). No `Relates`, o `inward` e o `outward` dizem os dois
+   "relates to", então a direção não tem como sair trocada.
+4. **Do `close`, os steps 3 a 7:** o resumo sai dos pais do merge (`close.md`
+   step 3), depois vêm o comentário com a releitura e a transição direta para o
+   status de categoria `done`. Os steps 8 a 10 não se aplicam, porque o PR já foi
+   mergeado.
+
+Medido em 30/10/2026 no WHF-176, o PR #13 do `warehouse_explorer_web`, já em
+produção. O `POST /issue` deu `201`, com sprint, pontos e responsável na
+releitura. O vínculo `Relates` ao WHF-162 deu `201`, o comentário `201` (releitura
+`dict 8`) e a transição `204`, e a releitura do status deu `Concluido`.
 
 ## Missão `sdd`: abrir à mão sem duplicar a fase TICKET
 

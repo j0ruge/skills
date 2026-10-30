@@ -4,7 +4,7 @@ description: "Jira ticket lifecycle for JRC Brasil projects, integrated with Git
 argument-hint: "start (open) | split | close | status"
 compatibility: "Claude Code: o argument-hint acima é campo dele e só é lido no topo. Requer acli e credenciais Jira (JIRA_EMAIL, JIRA_API_TOKEN)."
 metadata:
-  version: 1.13.0
+  version: 1.14.0
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -158,7 +158,8 @@ reunião): **pule branch e transição** — o cartão nasce em "Tarefas pendent
 sprint o procura; branch vazia e "Em andamento" mentiriam sobre o estado. Sprint, pontos,
 `fixVersion` e a releitura continuam valendo; se forem vários cartões, REST em lote (`references/campos.md §fixVersion`) e
 vínculo ao cartão que bloqueiam (`references/workflow.md §Vínculos entre issues`). Pedido ambíguo → pergunte se
-é "abrir para já começar" ou "registrar para o time priorizar".
+é "abrir para já começar" ou "registrar para o time priorizar". Trabalho já mergeado sem cartão:
+`references/start.md §Cartão retroativo`.
 
 ### Regras
 

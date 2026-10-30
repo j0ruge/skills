@@ -77,6 +77,18 @@ conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) ·
      Medido em 14/10/2026 na LH-5 (PR #22, merge `00dd775`): 62 commits e 92 arquivos, com
      os handoffs da missão; leia a lista e separe o que é registro do que é entrega.
 
+     Num repo com Jest, os testes novos se contam no mesmo recorte (o `def test_`
+     do bloco de rebase abaixo é o do pytest):
+
+     ```bash
+     git diff "$M^1" "$M" -- src | grep -cE '^\+\s*(it|test)\('   # adicionados
+     git diff "$M^1" "$M" -- src | grep -cE '^-\s*(it|test)\('    # removidos: um it( reescrito aparece nos dois
+     ```
+
+     Medido em 30/10/2026 no WHF-175 (PR #11, merge `743cfc1`): 27 e 0. É o mesmo
+     total da contagem por arquivo no merge, `git show "$M:<arquivo>" | grep -cE
+     '^\s*(it|test)\('`, que deu 18 + 6 + 2 + 1.
+
      **Mais de um PR da mesma branch** (o fix da revisão final num PR novo, por exemplo): os
      pais de um merge só contam aquele PR. Liste os merges da branch e recorte do primeiro pai
      do mais antigo até o segundo pai do mais novo:
@@ -221,6 +233,11 @@ conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) ·
      destino**); alternativamente, MCP transição **id `31`** ("Itens concluídos").
    - **SBM** (team-managed): de "Tarefas pendentes" o `GET` listou transição para
      todos os status; `Concluído` = id `41` ("Itens concluídos"), direto.
+   - **WHF** (team-managed): o status final é `Concluido`, **sem acento**, id `21`,
+     direto de "Em andamento" e de "A Fazer". O nome difere do `Concluído` do SQ:
+     escolha pela categoria `done`, como no REST abaixo, e não pelo nome copiado
+     de outro projeto. Medido em 30/10/2026 no WHF-175 e no WHF-176 (`204`, e a
+     releitura deu `Concluido done`).
    - **Sem MCP — REST por id** (preferido: `204` é sensor, o `acli` sai 0 em falha;
      validado em 04/10/2026 no SBM-3):
 

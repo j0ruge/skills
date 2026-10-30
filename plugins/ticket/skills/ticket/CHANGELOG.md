@@ -4,6 +4,17 @@ Registro por sessão da skill; o changelog **versionado** é `plugins/ticket/CHA
 (a entrada 1.4.0 de 2026-09-03 resume o que está aqui). Cada entrada registra **o que
 mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-10-30 — cartão retroativo, testes do Jest e o `Concluido` do WHF (1.14.0)
+
+- O PR #13 do `warehouse_explorer_web` foi mergeado e foi para produção sem cartão. O WHF-176 nasceu
+  pela criação do B, sem branch nem "Em andamento", e fechou pelos steps 3 a 7 do `close`. A
+  releitura confirmou cada passo (`201`, `201`, `201`, `204`). Isso vira seção do `start.md`, e o
+  `SKILL.md` aponta para ela.
+- `close` do WHF-175 num repo com Jest: a contagem dos `it(` e `test(` no diff do merge deu 27 e 0,
+  igual à contagem por arquivo. Ela entra no step 3 ao lado da receita do pytest.
+- O status final do WHF é `Concluido`, sem acento (id `21`). Ele entra no step 6 e na tabela do
+  `workflow.md`, com a escolha pela categoria `done`.
+
 ## 2026-10-16 — responsável e épico no POST, trabalho em dois repos (1.13.0)
 
 - `start` do RS-929: o `POST /issue` do B levou `assignee:{accountId}` (de `GET /myself`, já que o
