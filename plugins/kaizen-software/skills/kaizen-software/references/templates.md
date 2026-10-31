@@ -31,7 +31,9 @@ pedido sobre acesso ou exposição ("é interno", "é restrito"), conferidas no 
 | 2 | ... | ... | ... |
 
 ## Riscos e reversão
-<O que pode dar errado em cada incremento e como reverter.>
+<O que pode dar errado em cada incremento e como reverter. Se a reversão usa o canal que o passo pode
+derrubar (desligar equipamento pela rede, mexer na rede, firewall ou SSH do host), ela não existe:
+nomeie antes o caminho de volta fora de banda (alguém no local, console, controle remoto).>
 
 ## Act (após o Check)
 <Preenchido ao final: o que padronizar, o que ajustar, entrada no kaizen log.>
@@ -74,7 +76,7 @@ escrita na tabela de desperdícios.
 - [ ] Check no artefato que chega ao destino, não no rótulo nem na cópia local
 - [ ] Premissa do pedido sobre acesso ou exposição ("é interno", "é restrito") conferida na permissão do destino, não na palavra de quem pediu
 - [ ] Poka-yoke antes de regra escrita; a regra que sobrar diz por que nenhum degrau acima coube
-- [ ] Ação irreversível com o passo reversível antes, a confirmação de quem decide e os identificadores anotados
+- [ ] Ação irreversível com o passo reversível antes, a confirmação de quem decide e os identificadores anotados; conta como irreversível a que derruba o canal por onde seria desfeita (desligar pela rede, mexer em rede/SSH), que pede caminho de volta fora de banda
 - [ ] Espera no caminho crítico nomeada, com dono e momento
 - [ ] Estoque com dono: o que fica pronto e parado tem item e responsável
 - [ ] Yokoten: onde mais a decisão vale, e se entra agora ou vira oportunidade

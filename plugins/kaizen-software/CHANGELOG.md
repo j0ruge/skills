@@ -2,6 +2,39 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.8] — 2026-10-31
+
+Patch: duas lições de uma sessão que pôs o controle de um projetor (interface web embarcada) num
+módulo do Bitfocus Companion. O detalhe foi para `references/kaizen-conceitos.md` e
+`references/templates.md`, e o `SKILL.md` ganhou só dois termos em frases que já roteiam para
+lá, porque estava a 132 caracteres do teto de 20 mil.
+
+- **Ação que derruba o próprio canal de volta é irreversível.** Um teste autorizado desligou o
+  projetor pela web às 12:40:53. A web respondeu `pw:"0"` por cerca de 13 s, e a partir de 12:41:17
+  as consultas deram timeout ou conexão recusada: no standby comum, a rede do aparelho desliga.
+  O comando de religar dependia dessa rede, e o operador teve de religar pelo controle remoto
+  (12:43:56). O plano tinha "desligar → religar após o cooldown" como passo reversível. A lista de
+  ações irreversíveis (apagar, migration, revogar, publicar) não cobria esse caso.
+  - `SKILL.md`: a lista entre parênteses das ações irreversíveis ganhou "desligar ou reconfigurar o
+    que só se alcança pelo canal que a ação derruba".
+  - `templates.md`: o Plano PDCA § Riscos e reversão pede o caminho de volta fora de banda (alguém
+    no local, console, controle remoto). O item "Ação irreversível" do checklist de validação
+    ganhou o mesmo caso.
+- **Dublê de teste é sonda.** 26 testes passavam contra um servidor falso em `node:http`. No
+  aparelho real, o cliente falhou com `Parse Error: Missing expected CR after response line`,
+  porque o servidor embarcado termina as linhas do cabeçalho só com LF e o fake, feito com a
+  biblioteca da norma, nunca mandaria isso. Refeito em TCP cru com os bytes capturados do fio, o
+  fake reproduziu os 6 vermelhos do aparelho antes da correção. A skill pedia caso sabotado
+  montado do zero e Check no artefato, mas não dizia que o dublê precisa imitar o artefato
+  observado, e não a norma.
+  - `SKILL.md`: "Sonda nova (script, check, healthcheck, dublê de teste)". O "ver *Poka-yoke*"
+    que já estava na frase leva ao detalhe.
+  - `kaizen-conceitos.md` § Poka-yoke: parágrafo "Dublê de teste é sonda", com o caso.
+
+Dívida pré-existente, fora deste patch: o smoke do Codex (`docs/codex/smokes.json`) ainda é o da
+1.4.3. Os INFO F1 (references sem "quando ler"), F4 (sem evals) e D1 (afirmações factuais) da
+auditoria já vinham de antes.
+
 ## [1.4.7] — 2026-10-27
 
 Patch: uma lição do planejamento de um sync automático de arquivos de segredo para uma wiki
