@@ -290,6 +290,24 @@ phase, and step 7 checks the doc against the diff, not against code the range le
   measuring script printed its "as is" block identical to its "floor" block (W/B at pick 6 in both);
   on the archive of `3678343`, a commit from before the change, it printed B/R at pick 15, the doc's
   before.
+- **A comparison across versions needs the same metric on each side, read in each version's code.**
+  Evidence that matches the doc cell by cell does not show that a column means the same thing in
+  every version: when the PR changes the code that measures (a path removed, a step added before
+  the timer starts), read in each version where the measurement starts and ends
+  (`git show <ref>:<file>`), and prefer a measure that starts at the same point in all of them, such
+  as the wall-clock total over a partial time. Measured 2026-10-31 (magic_tutor, PR #150, round 1):
+  the agent checked every cell of a three-version table against the saved runs ("all match"), but
+  the fix started its `JOGADA em` timer in `_em_fluxo`, after a subscription check, and the removed
+  path started it in `perguntar`, before it; on the total time, the PR's headline went from −39% to
+  −27%. A derived difference (total − partial) did not isolate the offset in round 2: it also
+  carries the rest of the answer.
+- **An agent's number that contradicts the doc is recomputed before it keeps its severity.** The
+  agent reads the saved outputs by eye, so its range, count or ratio is a claim like the doc's.
+  Recompute it from the same files, save that output beside the evidence, and only then edit the
+  doc toward it or keep the finding. Measured 2026-10-31 (magic_tutor, PR #150, round 2): a MEDIUM
+  said a tail "varied from 1.8 to 4.4 s within one version"; recomputed from the saved runs, it went
+  from 1.8 to 2.6 s on `main` and from 2.5 to 3.8 s on the fix, so the finding fell to LOW, and the
+  doc said "compatible, not isolated" instead of adopting the wrong range.
 - **The evidence of a pipeline's doc is the folder its phase saved, not your re-run.** A handoff
   or report a phase wrote cites the measurements that phase made, at the head it reviewed. Pass
   that folder, and each artifact a doc cites by its exact path: given only a parent folder, the

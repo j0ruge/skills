@@ -2,6 +2,52 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.21] — 2026-10-31
+
+### A mesma métrica nas duas versões, e o resultado do PR que vale HIGH
+
+Lições do `codereview` no PR #150 do `magic_tutor` (o coach Claude volta a um pedido por dica), em
+5 rodadas: 10, 5, 1, 2 e 0 achados. O `SKILL.md` segue em 19.999 caracteres, encostado no teto: as
+quatro lições foram para as references, e ele só mudou a versão.
+
+- **`references/configuration.md`, *Docs this session wrote*: a comparação entre versões precisa da
+  mesma métrica dos dois lados, lida no código de cada versão.**
+  - **O quê:** a evidência que bate célula a célula com o doc não prova que uma coluna mede a mesma
+    coisa em todas as versões. Quando o PR muda o código que mede, ler em cada versão
+    (`git show <ref>:<arquivo>`) onde a medida começa e termina, e preferir uma que comece no mesmo
+    ponto em todas (o tempo total, não um parcial).
+  - **Por quê:** na rodada 1, o agente conferiu toda a tabela de três versões ("all match"), mas o
+    conserto contava a JOGADA no `_em_fluxo`, depois da checagem de assinatura, e o caminho apagado,
+    no `perguntar`, antes dela. Pelo tempo total, a manchete do PR foi de −39% para −27%. A
+    diferença derivada (total − parcial) não isolou o deslocamento na rodada 2, porque carrega o
+    resto da resposta: ela fica registrada como o que não funcionou, e não como método.
+  - **Verificação:** a leitura do código dos dois caminhos achou o deslocamento, e a rodada 3
+    confirmou os pontos de início no código.
+- **`references/configuration.md`, mesma seção: o número de um agente que contradiz o doc é
+  recalculado antes de manter a severidade.**
+  - **O quê:** recalcular das mesmas saídas, salvar o resultado junto da evidência, e só então
+    reescrever o doc na direção do agente ou manter o achado.
+  - **Por quê:** na rodada 2, um MEDIUM dizia que a cauda "variava de 1,8 a 4,4 s numa mesma
+    versão"; recalculada, ela ia de 1,8 a 2,6 s na `main` e de 2,5 a 3,8 s no conserto. O achado
+    caiu para LOW, e o doc não adotou a faixa errada.
+- **`references/detection-passes.md` 6.5: o que a base ou um arquivo apagado fazia é lido, não
+  lembrado.**
+  - **O quê:** generaliza a regra da restauração (2.27.20). Uma afirmação da Fase C sobre o código de
+    antes do PR passa por `git show <base>:<arquivo>` antes de entrar no relatório.
+  - **Por quê:** na rodada 1, o orquestrador escreveu que a sessão por jogo apagada "pulava a
+    checagem de assinatura ao reusar a sessão". O `git show 02290f0:monitor/claude_sessao.py`
+    mostrou a checagem a cada turno (linha 110), e o achado caiu.
+- **`references/detection-passes.md` 6.5: o resultado medido do PR vale como contrato.**
+  - **O quê:** o número que o PR afirma como resultado (no corpo, num commit ou num doc de
+    evidência), quando a evidência não o mede validamente (duas versões cronometradas de pontos
+    diferentes, um "antes" tirado do código do "depois"), é **HIGH**, como a docstring que contradiz
+    o código (6.5.1). Um número só impreciso segue MEDIUM ou LOW.
+  - **Por quê:** a escala de notas não tem degrau para MEDIUM não-menor sem HIGH (A pede "at most
+    minor MEDIUM/LOW", B pede "few HIGH"). Na rodada 1, a manchete medida em relógios diferentes saiu
+    como três MEDIUM, a escala dava A, e o orquestrador deu B à mão, fora dela.
+  - **Verificação:** só de mesa. Com a regra, o primeiro dos três MEDIUM vira HIGH e a escala dá o B
+    que foi dado à mão. Nenhuma rodada nova rodou com ela.
+
 ## [2.27.20] — 2026-10-30
 
 ### CSS medido no navegador, e restauração que não é regressão
