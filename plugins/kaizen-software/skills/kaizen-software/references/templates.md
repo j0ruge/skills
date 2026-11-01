@@ -19,7 +19,8 @@ Salve como `docs/planos/PLANO-<slug-curto>.md` (ou onde o projeto guardar planos
 
 ## Gemba — situação atual
 <O que foi observado no código/sistema real: arquivos afetados, fluxo atual, dados. E as premissas do
-pedido sobre acesso ou exposição ("é interno", "é restrito"), conferidas no artefato (permissão, ACL).>
+pedido sobre acesso ou exposição ("é interno", "é restrito"), conferidas no artefato (permissão, ACL).
+O estado e as fontes vindos de handoff ou resumo ("não enviado", "o registro está em X"), relidos no destino.>
 
 ## Desperdícios evitados
 <Itens cortados/adiados do escopo e por quê (superprodução, superprocessamento...).>
@@ -75,6 +76,7 @@ escrita na tabela de desperdícios.
 - [ ] Todo incremento com Check; teste visto vermelho antes; sonda nova com caso sabotado montado do zero, cache da ferramenta incluído
 - [ ] Check no artefato que chega ao destino, não no rótulo nem na cópia local
 - [ ] Premissa do pedido sobre acesso ou exposição ("é interno", "é restrito") conferida na permissão do destino, não na palavra de quem pediu
+- [ ] Estado e fontes herdados de handoff ou resumo ("não enviado", "o registro está em X") relidos no destino antes de entrar no plano
 - [ ] Poka-yoke antes de regra escrita; a regra que sobrar diz por que nenhum degrau acima coube
 - [ ] Ação irreversível com o passo reversível antes, a confirmação de quem decide e os identificadores anotados; conta como irreversível a que derruba o canal por onde seria desfeita (desligar pela rede, mexer em rede/SSH), que pede caminho de volta fora de banda
 - [ ] Espera no caminho crítico nomeada, com dono e momento

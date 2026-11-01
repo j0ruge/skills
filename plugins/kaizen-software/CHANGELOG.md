@@ -2,6 +2,40 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.9] — 2026-11-01
+
+Patch: duas lições da investigação da origem de um incidente num site WordPress, conduzida
+com esta skill. O detalhe foi para `references/kaizen-conceitos.md` e `references/templates.md`.
+O `SKILL.md` ganhou só dois trechos curtos (+32 caracteres, ficando com 19.992), porque estava a
+40 caracteres do teto de 20 mil.
+
+- **O zero também é rótulo.** Num log de proxy com bytes binários, o `grep` passou a tratar o
+  arquivo como binário e parou de imprimir. Um IP com 29 linhas deu 0, e a contagem por dia
+  mostrou 6 dias de um log de 99. O handoff dizia que o IP estava no log, e o zero o
+  contradizia. A incoerência entre a última linha do arquivo (outubro) e o último dia contado
+  (julho) mostrou que a ferramenta tinha lido só parte do arquivo. A armadilha "Sonda verde
+  porque não leu o artefato" cobria escopo (`git ls-files`) e a sonda ter rodado, mas não uma
+  ferramenta que para no meio do artefato sem erro e devolve uma ausência.
+  - `SKILL.md`: o título virou "Sonda verde, ou zero, porque não leu o artefato".
+  - `kaizen-conceitos.md` § Rótulo ≠ artefato: parágrafo com a regra (primeira e última
+    unidade lidas são as do artefato) e o caso.
+  - O que resolveu na sessão: `grep -a`, e um parser em Python testado contra uma linha binária
+    montada de propósito e contra as 28 linhas já conhecidas na janela.
+- **Handoff também carrega estado vencido e fonte errada.** A armadilha do handoff tratava
+  restrição acrescentada por agente. Nesta sessão, o handoff dizia "rascunho não enviado", e o
+  e-mail já tinha saído minutos depois de o handoff ser escrito. As duas fontes que ele citava
+  para o atendimento anterior não tratavam desse atendimento.
+  - `SKILL.md`: "…uma restrição que o próprio agente acrescentou, ou um estado vencido".
+  - `kaizen-conceitos.md` § Gemba: handoff e resumo também são memória, com o caso.
+  - `templates.md`: o "Gemba — situação atual" do Plano PDCA pede o estado e as fontes de
+    handoff relidos no destino; o checklist da Validação de plano ganhou o item.
+  - O que resolveu na sessão: reler a thread e procurar nas fontes antes de fechar o plano.
+
+Dívida pré-existente, fora deste patch: o smoke do Codex (`docs/codex/smokes.json`) ainda é o da
+1.4.3. Os INFO F1, F4 e D1 da auditoria já vinham de antes. Com 8 caracteres de folga, a próxima
+lição não cabe no `SKILL.md`: extrair os casos das Armadilhas para uma reference é tarefa própria
+da `skill-refactoring`.
+
 ## [1.4.8] — 2026-10-31
 
 Patch: duas lições de uma sessão que pôs o controle de um projetor (interface web embarcada) num
