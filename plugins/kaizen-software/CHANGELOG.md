@@ -2,6 +2,22 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.10] — 2026-11-01
+
+Patch de correção: o caso que a 1.4.9 pôs em `references/kaizen-conceitos.md` § Gemba dizia que
+as duas fontes citadas pelo handoff não tratavam do atendimento anterior. Uma delas tratava: era
+uma página de wiki, e a sessão a tinha avaliado pela descrição dela numa nota, sem abrir a página.
+Quando o usuário mandou o link da seção, o registro estava lá (contas plantadas, IDs e senhas
+trocadas). A regra da 1.4.9 continua valendo (o caso do "rascunho não enviado" é real), e o erro
+reforça a regra.
+
+- `kaizen-conceitos.md` § Gemba: o caso agora conta os dois lados. O estado vencido apanhado
+  ao reler a thread, e a fonte julgada pela descrição e não pela página. A regra ganhou a frase
+  "reler a fonte é abrir a fonte, não o resumo dela; 'não está lá' exige ter olhado lá".
+- `CHANGELOG.md`: a entrada 1.4.9 ganhou a marca de correção. O resto do histórico não foi
+  reescrito.
+- `SKILL.md`: só a versão (19.993 caracteres).
+
 ## [1.4.9] — 2026-11-01
 
 Patch: duas lições da investigação da origem de um incidente num site WordPress, conduzida
@@ -24,7 +40,7 @@ O `SKILL.md` ganhou só dois trechos curtos (+32 caracteres, ficando com 19.992)
 - **Handoff também carrega estado vencido e fonte errada.** A armadilha do handoff tratava
   restrição acrescentada por agente. Nesta sessão, o handoff dizia "rascunho não enviado", e o
   e-mail já tinha saído minutos depois de o handoff ser escrito. As duas fontes que ele citava
-  para o atendimento anterior não tratavam desse atendimento.
+  para o atendimento anterior não tratavam desse atendimento. *(Errado: uma delas tratava. Ver 1.4.10.)*
   - `SKILL.md`: "…uma restrição que o próprio agente acrescentou, ou um estado vencido".
   - `kaizen-conceitos.md` § Gemba: handoff e resumo também são memória, com o caso.
   - `templates.md`: o "Gemba — situação atual" do Plano PDCA pede o estado e as fontes de
