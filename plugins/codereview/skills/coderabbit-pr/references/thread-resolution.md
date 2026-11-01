@@ -13,15 +13,30 @@ right after Phase 4 the fixes exist only on disk. Check before 5.1:
 
 ```bash
 git status --porcelain                                  # must not list the files you fixed
-[ "$(gh pr view "$PR" --json headRefOid -q .headRefOid)" = "$(git rev-parse HEAD)" ] \
-  && echo "head carries the fixes" || echo "PR head differs from local HEAD"
+L=$(git rev-parse HEAD); P=$(gh pr view "$PR" --json headRefOid -q .headRefOid)
+R=$(git ls-remote origin "refs/heads/$(gh pr view "$PR" --json headRefName -q .headRefName)" | cut -f1)
+if [ "$P" = "$L" ]; then echo "head carries the fixes"
+elif [ "$R" = "$L" ]; then echo "pushed: the API still answers ${P:-nothing}, read it again in a few seconds"
+else echo "not pushed: the remote has ${R:-nothing}, local HEAD is $L"; fi
 ```
 
-Anything uncommitted, or a different head → stop, show the user the diff and ask them to commit
-and push (or to authorise you to). Re-run the check after the push. With Phase 3 having changed
-no files (every item already fixed / not applicable), the check passes trivially — resolve.
-A merged PR has no head to carry them: check the follow-up PR's (pr-branch.md, *A PR already
-merged*).
+Anything uncommitted, or `not pushed` → stop, show the user the diff and ask them to commit and
+push (or to authorise you to). Re-run the check after the push. With Phase 3 having changed no
+files (every item already fixed / not applicable), the check passes trivially — resolve. A merged
+PR has no head to carry them: check the follow-up PR's (pr-branch.md, *A PR already merged*).
+
+**`pushed:` is the API behind your own push, not a push that failed.** Run the check again a few
+seconds later; never push again, and never blame a hook for it. Right after a push, every API read
+of the PR head can still answer the old one: `headRefOid` from `gh pr view`, and the `head.sha` of
+REST `pulls/<n>`, even in the response to a `PATCH` sent after the push. `git ls-remote` reads the
+branch itself. Measured on 2026-10-04 (sdd_agents PR #219): `headRefOid` still answered the
+pre-push `b9e95ba` while `ls-remote` already had `d8da110`; the next query answered `d8da110`.
+Measured on 2026-11-01 (sdd_agents PR #335), with the old two-way check and this paragraph at the
+end of the section: a run that read only the section's top saw `f8b6938` against a local
+`a25482f`, took it for a pre-push refusing the checklist and pushed again (`Everything
+up-to-date`); the next read answered `a25482f`. Same day (sdd_agents PR #334): the `PATCH` of the
+PR body, sent right after the push of `5d14540`, returned `head.sha` `0928490`; five seconds later
+`ls-remote` and `headRefOid` both had `5d14540`.
 
 **A pre-push that refuses a dirty tree refuses the checklist too.** The `{reviewer}-review.md`
 files sit untracked in the root (`?? codex-review.md`), and a hook that rejects untracked files
@@ -53,18 +68,6 @@ hunks in 3 shared files, 4 commits, `cmp` equal.
 Measured on 2026-10-02 (sdd_agents PR #195): followed literally, the run would have resolved the
 CodeRabbit thread while the PR head (`3c739aa`) still carried the defect; the fix was pushed as
 `96532c9` first, and only then resolved.
-
-A different head right after **your own** push can be the API lagging, not the push failing. Read
-the remote ref itself before you stop:
-
-```bash
-git ls-remote origin "refs/heads/$(gh pr view "$PR" --json headRefName -q .headRefName)"
-```
-
-If it equals `git rev-parse HEAD`, the push landed: re-run the check a few seconds later instead of
-asking the user to push again. Measured on 2026-10-04 (sdd_agents PR #219): right after `git push`,
-`headRefOid` still answered the pre-push `b9e95ba` while `ls-remote` already had `d8da110`; the next
-query answered `d8da110`.
 
 ## 5.1 List Unresolved Threads
 
@@ -122,6 +125,10 @@ search path inside the loop and every `gh` and `sed` after it dies with `command
 on 2026-10-03: nothing resolved, every line an error, caught by 5.3. Use `_`, or a name like `file`.
 
 Each line must print `true`. Anything else (an error, `false`) means that thread is still open — carry it into 5.3.
+No line at all means 5.1 listed nothing, and that is not a failure: a bot can resolve its own
+thread once the push reaches it, and 5.3 decides. Measured on 2026-11-01 (sdd_agents PR #335): the
+fixed thread's `resolvedBy` was `coderabbitai[bot]`, the loop printed nothing and 5.3 answered
+`total: 1  unresolved: 0`.
 
 ## 5.3 Verify Zero Remain
 

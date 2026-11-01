@@ -2,6 +2,41 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.22] — 2026-11-01
+
+### O 5.0 da `coderabbit-pr` separa o atraso da API do push que faltou
+
+Lições da `coderabbit-pr` 4.6.5 nos PRs #335 e #334 do `sdd_agents`. A `coderabbit-pr` vai a
+4.6.6. O `SKILL.md` fica em 19.998 caracteres: só a linha do 5.0 e a versão mudaram, e o detalhe
+está em `references/thread-resolution.md`.
+
+- **`references/thread-resolution.md` 5.0: a checagem lê o `git ls-remote` e tem três saídas.**
+  - **O quê:** `head carries the fixes`, `pushed:` (o ramo remoto já tem o `HEAD` e a API ainda
+    responde o head antigo: ler de novo em alguns segundos, sem novo push e sem culpar hook) e
+    `not pushed` (pedir o commit e o push). O parágrafo medido do atraso (4.3.3, PR #219) subiu
+    para logo depois da checagem e foi fundido com as medições novas; o parágrafo do fim da seção
+    saiu, porque foi movido para lá. O `SKILL.md` diz no 5.0 que o pedido de push só vem quando o
+    `git ls-remote` também não tem o head.
+  - **Por quê:** a lição do atraso existia desde a 4.3.3, mas como o último parágrafo do 5.0,
+    umas 40 linhas abaixo da checagem de duas saídas. No PR #335, a leitura da seção parou antes
+    dele (`sed -n 1,60p … | grep -v '^$' | head -45`): o `headRefOid` deu `f8b6938` contra o
+    `a25482f` local, a run culpou o pre-push pelo checklist não rastreado, que é o parágrafo que
+    vem antes, e repetiu o push (`Everything up-to-date`). Dentro da checagem, a distinção chega a
+    quem lê só o comando. No PR #334, a resposta do `PATCH` do corpo do PR, mandado logo depois do
+    push de `5d14540`, trouxe `head.sha` `0928490`: o REST atrasa como o `gh pr view`.
+  - **Verificação:** o comando, extraído do arquivo com `awk`, rodou no zsh e no bash num clone
+    descartável do ramo do PR #334: `head carries the fixes` no head do PR, e
+    `not pushed: the remote has 5d145409…` com um commit local a mais. A saída `pushed:` não se
+    reproduz quando se quer; a lógica das três saídas passou com valores injetados nos dois shells.
+- **`references/thread-resolution.md` 5.2: o laço sem linha nenhuma não é falha.**
+  - **O quê:** quando o 5.1 não lista nada, o laço não imprime nada, e quem decide é o 5.3.
+  - **Por quê:** no PR #335, o thread consertado tinha `resolvedBy` `coderabbitai[bot]`: o robô o
+    fechou depois do push. O laço não imprimiu nenhum `true`, e o 5.3 deu `total: 1  unresolved: 0`.
+    A regra "cada linha tem de imprimir `true`" não dizia nada do caso sem linha.
+- **Fica de fora, sem medição:** a espera pelo `Completed` do Codex em
+  `references/reviewer-registry.md` (*Codex*) lê o `H` do `headRefOid`. Logo depois do push, um `H`
+  atrasado aceitaria o `Completed` do head anterior. Ainda não foi medido; nada mudou ali.
+
 ## [2.27.21] — 2026-10-31
 
 ### A mesma métrica nas duas versões, e o resultado do PR que vale HIGH

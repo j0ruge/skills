@@ -1,7 +1,7 @@
 ---
 name: coderabbit-pr
 metadata:
-  version: 4.6.5
+  version: 4.6.6
 description: Resolves AI review comments on a GitHub PR — auto-detects CodeRabbit, Copilot, Gemini, Codex; creates per-reviewer checklists, verifies findings against current code (with byte-exact inspection when reviewers cite invisible/control characters), applies fixes, runs regression tests, resolves GitHub conversations, then cleans up its own checklist files. Triggers — coderabbit, copilot review, gemini review, codex review, fix PR review.
 ---
 
@@ -281,7 +281,7 @@ reviewer, not only those processed in Phase 3. Run the steps directly, never del
 `references/thread-resolution.md`).
 
 0. **5.0** the PR head must carry the fixes (`headRefOid` == `HEAD`, nothing uncommitted); if
-   not, ask the user to commit and push first;
+   not and `git ls-remote` lacks it too, ask for the push;
 1. **5.1** list the unresolved threads (GraphQL `reviewThreads`, `isResolved == false`);
 2. **5.2** resolve each with the `resolveReviewThread` mutation, piping 5.1 into `while read` — every
    line must print `true`; anything else means the thread is still open, carry it into 5.3;
