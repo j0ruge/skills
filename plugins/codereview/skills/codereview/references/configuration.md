@@ -153,7 +153,22 @@ base equals `HEAD`, or when the session runs isolated in a worktree.
 
 ## Stale copy
 
-Read this when Phase A finds `{SKILL_DIR}` outside the `installPath` that
+**Phase A reads the two versions in calls of their own,** plain `grep` with the path spelled out:
+the loaded one, `/usr/bin/grep -m1 '^  version:' {SKILL_DIR}/SKILL.md`, and the install record,
+`/usr/bin/grep -B2 -A8 'codereview@' ~/.claude/plugins/installed_plugins.json | /usr/bin/grep -E 'installPath|version'`.
+
+- **Packed into the turn-1 chain, they were lost.** Over 26 `sdd run` REVIEW phases under
+  `claude -p` (2026-10-19 to 2026-11-02, 2.23.2 to 2.27.23), the chain came back "This Bash command
+  contains multiple operations… require approval" 21 times, and 19 phases never read the
+  `installPath` again. One report wrote "carregada do cache instalado" three rounds running without
+  that read.
+- **No single part is the trigger.** Near-identical chains passed in other phases under the same
+  `acceptEdits`. Alone, the record `grep` ran (2026-11-01, rc 0), while `sed` on a path under
+  `~/.claude` was asked as an *edit* of a sensitive file. The `SKILL.md` `grep` was not observed there.
+- **A refused read is re-run alone, as the secrets pre-scan is.** If it still cannot run, the Cost
+  footprint says `installPath not checked` and names no source.
+
+Read the rest when Phase A finds `{SKILL_DIR}` outside the `installPath` that
 `~/.claude/plugins/installed_plugins.json` records. The copy outside can be older or newer, so
 compare the two versions first, the one Phase A read and that record's `version`
 (`printf '%s\n' <loaded> <installed> | sort -V | tail -1` prints the newer).
@@ -656,12 +671,15 @@ These decide whether the rounds converge:
   to `rgb(108, 108, 128)` and the focused action from `rgb(197, 48, 48)` to `rgb(155, 44, 44)`; on
   six screens (three pages at 1440 and 390 px) the difference box was 27×10 px around the label,
   with the page sizes unchanged.
-- **The code a fix round wrote goes to an agent, as a doc does** (*Docs this session wrote*). With
-  ≤3 CODE files the inline shortcut has the orchestrator grade its own fix: send those files to
-  Phase B agents, launch prompt unchanged. Measured 2026-10-19 (magic_tutor, rounds 2–4 over a
-  two-file Python fix): the agent found each round's only MEDIUM — a cached JSON body without `log`
-  that crashed every later run, a `break` that left the older items unreachable — and a test written
-  first went red on each.
+- **Code this session wrote goes to an agent, as a doc does** (*Docs this session wrote*): a fix
+  round's code or the change itself. With ≤3 CODE files the inline shortcut has the orchestrator
+  grade its own code: send those files to Phase B agents, launch prompt unchanged. Measured
+  2026-10-19 (magic_tutor, rounds 2–4 over a two-file Python fix): the agent found each round's only
+  MEDIUM — a cached JSON body without `log` that crashed every later run, a `break` that left the
+  older items unreachable — and a test written first went red on each. Measured again 2026-10-21 on
+  the change itself (magic_tutor PR #49: three CODE files the session wrote, reviewed inline, only
+  the docs sent to agents): Codex then raised a P2 in `descricao.py` ("Include costs for cards
+  without rules text"), accepted and fixed in `c21197f`.
 - **The clean round covers the head it read, and nothing committed after it.** The fix for the last
   LOW, be it a docstring, a comment or one reworded message, is a new head: the series closes on a
   round over it, with the code agent and the sweep (the bullet above), not on the round before it.

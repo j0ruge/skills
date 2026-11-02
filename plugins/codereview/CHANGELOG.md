@@ -2,6 +2,62 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.24] — 2026-11-02
+
+### As leituras de versão viram chamadas próprias, o contrato ilegível tem saída, e o atalho inline não revisa o código da própria sessão
+
+Lições da fila do `retrofit-watch`: 26 fases REVIEW do `sdd run` (`dotp-remake`, `magic_tutor`,
+`mt-maior-valor`, `magic_tutor-p1`; 2026-10-19 a 2026-11-02, skill 2.23.2 a 2.27.23) e uma sessão
+interativa do `magic_tutor`. Cada lição foi conferida no transcript, não só no relato dos leitores.
+O `SKILL.md` segue em 19.999 caracteres: a linha 90 perdeu o `sed` e o caminho do
+`installed_plugins.json`, e o detalhe foi para as references.
+
+- **`SKILL.md` Fase A e `references/configuration.md`, *Stale copy*: as duas leituras de versão em
+  chamadas próprias.**
+  - **O quê:** a versão carregada (`/usr/bin/grep -m1 '^  version:' {SKILL_DIR}/SKILL.md`) e o
+    registro de instalação (`grep` do `installed_plugins.json`) saem do turno 1. Leitura negada se
+    refaz sozinha, como o pre-scan. Se ainda assim não rodar, o rodapé diz `installPath not checked`
+    e não nomeia origem (`report-template.md`, *Cost footprint*).
+  - **Por quê:** nas 26 fases, o composto do turno 1 voltou "This Bash command contains multiple
+    operations… require approval" em 21, e 19 nunca leram o `installPath` de novo. O relatório da
+    3.4a (`40-review-r1.md:151`, e o mesmo na r2 e na r3) escreveu "carregada do cache instalado"
+    sem essa leitura. Na 3.3a, a mesma sonda tinha achado uma cópia velha com hunk de passo (carregada
+    2.26.1, instalada 2.26.2).
+  - **O que não foi isolado:** compostos quase idênticos passaram em outras fases, no mesmo
+    `acceptEdits` (o da sessão `e1fae27c` foi negado e o da `0f51f7a5` passou). Também foi refutada a
+    hipótese de que a culpa fosse do pipe do scan junto com o `installed_plugins.json`: o composto
+    da `feec0c5c` foi negado sem esse arquivo.
+  - **O `sed` saiu da linha 90.** O `sed -n 's/^  version: //p'` sobre `~/.claude/...` foi pedido
+    como *edição* de arquivo sensível mesmo sozinho (`e1fae27c`, L118). O `grep` do registro sozinho
+    rodou com rc 0 (`e1fae27c`, L120). O `grep` do `SKILL.md` não foi observado em `claude -p`;
+    localmente, sobre o cache 2.27.23, devolve a linha da versão com rc 0.
+- **`SKILL.md` Fase B e `references/runtime-routing.md`, *Contrato ilegível*: a única exceção ao
+  "nothing added".**
+  - **O quê:** se um `Read` dentro de `{SKILL_DIR}` foi negado na sessão, os prompts de lançamento,
+    por arquivo e de varredura, ganham no fim a linha
+    `If Read is denied on {SKILL_DIR}, read those files with cat through Bash.` e nada mais.
+  - **Por quê:** de 2026-10-19 a 2026-10-25, 94 de 176 agentes tiveram negado o `Read` do próprio
+    contrato. Na `f4e22bf4`, nenhum dos 19 negados fechou com `END_OF_FILE_REVIEW`. Na `1ae56107`,
+    a varredura teve o `Read` negado e não voltou com `END_OF_DEAD_CODE_SWEEP`.
+
+    Orquestradores furaram a regra para acrescentar a linha, e deu certo: 10 de 11 agentes voltaram
+    com o marcador na `30816c81` e 4 de 4 na relançada da `d153c7be`. A linha também foi usada na
+    `01347895` e na `eb0dabef`.
+  - **Limite:** nas fases do `sdd`, a causa era do kit, que passou a liberar a pasta (`READ_EXTRA`,
+    ADR 0019 do `sdd_agents`). Desde então, nenhuma negação. A linha fica para qualquer sessão cujo
+    `Read` não alcança o cache de plugins.
+- **`SKILL.md` (≤3 CODE) e `references/configuration.md`, *Re-review rounds*: o código que a sessão
+  escreveu vai para um agente, não só o da rodada de conserto.**
+  - **O quê:** o item que mandava a um agente o código de uma rodada de conserto passa a cobrir
+    também a mudança em si (*Code this session wrote*). O atalho inline segue valendo para código de
+    outra sessão.
+  - **Por quê:** no PR #49 do `magic_tutor` (issues #45 e #46), os três arquivos CODE escritos pela
+    sessão foram revisados inline, e só as docs foram para agentes. Depois, o Codex apontou um P2 em
+    `descricao.py` ("Include costs for cards without rules text"), aceito e consertado em `c21197f`.
+- **Fica de fora:**
+  - a `coderabbit-pr`, porque nenhuma fase a usou;
+  - o `echo ======` que o zsh aborta, já descrito no `SKILL.md`, junto à sonda de testes.
+
 ## [2.27.23] — 2026-11-01
 
 ### O registro de fase que um commit posterior envelheceu ganha uma nota datada completa

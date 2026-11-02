@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.27.23
+  version: 2.27.24
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -58,7 +58,7 @@ reads a file only at the step that needs it:
 | B | Per-file analysis (detection passes) | **review-model** agents, in parallel | Pattern matching on code, no deep reasoning |
 | C | Cross-file review, severity calibration, report | **Main model** (whatever the session runs) | Judgment, cross-references, a coherent report |
 
-**≤3 CODE files** → skip routing and run Phase B inline too; the agent overhead isn't worth it.
+**≤3 CODE files** → skip routing and run Phase B inline too; the agent overhead isn't worth it, except on code this session wrote (configuration.md, *Code this session wrote*).
 
 Before B/B2, read `references/runtime-routing.md` for model selection and complete result capture.
 Bind `REVIEW_MODEL`: Codex → `gpt-6.1-terra`; Claude Code → `sonnet`. Pass it explicitly.
@@ -87,7 +87,7 @@ Regardless of failures, always produce a final report listing all files analyzed
 
 Every step is a fixed command with one right answer, so it runs inline, not in an agent: an agent only adds variation, latency and the chance of a silently dropped field — and without the secrets pre-scan JSON the F-grade gate goes blind. Outputs are small.
 
-Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. Three Bash turns cover steps 1–8 — (1) steps 1–3, base-branch detection as one fallback chain, plus this skill's version for the Cost footprint (`sed -n 's/^  version: //p' {SKILL_DIR}/SKILL.md`), `git ls-files '*handoff*'` and, from a plugin cache, the `installPath` in `~/.claude/plugins/installed_plugins.json`: a `{SKILL_DIR}` outside it, older or newer: configuration.md, *Stale copy*; (2) step 4; (3) steps 5–8 as parallel calls in one message:
+Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. Three Bash turns cover steps 1–8 — (1) steps 1–3, base-branch detection as one fallback chain, and `git ls-files '*handoff*'`, with the version and `installPath` read in separate calls (configuration.md, *Stale copy*); (2) step 4; (3) steps 5–8 as parallel calls in one message:
 
 1. Verify git repo:  `git rev-parse --is-inside-work-tree`
 2. Detect base branch (try: origin HEAD symbolic-ref, then main, then master); a stale local base, a merged branch or an isolated worktree: configuration.md, *Base and batching*
@@ -121,7 +121,7 @@ More than 15 CODE files: order the groups by change size (diff stat lines); ever
 
 For each CODE file (or group of 2-3 small files sharing imports), each changed TESTS file on a test-quality focus (6.12) and each DOCS file this session, its pipeline or the handoff it continues wrote (configuration.md, *Docs this session wrote*), **spawn a review-model agent** to analyze it. Launch all agents **in parallel**, in one message.
 
-Each agent reads its instructions itself from `{SKILL_DIR}/references/per-file-agent.md`, so every agent gets the same contract. Emit only the launch prompt below, placeholders filled — nothing added (no themes, framing or reproduction requests: those come back marked `needs reproduction`), nothing removed. `model: REVIEW_MODEL` on every call.
+Each agent reads its instructions itself from `{SKILL_DIR}/references/per-file-agent.md`, so every agent gets the same contract. Emit only the launch prompt below, placeholders filled — nothing added (no themes, framing or reproduction requests: those come back marked `needs reproduction`), nothing removed; exception: a refused `Read` under `{SKILL_DIR}` (runtime-routing.md, *Contrato ilegível*). `model: REVIEW_MODEL` on every call.
 
 ```
 Agent(model: REVIEW_MODEL, prompt: "
