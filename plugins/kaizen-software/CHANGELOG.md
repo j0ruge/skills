@@ -2,6 +2,47 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.11] — 2026-11-02 — sabotagem nos dois sentidos, alerta contado antes de ligar, zero filtrado
+
+Patch: três lições de método da sessão que escreveu a inspeção diária de um site WordPress
+(`wp-inspecao`, que compara o site com a linha de base aprovada). O `SKILL.md` muda só a versão e
+fica com 19.993 caracteres, a 7 do teto de 20 mil. O detalhe foi para as references que a Fase 2,
+item 6, já roteia ("ver *Rótulo ≠ artefato*" e "ver *Poka-yoke*").
+
+- **A sabotagem que prova a suíte vai nos dois sentidos.** A Fase 2 pedia o caso sabotado e o bom,
+  mas não dizia a direção. A sabotagem "não detecta nada" em duas regras do detector derrubou só os 3
+  testes que esperam alerta delas. Os 2 testes de "sem alerta" das mesmas regras ficaram verdes, e
+  nenhuma sabotagem desse tipo os derruba, porque passam com qualquer código que nunca alerta. A sabotagem inversa
+  ("detecta tudo") derrubou os 2. Reproduzido nesta versão sobre uma cópia do commit da
+  ferramenta: 3 falhas com a que cala, 22 com a que alarma, inclusive os 2 negativos.
+  - `kaizen-conceitos.md` § Poka-yoke: **Sabotagem nos dois sentidos**, com a regra (cada teste tem
+    de cair em ao menos uma das sabotagens) e o caso.
+  - `templates.md` § Validação de plano: o item do Check pede a suíte sabotada nos dois sentidos.
+- **Alerta novo se conta na população real antes de ligar.** O plano previa 0 alertas na estreia.
+  Uma varredura só de leitura de 30 dias do log real do proxy, com a regra do plano, daria
+  milhares (os 503 do proxy com o site desligado, acessos ao painel de antes de a regra existir e
+  um `index.php` legítimo de plugin em uploads). Os casos montados do zero não mostram falso
+  positivo em massa, e é ele que ensina o operador a ignorar o alerta, como a skill já dizia.
+  - `kaizen-conceitos.md` § Poka-yoke: **Conte o alerta na população real antes de ligá-lo**, com
+    o caso e o ensaio sem gravar nada no servidor (script pelo stdin do `ssh`, `python3 -I -`).
+  - `templates.md` § Validação de plano: item novo no checklist.
+- **Leitura filtrada vazia com rc 0.** A 1.4.9 mandava conferir a primeira e a última unidade
+  lidas, e uma leitura que volta vazia não tem nenhuma. `docker logs --since 2h` devolveu 0 linhas
+  com rc 0, enquanto `--tail 2` mostrava linhas do mesmo minuto: uma linha corrompida num reboot
+  de julho fazia o leitor do Docker parar, e todo `--since` posterior voltava vazio.
+  - `kaizen-conceitos.md` § Rótulo ≠ artefato: depois do caso da 1.4.9, a regra para o zero
+    filtrado (ler a outra ponta sem o filtro) e o caso.
+- Números: `SKILL.md` 125 linhas e 19.993 caracteres antes e depois; `kaizen-conceitos.md` 64
+  linhas (o parágrafo do Poka-yoke e o do Rótulo ≠ artefato cresceram); `templates.md` +1 linha.
+- Base: `60a2163`. Como reverter: `git revert` do commit que traz esta entrada.
+
+Dívida pré-existente, fora deste patch: o smoke do Codex (`docs/codex/smokes.json`) ainda é o da
+1.4.3. Os INFO F1, F4 e D1 da auditoria já vinham de antes. O `SKILL.md` segue sem
+`metadata.author`. A armadilha "Sonda verde, ou zero, porque não leu o artefato" do `SKILL.md`
+não roteia para o § Rótulo ≠ artefato, onde mora a regra do zero; com 7 caracteres de folga, o
+roteamento e a extração dos casos das Armadilhas para uma reference são tarefa própria da
+`skill-refactoring`.
+
 ## [1.4.10] — 2026-11-01
 
 Patch de correção: o caso que a 1.4.9 pôs em `references/kaizen-conceitos.md` § Gemba dizia que

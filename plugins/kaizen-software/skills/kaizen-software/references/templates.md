@@ -73,7 +73,8 @@ escrita na tabela de desperdícios.
 ## Checklist
 - [ ] Problema em uma frase e métrica de sucesso de cada entrega
 - [ ] Primeira entrega verificável no primeiro incremento
-- [ ] Todo incremento com Check; teste visto vermelho antes; sonda nova com caso sabotado montado do zero, cache da ferramenta incluído
+- [ ] Todo incremento com Check; teste visto vermelho antes; sonda nova com caso sabotado montado do zero, cache da ferramenta incluído; a suíte de um detector sabotada nos dois sentidos (detector que cala e detector que alarma), com cada teste derrubado por uma das sabotagens
+- [ ] Alerta novo contado só em leitura sobre a população real antes de ligar; a expectativa de alertas da estreia sai dessa contagem
 - [ ] Check no artefato que chega ao destino, não no rótulo nem na cópia local
 - [ ] Premissa do pedido sobre acesso ou exposição ("é interno", "é restrito") conferida na permissão do destino, não na palavra de quem pediu
 - [ ] Estado e fontes herdados de handoff ou resumo ("não enviado", "o registro está em X") relidos no destino antes de entrar no plano
