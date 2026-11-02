@@ -322,6 +322,20 @@ phase, and step 7 checks the doc against the diff, not against code the range le
   checked with `git show <head>:<file>`). In the same round an agent given the DOCS folder but not
   the report a doc cited counted 4 reasons in a stale copy under the repo, where the phase's report
   had 3.
+- **A phase record ages with every commit after its phase.** A handoff or report a pipeline phase
+  wrote (`20-handoff-exec.md`, `45-docs.md`, `50-pr.md`, an earlier round's review) describes the
+  head that phase ran on, and each fix round makes some of its lines old again: its agent reads
+  them against `HEAD` and finds them, round after round. In Phase C, findings whose only defect is
+  a commit after the phase get one fix per record: a note at its top, stamped with its date and
+  head, naming the commits after the phase and every value they changed that a reader could act on
+  (an ADR's status, the head the PR carries, a count a gate reads). Leave the body as the phase
+  wrote it: rewritten to the current head, it ages again at the next fix. A partial note is the
+  next round's finding. Measured 2026-11-01 (a .NET rules engine, PR #22, rounds 3 to 5): round 3
+  gave 5 of its 16 LOW on four phase records, 3 of them (`50-pr.md`, `45-docs.md`,
+  `20-handoff-exec.md`) only because `537ffc8` and `74823a9` came after the phase; the fix added
+  dated notes, and round 4 gave 3 LOW on the notes (a past tense for a head that was still the
+  PR's, a count left outside the note, an ADR status the note did not name); with the notes
+  completed, round 5 gave none on the records.
 - **A sentence that confines a change to a list is a claim of absence about the rest.** "the
   split's section now opens at the cast (Replay22, 24 and 25)" says no other section moved. Save
   the per-item detail of everything that changed, not only the totals, so the agent can check the

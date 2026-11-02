@@ -2,6 +2,35 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.23] — 2026-11-01
+
+### O registro de fase que um commit posterior envelheceu ganha uma nota datada completa
+
+Lição das rodadas r3 a r5 do `/codereview` no PR #22 do `dotp-remake` (a missão 3.5c do `sdd`),
+todas com `base=` no head da rodada anterior. O `SKILL.md` segue em 19.999 caracteres: só a versão
+mudou, e a lição foi para a reference.
+
+- **`references/configuration.md`, *Docs this session wrote*: o registro de fase envelhece a cada
+  commit depois da fase.**
+  - **O quê:** um handoff ou relatório que uma fase do pipeline escreveu (`20-handoff-exec.md`,
+    `45-docs.md`, `50-pr.md`, o relatório de uma rodada anterior) descreve o head daquela fase. Na
+    Fase C, os achados cujo único defeito é um commit posterior viram um conserto por registro:
+    uma nota no topo, com data e head, que nomeia os commits depois da fase e cada valor que eles
+    mudaram e que um leitor usaria (o status de um ADR, o head do PR, uma contagem que um gate lê).
+    O corpo fica como a fase o escreveu, porque, reescrito para o head atual, envelhece de novo no
+    próximo conserto. Nota parcial é achado da rodada seguinte.
+  - **Por quê:** a r3 deu 5 dos seus 16 LOWs em quatro registros de fase, 3 deles (`50-pr.md`,
+    `45-docs.md`, `20-handoff-exec.md`) só porque o `537ffc8` e o `74823a9` vieram depois da fase.
+    O conserto pôs notas datadas, e a r4 deu 3 LOWs nelas: um "era o
+    `89f6244`" para um head que ainda era o do PR, a contagem do `grep -c` do `gate:` fora da nota
+    (4 na fase, 5 no head) e o status do ADR 0015, que a nota não citava. Com as notas completas, a
+    r5 não deu nenhum achado nos registros, e Documentation chegou a A.
+  - **Verificação:** as tabelas de achados das três rodadas, no relatório de cada uma; a r5 mandou
+    os três handoffs a um agente, que voltou limpo.
+- **Fica de fora, sem medição:** mandar o registro ao agente com o head da fase na categoria, para
+  ele conferir as afirmações naquele sha (`git show <sha>:<arquivo>`). Mudaria o contrato que todo
+  agente lê (`references/per-file-agent.md`), e não foi testado.
+
 ## [2.27.22] — 2026-11-01
 
 ### O 5.0 da `coderabbit-pr` separa o atraso da API do push que faltou
