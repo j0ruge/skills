@@ -5,7 +5,7 @@ license: MIT
 compatibility: Claude Code 2.1.163+ (Stop additionalContext); testado na 2.1.283 em 2026-09-30. Hook em Python 3, só biblioteca padrão, e git no PATH.
 metadata:
   author: JorUge
-  version: "0.3.3"
+  version: "0.3.4"
 ---
 
 # retrofit-watch
@@ -59,7 +59,8 @@ continua exigindo a sua confirmação.
    ≥ 1, grava uma linha em `${CLAUDE_PLUGIN_DATA}/queue.jsonl`, fora de qualquer repo, com
    sessão, transcript, repo, a fase (`sdd:REVIEW:<sid8>`, do `GIT_REFLOG_ACTION`) e as contagens.
    Trabalho sem atrito não entra. Ao abrir uma sessão interativa, um aviso de uma linha (só para
-   você, fora do contexto) diz quantas retros estão pendentes.
+   você, fora do contexto) diz quantas retros estão pendentes. O `"entrypoint":"cli"` do transcript
+   vence o ambiente: com ele, a sessão recebe a retro ao vivo em vez de ir para a fila.
 
 ## Quando a retro for pedida (ou sob demanda)
 
@@ -92,6 +93,8 @@ Sem argumento, faz a retro de cada skill nossa usada na sessão.
 cada entrada da fila, lendo o transcript da sessão que já acabou. Leia antes a seção 8 do
 `references/criteria.md`: como listar (`python3 <dir da skill>/scripts/retrofit_watch.py queue`),
 onde procurar a evidência no transcript e quando tirar a entrada da fila (`queue --done <id>`).
+Rodado à mão, o `queue` acha sozinho a pasta `~/.claude/plugins/data/retrofit-watch-<loja>`; sem
+ela, com duas, ou com um id que não está na fila, sai 1 e diz por quê. Até a 0.3.3 respondia `[]`.
 
 ## Controle
 
@@ -126,7 +129,11 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
 - **O gate de sessão desassistida** usa `CLAUDE_CODE_SESSION_ATTENDED` e
   `CLAUDE_CODE_ENTRYPOINT`, observadas na 2.1.283 mas não documentadas. Se uma versão nova
   mudar isso, o hook passa a pedir retro também em `-p`, o que dá um turno pago à fase. Confira
-  com o probe da skill `hook-builder`.
+  com o probe da skill `hook-builder`. O erro oposto já aconteceu: entre 2026-10-21 e 2026-11-02,
+  8 sessões interativas (2.1.305 e 2.1.316) chegaram ao hook como desassistidas e foram para a fila.
+  A causa não foi achada (versão, `/clear` e tempo ocioso descartados). Desde a 0.3.4 o `entrypoint`
+  do transcript desempata, e cada entrada da fila grava em `gate` o que o hook viu. O aviso de
+  pendentes no `startup` ainda decide só pelo ambiente.
 - **O transcript some com o tempo** (limpeza do Claude Code, 30 dias por padrão). A entrada cujo
   transcript não existe mais sai como `transcript_exists: false`: sem evidência não há retro, só o
   `queue --done`.

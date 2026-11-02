@@ -143,7 +143,9 @@ A evidência não está no seu contexto, está no transcript da outra sessão. P
    `pipeline.log` do repo dizem o que a fase tentava fazer.
 3. **Aplique as seções 2 a 5** como numa retro comum. A fase não pode mais responder, então todo
    pitfall sem correção verificada fica marcado assim. Atrito que é do repo-alvo ou da missão, e
-   não da skill, é descarte (seção 3).
+   não da skill, é descarte (seção 3). Entrada sem `phase` cujo transcript diz `"entrypoint":"cli"`
+   é sessão interativa que o gate errou (até a 0.3.3): tem prompts seus e outras tarefas, e o
+   filtro da seção 2 pesa mais.
 4. **Tire da fila só o que foi decidido:** `queue --done <id>` depois da sua resposta (retrofit
    feito, achado registrado, ou "sem lições novas"). Entrada com `transcript_exists: false` sai
    sem retro; diga isso no bloco.

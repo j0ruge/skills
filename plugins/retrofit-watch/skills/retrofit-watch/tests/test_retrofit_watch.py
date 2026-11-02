@@ -169,6 +169,11 @@ def prompt(text):
     return [{"type": "user", "message": {"role": "user", "content": text}}]
 
 
+def with_entrypoint(group, entrypoint):
+    """Os registros reais trazem de onde a sessão veio: `cli` (interativa) ou `sdk-cli` (`claude -p`)."""
+    return [dict(entry, entrypoint=entrypoint) for entry in group]
+
+
 def assistant_text(text):
     return [{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": text}]}}]
 
@@ -553,6 +558,70 @@ class StopTest(unittest.TestCase):
         self.cli("queue", "--done", listed["id"])
         self.assertEqual(json.loads(self.cli("queue")), [])
         self.assertIsNone(self.run_hook("pending"))
+
+    def cli_raw(self, *args, data=True):
+        """O `queue` como você o roda à mão: sem CLAUDE_PLUGIN_DATA, que só o hook recebe."""
+        full_env = dict(os.environ, HOME=str(self.w.home))
+        full_env.pop("CLAUDE_PLUGIN_DATA", None)
+        if data:
+            full_env["CLAUDE_PLUGIN_DATA"] = str(self.w.data)
+        return subprocess.run([sys.executable, str(SCRIPT), *args], input="", capture_output=True,
+                              text=True, env=full_env, timeout=20)
+
+    def test_queue_by_hand_finds_the_plugin_data_dir(self):
+        """Sem a variável, o `queue` lia `data/retrofit-watch`, que não existe, e respondia `[]` (2026-11-02)."""
+        real = self.w.home / ".claude/plugins/data/retrofit-watch-chewiesoft-marketplace"
+        real.mkdir(parents=True)
+        (real / "queue.jsonl").write_text(json.dumps({"id": "s9:1", "session": "s9", "skills": []}) + "\n")
+        proc = self.cli_raw("queue", data=False)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual([item["id"] for item in json.loads(proc.stdout)], ["s9:1"])
+        proc = self.cli_raw("queue", "--done", "s9:1", data=False)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual((real / "queue.jsonl").read_text(), "", "o --done tira da fila de verdade")
+
+    def test_queue_without_data_dir_fails_loudly_and_creates_nothing(self):
+        base = self.w.home / ".claude/plugins/data"
+        for args in (("queue",), ("queue", "--done", "s9:1")):
+            proc = self.cli_raw(*args, data=False)
+            self.assertEqual(proc.returncode, 1, f"{args}: uma fila vazia inventada esconde a de verdade")
+            self.assertEqual(proc.stdout, "")
+            self.assertIn("não existe", proc.stderr)
+        self.assertFalse((base / "retrofit-watch").exists(), "o --done não cria a pasta errada")
+
+    def test_queue_with_two_data_dirs_refuses_to_guess(self):
+        for name in ("retrofit-watch-loja-a", "retrofit-watch-loja-b"):
+            (self.w.home / ".claude/plugins/data" / name).mkdir(parents=True)
+        proc = self.cli_raw("queue", data=False)
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("loja-a", proc.stderr)
+        self.assertIn("loja-b", proc.stderr)
+
+    def test_queue_done_with_unknown_id_says_so(self):
+        self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), tool(error=True))
+        self.run_hook(env=UNATTENDED)
+        proc = self.cli_raw("queue", "--done", "nao-existe:1")
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("nao-existe:1", proc.stderr)
+        self.assertEqual(len(self.queued()), 1, "a entrada de verdade fica")
+
+    def test_interactive_transcript_wins_over_unattended_env(self):
+        """Oito sessões interativas (`cli` no transcript) foram para a fila e nunca tiveram a retro ao vivo."""
+        self.write(with_entrypoint(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), "cli"),
+                   with_entrypoint(tool(error=True), "cli"))
+        self.assertIn("codereview", self.context_of(self.run_hook(env=UNATTENDED)))
+        self.assertEqual(self.queued(), [], "sessão interativa não vai para a fila")
+        (self.w.home / ".claude/retrofit-watch.json").write_text(json.dumps({"unattended": "off"}))
+        self.write(with_entrypoint(tool(error=True), "cli"), with_entrypoint(tool(error=True), "cli"))
+        self.assertIsNotNone(self.run_hook(env=UNATTENDED), "o off da config cala a desassistida, não esta")
+
+    def test_headless_transcript_still_queues_and_records_the_gate(self):
+        self.write(with_entrypoint(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), "sdk-cli"),
+                   with_entrypoint(tool(error=True), "sdk-cli"))
+        self.assertIsNone(self.run_hook(env=UNATTENDED))
+        [item] = self.queued()
+        self.assertEqual(item["gate"], {"attended_env": "0", "entrypoint_env": "sdk-cli",
+                                        "entrypoint_transcript": "sdk-cli"})
 
     def test_hooks_json_wires_pending_on_startup(self):
         hooks = json.loads((SCRIPT.parents[3] / "hooks/hooks.json").read_text())["hooks"]

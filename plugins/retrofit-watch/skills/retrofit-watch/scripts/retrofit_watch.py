@@ -23,8 +23,11 @@ Config opcional em ~/.claude/retrofit-watch.json: owners, include, exclude, deny
 unattended ("queue", o padrão, ou "off").
 
 Sessão desassistida (claude -p, fase do sdd run): nada volta para a sessão; com atrito, grava uma
-linha em <data>/queue.jsonl (fora de qualquer repo) para a retro numa sessão com o humano.
+linha em <data>/queue.jsonl (fora de qualquer repo) para a retro numa sessão com o humano. O
+`"entrypoint":"cli"` do transcript vence o ambiente: com ele, a retro vem ao vivo, não vai para a fila.
 Estado em ${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json (offset do transcript e contadores).
+Sem CLAUDE_PLUGIN_DATA (o `queue` rodado à mão), <data> é a única ~/.claude/plugins/data/retrofit-watch-*;
+sem ela, ou com mais de uma, o `queue` sai 1 em vez de responder uma fila vazia.
 Nunca grava texto do assistente. Qualquer erro interno vai para <data>/errors.log e sai com 0.
 Só biblioteca padrão. Roda em Linux, macOS e Windows (lá o `python3` do PATH, sem fcntl).
 """
@@ -54,6 +57,10 @@ SECOND_REVIEW_FRICTION = 2
 STATE_TTL_SECONDS = 14 * 24 * 3600
 QUEUE_FILE = "queue.jsonl"
 GIT_TIMEOUT = 2
+# O transcript grava em cada registro de onde a sessão veio: `cli` na interativa, `sdk-cli` no
+# `claude -p` (medido em 2026-11-02: 69 sessões com retro ao vivo e 12 entradas interativas da fila
+# com `cli`, as 26 entradas de fase do `sdd run` com `sdk-cli`).
+ENTRYPOINT_RE = re.compile(rb'"entrypoint":\s*"([^"]+)"')
 
 BASE_PREFIX = "Base directory for this skill: "
 INTERRUPT = "[Request interrupted by user"
@@ -76,7 +83,15 @@ NO_LESSONS_RE = re.compile(r"sem li[cç][oõ]es novas|no new lessons", re.I)
 class Context:
     def __init__(self, home=None, data_dir=None):
         self.home = Path(os.path.realpath(home or os.environ.get("HOME") or Path.home()))
-        data = data_dir or os.environ.get("CLAUDE_PLUGIN_DATA") or self.home / ".claude/plugins/data/retrofit-watch"
+        data = data_dir or os.environ.get("CLAUDE_PLUGIN_DATA")
+        self.data_candidates = []
+        if not data:
+            # Fora do hook (o `queue` à mão) não há CLAUDE_PLUGIN_DATA. O Claude Code cria a pasta como
+            # `<plugin>-<loja>`; o nome sem a loja nunca existiu, e lê-lo respondia `[]` com 38 retros
+            # na fila (2026-11-02). Ambíguo ou ausente, o `queue` recusa (cmd_queue).
+            base = self.home / ".claude/plugins/data"
+            self.data_candidates = sorted(base.glob("retrofit-watch-*"))
+            data = self.data_candidates[0] if len(self.data_candidates) == 1 else base / "retrofit-watch"
         self.data_dir = Path(data)
         self.config = self._load_config()
         self._installed = None
@@ -610,7 +625,7 @@ def read_queue(ctx):
     return items
 
 
-def enqueue(ctx, payload, entries):
+def enqueue(ctx, payload, entries, entrypoint=None):
     session = payload.get("session_id") or "unknown"
     label = os.environ.get("GIT_REFLOG_ACTION", "")
     cwd = payload.get("cwd") or os.getcwd()
@@ -623,6 +638,11 @@ def enqueue(ctx, payload, entries):
         "repo": _toplevel(cwd) if os.path.isdir(cwd) else None,
         "phase": label if label.startswith("sdd:") else None,
         "skills": [{k: e.get(k) for k in ("label", "mode", "arg", "repo", "work", "friction")} for e in entries],
+        # O que o gate viu. Oito sessões interativas chegaram aqui com o ambiente dizendo desassistida,
+        # por causa não identificada; com isto gravado, o próximo caso traz a causa.
+        "gate": {"attended_env": os.environ.get("CLAUDE_CODE_SESSION_ATTENDED"),
+                 "entrypoint_env": os.environ.get("CLAUDE_CODE_ENTRYPOINT"),
+                 "entrypoint_transcript": entrypoint},
     }
     lock = _queue_lock(ctx)
     try:
@@ -633,13 +653,16 @@ def enqueue(ctx, payload, entries):
 
 
 def drain(ctx, ids):
+    """Tira da fila as entradas de `ids` e devolve os ids que de fato saíram."""
     lock = _queue_lock(ctx)
     try:
-        keep = [item for item in read_queue(ctx) if item["id"] not in ids]
+        items = read_queue(ctx)
+        keep = [item for item in items if item["id"] not in ids]
         fd, tmp = tempfile.mkstemp(dir=ctx.data_dir, prefix=".tmp-queue-")
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             fh.writelines(json.dumps(item, ensure_ascii=False) + "\n" for item in keep)
         os.replace(tmp, ctx.data_dir / QUEUE_FILE)
+        return {item["id"] for item in items if item["id"] in ids}
     finally:
         _unlock(lock)
 
@@ -653,8 +676,8 @@ def record_metric(ctx, payload, pending):
 
 def cmd_stop(payload, ctx):
     mode = session_mode(ctx)
-    if mode == "off":
-        return None
+    if mode == "off" and os.environ.get("RETROFIT_WATCH", "").lower() == "off":
+        return None  # o `off` da config cala só a sessão desassistida: decide depois do transcript
     transcript = payload.get("transcript_path")
     if not transcript or not os.path.isfile(transcript):
         return None
@@ -662,6 +685,16 @@ def cmd_stop(payload, ctx):
         st = state.data
         chunk, new_offset = read_delta(transcript, st["offset"])
         st["offset"] = new_offset
+        found = None
+        for found in ENTRYPOINT_RE.finditer(chunk):
+            pass
+        if found:
+            st["entrypoint"] = found.group(1).decode("utf-8", "replace")
+        if mode in ("queue", "off") and st.get("entrypoint") == "cli":
+            mode = "attended"  # o ambiente disse desassistida numa sessão interativa (ver o gate da fila)
+        if mode == "off":
+            state.save()
+            return None
         if payload.get("stop_hook_active"):
             if st["pending"]:
                 record_metric(ctx, payload, st["pending"])
@@ -684,7 +717,7 @@ def cmd_stop(payload, ctx):
             state.save()
             return None
         if mode == "queue":
-            enqueue(ctx, payload, ready)
+            enqueue(ctx, payload, ready, st.get("entrypoint"))
             output = None
         else:
             output = build_output(ready)
@@ -710,9 +743,29 @@ def cmd_pending(payload, ctx):
 
 
 def cmd_queue(argv, ctx):
-    """`queue` lista a fila em JSON; `queue --done ID...` tira as entradas já retradas."""
+    """`queue` lista a fila em JSON; `queue --done ID...` tira as entradas já retradas.
+
+    Sai 1, sem tocar em nada, quando a pasta de dados não existe ou é ambígua, e quando um id do
+    `--done` não está na fila: responder `[]` ou "tirei" nesses casos esconde a fila de verdade.
+    """
+    if len(ctx.data_candidates) > 1:
+        sys.stderr.write("retrofit-watch: mais de uma pasta de dados: "
+                         + ", ".join(str(p) for p in ctx.data_candidates)
+                         + ". Defina CLAUDE_PLUGIN_DATA com a certa.\n")
+        return 1
+    if not ctx.data_dir.is_dir():
+        sys.stderr.write(f"retrofit-watch: a pasta de dados não existe: {ctx.data_dir}. Sem ela não há "
+                         "fila para ler; defina CLAUDE_PLUGIN_DATA com a pasta do plugin em "
+                         "~/.claude/plugins/data/.\n")
+        return 1
     if argv[:1] == ["--done"]:
-        drain(ctx, set(argv[1:]))
+        ids = set(argv[1:])
+        removed = drain(ctx, ids)
+        sys.stderr.write(f"retrofit-watch: {len(removed)} entrada(s) tirada(s) da fila em {ctx.data_dir}.\n")
+        missing = sorted(ids - removed)
+        if missing:
+            sys.stderr.write("retrofit-watch: não estavam na fila: " + ", ".join(missing) + "\n")
+            return 1
         return 0
     items = read_queue(ctx)
     for item in items:

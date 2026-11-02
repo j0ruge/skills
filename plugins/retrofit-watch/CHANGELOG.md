@@ -1,5 +1,45 @@
 # Changelog — retrofit-watch
 
+## [0.3.4] — 2026-11-02
+
+### Fixed
+
+- **O `queue` rodado à mão respondia `[]` com 38 retros na fila.**
+  - Sem `CLAUDE_PLUGIN_DATA`, que só o hook recebe, o script caía em `~/.claude/plugins/data/retrofit-watch`.
+    A pasta que o Claude Code cria é `retrofit-watch-<loja>`. Esse era o comando que a `SKILL.md` e o
+    §8 do `criteria.md` mandam rodar, e a lista vazia não deixava ver as 38 entradas acumuladas desde
+    2026-10-19 em `retrofit-watch-chewiesoft-marketplace`.
+  - O `queue --done` errava do mesmo jeito: criava a pasta errada e saía 0 sem tirar nada da fila.
+  - Os testes não pegavam isso porque sempre passavam a variável.
+  - Agora, sem a variável, o script usa a única `retrofit-watch-*` que encontrar. Sem nenhuma, ou com
+    duas, o `queue` e o `--done` saem 1 com o caminho no stderr e não criam nada.
+  - O `--done` passa a dizer quantas entradas tirou e sai 1 quando um id não está na fila. Era o
+    último caminho calado para o mesmo sintoma.
+- **Sessão interativa ia para a fila e nunca recebia a retro ao vivo.**
+  - Entre 2026-10-21 e 2026-11-02, 8 sessões interativas viraram 12 entradas da fila, nas versões
+    2.1.305 e 2.1.316. Todas tinham `"entrypoint":"cli"` no transcript e de 2 a 60 prompts do usuário.
+    Nenhuma está no `metrics.jsonl`, e esse arquivo só registra a retro feita ao vivo.
+  - O ambiente que o hook recebeu dizia desassistida, por causa não identificada. Foram descartados:
+    - a versão: a 2.1.316 também aparece nas sessões com retro ao vivo;
+    - o `/clear`: 61 das sessões com retro ao vivo também começam com ele;
+    - o tempo ocioso: as entradas foram gravadas de 0,1 a 58 min depois do último prompt, e houve
+      retros ao vivo com até 314 min.
+  - Agora o `entrypoint` do transcript desempata. Com `cli`, a sessão conta como assistida. O campo
+    vem do mesmo trecho que o hook já lia, e o valor fica guardado no estado da sessão.
+  - Reaplicada aos transcripts reais, a regra classifica certo os 107 casos: 69 sessões com retro ao
+    vivo (`cli`), as 26 entradas de fase do `sdd run` (`sdk-cli`) e as 12 entradas interativas (`cli`).
+  - O `"unattended": "off"` da config passa a valer depois do desempate e cala só a sessão de fato
+    desassistida. Só o `RETROFIT_WATCH=off` sai antes de ler o transcript.
+  - Cada entrada da fila grava em `gate` o que o hook viu (`CLAUDE_CODE_SESSION_ATTENDED`,
+    `CLAUDE_CODE_ENTRYPOINT` e o entrypoint do transcript), para que o próximo caso traga a causa.
+  - Limite conhecido: o aviso de pendentes no `SessionStart` (`startup`) ainda decide só pelo
+    ambiente, porque o transcript está vazio nesse ponto.
+- O §8 do `criteria.md` avisa que uma entrada sem `phase` e com `cli` é uma sessão interativa: tem
+  prompts do usuário e outras tarefas.
+- **Seis testes novos.** Contra o script da 0.3.3, os seis falham, cada um com o sintoma original:
+  `[] != ['s9:1']`, "esperava um pedido de retro" e rc 0 onde devia ser 1. Uma mutação que devolve a
+  saída antecipada antiga para o `off` da config também é pega.
+
 ## [0.3.3] — 2026-10-09
 
 ### Fixed
