@@ -2,6 +2,28 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.15] — 2026-11-02 — o número na prosa se confere pelo valor, recalculado das contagens
+
+Patch: uma lição da sessão que escreveu o capítulo de resultados de uma monografia de TCC a partir
+dos JSON de resultado. A Fase 2, item 6, já mandava tirar de um comando o número que vai do
+artefato para a prosa, e faltava o caso do arredondamento duplo: o artefato grava o número já
+arredondado (4 casas num JSON), a prosa usa menos casas, e arredondar de novo o valor gravado erra
+a última casa quando o primeiro arredondamento deixou um 5 no fim. O `SKILL.md` muda só a versão e
+fica com 19.996 caracteres; o detalhe foi para as references que o item 6 já roteia ("ver *Rótulo
+≠ artefato*").
+
+- **O número na prosa também é rótulo.** O limite superior do IC de Wilson de 0/153 estava gravado
+  como 0,0245; arredondado de novo para três casas daria 0,025, e recalculado das contagens dá
+  0,024494, ou seja, 0,024 (conferido nesta versão: `z*z/(n+z*z)` com z = 1,96 e n = 153 dá
+  0,0244935). No mesmo dia, a prosa deu "82,9 %" a duas fontes com cobertura de 82,95 e 82,93 %
+  (798 e 797 quadros observados, 164 faltantes em cada), que arredondam para 83,0 e 82,9; uma sonda
+  que recalcula cada número da frase a partir do JSON achou o segundo caso. Um Check que só procura
+  o número no texto não pega nenhum dos dois.
+  - `kaizen-conceitos.md` § Rótulo ≠ artefato: **O número na prosa também é rótulo**, com a regra
+    (conferir valor a valor, na precisão impressa; recalcular das contagens brutas) e os dois casos.
+  - `templates.md` § Validação de plano: o item "Check no artefato que chega ao destino" ganhou a
+    conferência do número copiado para a prosa.
+
 ## [1.4.14] — 2026-11-02 — camadas, ensaio e filtro de saída; as funções e os métodos de Shingo
 
 Patch: três lições de método da sessão que fechou as condições do HQ para reabrir um site
