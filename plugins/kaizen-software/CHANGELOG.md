@@ -2,6 +2,41 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.12] — 2026-11-02 — estado herdado de um caso anterior da mesma rodada
+
+Patch: uma lição do teste de um expedidor de logs (rsyslog lendo arquivos e guardando a posição de
+leitura num volume). A Fase 2, item 6, já avisava que fixture herdada de uma rodada *anterior* pode
+dar verde sem testar nada, mas não cobria o estado deixado por um caso anterior da *mesma* rodada.
+
+- **O caso que dá verde pelo que o anterior gravou.** Os casos novos do teste, parada limpa e
+  `kill -9`, cada um com recriação, ficavam vermelhos com o volume sabotado (0 de 10 linhas): a
+  sonda via a perda. Com a configuração ainda sem a correção, o do `kill -9` dava verde, porque
+  rodava depois da parada limpa e de uma rotação, que fecham arquivos e gravam a posição. O spool
+  do teste tinha estado gravado; o do expedidor em produção estava vazio cerca de 10 minutos
+  depois do start, e foi essa diferença que mostrou o falso verde. Movido para antes de qualquer
+  parada limpa ou rotação, o caso ficou vermelho; a correção deu verde e foi reaplicada em
+  produção.
+  - Reproduzido nesta versão sobre uma cópia do commit do teste, com Docker local: ordem atual e
+    conf corrigida, 10/10 e 4 arquivos de posição no spool; ordem atual e conf sem a correção, o
+    caso do `kill -9` com 0 de 10 e o spool vazio; ordem antiga (o `kill -9` depois da parada
+    limpa) e conf sem a correção, 10/10 verde, com 6 arquivos de posição no spool; spool fora do
+    volume, os casos de parada limpa e de `kill -9` com 0 de 10 cada.
+  - `SKILL.md`, Fase 2 item 6: "fixture herdada de uma rodada anterior" virou "estado herdado de
+    rodada ou caso anterior" (+3 caracteres). Estado inclui a fixture, e o exemplo do hardlink
+    numa pasta de rodada anterior continua na reference.
+  - `kaizen-conceitos.md` § Poka-yoke: **Estado herdado de um caso anterior da mesma rodada**, com
+    a regra (o caso da falha brusca antes de qualquer evento que grave o estado de que depende; o
+    estado do teste no momento do caso conferido contra o do Gemba) e o caso.
+  - `templates.md` § Validação de plano: o item do Check ganhou a mesma regra.
+- Por que não um bullet novo em Armadilhas: o `SKILL.md` estava a 7 caracteres do teto de 20 mil.
+- Números: `SKILL.md` 125 linhas e 19.996 caracteres; `kaizen-conceitos.md` 64 linhas (o parágrafo
+  do Poka-yoke cresceu); `templates.md` 164 linhas (o item do Check cresceu).
+- Base: `9a8cc72`. Como reverter: `git revert` do commit que traz esta entrada.
+
+Dívida pré-existente, fora deste patch: a mesma registrada na 1.4.11 (smoke do Codex na 1.4.3,
+INFO F1, F4 e D1, `SKILL.md` sem `metadata.author`, extração dos casos das Armadilhas para uma
+reference como tarefa da `skill-refactoring`).
+
 ## [1.4.11] — 2026-11-02 — sabotagem nos dois sentidos, alerta contado antes de ligar, zero filtrado
 
 Patch: três lições de método da sessão que escreveu a inspeção diária de um site WordPress
