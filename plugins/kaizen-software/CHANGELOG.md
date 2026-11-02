@@ -2,6 +2,58 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.14] — 2026-11-02 — camadas, ensaio e filtro de saída; as funções e os métodos de Shingo
+
+Patch: três lições de método da sessão que fechou as condições do HQ para reabrir um site
+(provas de gatilho no Zabbix, páginas novas num KB, consulta aos logs centrais) e o reforço do
+verbete *Poka-yoke* com pesquisa, a pedido do usuário. O `SKILL.md` muda só a versão e fica com
+19.996 caracteres. O detalhe foi para as references que a Fase 2, item 6, já roteia ("ver
+*Poka-yoke*").
+
+- **A sabotagem de uma camada atravessa as outras.** A 1.4.11 pedia que cada teste caísse em ao
+  menos uma sabotagem; faltava a outra metade, cada camada sabotada derrubar ao menos um teste. No
+  script de consulta de um receptor de logs, a fonte é um nome de pasta validado e depois conferido
+  como pasta existente. Sem a validação do nome, o caso `../etc` seguiu verde porque a pasta não
+  existia e a segunda defesa o recusou. Reproduzido nesta versão sobre uma cópia da skill que tem o
+  script: com a validação, 9 de 9; sem ela, `../etc` 9 de 9 (verde) e `../srv-logs/<ip>` 8 de 9
+  (`FAIL 4`).
+  - `kaizen-conceitos.md` § Poka-yoke: **A sabotagem de uma camada atravessa as outras**, com a
+    regra, o paralelo com o mutante que sobrevive (documentação do Cosmic Ray, *Theory*) e o caso.
+- **Ensaio pelo mesmo caminho da escrita.** O dry-run de comandos RouterOS 6 conferia o argumento
+  de menu único com `get` e deu verde; a aplicação recusou `ntp client set … mode=unicast`
+  (`expected end of command`), porque sem o pacote `ntp` o `mode` é só leitura. As sabotagens do
+  ensaio só cobriam nome e valor inválidos. O ensaio ganhou o `export verbose` do submenu e o
+  aviso do que só se valida ao aplicar. Caso datado (o roteador é de produção; não reproduzido).
+  - `kaizen-conceitos.md` § Poka-yoke: **Ensaio pelo mesmo caminho da escrita**, depois do
+    *Dublê de teste é sonda*, de que ele é um caso.
+- **Filtro de saída: o primeiro dado real já é a prova.** Um leitor de páginas de um KB escondia a
+  linha que tivesse "senha", "password" ou "user:"; numa tabela de credenciais a palavra só está no
+  cabeçalho, e as linhas de dados saíram no histórico da sessão. Em máscara e redação a falha é a
+  exposição, e não existe Check depois dela. Os leitores que o substituíram listam o que pode sair
+  (tags, contagens, `<th>`) e ficaram vermelhos em cópias sabotadas para imprimir texto, com
+  `SEGREDO_*` em `<p>`, `<li>`, `<td>`, `<pre>`, na variante e no stderr.
+  - `kaizen-conceitos.md` § Poka-yoke: **Filtro de saída**, com CWE-184 (*Incomplete List of
+    Disallowed Inputs*: "often only address the most well-known bad inputs") e o *Input
+    Validation Cheat Sheet* da OWASP (§ Allowlist vs Denylist), conferidos nas páginas em
+    2026-11-02.
+  - `templates.md` § Validação de plano: o item do Check ganhou as duas primeiras regras, e um item
+    novo traz a terceira.
+- **Reforço do conceito (pesquisa).** O verbete *Poka-yoke* abre com as duas funções de Shingo
+  (controle, que não deixa o processo começar ou continuar depois do erro; aviso, que sinaliza sem
+  impedir) e os três métodos (contato, valor fixo e passo-movimento), cada um ligado ao seu
+  equivalente em software e às regras que a skill já tinha. Fonte: *Encyclopedia of Management*,
+  verbete *Poka-Yoke*, conferida na página em 2026-11-02.
+- Números: `SKILL.md` 125 linhas e 19.996 caracteres antes e depois; `kaizen-conceitos.md` 64
+  linhas e 21.745 caracteres (eram 17.611); `templates.md` 170 linhas (eram 169). Medido com
+  `wc -lm`.
+- Base: `9f856d2`. Como reverter: `git revert` do commit que traz esta entrada.
+
+Dívida pré-existente, fora deste patch: a mesma registrada na 1.4.13 (smoke do Codex na 1.4.3,
+INFO F1, F4 e D1, `SKILL.md` sem `metadata.author`, extração dos casos das Armadilhas para uma
+reference como tarefa da `skill-refactoring`). O `/claude-api prompt-audit` que o `CLAUDE.md` do
+repo pede a cada retrofit não rodou nas 1.4.11 a 1.4.14; fica como tarefa própria. O verbete
+*Poka-yoke* é uma linha só de 10.991 caracteres (`awk` `length`) e pede a mesma extração.
+
 ## [1.4.13] — 2026-11-02 — inventário contra todas as listas; decisão do usuário conferida nos dados
 
 Patch: duas lições de método da sessão que montou o roteiro de conclusão de um TCC (o que falta até

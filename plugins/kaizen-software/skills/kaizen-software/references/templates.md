@@ -76,9 +76,10 @@ escrita na tabela de desperdícios.
 ## Checklist
 - [ ] Problema em uma frase e métrica de sucesso de cada entrega
 - [ ] Primeira entrega verificável no primeiro incremento
-- [ ] Todo incremento com Check; teste visto vermelho antes; sonda nova com caso sabotado montado do zero, cache da ferramenta incluído; em casos que rodam em sequência e compartilham estado, o de falha brusca antes de qualquer evento que grave esse estado, e o estado do teste no momento do caso conferido contra o do Gemba; a suíte de um detector sabotada nos dois sentidos (detector que cala e detector que alarma), com cada teste derrubado por uma das sabotagens
+- [ ] Todo incremento com Check; teste visto vermelho antes; sonda nova com caso sabotado montado do zero, cache da ferramenta incluído; em casos que rodam em sequência e compartilham estado, o de falha brusca antes; com defesas em camadas, cada camada sabotada derruba ao menos um teste; ensaio (dry-run, `--check`) pela mesma validação da escrita, ou dizendo o que não valida de qualquer evento que grave esse estado, e o estado do teste no momento do caso conferido contra o do Gemba; a suíte de um detector sabotada nos dois sentidos (detector que cala e detector que alarma), com cada teste derrubado por uma das sabotagens
 - [ ] Alerta novo contado só em leitura sobre a população real antes de ligar; a expectativa de alertas da estreia sai dessa contagem
 - [ ] Check no artefato que chega ao destino, não no rótulo nem na cópia local
+- [ ] Filtro de saída (máscara, redação, resumo que esconde o corpo) em lista do que pode sair, com vermelho provado por segredo falso em cada forma (célula, linha solta, bloco, erro) antes do primeiro dado real
 - [ ] Premissa do pedido sobre acesso ou exposição ("é interno", "é restrito") conferida na permissão do destino, não na palavra de quem pediu
 - [ ] Estado e fontes herdados de handoff ou resumo ("não enviado", "o registro está em X") relidos no destino antes de entrar no plano
 - [ ] Inventário do que falta cruzado com todas as listas de pendências do projeto (a tabela do handoff e as listas abaixo dela, o ledger, o TODO, o tracker), não só com a primeira
