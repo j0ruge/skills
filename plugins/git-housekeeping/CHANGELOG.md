@@ -1,5 +1,29 @@
 # Changelog — `git-housekeeping`
 
+## [0.5.0] — 2026-11-02
+
+### Os ignorados que vão junto saem em três grupos: sem outra cópia, igual no principal, regeneráveis
+
+Nasceu da limpeza do `magic_tutor` depois dos PRs #150 a #152.
+
+- **O quê:** o `Item` do worktree ganha `regen` e `copies`. Regenerável é o ignorado de nome
+  conhecido (`REGENERAVEIS`: `__pycache__`, `node_modules`, `build`, `.pytest_cache`…), o
+  `*.egg-info`, a pasta com `pyvenv.cfg` (um venv, qualquer que seja o nome) e o link. Igual no
+  principal é o ignorado que o worktree principal guarda no mesmo caminho, byte a byte, com a
+  pasta comparada só até `TETO_ARQUIVOS` (2.000) e `TETO_BYTES` (64 MiB). O relatório mostra
+  `sem outra cópia: …; igual no principal: …; regeneráveis: …`, e o passo 2 do `SKILL.md` manda
+  ler em voz alta só o primeiro grupo. O `ignored` não mudou: a recusa por ignorado novo do
+  `apply_plan.py` segue igual.
+- **Por quê:** o worktree `23d3` do `magic_tutor` listava 16 ignorados num saco só. Entre eles
+  estavam 11 caches ou venv (o `.venv-gui/` de 256 MB) e 3 mocks `.impeccable/*.png` iguais aos do
+  checkout, e os rascunhos `.superpowers/sdd/` só existiam ali. Separar o que se perdia de fato
+  custou três checagens à mão (`cmp` contra o checkout, `find .superpowers -type f`) antes da 1ª
+  confirmação.
+- **Testes:** `IgnoradosPorGrupoTest` (`test_classify.py`: os três grupos, o teto, a pasta com
+  arquivo a mais) e dois em `test_analyze.py` (a linha do relatório e o worktree só com
+  regeneráveis). Os novos falharam antes do código; a suíte foi de 74 para 79.
+- **Dívida que fica:** o smoke do Codex em `docs/codex/smokes.json` ainda é o da 0.1.0.
+
 ## [0.4.0] — 2026-10-26
 
 ### O symlink ignorado sai marcado, e o worktree com um processo dentro fica

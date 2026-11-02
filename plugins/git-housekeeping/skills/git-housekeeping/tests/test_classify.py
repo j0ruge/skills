@@ -377,3 +377,56 @@ class ProcessosTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class IgnoradosPorGrupoTest(unittest.TestCase):
+    """Os ignorados que vão junto em três grupos: sem outra cópia, igual no principal e regeneráveis.
+    Na limpeza do magic_tutor (2026-11-02), um worktree levava 16 ignorados num saco só, caches de
+    um lado e rascunhos sem cópia do outro, e separar custou três checagens à mão."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        fx = self.fx = Fixture(Path(self.tmp.name))
+        with open(fx.clone / ".git" / "info" / "exclude", "a", encoding="utf-8") as f:
+            f.write("__pycache__/\nvenv-x/\nnotas/\niguais/\n*.png\npkg.egg-info/\n")
+        fx.branch("feat/g"); fx.merge("feat/g", pr=False)
+        wt = self.wt = fx.worktree("wt-g", "feat/g")
+        (wt / "__pycache__").mkdir(); (wt / "__pycache__" / "m.pyc").write_bytes(b"\0")
+        (wt / "pkg.egg-info").mkdir(); (wt / "pkg.egg-info" / "PKG-INFO").write_text("x")
+        (wt / "venv-x" / "bin").mkdir(parents=True)
+        (wt / "venv-x" / "pyvenv.cfg").write_text("home = /usr/bin\n")
+        (wt / "notas").mkdir(); (wt / "notas" / "a.md").write_text("só aqui")
+        (wt / ".env.local").write_text("X=1\n")
+        for base in (wt, fx.clone):
+            (base / "iguais").mkdir(exist_ok=True)
+            (base / "iguais" / "um.txt").write_text("1")
+            (base / "iguais" / "dois.txt").write_text("2")
+            (base / "mock.png").write_bytes(b"PNG-igual")
+        (wt / "outro.png").write_bytes(b"AAAA")
+        (fx.clone / "outro.png").write_bytes(b"BBBB")  # mesmo tamanho, conteúdo diferente
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def item(self):
+        with mock.patch.dict(os.environ, self.fx.env()):
+            items = hk.classify(hk.load_facts(self.fx.clone))
+        return next(i for i in items if i.kind == "worktree")
+
+    def test_tres_grupos(self):
+        i = self.item()
+        self.assertEqual(i.decision, "delete", i.reason)
+        self.assertEqual(i.regen, ["__pycache__/", "pkg.egg-info/", "venv-x/"])
+        self.assertEqual(i.copies, ["iguais/", "mock.png"])
+        sem_copia = [x for x in i.ignored if x not in i.regen + i.copies]
+        self.assertEqual(sem_copia, [".env.local", "notas/", "outro.png"])
+
+    def test_pasta_acima_do_teto_nao_e_comparada(self):
+        with mock.patch.object(hk, "TETO_ARQUIVOS", 1):
+            i = self.item()
+        self.assertNotIn("iguais/", i.copies)
+        self.assertIn("mock.png", i.copies)
+
+    def test_pasta_com_arquivo_a_mais_no_worktree_nao_e_copia(self):
+        (self.wt / "iguais" / "tres.txt").write_text("3")
+        self.assertNotIn("iguais/", self.item().copies)

@@ -6,6 +6,7 @@ load_facts, que não apaga ref nenhuma, nada aqui escreve no repo.
 """
 from __future__ import annotations
 
+import filecmp
 import fnmatch
 import json
 import os
@@ -23,6 +24,14 @@ LONG_LIVED = ("main", "master", "develop", "staging", "production", "release/*")
 # além dele esconderia uma proteção, e por isso o gh passa a contar como indisponível.
 PR_LIMIT = 1000
 PR_FIELDS = "number,headRefName,headRefOid,baseRefName,isCrossRepository"
+# Ignorado que se recria (cache, saída de build, dependência instalada): o relatório o separa do que
+# não tem outra cópia. A pasta com pyvenv.cfg é um venv, qualquer que seja o nome (.venv-gui/).
+REGENERAVEIS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".nox",
+                ".hypothesis", "node_modules", "build", "dist", "htmlcov", ".coverage", ".next",
+                ".turbo", ".parcel-cache"}
+# A pasta ignorada só é comparada com a do worktree principal até aqui; acima, nada se afirma.
+TETO_ARQUIVOS = 2000
+TETO_BYTES = 64 * 1024 * 1024
 KIND_PT = {"worktree": "worktree", "local-branch": "branch local",
            "remote-branch": "branch remota", "remote-tracking": "ref remote-tracking"}
 
@@ -91,6 +100,8 @@ class Item:
     kb: int = 0
     ignored: list = field(default_factory=list)
     links: dict = field(default_factory=dict)
+    regen: list = field(default_factory=list)
+    copies: list = field(default_factory=list)
     author: str = ""
 
 
@@ -289,6 +300,34 @@ def dir_kb(path) -> int:
             blocks = getattr(st, "st_blocks", None)
             total += blocks * 512 if blocks is not None else st.st_size
     return total // 1024
+
+
+def regeneravel(path) -> bool:
+    """O ignorado se recria: cache ou saída conhecida pelo nome, ou um venv (tem pyvenv.cfg)."""
+    name = os.path.basename(os.path.normpath(path))
+    return (name in REGENERAVEIS or name.endswith(".egg-info")
+            or os.path.isfile(os.path.join(path, "pyvenv.cfg")))
+
+
+def copia_igual(src, dst) -> bool:
+    """`dst` guarda tudo o que `src` tem, byte a byte; pasta só até o teto (acima: False).
+
+    O symlink conta pelo destino que ele guarda, não pelo conteúdo para onde aponta."""
+    if os.path.islink(src):
+        return os.path.islink(dst) and os.readlink(src) == os.readlink(dst)
+    if os.path.isfile(src):
+        return os.path.isfile(dst) and not os.path.islink(dst) and filecmp.cmp(src, dst, shallow=False)
+    if not os.path.isdir(src) or not os.path.isdir(dst):
+        return False
+    files, total = [], 0
+    for root, _dirs, names in os.walk(src):
+        for name in names:
+            path = os.path.join(root, name)
+            files.append(path)
+            total += 0 if os.path.islink(path) else os.lstat(path).st_size
+            if len(files) > TETO_ARQUIVOS or total > TETO_BYTES:
+                return False
+    return all(copia_igual(f, os.path.join(dst, os.path.relpath(f, src))) for f in files)
 
 
 def git_kb(repo) -> int:
@@ -571,6 +610,14 @@ def _classify_worktree(facts: Facts, wt: Worktree, base: dict) -> Item:
     # O symlink ignorado (o .venv que aponta para o do checkout) sai sem levar o destino.
     out.links = {x: os.readlink(os.path.join(wt.path, x.rstrip("/"))) for x in out.ignored
                  if os.path.islink(os.path.join(wt.path, x.rstrip("/")))}
+    # O que se recria e o que o worktree principal guarda igual: o resto é o que se perde de fato.
+    main = next((w.path for w in facts.worktrees if w.main), "")
+    for x in out.ignored:
+        path = os.path.join(wt.path, x.rstrip("/"))
+        if x in out.links or regeneravel(path):
+            out.regen.append(x)
+        elif main and copia_igual(path, os.path.join(main, x.rstrip("/"))):
+            out.copies.append(x)
     return out
 
 

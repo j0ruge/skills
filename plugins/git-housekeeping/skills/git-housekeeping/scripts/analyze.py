@@ -30,6 +30,26 @@ def _label(plan: dict, item: dict) -> str:
     return f"{plan['remote']}/{item['name']}" if item["kind"] == "remote-tracking" else item["name"]
 
 
+def _ignored(item: dict) -> str:
+    """Os ignorados do worktree em três grupos: sem outra cópia (o que se perde de fato, com ⚠ no
+    .env*), igual no worktree principal, e regeneráveis (o link conta aqui: só o link sai)."""
+    if not item["ignored"]:
+        return "nenhum"
+    links, regen, copies = item.get("links", {}), item.get("regen", []), item.get("copies", [])
+
+    def name(x):
+        return (("⚠ " if Path(x.rstrip("/")).name.startswith(".env") else "") + x
+                + (f" → {links[x]} (link: só o link sai)" if x in links else ""))
+
+    lost = [name(x) for x in item["ignored"] if x not in regen and x not in copies]
+    parts = [f"sem outra cópia: {', '.join(lost) or 'nenhum'}"]
+    if copies:
+        parts.append(f"igual no principal: {', '.join(name(x) for x in copies)}")
+    if regen:
+        parts.append(f"regeneráveis: {', '.join(name(x) for x in regen)}")
+    return "; ".join(parts)
+
+
 def render(plan: dict) -> str:
     """O relatório em texto: cabeçalho, os três grupos com o motivo de cada item, e o disco."""
     gh = "sim" if plan["gh_available"] else f"não ({plan['gh_reason']})"
@@ -48,11 +68,7 @@ def render(plan: dict) -> str:
             if i["author"]:
                 line += f"  [último commit: {i['author']}]"
             if i["kind"] == "worktree" and decision == "delete" and i["action"] == "remove":
-                links = i.get("links", {})
-                names = [("⚠ " if Path(x.rstrip("/")).name.startswith(".env") else "") + x
-                         + (f" → {links[x]} (link: só o link sai)" if x in links else "")
-                         for x in i["ignored"]]
-                line += f"  [{mb(i['kb'])}; ignorados que vão junto: {', '.join(names) or 'nenhum'}]"
+                line += f"  [{mb(i['kb'])}; ignorados que vão junto: {_ignored(i)}]"
             lines.append(line)
         lines.append("")
     disk = plan["disk"]

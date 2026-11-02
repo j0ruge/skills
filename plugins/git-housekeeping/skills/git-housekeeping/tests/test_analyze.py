@@ -104,6 +104,38 @@ class AnalyzeCliTest(unittest.TestCase):
         self.assertEqual(item["decision"], "delete")
         self.assertEqual(item["links"], {".venv": str(venv)})
 
+    def test_ignorados_saem_em_tres_grupos(self):
+        """O relatório separa o que não tem outra cópia do que é igual no principal e do que se recria."""
+        self.fx.branch("feat/g"); self.fx.merge("feat/g", pr=False)
+        wt = self.fx.worktree("wt-g", "feat/g")
+        with open(self.fx.clone / ".git" / "info" / "exclude", "a", encoding="utf-8") as f:
+            f.write("__pycache__/\nnotas/\n*.png\n.venv\n")
+        (wt / "__pycache__").mkdir(); (wt / "__pycache__" / "m.pyc").write_bytes(b"\0")
+        (wt / "notas").mkdir(); (wt / "notas" / "a.md").write_text("só aqui")
+        (wt / ".env.local").write_text("X=1\n")
+        for base in (wt, self.fx.clone):
+            (base / "mock.png").write_bytes(b"PNG")
+        venv = self.root / "venv-do-checkout"; venv.mkdir()
+        (wt / ".venv").symlink_to(venv)
+        r = run(self.fx, "--repo", self.fx.clone, "--plan", self.plan)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        linha = next(x for x in r.stdout.splitlines() if "wt-g" in x)
+        self.assertIn("sem outra cópia: ⚠ .env.local, notas/", linha)
+        self.assertIn("igual no principal: mock.png", linha)
+        self.assertIn(f"regeneráveis: .venv → {venv} (link: só o link sai), __pycache__/", linha)
+        self.assertLess(linha.index("sem outra cópia"), linha.index("igual no principal"))
+        self.assertLess(linha.index("igual no principal"), linha.index("regeneráveis"))
+
+    def test_worktree_so_com_regeneraveis_diz_nada_sem_copia(self):
+        self.fx.branch("feat/c"); self.fx.merge("feat/c", pr=False)
+        wt = self.fx.worktree("wt-c", "feat/c")
+        with open(self.fx.clone / ".git" / "info" / "exclude", "a", encoding="utf-8") as f:
+            f.write("__pycache__/\n")
+        (wt / "__pycache__").mkdir(); (wt / "__pycache__" / "m.pyc").write_bytes(b"\0")
+        r = run(self.fx, "--repo", self.fx.clone, "--plan", self.plan)
+        linha = next(x for x in r.stdout.splitlines() if "wt-c" in x)
+        self.assertIn("ignorados que vão junto: sem outra cópia: nenhum; regeneráveis: __pycache__/]", linha)
+
     @unittest.skipUnless(os.path.isdir("/proc/self"), "sem /proc: a varredura de processos não roda")
     def test_worktree_com_processo_dentro_fica(self):
         """Outra sessão aberta no worktree: ele fica, e o motivo traz o pid."""
