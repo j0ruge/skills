@@ -3,6 +3,31 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-11-02 — o link errado que já foi espelhado, e a medida no título
+
+Publicado como **v2.9.0**. Saiu da fila do `retrofit-watch`: três sessões do `magic_tutor` (de 21 a
+22/10) e uma do `rea-projects` (02/11). Cada lição foi conferida no transcript.
+
+- **O `REF?` não revisita o que já foi espelhado.**
+  - No espelho do `TODO.md` do `sdd_agents`, o plano na `main` deu `UPDATE #312 L323 (anchor)` sem
+    nenhum `REF?` (`update=18 (anchor 15)`).
+  - Rodado de uma branch, o mesmo item virou `text` (`anchor 0`), e só então apareceu
+    `REF? L323 #29 → PR #29: chore(todo)…`. O alvo era o PR do kit, mas o item queria
+    `JRC-Brasil/lighthouse_project#29`. A fonte foi corrigida, e o plano final deu `ok=67`.
+  - A causa era uma escolha escrita no código: o `REF?` só sai para o corpo que a rodada escreve,
+    para não repetir as mesmas linhas a cada plano. O preço não estava escrito.
+  - Agora o `--refs` varre todos os corpos quando alguém pede, e o plano padrão fica igual.
+- **A medida no título troca a chave.** O item 18 do `TODO.md` do `magic_tutor` dizia "O
+  docs/monitor.md tem 501 linhas, e 318 são dos replays". Nas três sessões seguintes o número foi
+  501, 520 e 547, e cada vez o plano deu `CREATE` para o "novo" item e `ORPHAN` para a #39. A chave da
+  #39 foi trocada à mão via REST três vezes: `a9fcf6bb` → `32ba80cb` → `d1b38e18` → `046f9784`. A
+  *Identidade* explicava o custo de renomear, mas não tirava a conclusão para quem escreve o item:
+  número que muda vai no corpo.
+- **Fica de fora:**
+  - avisar disso no cabeçalho do `TODO.md` do kit, que é do kit e não da skill;
+  - a suposição de que o `gh issue edit` "falha aqui", que veio de uma memória sobre o `gh pr edit`.
+    O `--apply` usou o `gh issue edit` sem erro.
+
 ## 2026-10-26 — o plano na branch do PR, antes do merge
 
 Publicado como **v2.8.3**. Saiu do espelho do `TODO.md` do `magic_tutor` depois do merge do PR #114

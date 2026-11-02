@@ -347,8 +347,15 @@ check("refs: an item with no bare #N prints nothing",
       t.ref_lines([i for i in items if not t.bare_refs(t.render_body(i, ctx))][:1], ctx, lambda n: 1 / 0) == [])
 import inspect
 
-check("refs: main() names the targets of the bodies it writes — CREATE and UPDATE (text), not (anchor)",
-      "ref_lines(written," in inspect.getsource(t.main) and 'k == "text"' in inspect.getsource(t.main))
+check("refs: main() names the targets of the bodies ref_items picks, and --refs reaches it",
+      "ref_lines(written," in inspect.getsource(t.main)
+      and "ref_items(plan, kinds, every=a.refs)" in inspect.getsource(t.main))
+i_new, i_text, i_anchor, i_ok = (copy.deepcopy(i) for i in items[:4])
+plan_refs = t.Plan(create=[i_new], update=[(i_text, {}), (i_anchor, {})], ok=[(i_ok, {})])
+check("refs: by default only the bodies this run writes — CREATE and UPDATE (text), not (anchor) nor OK",
+      t.ref_items(plan_refs, ["text", "anchor"]) == [i_new, i_text])
+check("refs: --refs also sweeps the bodies already mirrored, (anchor) and OK, where an old wrong link hides",
+      t.ref_items(plan_refs, ["text", "anchor"], every=True) == [i_new, i_text, i_anchor, i_ok])
 
 stem = "R"
 extra = r.extra_findings({"Uma obs": 9}, spans, rlines, set(by))

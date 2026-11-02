@@ -345,6 +345,17 @@ def ref_target(repo: str, n: int, issues: list[dict], fetch=None) -> str:
     return f"{'PR' if 'pull_request' in hit else 'issue'} #{n}: {short(hit.get('title', ''), 70)}"
 
 
+def ref_items(plan: "Plan", kinds: list[str], every: bool = False) -> list[Item]:
+    """The items whose bare `#N` the plan lists. By default only the bodies this run writes (CREATE,
+    UPDATE (text)): an (anchor) update or an OK item carries the text already mirrored, and listing it
+    would repeat the same lines on every plan. `every` (--refs) adds those too: a wrong link mirrored
+    before stays out of the default plan for good (2026-11-02, sdd_agents: `#29` in an (anchor)
+    update pointed at the kit's PR #29, seen only when a branch run turned it into (text))."""
+    if every:
+        return plan.create + [it for it, _ in plan.update] + [it for it, _ in plan.ok]
+    return plan.create + [it for (it, _), k in zip(plan.update, kinds) if k == "text"]
+
+
 def ref_lines(written: list[Item], ctx: Ctx, target) -> list[str]:
     """The plan's `REF?` lines for the bodies this run writes: each bare `#N` with its target."""
     return [f"REF?    L{it.start:<4} #{n} → {target(n)} — " + REF_HINT.format(n=n)
@@ -696,6 +707,8 @@ def main() -> int:
                     help="format: the existing `## TEXT` that holds the findings, when --audit cannot tell")
     ap.add_argument("--lang", metavar="LANG",
                     help="format: the seed language when the repo declares no OUTPUT_LANG (e.g. pt-BR)")
+    ap.add_argument("--refs", action="store_true",
+                    help="plan: list REF? for every body, also UPDATE (anchor) and OK items already mirrored")
     a = ap.parse_args()
     if a.close_orphans and not a.apply:
         ap.error("--close-orphans needs --apply")
@@ -752,9 +765,8 @@ def main() -> int:
     for (it, iss), kind in zip(plan.update, kinds):
         print(f"UPDATE  #{iss['number']:<4} L{it.start:<4} ({kind:<6}) {short(it.title)}")
     # A bare #N links to THIS repo's #N whatever the text meant, so the plan names each target and
-    # the source is fixed by hand. Only for the bodies this run writes: an (anchor) update carries
-    # the text already mirrored, and listing it would repeat the same lines on every plan.
-    written = plan.create + [it for (it, _), k in zip(plan.update, kinds) if k == "text"]
+    # the source is fixed by hand. Which bodies: ref_items (--refs sweeps the mirrored ones too).
+    written = ref_items(plan, kinds, every=a.refs)
     target = functools.lru_cache(maxsize=None)(lambda n: ref_target(ctx.repo, n, issues))
     for line in ref_lines(written, ctx, target):
         print(line)

@@ -3,6 +3,26 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.9.0] — 2026-11-02
+
+Minor: o `--refs` revisita os links já espelhados, e a medida sai do título.
+
+### Added
+
+- **`--refs` no plano.** O `REF?` passa a valer para todos os corpos, inclusive `UPDATE (anchor)` e
+  OK. Sem a flag, o plano não muda. Um `#N` errado que já foi espelhado ficava fora do plano para
+  sempre: no `TODO.md` do `sdd_agents`, o `#29` de um `UPDATE (anchor)` ligava ao PR #29 do kit, e
+  só apareceu quando um plano rodado de uma branch o transformou em `text`.
+  - A escolha de quais itens entram virou `ref_items`, com teste dos dois modos. Cada um de dois
+    mutantes reprova a sua checagem.
+
+### Changed
+
+- **`SKILL.md`, *Identidade*: número que muda vai no corpo, não no título.** A chave é o título,
+  então uma medida no título gera `ORPHAN` + `CREATE` a cada nova medição. No `magic_tutor`, a #39
+  ("O docs/monitor.md tem 501 linhas…", que depois foi a 520 e a 547) teve a chave trocada à mão três
+  vezes, em três sessões.
+
 ## [2.8.3] — 2026-10-26
 
 Patch: o `#N` solto se pega na branch do PR, antes do merge.
