@@ -2,6 +2,45 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.13] — 2026-11-02 — inventário contra todas as listas; decisão do usuário conferida nos dados
+
+Patch: duas lições de método da sessão que montou o roteiro de conclusão de um TCC (o que falta até
+a banca, com dono, data e Check). O `SKILL.md` muda só a versão e fica com 19.996 caracteres, a 4
+do teto de 20 mil. As regras foram para o template do Plano PDCA, usado em todo plano (Fase 1,
+passo 5), e para o checklist da Validação de plano; os casos, para o verbete *Gemba*.
+
+- **O inventário do que falta cruza todas as listas de pendências.** A Fase 1 pedia o Gemba e a
+  releitura do handoff no destino, mas não dizia que um roteiro do que falta tem de passar por cada
+  lista do projeto. O primeiro roteiro saiu só da tabela do topo do handoff e perdeu três frentes
+  da lista numerada logo abaixo dela (a higiene de um teste, a decisão sobre fotos de tela e uma
+  figura). Elas apareceram porque uma decisão do ledger, relida para escrever outra, citava uma
+  delas pelo número.
+  - `templates.md` § Plano PDCA, campo "Gemba — situação atual": o inventário cruzado com a tabela
+    do handoff e as listas abaixo dela, o ledger, o TODO e o tracker.
+  - `templates.md` § Validação de plano: o item do checklist com a mesma regra.
+  - `kaizen-conceitos.md` § Gemba: **Inventário do que falta**, com o caso.
+- **Decisão do usuário que fala dos dados se aplica e se conta nos dados antes do registro.** A
+  armadilha "Regra herdada de handoff" trata da origem da regra; aqui a regra veio do próprio
+  usuário ("o critério do engenheiro vence", sobre as discordâncias de uma rotulagem dupla) e
+  parecia já estar nos dados. Contada no arquivo de rótulos, sem abrir imagem: em 8 das 9
+  discordâncias de classe e nas 2 de qualidade, a referência já era o rótulo cego do engenheiro;
+  em 2 das 50 imagens da dupla, ele tinha dado uma classe às cegas e outra na validação. A linha
+  parou, o autor escolheu a validação, e a referência congelada e os resultados calculados sobre
+  ela ficaram como estavam.
+  - `templates.md` § Plano PDCA (o mesmo campo) e § Validação de plano: a decisão aplicada e
+    contada antes de ir ao registro; se a mesma fonte deu dois valores ao mesmo item, ela tem dois
+    sentidos e volta como pergunta.
+  - `kaizen-conceitos.md` § Gemba: **Decisão do usuário que fala dos dados também se confere no
+    Gemba**, com o caso.
+- Por que não um bullet novo em Armadilhas: o `SKILL.md` está a 4 caracteres do teto.
+- Números: `SKILL.md` 125 linhas e 19.996 caracteres; `templates.md` 169 linhas (eram 164);
+  `kaizen-conceitos.md` 64 linhas (o verbete *Gemba* cresceu). Medido com `wc -lm`.
+- Base: `66df003`. Como reverter: `git revert` do commit que traz esta entrada.
+
+Dívida pré-existente, fora deste patch: a mesma registrada na 1.4.12 (smoke do Codex na 1.4.3,
+INFO F1, F4 e D1, `SKILL.md` sem `metadata.author`, extração dos casos das Armadilhas para uma
+reference como tarefa da `skill-refactoring`).
+
 ## [1.4.12] — 2026-11-02 — estado herdado de um caso anterior da mesma rodada
 
 Patch: uma lição do teste de um expedidor de logs (rsyslog lendo arquivos e guardando a posição de

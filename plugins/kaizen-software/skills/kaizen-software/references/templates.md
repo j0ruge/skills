@@ -20,7 +20,10 @@ Salve como `docs/planos/PLANO-<slug-curto>.md` (ou onde o projeto guardar planos
 ## Gemba — situação atual
 <O que foi observado no código/sistema real: arquivos afetados, fluxo atual, dados. E as premissas do
 pedido sobre acesso ou exposição ("é interno", "é restrito"), conferidas no artefato (permissão, ACL).
-O estado e as fontes vindos de handoff ou resumo ("não enviado", "o registro está em X"), relidos no destino.>
+O estado e as fontes vindos de handoff ou resumo ("não enviado", "o registro está em X"), relidos no destino.
+Num plano do que falta, o inventário cruzado com todas as listas de pendências do projeto (a tabela do
+handoff e as listas abaixo dela, o ledger, o TODO, o tracker), não só com a primeira. E a decisão do
+usuário que fala dos dados ("o especialista vence"), aplicada e contada neles antes de entrar no plano.>
 
 ## Desperdícios evitados
 <Itens cortados/adiados do escopo e por quê (superprodução, superprocessamento...).>
@@ -78,6 +81,8 @@ escrita na tabela de desperdícios.
 - [ ] Check no artefato que chega ao destino, não no rótulo nem na cópia local
 - [ ] Premissa do pedido sobre acesso ou exposição ("é interno", "é restrito") conferida na permissão do destino, não na palavra de quem pediu
 - [ ] Estado e fontes herdados de handoff ou resumo ("não enviado", "o registro está em X") relidos no destino antes de entrar no plano
+- [ ] Inventário do que falta cruzado com todas as listas de pendências do projeto (a tabela do handoff e as listas abaixo dela, o ledger, o TODO, o tracker), não só com a primeira
+- [ ] Decisão do usuário que fala dos dados ("o especialista vence", "vale a versão de produção") aplicada e contada nos dados antes de ir ao registro; se a mesma fonte deu dois valores ao mesmo item, ela tem dois sentidos e volta como pergunta
 - [ ] Poka-yoke antes de regra escrita; a regra que sobrar diz por que nenhum degrau acima coube
 - [ ] Ação irreversível com o passo reversível antes, a confirmação de quem decide e os identificadores anotados; conta como irreversível a que derruba o canal por onde seria desfeita (desligar pela rede, mexer em rede/SSH), que pede caminho de volta fora de banda
 - [ ] Espera no caminho crítico nomeada, com dono e momento
