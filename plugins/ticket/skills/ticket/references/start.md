@@ -158,6 +158,17 @@
    seguir e a branch nasce de base não verificada, sem nada avisar. Por isso a
    verificação acima mede a base em vez de confiar no pull.
 
+   **Depois de criar, rode `git status --short` de novo.** Árvore limpa antes da troca
+   não garante árvore limpa depois. Um `.gitignore` que só a branch anterior tinha (a
+   de outra missão, ainda sem merge) sai do disco no `checkout`, e os arquivos que ele
+   ignorava ficam, porque o git não toca em arquivo ignorado. Na branch nova eles
+   aparecem como `??`, e não são do ticket: nada de `git add -A`. Diga ao dev, e
+   adicione só os seus arquivos, pelo nome. Medido no LH-11 (`apresentacoes`,
+   03/11/2026): o status saía limpo na `RS-929_apresentacao_manutencao_proativa`, e
+   depois do `checkout main` e do `checkout -b` vieram 119 arquivos `??` (13 MB de
+   `docs/qa/evidence/`), que o `.gitignore` da pasta do deck, existente só naquela
+   branch, ignorava. Reproduzido do zero num repo descartável (git 2.43.0).
+
    **Branch que já existe com outro nome** (o trabalho, o planejamento por exemplo,
    começou antes do ticket): não abra uma segunda branch da base. Renomeie a que
    existe e traga a base por fast-forward, medindo antes e depois:
@@ -350,6 +361,8 @@ o próximo deck de outro projeto abriria ticket no lugar errado. Faça assim:
 2. No outro repo, crie a branch de **mesmo nome** a partir da base desse repo, que pode
    não ser a mesma (por exemplo, `develop` num e `main` no outro). Meça como no A8:
    `git fetch origin -q` e depois `git rev-list --left-right --count HEAD...origin/<base>`.
+   Rode também o `git status --short` do A8: o outro repo costuma estar na branch de
+   outra missão, e é dela que sobram os arquivos não rastreados.
 3. Registre as duas branches onde o trabalho começa (handoff, descrição da issue).
    O `close` roda no repo do `.jira-project`, e o PR do outro repo é aberto à mão.
 

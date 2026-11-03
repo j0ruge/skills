@@ -1,5 +1,39 @@
 # Changelog — ticket
 
+## [1.14.1] — 2026-11-03
+
+### Por quê
+
+No LH-11 (03/11/2026) a issue saiu do `lighthouse_project`, e a branch espelhada nasceu no `apresentacoes`, que
+estava na `RS-929_apresentacao_manutencao_proativa`, de outra missão e ainda sem merge. O `git status --short` saía
+limpo antes da troca. Depois de `git checkout main` e `git checkout -b LH-11_apresentacao-diretoria`, ele mostrou
+119 arquivos `??` (13 MB de `docs/qa/evidence/`).
+
+A causa é o `.gitignore` da pasta daquele deck, que só existe na branch RS-929 (`git show
+RS-929_apresentacao_manutencao_proativa:manutencao-proativa-2026/.gitignore`). No `checkout` ele sai do disco,
+e os arquivos que ignorava ficam, porque o git não toca em arquivo ignorado. Reproduzido do zero num repo
+descartável com git 2.43.0: `[]` na branch de origem, `?? deck/docs/qa/evidence/a.png` na nova.
+
+A skill mandava conferir o status antes de trocar de branch, e não depois. Um `git add -A` na branch nova levaria
+o resíduo da outra missão para o PR do ticket. No LH-11 o commit levou só o `HANDOFF.md`, pelo nome.
+
+### O quê
+
+- `references/start.md`, A8: depois de criar a branch, `git status --short` de novo, com o mecanismo, a ação (avisar
+  o dev e adicionar pelo nome, nunca `git add -A`) e o caso medido.
+- `references/start.md`, §Trabalho em dois repos, passo 2: rodar o status do A8 também no outro repo, que costuma
+  estar na branch de outra missão.
+- `SKILL.md`: só o `metadata.version`. Com 19.911 chars, ele está colado no teto de ~20 mil da spec, e o
+  `start.md` já é leitura obrigatória antes do primeiro `start`.
+
+### Dívida pré-existente (não mexida aqui)
+
+O `audit_skill_quality.py` já acusava antes desta versão:
+
+- o AVISO A4 e o ERRO G2, do `argument-hint` mantido no topo de propósito desde a 1.8.2;
+- os INFO B4 (menções a `~/.hermes`), F1 (reference sem "quando ler" no texto que o check casa) e D1 (afirmações
+  factuais a datar).
+
 ## [1.14.0] — 2026-10-30
 
 ### Por quê
