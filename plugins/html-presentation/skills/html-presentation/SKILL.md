@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.4.2"
+  version: "1.4.3"
 ---
 
 # HTML Presentation
@@ -122,8 +122,9 @@ its slide; one of the six fixes in the origin session did.
 ### 8. Deliver
 
 - `dist/<name>.html`: present with it (keys below).
-- `dist/<name>.pdf`: for absentees. The footer is hidden in print, so each page carries
-  `classification · section · NN / TT` from `data-print`. Set `<body data-classification="…">`.
+- `dist/<name>.pdf`: for absentees. The footer is hidden in print, so each page after the cover carries
+  `classification · section · NN / TT` from `data-print`. Set `<body data-classification="…">`. The cover carries
+  only `01 / TT`, so write the classification on the cover itself (the template's credit line).
 - `dist/roteiro-de-fala.md`: rehearsal script with a cumulative clock.
 - Optional post-event kit: attendance, recording, minutes template, email to absentees with a reading
   deadline.
@@ -146,7 +147,10 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
 - **Stage shrunk, with dark bands, in the shots.** In `--headless=new` (the full Chrome), `--window-size` is the
   outer window and 87 px go to the browser bar: a 1920×1080 window gave a 1920×993 viewport, and the stage
   came out at ~0.92 (Chromium 130 and 145, 19/10/2026). `shoot.sh` measures the real viewport, opens a taller
-  window and crops the PNG back with Pillow or ImageMagick; without either, it warns.
+  window and crops the PNG back with Pillow or ImageMagick; without either, it warns. From Chrome 153 the
+  screenshot uses the whole window while `--dump-dom` still reports 993, and compensating from `--dump-dom` moved
+  the stage 44 px down and cut the footer in every shot (Chrome 156, Lighthouse deck, 03/11/2026). `shoot.sh` now
+  measures the viewport with a screenshot of a marker, the same mode as the captures.
 - **Presenter window out of sync.** On `file://`, BroadcastChannel does not cross windows. Sync through
   `window.opener` / `postMessage`. The deck holds the popup only in memory: after an F5 the notes stayed on
   the old slide and the popup's arrows made the projector skip one. Each window also kept its own clock, so
@@ -172,10 +176,14 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
   self-hosted font was still loading (19/10/2026). `check-presenter.mjs` checks that the hidden labels collide.
 - **Empty stage.** A narrow `max-width` on titles makes 3-line headings and leaves the bottom third blank. If
   a slide looks sparse, raise the type before adding content.
+- **Cover title over its metadata.** The cover places `.body`, `.hline` and `.meta` at fixed `top` values, so a
+  hero title that gains a line runs over the line and the metadata: at 132 px a two-line title beside a photo
+  wrapped to three (Lighthouse deck, 03/11/2026). Look at the cover shot; shorten the title or lower the hero size.
 - **The builder's review misses content loss.** In the origin session the fresh reviewer found 6 material
   losses that the builder's two screenshot rounds passed: a dropped key instruction, a missing count ("7th
   time"), a wrong technical term, "job title" written where the source said "department", and a stage clipped
-  on laptops.
+  on laptops. A design critique does not replace it: in the Lighthouse deck (03/11/2026), after two rounds and an
+  impeccable critique, the reviewer with the sources in `material/` still found 5 factual errors.
 - **Print loses context.** `@media print` hides the footer; without `data-print` the PDF has no page numbers,
   sections or classification.
 - **Confidential source.** Material marked "Confidential" stays out of public places. Don't publish the

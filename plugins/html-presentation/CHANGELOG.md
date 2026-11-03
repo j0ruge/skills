@@ -3,6 +3,30 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.4.3] — 2026-11-03
+
+### Fixed
+- `shoot.sh` measures the browser bar with a screenshot of a marker at the bottom of the viewport, the same mode as
+  the captures, instead of `--dump-dom`. Why: from Chrome 153, `--dump-dom` still reports `innerHeight` 993 in a
+  1920×1080 window, but `--screenshot` uses the whole window. Measured on 03/11/2026 with the probe page: Chrome 145
+  captures 993 rows, 153 and 156 capture 1080. Compensating 87 px on 156 moved the stage 44 px down and cut the
+  footer in every shot of the Lighthouse deck, though the PDF was fine. With the new measure, the 27 slide shots
+  and the 2 laptop shots of that deck are pixel-identical to Playwright shots at the exact viewport: the mean
+  difference is 0.00, against 16.0 to 31.8 with the old `shoot.sh`. Without Pillow, `shoot.sh` keeps the
+  `--dump-dom` measure.
+- Template: `.item .chip{align-self:flex-start}`. Why: in the item's flex column a status chip stretched to the
+  full width of the column (Lighthouse deck, slide 2).
+- `SKILL.md` "Deliver": the cover page carries only `01 / TT`, not the classification, because the engine adds no
+  prefix on slide 1. The template's cover credit placeholder now asks for the classification.
+
+### Added
+- Gotcha "Cover title over its metadata": the cover places its blocks at fixed `top` values, and a hero title
+  that gains a line runs over the line and the metadata.
+- `references/layout-and-type.md`: "Generated diagram" (a legend written outside it restates its semantics; the
+  Archify decline is also dashed) and "Photo" (license, credit, and the record in `material/`).
+- The gotcha on the builder's review now says a design critique does not replace the independent review (5 factual
+  errors after two rounds and an impeccable critique, Lighthouse deck).
+
 ## [1.4.2] — 2026-11-03
 
 ### Fixed

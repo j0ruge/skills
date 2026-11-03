@@ -12,6 +12,9 @@
 #                               count, and Pillow grades; the contact sheets used to vanish without a word
 #   taller window + crop      — --headless=new gives ~87 px of --window-size to the browser UI, so the stage came out
 #                               at 0.92 with dark bands; the real viewport is measured once and the PNG cropped back
+#   viewport by screenshot    — from Chrome 153, --dump-dom still reports 993 but --screenshot uses the whole window:
+#                               compensating from --dump-dom moved the stage 44 px down and cut the footer. The bar is
+#                               measured by a screenshot of a marker, the same mode as the captures
 set -uo pipefail
 [ -f "${1:-}" ] || { echo "uso: shoot.sh <deck.html> [shots] [pdf]"; exit 2; }
 HTML=$(readlink -f "$1"); SHOTS=${2:-shots}; PDF=${3:-"${HTML%.html}.pdf"}
@@ -22,11 +25,18 @@ CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-
 N=$(grep -o '<section class="slide' "$HTML" | wc -l)
 mkdir -p "$SHOTS"; rm -f "$SHOTS"/*.png
 fail=0
-# Viewport real de uma janela 1920×1080: DH é a altura que a barra do navegador leva
-printf '<p id=v></p><script>v.textContent="vh"+innerHeight</script>' > "$SHOTS/.viewport.html"
-VH=$("$CHROME" --headless=new --disable-gpu --window-size=1920,1080 --dump-dom "file://$(readlink -f "$SHOTS")/.viewport.html" \
-  2>/dev/null | grep -o 'vh[0-9]*' | tr -dc 0-9)
-rm -f "$SHOTS/.viewport.html"; DH=$((1080 - ${VH:-1080})); [ "$DH" -gt 0 ] || DH=0
+# Viewport real de uma janela 1920×1080: DH é a altura que a barra do navegador leva NA CAPTURA. Mede-se pelo mesmo
+# --screenshot das lâminas: um marcador verde de 2 px no pé do viewport, e VH é a linha logo abaixo dele. O --dump-dom
+# diz 993 no Chrome 145, 153 e 156, mas só o 145 captura 993 linhas; o 153 e o 156 capturam 1080 (03/11/2026).
+# Sem Pillow, fica o --dump-dom, que acerta só no comportamento antigo.
+printf '<style>html,body{margin:0;height:100%%;background:#f00}#b{position:fixed;left:0;right:0;bottom:0;height:2px;background:#0f0}</style><div id=b></div><p id=v></p><script>v.textContent="vh"+innerHeight</script>' > "$SHOTS/.viewport.html"
+VURL="file://$(readlink -f "$SHOTS")/.viewport.html"; VH=""
+if python3 -c 'import PIL' 2>/dev/null; then
+  "$CHROME" --headless=new --disable-gpu --hide-scrollbars --window-size=1920,1080 --screenshot="$SHOTS/.viewport.png" "$VURL" >/dev/null 2>&1
+  VH=$(python3 -c 'import sys; from PIL import Image; im = Image.open(sys.argv[1]).convert("RGB"); ys = [y for y in range(im.height) if im.getpixel((im.width // 2, y)) == (0, 255, 0)]; print(ys[-1] + 1 if ys else "")' "$SHOTS/.viewport.png" 2>/dev/null)
+fi
+[ -n "$VH" ] || VH=$("$CHROME" --headless=new --disable-gpu --window-size=1920,1080 --dump-dom "$VURL" 2>/dev/null | grep -o 'vh[0-9]*' | tr -dc 0-9)
+rm -f "$SHOTS/.viewport.html" "$SHOTS/.viewport.png"; DH=$((1080 - ${VH:-1080})); [ "$DH" -gt 0 ] || DH=0
 crop() { # file width height: tira as DH linhas a mais, com Pillow ou ImageMagick
   [ "$DH" -gt 0 ] || return 0
   if python3 -c 'import PIL' 2>/dev/null; then

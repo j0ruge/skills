@@ -43,6 +43,14 @@ The slide padding is 112 / 128 / 150. The bottom 150 px belong to the footer, so
   something essential only in a tip: the PDF does not show it. On a block of verse, drop the underline and
   highlight the line on hover instead (`--brand-soft` with a 2 px border), or the dotted lines compete with the
   text.
+- **Generated diagram** (Archify, Mermaid): it enters as an image, unedited, in its own palette. A legend you
+  write outside it restates the diagram's own semantics, so read its legend first. In the Lighthouse deck
+  (03/11/2026) the slide said "dashed = the future release", but Archify also draws the decline, which exists
+  today, as a red dashed line; in the PDF the decline read as future. Name the stroke by its color too ("purple
+  dashes"), and repeat outside the image, at deck scale, what its small text says.
+- **Photo** (cover and close): it needs a license that allows reuse, and the credit goes on the slide. In the
+  Lighthouse deck (03/11/2026) Unsplash's search asked for a login, and Wikimedia Commons (Featured pictures) gave a
+  CC BY photo with a named author. Record the author, license, URL, crop and sha256 in `material/`.
 - **Close** (`.close`): 3 principles + a dark contact panel with the address in mono and the deadline.
 - **Agenda** (`.agenda`, for talks of about 30 minutes or more): one row per `data-section`. Fill the minutes
   from the notes instead of typing them, or they drift after the first timing change. Inside the template's

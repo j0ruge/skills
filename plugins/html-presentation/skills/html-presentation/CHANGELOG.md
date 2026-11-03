@@ -2,6 +2,21 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-11-03 — Lighthouse AMEP, the rest of the deck: polish, review, delivery (v1.4.3)
+- The same 27-slide deck, finished: an impeccable critique and polish, then the `deck-reviewer` (SHIP WITH FIXES,
+  5 material findings applied).
+- Lessons added:
+  - `shoot.sh` measures the browser bar by screenshot. The `--dump-dom` measure was wrong from Chrome 153, and the
+    bar is now measured on Chrome 145, 153 and 156;
+  - the chip rule for items, and the cover's classification;
+  - the cover gotcha, generated diagrams and photos in `layout-and-type.md`, and a sentence on the reviewer
+    gotcha.
+- Not changed:
+  - the cover layout itself (fixed `top`s), because a flow layout is a template change bigger than this lesson;
+  - the description;
+  - the presenter-window class names. A deck class `.plan` would have reached `#pview .plan`, but it was caught
+    before the build, with no measured failure.
+
 ## 2026-11-03 — Lighthouse AMEP, a 30-minute deck in English for the Direction (v1.4.2)
 - The first deck in another language. The audience-visible engine strings (key hint, tip label) were translated;
   translating the N panel too crashed `check-presenter` (it matched the word "decorrido"), proved on the template.
