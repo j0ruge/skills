@@ -2,6 +2,15 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-11-03 — Lighthouse AMEP, the code review on the eve of the talk (v1.5.0)
+- A code review of the finished deck and its tools, after a wording change that entered the footer with every gate
+  green.
+- Lessons added:
+  - `check-fit.mjs`, ported from the deck with the holes the review reproduced closed;
+  - the keys on the popup's buttons and the malformed message, in the template and in `check-presenter`;
+  - two gotchas, and a "Layout check" section in `engine.md`.
+- The prototype corrected the first fix: a guard with `:focus-visible` failed, because the key press turns it on.
+
 ## 2026-11-03 — Lighthouse AMEP, the rest of the deck: polish, review, delivery (v1.4.3)
 - The same 27-slide deck, finished: an impeccable critique and polish, then the `deck-reviewer` (SHIP WITH FIXES,
   5 material findings applied).

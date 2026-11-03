@@ -28,10 +28,10 @@ JS at the bottom of `assets/deck-template.html`.
 | Feature | How |
 |---|---|
 | Fit | `translate(-50%,-50%) scale(min(w/1920, h/1080))` on an absolutely positioned stage |
-| Navigation | Arrows, PageUp/Down, Space, Enter, Home/End, click on the stage (left third = back), swipe. A click within 400 ms of the window gaining focus, or outside the stage, does nothing |
+| Navigation | Arrows, PageUp/Down, Space, Enter, Home/End, click on the stage (left third = back), swipe. A click within 400 ms of the window gaining focus, or outside the stage, does nothing. Enter and Space on a focused button belong to the button; a mouse click on a popup button drops its focus (`e.detail` is 0 only for a click from the keyboard), so Space still advances afterwards |
 | Deep link | `#N` in the URL; it is kept in sync with `history.replaceState` |
 | Notes panel | `N` toggles a bottom panel with elapsed time and the plan window for the slide |
-| Presenter window | `P` opens `?apresentador#N` in a popup. Sync goes through `postMessage` to `opener`/popup, because BroadcastChannel does not cross `file://` windows. Messages carry `{deck, t0, gen}`. The popup sends `{hello}` every second, and a deck that lost it (F5) relinks and sends its slide back once. Timer turns red 15 s past the plan |
+| Presenter window | `P` opens `?apresentador#N` in a popup. Sync goes through `postMessage` to `opener`/popup, because BroadcastChannel does not cross `file://` windows. Messages carry `{deck, t0, gen}`. The popup sends `{hello}` every second, and a deck that lost it (F5) relinks and sends its slide back once. A `deck` that is not an integer is ignored: `NaN` passed `typeof … === 'number'` and left no active slide. Timer turns red 15 s past the plan |
 | Timer | Starts when leaving the cover and is shared by both windows. `R` (either window) or the popup's button bumps `gen`, which wins everywhere; with the same `gen`, the oldest `t0` wins, so a reopened popup or a reloaded deck keeps the time already spoken |
 | Key hint | Shown on mouse move (`body.hint`), hidden 2.5 s after the mouse stops. Never while the presenter window is open (`pwin` alive; a hello also clears it), in the popup or in print. Right after an F5 it can show until the first hello (≤ 1 s) |
 | Steps | On a slide with `data-steps="N"`, arrows, click, swipe and the popup's buttons reveal the next step before changing slide, and going back lands on the slide fully revealed. A block not yet revealed gets `.later` (transparent, its space kept, so nothing jumps); `data-at` on the section carries the step for custom styling. Messages carry `{deck, step, t0, gen}`, and the popup shows "etapa s/N" and what the next click does. The hash stays `#N`, because `check-presenter` reads it; `#N.s` opens on step s, for screenshots |
@@ -62,4 +62,14 @@ no popup opened (Farel deck, 3 of 3 runs, 19/10/2026). A last tab with reduced m
 deck, checks that no transition still runs and that the hidden footer labels are the colliding ones. It simulates the activation click with a window `focus`
 event, because Playwright emulates focus on the pages it drives and the page never sees the real one. On
 X11 the real activation click delivers `focus` 2–7 ms before `mousedown` (plain Chrome on Xvfb + openbox,
-16/10/2026); on Windows it is still a human check.
+16/10/2026); on Windows it is still a human check. It also tabs to the popup's buttons, presses Enter and Space, clicks
+with the mouse and presses Space, and posts a message with `deck: NaN`. A deck with an engine older than 1.5.0 fails
+those four, and the script-error check with them, until the fix is ported.
+
+## Layout check
+
+`node scripts/check-fit.mjs dist/<name>.html` opens every slide fully revealed (`#N.s`) at 1920×1080, 1366×768,
+1280×720 and 1366×657, and exits 1 when the stage leaves the window, an element leaves the slide, text is clipped,
+something with text sits below `.src`, or anything that paints (text, a background, a border, an image, an SVG) goes
+below the top of `#footer`. A slide that hides the footer, like the cover, is listed and not compared. It exits 2 when
+it could not measure: no `section.slide`, no `#stage` or `#footer`, or a slide the navigation did not reach.

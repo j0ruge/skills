@@ -149,6 +149,31 @@ if (tipAt >= 0) {
   check('dica: fecha quando o mouse sai do termo', await page.evaluate(() => !document.getElementById('tip').classList.contains('on')), 'continua aberta');
 } else console.log('pulado  dica ao passar o mouse (nenhum data-tip/data-g)');
 
+// Teclas na janela P. Enter e Espaço num botão focado pelo Tab são do botão; depois de um clique de mouse, Espaço segue
+// avançando. Antes, Enter no "Zerar" avançava sem zerar, e Espaço no "Anterior" avançava (Lighthouse, 03/11/2026). E
+// uma mensagem com deck NaN deixava o deck sem lâmina ativa.
+const plain = await page.evaluate(() => [...document.querySelectorAll('.slide')].findIndex((s, k) => k >= 1 && !+s.dataset.steps));
+if (plain >= 0) {
+  await page.goto(url + '#' + (plain + 1)); await page.reload(); await page.waitForLoadState('load'); await sleep(600);
+  [pop] = await Promise.all([page.waitForEvent('popup'), page.keyboard.press('p')]); await sleep(1200);
+  const tabTo = async id => { for (let t = 0; t < 12; t++) { await pop.keyboard.press('Tab'); if (await pop.evaluate(i => document.activeElement?.id === i, id)) return true; } return false; };
+  await sleep(2200);
+  const here = await deckIdx(), before = await popClock(pop), onReset = await tabTo('preset');
+  await pop.keyboard.press('Enter'); await sleep(400);
+  a = await popClock(pop);
+  check('teclas: Enter no Zerar pelo Tab zera e fica na lâmina', onReset && secs(before) >= 2 && secs(a) <= 1 && (await deckIdx()) === here, `relógio ${before} → ${a}, lâmina ${here} → ${await deckIdx()}`);
+  const onPrev = await tabTo('pprev');
+  await pop.keyboard.press(' '); await sleep(400);
+  check('teclas: Espaço no Anterior pelo Tab volta', onPrev && (await deckIdx()) === here - 1, `lâmina ${here} → ${await deckIdx()}`);
+  await pop.click('#pnextb'); await sleep(300); await pop.click('#pprev'); await sleep(300);
+  await pop.keyboard.press(' '); await sleep(400);
+  check('teclas: depois do clique no Anterior, Espaço avança', (await deckIdx()) === here, `lâmina ${here - 1} → ${await deckIdx()}`);
+  await page.evaluate(() => postMessage({ deck: NaN }, '*')); await sleep(200);
+  await page.keyboard.press('ArrowRight'); await sleep(300);
+  check('mensagem com deck inválido é ignorada', await page.evaluate(() => Boolean(document.querySelector('.slide.active'))), 'sem lâmina ativa');
+  await pop.close(); await sleep(300);
+} else console.log('pulado  teclas na janela P (nenhuma lâmina sem etapas depois da capa)');
+
 // Rodapé e capturas, numa aba com movimento reduzido, como o shoot.sh abre o deck. Uma transição que ainda corre
 // sai na captura como um rótulo meio apagado sobre o vizinho; e o .tight medido antes do #pageno e da fonte
 // esconde o rótulo errado. As caixas são medidas no palco: px da tela divididos pela escala.

@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.4.3"
+  version: "1.5.0"
 ---
 
 # HTML Presentation
@@ -112,6 +112,10 @@ deck and the presenter window together and fails when the engine copy inside the
 (the one whose `chromium-NNNN` is already in `~/.cache/ms-playwright`, so nothing downloads) and run it with
 `NODE_PATH=<dir>/node_modules`.
 
+Also run `node <skill>/scripts/check-fit.mjs dist/<name>.html`, with the same Playwright. It fails when a slide
+leaves the window, clips text, runs under its source line or enters the footer, and exits 2 when it could not
+measure. Run it again after any text change, and still look at the shot: it measures boxes, not how the slide reads.
+
 ### 7. Independent review
 
 Spawn the `deck-reviewer` agent (Claude Code). Elsewhere, spawn a general-purpose agent with the packet in
@@ -163,6 +167,10 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
 - **A click to focus the deck changed the slide.** With the popup over the deck on one screen, every click
   navigated, even on the black band beside the stage. The template ignores a click within 400 ms of the
   window gaining focus and any click outside the stage.
+- **Enter or Space on a presenter button did the opposite.** The deck handled the key before the button: Enter on
+  "Zerar cronômetro" advanced without resetting, and Space on "← Anterior" advanced (code review of the Lighthouse
+  deck, 03/11/2026). A focused button now keeps those keys, and a mouse click drops the focus, so Space still advances
+  afterwards. `:focus-visible` cannot tell the two apart: the key press itself turns it on.
 - **Reopened popup timed out in `check-presenter`.** Pressing `P` right after closing the presenter window reached
   the window still closing, and no popup opened: the Farel deck failed 3 of 3 runs, and passed 18/18 with 300 ms
   of wait after `close()` (19/10/2026). The check now waits; if it times out again, suspect that race first.
@@ -204,7 +212,13 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
   `--photo:url(...)` it was 569 KB (IACS deck, 30/09/2026).
 - **Source line under the content.** `.src` sits at a fixed spot above the footer (`position:absolute`), so
   content that grows runs under it: 3 slides of the IACS deck (30/09/2026), one of them after a review fix.
-  Look for it in every shot.
+  Look for it in every shot; `check-fit.mjs` fails it too.
+- **Content inside the footer, with every gate green.** The footer sits inside the slide, so a box can enter it
+  without leaving the slide. A request that wrapped to 2 lines put the `.act` box 20 px into the footer, with
+  `build.py`, `shoot.sh`, `check-presenter` and the deck's own secrecy check green, and a first sensor that compared
+  content with the slide's edge said "nothing cut" (Lighthouse deck, 03/11/2026). `check-fit.mjs` compares with the
+  footer and counts whatever paints, SVG and images included. Its first version answered "ok" on zero slides and did
+  not see an SVG in the footer: prove a new sensor against the empty case and each kind of content.
 - **Deck in another language: the engine speaks Portuguese.** The key hint (`#help`), the tip label (`Tradução`), the
   N panel and the P window ship in Portuguese. Translate at least what the audience sees: the hint and the tip label.
   Before 1.4.2, `check-presenter` read the N panel clock by the word "decorrido", and a panel translated to English
@@ -218,7 +232,8 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
 | `assets/deck-template.html` | Starting point for every deck: engine, footer, notes, presenter window, print, sample slides per component |
 | `scripts/build.py` | Run on every build: inlines assets, generates the script, enforces the gates |
 | `scripts/shoot.sh` | Every inspection round: screenshots, laptop views, PDF, contact sheets |
-| `scripts/check-presenter.mjs` | Step 6 when Playwright is installed, and after porting an engine fix: presenter window, shared timer, key hint, focus click, steps, hover tips, footer labels, reduced motion |
+| `scripts/check-presenter.mjs` | Step 6 when Playwright is installed, and after porting an engine fix: presenter window, shared timer, key hint, focus click, keys on the popup's buttons, steps, hover tips, footer labels, reduced motion |
+| `scripts/check-fit.mjs` | Step 6 when Playwright is installed, and after any text change: a slide out of the window, clipped text, content under the source line or inside the footer |
 | `references/layout-and-type.md` | Read when composing slides (step 4): components, scale, mockups, what to refuse |
 | `references/engine.md` | Read only when changing navigation, notes, presenter window or print behavior |
 | `references/review.md` | Read before step 7, when spawning the reviewer: input packet and verdict format |

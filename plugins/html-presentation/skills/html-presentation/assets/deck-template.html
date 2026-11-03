@@ -504,11 +504,14 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
     merge(m);
     // o popup dá sinal de vida a cada segundo: depois de um F5 o deck o reconhece e devolve a lâmina uma vez
     if (m.hello && !presenter) { if (m.ask || e.source !== pwin) { pwin = e.source; send(state()); } document.body.classList.remove('hint'); renderNotes(); }
-    else if (typeof m.deck === 'number') show(m.deck, 'peer', Number.isInteger(m.step) ? m.step : 0);
+    else if (Number.isInteger(m.deck)) show(m.deck, 'peer', Number.isInteger(m.step) ? m.step : 0);
   });
   addEventListener('keydown', e => {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     const k = e.key;
+    // Enter e Espaço num botão focado são do botão (Lighthouse, 03/11/2026). O clique de mouse tira o foco do botão,
+    // então depois dele Espaço segue avançando. Não dá para usar :focus-visible: a própria tecla o acende.
+    if ((k === ' ' || k === 'Enter') && e.target.closest?.('button')) return;
     if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(k)) { e.preventDefault(); next(); }
     else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); prev(); }
     else if (k === 'Home') show(0); else if (k === 'End') show(N - 1);
@@ -535,9 +538,10 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
   addEventListener('touchend', e => { if (tx === null) return; const d = e.changedTouches[0].clientX - tx; if (Math.abs(d) > 50) d < 0 ? next() : prev(); tx = null; });
   if (presenter) {
     document.body.classList.add('presenter'); document.title = 'Apresentador · ' + document.title;
-    document.getElementById('pprev').onclick = prev;
-    document.getElementById('pnextb').onclick = next;
-    document.getElementById('preset').onclick = reset;
+    // e.detail é 0 num clique que veio do teclado: só o do mouse solta o foco
+    [['pprev', prev], ['pnextb', next], ['preset', reset]].forEach(([id, act]) => {
+      document.getElementById(id).onclick = e => { act(); if (e.detail) e.currentTarget.blur(); };
+    });
     let ask = 1; const hello = () => { send({ hello: 1, ask, t0, gen }); ask = 0; };
     setInterval(hello, 1000); setTimeout(hello, 0);
   }

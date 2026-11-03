@@ -3,6 +3,34 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.5.0] — 2026-11-03
+
+### Added
+- `scripts/check-fit.mjs`: fails when a slide leaves the window, clips text, runs under its source line or enters the
+  footer, and exits 2 when it could not measure. Why: in the Lighthouse deck a request that wrapped to 2 lines put the
+  `.act` box 20 px into the footer with `build.py`, `shoot.sh`, `check-presenter` and the deck's secrecy check green.
+  The deck's first sensor had two holes, reproduced in its code review: it answered "ok" on zero slides, and an SVG
+  in the footer of slide 3 came out green. This version counts whatever paints and proves it reached each slide. Red
+  on an SVG, an image and a box in the footer, on text outside the slide and on the real 2-line defect; 2 on zero slides
+  and on a deck that ignores the hash; green on the Lighthouse deck and on the template sample.
+- `check-presenter.mjs`: four checks on the popup's keys and on a malformed message, each seen red on the 1.4.3
+  template.
+
+### Fixed
+- Template: Enter and Space on a focused button belong to the button, and a mouse click on a popup button drops its
+  focus. Why: on the 1.4.3 template, Enter on "Zerar cronômetro" advanced without resetting, and Space on "← Anterior"
+  advanced. `:focus-visible` does not work here: the first attempt failed its own check, because the key press itself
+  turns it on.
+- Template: a message whose `deck` is not an integer is ignored. Why: `NaN` passed `typeof … === 'number'` and left
+  the deck with no active slide and a script error. Seen only with a crafted message; the fix is one word.
+
+### Not included
+- The deck's pixel contrast sensor (457 texts): it caught no defect, and the gotchas here are real failures.
+- The deck's `check-sigilo.sh` is not part of this skill, so its findings stay in that deck's review.
+
+### Debt
+- `docs/codex/smokes.json` still records the smoke of 1.4.0, as it has since 1.4.1. Not redone here.
+
 ## [1.4.3] — 2026-11-03
 
 ### Fixed
