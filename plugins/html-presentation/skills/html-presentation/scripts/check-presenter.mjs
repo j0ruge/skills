@@ -40,10 +40,12 @@ const page = await ctx.newPage();
 await page.goto(url + '#2'); await sleep(600);
 const N = await page.evaluate(() => document.querySelectorAll('.slide').length);
 const deckIdx = () => page.evaluate(() => +location.hash.slice(1));
-const deckClock = () => page.evaluate(() => (document.getElementById('notesPanel').textContent.match(/decorrido\s*(\d\d:\d\d)/) || [])[1]);
+// O relógio do painel N é o 1º <span> da barra: lido pela posição, e não pela palavra "decorrido", o painel pode ser
+// traduzido. Um deck em inglês quebrava aqui com TypeError no secs() (Lighthouse, 03/11/2026).
+const deckClock = () => page.evaluate(() => (document.querySelector('#notesPanel .bar span')?.textContent.match(/\d\d:\d\d/) || [])[0]);
 const popIdx = p => p.evaluate(() => +document.getElementById('ptitle').textContent.slice(0, 2));
 const popClock = p => p.evaluate(() => document.getElementById('pclock').textContent);
-const secs = s => +s.slice(0, 2) * 60 + +s.slice(3);
+const secs = s => { if (!s) throw new Error('relógio não encontrado: o 1º <span> de #notesPanel .bar precisa ter mm:ss'); return +s.slice(0, 2) * 60 + +s.slice(3); };
 await page.keyboard.press('n');
 let [pop] = await Promise.all([page.waitForEvent('popup'), page.keyboard.press('p')]); await sleep(800);
 

@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.4.0"
+  version: "1.4.2"
 ---
 
 # HTML Presentation
@@ -197,6 +197,11 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
 - **Source line under the content.** `.src` sits at a fixed spot above the footer (`position:absolute`), so
   content that grows runs under it: 3 slides of the IACS deck (30/09/2026), one of them after a review fix.
   Look for it in every shot.
+- **Deck in another language: the engine speaks Portuguese.** The key hint (`#help`), the tip label (`Tradução`), the
+  N panel and the P window ship in Portuguese. Translate at least what the audience sees: the hint and the tip label.
+  Before 1.4.2, `check-presenter` read the N panel clock by the word "decorrido", and a panel translated to English
+  crashed it with a `TypeError` (Lighthouse deck, 03/11/2026). It now reads the first `<span>` of the bar, so keep the
+  elapsed time there.
 
 ## Files
 

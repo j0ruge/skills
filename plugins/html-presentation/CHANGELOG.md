@@ -3,6 +3,19 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.4.2] — 2026-11-03
+
+### Fixed
+- `check-presenter.mjs` reads the N panel clock from the first `<span>` of the bar instead of the word "decorrido".
+  Why: the Lighthouse deck is in English, and the template with only that word translated crashed the check with
+  `TypeError: Cannot read properties of undefined (reading 'slice')`; the original template passed. Both pass now,
+  and a bar without the elapsed span fails the three clock checks instead of crashing.
+- `SKILL.md` metadata version was still `1.4.0` after the 1.4.1 release; it now follows `plugin.json`.
+
+### Added
+- Gotcha "Deck in another language": the engine strings ship in Portuguese; translate at least the key hint and the
+  tip label, which the audience sees.
+
 ## [1.4.1] — 2026-10-22
 
 Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.

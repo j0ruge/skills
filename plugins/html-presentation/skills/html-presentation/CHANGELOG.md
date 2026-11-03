@@ -2,6 +2,13 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-11-03 — Lighthouse AMEP, a 30-minute deck in English for the Direction (v1.4.2)
+- The first deck in another language. The audience-visible engine strings (key hint, tip label) were translated;
+  translating the N panel too crashed `check-presenter` (it matched the word "decorrido"), proved on the template.
+- Lessons added: the checker reads the clock by position, and the gotcha for a deck in another language.
+- Not changed: the template strings stay in Portuguese (one i18n object per `lang` is a bigger change than this
+  lesson), and the description.
+
 ## 2026-10-19 — Guilherme Farel, questions after reading (v1.4.0)
 - The presenter read the 12-slide deck and sent a list of questions (terms, people, a French poem). Answered from checked
   sources; the answers became hover tips (glossary + translations), notes and two reference slides; a fresh review
