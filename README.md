@@ -6,7 +6,7 @@
 
 [![Plugins](https://img.shields.io/badge/plugins-33-blue?style=flat-square)](#available-plugins)
 [![Platform](https://img.shields.io/badge/platform-Claude%20Code%20%7C%20Cursor%20%7C%20Codex-blueviolet?style=flat-square)](https://code.claude.com)
-[![License](https://img.shields.io/badge/license-Proprietary-red?style=flat-square)](#)
+[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
 </div>
 
@@ -770,5 +770,5 @@ Research, decisions, and the DDD/Kaizen checklist are tracked in [CONTEXT.md](CO
 ---
 
 <div align="center">
-Proprietary — <strong>j0ruge</strong>. All rights reserved.
+MIT — <strong>ChewieSoft</strong>. See <a href="LICENSE">LICENSE</a> and <a href="THIRD_PARTY_NOTICES.md">third-party notices</a>.
 </div>
