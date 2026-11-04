@@ -1,5 +1,16 @@
 # Changelog — retrofit-watch
 
+## [0.3.5] — 2026-11-04
+
+### Fixed
+
+- **O aviso da licença do `self-learning` acompanha a skill.**
+  - `references/criteria.md` adapta critérios do `self-learning` (kulaxyz, MIT) e já dava o crédito, mas o
+    texto da licença, que a MIT pede nas cópias, não vinha junto. O `THIRD_PARTY_NOTICES.md` da raiz do
+    repositório (`91a57de`) não chega à instalação, que copia só a pasta do plugin.
+  - `THIRD_PARTY_NOTICES.md`, na pasta da skill, traz o aviso tirado do commit `1304fce` do `self-learning`,
+    e o `criteria.md` aponta para ele.
+
 ## [0.3.4] — 2026-11-02
 
 ### Fixed

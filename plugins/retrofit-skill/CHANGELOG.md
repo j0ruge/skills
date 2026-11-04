@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.10.1] — 2026-11-04
+
+### `LICENSE_MISSING` deixa de ser dívida da loja
+
+- **Comando, passo 4, e *Armadilhas*, §10.**
+  - **O quê:** o texto dizia que o `LICENSE_MISSING` é dívida da loja inteira e vai para o resumo. Agora
+    esse aviso é tratado como regressão, a consertar antes do commit. `category`, `platforms` e
+    `ICON_MISSING` ficam nomeados como os avisos que restam, e `platforms` não pode sair do `plugin.json`.
+  - **Por quê:** a raiz ganhou o `LICENSE` MIT em `91a57de`, e `claude plugin validate --profile directory`
+    saiu com rc=0 e sem `LICENSE_MISSING` nos 33 plugins. Mantido, o texto antigo mandaria ignorar o aviso
+    justo no dia em que o arquivo sumisse. O Claude Code diz que ignora `platforms`, e tirá-lo para calar
+    o aviso quebraria o `validate-versions.py` e o `codex-marketplace.py`.
+
 ## [0.10.0] — 2026-10-27
 
 ### Plugin com `codex` em `platforms`: a metade Codex do ciclo

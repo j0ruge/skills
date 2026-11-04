@@ -52,7 +52,8 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
     mostra o `systemMessage`, o `PLUGIN_DATA` sem a pasta criada e `NumberOfPasswordPrompts` com
     `sshpass`.
   - **Retrofit do `skill-quality-audit`:** o F1 lê só a linha da referência e a anterior.
-  - **Nenhum plugin da loja tem `LICENSE`** (`LICENSE_MISSING` no `claude plugin validate`).
+  - **Nenhum plugin da loja tem `LICENSE`** (`LICENSE_MISSING` no `claude plugin validate`). Resolvido em
+    2026-11-04: `LICENSE` MIT na raiz (`91a57de`).
 
 ---
 

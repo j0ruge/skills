@@ -3,7 +3,8 @@
 Adaptado de `self-learning` (kulaxyz/self-learning-skills, MIT, commit `1304fce`, 2026-09-14):
 sinais do momento, regra de promoção, triagem e auto-audit de segredos. A diferença de
 propósito: a `self-learning` **cria** uma skill nova sozinha. Aqui a lição vai para uma skill que
-**já existe**, e só pelo `/retrofit-skill`, que pede confirmação.
+**já existe**, e só pelo `/retrofit-skill`, que pede confirmação. O aviso da licença original está em
+`../THIRD_PARTY_NOTICES.md`.
 
 O formato do bloco segue o "Loop de auto-melhoria" de um agente de propostas de
 um projeto interno: lição genérica → retrofit, lição do projeto → patch local, nenhuma → "sem lições

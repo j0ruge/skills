@@ -235,9 +235,12 @@ limpo, e o Codex ainda tinha quatro lugares por fazer.
   base, extraído com `git archive <base> | tar -x -C <pasta>` e testado lá, sem `checkout` na
   árvore de trabalho: eram dívida, não regressão. A causa, naquela máquina, era `bwrap: setting up
   uid map: Permission denied`, do sandbox, e não a versão do codex que o handoff supunha.
-- **`claude plugin validate plugins/<p>`** acusa `LICENSE_MISSING`, porque o diretório oficial de
-  plugins exige `LICENSE` ou `license`. É dívida da loja inteira e vai para o resumo, como manda o
-  *Princípio* do comando.
+- **`claude plugin validate plugins/<p>`** acusava `LICENSE_MISSING` em toda a loja, porque o
+  diretório oficial de plugins exige `LICENSE` ou `license`. Em 04/11/2026 a raiz ganhou o `LICENSE`
+  MIT, que vale para os plugins nas subpastas: `--profile directory` saiu com rc=0 nos 33. Se o aviso
+  voltar, o arquivo sumiu. `category`, `platforms` e `ICON_MISSING` seguem nos 33 e não reprovam
+  esse perfil. `platforms` fica no `plugin.json` mesmo com o Claude Code o ignorando, porque
+  `validate-versions.py` e `codex-marketplace.py` o leem.
 - **Depois do push.** O `codex plugin marketplace list` diz se a loja está configurada. Com origem
   Git, `codex plugin marketplace upgrade <loja>` atualiza a cópia e também os plugins instalados
   (`docs/codex/verification.md`, CLI 0.163.0). Em 27/10, a loja não estava configurada no `~/.codex`

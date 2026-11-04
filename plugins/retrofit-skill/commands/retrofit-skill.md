@@ -251,9 +251,10 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
      nelas, mostra ainda a entrada no catálogo Codex, a contagem da linha do
      `compatibility.md` contra a medida e a versão do smoke.
 
-     `claude plugin validate plugins/<plugin>` confere o manifesto pelo cliente. O
-     `LICENSE_MISSING` que ele acusa é dívida da loja inteira: vai para o resumo, não
-     para este commit.
+     `claude plugin validate plugins/<plugin>` confere o manifesto pelo cliente. `category`,
+     `platforms` e `ICON_MISSING` são avisos de toda a loja e não entram neste commit; `platforms`
+     não pode sair do `plugin.json`, porque os cheques do repositório o leem. `LICENSE_MISSING` é
+     regressão: o `LICENSE` da raiz sumiu, e isso se conserta antes do commit (*Armadilhas*, §10).
    - **Antes do commit, leia o `--stat` e responda por cada arquivo.**
 
      ```bash
