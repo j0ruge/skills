@@ -2,7 +2,7 @@
 name: git-housekeeping
 description: "Safely deletes merged git branches, local and remote, and their worktrees. A read-only scan proves each merge by merge commit or by the merged PR's head sha; only the approved plan is deleted, with sha leases and two confirmations. Triggers — merged branches, branch cleanup, delete merged branches, stale worktrees, git housekeeping, prune branches."
 metadata:
-  version: 0.5.0
+  version: 0.5.1
 ---
 
 # git-housekeeping
@@ -104,8 +104,12 @@ o `apply_plan.py` reclassifica com o mesmo código que gerou o plano.
 
 6. **Apagar o remoto:** o mesmo comando com `--scope remote`.
 
-7. **Provar.** Rode o `analyze.py` de novo: o grupo `SAI` tem de vir vazio (ou só com o que foi
-   recusado). Mostre o disco antes e depois e as linhas `desfazer:` que o `apply_plan.py` imprimiu.
+7. **Provar.** Rode o `analyze.py` de novo, com outro `--plan`: o grupo `SAI` tem de vir vazio (ou
+   só com o que foi recusado). Mostre o disco antes e depois e as linhas `desfazer:` que o
+   `apply_plan.py` imprimiu. Um item do `SAI` que o 1º plano não tinha vem do repo que andou entre
+   as duas análises (um PR mergeado no meio). Ele não é recusa nem falha do apply: mostre-o e peça
+   uma confirmação nova, porque a dos passos 3 e 5 não o cobre. Em 2026-11-03, no `magic_tutor`,
+   outra sessão mergeou dois PRs no meio, e os dois ramos apareceram aí.
 
 Confirmação negada no passo 3: pare tudo. Negada no passo 5: o local fica feito e o remoto não.
 

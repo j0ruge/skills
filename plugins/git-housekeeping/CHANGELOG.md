@@ -1,5 +1,25 @@
 # Changelog — `git-housekeeping`
 
+## [0.5.1] — 2026-11-03
+
+### O passo 7 diz o que fazer com o item que o 1º plano não tinha
+
+Nasceu da limpeza do `magic_tutor` depois do PR #166.
+
+- **O quê:** o passo 7 (Provar) do `SKILL.md` grava a análise da prova num `--plan` novo, e diz
+  que um item do `SAI` que o 1º plano não tinha vem do repo que andou entre as duas análises: o
+  agente o mostra e pede uma confirmação nova, porque a dos passos 3 e 5 não o cobre. O 1º plano
+  fica como o registro do que foi aprovado; sobrescrito pela prova, um `apply_plan.py` rodado de
+  novo levaria junto o que ninguém aprovou.
+- **Por quê:** a prova trouxe `SAI (2)`, `chore/todo-85-alvo-do-ataque` e
+  `chore/retrofit-atualizar-regras`, que outra sessão mergeou (PRs #173 e #175 do `magic_tutor`)
+  entre a 1ª análise e a prova. O passo 7 só previa "vazio, ou só com o que foi recusado", e os
+  dois não eram recusa. Lidos como falha do apply, ou cobertos pela aprovação dada para os outros
+  cinco ramos, eles sairiam sem ninguém tê-los visto.
+- **Sem código:** o `analyze.py` não compara com o plano anterior; a comparação é do agente, pelos
+  dois relatórios. Os testes não mudam.
+- **Dívida que fica:** o smoke do Codex em `docs/codex/smokes.json` ainda é o da 0.1.0.
+
 ## [0.5.0] — 2026-11-02
 
 ### Os ignorados que vão junto saem em três grupos: sem outra cópia, igual no principal, regeneráveis
