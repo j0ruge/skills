@@ -273,8 +273,25 @@ def mask_snippet(line: str, value_start: int, value_end: int, max_len: int = 120
 
 
 _HUNK_HEADER_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<new>\d+)(?:,\d+)? @@")
-_FILE_HEADER_RE = re.compile(r"^\+\+\+ b/(?P<path>.+)$")
+# O git põe um TAB depois de caminho com espaço, e entre aspas, com escape em octal, o que não é ASCII.
+_FILE_HEADER_RE = re.compile(r'^\+\+\+ (?P<aspas>"?)b/(?P<path>.+?)(?P=aspas)\t?$')
+_ESCAPE_GIT = {"a": b"\a", "b": b"\b", "t": b"\t", "n": b"\n", "v": b"\v", "f": b"\f", "r": b"\r"}
 _DEV_NULL_RE = re.compile(r"^\+\+\+ /dev/null\s*$")
+
+
+def _caminho_do_cabecalho(m: re.Match) -> str:
+    """Caminho de um cabeçalho `+++`, sem as aspas e os escapes do git."""
+    if not m.group("aspas"):
+        return m.group("path")
+    saida = bytearray()
+    for i, parte in enumerate(re.split(r"\\([0-3][0-7]{2}|.)", m.group("path"))):
+        if i % 2 == 0:
+            saida += parte.encode("utf-8")
+        elif len(parte) == 3:
+            saida.append(int(parte, 8))
+        else:  # uma linha acrescentada `++ "b/..."` também chega aqui, com escape que o git não emite
+            saida += _ESCAPE_GIT.get(parte, parte.encode("utf-8"))
+    return saida.decode("utf-8", "replace")
 
 
 def iter_added_lines(diff_text: str) -> Iterable[tuple[str, int, str]]:
@@ -290,7 +307,7 @@ def iter_added_lines(diff_text: str) -> Iterable[tuple[str, int, str]]:
         # Cabeçalho de novo arquivo? Atualiza file ativo.
         m_file = _FILE_HEADER_RE.match(raw)
         if m_file:
-            current_file = m_file.group("path")
+            current_file = _caminho_do_cabecalho(m_file)
             continue
         if _DEV_NULL_RE.match(raw):
             current_file = None
@@ -458,7 +475,8 @@ def run_ggshield(scan_dir: str, scope: dict[str, set[int]], result: ScanResult) 
         proc = subprocess.run(
             ["ggshield", "secret", "scan", "path", scan_dir, "--json"],
             capture_output=True,
-            text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=60,
             check=False,
         )
@@ -517,7 +535,8 @@ def run_gitleaks(repo_root: str, scan_dir: str, scope: dict[str, set[int]], resu
             cmd,
             cwd=scan_dir,
             capture_output=True,
-            text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=60,
             check=False,
         )
@@ -599,7 +618,8 @@ def get_diff_text(args: argparse.Namespace) -> str:
                 ["git", "diff", f"{args.base}...HEAD", "--unified=0"],
                 cwd=args.repo_root,
                 capture_output=True,
-                text=True,
+                encoding="utf-8",
+                errors="replace",
                 check=True,
             )
             return proc.stdout
@@ -609,6 +629,9 @@ def get_diff_text(args: argparse.Namespace) -> str:
     if args.diff:
         with open(args.diff, "r", encoding="utf-8", errors="replace") as fh:
             return fh.read()
+    # O stdin do Python no Windows vem em cp1252 com surrogateescape: 0x81, 0x8D, 0x8F, 0x90 e 0x9D (o "Á"
+    # em UTF-8 é C3 81) viram surrogates, e materialize_added_lines não consegue gravá-los em UTF-8.
+    sys.stdin.reconfigure(encoding="utf-8", errors="replace")
     return sys.stdin.read()
 
 
@@ -625,10 +648,11 @@ def main(argv: list[str] | None = None) -> int:
                 if scope:   # sem linha acrescentada, nada a varrer
                     run_ggshield(scan_dir, scope, result)
                     run_gitleaks(args.repo_root, scan_dir, scope, result)
-        except OSError as e:   # o regex já rodou; o gate fica sabendo que os externos não
+        except (OSError, ValueError) as e:   # o regex já rodou; o gate fica sabendo que os externos não
             result.errors.append(f"external scanners: {type(e).__name__}: {e}")
 
     deduplicate(result)
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # um achado com letra fora do cp1252 derrubava o print
     print(result.to_json())
     return 0
 

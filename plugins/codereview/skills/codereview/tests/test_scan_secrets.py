@@ -16,6 +16,7 @@ neste arquivo.
 """
 import hashlib
 import json
+import os
 import secrets
 import shutil
 import string
@@ -189,6 +190,66 @@ class TestQuantoLeu(RepoComPR):
     def test_diff_sem_cabecalho_git_conta_pelo_mais_mais_mais(self):
         diff = "+++ b/a.py\n@@ -0,0 +1,2 @@\n+x\n+y\n+++ /dev/null\n@@ -1 +0,0 @@\n-z\n"
         self.assertEqual(scan_secrets.scan_diff(diff).scanned, {"files": 2, "added_lines": 2})
+
+
+class TestDiffForaDoAscii(unittest.TestCase):
+    """O stdin do Windows (cp1252 com surrogateescape) e os cabeçalhos `+++` com TAB e com aspas."""
+
+    def rodar(self, diff: bytes, *opcoes: str) -> dict:
+        ambiente = {**os.environ, "PYTHONIOENCODING": "cp1252:surrogateescape"}
+        out = subprocess.run([sys.executable, str(SCRIPT), *opcoes], input=diff, capture_output=True,
+                             env=ambiente, cwd=tempfile.gettempdir())
+        self.assertEqual(out.returncode, 0, out.stderr.decode("utf-8", "replace")[-300:])
+        return json.loads(out.stdout.decode("utf-8"))
+
+    def test_letra_que_cp1252_nao_tem_nao_derruba_a_varredura(self):
+        for letra in ("Á", "Í", "Ð", "א"):
+            with self.subTest(letra):
+                diff = f"diff --git a/x.md b/x.md\n--- /dev/null\n+++ b/x.md\n@@ -0,0 +1 @@\n+{letra}\n".encode("utf-8")
+                saida = self.rodar(diff)
+                self.assertEqual(saida["errors"], [])
+                self.assertEqual(saida["scanned"]["added_lines"], 1)
+
+    def test_achado_em_arquivo_fora_do_cp1252_sai_em_utf8(self):
+        # Pelo stdin em cp1252 a letra faz ida e volta e o print não cai; pelo --diff ela chega de verdade.
+        linha = f'token = "{token_falso()}"'
+        with tempfile.TemporaryDirectory() as pasta:
+            arquivo = Path(pasta) / "x.diff"
+            arquivo.write_bytes(f"diff --git a/x.md b/x.md\n+++ b/\u1e25.md\n@@ -0,0 +1 @@\n+{linha}\n".encode("utf-8"))
+            saida = self.rodar(b"", "--diff", str(arquivo), "--no-external")
+        self.assertEqual(saida["findings"][0]["file"], "\u1e25.md")
+
+    def test_caminho_com_espaco_perde_o_tab(self):
+        diff = "+++ b/pasta com espaço/x y.md\t\n@@ -0,0 +1 @@\n+oi\n"
+        self.assertEqual(list(scan_secrets.iter_added_lines(diff)), [("pasta com espaço/x y.md", 1, "oi")])
+
+    def test_caminho_entre_aspas_e_do_arquivo_certo(self):
+        diff = ('+++ b/antes.md\n@@ -0,0 +1 @@\n+a\n'
+                '+++ "b/ARQUEOL\\303\\223GICOS \\"x\\".md"\t\n@@ -0,0 +1 @@\n+b\n')
+        self.assertEqual(list(scan_secrets.iter_added_lines(diff)),
+                         [("antes.md", 1, "a"), ('ARQUEOLÓGICOS "x".md', 1, "b")])
+
+    def test_base_le_o_diff_em_utf8(self):
+        feito = subprocess.CompletedProcess([], 0, stdout="", stderr="")
+        with mock.patch.object(scan_secrets.subprocess, "run", return_value=feito) as run:
+            scan_secrets.get_diff_text(scan_secrets.parse_args(["--base", "main"]))
+        self.assertEqual(run.call_args.kwargs.get("encoding"), "utf-8")
+        self.assertEqual(run.call_args.kwargs.get("errors"), "replace")
+
+    def test_escape_que_o_git_nao_emite_nao_derruba_a_varredura(self):
+        # Uma linha acrescentada `++ "b/..."` vira `+++ "b/..."` no diff e é lida como cabeçalho.
+        for caminho in ("\\\u1e25.md", "\\777.md", "x\\"):
+            with self.subTest(caminho):
+                diff = f'diff --git a/x b/x\n+++ "b/{caminho}"\n@@ -0,0 +1 @@\n+oi\n'.encode("utf-8")
+                saida = self.rodar(diff)
+                self.assertEqual(saida["scanned"]["added_lines"], 1)
+                self.assertEqual(saida["errors"], [])
+
+    def test_caminho_com_nul_avisa_que_os_externos_nao_rodaram(self):
+        diff = b'diff --git a/x b/x\n+++ "b/x\\000.md"\n@@ -0,0 +1 @@\n+oi\n'
+        saida = self.rodar(diff)
+        self.assertEqual(saida["scanned"]["added_lines"], 1)
+        self.assertTrue(any("external scanners" in e for e in saida["errors"]), saida["errors"])
 
 
 class TestMaterializar(unittest.TestCase):

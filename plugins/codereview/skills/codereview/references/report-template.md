@@ -47,6 +47,8 @@ Always render this section, even when clean (this tells the user the pass ran). 
 
 `NOT RUN` is never the final status: 0 rows over a diff the scanner never read is not a pass. Re-run Phase A step 8 over the same range and pathspecs as step 5, and grade only once the two counts match. `scanned.files` counts the `diff --git` headers, so a binary file, a mode change and a pure rename count too, as in `--name-only`. Measured 2026-10-18: `printf '' | scan_secrets.sh` gave `findings: []`, `errors: []` and rc 0 up to 2.18.6; on two ranges of one repo, `scanned.files` equalled `git diff --name-only | wc -l` (62 and 9 files).
 
+`scanned.added_lines` can exceed the `git diff --numstat` sum without anything being wrong: on Git for Windows `git check-attr diff -- x.pdf` answers `astextplain`, so its `git diff` carries a changed PDF's text, which `--numstat` counts as binary. Measured 2026-11-04 on one range: 26,358 on Git for Windows and 25,982 in WSL, the 376 extra lines all from 4 PDFs, with `scanned.files` at 126 on both.
+
 When Status is `BLOCKED`:
 - Overall grade is forced to **F** regardless of anything else in the report.
 - Each row must appear again under "Must Fix (CRITICAL)" with the full remediation block from `detection-passes.md` pass 6.10 (the SKILL.md routes it) (env var + rotate + rewrite history + install ggshield pre-commit).

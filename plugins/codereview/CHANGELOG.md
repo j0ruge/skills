@@ -2,6 +2,52 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.25] — 2026-11-04
+
+### O pré-scan de segredos aguenta o Python do Windows e lê o cabeçalho `+++` com TAB ou aspas
+
+Lição de uma revisão com nomes de arquivo acentuados, no Git Bash com o Python 3.9.13 do Windows: o
+pré-scan saiu com `rc=1` num diff de 126 arquivos, pelo pipe do `SKILL.md` e por `--base`. Esse scan é
+o gate que força nota F, e foi nele que a revisão travou. A causa foi isolada mudando uma coisa por
+vez: nesse ambiente, `sys.stdin` vem em `cp1252` com `surrogateescape`. Com `core.quotepath=false` ou
+com `iconv` no pipe, o erro é o mesmo. `PYTHONUTF8=1` tira o travamento e deixa o defeito do TAB em
+`errors`. No WSL, o mesmo range passa.
+
+- **`scripts/scan_secrets.py`: o diff entra e o JSON sai em UTF-8.**
+  - **O quê:** stdin e stdout passam por `reconfigure(encoding="utf-8", errors="replace")`. `--base`,
+    ggshield e gitleaks trocam `text=True` por `encoding="utf-8", errors="replace"`.
+  - **Por quê:** o cp1252 não define 0x81, 0x8D, 0x8F, 0x90 e 0x9D. `Á` em UTF-8 é C3 81 e `Í` é
+    C3 8D, então esses bytes viram surrogates e `materialize_added_lines` cai ao gravar
+    (`UnicodeEncodeError '\udc81'`; com `--no-external` passa, e `á` passa). Em `--base`, `stdout` fica
+    `None` e vem `AttributeError`. Pelo `--diff`, o `print` caía com um token falso em `ḥ.md`
+    (`'charmap' 'ḥ'`): o gate quebrava justo ao achar um segredo.
+  - **Não medido:** ggshield e gitleaks não estão instalados nesta máquina. A troca neles segue o mesmo
+    mecanismo e não tem teste que a exercite.
+- **`_FILE_HEADER_RE`: TAB e aspas no cabeçalho.**
+  - **O quê:** a regex aceita o TAB que o git põe depois de caminho com espaço e o cabeçalho entre
+    aspas. `_caminho_do_cabecalho` tira as aspas e os escapes em octal.
+  - **Por quê:** o TAB ficava no nome, o que dá `OSError [Errno 22]` no Windows, e os scanners externos
+    não rodavam. O cabeçalho entre aspas não casava em nenhum sistema, e a linha era atribuída ao
+    arquivo anterior: `('antes.md', 1, 'b')`.
+- **Uma linha acrescentada pode imitar um cabeçalho.**
+  - **O quê:** escape que o git não emite fica como está. `main` passa a capturar `ValueError` junto
+    com `OSError`, então NUL no caminho vira `external scanners: ValueError` em `errors`, com o regex
+    já rodado.
+  - **Por quê:** `++ "b/\ḥ.md"` vira `+++ "b/\ḥ.md"` no diff. O primeiro protótipo desta correção saía
+    com `rc=1` em `\ḥ`, `\777` e `\000`, que o script 2.27.24 aceitava. Sem essa sonda, a correção
+    trocaria um travamento por outro.
+- **`references/report-template.md`: `scanned.added_lines` contra `--numstat`.** No Git for Windows,
+  `git check-attr diff -- x.pdf` responde `astextplain`, e o `git diff` traz o texto dos PDFs, que o
+  `--numstat` conta como binário. No range medido, deu 26.358 contra 25.982 do WSL: as 376 linhas a mais
+  vêm de 4 PDFs. A diferença custou um diagnóstico e não indica defeito.
+- **`tests/test_scan_secrets.py`:** 7 testes novos, que dão 12 falhas contra o script 2.27.24. São 22
+  testes com `OK (skipped=7)`, os mesmos 7 pulados de antes, no WSL e no Python do Windows. Seis
+  mutantes, um por guarda, derrubam a suíte.
+
+O `SKILL.md` segue em 19.999 caracteres: só a versão mudou. Dívida pré-existente, fora deste commit: os
+3 C2 de contrato de subagente, que são legítimos, e a linha do codereview em
+`docs/codex/compatibility.md`, que segue em 17 arquivos, e a regra dá 18 desde a v2.27.16.
+
 ## [2.27.24] — 2026-11-02
 
 ### As leituras de versão viram chamadas próprias, o contrato ilegível tem saída, e o atalho inline não revisa o código da própria sessão
