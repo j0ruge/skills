@@ -294,6 +294,15 @@ Available speckit commands: `specify`, `clarify`, `plan`, `analyze`, `tasks`, `i
   print nothing. A plain `grep Co-Authored` on the message is not the sensor: it also matches a
   message that only mentions the trailer, as the commit that added this rule does.
 
+- **Private names:** the store is public, and its lessons come from real projects. A project, company
+  or person name stays out of every file and commit message. If the name is not needed, drop it
+  (`Measured 2026-10-19 (PR #8):`); if the sentence depends on it, use a generic term (`um projeto`,
+  `another repo`, `<repo>`). Dates, PR numbers and hashes stay, because they are the evidence.
+  `scripts/check-private-names.py` enforces this for files, from `validate-versions.py` and
+  `tests/test_private_names.py`; nothing scans the commit message, so read it. The list holds hashes,
+  because a plain list would publish what it protects: `--add NAME` adds a name, and `--remove NAME`
+  takes out a real coincidence with a common word.
+
 ## Distribuição Codex
 
 A fonte canônica de identidade, versão, autoria e plataformas continua em

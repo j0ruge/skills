@@ -14,6 +14,7 @@ Verificacoes (na ordem em que rodam):
      spec e SKILL.md > 20.000 chars (~5.000 tokens) saem como aviso.
   8. O SKILL.md que o install.py gera para o Cursor (sem o bloco metadata) e YAML valido,
      com name e description.
+  9. Nenhum arquivo da loja cita nome privado (scripts/check-private-names.py).
 
 Por que a verificacao 6 existe: a description e a UNICA superficie de triggering do
 plugin -- e por ela (mais o nome) que o agente decide invocar a skill. Como ela e
@@ -44,6 +45,7 @@ Uso:
 import importlib.util
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -333,6 +335,20 @@ def _check_cursor_frontmatter(repo_root: Path) -> 'tuple[list[str], list[str]]':
     return errors, []
 
 
+def _check_private_names(repo_root: Path) -> 'list[str]':
+    """Check 9: a loja e publica, e o retrofit traz nome de projeto de volta se nada reprovar."""
+    try:
+        spec = importlib.util.spec_from_file_location('check_private_names',
+                                                      repo_root / 'scripts/check-private-names.py')
+        sensor = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(sensor)
+        achados = sensor.varrer(repo_root, sensor.carregar(repo_root / 'scripts/private-names.sha256'))
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
+        return [f'  nomes privados: sensor inutilizavel: {exc}']
+    erros = [f'  {rel}:{linha}: nome privado "{ascii(trecho)[1:-1]}"' for rel, linha, trecho in achados]
+    return erros + [f'  nomes privados: {sensor.REGRA}'] if erros else []
+
+
 def main():
     """Valida metadados, frontmatter e distribuição; aplica conciliações com --fix."""
     try:
@@ -553,6 +569,9 @@ def main():
     cursor_errors, cursor_notes = _check_cursor_frontmatter(repo_root)
     errors.extend(cursor_errors)
     notes.extend(cursor_notes)
+
+    # Check 9: nome privado em qualquer arquivo (sem --fix: e decisao de redacao)
+    errors.extend(_check_private_names(repo_root))
 
     # O catálogo conferido é o mesmo artefato distribuído ao consumidor Git.
     try:

@@ -6,6 +6,24 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-11-05 — Nome privado deixa de depender de memória
+
+- **Antes:** limpezas sucessivas tiravam os nomes da loja, e o retrofit seguinte os trazia de volta: a lição
+  nasce numa sessão real, e o nome do projeto vem junto. Em 05/11, um retrofit publicou um nome horas antes
+  da limpeza que o removia.
+- **Depois:**
+  - **Regra:** se o nome não é necessário, ele sai; se a frase depende dele, entra um termo genérico. Apelido
+    fixo não resolve, porque ainda conta do que o projeto trata.
+  - **Poka-yoke:** `scripts/check-private-names.py`, com o check 9 do `validate-versions.py`, que todo retrofit
+    roda antes do commit. A loja não tem CI: um teste em `tests/` sozinho só rodaria quando alguém lembrasse.
+  - **Lista em hash:** em texto puro, ela publicaria o que protege.
+- **Limites:** a mensagem de commit não é varrida, e chave de ticket e id numérico continuam fora da lista.
+- **Lição:** a primeira versão da comparação por hash deste trabalho tinha um limite de token errado e deu "não
+  achei" onde a chave estava; só o controle positivo, um caso que tinha de bater, mostrou isso. Sensor novo
+  começa provando que acha.
+
+---
+
 ## 2026-10-27 — env-docs-sync 0.1.0: hook que documenta segredo, provado nos dois hosts antes de publicar
 
 - **Antes:** a loja não tinha plugin que mantivesse uma página de documentação a partir de arquivos
