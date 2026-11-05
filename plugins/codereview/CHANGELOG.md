@@ -2,6 +2,41 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.27] — 2026-11-05
+
+### O `$(…)` entre aspas depois do `=` é leitura em execução, e a nota do conserto não copia a linha acusada
+
+Duas lições do `/codereview` 2.27.26 no ramo `feat/jev-em-julgamentos` do `magic_tutor`, em duas rodadas
+(rodada 1 sobre `74efae8`, rodada 2 sobre `8c651cf`). Só as references ganham texto. O `SKILL.md` segue a
+1 caractere do teto do C1 (19.999 de 20.000) e muda só no `metadata.version`, com o mesmo tamanho.
+
+- **`references/detection-passes.md`, passe 6.10: "A command substitution in quotes after the `=` is a read
+  at run time, not a credential".**
+  - **O quê:** mais um caso ao lado do regex de validação e do `Bearer` de teste, no mesmo formato. Um
+    `export` de shell cuja chave sai do `.env` por `"$(sed …)"` volta CRITICAL: a aspa vem logo depois do
+    `=` e o trecho até a primeira aspa simples do `sed` preenche os 4 caracteres do `Generic Password`. As
+    *Exceptions* listam `process.env`, `os.environ` etc., não o `$(…)` do shell. A linha fica no relatório
+    com a prova (comando que lê o arquivo em execução, sem credencial literal, nada a rotacionar), e o
+    remédio é a atribuição sem aspa depois do `=`, exportada em seguida. Fecha com o efeito colateral que
+    as duas formas têm: sem o `.env` ou sem a linha, a variável sai vazia sem aviso, e um
+    `[ -n "$VAR" ] || echo …` depois avisa sem imprimir o valor.
+  - **Por quê:** essa linha, num plano em Markdown (`01-plano.md:119`), foi a única do pré-scan na rodada 1
+    e deu nota F a um ramo sem segredo. Medido com `scripts/scan_secrets.sh` em diffs de uma linha (só
+    `regex` em `scanners`): a forma antiga deu `Generic Password`, a nova `findings: []`, e um canário com
+    16 alfanuméricos inventados em `api_key = "…"` continuou `Generic Password`. A atribuição simples
+    preserva dois espaços e um `*` no bash 5.2.21 e no zsh 5.9. Gitleaks e ggshield não estavam instalados.
+- **`references/detection-passes.md`, passe 6.10: "The record of a 6.10 fix describes the flagged line in
+  words; it never copies it".** E um ponteiro curto em `references/configuration.md`, *Re-review rounds*.
+  - **O quê:** a nota, o handoff ou o doc de evidência que o conserto escreve entra no diff da rodada
+    seguinte, e o pré-scan o lê como qualquer linha acrescentada. O registro diz arquivo e linha, o tipo, por
+    que casou e a forma do remédio, em palavras. O snippet mascarado do relatório (`***`) é para o chat.
+  - **Por quê:** o conserto da rodada 1 reescreveu a linha do plano e acrescentou uma nota de fase
+    (`checkpoint-notas.md`) que citava a forma antiga entre crases. O pré-scan da rodada 2 deu
+    `Generic Password` nessa nota, linha 39, a única da rodada: o conserto recriou a linha que força o F.
+    Com a nota reescrita em palavras (`ff20ec6` no `magic_tutor`), a faixa da rodada 2 (13 arquivos, 66
+    linhas acrescentadas) e o ramo inteiro (63 arquivos, 5426 linhas) deram `findings: []`. Os textos
+    novos desta versão passaram pelo mesmo pré-scan: `findings: []`.
+
 ## [2.27.26] — 2026-11-04
 
 ### Dados da empresa saem do texto

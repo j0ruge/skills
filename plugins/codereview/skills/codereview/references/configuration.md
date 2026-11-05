@@ -600,6 +600,10 @@ These decide whether the rounds converge:
   the property ("say only what is known"), not the wording, and ask the fixer what the user does next
   on the path it changed. The round after that came back 0 HIGH / 0 MEDIUM once its two MEDIUM
   claims were reproduced and refuted.
+- **A note that records a 6.10 fix is in the next round's diff.** Describe the flagged line in
+  words, never between backticks: the pre-scan reads the note as it read the flagged line
+  (detection-passes.md, 6.10, *The record of a 6.10 fix*). Measured 2026-11-05 (magic_tutor): the
+  round-1 note that quoted the old form was round 2's only pre-scan row.
 - **A text finding in code converges when the sentence is true on every path, or leaves.** A
   warning, a comment or a docstring is a claim, as a doc sentence is: fix it by saying what holds on
   each path that reaches it, the silent one included, or delete it. A rewording that is true on the
