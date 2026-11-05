@@ -5,7 +5,7 @@ Lessons retrofitted into the skill, dated. Each entry describes **what** changed
 ## 2026-10-22 — A poda vai para antes do build, e o `builder prune --all` não devolve disco — bump 2.38.0 → [2.39.0]
 
 **Por quê:** a lição 118 deixou o conserto como direção: medir antes de promover e, sem folga, rodar
-a mesma poda antes. No mesmo dia o `portal_app` o construiu (PR #125). O `deploy.sh` passou a
+a mesma poda antes. No mesmo dia o projeto o construiu (PR #125). O `deploy.sh` passou a
 podar antes do build e no fim, retendo por nome a `sha-*` no ar e a de rollback, e a recusar o build
 abaixo do tamanho de um build frio medido (2,27 GB, num builder isolado). Na revisão, o Codex pediu
 `--all` no prune do ramo sem folga, citando a doc do Docker ("all unused build cache, not just
@@ -31,7 +31,7 @@ para disco, não é.
 
 ## 2026-10-22 — Apagar imagem não libera disco num host que constrói as próprias imagens — bump 2.37.1 → [2.38.0]
 
-**Por quê:** antes da promoção da 0.4.3 do `portal_app`, o host de staging (que também serve a
+**Por quê:** antes da promoção da 0.4.3 de um projeto, o host de staging (que também serve a
 produção de outro sistema) estava em 97% de disco, com 7,1 GB livres, e o deploy por agente constrói
 as duas imagens ali. O `docker rmi` de 13 imagens antigas do projeto saiu `ok` em todas, e o `df` não
 mudou. O `docker system df` mostrou o porquê: Images caiu 1,79 GB e Build Cache subiu os mesmos
@@ -58,9 +58,9 @@ minutos sem terminar.
 **Por quê:** desde a primeira versão (`822a7ac`, 2026-03-13) a "Workflow Overview" dizia que
 "both projects" deployam staging por push na `develop` e produção por tag `v*`, e as tabelas
 "Pipeline Files" e o bootstrap do `checklist-shared.md` repetiam isso como regra. Medido em
-2026-10-15 numa promoção real: o `inventory_app` deploya staging por push na `staging` e
+2026-10-15 numa promoção real: um projeto deploya staging por push na `staging` e
 produção por push na `main`, sem tag (`git show origin/develop:.github/workflows/cd-staging.yml`), e
-o `portal_app` não roda Actions nenhum (um agente no host deploya). Um agente que confiasse
+outro não roda Actions nenhum (um agente no host deploya). Um agente que confiasse
 na tabela empurraria a `develop` esperando staging e não deployaria nada, ou, lendo a `main` como
 "só sincronizada", deployaria produção. É o acidente que a skill `deploy:staging` existe para evitar.
 
@@ -77,7 +77,7 @@ A lição 28 do `lessons-learned.md` é histórica e não mudou.
 
 ## 2026-10-13 — Deploy sem Actions por agente no host: rollback por `trap ERR`, sensor de texto, healthcheck de laço e o buildx implícito — bump 2.36.0 → [2.37.0]
 
-**Por quê:** o `portal_app` trocou o runner do Actions por um agente de deploy no host
+**Por quê:** um projeto trocou o runner do Actions por um agente de deploy no host
 (container que observa a branch, roda o gate e o deploy). Uma revisão independente da branch e o
 1º deploy pelo agente acharam oito lições que a skill não tinha, todas medidas em 2026-10-13: o
 rollback por `trap ERR` não disparava quando a prova do papel reprovava por `exit` (a versão nova
@@ -499,7 +499,7 @@ sentidos (com o defeito, exit 1 apontando linha:coluna; corrigido, exit 0).
 
 **O quê:** nova reference `references/ci-cost-minutes.md` (modelo de custo, como medir, alavancas por retorno sobre risco, e o que NÃO economiza) + linha na Quick Troubleshooting + linha na routing table + parágrafo de trigger + lições 68–70 + lição 57 estendida (`paths-ignore` vale também em `pull_request`) + 6 keywords espelhadas em SKILL.md/plugin.json/marketplace.json.
 
-**Por quê:** num repo **privado** no limite da cota (`report_api`), a skill não tinha o que dizer — ela cobria pipeline quebrado, não pipeline caro. A medição expôs duas causas estruturais que nenhuma lição existente nomeava. **(1) O custo é por JOB arredondado para cima ao minuto**, não por segundo: um `Lint` de 51s custa um minuto cheio, e o instinto de paralelizar `lint`/`test` em dois jobs **adiciona** um minuto por execução — otimizar a duração de um job que já roda em menos de 1 min não economiza nada. **(2) O maior desperdício era estrutural**: `build-and-push` e o gate de CI queimando minutos em `ubuntu-latest` enquanto os runners self-hosted, que a org já paga, rodavam só o `deploy` (47–103s/dia). A skill só tratava self-hosted como *fonte de falha* (§7–§11); como *alavanca de custo* não aparecia em lugar nenhum. Medido: ~11 min por mudança que chega a produção, com o mesmo SHA testado **três vezes** (PR → push `develop` → tag).
+**Por quê:** num repo **privado** no limite da cota, a skill não tinha o que dizer — ela cobria pipeline quebrado, não pipeline caro. A medição expôs duas causas estruturais que nenhuma lição existente nomeava. **(1) O custo é por JOB arredondado para cima ao minuto**, não por segundo: um `Lint` de 51s custa um minuto cheio, e o instinto de paralelizar `lint`/`test` em dois jobs **adiciona** um minuto por execução — otimizar a duração de um job que já roda em menos de 1 min não economiza nada. **(2) O maior desperdício era estrutural**: `build-and-push` e o gate de CI queimando minutos em `ubuntu-latest` enquanto os runners self-hosted, que a org já paga, rodavam só o `deploy` (47–103s/dia). A skill só tratava self-hosted como *fonte de falha* (§7–§11); como *alavanca de custo* não aparecia em lugar nenhum. Medido: ~11 min por mudança que chega a produção, com o mesmo SHA testado **três vezes** (PR → push `develop` → tag).
 
 Duas armadilhas de medição que custaram tempo e viraram lição própria: **`/actions/runs/<id>/timing` reportou `billable.UBUNTU.total_ms: 0`** com `run_duration_ms: 322000` e `jobs: 2` — quem confia nesse número conclui "não gastamos nada" e para de investigar; o caminho confiável é `/actions/runs/<id>/jobs` separando por **`runner_group_name`** (`GitHub Actions`=cobrado, `Default`=grátis). E **`gh api /repos/.../actions/runners` lista só runners de REPOSITÓRIO** — o de produção era de organização e não aparecia, o que me levou a afirmar que ele não estava registrado quando havia um deploy de 103s comprovando o contrário; lista vazia não prova ausência, confirme pelo `runner_name` de um deploy que concluiu.
 
@@ -563,7 +563,7 @@ ACCESS_TOKEN seria à prova de balas:
 
 ## 2026-06-15 — §7 recorrente: recipe de migração ACCESS_TOKEN in-place (o fix durável) — bump 2.14.0 → 2.15.0
 
-Source: project `quote_app` (staging, 2º incidente do mesmo §7 — "não é a primeira
+Source: a real project (staging, 2º incidente do mesmo §7 — "não é a primeira
 vez"). O §7 (chicken-and-egg do `RUNNER_REGISTRATION_TOKEN` estático) voltou a derrubar
 o deploy: runner em crashloop `404 runner-registration`, `RestartCount=1397`, deploy
 queued sem runner. O recovery documentado (rotacionar token + recriar) destravou, mas é
@@ -589,15 +589,15 @@ ninguém a executava e o problema reincidia. Este retrofit fecha o loop:
 
 **Por quê**: transformar "opção mencionada" em recipe executável e marcar o recovery e o
 toggling de `EPHEMERAL` como paliativos — para o §7 parar de reincidir. Provado em staging
-do `quote_app` (cutover + `docker restart` sem 404).
+de um projeto (cutover + `docker restart` sem 404).
 
 ## 2026-06-12 — Monorepo npm-workspace build/runtime traps + `tsc -b` project references — bump 2.12.0 → 2.13.0
 
-Source: project `quote_app` (feature 017, primeiro CI/CD do repo). Quatro armadilhas
+Source: a real project (feature 017, primeiro CI/CD do repo). Quatro armadilhas
 não-óbvias que custaram tempo real, todas ausentes da skill (verificado por grep):
 
 - **Backend não roda como `node dist/` quando workspaces shared exportam TS source.** Os
-  pacotes `@quote-app/shared-*` têm `main: ./src/index.ts` (TS cru, import com extensão
+  pacotes `@<app>/shared-*` têm `main: ./src/index.ts` (TS cru, import com extensão
   `.js`). A imagem compilada morria no boot com `ERR_MODULE_NOT_FOUND`/`ERR_UNKNOWN_FILE_EXTENSION`
   no `.ts` do sibling — `tsc` não inlina workspace deps e `node` não carrega `.ts`. Fix:
   rodar a imagem via `tsx src/index.ts` (igual ao dev). Repontar o `exports` do shared p/
@@ -663,7 +663,7 @@ Any self-hosted runner sitting behind a VPN, cloud overlay, or corporate firewal
 
 ## 2026-05-08 — Best-effort write narrow catch + GHA bind mount uid mismatch + compose `--wait` scope — bump 2.10.0 → 2.11.0
 
-Source: project `inventory_app`, PR #10 (mergeada 2026-05-08, merge commit `13eed8d`). After v2.10.0 documented the ENOENT-bootstrap + soft-failure-yellow-warning trap, a code review on the canonical fix (Copilot, on `bootstrap-zitadel.ts:1106-1112`) pointed out a refinement worth folding back, and the work to bring an `smoke-e2e` CI job from red to green surfaced 2 more unrelated CI patterns that fit this skill's scope.
+Source: a real project, PR #10 (mergeada 2026-05-08, merge commit `13eed8d`). After v2.10.0 documented the ENOENT-bootstrap + soft-failure-yellow-warning trap, a code review on the canonical fix (Copilot, on `bootstrap-zitadel.ts:1106-1112`) pointed out a refinement worth folding back, and the work to bring an `smoke-e2e` CI job from red to green surfaced 2 more unrelated CI patterns that fit this skill's scope.
 
 - **§5 refinement** — the canonical "best-effort wrap" was `try { writeFileSync } catch { warn }`, which silences EVERY error from the write, not just the `ENOENT` expected in the container. Reviewer Copilot pointed out that on a dev machine, EACCES (perms wrong on the bind mount), ENOSPC (disk full), or EROFS (read-only filesystem) are real local problems that should propagate — not be silenced. The pragmatic refinement is to narrow the catch to `ENOENT`/`ENOTDIR` (the expected case in the container) and re-throw everything else. **Why this matters concretely**: in the source project the `bootstrap.json` written by the script is consumed by a backend `auth-sanity.ts` check that compares `AUTH_AUDIENCE` against the project ID — silencing a write failure means the sanity check then operates on a stale or absent file without alarm. The narrow catch preserves the prod fix (ENOENT in container, expected) while keeping the dev signal honest. The same reasoning applies to any best-effort write: silence only the errno you affirmatively expect, not the whole cone of failure modes.
 
@@ -687,7 +687,7 @@ These two CI sections (§6 + §7) generalize beyond Zitadel — they apply to an
 
 ## 2026-05-08 — Container script writing output paths outside WORKDIR — soft-failure that hides forever — bump 2.9.0 → 2.10.0
 
-Source: project `inventory_app`, post-§7 recovery (cutover prod 2026-05-08). The §7 chicken-and-egg recovery from v2.9.0 worked exactly as documented (~5min from `0 runners` diagnosis to job picked up), and the first successful deploy in ~19h surfaced **a separate latent bug** that had been hiding behind yellow warnings since feature 005 — the `idp-bootstrap` step exits 1 on every deploy with `ENOENT '/app/infra/docker/zitadel/local/bootstrap.json'`, but `continue-on-error: true` + `::warning::` mark it as soft-failure so the stack stays healthy. Operators stopped reading the yellow warning after a few deploys.
+Source: a real project, post-§7 recovery (cutover prod 2026-05-08). The §7 chicken-and-egg recovery from v2.9.0 worked exactly as documented (~5min from `0 runners` diagnosis to job picked up), and the first successful deploy in ~19h surfaced **a separate latent bug** that had been hiding behind yellow warnings since feature 005 — the `idp-bootstrap` step exits 1 on every deploy with `ENOENT '/app/infra/docker/zitadel/local/bootstrap.json'`, but `continue-on-error: true` + `::warning::` mark it as soft-failure so the stack stays healthy. Operators stopped reading the yellow warning after a few deploys.
 
 Root cause: `bootstrap-zitadel.ts:1099` resolves `outFile = resolve(__dirname, '../../../infra/docker/zitadel/local/bootstrap.json')` — in dev the source tree mounted/checked-out has the upward path; in prod the Dockerfile only copies `packages/idp/`, so the upstream paths don't exist in the image. Every Zitadel operation (org/project/app/roles/user/grants/label-policy/custom-texts) completes BEFORE the `writeFile`, so each deploy correctly applies IdP state — it just blows up cosmetically at the end.
 
@@ -701,7 +701,7 @@ Also fixes a **drift in `SKILL.md` `metadata.version`** — was at 2.8.0 since v
 
 ## 2026-05-07 — CD cutover pitfalls: build-time vs runtime, operator clones, `--profile run` side-effects + multi-job token exhaustion — bump 2.6.1 → 2.7.0
 
-Source: project `inventory_app`, Onda 3 of feature 006 (cutover prod). The existing skill v2.6.1 covered the runner build-time and registration mechanics solidly, but a real production cutover surfaced **four classes of CD-time pitfalls** that bit during mid-flight debugging — each costing 15-60 minutes the first time and recurring across the day:
+Source: a real project, Onda 3 of feature 006 (cutover prod). The existing skill v2.6.1 covered the runner build-time and registration mechanics solidly, but a real production cutover surfaced **four classes of CD-time pitfalls** that bit during mid-flight debugging — each costing 15-60 minutes the first time and recurring across the day:
 
 - **Multi-job CD exhausts ephemeral runner tokens within the 1h window.** Skill §5 noted "tokens single-use, vencem em 1h" but didn't spell out the **multi-deploy-day failure mode**: `EPHEMERAL=true` runner consumes the token on each job's re-registration, so 4-5 deploys in an hour exhaust it even before the wall-clock TTL expires. Symptom is `gh-runner Restarting (1)` mid-cutover with a job stuck "queued" in CI. Fix requires updating the token in **two places** (GH secret + `.env` on the runner host) plus `docker compose up -d --force-recreate runner` — the GH secret alone doesn't help the running container which already has the stale `.env`. Captured in new §5b.
 

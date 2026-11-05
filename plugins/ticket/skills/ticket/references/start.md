@@ -148,7 +148,7 @@
    commits locais que a origin não tem, e pode ser maior que zero de propósito,
    quando a base local carrega commits que ainda não subiram. É o caso da fase
    PLAN de uma missão `sdd`, que comita na base antes de a branch nascer: deu
-   `2	0` na QUO-155 (`quote_app`, 05/10/2026). Confira que são exatamente os
+   `2	0` na QUO-155 (05/10/2026). Confira que são exatamente os
    esperados com `git log --oneline origin/${BASE_BRANCH}..HEAD`, e nunca
    "conserte" o lado esquerdo com `reset`, que apaga esses commits.
 
@@ -183,7 +183,7 @@
 
    Esquerda maior que zero (a branch já tem commits próprios): o `--ff-only` recusa
    sem mexer em nada; pare e pergunte ao dev (rebase, se a branch não foi publicada).
-   Medido em 14/10/2026 no REP-925 (`report_api`), pelo reflog:
+   Medido em 14/10/2026 no REP-925, pelo reflog:
    `feature/staging-refresh`, criada de uma base velha, foi renomeada e avançou 7
    commits por fast-forward (`0	7` → `0	0`); o primeiro commit do ticket veio depois.
 
@@ -366,8 +366,8 @@ o próximo deck de outro projeto abriria ticket no lugar errado. Faça assim:
 3. Registre as duas branches onde o trabalho começa (handoff, descrição da issue).
    O `close` roda no repo do `.jira-project`, e o PR do outro repo é aberto à mão.
 
-Medido no REP-929 (16/10/2026): a issue e a branch foram abertas no
-`report_api`, a partir de `develop`. A branch espelhada nasceu em
+Medido no REP-929 (16/10/2026): a issue e a branch foram abertas num
+repositório, a partir de `develop`. A branch espelhada nasceu em
 `~/repos/<outro-repo>`, a partir de `main`, e as duas mediram `0 0`.
 
 ## Registrar cartão SEM começar o trabalho
@@ -445,5 +445,5 @@ a base local à frente pelos commits da fase PLAN, como explica o A8):
 5. Confira com `sdd why <missao> TICKET`, que deve responder
    `issue <KEY> in the sprint`.
 
-Medido na QUO-155 (`quote_app`, 05/10/2026): os cinco passos, e o `sdd why`
+Medido na QUO-155 (05/10/2026): os cinco passos, e o `sdd why`
 respondeu `issue QUO-155 in the sprint`.

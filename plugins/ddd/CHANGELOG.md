@@ -2,12 +2,19 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [0.5.4] — 2026-11-05
+
+### Apelidos de projeto saem do texto
+
+Os apelidos de projeto da limpeza anterior saem do texto, também nas entradas antigas deste arquivo.
+Onde a frase dependia do nome, ficou um termo genérico. As medições continuam valendo. O comportamento não muda.
+
 ## [0.5.3] — 2026-11-04
 
 ### Dados da empresa saem do texto
 
 Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
-instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `QUO-…`), também nas
 entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
 
 ## [0.5.2] — 2026-10-22
@@ -20,7 +27,7 @@ Distribuição individual no catálogo Codex após instalação isolada, descobe
 
 ## [0.5.0] - 2026-10-01
 
-Lição de uma sessão real (quote_app, QUO-153): o `CLAUDE.md` do projeto exige rodar a skill antes de
+Lição de uma sessão real (QUO-153): o `CLAUDE.md` do projeto exige rodar a skill antes de
 concluir trabalho que toca a modelagem, e a chamada foi `review <path> — escopo: o diff não
 commitado`. O Modo 1 só descrevia a análise do **codebase inteiro** ("aponta codebase", template
 "Relatório — <projeto>", fan-out para codebase grande), sem escopo, foco nem saída para revisar a
@@ -213,7 +220,7 @@ Auditoria de cobertura (skill v0.2.0 vs. 4 markdowns brutos dos livros-fonte) co
 
 ### Motivação
 
-Validação aplicada no projeto `inventory_app` revelou: (a) subagentes precisaram improvisar naming/estrutura de domain events (inconsistência); (b) spec completa é overkill pra casos pequenos; (c) heurísticas de review ficam mais úteis com exemplos concretos lado a lado.
+Validação aplicada num projeto revelou: (a) subagentes precisaram improvisar naming/estrutura de domain events (inconsistência); (b) spec completa é overkill pra casos pequenos; (c) heurísticas de review ficam mais úteis com exemplos concretos lado a lado.
 
 ## [0.1.0] - 2026-04-14
 

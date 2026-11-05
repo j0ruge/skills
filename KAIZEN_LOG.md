@@ -372,7 +372,7 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 - **Yokoten:** a mesma causa existe fora do marketplace — `sdd_agents/agents/sdd-reviewer.md`
   ("Reproduce before you conclude" + "adversarial" = cauda de ≈ $5,4 e ~50 turnos por sessão
   REVIEW, e é o que empurra os agentes a construir sandboxes) e o `CLAUDE.md` + `.claude/rules`
-  do `report_api` (≈ 110 KB ≈ 28k tokens injetados em **cada** subagente).
+  de um projeto (≈ 110 KB ≈ 28k tokens injetados em **cada** subagente).
   Registrados como oportunidades (f); não feitos nesta rodada.
 
 ### Antes → Depois (um commit por plugin, todos em `origin/main`)
@@ -469,7 +469,7 @@ pedido dele, e publicada junto com as três lições dele. Rodada das 16 skills 
 - (e) `ansible-docker-backup-restore`: a prova "há dados" conta blocos `COPY` — Postgres-only;
   `mysqldump` grava `INSERT INTO` (já anotado no CHANGELOG 1.3.2, sem diff).
 - (f) Fora do repo: `sdd_agents/agents/sdd-reviewer.md` "Reproduce before you conclude" —
-  reproduzir só CRITICAL/HIGH; `CLAUDE.md` + `.claude/rules` do report_api com ≈ 110 KB — cada
+  reproduzir só CRITICAL/HIGH; `CLAUDE.md` + `.claude/rules` de um projeto com ≈ 110 KB — cada
   subagente paga ≈ 28k tokens de prefixo.
 - (g) `ticket` — **feita** (2026-09-03, `50e814c`, 1.4.0). O único tipo de achado que as outras 15 não tinham
   mostrado: uma **tabela de referência contradizendo a regra que a substituiu** (`sprint list-workitems` ainda

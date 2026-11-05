@@ -1,7 +1,7 @@
 ---
 name: dotnet-wpf-design
 metadata:
-  version: 1.8.1
+  version: 1.8.2
 description: Professional WPF/XAML design guide — Fluent Design (90+ controls, DataGrid icons, RowHeight), layout troubleshooting (ScrollViewer, toolbar, form spacing), control sizing, dark theme, branding. MVVM and E2E live in sibling skills. Triggers — WPF design, XAML layout, Fluent, DataGrid icon, form spacing, dark theme.
 ---
 

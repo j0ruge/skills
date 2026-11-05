@@ -100,7 +100,7 @@ Se `refs/remotes/origin/HEAD` não existir na cópia local, criar com
 
 | Repo | Projeto | `$BASE_BRANCH` | Fluxo |
 |---|---|---|---|
-| `quote_app` | QUO | **`develop`** | `develop → staging → main`; PRs vão para `develop` desde a feature 017 |
+| `<repo>` (exemplo) | QUO | **`develop`** | `develop → staging → main`; PRs vão para `develop` desde a feature 017 |
 
 > Se um repo novo entrar na tabela, entre com a **saída do comando**, não com o
 > que parece razoável.

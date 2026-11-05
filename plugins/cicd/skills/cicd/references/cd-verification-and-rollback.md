@@ -107,7 +107,7 @@ route in your runbook.
 A deploy script outside Actions (a host agent, an operator script) usually arms the
 rollback as `trap rollback ERR` after the build and disarms it after the last proof. Two
 bash rules decide whether it runs, and both fail silently. Measured on 2026-10-13
-(`portal_app`, `infra/__tests__/deploy-comportamento.test.ts`, which runs the real
+(`infra/__tests__/deploy-comportamento.test.ts`, which runs the real
 `deploy.sh` with `docker`/`dig` stubs on `PATH`):
 
 1. **`exit` does not fire `ERR`.** A proof written as
@@ -349,7 +349,7 @@ see it. Same outcome, opposite cause, identical transcript.
 ## §6c. A sensor that reads the script's TEXT stays green with the wrong script
 
 A contract test that regex-matches a deploy script proves the text is there, not that the
-script does it. An independent review on 2026-10-13 (`portal_app`) found three
+script does it. An independent review on 2026-10-13 found three
 defects behind green text-sensors, each then caught by running the script:
 
 | Text the sensor matched | What the script actually did |

@@ -1,11 +1,18 @@
 # Changelog — `whisper-preprocess`
 
+## [1.1.3] — 2026-11-05
+
+### Apelidos de projeto saem do texto
+
+Os apelidos de projeto da limpeza anterior saem do texto, também nas entradas antigas deste arquivo.
+Onde a frase dependia do nome, ficou um termo genérico. As medições continuam valendo. O comportamento não muda.
+
 ## [1.1.2] — 2026-11-04
 
 ### Dados da empresa saem do texto
 
 Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
-instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `QUO-…`), também nas
 entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
 
 ## [1.1.1] — 2026-10-22

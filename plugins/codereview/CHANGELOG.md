@@ -2,6 +2,13 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.29] — 2026-11-05
+
+### Apelidos de projeto saem do texto
+
+Os apelidos de projeto da limpeza anterior saem do texto, também nas entradas antigas deste arquivo.
+Onde a frase dependia do nome, ficou um termo genérico. As medições continuam valendo. O comportamento não muda.
+
 ## [2.27.28] — 2026-11-05
 
 ### Nomes de repositórios privados saem do texto
@@ -49,7 +56,7 @@ Duas lições do `/codereview` 2.27.26 no ramo `feat/jev-em-julgamentos`, em dua
 ### Dados da empresa saem do texto
 
 Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
-instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `QUO-…`), também nas
 entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
 
 ## [2.27.25] — 2026-11-04
@@ -837,7 +844,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
     (`local/ci`, pela API de Statuses) serve de baseline quando a árvore está no `headRefOid` sem mudança
     local, o estado é `success` e a descrição nomeia o comando do 4.1 ou um que o contém. O 4.2 roda o mesmo
     comando, e uma falha sob um status verde é rodada de novo no head antes de virar regressão.
-- **Por quê:** na sessão do `/coderabbit-pr` do PR #107 do portal_app (2026-10-21):
+- **Por quê:** na sessão do `/coderabbit-pr` do PR #107 (2026-10-21):
   - a sessão tinha carregado o 2.26.0, com o 2.26.8 instalado. Os dois `SKILL.md` diferiam só no
     `version:` (4.5.2 → 4.5.5), mas `fix-loop.md`, `regression-testing.md` e `reviewer-registry.md`
     diferiam, e só o `fix-loop.md` instalado tinha *A finding already in the backlog*. Pela regra antiga a
@@ -867,8 +874,8 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
   escreve `git -P -C <repo> diff …` com caminhos absolutos, e a linha `Repository:` diz que o checkout
   padrão é outro. O roteador do `SKILL.md` troca "names more than one repo" por "names a repo besides the
   cwd", que cobre os dois casos; o sumário do `configuration.md` cita o caso novo.
-- **Por quê:** na revisão do plano da peça C do portal_app (2026-10-21, codereview 2.26.0), o
-  pedido nomeava o worktree `portal_app-peca-c`, e a sessão rodava no checkout principal, em
+- **Por quê:** na revisão do plano da peça C de um projeto (2026-10-21, codereview 2.26.0), o
+  pedido nomeava o worktree `<repo>-peca-c`, e a sessão rodava no checkout principal, em
   `develop`, no próprio merge base: o `git diff b466869...HEAD` do prompt de lançamento, rodado dali, sai
   vazio, e o `cd` do orquestrador não persiste (cada Bash voltou com `Shell cwd was reset`). Só o caso de
   vários repositórios mandava o `-C`. Os prompts da rodada levaram `git -C <worktree> diff` sem o `-P`, e
@@ -1025,7 +1032,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
   fato prova, põe-no sob a *Findings Table* e onde o orquestrador da rodada seguinte o lê (a tabela
   de vereditos de um handoff), e ele não conta contra a regra de parada. O bullet também avisa que
   tirar uma afirmação, como *Docs this session wrote* recomenda, é uma dessas correções.
-- **Por quê:** na revisão do plano da `@acme/object-storage` (portal_app, branch
+- **Por quê:** na revisão do plano da `@acme/object-storage` (branch
   `docs/plano-object-storage-lib`, o plano revisado como CODE), a correção da rodada 29 (`1ae5181`)
   exigiu `COPY vendor/ vendor/` "exatamente e sem opções", cláusula que só o caso `COPY --from=…`
   provava. A rodada 30 (`base=8c788d6`) deu LOW nela, e a correção (`5734ee4`) tirou a cláusula. A
@@ -1033,7 +1040,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
   ficavam indefinidos. Fechou por um veredito escrito, não por outra edição: o caso de dois estágios
   já fixa que o `--from` não conta, e as outras opções não mudam a origem do `COPY`, então qualquer
   escolha do executor passa certo ou reprova alto. O veredito entrou na tabela "Vereditos já dados"
-  do handoff (portal_app `a567958`), e a série parou ali, com A em todas as linhas. O bullet
+  do handoff (`a567958`), e a série parou ali, com A em todas as linhas. O bullet
   irmão só cobria o achado **descartado** que volta; este é o achado que desfaz uma correção
   **aceita**, e aceitá-lo de novo faria o texto oscilar entre as duas formas.
 - **Onde:** só na reference. O `SKILL.md` está em 19.993 caracteres, no teto de ~20 mil da spec,
@@ -1070,7 +1077,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
     batia com o clone do marketplace (rc 0); a 2.19.0 diferia dele no `SKILL.md` e em cinco
     references. A regra antiga, seguida ao pé da letra, rodaria a revisão na 2.19.0, doze releases
     atrás.
-  - Código em doc: na revisão do plano da `@acme/object-storage` (portal_app, sem foco, 0
+  - Código em doc: na revisão do plano da `@acme/object-storage` (sem foco, 0
     CODE), o plano revisado como CODE deu à rodada 1 os seus dois MEDIUM, os dois em Checks: a
     sabotagem `*.tgz` deu 34/0 em vez de 33/1, e o piso de um Check já estava verde no HEAD.
   - Faixa: o agente das linhas 354–645 do mesmo plano apontou como lacuna a docstring no I3 e no I4,
@@ -1661,7 +1668,7 @@ Lições das rodadas 2 a 4 do `/codereview:codereview` na branch `REP-929_aprese
 (dois repos, `codereview` 2.16.0), que fecharam em A nos dois.
 
 - **`references/detection-passes.md`, 6.5.2, parágrafo novo *Line anchors into a changed file*:** a
-  rodada 2 do report_api revisava um diff só de docs, correto em si. As 11 linhas novas numa regra empurraram
+  rodada 2 de um projeto revisava um diff só de docs, correto em si. As 11 linhas novas numa regra empurraram
   `chaveItem` de 688 para 699, e a âncora `TODO.md:81 → controle-vida-util-consumiveis.md:688` ficou
   fora do alvo num arquivo que não estava no diff. Só o sensor do próprio repo viu
   (`check-todo.sh --check TODO.md`, rc 1, "anchor … is off target"). A fase C passa a rodar
@@ -1712,7 +1719,7 @@ Lições de um `/codereview:codereview nos repos` na branch `REP-929_apresentaca
 
 ### O Codex que ninguém pediu, e o achado que supõe squash
 
-Lições de um `/codereview:coderabbit-pr` nos PRs #32, #33 e #37 do `portal_app`
+Lições de um `/codereview:coderabbit-pr` nos PRs #32, #33 e #37
 (`coderabbit-pr` 4.4.4).
 
 - **`references/reviewer-registry.md`, *Detection Strategy*:** um revisor que só roda sob pedido
@@ -1777,7 +1784,7 @@ do mesmo repo, no mesmo dia (`coderabbit-pr` 4.4.3).
 
 ### Sonda de "apaga no fim" afirma antes o estado gravado
 
-Lição de um `/codereview:coderabbit-pr` no PR #92 do `report_api` (REP-925), em que
+Lição de um `/codereview:coderabbit-pr` no PR #92 (REP-925), em que
 o fix do achado P2 do Codex grava um marcador `QUEBRADO` e o apaga num refresh ou rollback que dá
 certo.
 
@@ -1797,7 +1804,7 @@ certo.
 
 ### Hash de manifesto não é credencial; a lista de correções do orquestrador também é prosa
 
-Lições de quatro rodadas de `/codereview` sobre a branch REP-925 do `report_api`
+Lições de quatro rodadas de `/codereview` sobre a branch REP-925
 (scripts bash de refresh de staging), com `base=` encadeado de rodada em rodada.
 
 - **`references/detection-passes.md`, pass 6.10:** o gitleaks (`generic-api-key`) acusou um valor
@@ -1897,7 +1904,7 @@ Lições de uma revisão do ABC-6 no `~/.hermes` (faixa `47fbe46..HEAD` com path
 
 ### A mensagem que pede ação precisa sair quando a ação é feita, e a cópia velha se prova com `diff`
 
-Lições de uma revisão no `quote_app` (QUO-155), sobre o delta que o pipeline `sdd` não revisou.
+Lições de uma revisão num projeto (QUO-155), sobre o delta que o pipeline `sdd` não revisou.
 
 - **`references/detection-passes.md` §6.1 (react/node):** item novo, MEDIUM. Uma mensagem que pede ação
   ("confira o endereço", "tente de novo") e não tem caminho que a retire depois da ação continua
@@ -2448,7 +2455,7 @@ Lição de uma análise do laço de revisão do kit `sdd_agents`, provocada por 
 
 ### `coderabbit-pr` 4.0.2: o Codex "Running" é pendente, não aprovação
 
-Lição de um `@codex review` no PR acme/quote_app#402.
+Lição de um `@codex review` no PR #402.
 
 - **O resumo vem antes da revisão.** O Codex publicou primeiro um comentário de *issue* com o
   marcador `<!-- codex-pull-request-review-summary -->` e o status `🔄 Running` (21:13:21Z); o review
@@ -2489,7 +2496,7 @@ log)." foi fundida à anterior como "Outputs are small.". Os três avisos C2 con
 
 ### Três lições de uma revisão por faixa de commits
 
-Lições da revisão dos 7 commits de correção do QA da QUO-153 no `quote_app` (`2773ce14..a08f54a6`).
+Lições da revisão dos 7 commits de correção do QA da QUO-153 (`2773ce14..a08f54a6`).
 
 - **`base=<sha>`: revisar uma faixa nomeada em prosa.** O pedido foi "os 7 commits de `8cae117f` a
   `a08f54a6`, sobre `2773ce14`", e a skill só sabia calcular `git merge-base {BASE_BRANCH} HEAD`,
@@ -2518,7 +2525,7 @@ references que os subagentes leem por caminho absoluto) são dívida antiga e fi
 A Fase 5.2 trazia `for id in <thread IDs from 5.1>; do`, e o jeito natural de preencher o
 placeholder é guardar os ids numa variável e iterar com `$ids`. No zsh, que não separa variável sem
 aspas, o laço roda uma vez só com todos os ids juntos. A API respondeu `NOT_FOUND … global id of
-'PRRT_…\nPRRT_…'` e nenhuma conversa foi resolvida no PR #401 do `quote_app`. Só a recontagem da
+'PRRT_…\nPRRT_…'` e nenhuma conversa foi resolvida no PR #401. Só a recontagem da
 5.3 (`unresolved: 2 of 2`) acusou a falha.
 
 - A 5.2 passa a receber a saída da 5.1 por pipe, com `while IFS=$'\t' read -r id _`, que se
@@ -2618,7 +2625,7 @@ AVISOS (B1, C1, C2 ×2, C3), depois 3 AVISOS C2, todos dos contratos de agente a
 ## [1.20.0] — 2026-09-11
 
 Novo passe de detecção **6.11 — Silent-Blinding Sensors**, always-on como o 6.10 mas **sem gate de
-nota**. Nasceu de uma revisão escopada real (REP-877, frontend do report_api): dos cinco achados, **três
+nota**. Nasceu de uma revisão escopada real (REP-877, frontend): dos cinco achados, **três
 estavam em código que já havia passado por duas rodadas de review** — porque a família inteira é
 invisível a quem procura bug, não sensor cego.
 
@@ -2765,7 +2772,7 @@ Relatórios completos ficaram fora do repo; aqui vai o que mudou e por quê.
 - **Modelo fixo em prosa:** "opus" era citado 8× como o modelo principal; agora "the main model —
   whichever model the session is running". A description troca `(haiku/sonnet/opus)` por
   "tiered model routing" (489 → 476 chars, idêntica nos 3 lugares).
-- `detection-passes.md`: a narrativa do incidente `@quote-app`/`FORMA_PAGAMENTO` (projeto de
+- `detection-passes.md`: a narrativa do incidente `@<app>`/`FORMA_PAGAMENTO` (projeto de
   origem) vira a forma geral do defeito; referências ao "haiku agent" saem.
 
 ### `coderabbit_pr` 3.6.0
@@ -2775,7 +2782,7 @@ Relatórios completos ficaram fora do repo; aqui vai o que mudou e por quê.
   `copilot-pull-request-reviewer[bot]` e os inline sob um segundo login, `Copilot`, que ninguém
   listava; os dois logins do Codex não existiam (404) — o que existe é `chatgpt-codex-connector[bot]`.
 - Frases relativas à versão anterior ("inline **now**", "rows that **still** delegate") e
-  arqueologia de PR (`PR #6 de inventory_app`, `PR #7`) saem; a regra fica.
+  arqueologia de PR (`PR #6`, `PR #7`) saem; a regra fica.
 - "opus"/"sonnet" fixos viram "main model"/"cheaper model" (o exemplo `model: "sonnet"` fica).
 - O baseline de testes (4.0) diz onde de fato roda: no início da 3.2, quando os vereditos indicam
   que algo vai mudar — as duas sondas cegas do auditor travaram exatamente nesse ponto.
@@ -2974,7 +2981,7 @@ Pedido do dono via `/retrofit-skill`: "faça um deepsearch e adicione um agente 
 
 ### Why (Part 1 — 6.5.3)
 
-Sessão `/speckit-implement` da feature 012 (`QUO-33_codigo_unico_cotacao`) no repo `quote_app`: ao rodar a suite completa do monorepo, vi `packages/shared/api-types/src/__tests__/contracts.test.ts > FORMA_PAGAMENTO contém os 4 valores canônicos` falhando. Reproduzi em baseline via `git stash + rerun` → também falha → declarei "drift pré-existente de outra feature, não introduzido por esta task" no resumo final do speckit-implement.
+Sessão `/speckit-implement` da feature 012 (`QUO-33_codigo_unico_cotacao`) num repo: ao rodar a suite completa do monorepo, vi `packages/shared/api-types/src/__tests__/contracts.test.ts > FORMA_PAGAMENTO contém os 4 valores canônicos` falhando. Reproduzi em baseline via `git stash + rerun` → também falha → declarei "drift pré-existente de outra feature, não introduzido por esta task" no resumo final do speckit-implement.
 
 O usuário pediu `ultrathink` + `superpowers:systematic-debugging` sobre essa decisão. Em ~5 min e 3 greps:
 - `grep "export const FORMA_PAGAMENTO" enums.ts` → tupla tem 7 valores + docstring "Conjunto completo restaurado em QUO-22 (rollback do R-022 da spec 011)".
@@ -3014,7 +3021,7 @@ A regra do `_None._` em buckets vazios de Recommended Actions é especialmente i
 
 ### Why
 
-Sessão de codereview no branch `QUO-22_aplicar_design` do repo `quote_app`: o agente Phase A (haiku, 9 tool uses, 81s) rodou os 8 passos via tool calls com sucesso mas devolveu como final message apenas `"Phase A complete. Structured results returned above."` — sem nenhum dos dados estruturados que o prompt pediu. O orquestrador (Opus) ficou cego: nem o diff stat, nem a classificação, nem o `SECRETS_PRESCAN` JSON chegaram. Tive que rodar `git status`, `git diff --name-only`, `git diff --stat`, `git log` e pipe-ar para `scan_secrets.sh` manualmente em paralelo no main session — anulando completamente o benefício do model routing haiku → opus que a v1.6.0 introduziu.
+Sessão de codereview no branch `QUO-22_aplicar_design` de um repo: o agente Phase A (haiku, 9 tool uses, 81s) rodou os 8 passos via tool calls com sucesso mas devolveu como final message apenas `"Phase A complete. Structured results returned above."` — sem nenhum dos dados estruturados que o prompt pediu. O orquestrador (Opus) ficou cego: nem o diff stat, nem a classificação, nem o `SECRETS_PRESCAN` JSON chegaram. Tive que rodar `git status`, `git diff --name-only`, `git diff --stat`, `git log` e pipe-ar para `scan_secrets.sh` manualmente em paralelo no main session — anulando completamente o benefício do model routing haiku → opus que a v1.6.0 introduziu.
 
 Comparação direta entre os prompts mostra a causa raiz: a Phase B sonnet (que funcionou — 8 agentes em paralelo, todos devolveram findings estruturadas) termina com `## Output Format` + template literal numbered list + edge case explícito (`"No findings for {FILE_PATH}"`). A Phase A haiku terminava com `"Return as a structured list"` abstrato + bullets de campos. Em modelos menores (haiku) com prompts de 40+ linhas e múltiplos passos, "lista estruturada" não é instrução forte o suficiente — o modelo trata os tool-call outputs como "já entregues" e o final message vira um status executivo. A interface do Agent tool em Claude Code só propaga a última mensagem do agente, não o transcript; um final message status-only equivale a uma resposta vazia.
 
@@ -3066,7 +3073,7 @@ The generalization for `coderabbit_pr`: NUL bytes, BOM markers, zero-width chara
 
 ### Why
 
-Sessão de debug do PR #6 do `inventory_app`: cached plan da sessão anterior documentava `TypeError: RequestInit signal AbortSignal` (msw v2 + jsdom + undici) como bug ativo bloqueando 44 testes. Verificação primária via `gh run view --log-failed` mostrou que o erro REAL do CI era completamente diferente: `Cannot find package 'jsdom' imported from /node_modules/vitest/...`. Os dois bugs existiam, mas o do cached plan estava mascarado pelo primeiro. Se eu tivesse aceitado o cached plan sem validar, teria proposto fix para o bug errado.
+Sessão de debug do PR #6: cached plan da sessão anterior documentava `TypeError: RequestInit signal AbortSignal` (msw v2 + jsdom + undici) como bug ativo bloqueando 44 testes. Verificação primária via `gh run view --log-failed` mostrou que o erro REAL do CI era completamente diferente: `Cannot find package 'jsdom' imported from /node_modules/vitest/...`. Os dois bugs existiam, mas o do cached plan estava mascarado pelo primeiro. Se eu tivesse aceitado o cached plan sem validar, teria proposto fix para o bug errado.
 
 Generaliza para `coderabbit_pr`: reviewers (CodeRabbit, Copilot, Gemini, Codex) podem citar arquivo, linha ou comportamento que mudou desde o snapshot do review. Sem validar contra código vivo, o skill aplica fix em código que já mudou ou propaga diagnóstico incorreto. O princípio é o mesmo do anti-silencing do v1.9.0 (evidência primária antes de qualquer ação) — só que aplicado em outra direção: v1.9.0 dizia "não esconder failures"; v1.10.0 diz "não trustar referências sem validar".
 
@@ -3091,7 +3098,7 @@ A nota refinada da Phase 4.2 vem do mesmo PR #6: cicd v2.4.0 já documentava cas
 
 ### Why
 
-PR #6 on `inventory_app` had 8 red CI jobs. The root cause for 6 of them was a single broken `npm run -w <ws> exec --` syntax in 3 workflows — a fail-fast error that aborted in seconds at the Typecheck step, **masking** all subsequent steps. After the fix unblocked CI, **44 frontend tests started failing** with msw/jsdom AbortSignal interop errors, and 2 backend type errors appeared in `auth-sanity.test.ts`. These were ALL pre-existing — the `npm run … exec` failure was hiding them.
+PR #6 had 8 red CI jobs. The root cause for 6 of them was a single broken `npm run -w <ws> exec --` syntax in 3 workflows — a fail-fast error that aborted in seconds at the Typecheck step, **masking** all subsequent steps. After the fix unblocked CI, **44 frontend tests started failing** with msw/jsdom AbortSignal interop errors, and 2 backend type errors appeared in `auth-sanity.test.ts`. These were ALL pre-existing — the `npm run … exec` failure was hiding them.
 
 Without baseline awareness, Phase 4 of `coderabbit_pr` would treat these 44+2 failures as "caused by the applied fixes" and either (a) try to fix them (scope explosion: msw/jsdom interop is a non-trivial test infrastructure rabbit hole) or (b) silence them (which the skill explicitly should never do). The correct triage is: capture baseline before any fix, distinguish unmasked-latent from caused-by-edit, document the latent, fix only the caused-by-edit, push.
 
@@ -3115,7 +3122,7 @@ This generalizes beyond CI cascades: any regression-detection workflow needs a b
 
 ### Why
 
-After PR #2 on `inventory_app` (`feat(002-idp-oidc): IdP OIDC via Zitadel`) was blocked by GitGuardian with **3 Generic Password findings** (2 in test integration files at `initialPassword: '<literal>'` shape, 1 false-positive in a docker-compose env-var substitution), the user pointed out that v1.7.0 should have caught these locally before push. Investigation found three distinct gaps:
+After PR #2 (`feat(002-idp-oidc): IdP OIDC via Zitadel`) was blocked by GitGuardian with **3 Generic Password findings** (2 in test integration files at `initialPassword: '<literal>'` shape, 1 false-positive in a docker-compose env-var substitution), the user pointed out that v1.7.0 should have caught these locally before push. Investigation found three distinct gaps:
 
 1. **Phase A pre-scan was a phantom step** — `SKILL.md` had a paragraph saying "the haiku agent runs a fast regex pre-scan" but the actual agent prompt code block never instructed the agent to do this. The pre-scan never ran.
 2. **LLM-simulated regex is unreliable** — sonnet agents were asked to mentally apply the regex catalog from `detection-passes.md`. Substring shapes like `initialPassword: '...'` (where `password` is the suffix of `initialPassword`) were missed because the LLM "saw" the field name, not the regex match. False-negative rate was high enough on real-world test fixtures to defeat the purpose.

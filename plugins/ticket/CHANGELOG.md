@@ -1,5 +1,12 @@
 # Changelog — ticket
 
+## [1.14.4] — 2026-11-05
+
+### Apelidos de projeto saem do texto
+
+Os apelidos de projeto da limpeza anterior saem do texto, também nas entradas antigas deste arquivo.
+Onde a frase dependia do nome, ficou um termo genérico. As medições continuam valendo. O comportamento não muda.
+
 ## [1.14.3] — 2026-11-05
 
 ### Nomes de repositórios privados saem do texto
@@ -19,14 +26,14 @@ Onde a frase dependia do nome, ficou um termo genérico. As medições continuam
   - **O que muda para quem usa:** é preciso definir `JIRA_BASE_URL` no ambiente. `acli` e o MCP não usam
     essa variável.
 - **Textos:** nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
-  instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+  instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `QUO-…`), também nas
   entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem.
 
 ## [1.14.1] — 2026-11-03
 
 ### Por quê
 
-No POR-11 (03/11/2026) a issue saiu do `portal_app`, e a branch espelhada nasceu em outro repositório, que
+No POR-11 (03/11/2026) a issue saiu de um repositório, e a branch espelhada nasceu em outro, que
 estava na `REP-929_apresentacao_manutencao_proativa`, de outra missão e ainda sem merge. O `git status --short` saía
 limpo antes da troca. Depois de `git checkout main` e `git checkout -b POR-11_apresentacao-diretoria`, ele mostrou
 119 arquivos `??` (13 MB de `docs/qa/evidence/`).
@@ -103,7 +110,7 @@ Distribuição individual no catálogo Codex após instalação isolada, descobe
 
 ### Por quê
 
-No `start` do REP-929 (`report_api`, 16/10/2026) a issue nasceu pelo `POST /issue` do
+No `start` do REP-929 (16/10/2026) a issue nasceu pelo `POST /issue` do
 sub-fluxo B com dois campos que a skill não pedia. O primeiro foi `assignee:{accountId}`: o B
 transiciona para "Em andamento", mas nunca perguntava o responsável, e o REST não aceita `@me`. O
 `accountId` veio de `GET /myself`, o comando que o `workflow.md` só mostrava para atribuir outra
@@ -129,7 +136,7 @@ abrir a issue do repo do projeto e espelhar a branch de mesmo nome no outro, cad
 
 ### Por quê
 
-No `close` do REP-925 (`report_api`, 14/10/2026) a mesma branch entrou em `develop`
+No `close` do REP-925 (14/10/2026) a mesma branch entrou em `develop`
 por **dois** merge commits: o PR #92 (`d4466af`) e o PR #93 (`6a43598`), com o fix da revisão final.
 A receita da 1.11.3 recorta pelos pais de **um** merge: aplicada ao último, `6a43598^1..6a43598^2`
 deu 5 commits e 14 arquivos, só o #93. O resumo postado precisou de `d4466af^1..6a43598^2`: 33
@@ -159,7 +166,7 @@ origin/develop` (Fast-forward de 7 commits) e medir `0	0`.
 
 ### Por quê
 
-No `close` da POR-5 (`portal_app`, 14/10/2026) o PR #22 entrou em `develop` por **merge
+No `close` da POR-5 (14/10/2026) o PR #22 entrou em `develop` por **merge
 commit** (`--no-ff`, merge `00dd775`), e o step 3 do `close.md` só cobria squash e rebase +
 fast-forward. Os dois pais do merge delimitaram a branch sem busca pela key:
 `git log --no-merges 00dd775^1..00dd775^2` deu 62 commits e `git diff --stat 00dd775^1 00dd775`
@@ -185,7 +192,7 @@ resultado não imprime nada: o silêncio de "nenhuma" é o mesmo de uma busca qu
 
 ### Por quê
 
-No planejamento da POR-5 (`portal_app`, 13/10/2026), a existência da versão `0.3.0` no
+No planejamento da POR-5 (13/10/2026), a existência da versão `0.3.0` no
 projeto POR foi deduzida de uma JQL: `project = POR AND fixVersion = "0.3.0"` voltou vazia e sem
 erro, enquanto `0.4.0` respondia `o valor '0.4.0' não existe para o campo 'fixversion'`. O agente
 disse ao dev que a versão "existe e está vazia", e o dev escolheu o rótulo sob essa premissa. No
@@ -233,7 +240,7 @@ negrito), mas dependia de alguém notar olhando o JSON.
 
 ### Por quê
 
-Duas lições do `start` da QUO-155 (05/10/2026, no `quote_app`), aberta à mão dentro de uma missão
+Duas lições do `start` da QUO-155 (05/10/2026), aberta à mão dentro de uma missão
 do kit `sdd`:
 
 1. O repo roda o kit `sdd`, cuja fase TICKET do `sdd run` abre a issue sozinha. O dev pediu o
@@ -885,7 +892,7 @@ cego é pior que sensor ausente — ele produz confiança.
 
 ### Fixed
 
-- **A skill afirmava a branch base errada para o `quote_app`/QUO.** O `SKILL.md`
+- **A skill afirmava a branch base errada para o projeto `QUO`.** O `SKILL.md`
   dizia, em dois pontos (exemplo do `.jira-project` e nota da tabela de
   variáveis), que o projeto usa `main`. Usa **`develop`** —
   `origin/HEAD → origin/develop` desde a feature 017, e o fluxo é
@@ -1023,7 +1030,7 @@ contra o Jira de produção (boards 51/QUO e 10/REP) e contra os endpoints MCP.
 
 ### Origin
 
-Sessão de fechamento de **QUO-42 + QUO-43** (quote_app): com o MCP atlassian
+Sessão de fechamento de **QUO-42 + QUO-43**: com o MCP atlassian
 não-autenticado, a transição foi feita por `acli` — a tentativa pelo *nome da
 transição* (`"Itens concluídos"`, conforme a doc v1.0.0) falhou, e o *nome do
 status* (`"Concluído"`) funcionou, desmentindo o corolário da v1.0.0.
@@ -1054,11 +1061,11 @@ status* (`"Concluído"`) funcionou, desmentindo o corolário da v1.0.0.
   no `.jira-project`, com **fallback que detecta o branch default do repo**
   (`git symbolic-ref --short refs/remotes/origin/HEAD`). Substituídas todas as
   referências cravadas a `develop` em `start`/`close` por `${BASE_BRANCH}`.
-  ⚠️ Não assumir `develop` — `quote_app`/QUO usa `main`.
+  ⚠️ Não assumir `develop` — o projeto `QUO` usa `main`.
 
 ### Why / Origin
 
-Sessão de fechamento do ticket **QUO-41** (quote_app): o `/ticket close`
+Sessão de fechamento do ticket **QUO-41**: o `/ticket close`
 tentou `acli --status "Aprovação"` e `"Finished"` e falhou 2× com
 `"No allowed transitions found for given status"`, porque o board QUO não tem
 essa etapa. A correção (descobrir transições por id + base de branch por-projeto)

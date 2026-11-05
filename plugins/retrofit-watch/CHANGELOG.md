@@ -1,5 +1,12 @@
 # Changelog — retrofit-watch
 
+## [0.3.7] — 2026-11-05
+
+### Apelidos de projeto saem do texto
+
+Os apelidos de projeto da limpeza anterior saem do texto, também nas entradas antigas deste arquivo.
+Onde a frase dependia do nome, ficou um termo genérico. As medições continuam valendo. O comportamento não muda.
+
 ## [0.3.6] — 2026-11-04
 
 ### Changed
@@ -179,7 +186,7 @@
 
 ### Added
 
-- **Modo `kit`: o hook passa a vigiar o kit `sdd`.** Na sessão da QUO-152 do `quote_app`, uma
+- **Modo `kit`: o hook passa a vigiar o kit `sdd`.** Na sessão da QUO-152, uma
   PLAN inteira com o `/sdd-plan` e o `sdd-planner`, mais o `sdd approve` e o `sdd run`, deixaram
   o estado da sessão com `"skills": {}`. O `/sdd-plan` é comando sem `:`, o subagente chega como
   `Agent` com `subagent_type`, e o CLI é Bash comum. Nada disso era reconhecido, e o atrito real

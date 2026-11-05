@@ -311,7 +311,7 @@ check("defang: applied on the TODO path", all("@codex" not in t.render_body(i, c
 check("refs: a bare #N in prose, in parentheses and after 'PR' is found, each once",
       t.bare_refs("Liga com o #1. Ver (#10) e o PR #29, de novo #1") == [1, 10, 29])
 check("refs: qualified, glued, entity, fragment and code are not",
-      t.bare_refs("`dono/repo#10` e quote_app#484, &#123;, TODO.md#L12, `#7` e\n```\n#3\n```\nfim") == [])
+      t.bare_refs("`dono/repo#10` e app#484, &#123;, TODO.md#L12, `#7` e\n```\n#3\n```\nfim") == [])
 fake = {29: {"number": 29, "title": "chore(todo): catraca", "pull_request": {}}}
 check("refs: an issue the plan already listed is named without the network",
       t.ref_target("o/r", 10, [{"number": 10, "title": "1. Ver a dica"}], fetch=lambda n: 1 / 0)

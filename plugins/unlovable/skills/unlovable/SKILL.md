@@ -1,7 +1,7 @@
 ---
 name: unlovable
 metadata:
-  version: 1.1.2
+  version: 1.1.3
 description: "Strip every Lovable trace from a codebase scaffolded on lovable.dev — brand strings, og/twitter preview metadata, `.lovable/` residue, the `LOVABLE_API_KEY` email feature (migrated to SMTP) and the `@lovable.dev/*` Vite wrapper that owns the build. Tells cosmetic residue apart from the removals that break the build. Triggers — lovable, lovable.dev, unlovable, lovable-tagger, LOVABLE_API_KEY, remove Lovable branding, WhatsApp preview shows Lovable."
 ---
 

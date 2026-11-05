@@ -1,7 +1,7 @@
 ---
 name: dotnet-wpf-mvvm
 metadata:
-  version: 1.8.1
+  version: 1.8.2
 description: WinForms→WPF MVVM migration plus new WPF screens — CommunityToolkit.Mvvm, WPF-UI, ViewModels, data binding, Commands, navigation, DI via Microsoft.Extensions.Hosting. Setup and E2E live in sibling skills. Triggers — MVVM, WinForms to WPF, CommunityToolkit, data binding, RelayCommand.
 ---
 

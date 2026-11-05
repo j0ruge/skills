@@ -2,6 +2,11 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.18] — 2026-11-05 — apelidos de projeto saem do texto
+
+Os apelidos de projeto da limpeza anterior saem do texto, também nas entradas antigas deste arquivo.
+Onde a frase dependia do nome, ficou um termo genérico. As medições continuam valendo. O comportamento não muda.
+
 ## [1.4.17] — 2026-11-05 — nomes de repositórios privados saem do texto
 
 Nomes de repositórios privados saem do texto, também nas entradas antigas deste arquivo.
@@ -10,7 +15,7 @@ Onde a frase dependia do nome, ficou um termo genérico. As medições continuam
 ## [1.4.16] — 2026-11-04 — dados da empresa saem do texto
 
 Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
-instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `QUO-…`), também nas
 entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
 
 ## [1.4.15] — 2026-11-02 — o número na prosa se confere pelo valor, recalculado das contagens
@@ -442,7 +447,7 @@ grill de 13 perguntas e, a pedido do usuário, validação Kaizen da missão com
   validação foi improvisada: tabela dos desperdícios contra o plano, ajustes K1–K6 que voltaram ao
   plano e um checklist. O template é esse formato, com o checklist tirado dos princípios e armadilhas
   desta skill. Padrão de falha: cada validação sai num formato, e a que vira só uma nota não muda o
-  plano. Usado uma vez (`portal_app`, `docs/superpowers/specs/2026-10-16-acme-libs-object-storage-design.md`
+  plano. Usado uma vez (`docs/superpowers/specs/2026-10-16-acme-libs-object-storage-design.md`
   § 8); não testado em outro caso.
 - **Armadilha nova, "Sabotagem que não chegou à ferramenta".** Para provar que o `npm ci` recusa um
   tarball trocado em `vendor/`, o caso sabotado deu rc=0 e instalou o conteúdo **antigo**: o npm
@@ -660,7 +665,7 @@ para 8 gatilhos (pares `kaizen log/retrospectiva` e `desperdício/dívida técni
 `poka-yoke` como capacidade e gatilho, e perdeu "respeitando as convenções do repo" (é
 comportamento, coberto pela seção própria; não é gatilho) — 483 chars, agora entre aspas como o
 `CLAUDE.md` pede; `ANTES` em caps virou `antes` (a razão já estava na frase seguinte); a pergunta
-do desperdício #1 trocou "cotação" por "usuário" — vazamento do projeto `quote_app`, onde a skill
+do desperdício #1 trocou "cotação" por "usuário" — vazamento de um projeto, onde a skill
 nasceu. De brinde, "Caçe" → "Cace".
 
 Ficou de propósito (keep list do guia): o script exato das ações irreversíveis, a redundância
@@ -760,7 +765,7 @@ linha `Gatilhos —` com 8 termos. Mesmo texto espelhado em `SKILL.md`, `plugin.
 
 ### Changed — o template do Kaizen Log passou a refletir o uso real
 
-O uso da skill no projeto `quote_app` (feature QUO-62) produziu entradas de log com duas
+O uso da skill num projeto (feature QUO-62) produziu entradas de log com duas
 subseções que o template não previa, e ambas se provaram as mais consultadas depois:
 
 - **Desperdícios evitados (cortes conscientes)** — o que ficou fora do escopo e por quê.

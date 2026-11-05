@@ -239,7 +239,7 @@ version, while a session started fresh loads the `installPath`.
   both, so go on with `{SKILL_DIR}`, the newer of the two on disk, and put the three versions in the
   Cost footprint. The same version with other files: the cached copy was edited, so list the files
   and ask the user before going on.
-- Measured 2026-10-20 (portal_app, a plan review): loaded 2.25.2 with 2.19.0 installed,
+- Measured 2026-10-20 (a plan review): loaded 2.25.2 with 2.19.0 installed,
   recorded on 2026-10-18 by the last `claude plugin update codereview`. That afternoon another
   session ran `claude plugin marketplace update`, then `claude plugin update` for another plugin:
   2.25.2 entered the cache in the same second as new versions of three other plugins, and only the
@@ -404,7 +404,7 @@ grades "A, no CODE files" and never reads the one HIGH.
   or write `git -C <repo>`. Each launch prompt writes the diff out as above, gives absolute paths, and
   its `Repository:` line says the default directory is another checkout. Keep the `-P` next to the
   `-C`: rtk 0.42.3 rewrites `git -C <repo> diff …` (`rtk rewrite` rc 0, to `rtk git -C <repo> diff …`)
-  and leaves `git -P -C <repo> diff …` alone (rc 1). Measured 2026-10-21 (portal_app, a plan
+  and leaves `git -P -C <repo> diff …` alone (rc 1). Measured 2026-10-21 (a plan
   reviewed in a worktree): every Bash call came back with `Shell cwd was reset`, and the session's
   checkout sat at the merge base, where `git diff --stat b466869...HEAD` prints nothing. The 7 agents
   got `git -C <worktree> diff` without the `-P`, and the review held only because each read its file
@@ -472,7 +472,7 @@ launches no agent, and the report grades code nobody read.
 - Measured 2026-10-13 (`j0ruge/sdd_agents` PR #247, codereview 2.14.1): a 10-file docs-only diff
   classified 0 CODE; the 1184-line plan, split into two ranges (`1–505`, `506–632 + 973–1184`),
   gave two sonnet agents with findings, one of them a confirmed MEDIUM.
-- Measured 2026-10-20 (portal_app, the plan of a TypeScript library, no focus, 0 CODE):
+- Measured 2026-10-20 (the plan of a TypeScript library, no focus, 0 CODE):
   reviewed as CODE, the plan gave round 1 its two MEDIUMs, both in Checks a later step runs. The
   `*.tgz` sabotage a Check should catch read 34/0 instead of 33/1, and a Check's floor was already
   met at HEAD, green before the increment it gates.
@@ -504,7 +504,7 @@ These decide whether the rounds converge:
   what the sensor or the case proves, write that verdict under the Findings Table, and add it where
   the next round's orchestrator reads (a handoff's verdict table), for that round to cite; it does
   not count against the stop rule. Removing a claim, as *Docs this session wrote* advises, is one
-  such fix: the next round may ask for it back. Measured 2026-10-20 (portal_app, the plan in
+  such fix: the next round may ask for it back. Measured 2026-10-20 (the plan in
   *Code inside docs*): round 29's fix (`1ae5181`) required `COPY vendor/ vendor/` "exactly and
   without options", a clause only a `COPY --from=…` case proved; round 30 (`base=8c788d6`) gave it a
   LOW, and its fix (`5734ee4`) dropped the clause; round 31 (`base=1ae5181`) gave a LOW asking to

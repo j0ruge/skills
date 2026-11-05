@@ -1,11 +1,18 @@
 # Changelog — `dev-script`
 
+## [0.6.3] — 2026-11-05
+
+### Apelidos de projeto saem do texto
+
+Os apelidos de projeto da limpeza anterior saem do texto, também nas entradas antigas deste arquivo.
+Onde a frase dependia do nome, ficou um termo genérico. As medições continuam valendo. O comportamento não muda.
+
 ## [0.6.2] — 2026-11-04
 
 ### Dados da empresa saem do texto
 
 Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
-instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `QUO-…`), também nas
 entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
 
 ## [0.6.1] — 2026-10-22
@@ -165,7 +172,7 @@ Lessons from a session against the LouvorFlow monorepo where the user's `dev.sh`
 
 ## 0.3.0 — 2026-05-04
 
-Lessons from a session against the `inventory_app` LAN-HTTPS stack — three places where the v0.2.0 reference still left enough rope to hang yourself, including one regression that hit four times across separate sessions before the root cause clicked.
+Lessons from a session against a LAN-HTTPS stack — three places where the v0.2.0 reference still left enough rope to hang yourself, including one regression that hit four times across separate sessions before the root cause clicked.
 
 ### Added
 
@@ -201,7 +208,7 @@ Lessons from a session against the `inventory_app` LAN-HTTPS stack — three pla
 
 ## 0.2.0 — 2026-04-30
 
-Lessons from a smoke session against the `inventory_app` LAN-HTTPS stack — three places where the v0.1.0 reference drifted from real-world behaviour.
+Lessons from a smoke session against a LAN-HTTPS stack — three places where the v0.1.0 reference drifted from real-world behaviour.
 
 ### Added
 
@@ -254,7 +261,7 @@ Initial release. Generates `dev.sh` (bash, Linux/macOS) and `dev.ps1` (PowerShel
 
 The skill condenses lessons from two real-world `dev.sh` scripts:
 
-- `acme/report_api/dev.sh` — multi-backend monorepo with SQL Server externals, used as the baseline for color/prefix patterns, healthcheck loops, and `kill_stale_ports` shape.
-- `acme/inventory_app/dev.sh` (created in the same session that produced this skill) — Zitadel + Caddy + mkcert HTTPS-on-LAN setup, used as the source for TLS termination, Vite 5 `allowedHosts` wrapper, `NODE_EXTRA_CA_CERTS`, bootstrap idempotency with `COMMAND-1m88i` guard, and state-file drift detection.
+- A multi-backend monorepo with SQL Server externals, used as the baseline for color/prefix patterns, healthcheck loops, and `kill_stale_ports` shape.
+- A `dev.sh` created in the same session that produced this skill — Zitadel + Caddy + mkcert HTTPS-on-LAN setup, used as the source for TLS termination, Vite 5 `allowedHosts` wrapper, `NODE_EXTRA_CA_CERTS`, bootstrap idempotency with `COMMAND-1m88i` guard, and state-file drift detection.
 
 Future releases will add: Windows-native testing notes, Tilt comparison, devcontainer interop, and a `scripts/detect-stack.sh` utility that emits the detection summary as JSON for callers that want to drive generation programmatically.

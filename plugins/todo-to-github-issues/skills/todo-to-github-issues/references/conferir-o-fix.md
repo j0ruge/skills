@@ -4,7 +4,7 @@ O `--fix` é determinístico, mas uma migração de formato apaga itens, troca o
 headings. Três coisas escapam dos gates dele e só aparecem no commit seguinte, ou nunca. Rode as
 três antes de commitar o `--write`, na branch da migração.
 
-Os três casos foram medidos no `portal_app` em 2026-10-16: 139 violações iniciais, 20 itens
+Os três casos foram medidos em 2026-10-16: 139 violações iniciais, 20 itens
 marcados apagados pelo `AUTO` e 57 casos `MANUAL`.
 
 ## 1. A quebra de linha não mudou nenhuma palavra
@@ -20,7 +20,7 @@ diff <(git show HEAD:TODO.md | norm) <(norm < TODO.md) | grep -c '^[<>]'    # te
 ⚠️ **Ancore o marcador na linha inteira (`^…$`).** O preâmbulo da semente atual cita
 `<!-- sdd:open -->` entre crases, ao explicar o esqueleto. O recorte por `/<!-- sdd:open -->/`
 começa nesse parágrafo, e a comparação acusa 364 linhas de diferença onde há 0 (medido na
-migração do `portal_app`, 2026-10-16). Desde a 2.6.0 o
+migração de 2026-10-16). Desde a 2.6.0 o
 `AUTO` também apaga item aberto já resolvido (`--fix` diz quantos): as palavras dele saem como `<`,
 e só elas podem sair. Confira que cada `<` pertence a um desses itens.
 

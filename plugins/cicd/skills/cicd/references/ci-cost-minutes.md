@@ -407,8 +407,8 @@ as que estão **em uso** — os containers no ar.
    arquivo `0600`, e para senha embutida numa URL, extraia por `sed` no próprio host.
 2. **Prove cada senha antes de guardá-la**, por TCP: `psql -h 127.0.0.1 -U <papel> -c 'select current_user'`
    dentro do container do banco. O socket local costuma ser `trust` e aceita senha errada;
-   `-h 127.0.0.1` força a autenticação. Medido em 2026-10-13: as duas senhas responderam
-   `portal` e `portal_app`, cada uma pelo papel certo.
+   `-h 127.0.0.1` força a autenticação. Medido em 2026-10-13: as duas senhas responderam,
+   cada uma pelo papel certo.
 3. **Guarde num arquivo root-only no host** (`0600`, fora da cópia do compose, montado `:ro` no
    executor) e mantenha uma cópia cifrada fora do host (vault do Ansible, cofre de senhas). O
    executor relê o arquivo a cada uso: rotacionar é trocar uma linha.

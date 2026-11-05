@@ -39,7 +39,7 @@ from the tree of each sha; the agent's own image does not. When the failure is i
 on the host, and then a new request for the **same** head. No new promotion: the head did not
 change, and the environment branch would carry a commit that changes nothing deployed.
 
-### Measured cases (`portal_app`)
+### Measured cases
 
 **2026-10-13, the fix after the failure.** The first deploy through the agent (`ea2e774`, promotion PR #19) passed the gate on the host in
 ~4 min and failed in the frontend build, before anything was brought up: the agent image lacked

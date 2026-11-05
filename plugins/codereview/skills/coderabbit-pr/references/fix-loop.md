@@ -32,7 +32,7 @@ symptom — including one that opens a new fail-open next to it. The regression 
    success) is green before the fix by construction: "gone at the end" also holds when it never
    existed. Assert the set state mid-test, then its absence. Step 4's "at least one goes red" does
    not catch it, because the other probes go red and hide the empty one. Measured 2026-10-14
-   (report_api PR #92, `01a7c87`): "a successful refresh clears the QUEBRADO marker"
+   (PR #92, `01a7c87`): "a successful refresh clears the QUEBRADO marker"
    stayed green with the marker write sabotaged while three others went red; one assertion of the
    marker in the middle made that sabotage red too.
 2. **Fix** — the minimal change, with the editing tool, on the PR's head branch. A finding the
@@ -136,7 +136,7 @@ output built by hand as the probe:
    with any 18 cases, including an implementation that skips the new one.
 
 The fixtures and copies stay in the scratchpad: say in the commit and the checklist that the proof
-was by hand, with no artifact in the repo. Measured 2026-10-21 (portal_app PR #107): Codex's
+was by hand, with no artifact in the repo. Measured 2026-10-21 (PR #107): Codex's
 P1 (an executable that is also a PDF passed the PDF window) was fixed in the plan in `8ab1942`,
 which added two cases to I5, raised the Check's floor from 16 to 18 and anchored it on one title;
 the `/codereview` round over the fix rated MEDIUM that the other case, the polyglot, was not pinned.

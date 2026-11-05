@@ -4,7 +4,7 @@ description: "Jira ticket lifecycle, integrated with Git — create issues/sub-i
 argument-hint: "start (open) | split | close | status"
 compatibility: "Claude Code: o argument-hint acima é campo dele e só é lido no topo. Requer acli e credenciais Jira (JIRA_EMAIL, JIRA_API_TOKEN)."
 metadata:
-  version: 1.14.3
+  version: 1.14.4
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -46,7 +46,7 @@ A skill **não tem projeto Jira hardcoded** — cada repo declara o seu via arqu
 Antes de qualquer comando, ler e carregar as variáveis em escopo:
 
 ```ini
-# ~/repos/quote_app/.jira-project (exemplo)
+# ~/repos/<repo>/.jira-project (exemplo)
 PROJECT=QUO
 BOARD=51
 BRANCH_PREFIX=QUO

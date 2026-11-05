@@ -36,7 +36,7 @@ Uma referência já qualificada (`<dono>/<origem>#9`) não é tocada, nem `#` de
 conferido em 2026-10-16 com o `re` do Python, que é o motor do `--replace-message`.
 
 A primeira versão desta receita só reescrevia `\(#N\)`, e na extração real (**medido** em
-2026-10-16, `quote_app` → `acme-libs`) duas das quatro referências estavam fora de parênteses
+2026-10-16, um monorepo → `acme-libs`) duas das quatro referências estavam fora de parênteses
 ("review do PR #175", "no PR #178"). Elas teriam continuado como links para issues do repositório
 novo, sem erro nenhum.
 

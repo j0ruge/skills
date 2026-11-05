@@ -3,6 +3,13 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.9.3] — 2026-11-05
+
+### Apelidos de projeto saem do texto
+
+Os apelidos de projeto da limpeza anterior saem do texto, também nas entradas antigas deste arquivo.
+Onde a frase dependia do nome, ficou um termo genérico. As medições continuam valendo. O comportamento não muda.
+
 ## [2.9.2] — 2026-11-05
 
 ### Nomes de repositórios privados saem do texto
@@ -15,7 +22,7 @@ Onde a frase dependia do nome, ficou um termo genérico. As medições continuam
 ### Dados da empresa saem do texto
 
 Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
-instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `QUO-…`), também nas
 entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
 
 ## [2.9.0] — 2026-11-02
@@ -164,7 +171,7 @@ humano.
   - o atraso do índice de busca do GitHub marcado como não medido, porque nenhum arquivo do repo
     registra essa medição.
 
-  O `364` da `references/conferir-o-fix.md` ganhou a origem (`portal_app`, 2026-10-16).
+  O `364` da `references/conferir-o-fix.md` ganhou a origem (2026-10-16).
   Os demais têm sensor no código ou no CHANGELOG, ou são instrução, e a tabela está no CHANGELOG
   da skill.
 - O `scripts/__pycache__` local, ignorado pelo git (B6), foi para a lixeira.
@@ -195,10 +202,10 @@ conferir antes de commitar uma migração de formato.
   mesma prova do `- [x]` (`git merge-base --is-ancestor` de cada hash declarado; hash não mergeado
   ou desconhecido não é tocado). O ciclo de vida do kit mantém esse item só até o merge, e nada o
   tirava depois: o sensor o aceita, o `--audit` dá `clean` e o plano o lê `SKIP` para sempre. Na
-  migração do `TODO.md` do `portal_app` (2026-10-16), 10 itens assim só saíram porque
+  migração do `TODO.md` de um projeto (2026-10-16), 10 itens assim só saíram porque
   subagentes leram o arquivo item a item, e 3 ficaram mesmo assim (`ae5051e`, `84f0d9c` duas vezes,
   todos ancestrais de `origin/develop`); a 2.6.0 os acha sozinha. Sem efeito nos `TODO.md` do kit
-  sdd e do `quote_app` (`--fix` em seco: `auto=0`). Regra `resolved_open` em `todo_format.py`;
+  sdd e de um projeto (`--fix` em seco: `auto=0`). Regra `resolved_open` em `todo_format.py`;
   quatro casos novos em `test_todo_format.py`, os dois de apagar vistos vermelhos antes.
 - **`references/conferir-o-fix.md`**, roteada do `SKILL.md` para antes do commit de um `--write`:
   provar palavra a palavra que a quebra de linha não mudou o texto (com o marcador ancorado na
@@ -219,7 +226,7 @@ Patch: a linha `MANUAL` da âncora quebrada manda conferir se o achado ainda val
 ### Changed
 
 - **Âncora que perdeu o alvo às vezes é achado já consertado.** A célula dizia só "reancorar no
-  código atual". No `report_api` (2026-10-15), o sensor recusou o plano com 8 âncoras
+  código atual". Num projeto (2026-10-15), o sensor recusou o plano com 8 âncoras
   fora da ADR 0015 §2, e a do item "`tsc --noEmit` como step do CI" (`.github/workflows/ci.yml`) não
   tinha alvo porque o job `typecheck` já existia (`0a369c9`, PR #56). Reancorado, o primeiro
   `--apply` abriria uma issue para um achado fechado: o `SKIP` só pega quem traz `RESOLVED by`. O
@@ -235,13 +242,13 @@ Patch: o símbolo designado da âncora volta para a linha **Âncora:** do corpo 
   sdd, todo item ancorado escreve `` `arq:N` (`símbolo`) ``. O `render_body` tirava do texto só o
   token `` `arq:N` ``, então a issue lia `**Âncora:** [`bin/sdd:6340`](…)`, uma linha em branco e
   `(`preflight-test`) — a forma só é medida…` (kit #255 e #249, vistas em 2026-10-15). Medido em
-  2026-10-15: 6 de 6 itens do `TODO.md` do kit e 125 de 186 do quote_app carregam o símbolo.
+  2026-10-15: 6 de 6 itens do `TODO.md` do kit e 125 de 186 de um projeto carregam o símbolo.
 - **`SLOT_RE`**: lê o slot pela regra do `check-todo.sh` do kit (`(`, um trecho entre crases, `)`
   logo depois). O slot vai para a linha da âncora, e o `—` depois dele sai, como já saía depois do
   token. Um slot que não fecha continua no texto, porque o kit também não o lê como slot.
 - **`update_kind` lê o corpo antigo como o de hoje** (`LEGACY_SLOT_RE`). Sem isso, medido no
   protótipo, a issue publicada pela 2.5.0 cujo item só deslocou a linha da âncora voltava
-  `UPDATE (text)` em vez de `UPDATE (anchor)`: no quote_app, onde um PR desloca dezenas de
+  `UPDATE (text)` em vez de `UPDATE (anchor)`: num projeto, onde um PR desloca dezenas de
   âncoras, cada uma viraria um falso positivo para conferir à mão.
 - Testes sem rede: 5 casos novos (o símbolo na linha da âncora, o slot que não fecha, o corpo da
   2.5.0 com a linha deslocada e com uma palavra trocada, e o item ancorado com símbolo de que os
@@ -291,7 +298,7 @@ Minor: uma linha nova no plano, `PENDING`, e o `--close-orphans` passa a decidir
 
 Patch: só texto, uma linha nova em *Erros comuns*.
 
-- **Órfãs com o espelho bloqueado pelo formato.** No quote_app, o `TODO.md` é anterior à regra da
+- **Órfãs com o espelho bloqueado pelo formato.** Num projeto, o `TODO.md` é anterior à regra da
   âncora com símbolo (ADR 0015 §2 do kit): `--audit` deu `manual=206`, o plano recusa (rc 4) até a
   migração, e 8 issues cujo item já tinha saído do arquivo seguiam abertas desde 2026-09-24. A linha
   manda fechá-las à mão, achando a remoção por `git log -S`, sem esperar a migração; e manda não fechar
@@ -316,7 +323,7 @@ Minor: uma opção nova, `--allow-empty`.
   nomeia a saída; com `--allow-empty`, o plano lê toda issue espelhada do arquivo como `ORPHAN`, e o
   `--close-orphans` segue fechando só a que traz `fixed by`.
 - Cinco casos novos no `test_todo_issues.py`, incluindo a chamada da guarda no `main()`, que nenhum
-  caso sem rede executava (apagá-la deixava tudo verde). Com o `TODO.md` do quote_app: 78 de 78.
+  caso sem rede executava (apagá-la deixava tudo verde). Com o `TODO.md` de um projeto: 78 de 78.
 
 ## [2.3.3] — 2026-10-07
 
@@ -520,7 +527,7 @@ publicada.
 - **`--audit` / `--fix` contavam toda âncora como inválida.** O ADR 0011 do kit sdd (2026-09-25)
   passou a resolver a âncora `arquivo:linha` contra o repositório **do arquivo checado**, e a skill
   media uma cópia gravada em `/tmp` — fora de qualquer repositório. Resultado medido no `TODO.md`
-  do `quote_app`: 188 violações acusadas onde o sensor do kit vê 97. A cópia agora é gravada ao
+  de um projeto: 188 violações acusadas onde o sensor do kit vê 97. A cópia agora é gravada ao
   lado do arquivo (oculta, apagada no `finally`), como o `with_decided` do próprio kit faz.
 - **5 casos de `test_todo_format.py` vermelhos** pelo mesmo motivo: as fixtures ancoravam em
   arquivos que não existiam (`bin/x:1`, `a:1`). Ganharam um repositório temporário com os arquivos

@@ -1,11 +1,18 @@
 # Changelog — pdf-generation
 
+## [1.6.6] — 2026-11-05
+
+### Apelidos de projeto saem do texto
+
+Os apelidos de projeto da limpeza anterior saem do texto, também nas entradas antigas deste arquivo.
+Onde a frase dependia do nome, ficou um termo genérico. As medições continuam valendo. O comportamento não muda.
+
 ## [1.6.5] — 2026-11-04
 
 ### Dados da empresa saem do texto
 
 Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
-instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `QUO-…`), também nas
 entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
 
 ## [1.6.4] — 2026-10-22
@@ -58,7 +65,7 @@ Prompt audit (`/claude-api prompt-audit`, modelo-alvo Claude Fable 5.1); relató
 
 ### Why / Origin
 
-Sessão QUO-85 no `quote_app`: uma cotação com valor unitário de `R$103.927,00` quebrou o PDF — o valor saía em duas linhas (`R$103.927,0` + `0`) e o código de item de 12 dígitos junto. A causa não era caso extremo: o comentário do próprio código declarava o teto (`48, // Unit (suporta "R$ 99.999,99")`) — cinco dígitos inteiros — e ninguém tinha lido. Nenhum teste asseverava `widths`, então a calibração, feita de cabeça na implementação original, envelheceu calada.
+Sessão QUO-85: uma cotação com valor unitário de `R$103.927,00` quebrou o PDF — o valor saía em duas linhas (`R$103.927,0` + `0`) e o código de item de 12 dígitos junto. A causa não era caso extremo: o comentário do próprio código declarava o teto (`48, // Unit (suporta "R$ 99.999,99")`) — cinco dígitos inteiros — e ninguém tinha lido. Nenhum teste asseverava `widths`, então a calibração, feita de cabeça na implementação original, envelheceu calada.
 
 Duas lições genéricas saíram daí (unidade no cabeçalho; medir antes de calibrar) e uma terceira apareceu no caso de stress: a coluna `"*"` estourando com token sem espaço — que **já reproduzia em produção** num PDF oficial já emitido, e que o caso de stress descrito pela própria skill não teria pego.
 
@@ -70,7 +77,7 @@ Duas lições genéricas saíram daí (unidade no cabeçalho; medir antes de cal
 
 ### Why / Origin
 
-Sessão de ajustes no PDF da Proposta Comercial (`quote_app/015`): o bloco "TERMOS E CONDIÇÕES DE VENDA" partia no meio entre páginas, com o título órfão no fim da página. A skill não tinha **nenhuma** cobertura de keep-together/`unbreakable` (grep zero) — lacuna real, não duplicata. Universal para qualquer seção pdfmake que não deva ser dividida.
+Sessão de ajustes no PDF da Proposta Comercial (feature 015): o bloco "TERMOS E CONDIÇÕES DE VENDA" partia no meio entre páginas, com o título órfão no fim da página. A skill não tinha **nenhuma** cobertura de keep-together/`unbreakable` (grep zero) — lacuna real, não duplicata. Universal para qualquer seção pdfmake que não deva ser dividida.
 
 ## [1.4.0] — 2026-05-29
 
@@ -83,7 +90,7 @@ Sessão de ajustes no PDF da Proposta Comercial (`quote_app/015`): o bloco "TERM
 
 ### Why / Origin
 
-Sessão de troca do logo do PDF da Proposta Comercial (`quote_app/015`) de bitmap (PNG) para vetor (`assets/logo.svg`). As três lições custaram ciclos reais: a investigação inicial concluiu (erradamente) que pdfmake 0.3.x não suportava SVG; o SVG exportado da ferramenta de design veio com fills em `<style>`/classe e renderizou preto até inlinar os `fill`; e o build `tsc`/`dist` + `storage/` gitignored obrigaram a embutir o SVG como constante para o logo padrão não sumir em deploy. Universais para qualquer logo vetorial em pdfmake server-side.
+Sessão de troca do logo do PDF da Proposta Comercial (feature 015) de bitmap (PNG) para vetor (`assets/logo.svg`). As três lições custaram ciclos reais: a investigação inicial concluiu (erradamente) que pdfmake 0.3.x não suportava SVG; o SVG exportado da ferramenta de design veio com fills em `<style>`/classe e renderizou preto até inlinar os `fill`; e o build `tsc`/`dist` + `storage/` gitignored obrigaram a embutir o SVG como constante para o logo padrão não sumir em deploy. Universais para qualquer logo vetorial em pdfmake server-side.
 
 ---
 
@@ -98,7 +105,7 @@ Sessão de troca do logo do PDF da Proposta Comercial (`quote_app/015`) de bitma
 
 ### Why / Origin
 
-Sessão de ajustes de layout/conteúdo no PDF da Proposta Comercial (`quote_app/015`): rebalanceamento de cabeçalho, barra número/data em 2 colunas, novo campo de cliente. As três lições custaram ciclos reais — o header que não repetia em multipágina, campos de cliente que pareciam "não renderizar" (só faltava dado no snapshot), e o cache hash-based servindo PDF antigo após mudança de layout. Todas são universais para qualquer pipeline de geração de PDF server-side com controle de revisão.
+Sessão de ajustes de layout/conteúdo no PDF da Proposta Comercial (feature 015): rebalanceamento de cabeçalho, barra número/data em 2 colunas, novo campo de cliente. As três lições custaram ciclos reais — o header que não repetia em multipágina, campos de cliente que pareciam "não renderizar" (só faltava dado no snapshot), e o cache hash-based servindo PDF antigo após mudança de layout. Todas são universais para qualquer pipeline de geração de PDF server-side com controle de revisão.
 
 ---
 
@@ -115,7 +122,7 @@ Sessão de ajustes de layout/conteúdo no PDF da Proposta Comercial (`quote_app/
 
 ### Origin
 
-Sessão criando um agente de projeto especializado no PDF da Proposta Comercial (`quote_app/015`). Ao escopar o bug residual de ligaduras (Jira QUO-37), o parse SFNT da Roboto bundled refutou a hipótese "fonte antiga" da v1.2.0 e revelou a causa real (embedding de glifo de ligadura). Lição universal para qualquer setup pdfmake 0.3.x server-side.
+Sessão criando um agente de projeto especializado no PDF da Proposta Comercial (feature 015). Ao escopar o bug residual de ligaduras (Jira QUO-37), o parse SFNT da Roboto bundled refutou a hipótese "fonte antiga" da v1.2.0 e revelou a causa real (embedding de glifo de ligadura). Lição universal para qualquer setup pdfmake 0.3.x server-side.
 
 ---
 
@@ -134,7 +141,7 @@ Sessão criando um agente de projeto especializado no PDF da Proposta Comercial 
 
 ### Origin
 
-Lições aprendidas durante a verificação visual T056 da feature `quote_app/015-pdf-proposta-comercial`. Após 57 tasks com **todos os testes automatizados passando**, a inspeção manual de PDFs reais com dados de produção revelou:
+Lições aprendidas durante a verificação visual T056 da feature `015-pdf-proposta-comercial`. Após 57 tasks com **todos os testes automatizados passando**, a inspeção manual de PDFs reais com dados de produção revelou:
 
 1. Tabela de uma cotação de 11 itens com totais de R$300k+ teve a coluna "Total" cortada na borda direita (R$49.12 em vez de R$49.126,35). Causa: padding pitfall.
 2. Palavras como "fiscal" renderizadas como "fscal" no PDF gerado. Causa: ligaduras Roboto.
@@ -154,7 +161,7 @@ Todas as três lições são **universais** para qualquer setup pdfmake server-s
 
 ### Origin
 
-Ambos os pitfalls custaram tempo de debug durante a implementação real do PDF da Proposta Comercial no projeto `quote_app` (feature 015). São universais para qualquer setup pdfmake + TypeScript NodeNext em monorepo.
+Ambos os pitfalls custaram tempo de debug durante a implementação real do PDF da Proposta Comercial num projeto (feature 015). São universais para qualquer setup pdfmake + TypeScript NodeNext em monorepo.
 
 ---
 

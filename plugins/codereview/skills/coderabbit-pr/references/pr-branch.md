@@ -64,7 +64,7 @@ In the closing report, name both versions (`loaded 4.5.2, ran from installed 4.5
 `/reload-skills`, typed while the agent was mid-turn and delivered to it as queued messages,
 `/codereview:coderabbit-pr` still loaded `…/codereview/2.27.17/`; the two `coderabbit-pr` folders
 compared `same`, and the run went on. Measured 2026-10-21
-(portal_app PR #107): loaded from `…/codereview/2.26.0/` with 2.26.8 installed; the two
+(PR #107): loaded from `…/codereview/2.26.0/` with 2.26.8 installed; the two
 `SKILL.md` differed only in `version:` (4.5.2 → 4.5.5), while `fix-loop.md`,
 `regression-testing.md` and `reviewer-registry.md` differed, and only the installed `fix-loop.md`
 had *A finding already in the backlog*. The run followed the references of the installed folder
@@ -221,7 +221,7 @@ With a merge-commit convention the branch's commits enter the base unchanged, an
 not hold: `[x]` — "Not applicable: merged with a merge commit", merge with `gh pr merge --merge`
 (never squash, which would make the finding true after the fact), and prove it right after the
 merge with `git merge-base --is-ancestor <hash> "origin/$BASE"` (rc 0). Measured 2026-10-16
-(portal_app PR #37): Codex flagged `3447edb` as never ancestral to `develop`; the repo
+(PR #37): Codex flagged `3447edb` as never ancestral to `develop`; the repo
 merges with merge commits, and after `--merge` the check returned rc 0.
 
 ## Sweep leftover checklists
