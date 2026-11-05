@@ -67,7 +67,7 @@ For each backend workspace:
 
 ### 6. Database
 
-Look in compose first (`postgres`, `mysql`, `mariadb`, `mongo`, `mssql/server`). For external DBs (the JRC pattern with SQL Server hosted elsewhere): the backend `.env`'s `DATABASE_URL` will point to a non-local host. The dev script can `ping`/`tcping` to check reachability without trying to start anything.
+Look in compose first (`postgres`, `mysql`, `mariadb`, `mongo`, `mssql/server`). For external DBs (the usual pattern with SQL Server hosted elsewhere): the backend `.env`'s `DATABASE_URL` will point to a non-local host. The dev script can `ping`/`tcping` to check reachability without trying to start anything.
 
 ```bash
 grep -hE '^DATABASE_URL=' packages/*/.env*

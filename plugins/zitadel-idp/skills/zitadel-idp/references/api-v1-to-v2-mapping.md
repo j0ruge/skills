@@ -92,7 +92,7 @@ The wrapper is `result` for `UserService.ListUsers` (above), but each *item* in 
 {
   "result": [
     {
-      "userId": "371797720757239825",   // ← this is the field
+      "userId": "100000000000000010",   // ← this is the field
       "username": "admin@example.com",
       "details": { /* ... */ },
       "human": { /* ... */ }
@@ -143,9 +143,9 @@ This is the single most disruptive change for refactor work, and the source of Q
 POST /management/v1/projects HTTP/1.1
 Authorization: Bearer ${PAT}
 Content-Type: application/json
-x-zitadel-orgid: 370883099636006915
+x-zitadel-orgid: 100000000000000006
 
-{ "name": "ERP-JRC" }
+{ "name": "ERP-Acme" }
 ```
 
 **v2** carries it in the body, named per resource (most commonly `organizationId`, sometimes nested as `org.id` or `resourceOwner`):
@@ -156,8 +156,8 @@ Authorization: Bearer ${PAT}
 Content-Type: application/json
 
 {
-  "organizationId": "370883099636006915",
-  "name": "ERP-JRC"
+  "organizationId": "100000000000000006",
+  "name": "ERP-Acme"
 }
 ```
 
@@ -217,7 +217,7 @@ This one bites. Three traps in a row:
 ```diff
 # v1 — POST /management/v1/projects/{p}/apps/oidc
 - {
--   "name": "battery-lifecycle-web",
+-   "name": "inventory-web",
 -   "redirectUris": [...],
 -   "grantTypes": ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE", ...],
 -   "appType": "OIDC_APP_TYPE_USER_AGENT",
@@ -229,7 +229,7 @@ This one bites. Three traps in a row:
 + {
 +   "projectId": "<projectId>",
 +   "applicationId": "<your-deterministic-uuid>",
-+   "name": "battery-lifecycle-web",
++   "name": "inventory-web",
 +   "oidcConfiguration": {                     // ← proto: `oidc_configuration`, NOT `oidc`
 +     "redirectUris": [...],
 +     "postLogoutRedirectUris": [...],
@@ -268,14 +268,14 @@ await connect('/zitadel.authorization.v2.AuthorizationService/CreateAuthorizatio
   userId,
   projectId,
   organizationId: orgIdThatOwnsProject,        // ← REQUIRED
-  roleKeys: ['battery.admin'],
+  roleKeys: ['inventory.admin'],
 });
 // → { id: '371...', creationDate: '...' }
 
 // Update
 await connect('/zitadel.authorization.v2.AuthorizationService/UpdateAuthorization', {
   id: existing.id,                              // ← `id`, NOT `authorizationId`
-  roleKeys: ['battery.admin', 'battery.operator'],
+  roleKeys: ['inventory.admin', 'inventory.operator'],
 });
 
 // List + match (client-side, see §2.2)
@@ -291,7 +291,7 @@ v1 and v2 imply different idempotence styles. v1 was search-then-create; v2 pref
 
 | Style | v1 pattern | v2 pattern |
 |---|---|---|
-| **Resources with stable name** (org "JRC", project "ERP-JRC") | `POST /resource/_search` filtered by name; if 0 hits → `POST /resource` | Same — search first, then create. v2 lets you pass an `organizationId` you generated, but for human-readable resources the name-search pattern is still common. |
+| **Resources with stable name** (org "ACME", project "ERP-Acme") | `POST /resource/_search` filtered by name; if 0 hits → `POST /resource` | Same — search first, then create. v2 lets you pass an `organizationId` you generated, but for human-readable resources the name-search pattern is still common. |
 | **Resources with deterministic ID** (users by UUIDv4, project apps by deterministic UUID) | Couldn't supply own ID — Zitadel generated it; you read it back. | Supply your own `userId` / `applicationId` in the body. Duplicate ID returns `ALREADY_EXISTS` error code; treat as success. **No round-trip required.** |
 | **Update-or-create idempotent PUT** | `PUT /resource/{id}` — Zitadel returns `400 COMMAND-1m88i "No changes"` when body matches state (Quirk 14). | Same `COMMAND-1m88i` returns from `Update*` methods. Catch and treat as no-op. The error code is preserved across v1/v2. |
 
@@ -318,7 +318,7 @@ try {
   await connect('/zitadel.application.v2.ApplicationService/CreateApplication', {
     projectId,
     applicationId: appId,
-    name: 'battery-lifecycle-web',
+    name: 'inventory-web',
     oidc: { redirectUris, /* ... */ },
   });
 } catch (err) {

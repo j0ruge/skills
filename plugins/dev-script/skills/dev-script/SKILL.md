@@ -1,7 +1,7 @@
 ---
 name: dev-script
 metadata:
-  version: 0.6.0
+  version: 0.6.2
 description: "Generates idempotent dev.sh / dev.ps1 launchers for the current stack — Compose orchestration, healthchecks, two-strategy port handling (find-next-free for foreign-owned ports, kill-and-reclaim for own orphans), HTTPS-on-LAN via mkcert+Caddy, boot-time sanity check, Windows↔WSL migration guards. Triggers — dev script, single-command dev, mkcert, kill port, port discovery, script hangs, CRLF .env, native binding error."
 ---
 
@@ -36,7 +36,7 @@ Walk the project tree and identify:
 2. **Monorepo layout** — `package.json` `workspaces`, `pnpm-workspace.yaml`, `turbo.json`, `nx.json`, `lerna.json`. Identify each workspace's role from its own `package.json` (`scripts.dev`, `scripts.start`, declared deps).
 3. **Frontend dev server** — Vite (`vite.config.*`), Next (`next.config.*`), Astro, SvelteKit, Nuxt. Capture the configured `port` and any `host` setting. **Read the config; do not modify it.**
 4. **Backend dev process** — `tsx watch`, `nest start --watch`, `dotnet watch`, `air` (Go), `cargo watch`. Capture port from `.env`/`.env.example` (`PORT=`). Note which **package manager** runs these scripts (`yarn.lock` / `pnpm-lock.yaml` / `package-lock.json` + a `packageManager` field) and resolve it **Corepack-aware** — a bare `yarn`/`pnpm` is often absent (Corepack isn't enabled by default) or shadowed by Debian's `cmdtest` impostor (`pitfalls.md` §P20).
-5. **Database** — Postgres (most common), SQL Server (JRC ERP/EST), MySQL, Mongo. Determine reachability path: docker container vs. external. For external (e.g. SQL Server in another datacenter), the script should ping/probe but not try to start it.
+5. **Database** — Postgres (most common), SQL Server (some ERPs), MySQL, Mongo. Determine reachability path: docker container vs. external. For external (e.g. SQL Server in another datacenter), the script should ping/probe but not try to start it.
 6. **IdP** — Zitadel, Keycloak, Auth0 (cloud). For self-hosted Zitadel/Keycloak, this is the strongest signal that LAN HTTPS will be needed (PKCE requires secure context).
 7. **Bootstrap scripts** — `scripts/bootstrap-*.ts`, `infra/.../init/`. These run after containers are healthy. Capture them — they typically generate IDs that downstream services depend on.
 8. **`.env` files** — `.env`, `.env.example`, `.env.local`, `packages/*/.env`. List every key the dev script will need to read or patch. When the script *reads* a value out of a `.env` (container name, DB user, port) to drive `docker exec` / healthchecks, route it through a CRLF-stripping helper — Windows/WSL `.env` files are commonly CRLF and a trailing `\r` silently breaks `docker exec` / `pg_isready` while every log line looks correct (`pitfalls.md` §P18).
@@ -62,7 +62,7 @@ Wait for the user to confirm or redirect. **Big tip**: people often forget about
 
 The skill bundles two parallel templates:
 
-- `assets/dev.sh.tmpl` — bash, target Linux/macOS, default for most JRC projects.
+- `assets/dev.sh.tmpl` — bash, target Linux/macOS, default for most projects.
 - `assets/dev.ps1.tmpl` — PowerShell ≥ 5.1 / pwsh 7+, target Windows; also runs on Linux/macOS via pwsh.
 
 Both templates are **annotated with `<<…>>` placeholders** — substitute them based on Phase 1 detection. Both are **section-conditional**: cut TLS/Caddy if the project has no IdP and the user said "no LAN sharing"; cut the bootstrap re-derivation block if there's no `bootstrap.json` source. Smaller is better.
@@ -145,7 +145,7 @@ If the user wants other devices on the network to test, **the script must genera
 
 ## Pitfalls to encode in every script
 
-These are the recurring traps in JRC stacks. Read `references/pitfalls.md` for the full list with symptoms; the highlights:
+These are the recurring traps in real stacks. Read `references/pitfalls.md` for the full list with symptoms; the highlights:
 
 - **Vite ≥ 5 blocks non-localhost hosts** by default. Generate a `.vite.config.lan.ts` wrapper with `server.allowedHosts: true` and run Vite with `--config <wrapper>` — don't ask the user to edit `vite.config.ts`.
 - **Node backend can't validate JWKS over self-signed HTTPS** unless `NODE_EXTRA_CA_CERTS=$(mkcert -CAROOT)/rootCA.pem` is on the process. Inject it at the script level.
@@ -166,7 +166,7 @@ These are the recurring traps in JRC stacks. Read `references/pitfalls.md` for t
 | When writing `dev.ps1`: PowerShell equivalents (idiomatic, not literal ports) | `references/powershell-patterns.md` |
 | When the stack needs LAN HTTPS: the full mkcert + Caddy + Vite + backend wiring | `references/tls-https-recipe.md` |
 | When designing re-runs: state file format, drift detection, re-run discipline | `references/idempotency-and-state.md` |
-| When encoding or debugging a trap: the recurring traps in JRC stacks, with symptoms | `references/pitfalls.md` |
+| When encoding or debugging a trap: the recurring traps in real stacks, with symptoms | `references/pitfalls.md` |
 
 ## Templates — `assets/`
 

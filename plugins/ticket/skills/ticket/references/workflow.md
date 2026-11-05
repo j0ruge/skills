@@ -1,6 +1,6 @@
 # Workflow de Status — Jira (multi-projeto)
 
-> Placeholders `${PROJECT}` (ex.: `SQ`, `RS`) e `$BOARD` (ex.: `51`, `10`) vêm
+> Placeholders `${PROJECT}` (ex.: `QUO`, `REP`) e `$BOARD` (ex.: `51`, `10`) vêm
 > do arquivo `.jira-project` da raiz do repo — ver `SKILL.md §Detecção de Projeto`.
 > Sprint, story points, `fixVersion` e a releitura dos campos ficam em
 > `campos.md` (o SKILL.md roteia).
@@ -8,7 +8,7 @@
 ## Sequência de Transições
 
 > ⚠️ **As transições são específicas de cada projeto/board — não existe sequência
-> universal.** O board RS tem a etapa intermediária `Aprovação`; o board SQ **não**
+> universal.** O board REP tem a etapa intermediária `Aprovação`; o board QUO **não**
 > tem (vai direto de `Em andamento` para `Concluído`). Cravar a sequência de um
 > projeto quebra no outro com `"No allowed transitions found for given status"`.
 > **Antes de transicionar, descubra as transições reais da issue** (abaixo) e
@@ -18,13 +18,13 @@
 
 | Projeto | Board | Caminho até "done" | Status final | Como chegar ao done |
 |---|---|---|---|---|
-| RS | 10 | `Tarefas pendentes → Em andamento → Aprovação → Finished` | `Finished` | duas transições (`Aprovação`, depois `Finished`) — **por convenção do time, não por restrição do board** (ver abaixo) |
-| SQ | 51 | `Tarefas pendentes → Em andamento → Concluído` (**sem `Aprovação`**) | `Concluído` | `acli --status "Concluído"` direto (ou MCP transição **id `31`**) |
-| WHF | 2 | `A Fazer → Em andamento → Concluido` (**sem acento**) | `Concluido` | REST transição **id `21`**, direto de `A Fazer` ou de `Em andamento` (medido em 30/10/2026) |
+| REP | 10 | `Tarefas pendentes → Em andamento → Aprovação → Finished` | `Finished` | duas transições (`Aprovação`, depois `Finished`) — **por convenção do time, não por restrição do board** (ver abaixo) |
+| QUO | 51 | `Tarefas pendentes → Em andamento → Concluído` (**sem `Aprovação`**) | `Concluído` | `acli --status "Concluído"` direto (ou MCP transição **id `31`**) |
+| DEF | 2 | `A Fazer → Em andamento → Concluido` (**sem acento**) | `Concluido` | REST transição **id `21`**, direto de `A Fazer` ou de `Em andamento` (medido em 30/10/2026) |
 
 ### ⚠️ O caminho documentado é convenção; o board costuma ser mais permissivo
 
-Medido no RS em 11/09/2026, com a issue em `Em andamento`:
+Medido no REP em 11/09/2026, com a issue em `Em andamento`:
 
 ```text
 id= 2  Approval          → Aprovação
@@ -70,7 +70,7 @@ acli jira workitem transition --key "${PROJECT}-XXX" --status "Concluído"
    `"No allowed transitions found for given status"`.
 2. **Status/transições em PT-BR**, conforme configurado no projeto.
 3. **`acli --status` casa pelo NOME DO STATUS DE DESTINO, não da transição.**
-   Verificado 2026-05-29 no SQ, partindo de "Em andamento":
+   Verificado 2026-05-29 no QUO, partindo de "Em andamento":
    `acli --status "Concluído"` **funciona**; `acli --status "Itens concluídos"`
    (o *nome da transição* que leva a "Concluído", id `31`) **falha** com
    `No allowed transitions found for given status`. Bate com o help do `acli`
@@ -100,7 +100,7 @@ Se `refs/remotes/origin/HEAD` não existir na cópia local, criar com
 
 | Repo | Projeto | `$BASE_BRANCH` | Fluxo |
 |---|---|---|---|
-| `sales_quote` | SQ | **`develop`** | `develop → staging → main`; PRs vão para `develop` desde a feature 017 |
+| `quote_app` | QUO | **`develop`** | `develop → staging → main`; PRs vão para `develop` desde a feature 017 |
 
 > Se um repo novo entrar na tabela, entre com a **saída do comando**, não com o
 > que parece razoável.
@@ -118,10 +118,10 @@ BASE_BRANCH=develop
 
 Quando o `GET /rest/api/3/project/<KEY>` responde "Nenhum projeto poderia ser encontrado", a key
 ainda não existe. Criar projeto é ato de projeto: **confirme com o dev** a key, o nome e o modelo
-(Scrum ou Kanban) antes do POST. Medido ao criar o SBM em 2026-10-01:
+(Scrum ou Kanban) antes do POST. Medido ao criar o ABC em 2026-10-01:
 
 ```bash
-set -a; . ~/.hermes/.env; set +a; J=https://jrcbrasil.atlassian.net/rest/api/3
+set -a; . ~/.hermes/.env; set +a; J=$JIRA_BASE_URL/rest/api/3
 curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" "$J/myself"            # accountId do líder
 curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -X POST -H 'Content-Type: application/json' \
   -d '{"key":"<KEY>","name":"<nome>","projectTypeKey":"software",
@@ -129,13 +129,13 @@ curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -X POST -H 'Content-Type: application/j
        "leadAccountId":"<accountId>","assigneeType":"UNASSIGNED"}' "$J/project"
 # kanban: ...:gh-simplified-agility-kanban. Os dois criam projeto team-managed (style next-gen).
 curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
-  "https://jrcbrasil.atlassian.net/rest/agile/1.0/board?projectKeyOrId=<KEY>"   # $BOARD
+  "$JIRA_BASE_URL/rest/agile/1.0/board?projectKeyOrId=<KEY>"   # $BOARD
 ```
 
 - **Releia o projeto** com `GET $J/project/<KEY>`: ele traz o `id` (vai no `project.id` do
-  `POST /issue`) e os `issueTypes` **deste** projeto, com ids próprios. No SBM a subtarefa veio
+  `POST /issue`) e os `issueTypes` **deste** projeto, com ids próprios. No ABC a subtarefa veio
   como `Subtask`, e não como `Subtarefa`: confira o nome antes do `split`.
-- O board nasce junto (no SBM: `type: simple`), com uma sprint `future` já criada e **nenhuma
+- O board nasce junto (no ABC: `type: simple`), com uma sprint `future` já criada e **nenhuma
   ativa**. Ver `campos.md §Quando não aparece sprint ativa`, item 3.
 - Versão e issue seguem os caminhos de sempre (`campos.md §fixVersion`). Depois, grave o
   `.jira-project` com os ids descobertos no comentário de cabeçalho.
@@ -179,13 +179,13 @@ curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
   ```bash
   set -a; . ~/.hermes/.env; set +a
   AID=$(curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
-    "https://jrcbrasil.atlassian.net/rest/api/3/myself" | python3 -c 'import json,sys;print(json.load(sys.stdin)["accountId"])')
+    "$JIRA_BASE_URL/rest/api/3/myself" | python3 -c 'import json,sys;print(json.load(sys.stdin)["accountId"])')
   curl -s -o /dev/null -w '%{http_code}\n' -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
     -X PUT -H "Content-Type: application/json" \
     -d "{\"fields\":{\"assignee\":{\"accountId\":\"$AID\"}}}" \
-    "https://jrcbrasil.atlassian.net/rest/api/3/issue/${PROJECT}-XXX"   # espera 204
+    "$JIRA_BASE_URL/rest/api/3/issue/${PROJECT}-XXX"   # espera 204
   ```
-- `acli jira workitem create` retorna a key criada no output (ex.: `RS-605`, `SQ-32`)
+- `acli jira workitem create` retorna a key criada no output (ex.: `REP-605`, `QUO-32`)
 - Comentários: usar `comment create` (subcomando), não `comment` direto — `--body-file` para multiline
 - `--body-file` aceita ADF JSON nativamente — para comentários formatados via
   `acli`, usar ADF (`{ "version": 1, "type": "doc", ... }`). Markdown e Wiki
@@ -220,15 +220,15 @@ o `acli` não cria nem lê links.
 
 ⚠️ **Pertencer a um épico é outra coisa: é hierarquia (`parent`), não vínculo.**
 Na criação, `parent: {"key": "<EPIC>"}` entra no próprio `POST /issue`
-(`campos.md` §Criar a issue numa chamada só). Medido no RS-929, em 16/10/2026.
+(`campos.md` §Criar a issue numa chamada só). Medido no REP-929, em 16/10/2026.
 
 ```bash
 set -a; . ~/.hermes/.env; set +a
-J=https://jrcbrasil.atlassian.net/rest/api/3
+J=$JIRA_BASE_URL/rest/api/3
 curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" "$J/issueLinkType"   # nomes disponiveis
 ```
 
-No site jrcbrasil: `Blocks` (`is blocked by` / `blocks`), `Relates`, `Duplicate`,
+No site de origem: `Blocks` (`is blocked by` / `blocks`), `Relates`, `Duplicate`,
 `Cloners`, `Problem/Incident`, `Post-Incident Reviews`.
 
 ### 🔴 A direção é invertida em relação à intuição
@@ -238,15 +238,15 @@ para a direita você monta o oposto do que queria — e o Jira aceita os dois, e
 não há erro que denuncie.
 
 ```bash
-# QUERO: "RS-850 blocks RS-844"  (o defeito bloqueia a release)
+# QUERO: "REP-850 blocks REP-844"  (o defeito bloqueia a release)
 curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -X POST -H 'Content-Type: application/json' \
   -d '{"type":{"name":"Blocks"},
-       "inwardIssue":{"key":"RS-850"},
-       "outwardIssue":{"key":"RS-844"}}' "$J/issueLink"       # 201
+       "inwardIssue":{"key":"REP-850"},
+       "outwardIssue":{"key":"REP-844"}}' "$J/issueLink"       # 201
 ```
 
-Invertendo — `inwardIssue=RS-844` / `outwardIssue=RS-850` — o Jira grava
-**"RS-844 blocks RS-850"**, exatamente o contrário, e nada avisa (medido 2026-09-02).
+Invertendo — `inwardIssue=REP-844` / `outwardIssue=REP-850` — o Jira grava
+**"REP-844 blocks REP-850"**, exatamente o contrário, e nada avisa (medido 2026-09-02).
 
 ### Confira a direção relendo pelo lado do ALVO
 
@@ -255,12 +255,12 @@ prova de ter gravado o que se queria. Aqui a releitura tem de ser feita **pela
 issue-alvo**, porque é o lado em que o erro fica visível:
 
 ```bash
-curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" "$J/issue/RS-844?fields=issuelinks" | python3 -c "
+curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" "$J/issue/REP-844?fields=issuelinks" | python3 -c "
 import json,sys
 for l in json.load(sys.stdin)['fields'].get('issuelinks') or []:
-    if 'outwardIssue' in l: print('RS-844', l['type']['outward'], l['outwardIssue']['key'])
-    else:                   print('RS-844', l['type']['inward'],  l['inwardIssue']['key'])"
-# esperado: RS-844 is blocked by RS-850
+    if 'outwardIssue' in l: print('REP-844', l['type']['outward'], l['outwardIssue']['key'])
+    else:                   print('REP-844', l['type']['inward'],  l['inwardIssue']['key'])"
+# esperado: REP-844 is blocked by REP-850
 ```
 
 ### Remover um link errado
@@ -270,10 +270,10 @@ chamada** — passar a lista inteira de uma vez faz o `curl` montar uma URL só 
 devolver `HTTP 000`, o que parece falha de rede e não de uso:
 
 ```bash
-curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" "$J/issue/RS-844?fields=issuelinks" | python3 -c "
+curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" "$J/issue/REP-844?fields=issuelinks" | python3 -c "
 import json,sys
 for l in json.load(sys.stdin)['fields']['issuelinks']:
-    if 'outwardIssue' in l and l['outwardIssue']['key'] in ('RS-850',): print(l['id'])" > /tmp/links.txt
+    if 'outwardIssue' in l and l['outwardIssue']['key'] in ('REP-850',): print(l['id'])" > /tmp/links.txt
 while read -r id; do
   [ -n "$id" ] && curl -s -o /dev/null -w "delete $id -> %{http_code}\n" \
     -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -X DELETE "$J/issueLink/$id"     # espera 204

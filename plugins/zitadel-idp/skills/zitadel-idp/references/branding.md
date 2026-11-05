@@ -41,7 +41,7 @@ Pular o passo 1 ou o passo 7 são os erros mais frequentes — ambos não falham
 
 ```json
 {
-  "name": "ERP-JRC",
+  "name": "ERP-Acme",
   "projectRoleAssertion": true,
   "projectRoleCheck": false,
   "hasProjectCheck": false,

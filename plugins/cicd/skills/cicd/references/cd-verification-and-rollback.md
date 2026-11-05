@@ -107,11 +107,11 @@ route in your runbook.
 A deploy script outside Actions (a host agent, an operator script) usually arms the
 rollback as `trap rollback ERR` after the build and disarms it after the last proof. Two
 bash rules decide whether it runs, and both fail silently. Measured on 2026-10-13
-(`lighthouse_project`, `infra/__tests__/deploy-comportamento.test.ts`, which runs the real
+(`portal_app`, `infra/__tests__/deploy-comportamento.test.ts`, which runs the real
 `deploy.sh` with `docker`/`dig` stubs on `PATH`):
 
 1. **`exit` does not fire `ERR`.** A proof written as
-   `grep -qx lighthouse <<< "$users" && fail "connected as the DB owner"`, where `fail`
+   `grep -qx portal <<< "$users" && fail "connected as the DB owner"`, where `fail`
    does `exit 1`, ended the deploy with rc=1, **zero** `rolling back to` lines and the new
    image still serving — connected as the owner, with the append-only `REVOKE` decorative.
    Inside the armed window, fail with `return 1` (or `false`): the nonzero status of the
@@ -327,7 +327,7 @@ Two measured instances, hours apart, on the same codebase:
 
 | Assertion | What kept it green | Fix |
 | --- | --- | --- |
-| compose must not contain `STORAGE_PATH`, `JRC_API`, `ZITADEL_` | the provenance header listing exactly those names, to say why they were left out | parse the file and scan the **resolved config**, not the text |
+| compose must not contain `STORAGE_PATH`, `ACME_API`, `ZITADEL_` | the provenance header listing exactly those names, to say why they were left out | parse the file and scan the **resolved config**, not the text |
 | the role-proof SQL must contain `pid <> pg_backend_pid()` | the `<CRITICAL>` block explaining that exclusion | scan only **non-comment lines** |
 
 Note the first one is worse than a false negative: a raw-text assertion **forbids its own
@@ -349,7 +349,7 @@ see it. Same outcome, opposite cause, identical transcript.
 ## §6c. A sensor that reads the script's TEXT stays green with the wrong script
 
 A contract test that regex-matches a deploy script proves the text is there, not that the
-script does it. An independent review on 2026-10-13 (`lighthouse_project`) found three
+script does it. An independent review on 2026-10-13 (`portal_app`) found three
 defects behind green text-sensors, each then caught by running the script:
 
 | Text the sensor matched | What the script actually did |
@@ -501,7 +501,7 @@ antes de confiar no silêncio): o sinal observa algo **adjacente** ao trabalho.
 produz fato, o gate tem de olhar o fato. Um smoke a mais sobre o endpoint não
 compensa a ausência dessa pergunta.
 
-Medido em 2026-09-18 (IdP JRC): quatro passos verdes enquanto o bootstrap não
+Medido em 2026-09-18 (um IdP real): quatro passos verdes enquanto o bootstrap não
 criava papel nenhum; quem desmentiu foi um `SELECT` na projeção de papéis,
 rodado à mão **depois**, por desconfiança — não pelo pipeline.
 

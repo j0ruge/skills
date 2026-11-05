@@ -31,7 +31,7 @@
    - `customfield_10016` = story points (número ou null)
    - `customfield_10020` = array de sprints (pegar a com `"state": "active"`)
    - Se o comando falhar (issue não encontrada), informar o dev e abortar
-   - ⚠️ Esses IDs são **do site jrcbrasil**, não uma constante do Jira. Se vierem
+   - ⚠️ Esses IDs são **do site de origem**, não uma constante do Jira. Se vierem
      vazios num projeto novo, **descubra**: `acli jira workitem view <KEY> --fields "*all" --json`
      lista os ~100 campos (o `--json` sem `--fields` traz só 5 e **nenhum**
      custom field). A sprint é o array com `boardId`/`state`; story points é o
@@ -102,7 +102,7 @@
    ```bash
    set -a; . ~/.hermes/.env; set +a
    curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
-     "https://jrcbrasil.atlassian.net/rest/api/3/issue/${PROJECT}-XXX?fields=status,assignee,fixVersions,customfield_10016,customfield_10020"
+     "$JIRA_BASE_URL/rest/api/3/issue/${PROJECT}-XXX?fields=status,assignee,fixVersions,customfield_10016,customfield_10020"
    ```
 
    Um `GET` só traz os cinco campos, e responde **na hora** — inclusive numa
@@ -148,7 +148,7 @@
    commits locais que a origin não tem, e pode ser maior que zero de propósito,
    quando a base local carrega commits que ainda não subiram. É o caso da fase
    PLAN de uma missão `sdd`, que comita na base antes de a branch nascer: deu
-   `2	0` na SQ-155 (`sales_quote`, 05/10/2026). Confira que são exatamente os
+   `2	0` na QUO-155 (`quote_app`, 05/10/2026). Confira que são exatamente os
    esperados com `git log --oneline origin/${BASE_BRANCH}..HEAD`, e nunca
    "conserte" o lado esquerdo com `reset`, que apaga esses commits.
 
@@ -163,8 +163,8 @@
    de outra missão, ainda sem merge) sai do disco no `checkout`, e os arquivos que ele
    ignorava ficam, porque o git não toca em arquivo ignorado. Na branch nova eles
    aparecem como `??`, e não são do ticket: nada de `git add -A`. Diga ao dev, e
-   adicione só os seus arquivos, pelo nome. Medido no LH-11 (`apresentacoes`,
-   03/11/2026): o status saía limpo na `RS-929_apresentacao_manutencao_proativa`, e
+   adicione só os seus arquivos, pelo nome. Medido no POR-11 (`apresentacoes`,
+   03/11/2026): o status saía limpo na `REP-929_apresentacao_manutencao_proativa`, e
    depois do `checkout main` e do `checkout -b` vieram 119 arquivos `??` (13 MB de
    `docs/qa/evidence/`), que o `.gitignore` da pasta do deck, existente só naquela
    branch, ignorava. Reproduzido do zero num repo descartável (git 2.43.0).
@@ -183,7 +183,7 @@
 
    Esquerda maior que zero (a branch já tem commits próprios): o `--ff-only` recusa
    sem mexer em nada; pare e pergunte ao dev (rebase, se a branch não foi publicada).
-   Medido em 14/10/2026 no RS-925 (`digital_service_report_api`), pelo reflog:
+   Medido em 14/10/2026 no REP-925 (`report_api`), pelo reflog:
    `feature/staging-refresh`, criada de uma base velha, foi renomeada e avançou 7
    commits por fast-forward (`0	7` → `0	0`); o primeiro commit do ticket veio depois.
 
@@ -206,9 +206,9 @@
    `origin/${BASE_BRANCH}` sem ele, `git -C "$WT" rev-parse --abbrev-ref '@{u}'`
    responde `origin/main` (medido em 05/10/2026 num repo descartável), e um
    `git push` ou `git pull` sem argumentos ali aponta para a base. O close faz
-   `push -u` para a própria branch. Caso real: no EDS-65 (05/10/2026) o
+   `push -u` para a própria branch. Caso real: no PRC-65 (05/10/2026) o
    `estimates-os_mcp` servia o MCP da `main`; o trabalho foi em
-   `../estimates-os_mcp-EDS-65`, e a `main` só andou no merge autorizado. O close
+   `../estimates-os_mcp-PRC-65`, e a `main` só andou no merge autorizado. O close
    remove a worktree (`close.md` step 10).
 
 9. **Output:** Mostrar resumo final:
@@ -270,7 +270,7 @@
    ```bash
    cat > /tmp/${PROJECT}-new.json <<'JSON'
    {
-     "projectKey": "SQ",
+     "projectKey": "QUO",
      "type": "Tarefa",
      "summary": "{nome}",
      "description": { "version": 1, "type": "doc", "content": [
@@ -289,7 +289,7 @@
      sprint como número puro** (`405`, não `{"id": 405}`)
    - Omitir uma chave de `additionalAttributes` quando o dev não informou o valor
    - `description` aqui é **ADF**, não markdown (o `--from-json` não converte)
-   - Capturar a key retornada (ex.: `RS-605` ou `SQ-32`)
+   - Capturar a key retornada (ex.: `REP-605` ou `QUO-32`)
    - Se a versão do `acli` não tiver `--from-json`, criar sem custom fields
      (`create` simples) e gravá-los via `mcp__atlassian__editJiraIssue`,
      avisando o dev que sprint/score dependem do MCP autenticado
@@ -307,7 +307,7 @@
    # Um GET só: o REST lê os cinco campos, e o fixVersion SÓ ele lê
    # (o `acli view --json` devolve [] mesmo com o campo gravado).
    curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
-     "https://jrcbrasil.atlassian.net/rest/api/3/issue/${PROJECT}-XXX?fields=status,assignee,fixVersions,customfield_10016,customfield_10020"
+     "$JIRA_BASE_URL/rest/api/3/issue/${PROJECT}-XXX?fields=status,assignee,fixVersions,customfield_10016,customfield_10020"
    ```
 
    ⚠️ **Não troque essa leitura por uma JQL aqui**: recém-criada, a issue ainda
@@ -366,8 +366,8 @@ o próximo deck de outro projeto abriria ticket no lugar errado. Faça assim:
 3. Registre as duas branches onde o trabalho começa (handoff, descrição da issue).
    O `close` roda no repo do `.jira-project`, e o PR do outro repo é aberto à mão.
 
-Medido no RS-929 (16/10/2026): a issue e a branch foram abertas no
-`digital_service_report_api`, a partir de `develop`. A branch espelhada nasceu em
+Medido no REP-929 (16/10/2026): a issue e a branch foram abertas no
+`report_api`, a partir de `develop`. A branch espelhada nasceu em
 `~/repos/apresentacoes`, a partir de `main`, e as duas mediram `0 0`.
 
 ## Registrar cartão SEM começar o trabalho
@@ -414,9 +414,9 @@ deixa em "Tarefas pendentes" o que já foi entregue.
    status de categoria `done`. Os steps 8 a 10 não se aplicam, porque o PR já foi
    mergeado.
 
-Medido em 30/10/2026 no WHF-176, o PR #13 do `warehouse_explorer_web`, já em
+Medido em 30/10/2026 no DEF-176, o PR #13 do `warehouse_explorer_web`, já em
 produção. O `POST /issue` deu `201`, com sprint, pontos e responsável na
-releitura. O vínculo `Relates` ao WHF-162 deu `201`, o comentário `201` (releitura
+releitura. O vínculo `Relates` ao DEF-162 deu `201`, o comentário `201` (releitura
 `dict 8`) e a transição `204`, e a releitura do status deu `Concluido`.
 
 ## Missão `sdd`: abrir à mão sem duplicar a fase TICKET
@@ -445,5 +445,5 @@ a base local à frente pelos commits da fase PLAN, como explica o A8):
 5. Confira com `sdd why <missao> TICKET`, que deve responder
    `issue <KEY> in the sprint`.
 
-Medido na SQ-155 (`sales_quote`, 05/10/2026): os cinco passos, e o `sdd why`
-respondeu `issue SQ-155 in the sprint`.
+Medido na QUO-155 (`quote_app`, 05/10/2026): os cinco passos, e o `sdd why`
+respondeu `issue QUO-155 in the sprint`.

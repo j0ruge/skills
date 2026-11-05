@@ -1,6 +1,6 @@
 # Bash patterns — copy-pasteable building blocks
 
-These are the canonical idioms used in JRC `dev.sh` scripts. They handle the long tail of "works on my machine" problems (different distros, different `ss`/`fuser`/`lsof` versions, broken `kill -- -PID`, missing `realpath`).
+These are the canonical idioms used in real `dev.sh` scripts. They handle the long tail of "works on my machine" problems (different distros, different `ss`/`fuser`/`lsof` versions, broken `kill -- -PID`, missing `realpath`).
 
 ## Sumário
 

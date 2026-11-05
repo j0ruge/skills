@@ -24,13 +24,13 @@ conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) ·
      ```bash
      set -a; . ~/.hermes/.env; set +a
      curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
-       "https://jrcbrasil.atlassian.net/rest/api/3/issue/${PROJECT}-XXX?fields=status,assignee"
+       "$JIRA_BASE_URL/rest/api/3/issue/${PROJECT}-XXX?fields=status,assignee"
      ```
 
      `assignee` nulo → avisar e oferecer `acli jira workitem edit --key "${PROJECT}-XXX" --assignee "@me"`
      (com a releitura do A6). Status ainda na categoria `new` ("Tarefas pendentes") → dizer ao dev
      que o cartão nunca foi iniciado e confirmar que vai direto ao "done"; nem todo projeto tem
-     transição direta (o SBM tem, id `41`; ver o step 6). Medido em 04/10/2026: o SBM-3 foi fechado
+     transição direta (o ABC tem, id `41`; ver o step 6). Medido em 04/10/2026: o ABC-3 foi fechado
      com o trabalho em produção, ainda em "Tarefas pendentes" e sem responsável — fechar sem
      olhar deixaria o cartão sem dono no relatório da sprint.
 
@@ -47,12 +47,12 @@ conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) ·
 
    ```bash
    set -a; . ~/.hermes/.env; set +a
-   curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -G "https://jrcbrasil.atlassian.net/rest/api/3/search/jql" \
+   curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -G "$JIRA_BASE_URL/rest/api/3/search/jql" \
      --data-urlencode "jql=parent = ${PROJECT}-XXX" --data-urlencode "fields=status" \
      | python3 -c "import json,sys; d=json.load(sys.stdin); i=d.get('issues',[]); print(len(i), d.get('errorMessages','')); [print(x['key'], x['fields']['status']['name']) for x in i]"
    ```
 
-   Medido em 14/10/2026 só no caso vazio (LH-5: o `acli` mudo, o REST com `0`); a listagem de
+   Medido em 14/10/2026 só no caso vazio (POR-5: o `acli` mudo, o REST com `0`); a listagem de
    sub-issues por esse comando ainda não foi exercitada.
 
 3. **Auto-gerar resumo:**
@@ -74,7 +74,7 @@ conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) ·
      git diff --stat "$M^1" "$M"                   # os arquivos que o merge trouxe
      ```
 
-     Medido em 14/10/2026 na LH-5 (PR #22, merge `00dd775`): 62 commits e 92 arquivos, com
+     Medido em 14/10/2026 na POR-5 (PR #22, merge `00dd775`): 62 commits e 92 arquivos, com
      os handoffs da missão; leia a lista e separe o que é registro do que é entrega.
 
      Num repo com Jest, os testes novos se contam no mesmo recorte (o `def test_`
@@ -85,7 +85,7 @@ conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) ·
      git diff "$M^1" "$M" -- src | grep -cE '^-\s*(it|test)\('    # removidos: um it( reescrito aparece nos dois
      ```
 
-     Medido em 30/10/2026 no WHF-175 (PR #11, merge `743cfc1`): 27 e 0. É o mesmo
+     Medido em 30/10/2026 no DEF-175 (PR #11, merge `743cfc1`): 27 e 0. É o mesmo
      total da contagem por arquivo no merge, `git show "$M:<arquivo>" | grep -cE
      '^\s*(it|test)\('`, que deu 18 + 6 + 2 + 1.
 
@@ -99,7 +99,7 @@ conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) ·
      git diff --stat "$M1^1" "$MN^2"
      ```
 
-     Medido em 14/10/2026 no RS-925 (PRs #92 e #93, merges `d4466af` e `6a43598`): os pais
+     Medido em 14/10/2026 no REP-925 (PRs #92 e #93, merges `d4466af` e `6a43598`): os pais
      só do último merge deram 5 commits e 14 arquivos; o recorte deu 33 commits (28 + 5) e
      34 arquivos, os números do resumo postado.
 
@@ -115,8 +115,8 @@ conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) ·
        | grep -cE '^\+\s*def test_'                                               # testes novos (pytest)
      ```
 
-     Medido em 05/10/2026 (SBM-4 e SBM-5, no `~/.hermes`): o `--grep` sem âncora trouxe o
-     commit do SBM-5 cujo corpo citava "SBM-4 #2"; a busca na base inteira trouxe também 5
+     Medido em 05/10/2026 (ABC-4 e ABC-5, no `~/.hermes`): o `--grep` sem âncora trouxe o
+     commit do ABC-5 cujo corpo citava "ABC-4 #2"; a busca na base inteira trouxe também 5
      commits de HANDOFF posteriores ao fechamento (leia a lista e tire o que é registro, não
      entrega); e um `git diff <primeira>^ <última>` sobre essa lista crua somaria o commit de
      backup intercalado (151 arquivos). A contagem por commit bateu com o resumo postado.
@@ -129,7 +129,7 @@ conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) ·
 4. **Apresentar rascunho ao dev** — Mostrar o resumo gerado e pedir confirmação ou edições.
    Sem MCP atlassian, escreva o rascunho já no que o `md2adf.py` aceita (step 5: sem lista
    aninhada, sem crase dentro de negrito), para o dev aprovar o texto que vai ao Jira. Medido em
-   14/10/2026 no RS-925: o rascunho aprovado tinha as duas construções, e 8 trechos foram
+   14/10/2026 no REP-925: o rascunho aprovado tinha as duas construções, e 8 trechos foram
    achatados depois da aprovação.
 
 5. **Comentar na issue — preferir MCP atlassian com markdown:**
@@ -141,7 +141,7 @@ conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) ·
 
    ```text
    mcp__atlassian__addCommentToJiraIssue(
-     cloudId: "<cloud-id-da-jrcbrasil>",        # `getAccessibleAtlassianResources` se não souber
+     cloudId: "<cloud-id-do-site>",        # `getAccessibleAtlassianResources` se não souber
      issueIdOrKey: "${PROJECT}-XXX",
      commentBody: "<resumo em markdown — ver template em templates.md §Markdown>",
      contentFormat: "markdown"
@@ -167,25 +167,25 @@ conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) ·
 
    Aceita títulos, parágrafos, listas `-` e `1.`, `**negrito**`, `` `code` ``, links,
    bloco de código e `---`; itálico e tabela saem como texto. Validado em 05/10/2026 no
-   SBM-4: a saída é idêntica ao JSON que o Jira aceitou (`201`, releitura `dict 8`).
+   ABC-4: a saída é idêntica ao JSON que o Jira aceitou (`201`, releitura `dict 8`).
 
    Duas construções saem com **rc 1** e nada gravado, porque chegariam erradas ao Jira:
    **lista aninhada** (os subitens viravam o mesmo nível dos itens) e **crase dentro de
    negrito** (a crase aparecia literal). Para agrupar itens, escreva um parágrafo em
-   negrito por grupo, cada um com a sua lista. Medido em 07/10/2026 no SBM-6: o resumo
+   negrito por grupo, cada um com a sua lista. Medido em 07/10/2026 no ABC-6: o resumo
    com subitens por versão saiu como uma lista de 16 itens num nível só, com rc 0.
    Testes: `tests/test_md2adf.py`.
 
    **Prefira postar pelo REST:** o código HTTP é um sensor de verdade (`201` =
    gravado; 400 = ADF recusado), ao contrário do `acli`, que sai 0 em falha.
-   Validado em 04/10/2026 (SBM-3, `201` e releitura `dict 9`):
+   Validado em 04/10/2026 (ABC-3, `201` e releitura `dict 9`):
 
    ```bash
    set -a; . ~/.hermes/.env; set +a
    # /tmp/comment.json = {"body": <doc ADF>}  — o doc vai DENTRO de "body"
    curl -s -o /dev/null -w "%{http_code}\n" -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
      -H "Content-Type: application/json" -X POST --data @/tmp/comment.json \
-     "https://jrcbrasil.atlassian.net/rest/api/3/issue/${PROJECT}-XXX/comment"
+     "$JIRA_BASE_URL/rest/api/3/issue/${PROJECT}-XXX/comment"
    # espera: 201
    ```
 
@@ -211,7 +211,7 @@ conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) ·
    ```bash
    set -a; . ~/.hermes/.env; set +a
    curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
-     "https://jrcbrasil.atlassian.net/rest/api/3/issue/${PROJECT}-XXX/comment?orderBy=-created&maxResults=1" \
+     "$JIRA_BASE_URL/rest/api/3/issue/${PROJECT}-XXX/comment?orderBy=-created&maxResults=1" \
      | python3 -c "import json,sys; b=json.load(sys.stdin)['comments'][-1]['body']; print(type(b).__name__, len(b.get('content',[])) if isinstance(b,dict) else b[:80])"
    # espera: dict <N>   ·   se vier `str`, o ADF NÃO foi aceito
    ```
@@ -227,23 +227,23 @@ conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) ·
    mcp__atlassian__transitionJiraIssue(cloudId, issueIdOrKey: "${PROJECT}-XXX", transition: { id: "<id>" })
    ```
 
-   - **RS:** `Em andamento → Aprovação → Finished` (duas transições, por nome).
-   - **SQ:** `Em andamento → Concluído` direto (**não há `Aprovação`**) —
+   - **REP:** `Em andamento → Aprovação → Finished` (duas transições, por nome).
+   - **QUO:** `Em andamento → Concluído` direto (**não há `Aprovação`**) —
      `acli --status "Concluído"` funciona (casa pelo nome do **status de
      destino**); alternativamente, MCP transição **id `31`** ("Itens concluídos").
-   - **SBM** (team-managed): de "Tarefas pendentes" o `GET` listou transição para
+   - **ABC** (team-managed): de "Tarefas pendentes" o `GET` listou transição para
      todos os status; `Concluído` = id `41` ("Itens concluídos"), direto.
-   - **WHF** (team-managed): o status final é `Concluido`, **sem acento**, id `21`,
-     direto de "Em andamento" e de "A Fazer". O nome difere do `Concluído` do SQ:
+   - **DEF** (team-managed): o status final é `Concluido`, **sem acento**, id `21`,
+     direto de "Em andamento" e de "A Fazer". O nome difere do `Concluído` do QUO:
      escolha pela categoria `done`, como no REST abaixo, e não pelo nome copiado
-     de outro projeto. Medido em 30/10/2026 no WHF-175 e no WHF-176 (`204`, e a
+     de outro projeto. Medido em 30/10/2026 no DEF-175 e no DEF-176 (`204`, e a
      releitura deu `Concluido done`).
    - **Sem MCP — REST por id** (preferido: `204` é sensor, o `acli` sai 0 em falha;
-     validado em 04/10/2026 no SBM-3):
+     validado em 04/10/2026 no ABC-3):
 
      ```bash
      set -a; . ~/.hermes/.env; set +a
-     U="https://jrcbrasil.atlassian.net/rest/api/3/issue/${PROJECT}-XXX/transitions"
+     U="$JIRA_BASE_URL/rest/api/3/issue/${PROJECT}-XXX/transitions"
      curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" "$U" | python3 -c "import json,sys; [print(t['id'], t['name'], '->', t['to']['name'], t['to']['statusCategory']['key']) for t in json.load(sys.stdin)['transitions']]"
      # escolha o id cujo destino tem categoria `done` e aplique:
      curl -s -o /dev/null -w "%{http_code}\n" -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
@@ -263,7 +263,7 @@ conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) ·
    ```bash
    set -a; . ~/.hermes/.env; set +a
    curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
-     "https://jrcbrasil.atlassian.net/rest/api/3/issue/${PROJECT}-XXX?fields=fixVersions"
+     "$JIRA_BASE_URL/rest/api/3/issue/${PROJECT}-XXX?fields=fixVersions"
    git tag --sort=-v:refname | head -3      # o que de fato saiu
    ```
 
@@ -329,19 +329,19 @@ conforme a integração (squash, merge commit de um ou mais PRs, rebase + ff) ·
    > olhe o commit de squash — ele carrega a key no subject:
    >
    > ```bash
-   > git log -1 --format='%s'      # ex.: "SQ-133: o consultor vê ... (#172)"
+   > git log -1 --format='%s'      # ex.: "QUO-133: o consultor vê ... (#172)"
    > ```
    >
    > Confirme com o dev o que encontrou, em vez de assumir: o último commit da
    > base pode ser de outro cartão se alguém mergeou no meio. Integrado por rebase +
    > fast-forward (sem squash), a key está no corpo de cada commit, não no subject:
    > ache-os pela busca do step 3. Integrado por merge commit, a key vem no nome da
-   > branch dentro do subject (`Merge pull request #22 from JRC-Brasil/LH-5_amep-…`),
+   > branch dentro do subject (`Merge pull request #22 from acme/POR-5_…`),
    > e os commits saem pelos pais do merge (step 3).
 
    > **Worktree (start A8, árvore viva):** não há checkout a voltar, e o `pull` na
    > árvore viva não faz parte do close: atualizar a base dela é deploy, decisão à
-   > parte com o dev (no EDS-65, `merge --ff-only` e restart do serviço, autorizados
+   > parte com o dev (no PRC-65, `merge --ff-only` e restart do serviço, autorizados
    > antes). Depois do merge, saia da worktree e remova-a:
    >
    > ```bash

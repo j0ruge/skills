@@ -441,7 +441,7 @@ Rode-o para **todas** as variantes de coluna condicional, não só a mais comum:
 
 **Irmão traiçoeiro do pitfall anterior, e frequentemente confundido com ele.** Ali a soma das larguras estourava a página; aqui a soma está **correta**, o padding está **correto**, e a tabela sai do papel assim mesmo.
 
-Causa: o pdfmake só quebra linha em **espaço**. Uma célula da coluna `"*"` cujo conteúdo tenha um token contínuo mais largo que o espaço disponível — lista de números de série colada por vírgula (`SN:JDBDE-133,JDB00000480,JDB00000481`), URL longa, código de peça — não tem onde quebrar, e o pdfmake **expande a coluna** em vez de truncar ou quebrar por caractere. As colunas seguintes são empurradas para a direita e podem sair inteiras da página.
+Causa: o pdfmake só quebra linha em **espaço**. Uma célula da coluna `"*"` cujo conteúdo tenha um token contínuo mais largo que o espaço disponível — lista de números de série colada por vírgula (`SN:ABCDE-133,ABC00000480,ABC00000481`), URL longa, código de peça — não tem onde quebrar, e o pdfmake **expande a coluna** em vez de truncar ou quebrar por caractere. As colunas seguintes são empurradas para a direita e podem sair inteiras da página.
 
 **Sintoma**: idêntico ao pitfall de padding — a última coluna some — mas só em **algumas linhas de dados**, e `widths` está certo. Se a mesma tabela renderiza bem com um registro e mal com outro, é este, não aquele.
 

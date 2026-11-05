@@ -1,5 +1,13 @@
 # Changelog — zitadel-idp
 
+## [0.20.3] — 2026-11-04
+
+### Dados da empresa saem do texto
+
+Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [0.20.2] — 2026-10-27
 
 ### Fixed
@@ -18,11 +26,11 @@
   descoberta (`(_humans)?`) e num `left join`, com `email`, `is_email_verified` e `state`, e o filtro
   passa a ser o prefixo do papel, porque um projeto pode guardar os papéis de vários apps. O
   `change_date` da consulta anterior continua.
-- **Por quê:** na promoção da 0.4.4 do `lighthouse_project` a staging, em 26/10/2026, o login novo
+- **Por quê:** na promoção da 0.4.4 do `portal_app` a staging, em 26/10/2026, o login novo
   passou a recusar e-mail fora do domínio da empresa, e era preciso conferir antes o domínio de toda
-  conta com papel `lighthouse.*`. A consulta da skill não trazia o e-mail, e o filtro por `project_id`
-  traria também os grants de `battery.*` e `quote.*`. No mesmo dia, um `ps -eo …,args` de diagnóstico
-  de carga no kratos despejou o masterkey do IdP de staging na transcrição do agente.
+  conta com papel `portal.*`. A consulta da skill não trazia o e-mail, e o filtro por `project_id`
+  traria também os grants de `inventory.*` e `quote.*`. No mesmo dia, um `ps -eo …,args` de diagnóstico
+  de carga no host despejou o masterkey do IdP de staging na transcrição do agente.
 - **Evidência:** relido em 27/10/2026 no IdP de staging (`v4.15.0`), só por contagem e comprimento.
   `--masterkey` aparece 1× em `Args`, 1× em `Config.Cmd` e 1× nos args do processo, e a
   `ZITADEL_MASTERKEY` tem 32 chars no `Config.Env`, igual ao valor do `Args`. O `grep -o` devolve
@@ -60,7 +68,7 @@ Distribuição individual no catálogo Codex após instalação isolada, descobe
   tabela de tarefas do `SKILL.md`): ler o perfil e gravá-lo inteiro com `PUT
   /management/v1/users/{userId}/profile`, trocando só o `preferredLanguage` (código curto, Quirk 22). A
   Quirk 53 dizia que dar outro idioma a alguém é mudança de dado no IdP, mas não dizia como fazer.
-- **Por quê:** na promoção da 0.4.0 do `lighthouse_project` a staging, em 15/10/2026, foi preciso
+- **Por quê:** na promoção da 0.4.0 do `portal_app` a staging, em 15/10/2026, foi preciso
   conceder um papel a duas contas e trocar o idioma de uma terceira pela API do IdP de staging. A
   primeira sonda leu "nenhum grant" para uma conta que tinha oito papéis, porque o header levava a org
   do usuário; e a releitura do idioma, logo depois do `200`, mostrou o valor antigo.
@@ -83,7 +91,7 @@ Distribuição individual no catálogo Codex após instalação isolada, descobe
   e-mail não registram nenhuma. A verificação muda o login, não a unicidade (dois e-mails verificados
   iguais derrubam o login por e-mail das duas contas). O uso defensável do claim é exigir
   `email_verified`, que volta a `false` quando a própria pessoa troca o e-mail, e preferir `sub`.
-- **Por quê:** no grill da 0.4.0 do `lighthouse_project`, em 14/10/2026, a atribuição área → gerente
+- **Por quê:** no grill da 0.4.0 do `portal_app`, em 14/10/2026, a atribuição área → gerente
   foi decidida pelo e-mail que o `userinfo` devolve, e a skill não dizia se o Zitadel garante e-mail
   único. Um consumidor que autoriza pelo claim `email` como se ele fosse identidade dá a permissão a
   quem conseguir uma conta com aquele endereço.
@@ -304,7 +312,7 @@ Distribuição individual no catálogo Codex após instalação isolada, descobe
 
 ## [0.13.1] — 2026-09-18
 
-Correção do próprio quirk 48, um dia depois: a revisão de PR da SQ-133 refutou a afirmação com que
+Correção do próprio quirk 48, um dia depois: a revisão de PR da QUO-133 refutou a afirmação com que
 ele foi escrito.
 
 - **O alias liberta a ordem de CONCEDER, nunca a de RETIRAR.** O 0.13.0 dizia que, com o alias no
@@ -317,7 +325,7 @@ ele foi escrito.
   a mesma chamada, e o natural é escrever um `PUT` só com o conjunto final — que é exatamente a
   interrupção. A receita ganhou o aviso de não colapsar os passos 2 e 3, uma tabela de "seguro antes
   do deploy?" por passo, e a saída para quem precisa rebaixar cedo (manter a chave legada na união).
-- Medido: o runbook de migração do `sales_quote`, escrito a partir da versão sem ressalva, nasceu com
+- Medido: o runbook de migração do `quote_app`, escrito a partir da versão sem ressalva, nasceu com
   o passo destrutivo antes do deploy e **afirmando** "sem ordem obrigatória"; quem pegou foi o
   revisor do PR #172, não o autor. A lição que viaja: perigo de ordenação que a API aceita nas duas
   direções não tem sensor — só a prosa.
@@ -325,7 +333,7 @@ ele foi escrito.
 
 ## [0.13.0] — 2026-09-18
 
-Lição do rename `quote.cotador` → `quote.consultor` no sales_quote (SQ-133).
+Lição do rename `quote.cotador` → `quote.consultor` no quote_app (QUO-133).
 
 - **Quirk 48 — a chave de um project role é imutável.** `UpdateProjectRole` só mexe em
   `displayName`/`group`; renomear é remover e recriar. O quirk descreve a migração de quatro passos
@@ -349,9 +357,9 @@ Lição do rename `quote.cotador` → `quote.consultor` no sales_quote (SQ-133).
 
 Prompt audit (`/claude-api prompt-audit`, modelo-alvo Claude Fable 5.1); relatório completo fora do repo.
 
-- **Dados de uma instalação num plugin distribuído**: `it@jrcbrasil.com` (3 lugares),
-  `192.168.0.1.sslip.io`, `idp.jrcbrasil.com`, `jrc.idp.jrcbrasil.com`, `tadeu.mezzavilla@…` viram
-  `admin@example.com`, `<lan-ip>`, `acme.idp.example.com`, `jane.doe@…`.
+- **Dados de uma instalação num plugin distribuído**: o e-mail do operador (3 lugares), o IP de LAN,
+  os domínios do IdP e o e-mail de uma pessoa viram `admin@example.com`, `<lan-ip>`,
+  `acme.idp.example.com`, `jane.doe@…`.
 - **Description**: "47 documented quirks" → "a numbered quirk catalogue" — o número cresce a cada
   retrofit e envelhece na superfície de trigger (Grupo 2 do guia).
 - **A lista-gatilho dos quirks volta a ser gatilho**: 38–42, 44 e 45 carregavam receitas inteiras
@@ -464,7 +472,7 @@ Quirks **44–47**; a headline passa de "forty-three" para "forty-seven".
 
 ### Added
 
-- Primeiro smoke real-browser do loop SPA↔backend↔Zitadel (sales_quote T150) expôs dois
+- Primeiro smoke real-browser do loop SPA↔backend↔Zitadel (quote_app T150) expôs dois
   pitfalls novos. Quirk 41 — o bootstrap idempotente cria os grants do usuário inicial mas
   NÃO reconcilia os já existentes quando o YAML evolui (um usuário seed pré-existente fica
   com os `roleKeys` do dia-0 e o JWT sai sem o novo papel; um usuário novo pelo mesmo
@@ -481,7 +489,7 @@ Quirks **44–47**; a headline passa de "forty-three" para "forty-seven".
 
 ### Added
 
-- Três quirks de smoke-e2e em CI (validade_bateria_estoque PR #10). Quirk 38 — bind mount
+- Três quirks de smoke-e2e em CI (inventory_app PR #10). Quirk 38 — bind mount
   de `ZITADEL_FIRSTINSTANCE_PATPATH` com EACCES no runner GHA (uid 1000 vs 1001 + 0755)
   cascateia num `unique_constraints_pkey` enganoso; cura é `mkdir -p && chmod 0777` ANTES
   do `docker compose up`. Quirk 39 — a política de senha padrão exige as 4 classes de

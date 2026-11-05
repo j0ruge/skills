@@ -13,7 +13,7 @@ Markdown aceito (os nós da tabela ADF do templates.md): títulos `#`..`######`,
 parágrafos (linhas seguidas viram um parágrafo), listas `- `/`* ` e `1. `/`1) `
 `**negrito**`, `` `code` ``, `[texto](url)`, bloco de código com ``` e linha `---`.
 Itálico e tabela não: saem como texto. Duas construções são recusadas porque
-chegariam erradas ao Jira (medido em 07/10/2026, no fechamento do SBM-6): lista
+chegariam erradas ao Jira (medido em 07/10/2026, no fechamento do ABC-6): lista
 aninhada, que virava um nível só, e crase dentro de negrito, que aparecia literal.
 
 Saída: rc 0 gravou; rc 1 a varredura reprovou ou o markdown tem construção

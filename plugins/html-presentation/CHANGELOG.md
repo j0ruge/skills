@@ -3,16 +3,24 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.5.1] — 2026-11-04
+
+### Dados da empresa saem do texto
+
+Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [1.5.0] — 2026-11-03
 
 ### Added
 - `scripts/check-fit.mjs`: fails when a slide leaves the window, clips text, runs under its source line or enters the
-  footer, and exits 2 when it could not measure. Why: in the Lighthouse deck a request that wrapped to 2 lines put the
+  footer, and exits 2 when it could not measure. Why: in the Portal deck a request that wrapped to 2 lines put the
   `.act` box 20 px into the footer with `build.py`, `shoot.sh`, `check-presenter` and the deck's secrecy check green.
   The deck's first sensor had two holes, reproduced in its code review: it answered "ok" on zero slides, and an SVG
   in the footer of slide 3 came out green. This version counts whatever paints and proves it reached each slide. Red
   on an SVG, an image and a box in the footer, on text outside the slide and on the real 2-line defect; 2 on zero slides
-  and on a deck that ignores the hash; green on the Lighthouse deck and on the template sample.
+  and on a deck that ignores the hash; green on the Portal deck and on the template sample.
 - `check-presenter.mjs`: four checks on the popup's keys and on a malformed message, each seen red on the 1.4.3
   template.
 
@@ -38,12 +46,12 @@ Versioned history of the plugin (mirrors `plugin.json`). The per-session record 
   the captures, instead of `--dump-dom`. Why: from Chrome 153, `--dump-dom` still reports `innerHeight` 993 in a
   1920×1080 window, but `--screenshot` uses the whole window. Measured on 03/11/2026 with the probe page: Chrome 145
   captures 993 rows, 153 and 156 capture 1080. Compensating 87 px on 156 moved the stage 44 px down and cut the
-  footer in every shot of the Lighthouse deck, though the PDF was fine. With the new measure, the 27 slide shots
+  footer in every shot of the Portal deck, though the PDF was fine. With the new measure, the 27 slide shots
   and the 2 laptop shots of that deck are pixel-identical to Playwright shots at the exact viewport: the mean
   difference is 0.00, against 16.0 to 31.8 with the old `shoot.sh`. Without Pillow, `shoot.sh` keeps the
   `--dump-dom` measure.
 - Template: `.item .chip{align-self:flex-start}`. Why: in the item's flex column a status chip stretched to the
-  full width of the column (Lighthouse deck, slide 2).
+  full width of the column (Portal deck, slide 2).
 - `SKILL.md` "Deliver": the cover page carries only `01 / TT`, not the classification, because the engine adds no
   prefix on slide 1. The template's cover credit placeholder now asks for the classification.
 
@@ -53,13 +61,13 @@ Versioned history of the plugin (mirrors `plugin.json`). The per-session record 
 - `references/layout-and-type.md`: "Generated diagram" (a legend written outside it restates its semantics; the
   Archify decline is also dashed) and "Photo" (license, credit, and the record in `material/`).
 - The gotcha on the builder's review now says a design critique does not replace the independent review (5 factual
-  errors after two rounds and an impeccable critique, Lighthouse deck).
+  errors after two rounds and an impeccable critique, Portal deck).
 
 ## [1.4.2] — 2026-11-03
 
 ### Fixed
 - `check-presenter.mjs` reads the N panel clock from the first `<span>` of the bar instead of the word "decorrido".
-  Why: the Lighthouse deck is in English, and the template with only that word translated crashed the check with
+  Why: the Portal deck is in English, and the template with only that word translated crashed the check with
   `TypeError: Cannot read properties of undefined (reading 'slice')`; the original template passed. Both pass now,
   and a bar without the elapsed span fails the three clock checks instead of crashing.
 - `SKILL.md` metadata version was still `1.4.0` after the 1.4.1 release; it now follows `plugin.json`.
@@ -167,7 +175,7 @@ and WSL had no Chrome, `pdfinfo` or `montage`.
   1.2.0, green on 1.2.1) and now has 14.
 
 ### Why
-The residue the 1.2.0 QA retest left open on the Manutenção Proativa deck (RS-929): the user chose "hide the hint
+The residue the 1.2.0 QA retest left open on the Manutenção Proativa deck (REP-929): the user chose "hide the hint
 while the presenter window is open" over "only on the cover" and "accept".
 
 ## [1.2.0] — 2026-10-16
@@ -194,7 +202,7 @@ while the presenter window is open" over "only on the cover" and "accept".
   hand to each deck. `references/engine.md` documents the shared timer and the regression check.
 
 ### Why
-A `/qa-execution` round on the Manutenção Proativa deck (RS-929, 16/10/2026) walked the presenter journeys in
+A `/qa-execution` round on the Manutenção Proativa deck (REP-929, 16/10/2026) walked the presenter journeys in
 persona and filed six findings against the template's engine and the build gate. Each fix was red before and
 green after on the same check; the activation click was also measured with a real X11 click on plain Chrome,
 since Playwright's focus emulation hides it.

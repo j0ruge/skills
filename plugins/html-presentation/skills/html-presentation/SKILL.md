@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.5.0"
+  version: "1.5.1"
 ---
 
 # HTML Presentation
@@ -153,7 +153,7 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
   came out at ~0.92 (Chromium 130 and 145, 19/10/2026). `shoot.sh` measures the real viewport, opens a taller
   window and crops the PNG back with Pillow or ImageMagick; without either, it warns. From Chrome 153 the
   screenshot uses the whole window while `--dump-dom` still reports 993, and compensating from `--dump-dom` moved
-  the stage 44 px down and cut the footer in every shot (Chrome 156, Lighthouse deck, 03/11/2026). `shoot.sh` now
+  the stage 44 px down and cut the footer in every shot (Chrome 156, Portal deck, 03/11/2026). `shoot.sh` now
   measures the viewport with a screenshot of a marker, the same mode as the captures.
 - **Presenter window out of sync.** On `file://`, BroadcastChannel does not cross windows. Sync through
   `window.opener` / `postMessage`. The deck holds the popup only in memory: after an F5 the notes stayed on
@@ -168,7 +168,7 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
   navigated, even on the black band beside the stage. The template ignores a click within 400 ms of the
   window gaining focus and any click outside the stage.
 - **Enter or Space on a presenter button did the opposite.** The deck handled the key before the button: Enter on
-  "Zerar cronômetro" advanced without resetting, and Space on "← Anterior" advanced (code review of the Lighthouse
+  "Zerar cronômetro" advanced without resetting, and Space on "← Anterior" advanced (code review of the Portal
   deck, 03/11/2026). A focused button now keeps those keys, and a mouse click drops the focus, so Space still advances
   afterwards. `:focus-visible` cannot tell the two apart: the key press itself turns it on.
 - **Reopened popup timed out in `check-presenter`.** Pressing `P` right after closing the presenter window reached
@@ -186,11 +186,11 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
   a slide looks sparse, raise the type before adding content.
 - **Cover title over its metadata.** The cover places `.body`, `.hline` and `.meta` at fixed `top` values, so a
   hero title that gains a line runs over the line and the metadata: at 132 px a two-line title beside a photo
-  wrapped to three (Lighthouse deck, 03/11/2026). Look at the cover shot; shorten the title or lower the hero size.
+  wrapped to three (Portal deck, 03/11/2026). Look at the cover shot; shorten the title or lower the hero size.
 - **The builder's review misses content loss.** In the origin session the fresh reviewer found 6 material
   losses that the builder's two screenshot rounds passed: a dropped key instruction, a missing count ("7th
   time"), a wrong technical term, "job title" written where the source said "department", and a stage clipped
-  on laptops. A design critique does not replace it: in the Lighthouse deck (03/11/2026), after two rounds and an
+  on laptops. A design critique does not replace it: in the Portal deck (03/11/2026), after two rounds and an
   impeccable critique, the reviewer with the sources in `material/` still found 5 factual errors.
 - **Print loses context.** `@media print` hides the footer; without `data-print` the PDF has no page numbers,
   sections or classification.
@@ -216,13 +216,13 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
 - **Content inside the footer, with every gate green.** The footer sits inside the slide, so a box can enter it
   without leaving the slide. A request that wrapped to 2 lines put the `.act` box 20 px into the footer, with
   `build.py`, `shoot.sh`, `check-presenter` and the deck's own secrecy check green, and a first sensor that compared
-  content with the slide's edge said "nothing cut" (Lighthouse deck, 03/11/2026). `check-fit.mjs` compares with the
+  content with the slide's edge said "nothing cut" (Portal deck, 03/11/2026). `check-fit.mjs` compares with the
   footer and counts whatever paints, SVG and images included. Its first version answered "ok" on zero slides and did
   not see an SVG in the footer: prove a new sensor against the empty case and each kind of content.
 - **Deck in another language: the engine speaks Portuguese.** The key hint (`#help`), the tip label (`Tradução`), the
   N panel and the P window ship in Portuguese. Translate at least what the audience sees: the hint and the tip label.
   Before 1.4.2, `check-presenter` read the N panel clock by the word "decorrido", and a panel translated to English
-  crashed it with a `TypeError` (Lighthouse deck, 03/11/2026). It now reads the first `<span>` of the bar, so keep the
+  crashed it with a `TypeError` (Portal deck, 03/11/2026). It now reads the first `<span>` of the bar, so keep the
   elapsed time there.
 
 ## Files

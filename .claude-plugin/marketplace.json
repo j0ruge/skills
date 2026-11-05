@@ -207,7 +207,7 @@
     {
       "name": "cicd",
       "source": "./plugins/cicd",
-      "version": "2.39.1",
+      "version": "2.39.2",
       "description": "GitHub Actions / Docker / GHCR pipeline troubleshooting and config, auto-routed by stack (Node/Prisma, Django/gunicorn, Vite). Self-hosted runner runbook — what breaks when you move a billed job onto one, which runner to trust for production — deploy-time proof (rollback with re-smoke, backup gates that check the dump), and Actions minute economics. Triggers — CI/CD, GitHub Actions, job never starts, Actions minutes/quota, GHCR auth, self-hosted runner, deploy queued, rollback/backup gate.",
       "category": "development",
       "keywords": [
@@ -298,7 +298,7 @@
     {
       "name": "deploy",
       "source": "./plugins/deploy",
-      "version": "3.3.4",
+      "version": "3.3.5",
       "description": "Promote code to staging (and on to production) through the repo's real CD pipeline. Reads each workflow's `on.push.branches` and `runs-on` instead of assuming — the wrong branch can deploy production, and a hosted job under a billing block never starts. Waits for CI green on the exact commit, promotes by PR merge commit, watches the run, then proves the deploy by the data. Triggers — deploy staging, promote to staging, subir para staging, CD pipeline, cd-staging, promover para produção.",
       "category": "development",
       "keywords": [
@@ -321,7 +321,7 @@
     {
       "name": "codereview",
       "source": "./plugins/codereview",
-      "version": "2.27.25",
+      "version": "2.27.26",
       "description": "Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.",
       "category": "quality",
       "keywords": [
@@ -414,7 +414,7 @@
     {
       "name": "dotnet-wpf",
       "source": "./plugins/dotnet-wpf",
-      "version": "1.8.0",
+      "version": "1.8.1",
       "description": "Complete C#/.NET WPF development toolkit — project setup & audit, Fluent Design guide (90+ controls, form spacing recipes, height clipping diagnosis, Grid row separators, multi-column layouts, ContentDialog confirmation pattern for destructive actions), WinForms-to-WPF MVVM migration, and FlaUI E2E testing.",
       "category": "development",
       "keywords": [
@@ -444,7 +444,7 @@
     {
       "name": "ddd",
       "source": "./plugins/ddd",
-      "version": "0.5.2",
+      "version": "0.5.3",
       "description": "Domain-Driven Design toolkit — analyzes codebases for DDD violations, guides strategic design (event storming, context mapping), generates legacy→DDD migration specs. Language-agnostic. Synthesizes Evans + Vernon + modular-monolith practice. Triggers — DDD, bounded context, aggregate, event storming, hexagonal, legacy migration, architecture review.",
       "category": "architecture",
       "keywords": [
@@ -496,7 +496,7 @@
     {
       "name": "dev-script",
       "source": "./plugins/dev-script",
-      "version": "0.6.1",
+      "version": "0.6.2",
       "description": "Generates idempotent dev.sh / dev.ps1 launchers for the current stack — Compose orchestration, healthchecks, two-strategy port handling (find-next-free for foreign-owned ports, kill-and-reclaim for own orphans), HTTPS-on-LAN via mkcert+Caddy, boot-time sanity check, Windows↔WSL migration guards. Triggers — dev script, single-command dev, mkcert, kill port, port discovery, script hangs, CRLF .env, native binding error.",
       "category": "development",
       "keywords": [
@@ -541,7 +541,7 @@
     {
       "name": "zitadel-idp",
       "source": "./plugins/zitadel-idp",
-      "version": "0.20.2",
+      "version": "0.20.3",
       "description": "Self-hosted Zitadel v4 OIDC field guide — a numbered quirk catalogue, working docker-compose and an idempotent TypeScript bootstrap. High-friction traps: FirstInstance env placement, JWT/JWKS over self-signed HTTPS, `--tlsMode external` and the console's mixed-content `Failed to fetch`, v2.66→v4, API v1→v2, silent-renew, 401 storms, UI language from the `locale` claim. Triggers — zitadel, oidc self-hosted, JWKS, masterkey, v2.66→v4, tlsMode external, pre-cutover check, locale claim.",
       "category": "development",
       "keywords": [
@@ -634,7 +634,7 @@
     {
       "name": "pdf-generation",
       "source": "./plugins/pdf-generation",
-      "version": "1.6.4",
+      "version": "1.6.5",
       "description": "PDF generation design toolkit — analyze a reference template, pick the library (pdfmake, pdf-lib, PDFKit, Puppeteer, @react-pdf), and design modular sections with conditional columns, revision control, and visual verification. Carries hard-won pdfmake pitfalls: column widths that silently push the table off the page, colorless SVG logos, glyph-eating ligatures. Triggers — PDF generation, PDF template, pdfmake, invoice/proposal/report PDF, column overflow, SVG logo in PDF.",
       "category": "development",
       "keywords": [
@@ -665,8 +665,8 @@
     {
       "name": "ticket",
       "source": "./plugins/ticket",
-      "version": "1.14.1",
-      "description": "Jira ticket lifecycle for JRC Brasil projects, integrated with Git — create issues/sub-issues and branches, close with an auto-generated summary. Per-repo config via `.jira-project`; discovers project-specific transitions instead of assuming. New issues are born in the active sprint with story points and fixVersion, each read back by the sensor that can see it. Triggers — ticket, Jira, criar issue, fechar ticket, sprint, story points, fixVersion, acli.",
+      "version": "1.14.2",
+      "description": "Jira ticket lifecycle, integrated with Git — create issues/sub-issues and branches, close with an auto-generated summary. Per-repo config via `.jira-project`; discovers project-specific transitions instead of assuming. New issues are born in the active sprint with story points and fixVersion, each read back by the sensor that can see it. Triggers — ticket, Jira, criar issue, fechar ticket, sprint, story points, fixVersion, acli.",
       "category": "development",
       "keywords": [
         "jira",
@@ -684,7 +684,6 @@
         "from-json",
         "custom-fields",
         "workflow-transitions",
-        "jrc-brasil",
         "pull-request",
         "conventional-commits",
         "mcp-streamable-http",
@@ -706,7 +705,7 @@
     {
       "name": "whisper-preprocess",
       "source": "./plugins/whisper-preprocess",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "description": "Audio preprocessing and transcription with ffmpeg + OpenAI Whisper, fully offline — extraction, silence removal, voice enhancement, segmentation, then transcription. Handles MKV, MP4, WAV, M4A and other media. Triggers — transcribe audio or video, lecture/meeting/podcast/interview transcript, speech-to-text, transcrição, Whisper, remove silence, improve audio before transcription, convert media to text.",
       "category": "development",
       "keywords": [
@@ -747,7 +746,7 @@
     {
       "name": "kaizen-software",
       "source": "./plugins/kaizen-software",
-      "version": "1.4.15",
+      "version": "1.4.16",
       "description": "Metodologia Kaizen (melhoria contínua) para planejar, implementar e manter software — e para ensinar Kaizen ao time. Conduz as três fases pelo ciclo PDCA, verifica pelo artefato e não pelo rótulo da ferramenta, prefere poka-yoke a regra escrita, e mapeia os artefatos Kaizen nos que o projeto já tem (ADR, notas, TODO, CHANGELOG). Gatilhos — Kaizen, PDCA, kaizen log/retrospectiva, 5 porquês, poka-yoke, desperdício/dívida técnica, planejar feature, confirmar antes de apagar/limpar.",
       "category": "development",
       "keywords": [
@@ -779,7 +778,7 @@
     {
       "name": "ts-library",
       "source": "./plugins/ts-library",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "description": "Build and ship a TypeScript/Node library the 2026 way: ESM-only package, sensors on the packed tarball (publint, attw, API report), reproducible release, and vendored-tarball distribution when there is no registry or CI. Triggers — TypeScript library, npm package, extract lib, package.json exports, publint, attw, vendored tarball, library release",
       "category": "development",
       "keywords": [
@@ -805,7 +804,7 @@
     {
       "name": "cors",
       "source": "./plugins/cors",
-      "version": "1.1.2",
+      "version": "1.1.3",
       "description": "Diagnostica e configura CORS — o erro que mente sobre a causa. Decide qual portão barrou (CORS x CSP connect-src x mixed content, idênticos no JS), lê a mensagem literal do Chrome, e dá a receita por stack (nginx, Express, Django, Spring, FastAPI, CDN). Preflight, credenciais, Vary: Origin e as misconfigs que viram vulnerabilidade. Triggers — CORS, Access-Control-Allow-Origin, preflight, blocked by CORS policy, cross-origin, OPTIONS 401, no-cors, erro de CORS.",
       "category": "development",
       "keywords": [
@@ -903,7 +902,7 @@
     {
       "name": "unlovable",
       "source": "./plugins/unlovable",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "description": "Strip every Lovable trace from a codebase scaffolded on lovable.dev — brand strings, og/twitter preview metadata, `.lovable/` residue, the `LOVABLE_API_KEY` email feature (migrated to SMTP) and the `@lovable.dev/*` Vite wrapper that owns the build. Tells cosmetic residue apart from the removals that break the build. Triggers — lovable, lovable.dev, unlovable, lovable-tagger, LOVABLE_API_KEY, remove Lovable branding, WhatsApp preview shows Lovable.",
       "category": "development",
       "keywords": [
@@ -944,7 +943,7 @@
     {
       "name": "todo-to-github-issues",
       "source": "./plugins/todo-to-github-issues",
-      "version": "2.9.0",
+      "version": "2.9.1",
       "description": "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote.",
       "category": "development",
       "keywords": [
@@ -998,7 +997,7 @@
     {
       "name": "html-presentation",
       "source": "./plugins/html-presentation",
-      "version": "1.5.0",
+      "version": "1.5.1",
       "description": "Build a polished, self-contained HTML slide deck (1920×1080) for a timed talk from source material — honoring the project's DESIGN.md, with presenter notes, a presenter window with timer, a PDF for absentees and a speaker script generated from the notes, checked by an independent reviewer agent. Triggers — presentation, slide deck, palestra, apresentação HTML, treinamento, 15x15, talk from a PDF, speaker notes.",
       "category": "operations",
       "keywords": [
@@ -1050,7 +1049,7 @@
     {
       "name": "retrofit-watch",
       "source": "./plugins/retrofit-watch",
-      "version": "0.3.5",
+      "version": "0.3.6",
       "description": "Stop hook that notices when one of our skills (j0ruge/skills marketplace or a git-tracked project skill) or one of our kits (sdd) did real work in the session and asks Claude for an evidence-backed retro: /retrofit-skill for a skill, a TODO.md finding for a kit. Headless sessions (sdd run phases) are queued outside the repo for a later retro. Triggers — skill retro, retrofit-watch, session lessons, skill pitfalls, sdd kit lessons, pending retros.",
       "category": "development",
       "keywords": [

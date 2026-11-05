@@ -140,7 +140,7 @@ Seed/superuser (rodar **uma vez**, não a cada deploy) — preferir `docker exec
 container já rodando a `compose run` (ver §6):
 
 ```bash
-docker exec -e DJANGO_SUPERUSER_PASSWORD jrc-staging-backend \
+docker exec -e DJANGO_SUPERUSER_PASSWORD acme-staging-backend \
   python manage.py createsuperuser --noinput --username admin --email it@exemplo.com
 ```
 

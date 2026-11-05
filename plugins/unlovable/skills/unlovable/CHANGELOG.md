@@ -2,7 +2,7 @@
 
 ## [1.1.0] — 2026-09-09
 
-Primeiro uso real depois de publicada: limpeza do `sales_quote` (Vite + React
+Primeiro uso real depois de publicada: limpeza do `quote_app` (Vite + React
 com `lovable-tagger`, caso 3a). Três coisas que a skill não tinha.
 
 ### Changed

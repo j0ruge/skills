@@ -1,21 +1,36 @@
 # Changelog — ticket
 
+## [1.14.2] — 2026-11-04
+
+### Nenhum site Jira fixo, e os dados da empresa saem do texto
+
+- **`SKILL.md` e `references/`: o site vem de `JIRA_BASE_URL`.**
+  - **O quê:** as chamadas REST usam `$JIRA_BASE_URL/rest/...`, e sem a variável a skill para e pede o
+    endereço. A URL de um cartão casa com qualquer `*.atlassian.net`.
+  - **Por quê:** o endereço de um site estava fixo em 18 lugares: a skill só servia a ele, num plugin
+    público, e expunha o nome da empresa.
+  - **O que muda para quem usa:** é preciso definir `JIRA_BASE_URL` no ambiente. `acli` e o MCP não usam
+    essa variável.
+- **Textos:** nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
+  instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+  entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem.
+
 ## [1.14.1] — 2026-11-03
 
 ### Por quê
 
-No LH-11 (03/11/2026) a issue saiu do `lighthouse_project`, e a branch espelhada nasceu no `apresentacoes`, que
-estava na `RS-929_apresentacao_manutencao_proativa`, de outra missão e ainda sem merge. O `git status --short` saía
-limpo antes da troca. Depois de `git checkout main` e `git checkout -b LH-11_apresentacao-diretoria`, ele mostrou
+No POR-11 (03/11/2026) a issue saiu do `portal_app`, e a branch espelhada nasceu no `apresentacoes`, que
+estava na `REP-929_apresentacao_manutencao_proativa`, de outra missão e ainda sem merge. O `git status --short` saía
+limpo antes da troca. Depois de `git checkout main` e `git checkout -b POR-11_apresentacao-diretoria`, ele mostrou
 119 arquivos `??` (13 MB de `docs/qa/evidence/`).
 
-A causa é o `.gitignore` da pasta daquele deck, que só existe na branch RS-929 (`git show
-RS-929_apresentacao_manutencao_proativa:manutencao-proativa-2026/.gitignore`). No `checkout` ele sai do disco,
+A causa é o `.gitignore` da pasta daquele deck, que só existe na branch REP-929 (`git show
+REP-929_apresentacao_manutencao_proativa:manutencao-proativa-2026/.gitignore`). No `checkout` ele sai do disco,
 e os arquivos que ignorava ficam, porque o git não toca em arquivo ignorado. Reproduzido do zero num repo
 descartável com git 2.43.0: `[]` na branch de origem, `?? deck/docs/qa/evidence/a.png` na nova.
 
 A skill mandava conferir o status antes de trocar de branch, e não depois. Um `git add -A` na branch nova levaria
-o resíduo da outra missão para o PR do ticket. No LH-11 o commit levou só o `HANDOFF.md`, pelo nome.
+o resíduo da outra missão para o PR do ticket. No POR-11 o commit levou só o `HANDOFF.md`, pelo nome.
 
 ### O quê
 
@@ -41,26 +56,26 @@ O `audit_skill_quality.py` já acusava antes desta versão:
 No `warehouse_explorer_web` (30/10/2026), o PR #13 foi mergeado e foi para produção sem cartão, e o
 dev pediu o cartão depois. A skill tinha dois caminhos, e nenhum servia: o sub-fluxo B cria branch e
 põe em "Em andamento" o que já acabou, e o "registrar sem começar" deixa em "Tarefas pendentes" o que
-já foi entregue. O que funcionou no WHF-176 foi o seguinte:
+já foi entregue. O que funcionou no DEF-176 foi o seguinte:
 
 - só a criação do B, numa chamada (`POST /issue` `201`, com sprint, pontos e responsável na releitura);
-- o vínculo `Relates` ao WHF-162 (`201`);
+- o vínculo `Relates` ao DEF-162 (`201`);
 - os steps 3 a 7 do `close`: comentário `201` (`dict 8`) e transição `204` para `Concluido`.
 
-No `close` do WHF-175 (PR #11, merge `743cfc1`), o resumo precisava da contagem de testes, e a
+No `close` do DEF-175 (PR #11, merge `743cfc1`), o resumo precisava da contagem de testes, e a
 única receita do step 3 era a do pytest (`def test_`), num repo com Jest. A contagem dos `it(` e
 `test(` no diff do merge deu 27 adicionados e 0 removidos, o mesmo total da contagem por arquivo
 (18 + 6 + 2 + 1).
 
-As transições do WHF listaram `21 Concluido -> Concluido done`, sem acento. O exemplo do SQ
+As transições do DEF listaram `21 Concluido -> Concluido done`, sem acento. O exemplo do QUO
 (`acli --status "Concluído"`) traz o nome com acento, e quem copia o nome de outro projeto erra o
 alvo. A escolha pela categoria `done`, que o step 6 já fazia no REST, acertou nos dois cartões.
 
 ### O quê
 
 - `references/start.md`: seção nova **Cartão retroativo: trabalho já mergeado**, no sumário.
-- `references/close.md`, step 3: a contagem de testes do Jest no recorte do merge. Step 6: o item WHF.
-- `references/workflow.md`: a linha do WHF na tabela de exemplos conhecidos.
+- `references/close.md`, step 3: a contagem de testes do Jest no recorte do merge. Step 6: o item DEF.
+- `references/workflow.md`: a linha do DEF na tabela de exemplos conhecidos.
 - `SKILL.md`: uma frase em *Registrar cartão sem começar o trabalho* roteia para a seção nova
   (19.836 → 19.911 chars). O `metadata.version` estava em 1.13.0 desde a 1.13.1 e volta a bater com
   o `plugin.json`.
@@ -81,13 +96,13 @@ Distribuição individual no catálogo Codex após instalação isolada, descobe
 
 ### Por quê
 
-No `start` do RS-929 (`digital_service_report_api`, 16/10/2026) a issue nasceu pelo `POST /issue` do
+No `start` do REP-929 (`report_api`, 16/10/2026) a issue nasceu pelo `POST /issue` do
 sub-fluxo B com dois campos que a skill não pedia. O primeiro foi `assignee:{accountId}`: o B
 transiciona para "Em andamento", mas nunca perguntava o responsável, e o REST não aceita `@me`. O
 `accountId` veio de `GET /myself`, o comando que o `workflow.md` só mostrava para atribuir outra
-pessoa depois da criação. O segundo foi `parent:{"key":"RS-699"}`, que pôs a Tarefa dentro do épico.
+pessoa depois da criação. O segundo foi `parent:{"key":"REP-699"}`, que pôs a Tarefa dentro do épico.
 A seção de vínculos sugeria *vínculo* para "cartão que se relaciona a um épico". A releitura pelo
-`GET` trouxe os dois: responsável gravado e pai RS-699.
+`GET` trouxe os dois: responsável gravado e pai REP-699.
 
 O trabalho da mesma missão mora em outro repo, um monorepo de apresentações com decks de vários
 projetos. O bootstrap do `.jira-project` prenderia esse repo a um projeto só. O que funcionou foi
@@ -107,7 +122,7 @@ abrir a issue do repo do projeto e espelhar a branch de mesmo nome no outro, cad
 
 ### Por quê
 
-No `close` do RS-925 (`digital_service_report_api`, 14/10/2026) a mesma branch entrou em `develop`
+No `close` do REP-925 (`report_api`, 14/10/2026) a mesma branch entrou em `develop`
 por **dois** merge commits: o PR #92 (`d4466af`) e o PR #93 (`6a43598`), com o fix da revisão final.
 A receita da 1.11.3 recorta pelos pais de **um** merge: aplicada ao último, `6a43598^1..6a43598^2`
 deu 5 commits e 14 arquivos, só o #93. O resumo postado precisou de `d4466af^1..6a43598^2`: 33
@@ -137,7 +152,7 @@ origin/develop` (Fast-forward de 7 commits) e medir `0	0`.
 
 ### Por quê
 
-No `close` da LH-5 (`lighthouse_project`, 14/10/2026) o PR #22 entrou em `develop` por **merge
+No `close` da POR-5 (`portal_app`, 14/10/2026) o PR #22 entrou em `develop` por **merge
 commit** (`--no-ff`, merge `00dd775`), e o step 3 do `close.md` só cobria squash e rebase +
 fast-forward. Os dois pais do merge delimitaram a branch sem busca pela key:
 `git log --no-merges 00dd775^1..00dd775^2` deu 62 commits e `git diff --stat 00dd775^1 00dd775`
@@ -146,7 +161,7 @@ cartão (1.10.0), nem foi necessária.
 
 No mesmo `close`, o step 2 mandava listar as sub-issues pelo `acli jira workitem search`, que sem
 resultado não imprime nada: o silêncio de "nenhuma" é o mesmo de uma busca que falhou. O
-`GET /rest/api/3/search/jql` com `jql=parent = LH-5` devolveu uma contagem explícita, `0`.
+`GET /rest/api/3/search/jql` com `jql=parent = POR-5` devolveu uma contagem explícita, `0`.
 
 ### O quê
 
@@ -163,12 +178,12 @@ resultado não imprime nada: o silêncio de "nenhuma" é o mesmo de uma busca qu
 
 ### Por quê
 
-No planejamento da LH-5 (`lighthouse_project`, 13/10/2026), a existência da versão `0.3.0` no
-projeto LH foi deduzida de uma JQL: `project = LH AND fixVersion = "0.3.0"` voltou vazia e sem
+No planejamento da POR-5 (`portal_app`, 13/10/2026), a existência da versão `0.3.0` no
+projeto POR foi deduzida de uma JQL: `project = POR AND fixVersion = "0.3.0"` voltou vazia e sem
 erro, enquanto `0.4.0` respondia `o valor '0.4.0' não existe para o campo 'fixversion'`. O agente
 disse ao dev que a versão "existe e está vazia", e o dev escolheu o rótulo sob essa premissa. No
-`start`, o `GET /project/LH/versions` listou só `0.1.0` e `0.2.0`: o JQL valida o nome contra as
-versões de **todos** os projetos do site, e quem tinha `0.3.0` era o SBM (SBM-6). A versão teve de
+`start`, o `GET /project/POR/versions` listou só `0.1.0` e `0.2.0`: o JQL valida o nome contra as
+versões de **todos** os projetos do site, e quem tinha `0.3.0` era o ABC (ABC-6). A versão teve de
 ser criada (id 10116), com o dev confirmando.
 
 A tabela do `campos.md` já dizia que o REST é a fonte para listar versões, mas nada avisava que a
@@ -185,7 +200,7 @@ JQL calada parece uma confirmação.
 
 ### Por quê
 
-O `close` do SBM-6 (07/10/2026, no `~/.hermes`, sem MCP atlassian) passou o resumo pelo
+O `close` do ABC-6 (07/10/2026, no `~/.hermes`, sem MCP atlassian) passou o resumo pelo
 `scripts/md2adf.py`, que saiu com rc 0 em duas construções que chegariam erradas ao Jira:
 
 1. **Lista aninhada:** os subitens recuados sob cada versão viraram uma `bulletList` de 16 itens
@@ -203,7 +218,7 @@ negrito), mas dependia de alguém notar olhando o JSON.
   dizendo a linha (lista aninhada) ou o trecho (negrito com crase) e o que fazer. Fora de bloco de
   código; continuação recuada de item segue valendo.
 - **`tests/test_md2adf.py` (novo):** 7 testes, só stdlib. Os 3 das recusas ficaram vermelhos antes
-  da correção; os 4 que travam o que já funcionava passaram antes e depois. O resumo real do SBM-6,
+  da correção; os 4 que travam o que já funcionava passaram antes e depois. O resumo real do ABC-6,
   na forma reestruturada, continua convertendo (15 blocos).
 - **`references/close.md` passo 5:** as duas recusas e a forma de agrupar.
 
@@ -211,7 +226,7 @@ negrito), mas dependia de alguém notar olhando o JSON.
 
 ### Por quê
 
-Duas lições do `start` da SQ-155 (05/10/2026, no `sales_quote`), aberta à mão dentro de uma missão
+Duas lições do `start` da QUO-155 (05/10/2026, no `quote_app`), aberta à mão dentro de uma missão
 do kit `sdd`:
 
 1. O repo roda o kit `sdd`, cuja fase TICKET do `sdd run` abre a issue sozinha. O dev pediu o
@@ -220,7 +235,7 @@ do kit `sdd`:
    `<missao>/10-ticket.md`. Sem esse arquivo, o `sdd run` seguinte abriria um segundo ticket na
    mesma sprint. A sessão precisou ler o gate e um `10-ticket.md` anterior para saber o que gravar.
 2. O A8 do `start.md` dizia que `git rev-list --left-right --count HEAD...origin/<base>` "espera
-   `0	0`". Na SQ-155 deu `2	0`, e estava certo: a base local carregava os dois commits da fase
+   `0	0`". Na QUO-155 deu `2	0`, e estava certo: a base local carregava os dois commits da fase
    PLAN, ainda sem push. Um agente literal leria isso como divergência e pararia, ou "consertaria"
    com `reset`, apagando os commits da aprovação. O B5, que o `SKILL.md` manda seguir "como no A8",
    nem trazia a medição.
@@ -244,13 +259,13 @@ do kit `sdd`:
 
 ### Por quê
 
-Duas lições do `close` do SBM-4 (05/10/2026, no `~/.hermes`), feito sem o MCP atlassian e com o
+Duas lições do `close` do ABC-4 (05/10/2026, no `~/.hermes`), feito sem o MCP atlassian e com o
 trabalho já no `main`:
 
 1. O fallback sem MCP mandava montar o ADF à mão e rodar a varredura de marks, mas não trazia o
    conversor. A sessão teve de escrever um para postar o resumo, e cada fechamento sem MCP
    repetiria isso, com o risco do 400 mudo que o `templates.md` descreve.
-2. O SBM-4 e o SBM-5 entraram no `main` por rebase + fast-forward, sem PR e sem squash, e os
+2. O ABC-4 e o ABC-5 entraram no `main` por rebase + fast-forward, sem PR e sem squash, e os
    branches já tinham sido apagados. O step 3 só sabia coletar `${BASE_BRANCH}..HEAD`, que sai
    vazio, e a nota do step 10 procura a key no subject do squash, que não existe nesse caso: a key
    está no corpo de cada commit.
@@ -271,15 +286,15 @@ trabalho já no `main`:
 
 ### Verificação
 
-- A saída do script para o resumo do SBM-4 é igual (JSON comparado) ao corpo que o Jira aceitou
-  (`201`, releitura `dict 8`). O resumo do SBM-5 e o template de fechamento da skill convertem
+- A saída do script para o resumo do ABC-4 é igual (JSON comparado) ao corpo que o Jira aceitou
+  (`201`, releitura `dict 8`). O resumo do ABC-5 e o template de fechamento da skill convertem
   sem erro; um markdown sintético cobre títulos, parágrafo em várias linhas, as duas listas com
   linha de continuação, link, bloco de código, `---` e CRLF. A varredura reprova mark em string e
   conteúdo sem nó, com o caminho do nó.
-- Busca medida no `~/.hermes`: o `--grep 'SBM-4'` sem âncora trouxe `1973859`, do SBM-5, cujo corpo
-  cita "SBM-4 #2"; a ancorada na base inteira trouxe ainda 5 commits de HANDOFF posteriores; e um
+- Busca medida no `~/.hermes`: o `--grep 'ABC-4'` sem âncora trouxe `1973859`, do ABC-5, cujo corpo
+  cita "ABC-4 #2"; a ancorada na base inteira trouxe ainda 5 commits de HANDOFF posteriores; e um
   `diff <primeira>^ <última>` sobre essa lista somaria o backup intercalado (151 arquivos). A
-  contagem por commit dá 21 arquivos e 31 testes (SBM-4) e 20 e 14 (SBM-5), os números postados.
+  contagem por commit dá 21 arquivos e 31 testes (ABC-4) e 20 e 14 (ABC-5), os números postados.
 
 ## [1.9.1] — 2026-10-05
 
@@ -317,7 +332,7 @@ o bootstrap), indo às references pelo roteamento.
 
 O `start` A8 fazia `git checkout <base>` e `git pull` antes de criar a branch. Num checkout de
 onde um serviço roda, isso troca o código que o próximo restart carrega, e o `pull` na base já é
-deploy. No EDS-65 (05/10/2026) o `estimates-os_mcp` servia o MCP da `main`, e o JorUge teve de
+deploy. No PRC-65 (05/10/2026) o `estimates-os_mcp` servia o MCP da `main`, e o JorUge teve de
 pedir a worktree no argumento do `/ticket`. Partir de `origin/<base>` sem `--no-track` deixa a
 branch rastreando a base (medido num repo descartável: `@{u}` = `origin/main`), e um `push` ou
 `pull` sem argumentos aponta para ela.
@@ -372,7 +387,7 @@ skill, no campo `compatibility` da spec, e não só no manifesto.
 
 ### Por quê
 
-Abrindo dois cartões com subtarefas no EDS (EDS-53 e EDS-60), as subtarefas criadas com `parent`
+Abrindo dois cartões com subtarefas no PRC (PRC-53 e PRC-60), as subtarefas criadas com `parent`
 herdaram a sprint da mãe, mas voltaram com `fixVersions: []` no `GET` REST, embora a mãe tivesse
 a versão. A skill não avisava, e o `split` nem menciona o campo: o cartão sairia sem rótulo de
 release sem ninguém notar. O conserto, um `PUT` por subtarefa (`204`) com releitura, funcionou.
@@ -392,7 +407,7 @@ subtarefas, todas `201`), sem a janela entre o `create` e o `edit --parent` do `
 
 ### Por quê
 
-Fechando o SBM-3 numa sessão sem o MCP atlassian, o fallback da skill era o `acli` — que sai 0
+Fechando o ABC-3 numa sessão sem o MCP atlassian, o fallback da skill era o `acli` — que sai 0
 mesmo quando falha, então nem o comentário nem a transição tinham sensor no próprio comando. O
 REST do Jira devolve código HTTP de verdade (`201` no comentário, `204` na transição) e foi o
 caminho usado, com releitura batendo. E o cartão chegou ao `close` ainda em "Tarefas pendentes" e
@@ -405,7 +420,7 @@ sem responsável — o `close` não olhava isso, e fechar assim deixa o cartão 
 - `references/close.md` step 5: fallback sem MCP pelo REST (`POST /issue/<KEY>/comment` com
   `{"body": <ADF>}`, espera `201`); o `acli comment create` fica como segunda opção.
 - `references/close.md` step 6: transição por REST (`GET /transitions`, escolher o destino com
-  categoria `done`, `POST` por id, espera `204`, releitura); SBM documentado (id `41`, direto de
+  categoria `done`, `POST` por id, espera `204`, releitura); ABC documentado (id `41`, direto de
   "Tarefas pendentes").
 - `SKILL.md`: só trocas de texto nos steps 1, 5 e 6 do `close` (o arquivo está no teto de ~20 mil chars).
 - Dívida pré-existente, não tratada aqui: `argument-hint` no topo do frontmatter (ERRO G2 / AVISO A4).
@@ -414,16 +429,16 @@ sem responsável — o `close` não olhava isso, e fechar assim deixa o cartão 
 
 ### Por quê
 
-Pedido "enriquece a descrição atual do SBM-2 com o que evoluímos aqui": a skill só tinha template
+Pedido "enriquece a descrição atual do ABC-2 com o que evoluímos aqui": a skill só tinha template
 para a descrição de issue **nova**. O caminho óbvio, um `PUT` com `description` montada do zero,
-substitui o campo inteiro e apaga o texto do autor — no SBM-2, dois relatórios colados.
+substitui o campo inteiro e apaga o texto do autor — no ABC-2, dois relatórios colados.
 
 ### O quê
 
 - `references/templates.md` §Enriquecer a descrição de uma issue existente: backup pelo `GET`,
   ADF novo = `original.content + rule + seção datada`, varredura de marks e estrutura no documento
   inteiro, `assert` do prefixo antes do `PUT`, `204` e releitura comparando o prefixo com o backup.
-  Validado no SBM-2 em 02/10/2026 (6 → 22 nós, `original preservado: True`).
+  Validado no ABC-2 em 02/10/2026 (6 → 22 nós, `original preservado: True`).
 - `SKILL.md`: a roteadora do `templates.md` passa a citar esse caso.
 - Dívida pré-existente, não tratada aqui: `argument-hint` no topo do frontmatter (ERRO G2 /
   AVISO A4 da auditoria; warning do `validate-versions`).
@@ -454,7 +469,7 @@ Como reverter: `git revert` do commit desta versão.
 
 ### Por quê
 
-Na abertura do SBM-1 o projeto Jira SBM ainda não existia. O bootstrap da skill só sabia perguntar
+Na abertura do ABC-1 o projeto Jira ABC ainda não existia. O bootstrap da skill só sabia perguntar
 key e board de um projeto existente, e o executor teve de descobrir sozinho o `POST /project`, o
 template team-managed, o board criado junto e os ids de tipo por projeto. O board novo também só
 tinha uma sprint `future`, e o item 3 de "Quando não aparece sprint ativa" oferecia apenas criar
@@ -464,16 +479,16 @@ sprint ou deixar no backlog.
 
 - `references/workflow.md` ganha `## Projeto novo`: confirmação com o dev, `POST /project` (Scrum
   ou Kanban, team-managed), board pela API agile, releitura do projeto para `id` e `issueTypes`
-  (no SBM a subtarefa é `Subtask`, não `Subtarefa`).
+  (no ABC a subtarefa é `Subtask`, não `Subtarefa`).
 - `SKILL.md` roteia o bootstrap para essa seção quando o projeto não existe no Jira.
 - `references/campos.md`: sprint `future` existente vira terceira opção (id em número puro grava;
-  releitura mostra `state: future`, medido no SBM-1).
+  releitura mostra `state: future`, medido no ABC-1).
 
 ## [1.6.1] — 2026-10-01
 
 ### Por quê
 
-Na abertura do SQ-153 a fixVersion proposta (0.10.0) não existia no Jira. O B1 do `start` dizia só
+Na abertura do QUO-153 a fixVersion proposta (0.10.0) não existia no Jira. O B1 do `start` dizia só
 "liste as existentes e proponha a próxima" e não tratava o caso de a próxima faltar — ao contrário do
 close step 7, que manda parar e perguntar. O executor leu a subseção de criação da issue, não a tabela
 de operações da §fixVersion, e remontou o `POST /version` por conta própria. Funcionou, mas por sorte:
@@ -539,7 +554,7 @@ mantido de propósito, ver acima).
 
 ## [1.5.1] — 2026-09-18
 
-Duas correções de precisão vindas de um `close` real (SQ-133, projeto SQ), as
+Duas correções de precisão vindas de um `close` real (QUO-133, projeto QUO), as
 duas sobre o mesmo ponto cego: o fluxo descrevia o caminho certo com um detalhe
 errado, e o detalhe só cobra no fim.
 
@@ -570,7 +585,7 @@ com a cautela de que o último commit pode ser de outro cartão.
 
 ## [1.5.0] — 2026-09-11
 
-Quatro lições de um `close` real (RS-877, projeto RS). Três são sensores que
+Quatro lições de um `close` real (REP-877, projeto REP). Três são sensores que
 mentem de formas diferentes; a quarta é um passo que faltava no fluxo.
 
 ### `acli jira workitem comment` é um GRUPO, não um comando
@@ -595,7 +610,7 @@ família por outra porta: a **leitura de volta** também não é. O veredito é 
 
 ### A tabela de transições descrevia convenção como se fosse restrição
 
-A linha do RS dizia "duas transições (`Aprovação`, depois `Finished`)". Medido: a
+A linha do REP dizia "duas transições (`Aprovação`, depois `Finished`)". Medido: a
 partir de `Em andamento` existe `id=31 Itens concluídos → Finished`, que **pula a
 Aprovação**. O caminho de duas etapas é o **processo do time**, não um limite do
 board — e vale segui-lo mesmo assim, porque é o rastro que o time espera; o
@@ -609,14 +624,14 @@ anterior quebra.
 ### O `close` não perguntava `fixVersion`
 
 O `start` pergunta sempre; o `close` fechava um ticket que foi a produção sem
-rótulo de release — foi o que aconteceu na RS-877. Novo step 7 (os seguintes
+rótulo de release — foi o que aconteceu na REP-877. Novo step 7 (os seguintes
 renumerados): lê o campo, compara com as tags do repo, e trata o caso difícil
 com cuidado — quando a versão **não existe** no Jira, para e pergunta, porque
 criar `fixVersion` é ato de nível de projeto, não detalhe de fechamento.
 
 ## [1.5.0] — 2026-09-11
 
-Quatro lições de um `close` real (RS-877, projeto RS). Três são sensores que
+Quatro lições de um `close` real (REP-877, projeto REP). Três são sensores que
 mentem de formas diferentes; a quarta é um passo que faltava no fluxo.
 
 ### `acli jira workitem comment` é um GRUPO, não um comando
@@ -640,7 +655,7 @@ família por outra porta: a **leitura de volta** também não é. O veredito é 
 
 ### A tabela de transições descrevia convenção como se fosse restrição
 
-A linha do RS dizia "duas transições (`Aprovação`, depois `Finished`)". Medido: a
+A linha do REP dizia "duas transições (`Aprovação`, depois `Finished`)". Medido: a
 partir de `Em andamento` existe `id=31 Itens concluídos → Finished`, que **pula a
 Aprovação**. O caminho de duas etapas é o **processo do time**, não um limite do
 board — e vale segui-lo mesmo assim, porque é o rastro que o time espera; o
@@ -654,14 +669,14 @@ anterior quebra.
 ### O `close` não perguntava `fixVersion`
 
 O `start` pergunta sempre; o `close` fechava um ticket que foi a produção sem
-rótulo de release — foi o que aconteceu na RS-877. Novo step 7 (os seguintes
+rótulo de release — foi o que aconteceu na REP-877. Novo step 7 (os seguintes
 renumerados): lê o campo, compara com as tags do repo, e trata o caso difícil
 com cuidado — quando a versão **não existe** no Jira, para e pergunta, porque
 criar `fixVersion` é ato de nível de projeto, não detalhe de fechamento.
 
 ## [1.4.1] — 2026-09-10
 
-Uma sessão real (abertura do **SQ-122** no projeto SQ) cobrou a conferência que a
+Uma sessão real (abertura do **QUO-122** no projeto QUO) cobrou a conferência que a
 1.4.0 tinha acabado de alinhar. Todas as lições abaixo foram **medidas**.
 
 ### Fixed
@@ -669,8 +684,8 @@ Uma sessão real (abertura do **SQ-122** no projeto SQ) cobrou a conferência qu
 - **A JQL de conferência tem lag de indexação — e a 1.4.0 a tinha promovido a
   sensor** (`SKILL.md` sub-fluxos A/B, `references/workflow.md §Conferir que
   gravou`). Segundos após um `POST /issue` que nasceu com `customfield_10020: 405`,
-  `key = SQ-122 AND sprint in openSprints()` devolveu `{"issues":[]}` enquanto
-  `GET /issue/SQ-122?fields=customfield_10020` já mostrava `(405, "Formulário",
+  `key = QUO-122 AND sprint in openSprints()` devolveu `{"issues":[]}` enquanto
+  `GET /issue/QUO-122?fields=customfield_10020` já mostrava `(405, "Formulário",
   active)`; a mesma JQL achou a issue segundos depois. Quem seguisse a regra
   *"se não bater, reportar a falha"* anunciaria ao dev um cartão no backlog que
   **estava** na sprint — o alarme falso que a seção existe para evitar, e pelo
@@ -699,7 +714,7 @@ Uma sessão real (abertura do **SQ-122** no projeto SQ) cobrou a conferência qu
   O corpo pede `project` e `issuetype` por **id**, e o `.jira-project` guarda a
   *key* — a receita de criação em uma chamada estava incompleta sem isso.
   `GET /project/<KEY>` e `GET /issue/createmeta/<KEY>/issuetypes` resolvem, com os
-  valores medidos em SQ como exemplo (e o lembrete de confirmar: tipo de issue é
+  valores medidos em QUO como exemplo (e o lembrete de confirmar: tipo de issue é
   configuração de projeto).
 - **O envelope de `board list-sprints --json` é `{"sprints":[…]}`** — não lista
   nua, não `values`. Um parser escrito por analogia com outras APIs do Jira quebra
@@ -714,7 +729,7 @@ Uma sessão real (abertura do **SQ-122** no projeto SQ) cobrou a conferência qu
 ## [1.4.0] — 2026-09-03
 
 Duas frentes: três lições **medidas** numa sessão real de 2026-09-02 (abriu 4 cartões
-RS-850…RS-853, criou vínculos de bloqueio e comentou num quinto — o detalhe está em
+REP-850…REP-853, criou vínculos de bloqueio e comentou num quinto — o detalhe está em
 `skills/ticket/CHANGELOG.md`) e o prompt audit da skill contra o modelo atual
 (`/claude-api prompt-audit`, alvo Claude Fable 5.1), a última da rodada de 16 skills do
 marketplace. Relatório e diff do audit ficaram fora do repo; aqui vai o quê e o porquê.
@@ -753,8 +768,8 @@ marketplace. Relatório e diff do audit ficaram fora do repo; aqui vai o quê e 
 - **Tabela de sensores alinhada.** `workflow.md §Sprint e Story Points` ainda listava
   `sprint list-workitems` como forma de conferir — o comando que a 1.2.0 tirou do papel de
   sensor por paginar. A célula aponta para o JQL `sprint in openSprints()`.
-- **Arqueologia vira regra.** Treze trechos "medido no SQ-74 (2026-08-07) e de novo no
-  SQ-107…" perderam ticket, projeto e história; ficou a regra com o mecanismo da falha e,
+- **Arqueologia vira regra.** Treze trechos "medido no QUO-74 (2026-08-07) e de novo no
+  QUO-107…" perderam ticket, projeto e história; ficou a regra com o mecanismo da falha e,
   onde havia, um único carimbo de verificação. As falhas são das ferramentas (`acli` sai 0,
   paginação, 400 mudo, `fixVersion` cego), não do modelo — por isso nenhuma regra saiu.
 - **Tom normal nas Regras**: `SEMPRE`/`NUNCA`/`DEVE` em cinco linhas viram frase plana com a
@@ -778,7 +793,7 @@ A skill já mandava montar ADF por script e já avisava que malformado é recusa
 "sem dizer qual nó". O que faltava era o passo seguinte: **como descobrir qual
 nó**. Sem isso, o aviso só antecipa a frustração — não a resolve.
 
-Motivador concreto (RS-822): um helper de comentário recebeu `"strong"` como
+Motivador concreto (REP-822): um helper de comentário recebeu `"strong"` como
 **string** onde esperava lista. O loop iterou caractere a caractere e gerou
 `{"type":"s"}`, `{"type":"t"}`, `{"type":"r"}`… O JSON ficou sintaticamente
 válido, `json.tool` passou, e o Jira devolveu **400 sem nomear nada**. Montar por
@@ -806,8 +821,8 @@ script não impediu o erro — o script também erra.
 ## [1.2.0] — 2026-08-24
 
 Rodada motivada por uma constatação desconfortável: das quatro armadilhas
-medidas em 2026-08-07 (SQ-74) e registradas como pendência, **duas voltaram a
-cobrar pedágio no SQ-107**, 17 dias depois, do mesmo jeito. Uma lição que não
+medidas em 2026-08-07 (QUO-74) e registradas como pendência, **duas voltaram a
+cobrar pedágio no QUO-107**, 17 dias depois, do mesmo jeito. Uma lição que não
 entra na skill é uma lição que se paga de novo.
 
 ### Added
@@ -817,7 +832,7 @@ entra na skill é uma lição que se paga de novo.
   um cartão. É o campo com os piores sensores locais: `acli` não escreve **nem
   lê** (devolve `[]` sobre valor gravado), o MCP não confirma, e `updated` não
   bumpa. Tudo por REST, com tabela de operação → endpoint.
-- **A flag `released` do Jira não é sensor de release.** No SQ-107 a `0.7.1`
+- **A flag `released` do Jira não é sensor de release.** No QUO-107 a `0.7.1`
   aparecia `unreleased` estando em produção desde 20/ago. Antes de repassar esse
   metadado ao dev, confira o artefato (`git branch -r --contains <sha>` e a
   versão no `package.json` de `origin/main`) e corrija o Jira.
@@ -839,8 +854,8 @@ entra na skill é uma lição que se paga de novo.
 - **`sprint list-workitems` sai do papel de sensor — entra JQL.** O step 6 vendia
   aquele comando como "confirmação independente"; ele pagina em ~30 itens e o
   cartão recém-criado cai fora da primeira página. Seguir a skill produzia
-  exatamente o alarme falso que o passo existe para evitar. Medido no SQ-74 e no
-  SQ-107 — nas duas vezes o cartão **estava** na sprint.
+  exatamente o alarme falso que o passo existe para evitar. Medido no QUO-74 e no
+  QUO-107 — nas duas vezes o cartão **estava** na sprint.
 - **`acli` imprime `✗ Failure` e sai 0** — agora dito no topo dos gotchas.
   Cadeia `&&` e `$?` são decorativas; o sensor é a releitura do campo.
 - **A criação de branch passa a medir a base em vez de confiar no `pull`.**
@@ -863,13 +878,13 @@ cego é pior que sensor ausente — ele produz confiança.
 
 ### Fixed
 
-- **A skill afirmava a branch base errada para o `sales_quote`/SQ.** O `SKILL.md`
+- **A skill afirmava a branch base errada para o `quote_app`/QUO.** O `SKILL.md`
   dizia, em dois pontos (exemplo do `.jira-project` e nota da tabela de
   variáveis), que o projeto usa `main`. Usa **`develop`** —
   `origin/HEAD → origin/develop` desde a feature 017, e o fluxo é
   `develop → staging → main`. **Consequência real:** branch nova nasceria da base
   errada e a PR iria para o alvo errado, e o sintoma só aparece no merge, quando
-  já custa caro. Detectado na sessão de fechamento da SQ-73, quando a base teve
+  já custa caro. Detectado na sessão de fechamento da QUO-73, quando a base teve
   de ser corrigida à mão.
 - **A nota agora manda detectar, não trocar um chute por outro.** O texto antigo
   avisava "não assuma `develop`" e em seguida cravava `main` — o mesmo erro de
@@ -895,7 +910,7 @@ cego é pior que sensor ausente — ele produz confiança.
 - **Issue nova nasce dentro da sprint, com score — sem depender do MCP.**
   `acli jira workitem create --from-json` aceita `additionalAttributes` com
   `customfield_*`, então sprint e story points podem ser gravados **na criação**.
-  Validado em 2026-08-04 no projeto SQ (issue descartável criada com sprint
+  Validado em 2026-08-04 no projeto QUO (issue descartável criada com sprint
   `405` + 3 pontos, conferida e deletada). O `start` sub-fluxo B passa a usar
   esse caminho. **Por quê:** o fluxo antigo criava a issue "pelada" e tentava
   editar depois via MCP; quando o MCP não estava autenticado a edição falhava e
@@ -909,7 +924,7 @@ cego é pior que sensor ausente — ele produz confiança.
   `acli jira workitem view <KEY> --fields "*all" --json` traz ~100 campos (o
   `--json` sem `--fields` traz só 5 e **nenhum** custom field — motivo pelo qual
   o `view` parecia "não ter" sprint/score). `10016`/`10020` são do site
-  jrcbrasil, não constantes do Jira.
+  de origem, não constantes do Jira.
 - **Fallbacks para "não acho a sprint ativa"** (`workflow.md §Quando não aparece
   sprint ativa`): `$BOARD` errado é a causa mais comum (`board search` /
   `board list-projects`); descoberta independente do board via JQL
@@ -963,7 +978,7 @@ cego é pior que sensor ausente — ele produz confiança.
 Retrofit pedido após sessões em que a skill "jogava os cartões no backlog e não
 conseguia definir os pontos", somado ao aviso de depreciação emitido pelo próprio
 servidor MCP da Atlassian. As afirmações novas foram verificadas nesta sessão
-contra o Jira de produção (boards 51/SQ e 10/RS) e contra os endpoints MCP.
+contra o Jira de produção (boards 51/QUO e 10/REP) e contra os endpoints MCP.
 
 ## [1.0.1] — 2026-05-29
 
@@ -972,14 +987,14 @@ contra o Jira de produção (boards 51/SQ e 10/RS) e contra os endpoints MCP.
 - **Correção do "Corolário" da v1.0.0 — `acli --status` casa pelo NOME DO
   STATUS DE DESTINO, não da transição.** A v1.0.0 documentou o **inverso**
   (que `acli --status "Concluído"` falharia e que o flag casava por nome de
-  transição). Em uso real (fechamento de **SQ-42** e **SQ-43**, ambos partindo
+  transição). Em uso real (fechamento de **QUO-42** e **QUO-43**, ambos partindo
   de `Em andamento`) o comportamento observado foi o oposto:
   `acli --status "Concluído"` **funciona**, enquanto
   `acli --status "Itens concluídos"` (o *nome da transição*, id `31`) **falha**
   com `No allowed transitions found for given status`. Isso bate com o próprio
   help do `acli` (`--status` = "Status to transition the work item"). Provável
-  causa do engano na v1.0.0: a falha original do SQ-41 era em `"Aprovação"`/
-  `"Finished"` — status que **não existem** no board SQ —, não por casamento de
+  causa do engano na v1.0.0: a falha original do QUO-41 era em `"Aprovação"`/
+  `"Finished"` — status que **não existem** no board QUO —, não por casamento de
   nome; o `--status "Concluído"` nunca tinha sido testado isolado a partir de
   `Em andamento`.
 - **Por quê importa:** a guidance anterior mandava evitar um comando que
@@ -1001,7 +1016,7 @@ contra o Jira de produção (boards 51/SQ e 10/RS) e contra os endpoints MCP.
 
 ### Origin
 
-Sessão de fechamento de **SQ-42 + SQ-43** (sales_quote): com o MCP atlassian
+Sessão de fechamento de **QUO-42 + QUO-43** (quote_app): com o MCP atlassian
 não-autenticado, a transição foi feita por `acli` — a tentativa pelo *nome da
 transição* (`"Itens concluídos"`, conforme a doc v1.0.0) falhou, e o *nome do
 status* (`"Concluído"`) funcionou, desmentindo o corolário da v1.0.0.
@@ -1019,26 +1034,26 @@ status* (`"Concluído"`) funcionou, desmentindo o corolário da v1.0.0.
   `acli` + MCP atlassian (markdown em comentários; custom fields como story
   points/sprint que o `acli` não escreve).
 - **Lição 1 — transições são por-projeto, não universais.** A documentação
-  cravava a sequência do RS (`Em andamento → Aprovação → Finished`) como se
-  valesse para todos os boards. O board **SQ não tem `Aprovação`**: vai
+  cravava a sequência do REP (`Em andamento → Aprovação → Finished`) como se
+  valesse para todos os boards. O board **QUO não tem `Aprovação`**: vai
   `Em andamento → Concluído` direto, via transição **id `31`** ("Itens
   concluídos"). Agora o `close` e o `workflow.md` mandam **descobrir** as
   transições com `getTransitionsForJiraIssue` e transicionar por **id**.
 - **Corolário — `acli --status` casa pelo NOME DA TRANSIÇÃO, não do status.**
-  No SQ a transição p/ "Concluído" chama-se "Itens concluídos" — então
+  No QUO a transição p/ "Concluído" chama-se "Itens concluídos" — então
   `acli --status "Concluído"` falha, mas `transitionJiraIssue(transition:{id:"31"})`
   funciona. Documentado como o caminho confiável quando o nome diverge.
 - **Lição 2 — base de branch é por-projeto.** Novo campo opcional `BASE_BRANCH`
   no `.jira-project`, com **fallback que detecta o branch default do repo**
   (`git symbolic-ref --short refs/remotes/origin/HEAD`). Substituídas todas as
   referências cravadas a `develop` em `start`/`close` por `${BASE_BRANCH}`.
-  ⚠️ Não assumir `develop` — `sales_quote`/SQ usa `main`.
+  ⚠️ Não assumir `develop` — `quote_app`/QUO usa `main`.
 
 ### Why / Origin
 
-Sessão de fechamento do ticket **SQ-41** (sales_quote): o `/ticket close`
+Sessão de fechamento do ticket **QUO-41** (quote_app): o `/ticket close`
 tentou `acli --status "Aprovação"` e `"Finished"` e falhou 2× com
-`"No allowed transitions found for given status"`, porque o board SQ não tem
+`"No allowed transitions found for given status"`, porque o board QUO não tem
 essa etapa. A correção (descobrir transições por id + base de branch por-projeto)
 foi aplicada à skill local; este empacotamento traz a skill para o marketplace
 para ganhar versionamento e o fluxo do `retrofit-skill`.

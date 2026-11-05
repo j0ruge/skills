@@ -2,6 +2,14 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.1.3] — 2026-11-04
+
+### Dados da empresa saem do texto
+
+Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [1.1.2] — 2026-10-22
 
 **O quê:** a triagem de `Vary: Origin` aponta para `seguranca.md` §4, que trata
@@ -55,8 +63,8 @@ visíveis de uma vez:
 
 Prompt audit (`/claude-api prompt-audit`, modelo-alvo Claude Fable 5.1); relatório completo fora do repo. Corpo limpo fora de um hunk.
 
-- `references/diagnostico.md`, "Caso medido (28/08/2026)": três hostnames internos de staging
-  (`api.dsr/erp/estimates.jrcbrasil.net`), a mensagem literal do app de origem e "parser de PDF"
+- `references/diagnostico.md`, "Caso medido (28/08/2026)": três hostnames internos de staging, a
+  mensagem literal do app de origem e "parser de PDF"
   num plugin distribuído. O exemplo é load-bearing (as strings literais do Chrome, o `401` que
   ainda é "vivo", as duas lições), então vira `exemplo.com` — vocabulário que a skill já usa — sem
   a data.
@@ -75,7 +83,7 @@ a tabela sintoma → causa, mais quatro references: `diagnostico.md`, `configura
 tentativas por uma razão que nenhuma skill cobria. O curl devolvia `200` para os três serviços e a
 página dizia **"Serviço indisponível"** — o `checkHealth()` do app chamava `fetch`, caía no `catch` e
 traduzia a exceção para "fora do ar". A causa estava só no console: a API respondia
-`Access-Control-Allow-Origin: https://dsr.jrcbrasil.net` e a página rodava em `http://localhost`.
+`Access-Control-Allow-Origin: https://app.acme.example` e a página rodava em `http://localhost`.
 Não havia serviço fora do ar, nem falha de rede, nem o defeito de parsing que a mensagem seguinte
 acusava.
 

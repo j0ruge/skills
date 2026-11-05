@@ -1,9 +1,9 @@
 # Campos do cartão — sprint, story points, fixVersion e a releitura
 
 > Placeholders `${PROJECT}` e `$BOARD` vêm do `.jira-project` (ver `SKILL.md
-> §Detecção de Projeto`). As chamadas REST usam `JIRA_EMAIL`/`JIRA_API_TOKEN`,
+> §Detecção de Projeto`). As chamadas REST usam `JIRA_BASE_URL`, `JIRA_EMAIL` e `JIRA_API_TOKEN`,
 > carregados com `set -a; . ~/.hermes/.env; set +a`, e a base
-> `J=https://jrcbrasil.atlassian.net/rest/api/3`. Transições, branch base, tipos,
+> `J=$JIRA_BASE_URL/rest/api/3`. Transições, branch base, tipos,
 > sub-issues, vínculos e gotchas gerais do `acli` ficam em `workflow.md` (o
 > SKILL.md roteia).
 
@@ -37,7 +37,7 @@ confiabilidade, não por elegância.
 ### Descobrir os IDs dos campos (não confie nos números)
 
 `customfield_10016` (story points) e `customfield_10020` (sprint) são do site
-**jrcbrasil** — não são constantes do Jira. Num site/projeto novo, descubra:
+**de origem** — não são constantes do Jira. Num site/projeto novo, descubra:
 
 ```bash
 acli jira workitem view <KEY-que-já-tem-os-campos> --fields "*all" --json
@@ -56,7 +56,7 @@ acli jira board list-sprints --id $BOARD --state active --json
 ```
 
 Retorna as sprints ativas do board do projeto detectado (ex.: board `10` para
-RS, `51` para SQ). Extrair o `id`.
+REP, `51` para QUO). Extrair o `id`.
 
 O envelope é `{"isLast":…, "maxResults":…, "sprints":[…], "startAt":…, "total":…}`
 — a chave é **`sprints`**, não `values` e não uma lista nua. Um parser escrito
@@ -84,19 +84,19 @@ acli jira board list-sprints --id $BOARD --state active --json \
    avise o dev e pergunte se deve criar (`acli jira sprint create`) ou deixar no
    backlog conscientemente. Se já existe uma `future` (projeto Scrum novo nasce com uma), ela é
    a terceira opção: o id dela em número puro no `customfield_10020` grava, e a releitura mostra
-   `state: future` (medido no SBM-1, sprint 573). Iniciar a sprint continua sendo decisão do dev.
+   `state: future` (medido no ABC-1, sprint 573). Iniciar a sprint continua sendo decisão do dev.
    Board **kanban** não tem sprint: nesse caso o campo simplesmente não se aplica.
 
 ### Issue nova — `create --from-json` (não precisa de MCP)
 
 O template oficial (`acli jira workitem create --generate-json`) inclui
 `additionalAttributes`, que aceita `customfield_*` **na criação**. Validado em
-2026-08-04 no projeto SQ: a issue nasceu com sprint `405` e 3 story points sem
+2026-08-04 no projeto QUO: a issue nasceu com sprint `405` e 3 story points sem
 nenhuma chamada MCP.
 
 ```json
 {
-  "projectKey": "SQ",
+  "projectKey": "QUO",
   "type": "Tarefa",
   "summary": "Título da issue",
   "description": { "version": 1, "type": "doc", "content": [
@@ -111,7 +111,7 @@ nenhuma chamada MCP.
 
 ```bash
 acli jira workitem create --from-json /tmp/nova-issue.json
-# ✓ Work item SQ-66 created: https://jrcbrasil.atlassian.net/browse/SQ-66
+# ✓ Work item QUO-66 created: https://<site>.atlassian.net/browse/QUO-66
 ```
 
 - Sprint é o **id como número puro** (`405`). `{"id": 405}` não é o formato aqui.
@@ -167,25 +167,25 @@ REST.
 
 ```bash
 set -a; . ~/.hermes/.env; set +a     # JIRA_EMAIL / JIRA_API_TOKEN
-J=https://jrcbrasil.atlassian.net/rest/api/3
-curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" "$J/project/SQ/versions"          # listar
+J=$JIRA_BASE_URL/rest/api/3
+curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" "$J/project/QUO/versions"          # listar
 curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -X POST -H 'Content-Type: application/json' \
   -d '{"name":"0.8.0","projectId":10050}' "$J/version"                     # criar (devolve o id)
 curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
-  "$J/issue/SQ-107?fields=fixVersions"                                     # ÚNICO sensor de leitura
+  "$J/issue/QUO-107?fields=fixVersions"                                     # ÚNICO sensor de leitura
 ```
 
 ⚠️ **JQL calada não prova que a versão existe no projeto.** O JQL valida o nome da versão contra
 as versões de **todos** os projetos do site, não do projeto do filtro. Medido em 2026-10-13:
-`project = LH AND fixVersion = "0.3.0"` voltou vazio e sem erro, e o `GET /project/LH/versions`
-listava só `0.1.0` e `0.2.0` — o silêncio vinha do SBM, que tem `0.3.0` (SBM-6). O `0.4.0`, que
+`project = POR AND fixVersion = "0.3.0"` voltou vazio e sem erro, e o `GET /project/POR/versions`
+listava só `0.1.0` e `0.2.0` — o silêncio vinha do ABC, que tem `0.3.0` (ABC-6). O `0.4.0`, que
 nenhum projeto tem, respondeu `o valor '0.4.0' não existe para o campo 'fixversion'`. Concluir
 "existe e está vazia" pela JQL fez o planejamento prometer ao dev um rótulo que teve de ser
 criado no `start`. Existência no projeto = o nome aparece no `GET …/project/<KEY>/versions`.
 
 **Versão que ainda não existe, no `start`:** só crie depois de o dev confirmar o nome — é ato de
 projeto, não de cartão. Use o `id` da resposta (não o `name`) em `fixVersions:[{"id":…}]` do
-`POST /issue`, e confira pela releitura. Medido em 2026-10-01: `0.10.0` no SQ → `id` 10110, e o
+`POST /issue`, e confira pela releitura. Medido em 2026-10-01: `0.10.0` no QUO → `id` 10110, e o
 `GET ?fields=fixVersions` devolveu `['0.10.0']`. A receita esteve sempre nesta tabela; o que
 faltava era o B1 do `start` apontar para ela quando a versão proposta não existe.
 
@@ -205,7 +205,7 @@ ADF — uma chamada, um ponto de falha:
 set -a; . ~/.hermes/.env; set +a
 curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -X POST -H "Content-Type: application/json" \
   --data-binary @/tmp/nova-issue.json \
-  "https://jrcbrasil.atlassian.net/rest/api/3/issue"
+  "$JIRA_BASE_URL/rest/api/3/issue"
 # fields: { project:{id}, issuetype:{name}, summary, description(ADF),
 #           fixVersions:[{id}], customfield_10016: N, customfield_10020: SPRINT_ID }
 ```
@@ -213,10 +213,10 @@ curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -X POST -H "Content-Type: application/j
 Mais dois campos cabem na mesma chamada, e o B1 pergunta pelos dois:
 
 - `parent: {"key": "<EPIC>"}` põe a Tarefa dentro do épico, como hierarquia e não como
-  vínculo. Medido no RS-929 (16/10/2026): a releitura trouxe o pai RS-699.
+  vínculo. Medido no REP-929 (16/10/2026): a releitura trouxe o pai REP-699.
 - `assignee: {"accountId": "<id>"}` dá dono ao cartão. O REST não aceita `@me`, então o
   `accountId` vem de `GET /myself` (comando em `workflow.md` §Gotchas do `acli`). Medido
-  no mesmo RS-929: a releitura trouxe o responsável que entrou no `POST`.
+  no mesmo REP-929: a releitura trouxe o responsável que entrou no `POST`.
 
 `project` e `issuetype` vão por **id**, que o `.jira-project` não guarda —
 duas chamadas os descobrem, uma vez por projeto (subseção seguinte).
@@ -245,12 +245,12 @@ curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" "$J/issue/createmeta/$PROJECT/issuetype
   | python3 -c 'import json,sys;[print(t["id"], t["name"]) for t in json.load(sys.stdin)["issueTypes"]]'
 ```
 
-Medido em SQ (2026-09-10): projeto `10050`; tipos `10000` Epic · `10009` História ·
+Medido em QUO (2026-09-10): projeto `10050`; tipos `10000` Epic · `10009` História ·
 `10018` Tarefa · `10019` Subtarefa · `10020` Bug · `10271` Referência. Confirme
 antes de reusar — tipos são configuração de projeto e mudam.
 
 Anote o que descobriu como comentário datado no `.jira-project`: a próxima criação
-não repete as chamadas, e a data diz quando conferir de novo. O do EDS guarda projeto
+não repete as chamadas, e a data diz quando conferir de novo. O do PRC guarda projeto
 `10005`, `Tarefa` `10030` e a fixVersion `0.1.0` = `10004` (medidos em 05/10/2026).
 
 ### A flag `released` do Jira não diz se a versão foi lançada
@@ -289,8 +289,8 @@ indexação.** Medido em 2026-09-10, segundos após um `POST /issue` que nasceu 
 `customfield_10020: 405`:
 
 ```text
-key = SQ-122 AND sprint in openSprints()   → {"issues":[]}          ← ainda não indexado
-GET /issue/SQ-122?fields=customfield_10020 → [(405,"Formulário")]   ← já gravado
+key = QUO-122 AND sprint in openSprints()   → {"issues":[]}          ← ainda não indexado
+GET /issue/QUO-122?fields=customfield_10020 → [(405,"Formulário")]   ← já gravado
 ```
 
 Segundos depois a mesma JQL devolveu a issue. Quem seguisse a regra *"se não

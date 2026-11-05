@@ -1,5 +1,13 @@
 # Changelog — `dev-script`
 
+## [0.6.2] — 2026-11-04
+
+### Dados da empresa saem do texto
+
+Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [0.6.1] — 2026-10-22
 
 Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
@@ -34,8 +42,8 @@ que mudou foi a redação das citações de reference.
 Prompt audit (`/claude-api prompt-audit`, modelo-alvo Claude Fable 5.1); relatório completo fora do repo.
 
 - **Contagens de incidente apresentadas como argumento** ("4 zombie backend trees", "8 zombie tsx
-  watch trees", "4 sessions over 5 days", "why it bit us", "the bugs that bit JRC projects
-  (Zitadel/Battery Lifecycle, DSR Ecosystem)") saem; a regra e a razão ficam, em presente.
+  watch trees", "4 sessions over 5 days", "why it bit us", "the bugs that bit real projects") saem; a
+  regra e a razão ficam, em presente.
 - **Tetos numéricos de saída** ("5–10 bullets", "10–15 line summary", "4–6 lines") viram orientação
   qualitativa — Grupo 1f do guia: caps numéricos calibrados contra a verbosidade de um modelo antigo.
 - "Walk the project tree and identify, in this order" perde o "in this order" (a detecção não tem
@@ -157,7 +165,7 @@ Lessons from a session against the LouvorFlow monorepo where the user's `dev.sh`
 
 ## 0.3.0 — 2026-05-04
 
-Lessons from a session against the JRC `validade_bateria_estoque` LAN-HTTPS stack — three places where the v0.2.0 reference still left enough rope to hang yourself, including one regression that hit four times across separate sessions before the root cause clicked.
+Lessons from a session against the `inventory_app` LAN-HTTPS stack — three places where the v0.2.0 reference still left enough rope to hang yourself, including one regression that hit four times across separate sessions before the root cause clicked.
 
 ### Added
 
@@ -189,17 +197,17 @@ Lessons from a session against the JRC `validade_bateria_estoque` LAN-HTTPS stac
 
 ### Verification
 
-- The 3-layer fix proven on the JRC stack: 53× `/oauth/v2/authorize` requests in a 15-second post-login window collapsed to 1× after applying (1) regex fix in `kill_known_dev_servers`, (2) launcher-side `kill` before re-spawn, (3) `auth-sanity` check at backend boot. Login storm pattern eliminated; subsequent `--reset-zitadel` runs come up clean.
+- The 3-layer fix proven on a real stack: 53× `/oauth/v2/authorize` requests in a 15-second post-login window collapsed to 1× after applying (1) regex fix in `kill_known_dev_servers`, (2) launcher-side `kill` before re-spawn, (3) `auth-sanity` check at backend boot. Login storm pattern eliminated; subsequent `--reset-zitadel` runs come up clean.
 
 ## 0.2.0 — 2026-04-30
 
-Lessons from a smoke session against the JRC `validade_bateria_estoque` LAN-HTTPS stack — three places where the v0.1.0 reference drifted from real-world behaviour.
+Lessons from a smoke session against the `inventory_app` LAN-HTTPS stack — three places where the v0.1.0 reference drifted from real-world behaviour.
 
 ### Added
 
 - **`references/bash-patterns.md` §"Fourth fallback: `pgrep` by command line"** — the existing three-method `kill_port` (`fuser → lsof → ss`) returns empty on hardened kernels (recent Ubuntu, container hosts with `hidepid=2`, sandboxed sessions across PID namespaces), so `kill_port` becomes a silent no-op and zombie backends survive across runs. Added `kill_known_dev_servers()` as a fourth fallback that matches by command line via `pgrep -af`, plus a per-stack pattern table (Express/tsx, NestJS, Vite, dotnet, cargo) and a warning against bare `pgrep -af node`.
 
-  *Symptom prevented*: 4 zombie `tsx watch` trees survived a Ctrl+C on the JRC stack because none of `ss`, `lsof`, or `fuser` could see the PIDs from the same UID across sessions. The next `dev.sh` run failed with `EADDRINUSE` on `:3000`.
+  *Symptom prevented*: 4 zombie `tsx watch` trees survived a Ctrl+C on a real stack because none of `ss`, `lsof`, or `fuser` could see the PIDs from the same UID across sessions. The next `dev.sh` run failed with `EADDRINUSE` on `:3000`.
 
 - **`references/tls-https-recipe.md` §"Step 5 — Testing the LAN-HTTPS stack with Playwright"** — Playwright suites against `https://<lan-ip>.sslip.io:5443` need two moves: `PLAYWRIGHT_BASE_URL` env override + `ignoreHTTPSErrors` in **both** `use:` and the `globalSetup` browser context (the global setup creates its own context that doesn't inherit `use.ignoreHTTPSErrors`). Documents the failure mode (`net::ERR_CERT_AUTHORITY_INVALID` from the global setup, killing all specs before any body runs) and explains why `NODE_TLS_REJECT_UNAUTHORIZED=0` doesn't help. Plus a side note on logout test ordering invalidating shared `storageState`.
 
@@ -244,9 +252,9 @@ Initial release. Generates `dev.sh` (bash, Linux/macOS) and `dev.ps1` (PowerShel
 
 ### Sources
 
-The skill condenses lessons from two real-world JRC `dev.sh` scripts:
+The skill condenses lessons from two real-world `dev.sh` scripts:
 
-- `JRC-Brasil/digital_service_report_api/dev.sh` — multi-backend monorepo with SQL Server externals, used as the baseline for color/prefix patterns, healthcheck loops, and `kill_stale_ports` shape.
-- `JRC-Brasil/validade_bateria_estoque/dev.sh` (created in the same session that produced this skill) — Zitadel + Caddy + mkcert HTTPS-on-LAN setup, used as the source for TLS termination, Vite 5 `allowedHosts` wrapper, `NODE_EXTRA_CA_CERTS`, bootstrap idempotency with `COMMAND-1m88i` guard, and state-file drift detection.
+- `acme/report_api/dev.sh` — multi-backend monorepo with SQL Server externals, used as the baseline for color/prefix patterns, healthcheck loops, and `kill_stale_ports` shape.
+- `acme/inventory_app/dev.sh` (created in the same session that produced this skill) — Zitadel + Caddy + mkcert HTTPS-on-LAN setup, used as the source for TLS termination, Vite 5 `allowedHosts` wrapper, `NODE_EXTRA_CA_CERTS`, bootstrap idempotency with `COMMAND-1m88i` guard, and state-file drift detection.
 
 Future releases will add: Windows-native testing notes, Tilt comparison, devcontainer interop, and a `scripts/detect-stack.sh` utility that emits the detection summary as JSON for callers that want to drive generation programmatically.

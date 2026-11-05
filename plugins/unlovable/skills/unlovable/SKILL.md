@@ -1,7 +1,7 @@
 ---
 name: unlovable
 metadata:
-  version: 1.1.0
+  version: 1.1.2
 description: "Strip every Lovable trace from a codebase scaffolded on lovable.dev — brand strings, og/twitter preview metadata, `.lovable/` residue, the `LOVABLE_API_KEY` email feature (migrated to SMTP) and the `@lovable.dev/*` Vite wrapper that owns the build. Tells cosmetic residue apart from the removals that break the build. Triggers — lovable, lovable.dev, unlovable, lovable-tagger, LOVABLE_API_KEY, remove Lovable branding, WhatsApp preview shows Lovable."
 ---
 
@@ -103,7 +103,7 @@ git rm --cached .env && printf "\n# Secrets\n.env\n.env.*\n!.env.example\n" >> .
 Antes de editar, case o que o print mostra com a tag que o produziu — `og:title`
 costuma **já estar certo** (o Lovable preenche com o nome do app), então o card
 sai meio certo e meio Lovable, e isso faz o problema parecer maior ou menor do
-que é. Um caso real: título `JRC Sales Quote` correto, subtítulo
+que é. Um caso real: título `Acme Quote App` correto, subtítulo
 `Lovable Generated Project` (o `og:description`) e o banner *"Build apps and
 websites by chatting with AI"* (o `og:image` apontando para
 `https://lovable.dev/opengraph-image-*.png`).

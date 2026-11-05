@@ -74,15 +74,15 @@ POST /zitadel.org.v2.OrganizationService/AddOrganization
 Authorization: Bearer ${PAT}
 Content-Type: application/json
 
-{ "name": "JRC" }
+{ "name": "ACME" }
 ```
 
 Response:
 
 ```json
 {
-  "details": { "sequence": "4", "changeDate": "...", "resourceOwner": "370503937624637443" },
-  "organizationId": "370503937624637443"
+  "details": { "sequence": "4", "changeDate": "...", "resourceOwner": "100000000000000001" },
+  "organizationId": "100000000000000001"
 }
 ```
 
@@ -94,7 +94,7 @@ To find an existing org by name (idempotent bootstrap):
 POST /admin/v1/orgs/_search
 Content-Type: application/json
 
-{ "queries": [{ "nameQuery": { "name": "JRC", "method": "TEXT_QUERY_METHOD_EQUALS" } }] }
+{ "queries": [{ "nameQuery": { "name": "ACME", "method": "TEXT_QUERY_METHOD_EQUALS" } }] }
 ```
 
 ---
@@ -106,7 +106,7 @@ POST /management/v1/projects
 x-zitadel-orgid: ${orgId}
 
 {
-  "name": "ERP-JRC",
+  "name": "ERP-Acme",
   "projectRoleAssertion": true,
   "projectRoleCheck": false,
   "hasProjectCheck": false
@@ -121,7 +121,7 @@ Search by name:
 POST /management/v1/projects/_search
 x-zitadel-orgid: ${orgId}
 
-{ "queries": [{ "nameQuery": { "name": "ERP-JRC", "method": "PROJECT_NAME_QUERY_METHOD_EQUALS" } }] }
+{ "queries": [{ "nameQuery": { "name": "ERP-Acme", "method": "PROJECT_NAME_QUERY_METHOD_EQUALS" } }] }
 ```
 
 Note the `method` enum is `PROJECT_NAME_QUERY_METHOD_EQUALS`, not `TEXT_QUERY_METHOD_EQUALS`. Each search endpoint defines its own enum — copy from the docs, don't guess.
@@ -134,10 +134,10 @@ Note the `method` enum is `PROJECT_NAME_QUERY_METHOD_EQUALS`, not `TEXT_QUERY_ME
 POST /management/v1/projects/{projectId}/roles
 x-zitadel-orgid: ${orgId}
 
-{ "roleKey": "battery.operator", "displayName": "Operator", "group": "battery" }
+{ "roleKey": "inventory.operator", "displayName": "Operator", "group": "inventory" }
 ```
 
-`roleKey` is what appears in JWT claims. Pick a stable convention (we use `<context>.<role>` like `battery.operator`, `battery.admin`) and validate it in your backend with a regex — otherwise typos will yield silent role-assignment failures.
+`roleKey` is what appears in JWT claims. Pick a stable convention (we use `<context>.<role>` like `inventory.operator`, `inventory.admin`) and validate it in your backend with a regex — otherwise typos will yield silent role-assignment failures.
 
 List existing roles:
 
@@ -174,7 +174,7 @@ POST /management/v1/users/grants/_search
 { "queries": [ { "roleKeyQuery": { "roleKey": "quote.cotador" } } ] }
 
 PUT /management/v1/users/{userId}/grants/{grantId}
-{ "roleKeys": ["battery.admin", "quote.admin", "quote.consultor"] }
+{ "roleKeys": ["inventory.admin", "quote.admin", "quote.consultor"] }
 
 # 3. Drop the old key from those grants — the same PUT, minus the old entry.
 #    ⚠️ ONLY after the alias-aware build is serving in THIS environment (below).
@@ -236,7 +236,7 @@ POST /management/v1/projects/{projectId}/apps/oidc
 x-zitadel-orgid: ${orgId}
 
 {
-  "name": "battery-lifecycle-web",
+  "name": "inventory-web",
   "redirectUris": [
     "http://localhost:5173/auth/callback",
     "http://localhost:5173/silent-renew"
@@ -300,7 +300,7 @@ Search by name:
 POST /management/v1/projects/{projectId}/apps/_search
 x-zitadel-orgid: ${orgId}
 
-{ "queries": [{ "nameQuery": { "name": "battery-lifecycle-web", "method": "APP_NAME_QUERY_METHOD_EQUALS" } }] }
+{ "queries": [{ "nameQuery": { "name": "inventory-web", "method": "APP_NAME_QUERY_METHOD_EQUALS" } }] }
 ```
 
 ---
@@ -374,7 +374,7 @@ USERID=$(echo "$CREATE" | sed -n 's/.*"userId":"\([^"]*\)".*/\1/p')
 # 2) Grant the project role
 curl -sS -X POST "http://<external-domain>/management/v1/users/$USERID/grants" \
   -H "Authorization: Bearer $PAT" -H "x-zitadel-orgid: $ORG" -H 'Content-Type: application/json' \
-  -d "{\"projectId\":\"$PROJECT\",\"roleKeys\":[\"battery.admin\"]}"
+  -d "{\"projectId\":\"$PROJECT\",\"roleKeys\":[\"inventory.admin\"]}"
 ```
 
 **Notes**:
@@ -384,7 +384,7 @@ curl -sS -X POST "http://<external-domain>/management/v1/users/$USERID/grants" \
 - `preferredLanguage` is a **short** code in v2 (`pt`, `en`) — `pt-BR` is rejected with `400 LANG-…` (Quirk 22, `api-v1-to-v2-mapping.md`). Whatever you put here is what the user's `locale` claim will say (Quirk 53), so a seed that hardcodes `pt` makes every seeded account Portuguese.
 - `email.isVerified: true` is required if you want the user to log in immediately without an SMTP-sent verification link.
 - `password.changeRequired: false` skips the forced password-change wizard on first login. Useful for dev seeds; **never** for production users. The password must carry all four character classes (Quirk 39).
-- Whitelist policies (e.g., `enforce-jrc-email-whitelist`) intercept this call. If the user creation 422s, check your `pre_creation_user` Action.
+- Whitelist policies (e.g., `enforce-acme-email-whitelist`) intercept this call. If the user creation 422s, check your `pre_creation_user` Action.
 
 ---
 
@@ -423,10 +423,10 @@ The bootstrap script writes a JSON like this each run (the actual path varies �
 
 ```json
 {
-  "orgId": "370883099636006915",
-  "projectId": "370883099736670211",
-  "appId": "370883099988328451",
-  "clientId": "370883099988393987",
+  "orgId": "100000000000000006",
+  "projectId": "100000000000000007",
+  "appId": "100000000000000008",
+  "clientId": "100000000000000009",
   "redirectUris": ["..."]
 }
 ```
@@ -542,13 +542,13 @@ DELETE /management/v1/users/{userId}/grants/{grantId}          # remove grant
 Body for create:
 
 ```json
-{ "projectId": "${projectId}", "roleKeys": ["battery.operator"] }
+{ "projectId": "${projectId}", "roleKeys": ["inventory.operator"] }
 ```
 
 Body for update:
 
 ```json
-{ "roleKeys": ["battery.operator", "battery.admin"] }
+{ "roleKeys": ["inventory.operator", "inventory.admin"] }
 ```
 
 Why this matters: a naive implementation that POSTs a new grant on every assign produces duplicate grants which Zitadel **rejects** (the second call returns `ALREADY_EXISTS`). Search-then-update is required for idempotency.

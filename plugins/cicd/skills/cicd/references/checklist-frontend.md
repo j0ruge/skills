@@ -16,7 +16,7 @@ For shared sections (runner, GHCR, DNS/SSL, base networking), see `checklist-sha
 - [ ] `VITE_GOOGLE_CLIENT_ID` — Google OAuth client ID
 - [ ] `VITE_GOOGLE_DRIVE_LINK` — Google Drive link
 - [ ] `VITE_DOCUMENTATION_LINK` — documentation link
-- [ ] `VITE_API_ESTIMATES` — Estimates API URL (with `https://`)
+- [ ] `VITE_API_PRICING` — Pricing API URL (with `https://`)
 - [ ] `VITE_API_FENIX` — Fenix API URL (with `https://`)
 - [ ] `VITE_NODE_ENV` — `staging` or `production`
 

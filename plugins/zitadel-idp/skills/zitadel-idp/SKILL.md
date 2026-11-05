@@ -1,13 +1,13 @@
 ---
 name: zitadel-idp
 metadata:
-  version: 0.20.2
+  version: 0.20.3
 description: "Self-hosted Zitadel v4 OIDC field guide — a numbered quirk catalogue, working docker-compose and an idempotent TypeScript bootstrap. High-friction traps: FirstInstance env placement, JWT/JWKS over self-signed HTTPS, `--tlsMode external` and the console's mixed-content `Failed to fetch`, v2.66→v4, API v1→v2, silent-renew, 401 storms, UI language from the `locale` claim. Triggers — zitadel, oidc self-hosted, JWKS, masterkey, v2.66→v4, tlsMode external, pre-cutover check, locale claim."
 ---
 
 # Zitadel IdP — Field Guide
 
-This skill captures patterns and pitfalls discovered while integrating Zitadel `v4.x` self-hosted as the IdP for the JRC Brasil ERP. It exists to prevent every new project from re-discovering the same gotchas the hard way.
+This skill captures patterns and pitfalls discovered while integrating Zitadel `v4.x` self-hosted as the IdP for a company ERP. It exists to prevent every new project from re-discovering the same gotchas the hard way.
 
 **Scope**: Zitadel `v4.x` (latest as of 2026-04) is the default target. v3 differs in a few places (notably no `OrganizationService.AddOrganization` v2 endpoint) — the references flag breaking changes when relevant. **v2.66.x** is also covered for one specific edge case (Quirk 24, masterkey via flag) because legacy stacks still run it; the rest of the skill remains v4-first.
 

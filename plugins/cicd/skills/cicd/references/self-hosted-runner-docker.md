@@ -1,6 +1,6 @@
 # Self-Hosted Runner — versão dockerizada (myoung34/github-runner)
 
-Esta reference cobre o caso **runner em container** com a imagem `myoung34/github-runner` (FR-022a, R-002 nos specs JRC). Para runner via systemd no host, ver `troubleshooting-shared.md §"Runner Offline"`.
+Esta reference cobre o caso **runner em container** com a imagem `myoung34/github-runner` (FR-022a, R-002 nas specs do projeto). Para runner via systemd no host, ver `troubleshooting-shared.md §"Runner Offline"`.
 
 A imagem `myoung34/github-runner` é a fonte mais usada para conteinerizar o runner do GitHub Actions: binário oficial empacotado em Ubuntu, lê config via env vars, suporta JIT/ephemeral, integra com `docker.sock` mount para evitar docker-in-docker. Mas existem 6 pegadinhas que mordem na primeira tentativa de envelopá-la em um Dockerfile customizado para integrar com seu compose de produção.
 
@@ -58,7 +58,7 @@ ENTRYPOINT ["/entrypoint.sh"]
 CMD        ["./bin/Runner.Listener", "run", "--startuptype", "service"]
 ```
 
-O `/entrypoint.sh` upstream termina com `exec "$@"` — ou seja, espera rodar o `CMD` herdado. Quando seu Dockerfile customizado faz `ENTRYPOINT ["/usr/local/bin/jrc-entrypoint.sh"]`, **o CMD herdado é zerado** (Docker spec: definir ENTRYPOINT reseta CMD se o CMD vinha da imagem base). Resultado: seu entrypoint chama `exec /entrypoint.sh` (sem args), upstream chama `"$@"` que é vazio, processo sai com 0.
+O `/entrypoint.sh` upstream termina com `exec "$@"` — ou seja, espera rodar o `CMD` herdado. Quando seu Dockerfile customizado faz `ENTRYPOINT ["/usr/local/bin/acme-entrypoint.sh"]`, **o CMD herdado é zerado** (Docker spec: definir ENTRYPOINT reseta CMD se o CMD vinha da imagem base). Resultado: seu entrypoint chama `exec /entrypoint.sh` (sem args), upstream chama `"$@"` que é vazio, processo sai com 0.
 
 **Fix**: restaurar o CMD explicitamente.
 
@@ -67,7 +67,7 @@ FROM myoung34/github-runner:2.319.1-ubuntu-jammy@sha256:...
 
 # ... seu RUN install + COPY entrypoint ...
 
-ENTRYPOINT ["/usr/local/bin/jrc-entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/acme-entrypoint.sh"]
 
 # Restaurar CMD da imagem base — definir ENTRYPOINT zera CMD herdado.
 CMD ["./bin/Runner.Listener", "run", "--startuptype", "service"]
@@ -101,7 +101,7 @@ Não lê `RUNNER_LABELS`. É um nome confuso porque outras envs do upstream usam
 ```yaml
 runner:
   environment:
-    RUNNER_NAME: jrc-prod-01
+    RUNNER_NAME: acme-prod-01
     LABELS: production,self-hosted,linux,x64    # ← LABELS, não RUNNER_LABELS
     REPO_URL: https://github.com/<org>/<repo>
     RUNNER_TOKEN: ${RUNNER_REGISTRATION_TOKEN}
@@ -269,7 +269,7 @@ Ambos passos são necessários: a próxima execução do CD step "Gerar .env de 
 
 ```bash
 REPO=<org>/<repo>
-RUNNER_NAME=jrc-prod-01
+RUNNER_NAME=acme-prod-01
 
 EXISTING=$(gh api "/repos/${REPO}/actions/runners" \
   --jq ".runners[] | select(.name==\"${RUNNER_NAME}\") | .id")
@@ -306,10 +306,10 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin \
     && rm -rf /var/lib/apt/lists/*
 
-COPY entrypoint.sh /usr/local/bin/jrc-entrypoint.sh
-RUN chmod +x /usr/local/bin/jrc-entrypoint.sh
+COPY entrypoint.sh /usr/local/bin/acme-entrypoint.sh
+RUN chmod +x /usr/local/bin/acme-entrypoint.sh
 
-ENTRYPOINT ["/usr/local/bin/jrc-entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/acme-entrypoint.sh"]
 
 # CRÍTICO: definir ENTRYPOINT zera CMD herdado.
 # Sem isso, runner configura → exit 0 → restart loop.
@@ -386,7 +386,7 @@ runner:
     - "/var/run/docker.sock:/var/run/docker.sock"
     - "runner-work:/runner/_work"
   environment:
-    RUNNER_NAME: jrc-prod-01
+    RUNNER_NAME: acme-prod-01
     LABELS: production,self-hosted,linux,x64       # NÃO RUNNER_LABELS
     REPO_URL: https://github.com/<org>/<repo>
     RUNNER_TOKEN: ${RUNNER_REGISTRATION_TOKEN}
@@ -402,7 +402,7 @@ Quando algo deu errado e você precisa re-registrar do zero:
 
 ```bash
 REPO=<org>/<repo>
-RUNNER_NAME=jrc-prod-01
+RUNNER_NAME=acme-prod-01
 COMPOSE=infra/docker/docker-compose.prod.yml
 
 # 1. Apagar runner fantasma no GitHub (se existir)
@@ -419,7 +419,7 @@ mv infra/docker/.env.tmp infra/docker/.env
 
 # 4. Down + drop volume + rebuild + up
 docker compose -f "$COMPOSE" down runner
-docker volume rm jrc-prod_runner-work 2>/dev/null || true
+docker volume rm acme-prod_runner-work 2>/dev/null || true
 docker compose -f "$COMPOSE" build --no-cache runner
 docker compose -f "$COMPOSE" up -d runner
 
@@ -473,7 +473,7 @@ docker logs --tail 30 gh-runner 2>&1 | grep -E 'Http response|Not Found|expired|
 ```bash
 REPO=<org>/<repo>
 COMPOSE_HOST=/tmp/cd-bootstrap/docker     # diretório de bring-up no host
-PROJECT=<seu-compose-project>             # ex.: jrc-prod, deve bater com o do CD
+PROJECT=<seu-compose-project>             # ex.: acme-prod, deve bater com o do CD
 
 # (a) Token novo + ATUALIZAR a GH secret com o MESMO valor que vai pro .env local.
 # Sem esse match, próximo `compose up` no deploy detecta diff → recria runner
@@ -636,7 +636,7 @@ ex.: você quer o runner FORA do compose do produto, ou um token a quente por de
 
    Cada deploy gera token novo. `compose up` SEMPRE vai detectar diff e recriar o `runner` service — o que mata o job em execução. Mitigação: `docker compose up -d --no-recreate runner` no comando do deploy, ou mover o `up` do runner pra **outro job** que roda em `ubuntu-latest` (sem self-hosted) e SSH no host.
 
-2. **Migrar pro compose centralizado de runners com PAT** (modelo `myoung34` puro). Em `/home/<user>/runners/infra/runners/docker-compose.yml`, declarar service com `ACCESS_TOKEN: ${ACCESS_TOKEN}` (PAT) em vez de `RUNNER_TOKEN`. A imagem regenera registration tokens dinamicamente. Não há mais `runner` service no compose do produto — runner é infra do host, não da aplicação. CD perde a capacidade de rebuild do runner via deploy, mas ganha estabilidade de semanas (e elimina o secret expirável). É o modelo que outros 4+ runners JRC usam estavelmente.
+2. **Migrar pro compose centralizado de runners com PAT** (modelo `myoung34` puro). Em `/home/<user>/runners/infra/runners/docker-compose.yml`, declarar service com `ACCESS_TOKEN: ${ACCESS_TOKEN}` (PAT) em vez de `RUNNER_TOKEN`. A imagem regenera registration tokens dinamicamente. Não há mais `runner` service no compose do produto — runner é infra do host, não da aplicação. CD perde a capacidade de rebuild do runner via deploy, mas ganha estabilidade de semanas (e elimina o secret expirável). É o modelo que outros 4+ runners usam estavelmente.
 
 Pra rodar uma análise comparativa antes de decidir:
 
@@ -791,8 +791,8 @@ pull` não muda nada — é preciso bumpar o `FROM` e reconstruir (§8a).
 coisas que o caso de 18/09 não mostrou:
 
 - **Dois desempates baratos antes do `_diag`.** (a) Um **vizinho no mesmo host, na mesma versão**,
-  pode anunciar o que o seu esconde: o `erp-api-runner` registrou em claro `Runner version v2.335.1
-  is deprecated and cannot receive messages` enquanto o `dsr-frontend-runner`, idêntico, parava mudo
+  pode anunciar o que o seu esconde: o `core-api-runner` registrou em claro `Runner version v2.335.1
+  is deprecated and cannot receive messages` enquanto o `report-frontend-runner`, idêntico, parava mudo
   em `Listening for Jobs`. Leia `docker logs --tail 3` de **todos** os runners do host. (b) O
   `SelfUpdate-*.log` do dia termina em `Waiting for Runner.Listener (12) to complete` e nada depois;
   no caso medido havia um por dia, sempre às 01:58, desde 24/07 — o swap morrendo no restart do
@@ -1186,7 +1186,7 @@ docker exec <runner-ctr> sh -c 'test -r <host-path> && echo LEGIVEL || echo AUSE
 docker inspect -f '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{println}}{{end}}' <runner-ctr>
 ```
 
-Medido em 2026-09-18 (IdP JRC, primeiro deploy de staging): pré-condição
+Medido em 2026-09-18 (um IdP real, primeiro deploy de staging): pré-condição
 reprovando com o `.env` intacto no host, `0600 root`, quatro variáveis com
 valor — e as únicas montagens do runner eram o socket e o volume de trabalho.
 

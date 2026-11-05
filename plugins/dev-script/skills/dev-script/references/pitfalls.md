@@ -1,6 +1,6 @@
 # Pitfalls — the recurring traps to encode in every script
 
-These are the recurring traps in JRC stacks. The dev script must protect against them — either by setting things up correctly the first time, or by surfacing the failure mode loudly when conditions change.
+These are the recurring traps in real stacks. The dev script must protect against them — either by setting things up correctly the first time, or by surfacing the failure mode loudly when conditions change.
 
 ## Sumário
 

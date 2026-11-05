@@ -2,6 +2,14 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.39.2] — 2026-11-04
+
+### Dados da empresa saem do texto
+
+Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [2.39.1] — 2026-10-22
 
 - Reintegra a distribuição Codex sobre CICD 2.39.0, preservando as correções da main e o agrupamento existente.
@@ -9,7 +17,7 @@ Formato: [Semantic Versioning](https://semver.org/)
 ## 2026-10-22 — A poda vai para antes do build, e o `builder prune --all` não devolve disco — bump 2.38.0 → [2.39.0]
 
 **Por quê:** a lição 118 deixou o conserto como direção: medir antes de promover e, sem folga, rodar
-a mesma poda antes. No mesmo dia o `lighthouse_project` o construiu (PR #125). O `deploy.sh` passou a
+a mesma poda antes. No mesmo dia o `portal_app` o construiu (PR #125). O `deploy.sh` passou a
 podar antes do build e no fim, retendo por nome a `sha-*` no ar e a de rollback, e a recusar o build
 abaixo do tamanho de um build frio medido (2,27 GB, num builder isolado). Na revisão, o Codex pediu
 `--all` no prune do ramo sem folga, citando a doc do Docker ("all unused build cache, not just
@@ -39,7 +47,7 @@ Distribuição individual no catálogo Codex após instalação isolada, descobe
 
 ## 2026-10-22 — Apagar imagem não libera disco num host que constrói as próprias imagens — bump 2.37.1 → [2.38.0]
 
-**Por quê:** antes da promoção da 0.4.3 do `lighthouse_project`, o host de staging (que também serve a
+**Por quê:** antes da promoção da 0.4.3 do `portal_app`, o host de staging (que também serve a
 produção de outro sistema) estava em 97% de disco, com 7,1 GB livres, e o deploy por agente constrói
 as duas imagens ali. O `docker rmi` de 13 imagens antigas do projeto saiu `ok` em todas, e o `df` não
 mudou. O `docker system df` mostrou o porquê: Images caiu 1,79 GB e Build Cache subiu os mesmos
@@ -66,9 +74,9 @@ minutos sem terminar.
 **Por quê:** desde a primeira versão (`822a7ac`, 2026-03-13) a "Workflow Overview" dizia que
 "both projects" deployam staging por push na `develop` e produção por tag `v*`, e as tabelas
 "Pipeline Files" e o bootstrap do `checklist-shared.md` repetiam isso como regra. Medido em
-2026-10-15 numa promoção real: o `validade_bateria_estoque` deploya staging por push na `staging` e
+2026-10-15 numa promoção real: o `inventory_app` deploya staging por push na `staging` e
 produção por push na `main`, sem tag (`git show origin/develop:.github/workflows/cd-staging.yml`), e
-o `lighthouse_project` não roda Actions nenhum (um agente no host deploya). Um agente que confiasse
+o `portal_app` não roda Actions nenhum (um agente no host deploya). Um agente que confiasse
 na tabela empurraria a `develop` esperando staging e não deployaria nada, ou, lendo a `main` como
 "só sincronizada", deployaria produção. É o acidente que a skill `deploy:staging` existe para evitar.
 
@@ -85,7 +93,7 @@ A lição 28 do `lessons-learned.md` é histórica e não mudou.
 
 ## 2026-10-13 — Deploy sem Actions por agente no host: rollback por `trap ERR`, sensor de texto, healthcheck de laço e o buildx implícito — bump 2.36.0 → [2.37.0]
 
-**Por quê:** o `lighthouse_project` trocou o runner do Actions por um agente de deploy no host
+**Por quê:** o `portal_app` trocou o runner do Actions por um agente de deploy no host
 (container que observa a branch, roda o gate e o deploy). Uma revisão independente da branch e o
 1º deploy pelo agente acharam oito lições que a skill não tinha, todas medidas em 2026-10-13: o
 rollback por `trap ERR` não disparava quando a prova do papel reprovava por `exit` (a versão nova
@@ -543,11 +551,9 @@ Description inalterada (494/500 chars — sem folga para mais um gatilho, e
 Prompt audit (`/claude-api prompt-audit`, modelo-alvo Claude Fable 5.1); relatório completo fora do repo. Nenhuma lição muda de conteúdo técnico — muda o que a skill diz a um modelo que revisa
 um repositório que não é o de origem.
 
-- **Nomes de um projeto apresentados como regra geral** (Grupo 2 do guia): `api.dsr`,
-  `service_report_web`, `infra/dsr_web/…`, `ghcr.io/jrc-brasil/digital_service_report_frontend`,
-  `JRC-Brasil/validade_bateria_estoque`, `orgs/JRC-Brasil/packages` viram placeholders
-  (`<web-container>`, `infra/<web>/`, `<org>/<repo>`) nos checklists, no troubleshooting e no
-  runbook do runner.
+- **Nomes de um projeto apresentados como regra geral** (Grupo 2 do guia): hosts, containers, imagens
+  e repositórios da origem viram placeholders (`<web-container>`, `infra/<web>/`, `<org>/<repo>`) nos
+  checklists, no troubleshooting e no runbook do runner.
 - **Versão fixa do runner** (`2.321.0`) no checklist: o GitHub recusa jobs de binário deprecado
   (§8 do runbook), então a versão fixa apodrece num runner que nunca pega trabalho — passa a
   resolver a release atual pela API, com a razão ao lado.
@@ -596,7 +602,7 @@ um repositório que não é o de origem.
 
 **O quê:** nova reference `references/ci-cost-minutes.md` (modelo de custo, como medir, alavancas por retorno sobre risco, e o que NÃO economiza) + linha na Quick Troubleshooting + linha na routing table + parágrafo de trigger + lições 68–70 + lição 57 estendida (`paths-ignore` vale também em `pull_request`) + 6 keywords espelhadas em SKILL.md/plugin.json/marketplace.json.
 
-**Por quê:** num repo **privado** no limite da cota (`digital_service_report_api`), a skill não tinha o que dizer — ela cobria pipeline quebrado, não pipeline caro. A medição expôs duas causas estruturais que nenhuma lição existente nomeava. **(1) O custo é por JOB arredondado para cima ao minuto**, não por segundo: um `Lint` de 51s custa um minuto cheio, e o instinto de paralelizar `lint`/`test` em dois jobs **adiciona** um minuto por execução — otimizar a duração de um job que já roda em menos de 1 min não economiza nada. **(2) O maior desperdício era estrutural**: `build-and-push` e o gate de CI queimando minutos em `ubuntu-latest` enquanto os runners self-hosted, que a org já paga, rodavam só o `deploy` (47–103s/dia). A skill só tratava self-hosted como *fonte de falha* (§7–§11); como *alavanca de custo* não aparecia em lugar nenhum. Medido: ~11 min por mudança que chega a produção, com o mesmo SHA testado **três vezes** (PR → push `develop` → tag).
+**Por quê:** num repo **privado** no limite da cota (`report_api`), a skill não tinha o que dizer — ela cobria pipeline quebrado, não pipeline caro. A medição expôs duas causas estruturais que nenhuma lição existente nomeava. **(1) O custo é por JOB arredondado para cima ao minuto**, não por segundo: um `Lint` de 51s custa um minuto cheio, e o instinto de paralelizar `lint`/`test` em dois jobs **adiciona** um minuto por execução — otimizar a duração de um job que já roda em menos de 1 min não economiza nada. **(2) O maior desperdício era estrutural**: `build-and-push` e o gate de CI queimando minutos em `ubuntu-latest` enquanto os runners self-hosted, que a org já paga, rodavam só o `deploy` (47–103s/dia). A skill só tratava self-hosted como *fonte de falha* (§7–§11); como *alavanca de custo* não aparecia em lugar nenhum. Medido: ~11 min por mudança que chega a produção, com o mesmo SHA testado **três vezes** (PR → push `develop` → tag).
 
 Duas armadilhas de medição que custaram tempo e viraram lição própria: **`/actions/runs/<id>/timing` reportou `billable.UBUNTU.total_ms: 0`** com `run_duration_ms: 322000` e `jobs: 2` — quem confia nesse número conclui "não gastamos nada" e para de investigar; o caminho confiável é `/actions/runs/<id>/jobs` separando por **`runner_group_name`** (`GitHub Actions`=cobrado, `Default`=grátis). E **`gh api /repos/.../actions/runners` lista só runners de REPOSITÓRIO** — o de produção era de organização e não aparecia, o que me levou a afirmar que ele não estava registrado quando havia um deploy de 103s comprovando o contrário; lista vazia não prova ausência, confirme pelo `runner_name` de um deploy que concluiu.
 
@@ -767,7 +773,7 @@ leu. E as duas versões estouravam o cap de 500 do `CLAUDE.md`.
   deploy `queued` semanas depois"** (preflight gate + watchdog, com YAML) + Lição 51
   (+ linha no Quick Troubleshooting e 2 linhas na tabela "Sintomas → seção"; a nota de
   trigger do reference passou a citar §11). Motivação: incidente no
-  `digital_service_report_frontend` (staging) — o deploy ficou `queued` por **~5
+  `report_frontend` (staging) — o deploy ficou `queued` por **~5
   semanas** sem ninguém perceber. Um job `deploy` em `runs-on: [self-hosted, <label>]`
   fica em fila **silenciosamente** quando o runner está offline: sem ❌, sem e-mail, e
   o **`timeout-minutes` não conta tempo em fila** (só começa após um runner pegar o
@@ -799,7 +805,7 @@ leu. E as duas versões estouravam o cap de 500 do `CLAUDE.md`.
 
 - **`references/self-hosted-runner-docker.md` §10 — "Falhas EMPILHADAS: §9 → PAT 401
   → §8"** + Lição 50 (+ linhas no Quick Troubleshooting e na tabela "Sintomas →
-  seção"). Motivação: incidente no `erp_api` (staging) — um único deploy `queued`
+  seção"). Motivação: incidente no `core_api` (staging) — um único deploy `queued`
   exigiu resolver as TRÊS falhas de runner **em sequência**, cada fix desmascarando a
   próxima:
   1. §9 (config morta reusada → `registration has been deleted`) → `docker volume rm`
@@ -859,7 +865,7 @@ leu. E as duas versões estouravam o cap de 500 do `CLAUDE.md`.
 
 - **`references/self-hosted-runner-docker.md` §7 — "Migração ACCESS_TOKEN in-place"**
   (novo recipe, o fix DURÁVEL). Motivação: o §7 (chicken-and-egg do registration
-  token estático) **recorreu** no `sales_quote` ("não é a primeira vez") porque o
+  token estático) **recorreu** no `quote_app` ("não é a primeira vez") porque o
   skill documentava a migração ACCESS_TOKEN só como opção teórica ("compose
   centralizado"), enquanto o recovery que se usa no incidente é só rotação de token
   — que **não é cura**. Agora há recipe in-place completo: mantém o `runner` no
@@ -891,7 +897,7 @@ leu. E as duas versões estouravam o cap de 500 do `CLAUDE.md`.
 
 Fechar o loop de recorrência: transformar a migração ACCESS_TOKEN de "opção
 mencionada" em recipe executável e marcar explicitamente que o recovery e o
-toggling de `EPHEMERAL` são paliativos. Provado no staging do `sales_quote`
+toggling de `EPHEMERAL` são paliativos. Provado no staging do `quote_app`
 (2026-06-15): cutover + `docker restart` re-registrando sem 404.
 
 ## [2.14.0] - 2026-06-13
@@ -899,7 +905,7 @@ toggling de `EPHEMERAL` são paliativos. Provado no staging do `sales_quote`
 ### Adicionado
 
 - **Lessons Learned 41–45 (`SKILL.md`)** — 5 lições do hardening pós code-review da
-  feature 017 do `sales_quote` (continuação das 37–40), ausentes da skill:
+  feature 017 do `quote_app` (continuação das 37–40), ausentes da skill:
   - **41 `[S]`** — wrapper como PID 1 no container (`npx tsx …`/`npm start`) não
     repassa SIGTERM → SIGKILL após o grace period, sem shutdown gracioso. Fix:
     `init: true` no compose (ou `tini` no ENTRYPOINT). Cousin de runtime da lesson 37.
@@ -941,7 +947,7 @@ consumidores existentes.
 ### Adicionado
 
 - **Lessons Learned 37–40 (`SKILL.md`)** — 4 armadilhas de monorepo npm-workspaces
-  descobertas no `sales_quote` (feature 017), ausentes da skill:
+  descobertas no `quote_app` (feature 017), ausentes da skill:
   - **37 `[B]`** — backend roda via `tsx`, não `node dist/`, quando os workspaces shared
     exportam TS source (`main: ./src/index.ts`): o `dist` compilado morre com
     `ERR_MODULE_NOT_FOUND`/`ERR_UNKNOWN_FILE_EXTENSION` no `.ts` do sibling. Não repontar
@@ -1017,9 +1023,9 @@ O pattern generaliza: qualquer self-hosted runner em VPN, cloud overlay, ou rede
 
 ### Motivação
 
-Cutover prod do `validade_bateria_estoque` (2026-05-08): após o destrancar do CD via §7 chicken-and-egg recovery, o primeiro deploy bem-sucedido em ~19h destrancou também a visibilidade dos logs do step `idp-bootstrap` — que vinham falhando soft há semanas com `ENOENT '/app/infra/docker/zitadel/local/bootstrap.json'`. O bug existia desde a feature 005 mas o yellow warning passava despercebido em meio aos warnings legítimos de deprecation (Node.js 20 actions deprecated em todos os jobs). Análise do código revelou o pattern: `bootstrap-zitadel.ts:1099` resolve `outFile = resolve(__dirname, '../../../infra/docker/zitadel/local/bootstrap.json')` — em dev o source tree mounted tem o path, em prod o Dockerfile só copia `packages/idp/` então o path simplesmente não existe na imagem. Todas as operações Zitadel (org/project/app/roles/user/grants/label-policy/custom-texts) completavam ANTES do writeFile, então cada deploy aplicava as mudanças no IdP corretamente — só que falhava cosmeticamente no fim.
+Cutover prod do `inventory_app` (2026-05-08): após o destrancar do CD via §7 chicken-and-egg recovery, o primeiro deploy bem-sucedido em ~19h destrancou também a visibilidade dos logs do step `idp-bootstrap` — que vinham falhando soft há semanas com `ENOENT '/app/infra/docker/zitadel/local/bootstrap.json'`. O bug existia desde a feature 005 mas o yellow warning passava despercebido em meio aos warnings legítimos de deprecation (Node.js 20 actions deprecated em todos os jobs). Análise do código revelou o pattern: `bootstrap-zitadel.ts:1099` resolve `outFile = resolve(__dirname, '../../../infra/docker/zitadel/local/bootstrap.json')` — em dev o source tree mounted tem o path, em prod o Dockerfile só copia `packages/idp/` então o path simplesmente não existe na imagem. Todas as operações Zitadel (org/project/app/roles/user/grants/label-policy/custom-texts) completavam ANTES do writeFile, então cada deploy aplicava as mudanças no IdP corretamente — só que falhava cosmeticamente no fim.
 
-PR #10 do `validade_bateria_estoque` aplicou o fix canônico (try/catch best-effort + console.log dumpa o JSON). A lição generaliza além de bootstrap-de-IdP: qualquer script bake'd em container que escreve em path resolvido upward de `__dirname` cai nesse mesmo gotcha — `release-notes-emit`, `migration-summary`, `seed-data-export`, etc. A skill antes não codificava esse pattern, e o trap do soft-failure persistente (yellow warnings que viram ruído ambiente) é um meta-padrão operacional que vale destacar — o `::warning::` é o tool certo pra steps idempotentes, mas se acende em todo deploy o custo operacional já foi pago e o fix deve ser finalizado, não normalizado.
+PR #10 do `inventory_app` aplicou o fix canônico (try/catch best-effort + console.log dumpa o JSON). A lição generaliza além de bootstrap-de-IdP: qualquer script bake'd em container que escreve em path resolvido upward de `__dirname` cai nesse mesmo gotcha — `release-notes-emit`, `migration-summary`, `seed-data-export`, etc. A skill antes não codificava esse pattern, e o trap do soft-failure persistente (yellow warnings que viram ruído ambiente) é um meta-padrão operacional que vale destacar — o `::warning::` é o tool certo pra steps idempotentes, mas se acende em todo deploy o custo operacional já foi pago e o fix deve ser finalizado, não normalizado.
 
 ---
 
@@ -1041,9 +1047,9 @@ PR #10 do `validade_bateria_estoque` aplicou o fix canônico (try/catch best-eff
 
 ### Motivação
 
-Cutover prod do `validade_bateria_estoque` (2026-05-07): após push do fix `useRefreshToken` no frontend (commit `d09ebe0`), CD travou. Diagnóstico inicial sugeriu seguir o caminho canônico ("self-hosted runner offline → `systemctl status`") — mas o runner é conteinerizado via `myoung34/github-runner`, então systemd não tem nada relevante. O `gh-runner` estava em `Restarting (1) 18 seconds ago`, com `docker logs` revelando `404 Not Found` em `POST /actions/runner-registration` ciclando a cada ~30s. Token de registro tinha expirado horas antes (provavelmente após algum evento de re-registro do ephemeral runner que não conseguimos identificar com certeza); secret no GH ficou estática desde o setup inicial.
+Cutover prod do `inventory_app` (2026-05-07): após push do fix `useRefreshToken` no frontend (commit `d09ebe0`), CD travou. Diagnóstico inicial sugeriu seguir o caminho canônico ("self-hosted runner offline → `systemctl status`") — mas o runner é conteinerizado via `myoung34/github-runner`, então systemd não tem nada relevante. O `gh-runner` estava em `Restarting (1) 18 seconds ago`, com `docker logs` revelando `404 Not Found` em `POST /actions/runner-registration` ciclando a cada ~30s. Token de registro tinha expirado horas antes (provavelmente após algum evento de re-registro do ephemeral runner que não conseguimos identificar com certeza); secret no GH ficou estática desde o setup inicial.
 
-Recovery foi não-óbvia em 2 frentes que valem ser codificadas: (1) `docker run` direto com token fresco trouxe o runner online E destravou o pickup da queue, mas o **próximo `docker compose up` do deploy bateu em "Container gh-runner Conflict"** porque meu container manual não tinha as labels do compose project `jrc-prod`; (2) bring-up via `docker compose -p jrc-prod -f .../docker-compose.prod.yml --env-file .env up -d --build --no-deps runner` resolveu, MAS só funciona se a GH secret também for atualizada com o mesmo valor — caso contrário o próximo deploy detecta diff e recria o runner mid-job.
+Recovery foi não-óbvia em 2 frentes que valem ser codificadas: (1) `docker run` direto com token fresco trouxe o runner online E destravou o pickup da queue, mas o **próximo `docker compose up` do deploy bateu em "Container gh-runner Conflict"** porque meu container manual não tinha as labels do compose project `acme-prod`; (2) bring-up via `docker compose -p acme-prod -f .../docker-compose.prod.yml --env-file .env up -d --build --no-deps runner` resolveu, MAS só funciona se a GH secret também for atualizada com o mesmo valor — caso contrário o próximo deploy detecta diff e recria o runner mid-job.
 
 A skill antes documentava (em §5) que registration tokens expiram em 1h, mas não articulava o equilíbrio sistêmico do uso como secret estática nem o cenário deadlock-em-prod com runbook de recovery. Operador caía em loop: tentava regenerar token localmente seguindo §5, mas o próximo deploy do CD ainda usava o secret velho do GH e recriava o runner. Documentar essa armadilha + recovery 3-passos foi a lição justificativa do bump minor — antes a skill levava a vários round-trips de tentativa-e-erro, agora cobre o cenário em uma seção dedicada.
 
@@ -1067,9 +1073,9 @@ A skill antes documentava (em §5) que registration tokens expiram em 1h, mas n�
 
 ### Motivação
 
-Cutover prod do `validade_bateria_estoque` (feature 006, 2026-05-07): após declarar a feature fechada, usuários começaram a ver "Não foi possível carregar os indicadores: Token inválido" na SPA, em ~50% das chamadas ao backend. Diagnóstico inicial seguiu hipóteses naturais (aud claim mismatch, JWKS rotation, ZitadelClaimsMapper rejeitando token) — todas falsas. JWT decodificado batia perfeitamente: `aud` continha o projectId UUID correto, `iss` correto, `exp` no futuro, signature OK; replay externo via curl retornava 200 consistentemente.
+Cutover prod do `inventory_app` (feature 006, 2026-05-07): após declarar a feature fechada, usuários começaram a ver "Não foi possível carregar os indicadores: Token inválido" na SPA, em ~50% das chamadas ao backend. Diagnóstico inicial seguiu hipóteses naturais (aud claim mismatch, JWKS rotation, ZitadelClaimsMapper rejeitando token) — todas falsas. JWT decodificado batia perfeitamente: `aud` continha o projectId UUID correto, `iss` correto, `exp` no futuro, signature OK; replay externo via curl retornava 200 consistentemente.
 
-A descoberta veio de hammering: 20 hits paralelos com o mesmo token retornaram 7×200 + 3×401, depois 14×200 + 6×401 — split round-robin. Inspeção do upstream do nginx-proxy revelou DOIS containers no pool de `erp.api.battery.jrcbrasil.com`: o `erp-backend` saudável e um órfão `jrc-prod-backend-run-3ed3a2e9cdb9` (sha-0cae6ba, 41h vivo desde uma execução de `compose run --rm backend npx prisma migrate deploy` em CD anterior cujo `--rm` não disparou). O órfão tinha `AUTH_AUDIENCE=PLACEHOLDER_BEFORE_FIRST_BOOTSTRAP` (default antes do primeiro bootstrap), rejeitando 100% dos tokens.
+A descoberta veio de hammering: 20 hits paralelos com o mesmo token retornaram 7×200 + 3×401, depois 14×200 + 6×401 — split round-robin. Inspeção do upstream do nginx-proxy revelou DOIS containers no pool de `api.acme.example`: o `erp-backend` saudável e um órfão `acme-prod-backend-run-3ed3a2e9cdb9` (sha-0cae6ba, 41h vivo desde uma execução de `compose run --rm backend npx prisma migrate deploy` em CD anterior cujo `--rm` não disparou). O órfão tinha `AUTH_AUDIENCE=PLACEHOLDER_BEFORE_FIRST_BOOTSTRAP` (default antes do primeiro bootstrap), rejeitando 100% dos tokens.
 
 `docker rm -f` do órfão resolveu na hora; nginx-proxy regenerou config automaticamente. Fix permanente foi adicionado ao CD (`-e VIRTUAL_HOST= -e LETSENCRYPT_HOST=` no migration step + step pre-rolling de cleanup de `*-run-*`).
 
@@ -1096,11 +1102,11 @@ A pegadinha é genérica — qualquer setup CD que use `nginx-proxy` ou Traefik 
 
 ### Motivação
 
-Feature 005-production-deploy do `validade_bateria_estoque`: bring-up do self-hosted runner conteinerizado em VPS de produção JRC encontrou os 6 gotchas em sequência (algumas combinadas em loops mascarados). Sessão gastou ~1h investigando o "exit 0 sem mensagem de erro" antes de inspecionar o entrypoint upstream e descobrir o `exec "$@"` esperando o CMD herdado. Outras 30min em `Cannot configure the runner` antes de mapear que `restart != recreate` em Docker e `.runner` persiste no FS layer.
+Feature 005-production-deploy do `inventory_app`: bring-up do self-hosted runner conteinerizado em VPS de produção encontrou os 6 gotchas em sequência (algumas combinadas em loops mascarados). Sessão gastou ~1h investigando o "exit 0 sem mensagem de erro" antes de inspecionar o entrypoint upstream e descobrir o `exec "$@"` esperando o CMD herdado. Outras 30min em `Cannot configure the runner` antes de mapear que `restart != recreate` em Docker e `.runner` persiste no FS layer.
 
-Em paralelo, transferRepo `j0ruge/...` → `JRC-Brasil/...` revelou a regra deploy-key-per-repo, e múltiplas regenerações do `.env` durante o ciclo de debug expuseram o bug do leading-whitespace + sed silenciando.
+Em paralelo, transferRepo `j0ruge/...` → `acme/...` revelou a regra deploy-key-per-repo, e múltiplas regenerações do `.env` durante o ciclo de debug expuseram o bug do leading-whitespace + sed silenciando.
 
-A skill antes só cobria runner via systemd no host (caso clássico) — runner conteinerizado é o caminho recomendado pelos specs JRC desde 005 (FR-022a, R-002 socket-mount), então a lacuna era de cobertura. Progressive disclosure: o cluster grande (6 gotchas + template completo) virou ref própria; os 2 gotchas curtos (deploy key, .env whitespace) entraram em `troubleshooting-shared.md` sem inflar.
+A skill antes só cobria runner via systemd no host (caso clássico) — runner conteinerizado é o caminho recomendado pelas specs do projeto desde 005 (FR-022a, R-002 socket-mount), então a lacuna era de cobertura. Progressive disclosure: o cluster grande (6 gotchas + template completo) virou ref própria; os 2 gotchas curtos (deploy key, .env whitespace) entraram em `troubleshooting-shared.md` sem inflar.
 
 ---
 
@@ -1118,7 +1124,7 @@ A skill antes só cobria runner via systemd no host (caso clássico) — runner 
 
 ### Motivação
 
-PR #6 do `validade_bateria_estoque`, pós-fix do v2.4.0 (`Missing script: "exec"`), revelou um bug previamente mascarado: `Cannot find package 'jsdom' imported from /node_modules/vitest/...`. Causa não era jsdom faltando — `packages/frontend/package.json` declarava `jsdom@^20.0.3`. O lockfile instalava em `packages/frontend/node_modules/jsdom`, não em `/node_modules/jsdom`, porque jsdom@20 trazia subtree de deps em versões antigas (`agent-base@6`, `cssstyle@2`, `tough-cookie@4`) conflitando com a raiz. vitest hoisted na raiz fazia `import 'jsdom'` partindo de `/node_modules/vitest/...`, subia a árvore via Node ESM resolution, não achava — porque a resolução nunca olha em `packages/<ws>/node_modules/`.
+PR #6 do `inventory_app`, pós-fix do v2.4.0 (`Missing script: "exec"`), revelou um bug previamente mascarado: `Cannot find package 'jsdom' imported from /node_modules/vitest/...`. Causa não era jsdom faltando — `packages/frontend/package.json` declarava `jsdom@^20.0.3`. O lockfile instalava em `packages/frontend/node_modules/jsdom`, não em `/node_modules/jsdom`, porque jsdom@20 trazia subtree de deps em versões antigas (`agent-base@6`, `cssstyle@2`, `tough-cookie@4`) conflitando com a raiz. vitest hoisted na raiz fazia `import 'jsdom'` partindo de `/node_modules/vitest/...`, subia a árvore via Node ESM resolution, não achava — porque a resolução nunca olha em `packages/<ws>/node_modules/`.
 
 Solução canônica: trocar `jsdom` por `happy-dom`. Subtree leve hoista limpo + happy-dom usa `AbortController` nativo do Node, resolvendo de quebra um segundo bug latente que jsdom escondia (msw v2 + undici nativo validam `signal instanceof AbortSignal` contra a global do Node, não do jsdom). Fix único, dois bugs resolvidos: `npm i -D happy-dom -w <ws>`, `environment: 'happy-dom'` em `vitest.config.ts`. Nesta sessão: 57 pacotes removidos, 5 adicionados, 118/118 testes passando, CI verde em ~1m30s.
 
@@ -1139,7 +1145,7 @@ Lição cascade multi-nível: v2.4.0 documentava `npm exec` mascarando 44 testes
 
 ### Motivação
 
-PR #6 (`feat(005-production-deploy)`) tinha **8 jobs vermelhos** no CI. Investigando: 6 dos 8 vinham de uma única causa — sintaxe `npm run -w <ws> exec -- <cmd>` em 3 workflows (`ci.yml`, `cd-production.yml`, `frontend-ci.yml`). `npm run exec` busca um script chamado "exec" em `package.json`; não existindo, aborta com `Missing script: "exec"`. A sintaxe correta é `npm exec -w <ws> -- <cmd>` (sem `run`). Os outros 2 jobs falhavam por `ESLint couldn't find an eslint.config.(js|mjs|cjs) file` — workspaces `@validade-bateria/backend` e `@jrc/idp` declaravam `eslint ^9.0.0` sem `eslint.config.js` próprio, contando incorretamente com herança do flat config existente em `packages/frontend/`.
+PR #6 (`feat(005-production-deploy)`) tinha **8 jobs vermelhos** no CI. Investigando: 6 dos 8 vinham de uma única causa — sintaxe `npm run -w <ws> exec -- <cmd>` em 3 workflows (`ci.yml`, `cd-production.yml`, `frontend-ci.yml`). `npm run exec` busca um script chamado "exec" em `package.json`; não existindo, aborta com `Missing script: "exec"`. A sintaxe correta é `npm exec -w <ws> -- <cmd>` (sem `run`). Os outros 2 jobs falhavam por `ESLint couldn't find an eslint.config.(js|mjs|cjs) file` — workspaces `@inventory-app/backend` e `@acme/idp` declaravam `eslint ^9.0.0` sem `eslint.config.js` próprio, contando incorretamente com herança do flat config existente em `packages/frontend/`.
 
 Bonus lição: o `Missing script: "exec"` é **fail-fast** — abortava em segundos no step de Typecheck, **mascarando** falhas pré-existentes nos steps subsequentes (44 testes frontend quebrados por interop msw/jsdom, type errors latentes em `auth-sanity.test.ts`, openapi codegen drift). Ao consertar a sintaxe, esses fails apareceram e foram inicialmente confundidos com regressões. Documentado no cenário 6.
 
@@ -1184,7 +1190,7 @@ Incidente em produção: CD workflow rodou `docker run ghcr.io/.../api:staging n
 
 ### Motivação
 
-Deploy de `estimates_api` (npm, Biome, SQL Server/MSSQL, sem testes) para staging revelou 6 gaps na skill v2.1.0 que foi construída a partir de projetos ESLint+Prettier+PostgreSQL+Jest. A skill agora suporta múltiplas variantes de stack backend.
+Deploy de `pricing_api` (npm, Biome, SQL Server/MSSQL, sem testes) para staging revelou 6 gaps na skill v2.1.0 que foi construída a partir de projetos ESLint+Prettier+PostgreSQL+Jest. A skill agora suporta múltiplas variantes de stack backend.
 
 ---
 

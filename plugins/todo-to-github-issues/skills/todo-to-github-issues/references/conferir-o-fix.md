@@ -4,7 +4,7 @@ O `--fix` é determinístico, mas uma migração de formato apaga itens, troca o
 headings. Três coisas escapam dos gates dele e só aparecem no commit seguinte, ou nunca. Rode as
 três antes de commitar o `--write`, na branch da migração.
 
-Os três casos foram medidos no `lighthouse_project` em 2026-10-16: 139 violações iniciais, 20 itens
+Os três casos foram medidos no `portal_app` em 2026-10-16: 139 violações iniciais, 20 itens
 marcados apagados pelo `AUTO` e 57 casos `MANUAL`.
 
 ## 1. A quebra de linha não mudou nenhuma palavra
@@ -20,7 +20,7 @@ diff <(git show HEAD:TODO.md | norm) <(norm < TODO.md) | grep -c '^[<>]'    # te
 ⚠️ **Ancore o marcador na linha inteira (`^…$`).** O preâmbulo da semente atual cita
 `<!-- sdd:open -->` entre crases, ao explicar o esqueleto. O recorte por `/<!-- sdd:open -->/`
 começa nesse parágrafo, e a comparação acusa 364 linhas de diferença onde há 0 (medido na
-migração do `lighthouse_project`, 2026-10-16). Desde a 2.6.0 o
+migração do `portal_app`, 2026-10-16). Desde a 2.6.0 o
 `AUTO` também apaga item aberto já resolvido (`--fix` diz quantos): as palavras dele saem como `<`,
 e só elas podem sair. Confira que cada `<` pertence a um desses itens.
 
@@ -29,7 +29,7 @@ e só elas podem sair. Confira que cada `<` pertence a um desses itens.
 O `AUTO` apaga o item cujo `RESOLVED by` já está na branch padrão, e só olha o hash. O texto pode
 guardar uma contingência que não vive em outro lugar. No caso medido, o item do `a7755bc` dizia: "é
 PREMISSA da decisão 6 da Direção: se ela a recusar, `git revert a7755bc` e este item volta". O
-plano sobreviveu porque também estava em `docs/roadmap/amep.md`.
+plano sobreviveu porque também estava em `docs/roadmap/plano.md`.
 
 Antes do `--write`, liste o hash de cada item que sai com uma condicional no corpo. A condicional
 costuma estar numa linha de continuação, então o filtro lê o bloco inteiro, não só a primeira

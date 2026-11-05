@@ -6,7 +6,7 @@ Rodar a partir do diretório da skill:
 
 O conversor é o fallback do close step 5 sem MCP. Até a 1.11.0 ele saía com rc 0
 em duas construções que chegavam erradas ao Jira (medido em 07/10/2026, no
-fechamento do SBM-6): lista aninhada virava um nível só, e crase dentro de
+fechamento do ABC-6): lista aninhada virava um nível só, e crase dentro de
 negrito aparecia literal. Agora as duas são recusadas com rc 1, sem gravar nada.
 """
 import json

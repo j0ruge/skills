@@ -65,7 +65,7 @@ When a brainstorming visual companion is available, render an HTML mockup showin
 ```html
 <h2>Template Field Mapping</h2>
 <p class="subtitle">
-  Fields in <span style="color:#ed1c24;font-weight:bold">red</span> are dynamic (from database).
+  Fields in <span style="color:#d32f2f;font-weight:bold">red</span> are dynamic (from database).
   Fixed content in default color.
 </p>
 
@@ -80,7 +80,7 @@ When a brainstorming visual companion is available, render an HTML mockup showin
 
 <!-- Summary table below the mockup -->
 <div style="margin-top:24px; padding:16px; background:#1a1a2e; border-radius:8px; color:#e0e0e0;">
-  <h3 style="color:#ed1c24; margin-top:0;">Fields Identified</h3>
+  <h3 style="color:#d32f2f; margin-top:0;">Fields Identified</h3>
   <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
     <div>
       <div style="font-weight:bold; color:#fff;">Section Name (type)</div>
@@ -95,7 +95,7 @@ When a brainstorming visual companion is available, render an HTML mockup showin
 ```
 
 **Color coding convention:**
-- `#ed1c24` (red) — dynamic fields from database
+- `#d32f2f` (red) — dynamic fields from database
 - Default text color — fixed/hard-coded content
 - Dashed borders — conditional sections that may be omitted
 

@@ -41,7 +41,7 @@ await page.goto(url + '#2'); await sleep(600);
 const N = await page.evaluate(() => document.querySelectorAll('.slide').length);
 const deckIdx = () => page.evaluate(() => +location.hash.slice(1));
 // O relógio do painel N é o 1º <span> da barra: lido pela posição, e não pela palavra "decorrido", o painel pode ser
-// traduzido. Um deck em inglês quebrava aqui com TypeError no secs() (Lighthouse, 03/11/2026).
+// traduzido. Um deck em inglês quebrava aqui com TypeError no secs() (Portal, 03/11/2026).
 const deckClock = () => page.evaluate(() => (document.querySelector('#notesPanel .bar span')?.textContent.match(/\d\d:\d\d/) || [])[0]);
 const popIdx = p => p.evaluate(() => +document.getElementById('ptitle').textContent.slice(0, 2));
 const popClock = p => p.evaluate(() => document.getElementById('pclock').textContent);
@@ -150,7 +150,7 @@ if (tipAt >= 0) {
 } else console.log('pulado  dica ao passar o mouse (nenhum data-tip/data-g)');
 
 // Teclas na janela P. Enter e Espaço num botão focado pelo Tab são do botão; depois de um clique de mouse, Espaço segue
-// avançando. Antes, Enter no "Zerar" avançava sem zerar, e Espaço no "Anterior" avançava (Lighthouse, 03/11/2026). E
+// avançando. Antes, Enter no "Zerar" avançava sem zerar, e Espaço no "Anterior" avançava (Portal, 03/11/2026). E
 // uma mensagem com deck NaN deixava o deck sem lâmina ativa.
 const plain = await page.evaluate(() => [...document.querySelectorAll('.slide')].findIndex((s, k) => k >= 1 && !+s.dataset.steps));
 if (plain >= 0) {

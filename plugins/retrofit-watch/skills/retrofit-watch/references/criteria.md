@@ -90,7 +90,7 @@ retro ticket: sem lições novas
   transições antes (`acli … transitions`). Evita: nome de estado presumido em projeto localizado.
 - **Melhoria:** falta o passo de conferir o sprint ativo antes de criar a issue; a issue nasceu
   no backlog e foi movida à mão.
-- Só deste projeto → memória: o board SQ usa o campo customizado 10020 para story points.
+- Só deste projeto → memória: o board QUO usa o campo customizado 10020 para story points.
 
 Rodo `/retrofit-skill:retrofit-skill ticket`?
 ```

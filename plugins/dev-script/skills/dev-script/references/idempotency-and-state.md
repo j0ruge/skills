@@ -15,7 +15,7 @@ The discipline: **never blur the line**. Volatile state lives in gitignored file
 The IdP's `projectId` and `clientId` change every time its volume resets. If `packages/backend/.env` has
 
 ```text
-AUTH_AUDIENCE=370503956331233283
+AUTH_AUDIENCE=100000000000000002
 ```
 
 …hardcoded from a previous bootstrap, the next reset breaks every JWT validation silently (401 storm, no clear error). The fix:
@@ -139,7 +139,7 @@ Idempotency rules also apply when the script talks to a remote API:
 - **Catch "no changes" 4xx as no-op**. Some APIs (Zitadel notably) return 400 on PUTs that would result in no diff. Wrap those calls and treat the specific error code as success.
 - **Capture and re-emit IDs**, never re-derive from name. If the bootstrap creates an Org, the next run should look it up by name, not assume the previous ID.
 
-Reference for the JRC Zitadel pattern: see the consumer's `bootstrap-zitadel.ts` and the `zitadel-idp` skill's `api-cheatsheet.md §"Re-reading bootstrap output after volume reset"`.
+Reference for the Zitadel pattern: see the consumer's `bootstrap-zitadel.ts` and the `zitadel-idp` skill's `api-cheatsheet.md §"Re-reading bootstrap output after volume reset"`.
 
 ## Files generated on every run (gitignored)
 
@@ -164,7 +164,7 @@ If the script crashes mid-execution (e.g., docker daemon isn't running), the sta
 
 ## What `--reset` should actually do
 
-Implementations vary, but the JRC convention:
+Implementations vary, but a common convention:
 
 - **`--reset`** drops the **most volatile** stable state — the IdP volume, the cert names file, the state file. It does **not** touch the application database (Postgres data); that's a separate `--purge-db` if needed.
 - Always print what's about to be deleted **before** deleting, so the user can Ctrl+C if they didn't mean it.

@@ -2,7 +2,7 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
-## 2026-11-03 — Lighthouse AMEP, the code review on the eve of the talk (v1.5.0)
+## 2026-11-03 — Portal, the code review on the eve of the talk (v1.5.0)
 - A code review of the finished deck and its tools, after a wording change that entered the footer with every gate
   green.
 - Lessons added:
@@ -11,7 +11,7 @@ Per-session lessons for this skill. The versioned history is `plugins/html-prese
   - two gotchas, and a "Layout check" section in `engine.md`.
 - The prototype corrected the first fix: a guard with `:focus-visible` failed, because the key press turns it on.
 
-## 2026-11-03 — Lighthouse AMEP, the rest of the deck: polish, review, delivery (v1.4.3)
+## 2026-11-03 — Portal, the rest of the deck: polish, review, delivery (v1.4.3)
 - The same 27-slide deck, finished: an impeccable critique and polish, then the `deck-reviewer` (SHIP WITH FIXES,
   5 material findings applied).
 - Lessons added:
@@ -26,7 +26,7 @@ Per-session lessons for this skill. The versioned history is `plugins/html-prese
   - the presenter-window class names. A deck class `.plan` would have reached `#pview .plan`, but it was caught
     before the build, with no measured failure.
 
-## 2026-11-03 — Lighthouse AMEP, a 30-minute deck in English for the Direction (v1.4.2)
+## 2026-11-03 — Portal, a 30-minute deck in English for the Direction (v1.4.2)
 - The first deck in another language. The audience-visible engine strings (key hint, tip label) were translated;
   translating the N panel too crashed `check-presenter` (it matched the word "decorrido"), proved on the template.
 - Lessons added: the checker reads the clock by position, and the gotcha for a deck in another language.

@@ -1,7 +1,7 @@
 ---
 name: cicd
 metadata:
-  version: 2.39.0
+  version: 2.39.2
 description: "GitHub Actions / Docker / GHCR pipeline troubleshooting and config, auto-routed by stack (Node/Prisma, Django/gunicorn, Vite). Self-hosted runner runbook — what breaks when you move a billed job onto one, which runner to trust for production — deploy-time proof (rollback with re-smoke, backup gates that check the dump), and Actions minute economics. Triggers — CI/CD, GitHub Actions, job never starts, Actions minutes/quota, GHCR auth, self-hosted runner, deploy queued, rollback/backup gate."
 ---
 
@@ -58,7 +58,7 @@ Backend (Biome):   checkout → install → [prisma generate] → biome check �
 Frontend:          checkout → install → lint → typecheck → test (Vitest)
 ```
 
-> **Note:** `[prisma generate]` and `[test]` are optional — they depend on whether the project has Prisma and a configured test framework, respectively. Projects without a test framework (e.g., `estimates_api`) skip the test step in CI and CD.
+> **Note:** `[prisma generate]` and `[test]` are optional — they depend on whether the project has Prisma and a configured test framework, respectively. Projects without a test framework (e.g., `pricing_api`) skip the test step in CI and CD.
 
 ### Deploy Differences
 

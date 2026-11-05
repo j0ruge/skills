@@ -43,7 +43,7 @@ files sit untracked in the root (`?? codex-review.md`), and a hook that rejects 
 stops the push this step asks for. Before that push, move them out of the tree to a scratch
 directory and keep them there; Phase 6 deletes them there. Never `--no-verify`. The `.gitignore`
 entry Phase 6 suggests would also clear it, but it is a commit to the user's repo, theirs to make.
-Measured 2026-10-17 (jrc-libs PR #4): the hook has a case "deve recusar, sem rodar o gate, o push
+Measured 2026-10-17 (acme-libs PR #4): the hook has a case "deve recusar, sem rodar o gate, o push
 com arquivo não rastreado", and the push went through once the checklist left the root.
 
 **Authorised to commit, one commit per finding?** Several findings usually share a file, so split

@@ -405,7 +405,7 @@ curl -sS -X PUT http://<external-domain>/admin/v1/policies/login \
 
 ### `Organisation doesn't exist (AUTH-Bs7Ds)`
 
-**Cause**: you sent a non-numeric value in `x-zitadel-orgid` (e.g., your domain tenantId `"JRC"` instead of the numeric `370503937624637443`).
+**Cause**: you sent a non-numeric value in `x-zitadel-orgid` (e.g., your domain tenantId `"ACME"` instead of the numeric `100000000000000001`).
 
 **Fix**: build a tenant→orgId translation layer in your adapter. See `tenant-org-mapping.md`.
 
@@ -469,7 +469,7 @@ POST /zitadel.org.v2.OrganizationService/AddOrganization
 Content-Type: application/json
 Authorization: Bearer ${PAT}
 
-{ "name": "JRC" }
+{ "name": "ACME" }
 ```
 
 The IAM_OWNER service account from FirstInstance setup can manage all orgs without per-org admins.
@@ -551,7 +551,7 @@ Update via Console (Project → Settings; App → Token Settings) or API. Roles 
 
 **Symptom**: a pre-existing seed user can't access a new app that the YAML clearly grants them — backend returns 401 (`role_nao_reconhecida` or equivalent). A *brand-new* user provisioned via the same bootstrap works fine. Re-running the bootstrap doesn't help: log shows `ALREADY_EXISTS` on the grant and moves on.
 
-**Cause** (Quirk 41): the bootstrap creates initial grants but doesn't reconcile `roleKeys` on grants it already created. When you evolve the YAML to add a second app + role (`quote.admin` alongside the existing `battery.admin`), the user's existing grant stays at its day-0 `roleKeys` indefinitely. Easily confused with quirks 11 (access vs id token), 12/13/36 (the "401-storm with apparently-valid JWT" family — same backend symptom), or 28 (Login UI v2). The diagnostic is to decode the JWT and inspect `urn:zitadel:iam:org:project:roles` — if the new role's key is absent, this is the grant gap.
+**Cause** (Quirk 41): the bootstrap creates initial grants but doesn't reconcile `roleKeys` on grants it already created. When you evolve the YAML to add a second app + role (`quote.admin` alongside the existing `inventory.admin`), the user's existing grant stays at its day-0 `roleKeys` indefinitely. Easily confused with quirks 11 (access vs id token), 12/13/36 (the "401-storm with apparently-valid JWT" family — same backend symptom), or 28 (Login UI v2). The diagnostic is to decode the JWT and inspect `urn:zitadel:iam:org:project:roles` — if the new role's key is absent, this is the grant gap.
 
 **Fix immediately** — search-then-PUT (Quirk 8 pattern):
 
@@ -572,7 +572,7 @@ GRANT_ID=$(curl -sSk -X POST "$ZITADEL/management/v1/users/grants/_search" \
 curl -sSk -X PUT "$ZITADEL/management/v1/users/$USER_ID/grants/$GRANT_ID" \
   -H "Authorization: Bearer $PAT" -H "Content-Type: application/json" \
   -H "x-zitadel-orgid: $ORG_ID" \
-  -d '{"roleKeys":["battery.admin","quote.admin"]}'
+  -d '{"roleKeys":["inventory.admin","quote.admin"]}'
 ```
 
 User must re-login to get a fresh JWT — `addAccessTokenExpiring`/silent-renew also pulls new claims, so a session refresh works too.
@@ -752,7 +752,7 @@ docker exec <postgres-ctr> psql -U zitadel -c \
 
 ### Branding (logo / colors) gone after the upgrade
 
-**Symptom**: Login UI looked branded (red JRC, custom logo) on v2.66; same Login UI on v4 shows the default Zitadel blue/gray. `LabelPolicy` GET still returns the customized values — they're persisted, just not applied.
+**Symptom**: Login UI looked branded (red theme, custom logo) on v2.66; same Login UI on v4 shows the default Zitadel blue/gray. `LabelPolicy` GET still returns the customized values — they're persisted, just not applied.
 
 **Cause**: Two possible drifts:
 
@@ -850,7 +850,7 @@ If the failure persists without those envs, your underlying issue is somewhere e
 
 **Symptom**: Bootstrap succeeded (log shows `[app] created appId=<uuid> clientId=<numeric>`), the SPA was rebuilt with the right secret, but `/oauth/v2/authorize?client_id=<your-secret>` returns `400 invalid_request "Errors.App.NotFound"`. Login flow dies before the user ever sees the UI.
 
-**Cause**: Quirk 29 — you wired `VITE_OIDC_CLIENT_ID` (or equivalent SPA env) to the deterministic `applicationId` UUID you passed in `CreateApplicationRequest`, but Zitadel auto-generates a separate **numeric `clientId`** (e.g. `371898282416275459`) for OAuth/OIDC. The UUID is the resource handle for v2 admin APIs; only the numeric `clientId` is accepted as `client_id` on the OIDC endpoints.
+**Cause**: Quirk 29 — you wired `VITE_OIDC_CLIENT_ID` (or equivalent SPA env) to the deterministic `applicationId` UUID you passed in `CreateApplicationRequest`, but Zitadel auto-generates a separate **numeric `clientId`** (e.g. `100000000000000011`) for OAuth/OIDC. The UUID is the resource handle for v2 admin APIs; only the numeric `clientId` is accepted as `client_id` on the OIDC endpoints.
 
 **Fix**:
 
@@ -976,7 +976,7 @@ docker exec -i <postgres-idp-ctr> psql -U zitadel -d zitadel -c \
 
 Three choices in that query are not cosmetic:
 
-- **Filter by the role prefix, not by `project_id`, when several apps share one project.** Measured 2026-10-27 on a v4.15.0 staging instance: the project holding `lighthouse.*` also holds `battery.*` and `quote.*`, 18 grants in all, 7 of them `lighthouse.*`. `where g.project_id = '<projectId>'` answers for the project and the prefix answers for the app; when the project belongs to one app alone, they are the same filter.
+- **Filter by the role prefix, not by `project_id`, when several apps share one project.** Measured 2026-10-27 on a v4.15.0 staging instance: the project holding `portal.*` also holds `inventory.*` and `quote.*`, 18 grants in all, 7 of them `portal.*`. `where g.project_id = '<projectId>'` answers for the project and the prefix answers for the app; when the project belongs to one app alone, they are the same filter.
 - **Read the e-mail and `is_email_verified` whenever the login or the backend decides by e-mail.** The username can differ from the e-mail (Quirks 33 and 34), and an unverified e-mail proves nothing about the address (Quirks 35 and 54). Before a release that rejects every domain but the company's, this query is the census: in the measurement above, 7 of 7 rows carried the domain in both columns, all verified.
 - **`left join`, because a machine user has no row in `users14_humans`** (the instance's only machine user had none): an inner join would drop it from the census in silence. `state` is `domain.UserState`, read at the `v4.15.0` tag (`internal/domain/user.go`): `1` active, `2` inactive, `3` deleted, `4` locked, `5` suspend, `6` initial (Quirk 6).
 

@@ -11,10 +11,10 @@ set -euo pipefail
 # =============================================================================
 
 # ---- substitution placeholders (the skill replaces these per project) ------
-# <<PROJECT_NAME>>          e.g. "battery-lifecycle"
+# <<PROJECT_NAME>>          e.g. "inventory-app"
 # <<COMPOSE_BASE>>          e.g. "docker-compose.yml"
 # <<COMPOSE_IDP>>           e.g. "infra/docker/docker-compose.zitadel.yml"  (omit block if no IdP)
-# <<DB_USER>>               e.g. "jrc" (Postgres user for pg_isready)
+# <<DB_USER>>               e.g. "acme" (Postgres user for pg_isready)
 # <<EXTERNAL_PORTS>>        Web/API/IdP port triple — 5173/3000/8080 plain, 5443/3443/8443 TLS
 
 # ---- portable script-dir resolution ----------------------------------------

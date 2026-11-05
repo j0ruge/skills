@@ -5,7 +5,7 @@ license: MIT
 compatibility: Claude Code 2.1.163+ (Stop additionalContext); testado na 2.1.283 em 2026-09-30. Hook em Python 3, só biblioteca padrão, e git no PATH.
 metadata:
   author: JorUge
-  version: "0.3.5"
+  version: "0.3.6"
 ---
 
 # retrofit-watch
@@ -32,7 +32,7 @@ continua exigindo a sua confirmação.
    | Origem | Modo | Argumento do retrofit |
    |---|---|---|
    | cache ou clone do `chewiesoft-marketplace` (j0ruge/skills), inclusive por symlink e worktree | full | o **nome do plugin** (`codereview:coderabbit-pr` → `codereview`) |
-   | skill rastreada no git de um repo cujo `origin` é de `j0ruge`, `JRC-Brasil` ou `chewiesoft` | lean | o nome da skill |
+   | skill rastreada no git de um repo cujo `origin` é de `j0ruge`, `chewiesoft` ou de um dono em `owners` na config | lean | o nome da skill |
    | kit: o binário no `PATH` (por `realpath`, então o symlink de `~/.hermes/bin` vale) cai num repo cujo `origin` é nosso | kit | nenhum: a lição vai para o `TODO.md` do repo do kit, ou o do worktree ligado onde a missão roda |
    | `skills-lock.json`, `.agents/skills`, `~/.agents`, `~/.hermes`, outro marketplace, origin de terceiro, fora do git | ignora | — |
 
@@ -103,7 +103,7 @@ ela, com duas, ou com um id que não está na fila, sai 1 e diz por quê. Até a
 | desligar | `RETROFIT_WATCH=off` no ambiente, ou desabilitar o plugin |
 | testar em `claude -p` | `RETROFIT_WATCH=force` (pede a retro na própria sessão) |
 | sessão desassistida calada, sem fila | `"unattended": "off"` no `~/.claude/retrofit-watch.json` |
-| mudar donos, incluir ou excluir skills | `~/.claude/retrofit-watch.json`: `{"owners": [...], "include": ["skill"], "exclude": ["plugin-ou-skill"], "deny_roots": ["~/x"]}` |
+| mudar donos (`owners` substitui a lista padrão: repita `j0ruge` e `chewiesoft`), incluir ou excluir skills | `~/.claude/retrofit-watch.json`: `{"owners": [...], "include": ["skill"], "exclude": ["plugin-ou-skill"], "deny_roots": ["~/x"]}` |
 | mudar os kits vigiados | `"kits": ["sdd"]` no mesmo arquivo (`[]` desliga) |
 | ver o que aconteceu | `${CLAUDE_PLUGIN_DATA}/metrics.jsonl` (resultado de cada retro: `none`/`lessons`) e `errors.log` |
 

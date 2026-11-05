@@ -97,9 +97,9 @@ field that parses cleanly is an **answer**, and it is wrong:
 - the real source is an env var, whose value lives in the compose file — and there
   is usually more than one compose file;
 - so the environment whose compose forgot the var silently falls back to the
-  default. Measured: production set `ZITADEL_SEED_USER_ROLE=battery.admin,quote.admin`,
+  default. Measured: production set `ZITADEL_SEED_USER_ROLE=inventory.admin,quote.admin`,
   staging did not set it at all, and staging's seed user was born with
-  `battery.admin` alone. Nothing failed. The role simply was not there, and the
+  `inventory.admin` alone. Nothing failed. The role simply was not there, and the
   first person to notice was whoever tried to use the second product in staging.
 
 ### The fix is precedence, not replacement
@@ -116,7 +116,7 @@ export function resolveSeedUserRoles(
   const fromEnv = (envValue ?? '').split(',').map((r) => r.trim()).filter(Boolean);
   if (fromEnv.length > 0) return { roles: fromEnv, origem: 'env' };
   if (yamlRoles.length > 0) return { roles: [...yamlRoles], origem: 'yaml' };
-  return { roles: ['battery.admin'], origem: 'default' };
+  return { roles: ['inventory.admin'], origem: 'default' };
 }
 ```
 
@@ -126,7 +126,7 @@ Three details are load-bearing:
   YAML. An empty var passes through `envsubst`, compose interpolation and every
   `??` in its path without a complaint — treating `""` as "the operator chose no
   roles" turns a typo into a user with no access and no error.
-- **Log which source won.** `[user] seed roles: yaml → battery.admin,quote.admin`
+- **Log which source won.** `[user] seed roles: yaml → inventory.admin,quote.admin`
   costs one line and answers the only question anyone will have when the grant
   looks wrong. Precedence is invisible in a compose file.
 - **Put the resolver in its own module if your bootstrap script runs on import.**
@@ -190,7 +190,7 @@ enforced instead of requested. The shape that has worked:
 BOOTSTRAP_ENV=staging npm run grant-role -- \
   --role quote.consultor --when-has quote.admin,quote.cotador
 
-  it@example.com: [battery.admin, quote.admin] → [battery.admin, quote.admin, quote.consultor]
+  it@example.com: [inventory.admin, quote.admin] → [inventory.admin, quote.admin, quote.consultor]
   candidates=1 changed=0 already-had=0 outside-trigger=1
   dry-run — nothing written. Repeat with --apply.
 ```

@@ -136,5 +136,5 @@ expands `$`: in an earlier session of the promotion below, a `$$` in SQL passed 
 `ansible -m shell -a '…'` became the shell's PID.
 
 Measured on 2026-10-15, promoting a release whose migration replaced two `CHECK`s and the audit
-action `CHECK` (PR #31 of the `lighthouse_project`): 0 rows violated each of the three new
+action `CHECK` (PR #31 of the `portal_app`): 0 rows violated each of the three new
 constraints (5 `DRAFT` without a code, 22 `PLANNED` with one), probed before the merge.

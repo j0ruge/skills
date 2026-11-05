@@ -4,15 +4,15 @@ This reference is short on purpose: it's a single concept that bites every proje
 
 ## The problem
 
-Your domain layer has a stable `tenantId` value object — typically a short uppercase string like `"JRC"` or `"ACME"`. That string is what your code passes around, what shows in logs, what your tests assert on.
+Your domain layer has a stable `tenantId` value object — typically a short uppercase string like `"ACME"` or `"CONTOSO"`. That string is what your code passes around, what shows in logs, what your tests assert on.
 
 Zitadel's API expects the **numeric `orgId`** in the `x-zitadel-orgid` header on every Management API call:
 
 ```http
-x-zitadel-orgid: 370503937624637443
+x-zitadel-orgid: 100000000000000001
 ```
 
-`tenantId.toString()` returns `"JRC"` and Zitadel rejects it with `403 Organisation doesn't exist (AUTH-Bs7Ds)`.
+`tenantId.toString()` returns `"ACME"` and Zitadel rejects it with `403 Organisation doesn't exist (AUTH-Bs7Ds)`.
 
 ## Why both exist
 
@@ -33,7 +33,7 @@ const schema = z.object({
   OIDC_AUDIENCE: z.string().min(1),
   ZITADEL_PROJECT_ID: z.string().min(1),
   // Mapping. One env var per tenant, looked up dynamically.
-  // E.g., ZITADEL_ORG_ID_JRC=370503937624637443
+  // E.g., ZITADEL_ORG_ID_ACME=100000000000000001
 });
 
 // infrastructure/adapters/zitadel/ZitadelIdentityProvider.ts
@@ -71,13 +71,13 @@ The `bootstrap-zitadel.ts` script writes a JSON file with the mapping after firs
 
 ```json
 {
-  "orgId": "370503937624637443",
-  "orgName": "JRC",
-  "projectId": "370503956331233283",
-  "appId": "370503965692919811",
-  "clientId": "370503965692985347",
+  "orgId": "100000000000000001",
+  "orgName": "ACME",
+  "projectId": "100000000000000002",
+  "appId": "100000000000000003",
+  "clientId": "100000000000000004",
   "redirectUris": ["..."],
-  "roles": ["battery.operator", "battery.admin"]
+  "roles": ["inventory.operator", "inventory.admin"]
 }
 ```
 
@@ -122,23 +122,23 @@ The fallback uses the orgId itself when no mapping is configured — useful in d
 
 ## ACL parity: backend ↔ frontend
 
-If your backend translates **human** IdP roles (`battery.operator`, `battery.admin`) into **canonical** domain roles (`battery:writer`, `battery:reader`, `battery:admin`) via an Anti-Corruption Layer, **the SPA must duplicate that translation table**. Reason: in the SPA + API + IdP triangle, the access token goes **directly** from IdP to SPA. The backend never gets to inspect or rewrite it before the SPA reads `roles` from the JWT for UI gating.
+If your backend translates **human** IdP roles (`inventory.operator`, `inventory.admin`) into **canonical** domain roles (`inventory:writer`, `inventory:reader`, `inventory:admin`) via an Anti-Corruption Layer, **the SPA must duplicate that translation table**. Reason: in the SPA + API + IdP triangle, the access token goes **directly** from IdP to SPA. The backend never gets to inspect or rewrite it before the SPA reads `roles` from the JWT for UI gating.
 
-**Symptom of a missing parity**: a user with Zitadel role `battery.admin` logs in. Backend-protected routes work fine (backend translates the claim and authorizes). But the UI hides every admin button because the SPA's `extractRoles` filters for `["battery:reader", "battery:writer", "battery:admin"]` and the JWT only has `battery.admin` (with a dot, not a colon).
+**Symptom of a missing parity**: a user with Zitadel role `inventory.admin` logs in. Backend-protected routes work fine (backend translates the claim and authorizes). But the UI hides every admin button because the SPA's `extractRoles` filters for `["inventory:reader", "inventory:writer", "inventory:admin"]` and the JWT only has `inventory.admin` (with a dot, not a colon).
 
 ```typescript
 // SPA must mirror the backend ROLE_TRANSLATION_TABLE:
 const ROLE_TRANSLATION = {
-  'battery.operator': ['battery:writer', 'battery:reader'],
-  'battery.admin':    ['battery:admin', 'battery:writer', 'battery:reader'],
+  'inventory.operator': ['inventory:writer', 'inventory:reader'],
+  'inventory.admin':    ['inventory:admin', 'inventory:writer', 'inventory:reader'],
 } as const;
 
-function extractRoles(profile: IdTokenClaims): BatteryRole[] {
+function extractRoles(profile: IdTokenClaims): InventoryRole[] {
   const claim = profile['urn:zitadel:iam:org:project:roles'] ?? {};
   const raw = Array.isArray(claim) ? claim : Object.keys(claim);
-  const resolved = new Set<BatteryRole>();
+  const resolved = new Set<InventoryRole>();
   for (const r of raw) {
-    if (CANONICAL_ROLES.includes(r)) resolved.add(r as BatteryRole);
+    if (CANONICAL_ROLES.includes(r)) resolved.add(r as InventoryRole);
     ROLE_TRANSLATION[r]?.forEach((m) => resolved.add(m));
   }
   return [...resolved];

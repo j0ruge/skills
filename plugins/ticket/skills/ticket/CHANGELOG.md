@@ -4,21 +4,21 @@ Registro por sessão da skill; o changelog **versionado** é `plugins/ticket/CHA
 (a entrada 1.4.0 de 2026-09-03 resume o que está aqui). Cada entrada registra **o que
 mudou e por quê** — a lição que a motivou, não só o diff.
 
-## 2026-10-30 — cartão retroativo, testes do Jest e o `Concluido` do WHF (1.14.0)
+## 2026-10-30 — cartão retroativo, testes do Jest e o `Concluido` do DEF (1.14.0)
 
-- O PR #13 do `warehouse_explorer_web` foi mergeado e foi para produção sem cartão. O WHF-176 nasceu
+- O PR #13 do `warehouse_explorer_web` foi mergeado e foi para produção sem cartão. O DEF-176 nasceu
   pela criação do B, sem branch nem "Em andamento", e fechou pelos steps 3 a 7 do `close`. A
   releitura confirmou cada passo (`201`, `201`, `201`, `204`). Isso vira seção do `start.md`, e o
   `SKILL.md` aponta para ela.
-- `close` do WHF-175 num repo com Jest: a contagem dos `it(` e `test(` no diff do merge deu 27 e 0,
+- `close` do DEF-175 num repo com Jest: a contagem dos `it(` e `test(` no diff do merge deu 27 e 0,
   igual à contagem por arquivo. Ela entra no step 3 ao lado da receita do pytest.
-- O status final do WHF é `Concluido`, sem acento (id `21`). Ele entra no step 6 e na tabela do
+- O status final do DEF é `Concluido`, sem acento (id `21`). Ele entra no step 6 e na tabela do
   `workflow.md`, com a escolha pela categoria `done`.
 
 ## 2026-10-16 — responsável e épico no POST, trabalho em dois repos (1.13.0)
 
-- `start` do RS-929: o `POST /issue` do B levou `assignee:{accountId}` (de `GET /myself`, já que o
-  REST não tem `@me`) e `parent` com o épico RS-699. A releitura confirmou os dois. O B1 passa a
+- `start` do REP-929: o `POST /issue` do B levou `assignee:{accountId}` (de `GET /myself`, já que o
+  REST não tem `@me`) e `parent` com o épico REP-699. A releitura confirmou os dois. O B1 passa a
   perguntar pelos dois, e o `campos.md` os lista no corpo do `POST`.
 - A entrega morava num monorepo de vários projetos, sem `.jira-project`. A issue foi aberta do repo
   do projeto, e a branch foi espelhada no outro (`0 0` nos dois). Isso vira seção do `start.md`, e o
@@ -26,18 +26,18 @@ mudou e por quê** — a lição que a motivou, não só o diff.
 
 ## 2026-10-07 — md2adf recusa lista aninhada e crase no negrito (1.11.1)
 
-- `close` do SBM-6 sem MCP: o resumo com subitens por versão saiu como uma lista de 16 itens num
+- `close` do ABC-6 sem MCP: o resumo com subitens por versão saiu como uma lista de 16 itens num
   nível só, e `**`--para`:**` levaria as crases ao Jira, as duas com rc 0. O conversor passa a
   recusar as duas (rc 1, nada gravado) e ganha `tests/test_md2adf.py`; o `close.md` diz como agrupar.
 
 ## 2026-10-05 — conversor markdown → ADF e close sem branch (1.10.0)
 
-- `close` do SBM-4 sem MCP atlassian: a sessão teve de escrever o conversor para o ADF. Ele vira
-  `scripts/md2adf.py`, com a varredura de marks e estrutura embutida; a saída para o SBM-4 é igual
+- `close` do ABC-4 sem MCP atlassian: a sessão teve de escrever o conversor para o ADF. Ele vira
+  `scripts/md2adf.py`, com a varredura de marks e estrutura embutida; a saída para o ABC-4 é igual
   ao corpo que o Jira aceitou (`201`, `dict 8`).
-- SBM-4 e SBM-5 integrados por rebase + ff, branches apagados: `main..HEAD` vazio e key só no
+- ABC-4 e ABC-5 integrados por rebase + ff, branches apagados: `main..HEAD` vazio e key só no
   corpo. O step 3 ganha a busca ancorada no início da linha (a sem âncora puxou um commit do
-  SBM-5) e a contagem commit a commit (o `diff` primeira..última somaria o backup intercalado).
+  ABC-5) e a contagem commit a commit (o `diff` primeira..última somaria o backup intercalado).
 
 ## 2026-10-05 — passada da `skill-refactoring` (1.9.1)
 
@@ -51,13 +51,13 @@ mudou e por quê** — a lição que a motivou, não só o diff.
 
 ## 2026-10-05 — worktree quando a base é árvore de serviço no ar (1.9.0)
 
-- O A8 fazia `checkout` e `pull` na base. No EDS-65 o checkout da `main` era de onde o MCP
+- O A8 fazia `checkout` e `pull` na base. No PRC-65 o checkout da `main` era de onde o MCP
   rodava, e o JorUge precisou pedir a worktree no argumento do ticket. O `start.md` A8 ganha a
   worktree com `--no-track` (sem ele a branch rastreia `origin/main`, medido num repo
   descartável) e o `close.md` step 10, a remoção dela sem `pull` na árvore viva. O `SKILL.md` só
   roteia (cerca de 100 chars): ele já estava em 20.306 bytes (19.784 chars; corrigido na 1.9.1),
   dívida para a `skill-refactoring`.
-- `campos.md`: anotar os ids do `POST /issue` no `.jira-project`, como o do EDS faz.
+- `campos.md`: anotar os ids do `POST /issue` no `.jira-project`, como o do PRC faz.
 
 ## 2026-10-01 — refatoração: folga abaixo do orçamento de 20k chars
 
@@ -66,24 +66,24 @@ mudou e por quê** — a lição que a motivou, não só o diff.
   (`close.md:84`), a migração do endpoint MCP (`campos.md`, §Issue existente) e o pseudo-código da
   detecção pela branch. A narrativa dos workflows e a tabela de armadilhas ficaram intactas.
 
-## 2026-10-01 — `open` do SBM-1: o projeto que ainda não existia
+## 2026-10-01 — `open` do ABC-1: o projeto que ainda não existia
 
-- **Projeto novo.** `GET /project/SBM` respondeu "Nenhum projeto poderia ser encontrado". O dev
+- **Projeto novo.** `GET /project/ABC` respondeu "Nenhum projeto poderia ser encontrado". O dev
   autorizou criar; `POST /rest/api/3/project` com `gh-simplified-agility-scrum` criou o projeto
-  10183 (team-managed), o board 117 (`simple`, achado por `GET /rest/agile/1.0/board?projectKeyOrId=SBM`)
+  10183 (team-managed), o board 117 (`simple`, achado por `GET /rest/agile/1.0/board?projectKeyOrId=ABC`)
   e a sprint 573 `future`. Os tipos vieram com ids próprios (Tarefa 10306, `Subtask` em vez de
   `Subtarefa`). Receita em `workflow.md §Projeto novo`.
 - **Sprint `future`.** Sem sprint ativa, o `POST /issue` com `customfield_10020: 573` gravou; a
-  releitura REST mostrou `(573, 'SBM Sprint 1', 'future')`. Registrado em `campos.md`.
+  releitura REST mostrou `(573, 'ABC Sprint 1', 'future')`. Registrado em `campos.md`.
 
-## 2026-10-01 — `start` do SQ-153: a versão que ainda não existia
+## 2026-10-01 — `start` do QUO-153: a versão que ainda não existia
 
-Publicado como **v1.6.1**. A fixVersion 0.10.0 não existia no SQ; o B1 não roteava para a linha
+Publicado como **v1.6.1**. A fixVersion 0.10.0 não existia no QUO; o B1 não roteava para a linha
 "Criar versão" de `campos.md §fixVersion`, e o comando foi remontado à mão (`POST /version` →
 id 10110, releitura `['0.10.0']`). A lição inicial ("falta a receita") era falsa — a receita
 existia; faltava o ponteiro. Corrigido antes de editar.
 
-## 2026-09-11 — `close` da RS-877: três sensores que mentem
+## 2026-09-11 — `close` da REP-877: três sensores que mentem
 
 Publicado como **v1.5.0** (detalhe em `plugins/ticket/CHANGELOG.md`).
 
@@ -92,22 +92,22 @@ Publicado como **v1.5.0** (detalhe em `plugins/ticket/CHANGELOG.md`).
 - 🔴 `acli comment list --json` **achata o ADF para texto puro**. Quase reportei
   "o ADF não foi interpretado" com o corpo armazenado perfeito (17 nós). Sensor
   correto: `GET /rest/api/3/issue/<KEY>/comment` — `body` vem **objeto**.
-- A tabela de transições do RS descrevia **convenção como restrição**: existe
+- A tabela de transições do REP descrevia **convenção como restrição**: existe
   `id=31 → Finished` direto de `Em andamento`. E o conjunto de transições muda
   com o status atual (`id=6 DONE` só aparece a partir de `Aprovação`).
-- O `close` não perguntava `fixVersion` — a RS-877 fechou com o trabalho em
+- O `close` não perguntava `fixVersion` — a REP-877 fechou com o trabalho em
   produção e o campo vazio. Novo step 7.
 
 ## 2026-09-10
 
-Retrofit a partir da abertura do **SQ-122** (projeto SQ): História, 13 pontos,
+Retrofit a partir da abertura do **QUO-122** (projeto QUO): História, 13 pontos,
 sprint Formulário, `fixVersion` 0.8.0, criada em uma chamada REST com ADF. O
 caminho de criação funcionou como documentado — o que falhou foi a **conferência**.
 
 ### `SKILL.md` + `references/workflow.md` — o sensor de conferência tinha um ponto cego próprio
 
 A 1.4.0 alinhou a tabela de sprint à checagem por JQL. Medido agora: logo após o
-`POST /issue`, `key = SQ-122 AND sprint in openSprints()` devolve `{"issues":[]}`
+`POST /issue`, `key = QUO-122 AND sprint in openSprints()` devolve `{"issues":[]}`
 com o campo **já gravado** (`GET …?fields=customfield_10020` → `(405,
 "Formulário", active)`), e passa a encontrar a issue segundos depois. É lag de
 indexação, e a instrução vigente (*"se o valor não bater, reportar a falha
@@ -124,7 +124,7 @@ interessam.
 
 `POST /rest/api/3/issue` pede `project` e `issuetype` por **id**, e o
 `.jira-project` guarda a key. Duas chamadas descobrem (`GET /project/<KEY>`,
-`GET /issue/createmeta/<KEY>/issuetypes`); os ids do SQ ficam como exemplo, com o
+`GET /issue/createmeta/<KEY>/issuetypes`); os ids do QUO ficam como exemplo, com o
 aviso de confirmar. No mesmo caminho, `board list-sprints --json` devolve
 `{"sprints":[…]}` — a chave não é `values` nem uma lista nua, e o parser óbvio
 quebra com uma mensagem que não ajuda.
@@ -138,7 +138,7 @@ irmã: heredoc quotado preserva UTF-8, então não há motivo para tirar acentos
 
 ## 2026-09-02
 
-Retrofit a partir de uma sessão real que abriu 4 cartões (RS-850…RS-853), criou
+Retrofit a partir de uma sessão real que abriu 4 cartões (REP-850…REP-853), criou
 vínculos de bloqueio e comentou num quinto. As três lições abaixo foram
 **medidas**, não deduzidas.
 
@@ -161,8 +161,8 @@ vez de confiar em quem chama.
 Não havia nenhuma seção sobre `issueLink`. Pior que a ausência: em
 `POST /rest/api/3/issueLink`, **quem executa o verbo `outward` é o
 `inwardIssue`** — ler o payload da esquerda para a direita monta o oposto do que
-se queria. Com `inwardIssue=RS-844` / `outwardIssue=RS-850` o Jira gravou
-"RS-844 blocks RS-850", o contrário do pretendido, e **nada avisou**: os dois
+se queria. Com `inwardIssue=REP-844` / `outwardIssue=REP-850` o Jira gravou
+"REP-844 blocks REP-850", o contrário do pretendido, e **nada avisou**: os dois
 sentidos são válidos.
 
 **O que mudou:** seção nova com os tipos de link do site, o exemplo na direção

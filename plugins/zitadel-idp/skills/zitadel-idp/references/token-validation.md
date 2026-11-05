@@ -51,7 +51,7 @@ urn:zitadel:iam:org:project:id:<projectId>:aud
 So a typical Vite SPA env looks like:
 
 ```env
-VITE_OIDC_SCOPE=openid profile email urn:zitadel:iam:org:project:id:370503956331233283:aud
+VITE_OIDC_SCOPE=openid profile email urn:zitadel:iam:org:project:id:100000000000000002:aud
 ```
 
 Without the `:aud` scope, `aud` only contains the `clientId` and your backend audience check fails 401 even though everything else is configured correctly. This is the single most common "the token looks fine but backend says 401" cause.
@@ -96,13 +96,13 @@ Default JWT access token payload from a Zitadel SPA login:
 
 ```json
 {
-  "sub": "370734264657903619",
+  "sub": "100000000000000005",
   "iss": "http://127.0.0.1.sslip.io:8080",
   "aud": ["<clientId>", "<projectId>"],
   "exp": 1777517419,
   "iat": 1777474209,
   "client_id": "<clientId>",
-  "urn:zitadel:iam:org:project:roles": { "battery.admin": { "<orgId>": "<orgDomain>" } }
+  "urn:zitadel:iam:org:project:roles": { "inventory.admin": { "<orgId>": "<orgDomain>" } }
 }
 ```
 
@@ -132,7 +132,7 @@ Zitadel emits two URN-style role claims:
 ```json
 {
   "urn:zitadel:iam:org:project:roles": {
-    "battery.operator": { "<orgId>": "<orgDomain>" }
+    "inventory.operator": { "<orgId>": "<orgDomain>" }
   },
   "urn:zitadel:iam:org:project:<projectId>:roles": { /* same shape */ }
 }
@@ -161,7 +161,7 @@ Other useful claims:
 | `email` | Email address (when scope `email` is granted). Not unique across users — never key authorization on it alone (Quirk 54). |
 | `preferred_username` | Username (often the email). |
 | `urn:zitadel:iam:org:id` | Zitadel **orgId** (numeric). Use to scope queries in your domain. |
-| `urn:zitadel:iam:org:domain:primary` | Org's primary domain (e.g., `jrcbrasil.com`). |
+| `urn:zitadel:iam:org:domain:primary` | Org's primary domain (e.g., `acme.example`). |
 
 ## Express middleware pattern
 
@@ -243,7 +243,7 @@ export function requireRole(role: string) {
 }
 
 // usage:
-app.post('/admin/users', authenticate, requireRole('battery.admin'), handler);
+app.post('/admin/users', authenticate, requireRole('inventory.admin'), handler);
 ```
 
 ## When NOT to use JWT validation — opaque tokens + introspection

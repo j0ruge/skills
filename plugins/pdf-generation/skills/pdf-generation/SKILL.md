@@ -1,7 +1,7 @@
 ---
 name: pdf-generation
 metadata:
-  version: 1.6.4
+  version: 1.6.5
 description: "PDF generation design toolkit — analyze a reference template, pick the library (pdfmake, pdf-lib, PDFKit, Puppeteer, @react-pdf), and design modular sections with conditional columns, revision control, and visual verification. Carries hard-won pdfmake pitfalls: column widths that silently push the table off the page, colorless SVG logos, glyph-eating ligatures. Triggers — PDF generation, PDF template, pdfmake, invoice/proposal/report PDF, column overflow, SVG logo in PDF."
 ---
 
@@ -42,7 +42,7 @@ When the user provides a reference PDF, Excel, or image:
    - **Calculated** — derived from other fields (subtotals, tax, grand total)
    - **Conditional** — appears only when condition is met (discount column, tax column)
 4. **Show visual preview** — if brainstorming visual companion is available, render an HTML mockup mapping fields to data sources. Use color coding:
-   - Dynamic fields in **red** (`#ed1c24`)
+   - Dynamic fields in **red** (`#d32f2f`)
    - Fixed content in default color
    - Conditional sections with dashed borders
 

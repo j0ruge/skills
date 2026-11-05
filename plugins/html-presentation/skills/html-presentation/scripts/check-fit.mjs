@@ -6,7 +6,7 @@
 // Exit:  0 everything fits · 1 a slide failed · 2 could not measure (no slides, no #stage or #footer, navigation that
 //        did not reach the slide). A sensor that read nothing never says "ok".
 //
-// Why: build.py, shoot.sh and check-presenter do not measure fit. In the Lighthouse deck (03/11/2026) a request that
+// Why: build.py, shoot.sh and check-presenter do not measure fit. In the Portal deck (03/11/2026) a request that
 // wrapped to 2 lines put the .act box 20 px inside the footer with all of them green. The footer sits inside the
 // slide, so comparing content with the slide's edge does not see it.
 //

@@ -13,7 +13,7 @@ Publicado como **v2.9.0**. Saiu da fila do `retrofit-watch`: três sessões do `
     nenhum `REF?` (`update=18 (anchor 15)`).
   - Rodado de uma branch, o mesmo item virou `text` (`anchor 0`), e só então apareceu
     `REF? L323 #29 → PR #29: chore(todo)…`. O alvo era o PR do kit, mas o item queria
-    `JRC-Brasil/lighthouse_project#29`. A fonte foi corrigida, e o plano final deu `ok=67`.
+    `acme/portal_app#29`. A fonte foi corrigida, e o plano final deu `ok=67`.
   - A causa era uma escolha escrita no código: o `REF?` só sai para o corpo que a rodada escreve,
     para não repetir as mesmas linhas a cada plano. O preço não estava escrito.
   - Agora o `--refs` varre todos os corpos quando alguém pede, e o plano padrão fica igual.
@@ -71,7 +71,7 @@ de lá, que criou as issues #34 a #39.
   mas não o `#N`.
 - **Reescrever não serve.** Nas seções abertas do `magic_tutor` e do kit sdd havia 8 `#N` soltos.
   Quatro estavam certos (`#11`, `#246`, `#247`, `#254`) e quatro apontavam para outro lugar: o item
-  1, um PR do `lighthouse_project` e dois do `sales_quote`. Esses dois ainda saem como texto puro, e
+  1, um PR do `portal_app` e dois do `quote_app`. Esses dois ainda saem como texto puro, e
   vão virar link errado quando o kit chegar ao #405. Por isso a saída é uma linha `REF?` com o
   destino, e o conserto é na fonte: o `magic_tutor` abriu o PR #40 com "item 1 (#10)".
 - **Conferido num plano real.** Na branch do PR #40, o plano mostrou
@@ -124,7 +124,7 @@ Publicado como **v2.6.2**. Reparo autorizado pelo humano, na auditoria da `skill
   - **derivar:** `≤ 150` passou a `≤ TITLE_MAX` (`todo_format.py`), e "teto de 8 linhas" passou
     a "teto de linhas", porque o teto é do sensor do kit.
   - **datar:** o `WIDTH_CAP` de 120 ganhou "em 2026-10-16"; o 422 da vírgula ganhou "medido em
-    2026-09-24, `_label_safe`"; e o 364 da reference ganhou "lighthouse_project, 2026-10-16".
+    2026-09-24, `_label_safe`"; e o 364 da reference ganhou "portal_app, 2026-10-16".
   - **sem medida:** o atraso do índice de busca do GitHub virou "pode atrasar (não medido aqui)".
     Nenhum arquivo do repo registra essa medição.
 
@@ -165,7 +165,7 @@ Publicado como **v2.6.1**.
 
 Publicado como **v2.6.0**.
 
-- Primeiro espelho do `TODO.md` do `lighthouse_project`: o plano parou em rc 4 com 139 violações. O
+- Primeiro espelho do `TODO.md` do `portal_app`: o plano parou em rc 4 com 139 violações. O
   `--fix --write` levou a 55, e os 57 `MANUAL` foram conferidos contra o código por quatro
   subagentes só de leitura, antes de uma aprovação única do humano. Dez itens abertos tinham
   `RESOLVED by` com o commit já em `develop`. O `--fix` só apagava `[x]`, e esses passavam no
@@ -182,7 +182,7 @@ Publicado como **v2.6.0**.
 
 Publicado como **v2.5.2**.
 
-- Primeiro espelho do `TODO.md` do `digital_service_report_api`: o plano parou em rc 4 com 8 âncoras
+- Primeiro espelho do `TODO.md` do `report_api`: o plano parou em rc 4 com 8 âncoras
   fora da ADR 0015 §2, e o `--audit` deu `manual=8`. Ao procurar o alvo da âncora
   `.github/workflows/ci.yml` do item "`tsc --noEmit` como step do CI", o `grep` achou o job
   `typecheck` já no arquivo, e `git log -S"typecheck:"` apontou o commit que o trouxe.
@@ -223,15 +223,15 @@ Publicado como **v2.5.0**.
 
 Publicado como **v2.4.1**.
 
-- Faxina das issues do sales_quote: o `--audit` deu `summary auto=1 manual=206` (175 âncoras sem
+- Faxina das issues do quote_app: o `--audit` deu `summary auto=1 manual=206` (175 âncoras sem
   símbolo — o arquivo é anterior à ADR 0015 §2 do kit), e o plano recusa até a migração. O espelho
   estava sem sincronizar desde 2026-09-24, com 8 órfãs abertas.
 - Fechadas à mão: `git log --format='%h %ad %s' --date=short -S"<começo do título>" -- TODO.md` deu o
   commit de remoção de 7 delas, e `gh issue close N --reason completed --comment` citou cada um. A 8ª
   (#350) ficou aberta: o commit que a removeu não prova o conserto. Os 10 itens consertados que ainda estavam no arquivo saíram por PR
-  (sales_quote #419), com o doc da `Fonte:`, que o contrato de `docs/achados/` daquele repo exige.
+  (quote_app #419), com o doc da `Fonte:`, que o contrato de `docs/achados/` daquele repo exige.
 - Fora deste retrofit, sem correção verificada: o `--fix` só apaga `[x]` com `merge-base --is-ancestor`,
-  que nunca vale num repo de squash merge (PRs #405 e #406 do sales_quote). Registrado no `TODO.md` do kit.
+  que nunca vale num repo de squash merge (PRs #405 e #406 do quote_app). Registrado no `TODO.md` do kit.
 
 ## 2026-10-09 — o backlog que esvaziou de verdade
 
@@ -245,7 +245,7 @@ Publicado como **v2.4.0**.
   antes de um fechamento em massa; a saída virou `--allow-empty`. Provado no próprio kit: sem a flag,
   rc 2 nomeando a saída; com ela, `create=0 update=0 orphans=0`.
 - O `TODO.md` do kit não serve mais de entrada do `test_todo_issues.py` (0 itens, abaixo do piso de 5):
-  use o do sales_quote.
+  use o do quote_app.
 
 ## 2026-10-07 — o piso de 5 itens que o teste exigia calado
 
@@ -258,7 +258,7 @@ Publicado como **v2.3.3**.
 - Investigado antes de mexer: o piso protege contra vacuidade. `items[:-4]` com 4 itens é lista
   vazia, e o caso das órfãs passaria sem item mantido. Baixar o piso seria trocar um vermelho
   explicado por um verde que não mede. Mudou só onde o mínimo é dito: o `SKILL.md` e a mensagem do
-  caso. Com o `TODO.md` do sales_quote (223 itens), 73 de 73.
+  caso. Com o `TODO.md` do quote_app (223 itens), 73 de 73.
 
 ## 2026-10-07 — a regra de âncora que a skill ainda ensinava, e o espelho feito da branch
 

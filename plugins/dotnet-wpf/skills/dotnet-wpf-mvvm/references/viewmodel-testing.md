@@ -48,9 +48,9 @@ public void PopularCampos(HardwareInfo hwInfo)
 public void PopularCampos_AtualizaPropriedadesEHabilitaSave()
 {
     var vm = new MainWindowViewModel(service);
-    vm.PopularCampos(new HardwareInfo { CompanyName = "JRC" });
+    vm.PopularCampos(new HardwareInfo { CompanyName = "ACME" });
 
-    Assert.Equal("JRC", vm.CompanyName);
+    Assert.Equal("ACME", vm.CompanyName);
     Assert.True(vm.IsSaveEnabled);
 }
 ```

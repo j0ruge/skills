@@ -39,7 +39,7 @@ from the tree of each sha; the agent's own image does not. When the failure is i
 on the host, and then a new request for the **same** head. No new promotion: the head did not
 change, and the environment branch would carry a commit that changes nothing deployed.
 
-### Measured cases (`lighthouse_project`)
+### Measured cases (`portal_app`)
 
 **2026-10-13, the fix after the failure.** The first deploy through the agent (`ea2e774`, promotion PR #19) passed the gate on the host in
 ~4 min and failed in the frontend build, before anything was brought up: the agent image lacked
@@ -52,5 +52,5 @@ staging e2e 4/4. `gh run list` showed nothing throughout — the statuses were t
 **2026-10-14, the check before the merge.** The 0.3.0 promotion (PR #23) still carried that fix
 from `develop` to `staging`: the Step 4 diff over `infra/deployer/` listed `Dockerfile`. Merging
 it changes nothing on the host, so before the merge the host was probed:
-`docker exec jrc-staging-lh-deployer docker buildx version` answered, the rebuild of the day before
+`docker exec acme-staging-deployer docker buildx version` answered, the rebuild of the day before
 was in place, and the promotion went ahead: gate 15/15 on the host, deploy, then the staging e2e.

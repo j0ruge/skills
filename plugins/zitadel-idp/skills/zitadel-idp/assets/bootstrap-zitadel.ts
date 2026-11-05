@@ -1,7 +1,7 @@
 /**
- * Bootstrap declarativo do Zitadel — cria Org "JRC", Project "ERP-JRC",
- * roles `battery.operator`/`battery.admin` e Application OIDC
- * `battery-lifecycle-web` (SPA, PKCE) via Management API REST.
+ * Bootstrap declarativo do Zitadel — cria Org "ACME", Project "ERP-Acme",
+ * roles `inventory.operator`/`inventory.admin` e Application OIDC
+ * `inventory-web` (SPA, PKCE) via Management API REST.
  *
  * Idempotente: para cada recurso, busca antes de criar; se já existe, segue.
  *
@@ -37,12 +37,12 @@ const ZITADEL_API_URL = process.env.ZITADEL_API_URL ?? 'http://127.0.0.1.sslip.i
 const PAT_FILE =
   process.env.ZITADEL_PAT_FILE ?? resolve(__dirname, '../../../infra/docker/zitadel/local/admin.pat');
 
-const ORG_NAME = 'JRC';
-const PROJECT_NAME = 'ERP-JRC';
-const APP_NAME = 'battery-lifecycle-web';
+const ORG_NAME = 'ACME';
+const PROJECT_NAME = 'ERP-Acme';
+const APP_NAME = 'inventory-web';
 const ROLES = [
-  { key: 'battery.operator', displayName: 'Operador Battery Lifecycle', group: 'battery' },
-  { key: 'battery.admin', displayName: 'Administrador Battery Lifecycle', group: 'battery' },
+  { key: 'inventory.operator', displayName: 'Operador Inventory', group: 'inventory' },
+  { key: 'inventory.admin', displayName: 'Administrador Inventory', group: 'inventory' },
 ];
 // IMPORTANTE: incluir o silent-renew URI por default. Sem ele, todo
 // `automaticSilentRenew` na SPA retorna 400 e a UI fica em loop "verifying

@@ -195,7 +195,7 @@ check("...and the MANUAL line points at the item in the fixed text",
           for m in manual))
 
 # an OPEN box that declares a merged fix: the kit keeps it only until the merge, and nothing else
-# removes it (the sensor accepts it, the mirror SKIPs it) — lighthouse_project, 2026-10-16
+# removes it (the sensor accepts it, the mirror SKIPs it) — portal_app, 2026-10-16
 new, auto, _ = fix(ticked_world(f"- [ ] **aberto e feito** — `a:1` — ok. RESOLVED by `{merged}` — por `x` (2026-10-16)"),
                    repo)
 check("an open item whose RESOLVED by commit is merged -> deleted",

@@ -1,5 +1,13 @@
 # Changelog — `whisper-preprocess`
 
+## [1.1.2] — 2026-11-04
+
+### Dados da empresa saem do texto
+
+Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [1.1.1] — 2026-10-22
 
 Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
@@ -44,8 +52,7 @@ Initial packaging of the local `whisper-preprocess` skill into the marketplace. 
 already carried hard-won Whisper lessons (silence removal before enhancement, -30dB threshold,
 10-min segmentation against hallucination cascades, `condition_on_previous_text=False`, UTF-8
 on Windows, multilingual 2-pass + merge). This release packages all of that **plus** the
-anti-"picotamento" fix proven this session against a real 65-min recording (`Sales Quote
-fluxo.m4a`) containing a low-volume, speech-impaired (dysarthric) speaker whose voice came out
+anti-"picotamento" fix proven this session against a real 65-min recording (`reuniao-fluxo.m4a`) containing a low-volume, speech-impaired (dysarthric) speaker whose voice came out
 choppy/fluttering in the listenable `*_enhanced.opus`.
 
 ### Why (the lessons that motivated this)

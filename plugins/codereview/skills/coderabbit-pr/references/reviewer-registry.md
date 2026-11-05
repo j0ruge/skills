@@ -202,7 +202,7 @@ done
 
 Codex on other PRs and nothing on this one → case (b), **never requested**: say so in the report
 and offer to post `@codex review` (a comment on the user's PR is theirs to approve), then wait for
-`Completed` on the head (above). Measured 2026-10-16 (lighthouse_project PRs #32, #33, #36, #37):
+`Completed` on the head (above). Measured 2026-10-16 (portal_app PRs #32, #33, #36, #37):
 no Codex event on any of the four, Codex present only where `@codex review` had been posted (#29);
 asked, it returned five real findings in about ten minutes, and the report would have named only
 Copilot's quota notice.

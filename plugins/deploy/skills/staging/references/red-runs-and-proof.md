@@ -64,7 +64,7 @@ DATABASE_URL="<target env DB, read-only credentials>" npx prisma migrate status
 # 2. The container running now was created by THIS run, not last month's
 ssh <host> 'docker inspect <container> --format "{{.Created}} {{.Config.Image}}"'   # compare with the run's timestamps
 #    Read BOTH fields. `Created` catches a stale container; `Config.Image` catches a stranger one:
-#    an image name with no registry prefix (`dsr-web:latest`, not `ghcr.io/<org>/<img>:staging`)
+#    an image name with no registry prefix (`report-web:latest`, not `ghcr.io/<org>/<img>:staging`)
 #    means the container was built by hand on the host and the pipeline has never deployed here at
 #    all. Compare it against the `image:` the compose file declares — measured once, they differed,
 #    and "container up + hostname 200" had been reading as a working pipeline for weeks.

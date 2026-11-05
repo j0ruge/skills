@@ -244,7 +244,7 @@ def section_label(section: str) -> str | None:
 def _label_safe(text: str) -> str:
     """Troca a vírgula, que o GitHub recusa em nome de label, por ` ·`.
 
-    Medido em 2026-09-24 no JRC-Brasil/sales_quote: `todo: Aprovação, pendências e ciclo da
+    Medido em 2026-09-24 no acme/quote_app: `todo: Aprovação, pendências e ciclo da
     cotação` respondia 422 `Label.name is invalid`, e o mesmo nome sem a vírgula passava. O teto
     de 50 é de CARACTERES (50 caracteres com 97 bytes foram aceitos), então o `[:50]` fica.
 
@@ -619,7 +619,7 @@ def update_kind(it: Item, iss: dict, ctx: Ctx) -> str:
     positives of 86. Only a number after `:` inside backticks is normalized — a bare digit is content
     (`90 → 85`), and title and section (footer) changes stay `text`. A body rendered before the
     symbol moved to the Âncora line is read in today's layout: without that, every such issue came
-    back `text` on its next line shift (125 of 186 items of the sales_quote carry the symbol)."""
+    back `text` on its next line shift (125 of 186 items of the quote_app carry the symbol)."""
     def norm(b: str) -> str:
         b = LEGACY_SLOT_RE.sub(r"\1 \2\n\n", b.lstrip(), count=1)
         b = re.sub(r"<!--.*?-->", "", b, flags=re.S)

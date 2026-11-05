@@ -48,7 +48,7 @@ except ImportError:  # Windows
     import msvcrt
 
 MARKETPLACE = "chewiesoft-marketplace"
-DEFAULT_OWNERS = ("j0ruge", "jrc-brasil", "chewiesoft")
+DEFAULT_OWNERS = ("j0ruge", "chewiesoft")
 ALWAYS_EXCLUDED = {"retrofit-skill", "retrofit-watch", "skill-quality-audit"}
 DEFAULT_KITS = ("sdd",)
 MAX_REVIEWS = 2

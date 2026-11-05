@@ -2,6 +2,12 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.16] — 2026-11-04 — dados da empresa saem do texto
+
+Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [1.4.15] — 2026-11-02 — o número na prosa se confere pelo valor, recalculado das contagens
 
 Patch: uma lição da sessão que escreveu o capítulo de resultados de uma monografia de TCC a partir
@@ -422,7 +428,7 @@ organizada com esta skill):
 
 ### Validar um plano que já chegou pronto, e a sabotagem que o cache engoliu
 
-Lições de uma sessão real (planejamento da `@jrc/object-storage` como biblioteca da JRC: brainstorm,
+Lições de uma sessão real (planejamento da `@acme/object-storage` como biblioteca interna: brainstorm,
 grill de 13 perguntas e, a pedido do usuário, validação Kaizen da missão com checklist):
 
 - **Template novo, § Validação de plano** (`references/templates.md`), roteado pela Fase 1 e pela
@@ -431,7 +437,7 @@ grill de 13 perguntas e, a pedido do usuário, validação Kaizen da missão com
   validação foi improvisada: tabela dos desperdícios contra o plano, ajustes K1–K6 que voltaram ao
   plano e um checklist. O template é esse formato, com o checklist tirado dos princípios e armadilhas
   desta skill. Padrão de falha: cada validação sai num formato, e a que vira só uma nota não muda o
-  plano. Usado uma vez (`lighthouse_project`, `docs/superpowers/specs/2026-10-16-jrc-libs-object-storage-design.md`
+  plano. Usado uma vez (`portal_app`, `docs/superpowers/specs/2026-10-16-acme-libs-object-storage-design.md`
   § 8); não testado em outro caso.
 - **Armadilha nova, "Sabotagem que não chegou à ferramenta".** Para provar que o `npm ci` recusa um
   tarball trocado em `vendor/`, o caso sabotado deu rc=0 e instalou o conteúdo **antigo**: o npm
@@ -541,7 +547,7 @@ Lições de uma sessão real (publicação de uma skill nova no marketplace, a `
 Lições de uma sessão real (amostra de estoque para uma reunião, com nota no vault e e-mail à equipe):
 
 - **Fase 2, item 6 (Check explícito):** o Check do CSV passou em 20/20 peças, mas a nota escrita a
-  partir dele trazia "DE-JRC 119", somado de cabeça; o agrupamento por comando dava 137. O Check
+  partir dele trazia "DE-Acme 119", somado de cabeça; o agrupamento por comando dava 137. O Check
   verificava o artefato principal e deixava passar a prosa copiada dele (nota, e-mail, resumo). Agora
   todo número ou afirmação copiado para a prosa sai de um comando.
 - **Fase 1, item 1 (Gemba primeiro):** a nota do projeto já respondia o que era o local "DE", e mesmo
@@ -649,7 +655,7 @@ para 8 gatilhos (pares `kaizen log/retrospectiva` e `desperdício/dívida técni
 `poka-yoke` como capacidade e gatilho, e perdeu "respeitando as convenções do repo" (é
 comportamento, coberto pela seção própria; não é gatilho) — 483 chars, agora entre aspas como o
 `CLAUDE.md` pede; `ANTES` em caps virou `antes` (a razão já estava na frase seguinte); a pergunta
-do desperdício #1 trocou "cotação" por "usuário" — vazamento do projeto `sales_quote`, onde a skill
+do desperdício #1 trocou "cotação" por "usuário" — vazamento do projeto `quote_app`, onde a skill
 nasceu. De brinde, "Caçe" → "Cace".
 
 Ficou de propósito (keep list do guia): o script exato das ações irreversíveis, a redundância
@@ -749,7 +755,7 @@ linha `Gatilhos —` com 8 termos. Mesmo texto espelhado em `SKILL.md`, `plugin.
 
 ### Changed — o template do Kaizen Log passou a refletir o uso real
 
-O uso da skill no projeto `sales_quote` (feature SQ-62) produziu entradas de log com duas
+O uso da skill no projeto `quote_app` (feature QUO-62) produziu entradas de log com duas
 subseções que o template não previa, e ambas se provaram as mais consultadas depois:
 
 - **Desperdícios evitados (cortes conscientes)** — o que ficou fora do escopo e por quê.

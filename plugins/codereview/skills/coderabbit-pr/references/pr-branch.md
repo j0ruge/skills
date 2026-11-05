@@ -64,7 +64,7 @@ In the closing report, name both versions (`loaded 4.5.2, ran from installed 4.5
 `/reload-skills`, typed while the agent was mid-turn and delivered to it as queued messages,
 `/codereview:coderabbit-pr` still loaded `…/codereview/2.27.17/`; the two `coderabbit-pr` folders
 compared `same`, and the run went on. Measured 2026-10-21
-(lighthouse_project PR #107): loaded from `…/codereview/2.26.0/` with 2.26.8 installed; the two
+(portal_app PR #107): loaded from `…/codereview/2.26.0/` with 2.26.8 installed; the two
 `SKILL.md` differed only in `version:` (4.5.2 → 4.5.5), while `fix-loop.md`,
 `regression-testing.md` and `reviewer-registry.md` differed, and only the installed `fix-loop.md`
 had *A finding already in the backlog*. The run followed the references of the installed folder
@@ -170,7 +170,7 @@ gh pr view "$PR" --json state,mergeCommit,baseRefName -q '"\(.state) \(.mergeCom
    `gh api -X POST "repos/$REPO/pulls/$PR/comments/<comment id>/replies" -f body="Fixed in #<n>"`.
 4. 5.1–5.3 run on the merged PR, whose threads are the open ones: `unresolved: 0` there is the gate.
 
-Measured 2026-10-17 (jrc-libs PR #3): Codex's two P1 arrived at 23:10 UTC, and the user chose to
+Measured 2026-10-17 (acme-libs PR #3): Codex's two P1 arrived at 23:10 UTC, and the user chose to
 merge first, at 23:36 (`650f4cb`). The fixes went to a branch cut from `main`, as PR #4; each thread
 of #3 got a reply linking #4, and the 5.3 count on #3 read `total: 2 unresolved: 0`.
 
@@ -221,7 +221,7 @@ With a merge-commit convention the branch's commits enter the base unchanged, an
 not hold: `[x]` — "Not applicable: merged with a merge commit", merge with `gh pr merge --merge`
 (never squash, which would make the finding true after the fact), and prove it right after the
 merge with `git merge-base --is-ancestor <hash> "origin/$BASE"` (rc 0). Measured 2026-10-16
-(lighthouse_project PR #37): Codex flagged `3447edb` as never ancestral to `develop`; the repo
+(portal_app PR #37): Codex flagged `3447edb` as never ancestral to `develop`; the repo
 merges with merge commits, and after `--merge` the check returned rc 0.
 
 ## Sweep leftover checklists

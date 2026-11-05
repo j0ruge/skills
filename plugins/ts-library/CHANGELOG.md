@@ -2,6 +2,14 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [0.3.2] — 2026-11-04
+
+### Dados da empresa saem do texto
+
+Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [0.3.1] — 2026-10-22
 
 Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
@@ -11,8 +19,8 @@ Distribuição individual no catálogo Codex após instalação isolada, descobe
 ### O que a extração real mostrou
 
 A receita de extração da 0.1.0 tinha sido medida num repositório de prova. Na mesma data ela rodou de
-verdade: a `@jrc/object-storage` saiu de `JRC-Brasil/sales_quote` (`a1ad4b74`) para
-`JRC-Brasil/jrc-libs` (`21df76f`). Quatro lições, todas medidas nessa extração, entraram na
+verdade: a `@acme/object-storage` saiu de `acme/quote_app` (`a1ad4b74`) para
+`acme/acme-libs` (`21df76f`). Quatro lições, todas medidas nessa extração, entraram na
 `references/extracao.md`:
 
 - **A regex só pegava `(#N)`.** Duas das quatro referências estavam fora de parênteses ("review do PR
@@ -73,7 +81,7 @@ sobre o npm, restrição inventada, medição atribuída, arquivo commitado e ja
 
 ### A skill nasce do planejamento de uma lib real
 
-Origem: o planejamento da `@jrc/object-storage` como biblioteca da JRC (repositório privado, sem
+Origem: o planejamento da `@acme/object-storage` como biblioteca interna (repositório privado, sem
 GitHub Actions, sem registro de pacotes), com a conferência do desenho contra as práticas de 2026.
 
 - **O fluxo em seis passos** no `SKILL.md`: forma do pacote, sensores, versão, distribuição,

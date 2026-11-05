@@ -56,7 +56,7 @@ each checklist naming the context, the description and the date. 4.2 then runs t
 so both sides compare one gate. `failure` or `pending` names no failing test: run the suite. A
 status is someone's statement, not a run you watched: a failure in 4.2 under a green status is
 re-run on the head (the detached worktree above) before it is called a regression. Measured
-2026-10-21 (lighthouse_project PR #107): Codex's P1 arrived on `68abf95`, which had carried
+2026-10-21 (portal_app PR #107): Codex's P1 arrived on `68abf95`, which had carried
 `local/ci=success` (`infra/gate/gate.sh --sem-ci: 15/15, 0 reprovados`) for 17 minutes, the gate the
 repo's CLAUDE.md declares; the fix head `8ab1942` got the same gate, 15/15.
 

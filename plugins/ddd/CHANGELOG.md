@@ -2,6 +2,14 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [0.5.3] — 2026-11-04
+
+### Dados da empresa saem do texto
+
+Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [0.5.2] — 2026-10-22
 
 A entrada textual da invocação é explícita quando o host não substitui `$ARGUMENTS`, inclusive no Codex. Preserva o bloco para os hosts que fazem a substituição e a checagem de entrada vazia.
@@ -12,7 +20,7 @@ Distribuição individual no catálogo Codex após instalação isolada, descobe
 
 ## [0.5.0] - 2026-10-01
 
-Lição de uma sessão real (sales_quote, SQ-153): o `CLAUDE.md` do projeto exige rodar a skill antes de
+Lição de uma sessão real (quote_app, QUO-153): o `CLAUDE.md` do projeto exige rodar a skill antes de
 concluir trabalho que toca a modelagem, e a chamada foi `review <path> — escopo: o diff não
 commitado`. O Modo 1 só descrevia a análise do **codebase inteiro** ("aponta codebase", template
 "Relatório — <projeto>", fan-out para codebase grande), sem escopo, foco nem saída para revisar a
@@ -59,9 +67,8 @@ v0.2.0: 7 avisos → 0. Nenhum conteúdo técnico muda.
 Prompt audit (`/claude-api prompt-audit`, modelo-alvo Claude Fable 5.1); relatório completo fora do repo. O `SKILL.md` operacional estava limpo nos sinais de regex (0 caps da lista, 0 tickets,
 0 modelos); o que a sondagem achou foi outra coisa.
 
-- **E-mail e handle do autor** (`"joruge"`, `"j@jrc.com"`) num exemplo de código distribuído →
-  `alice@example.com`. Marca `JRC` / `vnd.jrc.*` nos exemplos → `Acme` / `vnd.acme.*` (a skill se
-  declara agnóstica e é distribuída).
+- **E-mail e handle do autor** num exemplo de código distribuído → `alice@example.com`. A marca da
+  empresa nos exemplos → `Acme` / `vnd.acme.*` (a skill se declara agnóstica e é distribuída).
 - **"Deliberadamente fora de escopo (v0.4.0)"** era um diff entre versões que o modelo nunca viu
   ("além das exclusões de v0.3.0…") e já estava desatualizado (skill em 0.4.1): vira uma lista
   única. "práticas 2024-2026" → "contemporâneas (pós-Evans/Vernon)".
@@ -109,7 +116,7 @@ Prompt audit (`/claude-api prompt-audit`, modelo-alvo Claude Fable 5.1); relató
 
 ### Motivação
 
-Re-auditoria paralela com 4 agentes (1 por markdown bruto em `~/repos/jrc-manual-rag/processed/markdown/`: Evans Referência, Evans Rápido, Vernon IDDD, Vernon Distilled) reportou convergência sobre 12 gaps residuais pós-v0.3.0:
+Re-auditoria paralela com 4 agentes (1 por markdown bruto em `~/repos/acme-manual-rag/processed/markdown/`: Evans Referência, Evans Rápido, Vernon IDDD, Vernon Distilled) reportou convergência sobre 12 gaps residuais pós-v0.3.0:
 
 **CRÍTICO convergente (Evans Ref + Rápido + IDDD):**
 1. Specification Pattern — só mencionado em glossary, sem implementação
@@ -156,7 +163,7 @@ Mantidas também as exclusões de v0.3.0: Large-Scale Structure patterns, SaaSOv
 - `cqrs-event-sourcing.md` — nova seção "Concorrência em Event Sourcing" (optimistic check, `ConflictsWith()` pattern, retry com exponential backoff); nova seção "Snapshots" (quando, frequência, trade-offs, armadilhas); nova seção "Master/Clone replication" (write-through vs write-behind) `[IDDD Apêndice A]`
 - `context-mapping.md` — nova seção "Notification pattern" completa: Notification wrapper (envelope padronizado), NotificationReader type-safe via dot notation, Custom Media Type / Published Language, estratégia v1-forward-compatible, REST pull vs messaging push, outbox obrigatório `[IDDD cap.13]`
 - `tactical-patterns.md` — nova seção "Factory em profundidade" (Factory Method em AR, Abstract Factory, Domain Service como Factory / ACL, multitenancy, Factory vs Constructor vs Repository); nova seção "Repository — queries em Ubiquitous Language" (bons vs ruins, paginação, armadilhas); nova seção "Module — organização que não vira BBoM" (naming, cohesão, acoplamento acíclico, DDD vs deployment module, antipadrão "pasta por camada técnica", testes de arquitetura); nova seção "Design Flexível em profundidade" (Standalone Class, Closure of Operations, Declarative Design / Specification, Conceptual Contour com exemplos agnósticos) `[IDDD cap.9, 11, 12]` `[Evans Reference]`
-- `strategic-design.md` — novo template completo do Domain Vision Statement (estrutura, exemplo Battery Lifecycle JRC, antipadrões); nova seção "Abstract Core" (quando subdomínios interagem); nova seção "Continuous Integration como pattern estratégico cross-team" `[Evans Reference]`
+- `strategic-design.md` — novo template completo do Domain Vision Statement (estrutura, exemplo Battery Lifecycle Acme, antipadrões); nova seção "Abstract Core" (quando subdomínios interagem); nova seção "Continuous Integration como pattern estratégico cross-team" `[Evans Reference]`
 - `architecture-styles.md` — nova seção "DIP — coração da hexagonal" com exemplo agnóstico e reforço via testes de arquitetura; nova seção "Inbound vs Outbound Adapters com exemplos" (REST/CLI/listener/scheduler vs Repository/Publisher/HTTP client/Clock); nova seção "REST como estilo arquitetural" (resources orientados a caso de uso, HATEOAS, content negotiation, errors semânticos, comparativo REST/gRPC/GraphQL) `[IDDD cap.4]`
 - `event-storming.md` — nova seção "Por que funciona — tátil, rápido, barato" (acessibilidade pedagógica preservada do Distilled); nota de integração com scenarios `[Distilled cap.7]`
 - `glossary.md` — entrada dupla "Linguagem Ubíqua / Linguagem Onipresente" (ambas variantes pt-BR aceitas); novas entradas: Notification, NotificationReader, Unit of Work, Snapshot, Modeling Spike, Modeling Debt, SWOT (em DDD), Scenario (Given-When-Then), Deeper Insight, Breakthrough
@@ -206,7 +213,7 @@ Auditoria de cobertura (skill v0.2.0 vs. 4 markdowns brutos dos livros-fonte) co
 
 ### Motivação
 
-Validação aplicada no projeto `validade_bateria_estoque` revelou: (a) subagentes precisaram improvisar naming/estrutura de domain events (inconsistência); (b) spec completa é overkill pra casos pequenos; (c) heurísticas de review ficam mais úteis com exemplos concretos lado a lado.
+Validação aplicada no projeto `inventory_app` revelou: (a) subagentes precisaram improvisar naming/estrutura de domain events (inconsistência); (b) spec completa é overkill pra casos pequenos; (c) heurísticas de review ficam mais úteis com exemplos concretos lado a lado.
 
 ## [0.1.0] - 2026-04-14
 

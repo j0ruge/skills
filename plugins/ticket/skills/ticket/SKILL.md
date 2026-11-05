@@ -1,23 +1,24 @@
 ---
 name: ticket
-description: "Jira ticket lifecycle for JRC Brasil projects, integrated with Git — create issues/sub-issues and branches, close with an auto-generated summary. Per-repo config via `.jira-project`; discovers project-specific transitions instead of assuming. New issues are born in the active sprint with story points and fixVersion, each read back by the sensor that can see it. Triggers — ticket, Jira, criar issue, fechar ticket, sprint, story points, fixVersion, acli."
+description: "Jira ticket lifecycle, integrated with Git — create issues/sub-issues and branches, close with an auto-generated summary. Per-repo config via `.jira-project`; discovers project-specific transitions instead of assuming. New issues are born in the active sprint with story points and fixVersion, each read back by the sensor that can see it. Triggers — ticket, Jira, criar issue, fechar ticket, sprint, story points, fixVersion, acli."
 argument-hint: "start (open) | split | close | status"
 compatibility: "Claude Code: o argument-hint acima é campo dele e só é lido no topo. Requer acli e credenciais Jira (JIRA_EMAIL, JIRA_API_TOKEN)."
 metadata:
-  version: 1.14.1
+  version: 1.14.2
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
 
-Gerencia o ciclo de vida de tickets Jira integrado com Git, seguindo o fluxo padronizado da JRC Brasil.
+Gerencia o ciclo de vida de tickets Jira integrado com Git, seguindo um fluxo padronizado.
 
 **CLI:** `acli` (Jira CLI — validado na v1.3.22; `--from-json` em
 `workitem create` exige ≥ 1.3.2x, confirme com `acli --version`) + MCP
 `mcp__atlassian__*` quando disponível
 **Projeto Jira:** detectado dinamicamente — ver "Detecção de Projeto" abaixo
-**Branch naming:** `${BRANCH_PREFIX}-XXX_descricao_curta` (ex.: `RS-605_...`, `SQ-22_...`)
-**REST:** as chamadas `curl` abaixo usam `JIRA_EMAIL`/`JIRA_API_TOKEN` — carregue antes com
-`set -a; . ~/.hermes/.env; set +a`. Base: `https://jrcbrasil.atlassian.net/rest/api/3`.
+**Branch naming:** `${BRANCH_PREFIX}-XXX_descricao_curta` (ex.: `REP-605_...`, `QUO-22_...`)
+**REST:** as chamadas `curl` abaixo usam `JIRA_BASE_URL` (`https://<site>.atlassian.net`), `JIRA_EMAIL` e
+`JIRA_API_TOKEN`; se faltarem no ambiente, carregue com `set -a; . ~/.hermes/.env; set +a`. Sem
+`JIRA_BASE_URL`, pare e peça o endereço do site: nenhum vem fixo aqui.
 
 ## Referências
 
@@ -45,10 +46,10 @@ A skill **não tem projeto Jira hardcoded** — cada repo declara o seu via arqu
 Antes de qualquer comando, ler e carregar as variáveis em escopo:
 
 ```ini
-# ~/repos/sales_quote/.jira-project (exemplo real)
-PROJECT=SQ
+# ~/repos/quote_app/.jira-project (exemplo)
+PROJECT=QUO
 BOARD=51
-BRANCH_PREFIX=SQ
+BRANCH_PREFIX=QUO
 BASE_BRANCH=develop   # opcional — base de branches/PR; se ausente, detectar (ver tabela)
 ```
 
@@ -87,7 +88,7 @@ Analise o argumento passado pelo usuário e execute o comando correspondente:
 
 **Detecção de sub-fluxo:** se o argumento após `start` contém uma **key Jira** (regex
 `${PROJECT}-\d+`) ou uma **URL do Jira** (regex
-`https?://jrcbrasil\.atlassian\.net/browse/(${PROJECT}-\d+)`), extrair a key e seguir o
+`https?://[^/]+\.atlassian\.net/browse/(${PROJECT}-\d+)`), extrair a key e seguir o
 **Sub-fluxo A**; caso contrário, **Sub-fluxo B**. Cada passo por extenso: `references/start.md`.
 
 ### Sub-fluxo A: Issue existente
@@ -95,7 +96,7 @@ Analise o argumento passado pelo usuário e execute o comando correspondente:
 1. **Buscar dados:** `acli jira workitem view ${PROJECT}-XXX`; sprint e pontos ficam fora do view
    padrão: `acli jira workitem view ${PROJECT}-XXX --fields "customfield_10016,customfield_10020" --json`
    (`10016` = story points; `10020` = array de sprints, pegar a `"state": "active"`). IDs do site
-   jrcbrasil, não constantes do Jira. Issue não encontrada → informar e abortar.
+   de origem, não constantes do Jira. Issue não encontrada → informar e abortar.
 2. **Mostrar resumo** (📋 key — summary · 📊 status · 👤 responsável · 🏃 sprint · 🎯 score).
 3. **Responsável vazio** → perguntar se o dev quer se atribuir; se sim,
    `acli jira workitem edit --key "${PROJECT}-XXX" --assignee "@me"` — `@me`, não o e-mail.
@@ -183,7 +184,7 @@ vínculo ao cartão que bloqueiam (`references/workflow.md §Vínculos entre iss
 1. **Detectar issue atual:** extrair `${PROJECT}-XXX` do nome da branch via regex
    `^(${BRANCH_PREFIX}-\d+)`; se não estiver em branch de issue, pedir a key ao dev.
 2. **Perguntar ao dev:** nome/summary da sub-issue e descrição breve (opcional).
-3. **Criar sub-issue** e capturar a key retornada (ex.: `RS-606` ou `SQ-33`):
+3. **Criar sub-issue** e capturar a key retornada (ex.: `REP-606` ou `QUO-33`):
    `acli jira workitem create --project "$PROJECT" --type "Subtarefa" --summary "{nome}" --description "{descrição}"`
 4. **Vincular à issue pai:** `acli jira workitem edit --key "${PROJECT}-YYY" --parent "${PROJECT}-XXX"`
 5. **Transicionar sub-issue para Em andamento (se o dev confirmar):**
@@ -220,7 +221,7 @@ por extenso, para ler antes do primeiro `close`: `references/close.md`.
    **objeto** (`str` = ADF recusado). Comando pronto em `references/close.md` step 5.
 
 6. **Transicionar até o "done"** descobrindo as transições (`getTransitionsForJiraIssue`; aplicar pelo
-   `id` da transição cujo `to.name` é o status final) — **RS:** `Em andamento → Aprovação → Finished`; **SQ:**
+   `id` da transição cujo `to.name` é o status final) — **REP:** `Em andamento → Aprovação → Finished`; **QUO:**
    `Em andamento → Concluído` direto (`acli --status "Concluído"`, que casa pelo status de destino,
    ou MCP id `31`). Sem MCP: REST por id (close.md step 6).
 7. **Conferir o `fixVersion`** (`GET .../issue/${PROJECT}-XXX?fields=fixVersions` contra

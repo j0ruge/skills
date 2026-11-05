@@ -2,6 +2,14 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [3.3.5] — 2026-11-04
+
+### Dados da empresa saem do texto
+
+Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## 2026-10-30 — A prova de um build estático copiado à mão — bump 3.3.3 → [3.3.4]
 
 **Por quê:** na homologação do `warehouse_explorer_web` (sem CI: o deploy é copiar o `build/` para o
@@ -26,7 +34,7 @@ Distribuição individual no catálogo Codex após instalação isolada, descobe
 ## 2026-10-22 — A poda que roda é a da árvore promovida; recusa por disco se repete no mesmo head — bump 3.3.1 → [3.3.2]
 
 **Por quê:** a linha **4 — disk** afirmava, em geral, que a poda do deploy roda depois do build. Era
-um fato do `deploy.sh` do `lighthouse_project`, e deixou de ser no mesmo dia: o PR #125 (`5285865` na
+um fato do `deploy.sh` do `portal_app`, e deixou de ser no mesmo dia: o PR #125 (`5285865` na
 `develop`) passou a podar também antes do build, a reter por nome a `sha-*` no ar e a de rollback, e
 a recusar o build abaixo de um piso de disco (`git show 5285865:infra/staging/scripts/deploy.sh`,
 `passo "disco antes do build"` antes de `passo "build das imagens"`). Para quem promove, isso muda
@@ -45,7 +53,7 @@ e F4 (sem evals) da `skill-quality-audit`.
 
 ## 2026-10-22 — Com agente no host, ler o disco do host antes do merge — bump 3.3.0 → [3.3.1]
 
-**Por quê:** na promoção da 0.4.3 do `lighthouse_project`, o agente constrói as duas imagens no host
+**Por quê:** na promoção da 0.4.3 do `portal_app`, o agente constrói as duas imagens no host
 de staging, e o host estava em 97% de disco (7,1 GB livres), servindo também a produção de outro
 sistema. A poda do `deploy.sh` roda no fim, depois do build, então não salva um build que não cabe.
 E apagar as imagens antigas não liberou nada: as camadas seguiam no cache do BuildKit, e só o
@@ -58,7 +66,7 @@ com o detalhe na lição 118 da `cicd`.
 
 ## 2026-10-15 — Migration com constraint nova: sondar a base do ambiente com a expressão do próprio constraint — bump 3.2.0 → [3.3.0]
 
-**Por quê:** a promoção da 0.4.0 do `lighthouse_project` (PR #31, `develop → staging`) carregava uma
+**Por quê:** a promoção da 0.4.0 do `portal_app` (PR #31, `develop → staging`) carregava uma
 migration que troca dois `CHECK`s de `expenditure_requests` e o `CHECK` de ação da auditoria. Uma
 linha da base de staging que violasse um deles abortaria o `migrate deploy`, que roda antes da
 aplicação, e pararia o deploy inteiro. A skill não pedia sonda nenhuma: o Step 4 diffava os workflows
@@ -87,11 +95,11 @@ sensor/data).
 
 ## 2026-10-14 — O agente no host não muda com o merge, e o bump que já veio — bump 3.1.0 → [3.2.0]
 
-**Por quê:** na promoção da 0.3.0 do `lighthouse_project` (PR #23, `develop → staging`), o diff do
+**Por quê:** na promoção da 0.3.0 do `portal_app` (PR #23, `develop → staging`), o diff do
 Step 4 sobre `infra/deployer/` listou o `Dockerfile` do agente de deploy: o conserto do `buildx`
 (#20) ainda viajava para `staging`. Mesclar não muda nada no host — o agente não vem da árvore do
 sha —, e a skill só tratava disso **depois** de um deploy vermelho, em `no-actions-agent.md`. A
-conferência foi feita à mão antes do merge (`docker exec jrc-staging-lh-deployer docker buildx
+conferência foi feita à mão antes do merge (`docker exec acme-staging-deployer docker buildx
 version`), porque o repo documentava; a skill não pedia. No mesmo dia o repo passou a trocar a versão
 quando o desenvolvimento da versão começa (`.claude/rules/devops.md` §3 de lá, commit `3362cd9`), e o
 Step 2b só descrevia o bump na promoção.
@@ -112,7 +120,7 @@ sensor/data).
 
 ## 2026-10-13 — Workflow desativado não é pipeline, e o deploy por agente no host — bump 3.0.0 → [3.1.0]
 
-**Por quê:** no `lighthouse_project` os três workflows estão `disabled_manually` e o deploy de
+**Por quê:** no `portal_app` os três workflows estão `disabled_manually` e o deploy de
 staging é feito por um agente no host, que observa a branch, roda o gate no servidor e publica
 status no commit. O Step 0 lia o `on:` de cada workflow sem conferir se estava ativo: montaria o
 mapa "staging → cd-staging" e esperaria um run que nunca vem. E, sem workflow escutando push, a
@@ -306,7 +314,7 @@ sobra nome para a imagem anterior. A saída é marcá-la **antes** do push, e el
 
 **O quê:** Step 7 passa a dizer como **ler** os dois campos do `docker inspect`, e o Step 4 ganha a contagem do backlog com a consequência de um CD longamente parado.
 
-**Por quê:** o Step 7 já mandava inspecionar `{{.Created}} {{.Config.Image}}`, mas só explicava o `Created`. Medido num host real: o container servia `dsr-web:latest` — **sem prefixo de registry** — enquanto o compose declarava `ghcr.io/<org>/<img>:staging`. Ou seja, aquilo tinha sido buildado à mão no host e o pipeline **nunca** havia entregado ali; por semanas "container up + hostname 200" foi lido como pipeline funcionando. O campo já estava no comando; faltava a leitura. No Step 4, a mesma investigação mostrou por que contar o backlog importa: com o CD parado por seis semanas, o primeiro deploy verde carregaria 15 commits **e** trocaria a imagem feita à mão por uma de pipeline nunca executada naquele ambiente — duas novidades no mesmo instante, e nenhuma forma de separá-las se algo quebrar depois.
+**Por quê:** o Step 7 já mandava inspecionar `{{.Created}} {{.Config.Image}}`, mas só explicava o `Created`. Medido num host real: o container servia `report-web:latest` — **sem prefixo de registry** — enquanto o compose declarava `ghcr.io/<org>/<img>:staging`. Ou seja, aquilo tinha sido buildado à mão no host e o pipeline **nunca** havia entregado ali; por semanas "container up + hostname 200" foi lido como pipeline funcionando. O campo já estava no comando; faltava a leitura. No Step 4, a mesma investigação mostrou por que contar o backlog importa: com o CD parado por seis semanas, o primeiro deploy verde carregaria 15 commits **e** trocaria a imagem feita à mão por uma de pipeline nunca executada naquele ambiente — duas novidades no mesmo instante, e nenhuma forma de separá-las se algo quebrar depois.
 
 ## [2.1.0] - 2026-08-28
 
@@ -388,7 +396,7 @@ sobra nome para a imagem anterior. A saída é marcá-la **antes** do push, e el
 
 ### Motivação
 
-Numa promoção real (`sales_quote`, cadeia `develop → staging → main`), seguir a
+Numa promoção real (`quote_app`, cadeia `develop → staging → main`), seguir a
 skill ao pé da letra teria empurrado `main` e disparado o deploy de produção no
 host de produção, enquanto anunciava "staging". A skill foi descartada em favor
 do fluxo correto e esta versão nasce daí.

@@ -204,7 +204,7 @@ extra_hosts:
   - "host.docker.internal:host-gateway"
 ```
 
-Medido em 2026-10-13 (kratos, 7 GB de RAM): `node:22-bookworm` com o socket montado rodou
+Medido em 2026-10-13 (host real, 7 GB de RAM): `node:22-bookworm` com o socket montado rodou
 `npm ci` + a suíte de integração, **12/12** em 110 s, com 4,9 GB livres; depois, o mesmo par
 no agente de deploy deu a integração verde em 31 s dentro do gate. O `host-gateway` resolve
 para o gateway do bridge default (`172.17.0.1`) mesmo com o container numa rede própria. O

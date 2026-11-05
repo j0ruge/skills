@@ -12,7 +12,7 @@ a tabela sintoma → causa, mais quatro references: `diagnostico.md`, `configura
 tentativas por uma razão que nenhuma skill cobria. O curl devolvia `200` para os três serviços e a
 página dizia **"Serviço indisponível"** — o `checkHealth()` do app chamava `fetch`, caía no `catch` e
 traduzia a exceção para "fora do ar". A causa estava só no console: a API respondia
-`Access-Control-Allow-Origin: https://dsr.jrcbrasil.net` e a página rodava em `http://localhost`.
+`Access-Control-Allow-Origin: https://app.acme.example` e a página rodava em `http://localhost`.
 Não havia serviço fora do ar, nem falha de rede, nem o defeito de parsing que a mensagem seguinte
 acusava.
 

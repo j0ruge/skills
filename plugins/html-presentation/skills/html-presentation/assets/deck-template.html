@@ -130,7 +130,7 @@ b,strong{font-weight:600;color:var(--fg)}
 .item .ico{width:56px;height:56px;color:var(--brand)}
 .item h3{font-size:34px;font-weight:600;line-height:1.2}
 .item p{font-size:27px;line-height:1.4;color:var(--fg2)}
-.item .chip{align-self:flex-start}  /* na coluna flex o chip esticava até a largura do item (deck Lighthouse, 03/11/2026) */
+.item .chip{align-self:flex-start}  /* na coluna flex o chip esticava até a largura do item (deck Portal, 03/11/2026) */
 
 /* Ficha (caso/incidente/fato) no vocabulário de "detalhe" de app */
 .split{display:grid;grid-template-columns:1fr 1.05fr;gap:72px;flex:1;min-height:0;align-items:start}
@@ -509,7 +509,7 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
   addEventListener('keydown', e => {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     const k = e.key;
-    // Enter e Espaço num botão focado são do botão (Lighthouse, 03/11/2026). O clique de mouse tira o foco do botão,
+    // Enter e Espaço num botão focado são do botão (Portal, 03/11/2026). O clique de mouse tira o foco do botão,
     // então depois dele Espaço segue avançando. Não dá para usar :focus-visible: a própria tecla o acende.
     if ((k === ' ' || k === 'Enter') && e.target.closest?.('button')) return;
     if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(k)) { e.preventDefault(); next(); }

@@ -1,5 +1,18 @@
 # Changelog — retrofit-watch
 
+## [0.3.6] — 2026-11-04
+
+### Changed
+
+- **A organização da empresa sai da lista padrão de donos.**
+  - **O quê:** `DEFAULT_OWNERS` agora é `j0ruge` e `chewiesoft`. Outro dono se declara em
+    `~/.claude/retrofit-watch.json`, e a `SKILL.md` avisa que `owners` substitui a lista padrão.
+  - **Por quê:** o nome estava fixo no código de um plugin público. Sem a config, as skills de
+    repositórios desse dono deixam de receber retro.
+  - **Teste novo:** um dono fora da lista só entra pela config, e `owners` tira os padrões. Até aqui,
+    nenhum teste exercitava `owners`.
+- **Textos:** os nomes da empresa e dos projetos viram substitutos fixos, também nas entradas antigas.
+
 ## [0.3.5] — 2026-11-04
 
 ### Fixed
@@ -166,7 +179,7 @@
 
 ### Added
 
-- **Modo `kit`: o hook passa a vigiar o kit `sdd`.** Na sessão da SQ-152 do `sales_quote`, uma
+- **Modo `kit`: o hook passa a vigiar o kit `sdd`.** Na sessão da QUO-152 do `quote_app`, uma
   PLAN inteira com o `/sdd-plan` e o `sdd-planner`, mais o `sdd approve` e o `sdd run`, deixaram
   o estado da sessão com `"skills": {}`. O `/sdd-plan` é comando sem `:`, o subagente chega como
   `Agent` com `subagent_type`, e o CLI é Bash comum. Nada disso era reconhecido, e o atrito real
@@ -226,7 +239,7 @@ continua exigindo confirmação.
     `isMeta` `Base directory for this skill:`, tanto na chamada pelo Skill tool quanto no
     `/skill` digitado; o plugin só de comandos é reconhecido pelo nome;
   - **classificação:** full (marketplace, com o argumento igual ao **nome do plugin**) × lean
-    (skill rastreada no git de um repo de `j0ruge`/`JRC-Brasil`/`chewiesoft`) × ignora
+    (skill rastreada no git de um repo de um dono da lista) × ignora
     (terceiros, `skills-lock.json`, `.agents/skills`, `~/.hermes`, fora do git);
   - **disparo:** adia quando o turno espera o usuário; teto de 2 retros por skill por sessão;
     fica calado em sessão desassistida e na continuação do próprio Stop;

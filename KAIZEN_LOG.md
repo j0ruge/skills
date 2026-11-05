@@ -372,7 +372,7 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 - **Yokoten:** a mesma causa existe fora do marketplace — `sdd_agents/agents/sdd-reviewer.md`
   ("Reproduce before you conclude" + "adversarial" = cauda de ≈ $5,4 e ~50 turnos por sessão
   REVIEW, e é o que empurra os agentes a construir sandboxes) e o `CLAUDE.md` + `.claude/rules`
-  do `digital_service_report_api` (≈ 110 KB ≈ 28k tokens injetados em **cada** subagente).
+  do `report_api` (≈ 110 KB ≈ 28k tokens injetados em **cada** subagente).
   Registrados como oportunidades (f); não feitos nesta rodada.
 
 ### Antes → Depois (um commit por plugin, todos em `origin/main`)
@@ -383,7 +383,7 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 | `7569ff9` | kaizen-software | 1.3.0 | yokoten, andon, Ishikawa, mura/muri, kaikaku, 8º desperdício, gemba sem ticket |
 | `186948c` | codereview | 1.18.0 | Fase A inline (sem agente haiku), 28 de 32 linhas em caps voltam ao tom normal, registry de reviewers medido, "opus" fixo sai |
 | `efbd550` | dotnet-wpf | 1.7.0 | hooks JSON inválido corrigido, VMs Singleton nas references, resíduos VDA/VDR fora |
-| `cf9ab8e` | cicd | 2.26.0 | nomes JRC → placeholders, runner version → latest, lições alinhadas ao paths-ignore |
+| `cf9ab8e` | cicd | 2.26.0 | nomes da origem → placeholders, runner version → latest, lições alinhadas ao paths-ignore |
 | `dfe3de7` | zitadel-idp | 0.12.0 | e-mail/IP/hosts fora, "47 quirks" → catálogo, quirks 38–45 viram gatilhos |
 | `1647f39` | whisper-preprocess | 1.1.0 | copiar os 2 scripts (merge silencioso), lição 9 no presente, afftdn escopado |
 | `fa90577` | pdf-generation | 1.6.1 | linha de downloads npm (falsa) fora, skill inexistente fora, NON-NEGOTIABLE/MUST |
@@ -469,7 +469,7 @@ pedido dele, e publicada junto com as três lições dele. Rodada das 16 skills 
 - (e) `ansible-docker-backup-restore`: a prova "há dados" conta blocos `COPY` — Postgres-only;
   `mysqldump` grava `INSERT INTO` (já anotado no CHANGELOG 1.3.2, sem diff).
 - (f) Fora do repo: `sdd_agents/agents/sdd-reviewer.md` "Reproduce before you conclude" —
-  reproduzir só CRITICAL/HIGH; `CLAUDE.md` + `.claude/rules` do DSR com ≈ 110 KB — cada
+  reproduzir só CRITICAL/HIGH; `CLAUDE.md` + `.claude/rules` do report_api com ≈ 110 KB — cada
   subagente paga ≈ 28k tokens de prefixo.
 - (g) `ticket` — **feita** (2026-09-03, `50e814c`, 1.4.0). O único tipo de achado que as outras 15 não tinham
   mostrado: uma **tabela de referência contradizendo a regra que a substituiu** (`sprint list-workitems` ainda

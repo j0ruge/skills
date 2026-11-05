@@ -4,15 +4,15 @@
     "should_trigger": true
   },
   {
-    "query": "pega o RS-850 e começa: me atribui, põe em andamento e cria a branch a partir da base do repo",
+    "query": "pega o REP-850 e começa: me atribui, põe em andamento e cria a branch a partir da base do repo",
     "should_trigger": true
   },
   {
-    "query": "terminei o EDS-60, fecha o cartão com um resumo dos commits e passa pra Concluído",
+    "query": "terminei o PRC-60, fecha o cartão com um resumo dos commits e passa pra Concluído",
     "should_trigger": true
   },
   {
-    "query": "quebra o EDS-53 em subtarefas: uma pro guard, uma pra auditoria e uma pro catálogo de tabelas",
+    "query": "quebra o PRC-53 em subtarefas: uma pro guard, uma pra auditoria e uma pro catálogo de tabelas",
     "should_trigger": true
   },
   {
@@ -24,15 +24,15 @@
     "should_trigger": true
   },
   {
-    "query": "o SQ-160 caiu no backlog sem pontuação, coloca na sprint ativa com 5 story points e confere se gravou",
+    "query": "o QUO-160 caiu no backlog sem pontuação, coloca na sprint ativa com 5 story points e confere se gravou",
     "should_trigger": true
   },
   {
-    "query": "cria a fixVersion 0.2.0 no projeto SQ e põe ela no SQ-160 e nas subtarefas",
+    "query": "cria a fixVersion 0.2.0 no projeto QUO e põe ela no QUO-160 e nas subtarefas",
     "should_trigger": true
   },
   {
-    "query": "o acli imprimiu Failure ao transicionar o RS-844 mas saiu com zero, confere no Jira se o status mudou mesmo",
+    "query": "o acli imprimiu Failure ao transicionar o REP-844 mas saiu com zero, confere no Jira se o status mudou mesmo",
     "should_trigger": true
   },
   {

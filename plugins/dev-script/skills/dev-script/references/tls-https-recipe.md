@@ -70,7 +70,7 @@ Caddy is a single static binary, has the cleanest config syntax for dev TLS, and
 }
 ```
 
-Default port mapping for the JRC pattern:
+Default port mapping for the usual pattern:
 
 | Service | Internal (HTTP) | External (HTTPS via Caddy) |
 |---|---|---|

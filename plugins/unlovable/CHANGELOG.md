@@ -1,12 +1,20 @@
 # Changelog — unlovable
 
+## [1.1.2] — 2026-11-04
+
+### Dados da empresa saem do texto
+
+Nome da empresa, repositórios privados, hosts, e-mails, chaves de ticket, IDs de instância e marca da
+instalação de origem viram substitutos fixos (`Acme`, `acme.example`, `quote_app`, `QUO-…`), também nas
+entradas antigas deste arquivo. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [1.1.1] — 2026-10-22
 
 Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.
 
 ## [1.1.0] — 2026-09-09
 
-Primeiro uso real depois de publicada: limpeza do `sales_quote` (Vite + React
+Primeiro uso real depois de publicada: limpeza do `quote_app` (Vite + React
 com `lovable-tagger`, caso 3a). Três coisas que a skill não tinha.
 
 ### Changed

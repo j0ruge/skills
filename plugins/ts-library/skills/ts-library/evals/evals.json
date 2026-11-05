@@ -21,14 +21,14 @@
     {
       "id": 2,
       "name": "plano-de-extracao",
-      "prompt": "No monorepo do sales_quote a gente tem packages/shared/messaging (envio de e-mail, drivers gmail, arquivo e memory, ESM, Node 22, com uma suíte de contrato). Agora o lighthouse_project também vai mandar e-mail e quer usar a mesma lib. Os dois repos são privados na org do GitHub, a org está bloqueada na cota de Actions e a gente não tem registro de pacotes. As imagens docker partem de node:22-alpine e instalam com npm ci --ignore-scripts, e o sales_quote está em produção. Me dá o plano pra transformar essa lib em pacote que os dois instalam: onde ela mora, como versiona, como chega no consumidor, e como provo que o que o consumidor instala é o que eu testei.",
-      "expected_output": "Plano que: mantém o histórico (filter-repo) num repositório próprio ou de libs; escolhe uma distribuição que funciona sem registro, sem Actions e sem git na imagem (tarball versionado com file: e lockfile, ou justifica outra com os custos); private + UNLICENSED; exports para dist com types primeiro; release pela estação com prova (reconstrução ou sha256) e evidência sem Actions; sensor de integridade no consumidor e npm ci com cache vazio; congela a cópia antiga no sales_quote e trata a troca lá como mudança de produção; documentação para agentes no pacote.",
+      "prompt": "No monorepo do quote_app a gente tem packages/shared/messaging (envio de e-mail, drivers gmail, arquivo e memory, ESM, Node 22, com uma suíte de contrato). Agora o portal_app também vai mandar e-mail e quer usar a mesma lib. Os dois repos são privados na org do GitHub, a org está bloqueada na cota de Actions e a gente não tem registro de pacotes. As imagens docker partem de node:22-alpine e instalam com npm ci --ignore-scripts, e o quote_app está em produção. Me dá o plano pra transformar essa lib em pacote que os dois instalam: onde ela mora, como versiona, como chega no consumidor, e como provo que o que o consumidor instala é o que eu testei.",
+      "expected_output": "Plano que: mantém o histórico (filter-repo) num repositório próprio ou de libs; escolhe uma distribuição que funciona sem registro, sem Actions e sem git na imagem (tarball versionado com file: e lockfile, ou justifica outra com os custos); private + UNLICENSED; exports para dist com types primeiro; release pela estação com prova (reconstrução ou sha256) e evidência sem Actions; sensor de integridade no consumidor e npm ci com cache vazio; congela a cópia antiga no quote_app e trata a troca lá como mudança de produção; documentação para agentes no pacote.",
       "files": [],
       "assertions": [
         "Escolhe uma forma de distribuição que funciona sem registro, sem Actions e com imagem alpine sem git e `--ignore-scripts` (por exemplo tarball versionado com `file:`), ou descarta explicitamente a dependência git por esses motivos",
         "Preserva o histórico da lib na extração (`git filter-repo` ou equivalente)",
         "Dá uma prova concreta de que o instalado é o testado: sha256/integrity do lockfile e/ou reconstrução da tag comparada com o publicado",
-        "Trata a troca no sales_quote como mudança de produção própria (não de carona) e cuida da cópia antiga no workspace (congelar ou remover em sequência controlada)",
+        "Trata a troca no quote_app como mudança de produção própria (não de carona) e cuida da cópia antiga no workspace (congelar ou remover em sequência controlada)",
         "Faz release e evidência sem GitHub Actions (script na estação, status de commit ou equivalente)",
         "Marca o pacote como `private` e/ou com licença proprietária, ou outra proteção contra publicação acidental",
         "Propõe uma checagem mecânica da janela de congelamento da cópia antiga (por exemplo git log desde o sha da extração tem de sair vazio), e não só um README",
@@ -38,7 +38,7 @@
     {
       "id": 3,
       "name": "atualizar-no-consumidor",
-      "prompt": "Saiu a release object-storage-v1.0.1 no nosso repo de libs (GitHub Release com o .tgz anexado e o sha256 nas notas). No lighthouse a lib está em vendor/jrc-object-storage-1.0.0.tgz, declarada com file: no packages/backend/package.json. Escreve o passo a passo pra atualizar e o que conferir antes de abrir o PR.",
+      "prompt": "Saiu a release object-storage-v1.0.1 no nosso repo de libs (GitHub Release com o .tgz anexado e o sha256 nas notas). No portal a lib está em vendor/acme-object-storage-1.0.0.tgz, declarada com file: no packages/backend/package.json. Escreve o passo a passo pra atualizar e o que conferir antes de abrir o PR.",
       "expected_output": "Passo a passo: gh release download do .tgz; conferir o sha256 contra as notas; trocar o file: e rodar npm install para atualizar o lockfile (avisa que copiar o .tgz sem npm install passa na estação por causa do cache do npm e reprova no build com EINTEGRITY); remover o tgz antigo; conferir sha512 do tgz = integrity do lockfile e que o escopo resolve só para file:vendor/; npm ci com cache vazio; rodar a suíte (inclusive a de contrato); ler o CHANGELOG da lib para saber se é patch de verdade; docker build ou prova da imagem.",
       "files": [],
       "assertions": [

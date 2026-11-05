@@ -80,7 +80,7 @@ class World:
         os.symlink(self.ticket, self.home / ".claude/skills/ticket")
         # repo de projeto nosso (modo lean)
         self.proj = self.tmp / "repos/app-interno"
-        init_repo(self.proj, "https://github.com/JRC-Brasil/app-interno.git")
+        init_repo(self.proj, "https://github.com/chewiesoft/app-interno.git")
         (self.proj / ".gitignore").write_text(".claude/skills/local-only/\n")
         self.graphify = make_skill(self.proj / ".claude/skills", "graphify")
         self.local_only = make_skill(self.proj / ".claude/skills", "local-only")
@@ -214,6 +214,21 @@ class ClassifyTest(unittest.TestCase):
     def test_tracked_project_skill_of_our_org_is_lean(self):
         got = self.classify(self.w.graphify)
         self.assertEqual((got["mode"], got["arg"], got["repo"]), ("lean", "graphify", str(self.w.proj)))
+
+    def test_owner_outside_the_defaults_needs_the_config(self):
+        repo = self.w.tmp / "repos/app-de-outra-org"
+        init_repo(repo, "https://github.com/outra-org/app.git")
+        skill = make_skill(repo / ".claude/skills", "do-cliente")
+        commit_all(repo)
+        self.assertIsNone(self.classify(skill))
+        cfg_path = self.w.home / ".claude/retrofit-watch.json"
+        cfg_path.write_text(json.dumps({"owners": ["outra-org"]}))
+        try:
+            ctx = self.w.ctx()
+            self.assertEqual(rw.classify_path(str(skill), ctx)["mode"], "lean")
+            self.assertIsNone(rw.classify_path(str(self.w.graphify), ctx))  # owners substitui a lista padrão
+        finally:
+            cfg_path.unlink()
 
     def test_project_worktree_is_lean_in_the_worktree(self):
         wt = self.w.tmp / "wt-sq"

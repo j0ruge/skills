@@ -1,7 +1,7 @@
 ---
 name: dotnet-wpf-e2e-testing
 metadata:
-  version: 1.8.0
+  version: 1.8.1
 description: FlaUI + xUnit E2E testing for WPF — project setup, AutomationId annotation, Page Objects, smoke tests, file-dialog automation, CI/CD wiring. Unit tests live in dotnet-wpf-mvvm. Triggers — WPF E2E, FlaUI, AutomationId, Page Object, smoke test.
 ---
 

@@ -550,7 +550,7 @@ Bringing a long-disabled smoke-e2e job back to green tends to expose 4-5 layers 
    - name: Apply Prisma migrations to ephemeral Postgres
      working-directory: packages/idp
      env:
-       DATABASE_URL: postgresql://postgres@localhost:5432/jrc?schema=idp
+       DATABASE_URL: postgresql://postgres@localhost:5432/acme?schema=idp
      run: npx prisma migrate deploy
    ```
 

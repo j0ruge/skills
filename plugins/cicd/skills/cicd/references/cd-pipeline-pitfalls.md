@@ -70,7 +70,7 @@ Use the **official nginx image's envsubst template mechanism** — no custom ent
 location /api/ {
   proxy_pass https://api.example.com;
   proxy_ssl_server_name on;
-  proxy_set_header Authorization "Bearer ${JRC_API_TOKEN}";   # resolved at RUNTIME
+  proxy_set_header Authorization "Bearer ${ACME_API_TOKEN}";   # resolved at RUNTIME
 }
 location / { try_files $uri $uri/ /index.html; }               # $uri NOT clobbered
 ```
@@ -83,7 +83,7 @@ COPY packages/frontend/nginx/default.conf.template /etc/nginx/templates/default.
 ```yaml
 # compose / docker run — token entra como env de RUNTIME, jamais build-arg
 environment:
-  JRC_API_TOKEN: ${JRC_API_TOKEN}
+  ACME_API_TOKEN: ${ACME_API_TOKEN}
 ```
 
 Two non-obvious points that make this safe:
@@ -263,9 +263,9 @@ something else.
   with `docker compose up -d --no-deps runner`, never a bare `up -d`.
 - **That clone's `.env` has no app secrets.** CD writes the `.env` in the runner workspace from
   GitHub secrets, so `docker compose config` in the operator clone prints `POSTGRES_*`,
-  `ZITADEL_MASTERKEY`, `JRC_API_TOKEN` "not set, defaulting to a blank string". A bare `up -d`
+  `ZITADEL_MASTERKEY`, `ACME_API_TOKEN` "not set, defaulting to a blank string". A bare `up -d`
   there doesn't fail — it starts containers with **empty credentials**, which is the
-  defined-but-empty trap of the §6 `JRC_API_TOKEN` lesson arriving by hand instead of by
+  defined-but-empty trap of the §6 `ACME_API_TOKEN` lesson arriving by hand instead of by
   pipeline.
 - **Sync it minimally.** Bringing the whole directory up to date with the repo is how you break
   it: an `entrypoint.sh` newer than the host's compose may require an env var that compose
@@ -329,7 +329,7 @@ docker exec nginx-proxy cat /etc/nginx/conf.d/default.conf \
   | sed -n "/upstream <hostname>/,/^[[:space:]]*}/p"
 ```
 
-If you see two `server` lines where there should be one (e.g., `# erp-backend` *and* `# jrc-prod-backend-run-3ed3a2e9cdb9`, both pointing at port 3000 on different IPs), that's the smoking gun. Inspect the orphan's env to confirm — usually `AUTH_AUDIENCE`, `DATABASE_URL`, or `IMAGE_TAG`-derived values will be from a stale build.
+If you see two `server` lines where there should be one (e.g., `# erp-backend` *and* `# acme-prod-backend-run-3ed3a2e9cdb9`, both pointing at port 3000 on different IPs), that's the smoking gun. Inspect the orphan's env to confirm — usually `AUTH_AUDIENCE`, `DATABASE_URL`, or `IMAGE_TAG`-derived values will be from a stale build.
 
 **Immediate fix**: `docker rm -f <orphan-name>`. nginx-proxy's docker-gen sees the container disappear, regenerates the config, and reloads nginx within a couple seconds. Verify with the parallel-curl check — should now be `20 200`.
 
@@ -778,7 +778,7 @@ docker image inspect -f '{{.Created}}' <img>:<tag>
 docker run --rm --entrypoint sh <img>:<tag> -c 'cat /config/<arquivo>'   # o INPUT, não a saída
 ```
 
-Medido em 2026-09-18 (IdP JRC): imagem de **13/jun**, deploy de **18/set**
+Medido em 2026-09-18 (um IdP real): imagem de **13/jun**, deploy de **18/set**
 verde, e o YAML embutido nela tinha 2 dos 4 papéis declarados no checkout — os
 dois que faltavam eram justamente o objetivo do deploy. Ver também
 `cd-verification-and-rollback.md §9`, que é como isso foi **descoberto**: o CD

@@ -174,7 +174,7 @@ Contexto:
 ## Enriquecer a descrição de uma issue existente
 
 "Enriquece a descrição do X-2" pede **acrescentar**, não reescrever: um `PUT` com
-`description` nova **substitui o campo inteiro** e apaga o texto do autor (no SBM-2,
+`description` nova **substitui o campo inteiro** e apaga o texto do autor (no ABC-2,
 dois relatórios colados). Sequência validada em 02/10/2026 (204, prefixo intacto):
 
 1. Backup: `GET $J/issue/X-2?fields=description > antes.json` — é também o rollback.
@@ -280,16 +280,16 @@ Ao trabalhar em sub-issues (criadas via `/ticket split`), os commits devem refer
 ${PROJECT}-YYY: descrição do que foi feito para a sub-issue
 ```
 
-Exemplo (projeto RS):
+Exemplo (projeto REP):
 
 ```text
-RS-601: implementar validação de campos obrigatórios
-RS-602: ajustar layout do formulário de upload
+REP-601: implementar validação de campos obrigatórios
+REP-602: ajustar layout do formulário de upload
 ```
 
-Exemplo (projeto SQ):
+Exemplo (projeto QUO):
 
 ```text
-SQ-22: aplicar design Navigational Horizon na tela de login
-SQ-32: investigar handler do botão Salvar rascunho que não dispara
+QUO-22: aplicar design Navigational Horizon na tela de login
+QUO-32: investigar handler do botão Salvar rascunho que não dispara
 ```
