@@ -3,6 +3,13 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.9.2] — 2026-11-05
+
+### Nomes de repositórios privados saem do texto
+
+Nomes de repositórios privados saem do texto, também nas entradas antigas deste arquivo.
+Onde a frase dependia do nome, ficou um termo genérico. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [2.9.1] — 2026-11-04
 
 ### Dados da empresa saem do texto
@@ -27,7 +34,7 @@ Minor: o `--refs` revisita os links já espelhados, e a medida sai do título.
 ### Changed
 
 - **`SKILL.md`, *Identidade*: número que muda vai no corpo, não no título.** A chave é o título,
-  então uma medida no título gera `ORPHAN` + `CREATE` a cada nova medição. No `magic_tutor`, a #39
+  então uma medida no título gera `ORPHAN` + `CREATE` a cada nova medição. Num projeto, a #39
   ("O docs/monitor.md tem 501 linhas…", que depois foi a 520 e a 547) teve a chave trocada à mão três
   vezes, em três sessões.
 
@@ -40,7 +47,7 @@ Patch: o `#N` solto se pega na branch do PR, antes do merge.
 - **`SKILL.md`, *Erro comum* "Deixar um `#N` solto no item".** Rode o plano (sem `--apply`) na
   branch do PR, antes do merge. O `REF?` só sai para os corpos que a rodada escreve (`CREATE` e
   `UPDATE (text)`), e na branch do PR são justamente os itens que o PR acrescenta ou muda. O conserto
-  vai no mesmo PR. Depois do merge, ele pede outro PR: no magic_tutor, os 3 `#N` soltos do PR #114
+  vai no mesmo PR. Depois do merge, ele pede outro PR: os 3 `#N` soltos do PR #114
   pediram o PR #115.
 
 ## [2.8.2] — 2026-10-25
@@ -90,9 +97,9 @@ deste repo.
 
 ### Why
 
-- Em 2026-10-20, a issue #34 do `magic_tutor` (espelho do item 19) trazia "Liga com o #1". O #1 era o
+- Em 2026-10-20, a issue #34 de um projeto (espelho do item 19) trazia "Liga com o #1". O #1 era o
   item 1 do arquivo, mas o HTML renderizado tinha `href=".../pull/1"`, um PR sem relação. O plano
-  mostrou `CREATE` sem aviso. Medidos os `#N` soltos das seções abertas do `magic_tutor` e do kit
+  mostrou `CREATE` sem aviso. Medidos os `#N` soltos das seções abertas desse projeto e do kit
   sdd, 4 de 8 apontavam para outro lugar (um item, PRs de outros repos) e 4 estavam certos. Por isso
   o plano avisa, e não reescreve.
 - O `REF?` sai só para `CREATE` e `UPDATE (text)`: um `UPDATE (anchor)` leva o texto já espelhado, e
@@ -103,7 +110,7 @@ deste repo.
 
 ## [2.7.0] — 2026-10-19
 
-Minor: três lições da migração e do espelho do `TODO.md` do `magic_tutor` (PR #9 de lá).
+Minor: três lições da migração e do espelho do `TODO.md` de um projeto (PR #9 de lá).
 
 ### Added
 
@@ -122,7 +129,7 @@ Minor: três lições da migração e do espelho do `TODO.md` do `magic_tutor` (
 
 - **Espelhar da branch padrão vale também para um `HEAD` contido nela e sem diff para ela.** Numa
   sessão isolada numa worktree, a cópia principal do repo não pode ser usada. Depois do merge, o
-  `HEAD` do PR serve. Isso foi medido no `magic_tutor`, em 2026-10-19:
+  `HEAD` do PR serve. Isso foi medido em 2026-10-19:
   - `git merge-base --is-ancestor HEAD origin/main` deu rc 0;
   - `git diff --stat HEAD origin/main` saiu vazio;
   - o plano saiu com `permalinks at ffb2c0f`;

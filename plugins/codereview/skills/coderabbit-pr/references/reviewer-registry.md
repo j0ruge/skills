@@ -72,7 +72,7 @@ Posts in **up to three places**:
 **On the Free plan the issue comment is the only thing it posts**: no inline comment, no review
 object, and the body says *"Your organization is on the Free plan … For a comprehensive line-by-line
 review, please upgrade"*. That is case (b) — it never reviewed the code — not a pass, and not "no
-reviewer" either. Measured 2026-10-03 (ui24-agent PR #73): `/pulls/73/comments` and
+reviewer" either. Measured 2026-10-03 (PR #73): `/pulls/73/comments` and
 `/pulls/73/reviews` returned only Codex and Copilot; the CodeRabbit login appeared only on the
 issue endpoint, so a two-endpoint detection dropped it from the report without a trace. Confirm:
 
@@ -153,7 +153,7 @@ gh api "repos/$REPO/issues/$PR/comments" --paginate --jq '.[] | select(.user.log
 
 `completed`, a `commit_sha` equal to `headRefOid` and `findings=false` is case (a). With no findings
 Codex posts no review object and no inline comment: the summary and a 👍 reaction on the PR are all
-there is. Measured 2026-10-18 (dotp-remake PR #7): `running` at 03:20 UTC, `completed` on the head
+there is. Measured 2026-10-18 (PR #7): `running` at 03:20 UTC, `completed` on the head
 with `findings=false`, the `+1` at 03:21, and zero Codex reviews on `/pulls/7/reviews`.
 
 **`findings=true` alone is not a finding.** The flag once said `true` for a head whose receipt said
@@ -163,7 +163,7 @@ the head before opening a round; nothing posted and a receipt naming the head is
 report notes the mismatch. Measured 2026-10-26 (sdd_agents PR #330): `completed d426c68…
 has_any_findings=true has_unresolved_findings=false`, receipt `6421460144` on `d426c68350`, nothing
 posted; on the next head (`6160ae1`) the flag read `false` beside its receipt. The cause is unknown,
-and it is not a PR-wide flag: on the fix heads of magic_tutor #103 and #114 and dotp-remake #13,
+and it is not a PR-wide flag: on the fix heads of PRs #103 and #114 in one project and #13 in another,
 after a P2 on an earlier head, flag and receipt agreed on `false`.
 
 ## Detection Strategy
@@ -241,14 +241,14 @@ review"*. With 0 remaining, the next push or request inside that window gets `Re
 unreviewed by CodeRabbit in the report. Measured 2026-10-26 (sdd_agents PR #330): the review of
 `a215a9b` at 15:11:59Z said 0 remain; the fix `8fbecb8`, pushed about 15:40Z, got the limit and was
 never seen by CodeRabbit; the request on `d426c68` at 16:02Z was served at 16:09:50Z. The Free plan
-prints the same line (magic_tutor PR #123, 2026-10-26).
+prints the same line (PR #123, 2026-10-26).
 
 **An inline comment's `commit_id` is not the commit it was written on.** Once a push moves the head,
 an inline comment whose line still anchors reports the new head as `commit_id`; the commit the
 reviewer saw is `original_commit_id`, and the `commit_id` of its review object, which does not move.
 Read coverage from the reviews, and the snapshot an inline finding describes (Phase 3.1 step 1.5)
 from `original_commit_id`: by `commit_id`, an old finding reads as raised again on the fix. Measured
-2026-10-20 (dotp-remake PR #13, `gh api repos/j0ruge/dotp-remake/pulls/comments/4330439724`): Codex's
+2026-10-20 (PR #13, `gh api repos/<owner>/<repo>/pulls/comments/4330439724`): Codex's
 P2 on `ed3729c`, posted 21:19Z, answered `commit_id` `85f7475`, the fix pushed about 21:42Z, with
 `original_commit_id` `ed3729c`; its review object stayed on `ed3729c`.
 
@@ -260,7 +260,7 @@ it **edits** its walkthrough issue comment (`updated_at` moves, `created_at` doe
 `## Review limit reached`, and the skipped range is the *"… between <old sha> and <new sha>"* line
 quoted (`> `) inside that notice. On PR #219 that edit was the only trace that `d8da110` went
 unreviewed by it. Unquoted, the same line sits in the *Recent review info* of every walkthrough and
-names the range that run processed, not a skipped one: measured 2026-10-25 (dotp-remake PR #21,
+names the range that run processed, not a skipped one: measured 2026-10-25 (PR #21,
 Free plan, no limit), an unanchored `between` pattern matched it once, a limit on a PR that had none.
 
 **It also pauses itself after N reviewed commits.** With
@@ -277,7 +277,7 @@ gh api "repos/$REPO/issues/$PR/comments" --paginate \
   | grep -E 'Review limit reached|Reviews paused|^> .*and between [0-9a-f]{40} and'
 ```
 
-The `^> ` is what tells the two lines apart: on PRs #219 (limit), #246 (pause) and dotp-remake #21
+The `^> ` is what tells the two lines apart: on PRs #219 (limit), #246 (pause) and #21 in another repo
 (neither) this grep matched 2, 1 and 0 lines; without it, 2, 1 and 1.
 
 ## Extensibility

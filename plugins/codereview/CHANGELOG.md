@@ -2,11 +2,18 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.28] — 2026-11-05
+
+### Nomes de repositórios privados saem do texto
+
+Nomes de repositórios privados saem do texto, também nas entradas antigas deste arquivo.
+Onde a frase dependia do nome, ficou um termo genérico. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [2.27.27] — 2026-11-05
 
 ### O `$(…)` entre aspas depois do `=` é leitura em execução, e a nota do conserto não copia a linha acusada
 
-Duas lições do `/codereview` 2.27.26 no ramo `feat/jev-em-julgamentos` do `magic_tutor`, em duas rodadas
+Duas lições do `/codereview` 2.27.26 no ramo `feat/jev-em-julgamentos`, em duas rodadas
 (rodada 1 sobre `74efae8`, rodada 2 sobre `8c651cf`). Só as references ganham texto. O `SKILL.md` segue a
 1 caractere do teto do C1 (19.999 de 20.000) e muda só no `metadata.version`, com o mesmo tamanho.
 
@@ -33,7 +40,7 @@ Duas lições do `/codereview` 2.27.26 no ramo `feat/jev-em-julgamentos` do `mag
   - **Por quê:** o conserto da rodada 1 reescreveu a linha do plano e acrescentou uma nota de fase
     (`checkpoint-notas.md`) que citava a forma antiga entre crases. O pré-scan da rodada 2 deu
     `Generic Password` nessa nota, linha 39, a única da rodada: o conserto recriou a linha que força o F.
-    Com a nota reescrita em palavras (`ff20ec6` no `magic_tutor`), a faixa da rodada 2 (13 arquivos, 66
+    Com a nota reescrita em palavras (`ff20ec6`), a faixa da rodada 2 (13 arquivos, 66
     linhas acrescentadas) e o ramo inteiro (63 arquivos, 5426 linhas) deram `findings: []`. Os textos
     novos desta versão passaram pelo mesmo pré-scan: `findings: []`.
 
@@ -95,9 +102,8 @@ O `SKILL.md` segue em 19.999 caracteres: só a versão mudou. Dívida pré-exist
 
 ### As leituras de versão viram chamadas próprias, o contrato ilegível tem saída, e o atalho inline não revisa o código da própria sessão
 
-Lições da fila do `retrofit-watch`: 26 fases REVIEW do `sdd run` (`dotp-remake`, `magic_tutor`,
-`mt-maior-valor`, `magic_tutor-p1`; 2026-10-19 a 2026-11-02, skill 2.23.2 a 2.27.23) e uma sessão
-interativa do `magic_tutor`. Cada lição foi conferida no transcript, não só no relato dos leitores.
+Lições da fila do `retrofit-watch`: 26 fases REVIEW do `sdd run` (2026-10-19 a 2026-11-02, skill 2.23.2 a 2.27.23) e uma sessão
+interativa. Cada lição foi conferida no transcript, não só no relato dos leitores.
 O `SKILL.md` segue em 19.999 caracteres: a linha 90 perdeu o `sed` e o caminho do
 `installed_plugins.json`, e o detalhe foi para as references.
 
@@ -140,7 +146,7 @@ O `SKILL.md` segue em 19.999 caracteres: a linha 90 perdeu o `sed` e o caminho d
   - **O quê:** o item que mandava a um agente o código de uma rodada de conserto passa a cobrir
     também a mudança em si (*Code this session wrote*). O atalho inline segue valendo para código de
     outra sessão.
-  - **Por quê:** no PR #49 do `magic_tutor` (issues #45 e #46), os três arquivos CODE escritos pela
+  - **Por quê:** no PR #49 (issues #45 e #46), os três arquivos CODE escritos pela
     sessão foram revisados inline, e só as docs foram para agentes. Depois, o Codex apontou um P2 em
     `descricao.py` ("Include costs for cards without rules text"), aceito e consertado em `c21197f`.
 - **Fica de fora:**
@@ -151,7 +157,7 @@ O `SKILL.md` segue em 19.999 caracteres: a linha 90 perdeu o `sed` e o caminho d
 
 ### O registro de fase que um commit posterior envelheceu ganha uma nota datada completa
 
-Lição das rodadas r3 a r5 do `/codereview` no PR #22 do `dotp-remake` (a missão 3.5c do `sdd`),
+Lição das rodadas r3 a r5 do `/codereview` no PR #22 (a missão 3.5c do `sdd`),
 todas com `base=` no head da rodada anterior. O `SKILL.md` segue em 19.999 caracteres: só a versão
 mudou, e a lição foi para a reference.
 
@@ -215,7 +221,7 @@ está em `references/thread-resolution.md`.
 
 ### A mesma métrica nas duas versões, e o resultado do PR que vale HIGH
 
-Lições do `codereview` no PR #150 do `magic_tutor` (o coach Claude volta a um pedido por dica), em
+Lições do `codereview` no PR #150 (o coach Claude volta a um pedido por dica), em
 5 rodadas: 10, 5, 1, 2 e 0 achados. O `SKILL.md` segue em 19.999 caracteres, encostado no teto: as
 quatro lições foram para as references, e ele só mudou a versão.
 
@@ -261,7 +267,7 @@ quatro lições foram para as references, e ele só mudou a versão.
 
 ### CSS medido no navegador, e restauração que não é regressão
 
-Lições do `codereview` no PR #13 do `warehouse_explorer_web` (as telas de item voltando ao visual da
+Lições do `codereview` no PR #13 (as telas de item voltando ao visual da
 produção, o `cac59e4`), rodadas 1 e 2. O `SKILL.md` segue em 19.999 caracteres, encostado no aviso
 do C1: tudo foi para as references, e ele só mudou a versão. A terceira lição da retro (as decisões
 do handoff contam na recalibração) já estava na 6.5, em "A decision already on record settles what
@@ -301,8 +307,8 @@ it covers", e não entrou de novo.
 
 ### Linha de base numa worktree, testes que regravam arquivos versionados, tipos dos testes e o reload
 
-Lições do mesmo dia: o `/codereview:coderabbit-pr` no PR #4 do `warehouse_explorer_api` e as
-rodadas 2 e 3 do PR #11 do `warehouse_explorer_web`. Os dois `SKILL.md` estão a menos de 15
+Lições do mesmo dia: o `/codereview:coderabbit-pr` no PR #4 e as
+rodadas 2 e 3 do PR #11. Os dois `SKILL.md` estão a menos de 15
 caracteres do aviso do C1 (codereview 19.999, coderabbit-pr 19.986), então tudo foi para as
 references, e os `SKILL.md` só mudaram a versão.
 
@@ -358,7 +364,7 @@ references, e os `SKILL.md` só mudaram a versão.
 
 ### Sondagem de testes por import resolvido, servidor lido como está no ar e o Bearer de teste
 
-Quatro lições do codereview do PR #11 do `warehouse_explorer_web` (DEF-175, sessão que vence). O
+Quatro lições do codereview do PR #11 (DEF-175, sessão que vence). O
 detalhe vai para as references. O `SKILL.md` ganha só duas rotas e fica com 19.999 caracteres, 1
 abaixo do aviso do C1 (20.000): o próximo retrofit precisa da `skill-refactoring` antes.
 
@@ -405,8 +411,7 @@ abaixo do aviso do C1 (20.000): o próximo retrofit precisa da `skill-refactorin
 
 ### Afirmação de comportamento marcada `needs reproduction` se confere nos testes alterados
 
-Uma lição do codereview da r3 da missão `20261028-def-162-abc-na-descricao` (PR #8 do
-`warehouse_explorer_web`). Só a `references/report-template.md` ganha texto. O `SKILL.md` segue a 51
+Uma lição do codereview da r3 da missão `20261028-def-162-abc-na-descricao` (PR #8). Só a `references/report-template.md` ganha texto. O `SKILL.md` segue a 51
 caracteres do teto do C1 (19.949 de 20.000) e muda só no `metadata.version`, com o mesmo tamanho.
 
 - **`references/report-template.md`, *Findings Table*: "A behavior claim marked `needs reproduction`
@@ -446,7 +451,7 @@ caracteres do teto do C1 (19.949 de 20.000) e muda só no `metadata.version`, co
 
 ### O "antes" de uma afirmação "antes → depois" se mede no commit de antes da mudança (codereview 2.27.15)
 
-Uma lição do codereview da missão `20261027-painel-do-pick-por-plano` (PR #128 do `magic_tutor`). Só a
+Uma lição do codereview da missão `20261027-painel-do-pick-por-plano` (PR #128). Só a
 `references/configuration.md` ganha texto. O `SKILL.md` segue a 5 caracteres do teto do C1 (19.995 de 20.000) e muda
 só no `metadata.version`, de 2.27.14 para 2.27.15, com o mesmo tamanho.
 
@@ -468,7 +473,7 @@ só no `metadata.version`, de 2.27.14 para 2.27.15, com o mesmo tamanho.
 
 ### A quebra de linha refeita vai até o fim do parágrafo (codereview 2.27.14)
 
-Uma lição do codereview em modo worktree do PR #127 do `magic_tutor` (três rodadas sobre consertos sem commit). Só a
+Uma lição do codereview em modo worktree do PR #127 (três rodadas sobre consertos sem commit). Só a
 `references/configuration.md` ganha texto. O `SKILL.md` está a 5 caracteres do teto do C1 (19.995 de 20.000) e muda
 só no `metadata.version`, de 2.27.13 para 2.27.14, com o mesmo tamanho.
 
@@ -515,7 +520,7 @@ Três lições da `coderabbit-pr` no PR #330 do sdd_agents (quatro heads revisad
   - **Por quê:** no `d426c68`, o estado dizia `has_any_findings=true, has_unresolved_findings=false`; o recibo do
     mesmo head (`6421460144`) dizia "Didn't find any major issues", e o Codex não postou nada. Pela regra antiga, o
     head limpo não virava caso (a). A causa é desconhecida. A 1ª leitura ("o flag é do PR inteiro") foi refutada
-    antes do commit: nos heads do conserto do magic_tutor #103 e #114, do dotp-remake #13 e do próprio #330 no
+    antes do commit: nos heads do conserto dos PRs #103 e #114 de um projeto, do #13 de outro e do próprio #330 no
     `6160ae1`, todos depois de um P2 num head anterior, o flag e o recibo concordam em `false`.
 - **Mesmo arquivo, *Coverage Per Commit*: "CodeRabbit with nothing to say leaves no review object".**
   - **O quê:** para o CodeRabbit, o walkthrough com "No actionable comments were generated in the recent review" e o
@@ -529,7 +534,7 @@ Três lições da `coderabbit-pr` no PR #330 do sdd_agents (quatro heads revisad
     o commit como não revisado pelo CodeRabbit.
   - **Por quê:** o review do `a215a9b` (15:11:59Z) dizia "0 remain", e o conserto `8fbecb8` (~15:40Z) bateu no
     limite e nunca foi visto pelo CodeRabbit. O pedido no `d426c68` às 16:02Z foi atendido às 16:09:50Z. O plano Free
-    imprime a mesma linha (magic_tutor PR #123).
+    imprime a mesma linha (PR #123).
 - **`references/thread-resolution.md`, 5.4:** duas orações que apontam para os dois parágrafos (o `findings=true` e a
   linha de cota).
 
@@ -537,7 +542,7 @@ Três lições da `coderabbit-pr` no PR #330 do sdd_agents (quatro heads revisad
 
 ### A reescrita do ramo inteiro entre rodadas: a cópia da cabeça revisada pelo assunto, e a busca dos sha antigos (codereview 2.27.11)
 
-Uma lição do `/codereview` do PR #112 do magic_tutor (três rodadas sobre o ramo de uma missão). Não entra no
+Uma lição do `/codereview` do PR #112 (três rodadas sobre o ramo de uma missão). Não entra no
 `SKILL.md`, que está a 5 caracteres do teto do C1 (19.995 de 20.000).
 
 - **`references/configuration.md`, *Re-review rounds*: um item novo, depois do item do rebase.**
@@ -558,7 +563,7 @@ Uma lição do `/codereview` do PR #112 do magic_tutor (três rodadas sobre o ra
 
 ### O `base=` da rodada vem colado do git, a evidência se lê antes do lançamento, e o agente de DOCS confere o roteamento das references (codereview 2.27.10)
 
-Três lições do `/codereview` do PR #107 do magic_tutor (quatro rodadas sobre um script Python e as docs de duas skills
+Três lições do `/codereview` do PR #107 (quatro rodadas sobre um script Python e as docs de duas skills
 locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19.994 de 20.000).
 
 - **`references/configuration.md`, *Re-review rounds*: o `base=` vem colado da saída do git.**
@@ -589,7 +594,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
   Too*: antes do relatório e da Fase 6, oferecer o `@codex review` e esperar `completed` na cabeça nova. O passo 5.3
   do `SKILL.md` roteia para ela numa frase. `references/regression-testing.md` (4.0) aceita como linha de base a
   suíte já rodada na sessão quando o `HEAD^{tree}` é o mesmo da árvore testada.
-- **Por quê:** no `/codereview:coderabbit-pr` do PR #103 do magic_tutor (2026-10-25), o P2 do Codex estava no
+- **Por quê:** no `/codereview:coderabbit-pr` do PR #103 (2026-10-25), o P2 do Codex estava no
   `ee81a77`, o conserto saiu como `693832e`, e a rodada fechava com o commit do conserto revisado por nenhum robô:
   o Codex só revisa sob pedido, e a skill só mandava relatar o caso (b). Quem pediu o `@codex review` foi o
   usuário, e ele deu `completed 693832e… findings=false`. A linha de base veio de uma rodada de 952 testes numa
@@ -605,10 +610,10 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
   limite é a linha *"… between <old sha> and <new sha>"* citada (`> `) dentro do aviso, e o grep de confirmação
   passa a ancorá-la: `^> .*and between [0-9a-f]{40} and`. Sem o `> `, a mesma linha está no *Recent review info*
   de todo walkthrough e nomeia a faixa que a execução processou, não uma pulada.
-- **Por quê:** no `/codereview:coderabbit-pr` do PR #21 do dotp-remake (2026-10-25), o grep da skill contou 1
+- **Por quê:** no `/codereview:coderabbit-pr` do PR #21 (2026-10-25), o grep da skill contou 1
   casamento num comentário sem `Review limit reached` nem `Reviews paused`: a linha comum do plano Free. Lida
   pela contagem, ela vira "limite atingido" num PR sem limite. Medido com o grep sobre o corpo dos comentários
-  do `coderabbitai[bot]`: sdd_agents #219 (limite) 2 → 2, sdd_agents #246 (pausa) 1 → 1, dotp-remake #21 1 → 0.
+  do `coderabbitai[bot]`: sdd_agents #219 (limite) 2 → 2, sdd_agents #246 (pausa) 1 → 1, #21 de outro repo 1 → 0.
   Neste PR não houve dano: o caso já era (b) pelo plano Free, e a linha foi lida antes do veredito.
 - **Onde:** só na reference. O `SKILL.md` da `coderabbit-pr` muda só o `metadata.version` (4.6.1 → 4.6.2, mesmo
   comprimento) e segue com 19 932 caracteres; a Fase 2 já roteia para o registry em *coverage per commit*.
@@ -621,7 +626,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
   uma fase de pipeline escreveu, a evidência é a pasta onde essa fase salvou as medidas que a doc cita, e cada
   artefato citado vai pelo caminho exato. Uma re-medida num head mais novo não confirma valor volátil (tempo) nem
   valor carimbado num head.
-- **Por quê:** no `/codereview` r1 do PR #20 do dotp-remake (2026-10-24), a evidência do handoff da REVIEW do kit
+- **Por quê:** no `/codereview` r1 do PR #20 (2026-10-24), a evidência do handoff da REVIEW do kit
   `sdd` foi a re-medida do orquestrador no head do PR e a pasta da fase DOCS, sem a pasta da própria REVIEW.
   - O agente desse handoff deu 3 LOW falsos: o 12,8 s e o 22,7 s "sem prova" (a re-medida deu 12,6 s) e um
     `TEST_CMD` "no 8a5c07d" contra a evidência carimbada no `7e2ae4a`. O agente de outra doc deu o mesmo 12,8 s.
@@ -646,7 +651,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
   - `references/configuration.md`, *Docs this session wrote*: a doc escrita pela sessão anterior do handoff que se
     continua conta como escrita nesta sessão (e o `SKILL.md` diz isso no roteamento da Fase B).
   - `SKILL.md`, classificação: em `.claude/`, `skills/` é DOCS, como `rules/`, e os scripts de lá são CODE.
-- **Por quê:** no `/codereview` do PR #81 do magic_tutor (2026-10-24), em três rodadas.
+- **Por quê:** no `/codereview` do PR #81 (2026-10-24), em três rodadas.
   - Nenhum agente por arquivo viu que o `input()` com `readline` numa thread daemon deixava o terminal sem eco
     depois do Ctrl+C. A reprodução em pty da Fase C mostrou ECHO e ICANON desligados; por um shell, o
     `bash --norc -i` deu `-icanon -echo`, e o `zsh -f -i`, `icanon echo`. O teste em pty do `main()` foi vermelho
@@ -675,7 +680,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
     ausente sai com rc 2 e o nome dele), e a afirmação nova de uma correção ganha a sua saída salva.
   - *Docs this session wrote*: a frase que restringe uma mudança a uma lista é uma afirmação de ausência sobre o
     resto; a saída salva imprime o detalhe por item, não só o total.
-- **Por quê:** no `/codereview` do PR #77 do magic_tutor (2026-10-23). Depois de dobrar a correção da rodada 1
+- **Por quê:** no `/codereview` do PR #77 (2026-10-23). Depois de dobrar a correção da rodada 1
   com fixup e autosquash, o `4f682e1` revisado deixou de ser ancestral (`--is-ancestor` rc 1). O
   `git diff --stat 4f682e1...2bd9a7c` deu 6 arquivos, +181/−47 (o ramo inteiro); o de dois pontos, 2 arquivos,
   +7/−6 (a correção), e a rodada 2 sobre ele voltou limpa. A frase nova da correção (duas narrações ganham uma
@@ -694,7 +699,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
   (`script > out.txt`), com o script ao lado só como a origem da saída. O contrato do agente proíbe rodar os
   comandos do projeto, então um caminho de script não confere nada. Vale também para o fato lido numa
   exploração, e a afirmação de ausência precisa do zero impresso. Um bullet *Measured* registra o caso.
-- **Por quê:** no `/codereview` do PR #75 do magic_tutor (2026-10-23), com os dois scripts de medida como
+- **Por quê:** no `/codereview` do PR #75 (2026-10-23), com os dois scripts de medida como
   evidência, o agente DOCS respondeu "there is no saved output" e deixou como `needs reproduction` as três
   afirmações da nota de protocolo (833 aparições, Replay15 `[1, 376]`, Replay10). A validação trocou só a
   evidência, com o mesmo doc (`docs/monitor.md`, `55fc495...f76b15f`) e o mesmo prompt de lançamento: com a
@@ -720,7 +725,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
     comum é um falso que para antes do real. Uma stream falsa que acaba logo depois do evento deixa o caminho
     de reserva do fim da stream responder pelo ramo afrouxado. A correção é dar ao falso a vida do processo
     real.
-- **Por quê:** na sessão do `/coderabbit-pr` do PR #73 do magic_tutor (2026-10-23):
+- **Por quê:** na sessão do `/coderabbit-pr` do PR #73 (2026-10-23):
   - com a separação por achado autorizada, `n`, `y` no `docs/monitor.md` puseram no índice o trecho do 2º
     achado (`4 +++-` no `git diff --cached --stat`) no lugar do 1º (`2 +-`). O `git diff --cached` pegou antes
     do commit;
@@ -758,7 +763,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
     diff contra o `HEAD`, então todas as linhas dele contam como acrescentadas (`git ls-files
     --error-unmatch` falha para ele).
 - **Por quê:** a regra do modo só dizia que o pre-scan de segredos lê os dois lados. As outras duas etapas
-  usam `git diff HEAD` e perdiam os arquivos novos sem aviso. Medido em 2026-10-23 (magic_tutor, Python,
+  usam `git diff HEAD` e perdiam os arquivos novos sem aviso. Medido em 2026-10-23 (Python,
   13 arquivos mudados, 3 novos): o stat deu 10 arquivos e +106, o `added_lines` do pre-scan deu 190, e as
   84 linhas dos três novos fecharam a conta; no `monitor/ambiente.py` novo, o `git diff -U0 HEAD` voltou com
   0 bytes, e o probe listou só `<module>`. Com a regra, listou `ler_env` e `caminho`.
@@ -903,7 +908,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
   orquestrador roda o script de novo agrupado pela entidade que a frase nomeia, e procura esse nome no diff do
   intervalo, porque o mesmo par pode estar num arquivo que nenhum agente leu. A frase só fica se o grupo tiver o
   número. Senão, o número vai para a categoria e o nome fica como exemplo.
-- **Por quê:** na revisão de `073fa08..3ea5c0e` do magic_tutor (2026-10-21), os totais batiam com o script
+- **Por quê:** na revisão de `073fa08..3ea5c0e` (2026-10-21), os totais batiam com o script
   (619, 129, 53, 76, 67). O agente de DOCS levantou o "67 dos 619" atribuído ao ETB de uma carta no
   `KAIZEN_LOG.md`, mas por inferência e marcado `needs reproduction`. Agrupados pela carta de origem, os 76
   gatilhos da própria carta vinham de 15 cartas (21, 11, 10, 6, 6, …), e a carta nomeada tinha 12 pedidos de
@@ -926,7 +931,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
   contagem igual antes e depois não prova saída igual. Roda-se o head numa worktree destacada (a do 4.0) e o
   conserto no checkout, e compara-se a saída inteira. Antes de confiar num diff vazio, prova-se que cada lado
   carregou o próprio código, com um marcador que só o conserto tem.
-- **Por quê:** no PR #33 do magic_tutor (2026-10-20, `3ea5c0e`), a doc dizia "35 dos 619 pedidos … eram desse
+- **Por quê:** no PR #33 (2026-10-20, `3ea5c0e`), a doc dizia "35 dos 619 pedidos … eram desse
   tipo". Um script novo de remedição contou `491` pedidos, porque lia um campo que a própria regra consertada
   limpa. Refeito pelo método do `fonte_do_alvo.py` original, o total voltou a `619`, e o número passou de 53 a
   129. Na mesma sessão, a medição de cancelamentos deu os mesmos números antes e depois, e a sessão comparou a
@@ -947,7 +952,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
   reescreve as citações vivas do `#N` que ainda o dão como atual: o parágrafo da doc, a entrada do changelog ou
   do KAIZEN, o corpo do PR, um texto proposto ainda não aplicado. Elas se acham pelo número e pelo símbolo,
   fora dos artefatos congelados das fases passadas.
-- **Por quê:** no PR #33 do magic_tutor (2026-10-20), o 1º P2 do Codex era o `TODO.md` #17, um resíduo que a
+- **Por quê:** no PR #33 (2026-10-20), o 1º P2 do Codex era o `TODO.md` #17, um resíduo que a
   rodada de revisão da missão tinha estacionado. Depois do conserto, o #17 seguia citado como defeito aberto em
   `docs/monitor.md`, duas vezes no `KAIZEN_LOG.md`, no corpo do PR e num texto ⛔ da fase DOCS. A sessão achou
   as citações por `grep` porque procurou; nenhuma reference mandava. `55e17a5` apagou o item e reescreveu as
@@ -964,9 +969,9 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
   `commit_id`; o commit que o revisor viu é o `original_commit_id` (e o `commit_id` do objeto de review,
   que não se move). A cobertura se lê nas reviews, e o retrato de um achado inline (Fase 3.1, passo
   1.5) no `original_commit_id`.
-- **Por quê:** no PR #13 do dotp-remake (2026-10-20), o P2 do Codex postado às 21:19Z sobre `ed3729c`
+- **Por quê:** no PR #13 (2026-10-20), o P2 do Codex postado às 21:19Z sobre `ed3729c`
   respondeu `commit_id` `85f7475`, a correção empurrada perto das 21:42Z, com `original_commit_id`
-  `ed3729c` (`gh api repos/j0ruge/dotp-remake/pulls/comments/4330439724`); o objeto de review ficou em
+  `ed3729c` (`gh api repos/<dono>/<repo>/pulls/comments/4330439724`); o objeto de review ficou em
   `ed3729c`. Lido pelo `commit_id`, o achado antigo parecia levantado de novo no head corrigido. A
   sessão não errou por isso (conferiu o `created_at` e o estado do Codex), e nenhuma reference citava
   o `original_commit_id`.
@@ -1091,10 +1096,10 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
   teste, ou que a correção precisa de um caso novo, procurar essa entrada nos testes. Um teste que já a
   usa e exige a saída errada é a forma 6.12 (*a test that pins the shape the code produces*), e vai na
   ação do achado e nas Notes da cobertura como teste que a correção muda.
-- **Por quê:** no `/codereview` do magic_tutor sobre `9d0eda3..a569b03`, o relatório disse que nenhum dos
+- **Por quê:** no `/codereview` sobre `9d0eda3..a569b03`, o relatório disse que nenhum dos
   14 testes novos punha uma mágica entre dois gatilhos iguais. O
   `test_gatilho_repetido_do_oponente_vira_uma_linha` tinha um Shock entre eles e exigia o `(×3)` errado, e
-  a correção (magic_tutor `466f154`, PR #23) teve de reescrevê-lo. Numa revisão completa, nenhum arquivo
+  a correção (`466f154`, PR #23) teve de reescrevê-lo. Numa revisão completa, nenhum arquivo
   de teste vai para um agente, e a 6.12 só roda com o foco `tests`: a afirmação saiu sem sensor.
 - **Onde:** só na reference. O `SKILL.md` está em 19.995 caracteres, no teto de ~20 mil da spec, e só o
   `metadata.version` mudou nele.
@@ -1106,7 +1111,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
 - **O quê:** o passo 4 do `references/fix-loop.md` (*Sabotage the fix*) ganhou um parágrafo. Depois de
   qualquer interrupção, recontar o texto afrouxado de cada sabotagem (`grep -cF`): toda contagem tem de
   dar 0 antes de confiar na suíte.
-- **Por quê:** no PR #21 do magic_tutor, a sessão caiu durante a última de uma série de 5 sabotagens da
+- **Por quê:** no PR #21, a sessão caiu durante a última de uma série de 5 sabotagens da
   narração do oponente. A restauração roda depois das sondas e não rodou, e o `monitor/replays.py` ficou com
   `"jogo": 0`. Com a correção ainda sem commit, o `git status` já mostrava o arquivo mudado e não
   separava a correção da sabotagem. Só a contagem do texto afrouxado achou a linha.
@@ -1118,7 +1123,7 @@ locais). Nenhuma entra no `SKILL.md`, que está a 6 caracteres do teto do C1 (19
 
 ### A série fecha numa rodada sobre o HEAD final, a linha anterior à branch não é da rodada, e o texto no código converge quando é verdade em todo caminho
 
-Lições da série de rodadas de fix do importador do Untapped no magic_tutor (branch
+Lições da série de rodadas de fix do importador do Untapped (branch
 `fix/importador-untapped`, 12 rodadas, com o LOW por rodada caindo de 9 para 2 até o grade A). O
 `SKILL.md` muda só a versão e fica com os mesmos 19.995 chars. Todo o resto vai para as references.
 
@@ -1157,7 +1162,7 @@ caminho absoluto de propósito) e os claims D1 que a auditoria lista em toda exe
 
 ### Base velha, branch já mergeada, worktree isolada, e o código que a rodada de fix escreveu vai para agente
 
-Lições de uma sessão no magic_tutor: a revisão do PR #17, que já estava mergeado, e mais 5 rodadas
+Lições de uma sessão: a revisão do PR #17, que já estava mergeado, e mais 5 rodadas
 de fix até o grade A, numa sessão isolada em worktree. O `SKILL.md` muda uma frase e a versão, e
 passa de 19.993 para 19.995 chars. Todo o resto vai para as references.
 
@@ -1199,7 +1204,7 @@ caminho absoluto de propósito) e os claims D1 que a auditoria lista em toda exe
 
 ### A prova da sabotagem conta o texto no arquivo, não no `git diff`
 
-`coderabbit-pr` 4.5.1. Lição do `/coderabbit-pr` do PR #8 do magic_tutor (três rodadas do Codex,
+`coderabbit-pr` 4.5.1. Lição do `/coderabbit-pr` do PR #8 (três rodadas do Codex,
 fix-loop com sabotagem em cada achado). Só a reference muda; os dois `SKILL.md` mudam só a versão,
 com o mesmo número de chars (19.991 e 19.993).
 
@@ -1220,7 +1225,7 @@ com o mesmo número de chars (19.991 e 19.993).
 
 ### `diff` pelo caminho absoluto, lista de caminhos fora de variável, sonda no worktree e mutantes numa cópia
 
-Lições da revisão das mudanças não commitadas do `magic_tutor` (coach do monitor ao vivo), em modo
+Lições da revisão das mudanças não commitadas (coach do monitor ao vivo), em modo
 `worktree` e três rodadas até a nota A. Só as references mudam; o `SKILL.md` muda só a versão e
 continua com 19.993 chars.
 
@@ -1252,7 +1257,7 @@ continua com 19.993 chars.
 
 ### Doc de pipeline vai para agente e stale copy segue o texto instalado
 
-Duas lições do PR #10 do dotp-remake (a fatia 3.2a, entregue pelo `sdd run` do kit `sdd_agents` e
+Duas lições do PR #10 (a fatia 3.2a, entregue pelo `sdd run` do kit `sdd_agents` e
 revisada em mais duas rodadas até a nota A).
 
 - **Doc escrito por um pipeline da sessão também vai para agente** (`SKILL.md`, Fase B;
@@ -1279,7 +1284,7 @@ revisada em mais duas rodadas até a nota A).
 
 ### Doc escrito pela sessão vai para agente, sonda por literal de registro e stale copy que lê o diff
 
-Três lições do PR #9 do dotp-remake (7 rodadas até a nota A).
+Três lições do PR #9 (7 rodadas até a nota A).
 
 - **Doc escrito pela própria sessão vai para um agente da Fase B** (`SKILL.md`, Fase B;
   `configuration.md`, *Docs this session wrote*; `per-file-agent.md`). A Fase B só mandava CODE (e
@@ -1294,7 +1299,7 @@ Três lições do PR #9 do dotp-remake (7 rodadas até a nota A).
   afirmação, não acrescentar evidência (cada palavra nova virou achado nas rodadas 3 a 6).
 - **Sonda de teste pelo literal de registro** (`configuration.md`, depois do parágrafo de C#). Um
   tipo que os testes nunca nomeiam (registrado por string num catálogo) escapava da sonda por tipo.
-  Medido no PR B do dotp-remake (14 classes `internal sealed` de palavra-chave, 37 testes alterados):
+  Medido no PR B (14 classes `internal sealed` de palavra-chave, 37 testes alterados):
   nenhum teste nomeia o tipo, e os acertos do `-w` eram texto de carta nas fixtures, um
   `d.Defender` sem relação e um literal de id inválido. O id entre aspas achou 14 de 14, todos em
   testes de palavra-chave; sem aspas, `reach` casa 6 arquivos contra 2. Em 4 dos 14 o único acerto é
@@ -1351,7 +1356,7 @@ do dono.
 
 ### A cópia velha que só difere na versão, e o renome por posição de sintaxe
 
-Lições das rodadas 4 a 10 do `/codereview` da S9 do ui24_agent (Python, `e1a6f69..`), que rodaram
+Lições das rodadas 4 a 10 do `/codereview` da S9 (Python, `e1a6f69..`), que rodaram
 com a cópia 2.18.4 carregada na sessão e a 2.19.0 instalada.
 
 - **`SKILL.md`, fase A:** a cópia fora do `installPath` deixa de parar a revisão por qualquer
@@ -1380,7 +1385,7 @@ com a cópia 2.18.4 carregada na sessão e a 2.19.0 instalada.
 
 ### Cobertura de testes sem os arquivos só de comentário, e a sonda por nome de tipo
 
-Lições da rodada 7 do `/codereview` do PR A da fatia 3.1 do dotp-remake (motor de regras em .NET,
+Lições da rodada 7 do `/codereview` do PR A da fatia 3.1 (motor de regras em .NET,
 `dbefae4..3f1f721`), que rodou a cópia 2.18.6.
 
 - **`references/report-template.md`, *Test Coverage*:** status novo `DOC_ONLY`, para o arquivo CODE
@@ -1459,7 +1464,7 @@ caminho absoluto).
 
 ### Projeto inteiro num repo de um commit, rodadas sem commit, docstring rebaixada pelo agente e âncora de mutante repetida
 
-Lições de uma revisão "até tudo A" do magic_tutor (Python: monitor ao vivo do MTG Arena e scripts;
+Lições de uma revisão "até tudo A" (Python: monitor ao vivo do MTG Arena e scripts;
 repo com um commit só no `main`; 5 rodadas, B → A, com 26, 7, 4, 2 e 0 achados; as correções
 ficaram sem commit, como o usuário queria).
 
@@ -1490,7 +1495,7 @@ absoluto) e INFO F4 (sem evals).
 
 ### `coderabbit-pr` segue com a cópia em cache igual à instalada e lê o estado do Codex pelo marcador
 
-coderabbit-pr 4.4.5; `codereview` fica em 2.18.4 (não mudou). Lições do PR #7 do dotp-remake.
+coderabbit-pr 4.4.5; `codereview` fica em 2.18.4 (não mudou). Lições do PR #7.
 
 - **`references/pr-branch.md`, *Is this run the installed copy?*:** `STALE` mandava parar e pedir
   `/reload-plugins` mesmo quando a pasta desta skill é igual nas duas cópias. Na sessão, a skill veio
@@ -1525,7 +1530,7 @@ a ser o próprio relatório.
 
 ### PR grande sem corte, LOW além do teto num arquivo, mutante que não compila e `__pycache__` dos agentes
 
-Lições do PR #6 do dotp-remake (motor de regras .NET/C# + um script Python; 3 rodadas, B → B → A;
+Lições do PR #6 (motor de regras .NET/C# + um script Python; 3 rodadas, B → B → A;
 rodada 1 com 42 arquivos CODE em 15 agentes sonnet).
 
 - **`SKILL.md`, Phase A e *Operating Principles*:** "more than 15 CODE files → prioritize by change
@@ -1559,7 +1564,7 @@ desenho).
 
 ### Veredito por parte: a parte de um achado que some em silêncio volta na rodada seguinte
 
-Lição das rodadas do PR #5 do dotp-remake (motor de regras .NET/C#; 3 rodadas, B → B → A).
+Lição das rodadas do PR #5 (motor de regras .NET/C#; 3 rodadas, B → B → A).
 
 - **`references/report-template.md`, *Findings Table*:** na rodada 1, o agente de combate listou seis
   ramos sem teste num único achado MEDIUM (509.1h, 506.4 em `Combat.cs:38/69/75`, 704.5f, empate,
@@ -1586,8 +1591,8 @@ dos agentes são lidos por caminho absoluto, por desenho).
 
 ### Read-only também é o HEAD: o agente de sweep que rodou `git checkout`
 
-Lição de uma rodada de re-revisão (`base=6db2ab6`, fim em `3391a14`) num repositório .NET/C#
-(dotp-remake), com a `main` já mergeada na mesma árvore do fim do range.
+Lição de uma rodada de re-revisão (`base=6db2ab6`, fim em `3391a14`) num repositório .NET/C#,
+com a `main` já mergeada na mesma árvore do fim do range.
 
 - **`references/sweep-agent.md` e `references/per-file-agent.md`, frase de abertura:** o agente de
   sweep, para fazer grep na árvore do commit revisado, rodou `git checkout --detach 3391a14` e tirou o
@@ -1653,7 +1658,7 @@ um deck HTML (Windows sob WSL), que fecharam em A em todas as linhas da nota.
 ### A âncora que o diff não mostra, a regra que a classificação escondia, e o guarda que respondeu pelo outro
 
 Lições das rodadas 2 a 4 do `/codereview:codereview` na branch `REP-929_apresentacao_manutencao_proativa`
-(repos `report_api` e `apresentacoes`, `codereview` 2.16.0), que fecharam em A nos dois.
+(dois repos, `codereview` 2.16.0), que fecharam em A nos dois.
 
 - **`references/detection-passes.md`, 6.5.2, parágrafo novo *Line anchors into a changed file*:** a
   rodada 2 do report_api revisava um diff só de docs, correto em si. As 11 linhas novas numa regra empurraram
@@ -1685,7 +1690,7 @@ caminho absoluto, de propósito.
 ### Revisão de vários repositórios, e o sensor que se prova rodando
 
 Lições de um `/codereview:codereview nos repos` na branch `REP-929_apresentacao_manutencao_proativa`
-(repos `report_api` e `apresentacoes`, `codereview` 2.15.1).
+(dois repos, `codereview` 2.15.1).
 
 - **`references/configuration.md`, seção nova *Several repositories*:** o pedido nomeava dois
   repositórios e a sessão estava num só. A branch do diretório de trabalho tinha 5 `.md`; o código
@@ -2027,8 +2032,7 @@ Lições de uma rodada no `sdd_agents` PR #222 (CodeRabbit 5 achados, Codex 2, C
 
 ### `codereview` 2.10.0: o intervalo que não termina no HEAD, os dados que o código grava, o handoff e a cópia velha
 
-Lições de uma revisão de intervalos já mergeados, em 2026-10-05: `estimates-os_mcp`
-`6309d7b..37930f5` (15 commits) e quatro commits do `~/.hermes`, com JorUge.
+Lições de uma revisão de intervalos já mergeados, em 2026-10-05: `6309d7b..37930f5` (15 commits) e quatro commits do `~/.hermes`, com JorUge.
 
 - **`head=` fecha o intervalo antes do `HEAD`.** O `base=` fixava só o início, e os prompts dos
   agentes mandam `{MERGE_BASE}...HEAD`. O intervalo pedido terminava dois commits antes do `HEAD`;
@@ -2064,7 +2068,7 @@ Lições de uma revisão de intervalos já mergeados, em 2026-10-05: `estimates-
 
 ### `codereview` 2.9.2 e `coderabbit-pr` 4.3.7: as proibições do projeto no prompt dos agentes, e três casos de uma rodada real com o Codex
 
-Lições de duas fontes no `projeto-final-vdr`: as rodadas 3, 7 e 8 do codereview da D75 (aplicadas
+Lições de duas fontes: as rodadas 3, 7 e 8 do codereview da D75 (aplicadas
 à mão, sem atrito, e aprovadas pelo autor para este retrofit) e a resolução do PR #3 pelo
 `coderabbit-pr`, com o Codex, em 2026-10-04.
 
@@ -2227,7 +2231,7 @@ natural, *"If CHANGED_FILES is empty"*, passava por um.
 
 ### `codereview` 2.9.0: o teste vácuo ganha passo próprio, e a re-review converge
 
-Lições do `/codereview` no I10 da S8 do `ui24_agent` (quatro rodadas, grade B → A; o pedido em prosa
+Lições do `/codereview` no I10 da S8 (quatro rodadas, grade B → A; o pedido em prosa
 foi "caçar teste vácuo").
 
 - **Passo 6.12 Test Quality** (`references/detection-passes.md`). O mapeamento `tests → test quality`
@@ -2278,7 +2282,7 @@ cota).
 
 ### `coderabbit-pr` 4.3.1: o revisor que só posta na issue, e a sonda que erra depois do conserto
 
-Lições do `/codereview:coderabbit-pr` no PR #73 do `ui24-agent` (Python, um achado do Codex, Copilot
+Lições do `/codereview:coderabbit-pr` no PR #73 (Python, um achado do Codex, Copilot
 sem cota e CodeRabbit no plano Free).
 
 - **A detecção da Fase 1.2 lia dois endpoints, e o CodeRabbit no plano Free só posta no terceiro.**
@@ -2797,7 +2801,7 @@ melhorar.
 
 ### Fixed (coderabbit_pr 3.5.0 → 3.5.1 — quatro defeitos de coerência que uma rodada REAL da v1.17.0 expôs)
 
-Motivação: a v1.17.0 foi testada ao vivo no PR #25 do `ui24-agent`. As quatro mudanças
+Motivação: a v1.17.0 foi testada ao vivo no PR #25. As quatro mudanças
 novas funcionaram (checagem de branch pegou a divergência e trocou sozinha; a varredura
 apagou dois checklists do PR #7 parados na árvore desde 28/06; a união dos dois endpoints
 achou o Copilot que só aparecia em `/reviews`; o caso (b) registrou "não rodou" em vez de
@@ -2835,7 +2839,7 @@ condicionado ao `--keep-checklists`). Sem mudança na superfície de triggering.
 
 ### Changed (coderabbit_pr 3.4.0 → 3.5.0 — as fases mecânicas viram determinísticas e a skill passa a limpar o próprio lixo)
 
-Motivação: numa sessão real (PR #15 do `ui24-agent`, 3 achados do Gemini) as fases
+Motivação: numa sessão real (PR #15, 3 achados do Gemini) as fases
 mecânicas mostraram três problemas — dois de confiabilidade e um de sujeira acumulada.
 
 - **Listar comentários e fechar threads eram delegados a subagentes** (haiku/sonnet) com

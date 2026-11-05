@@ -381,7 +381,7 @@ if __name__ == "__main__":
 
 class IgnoradosPorGrupoTest(unittest.TestCase):
     """Os ignorados que vão junto em três grupos: sem outra cópia, igual no principal e regeneráveis.
-    Na limpeza do magic_tutor (2026-11-02), um worktree levava 16 ignorados num saco só, caches de
+    Na limpeza de 2026-11-02, um worktree levava 16 ignorados num saco só, caches de
     um lado e rascunhos sem cópia do outro, e separar custou três checagens à mão."""
 
     def setUp(self):

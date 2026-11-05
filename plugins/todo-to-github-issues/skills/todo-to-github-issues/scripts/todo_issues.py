@@ -313,7 +313,7 @@ def bare_refs(md: str) -> list[int]:
     """Every `#N` GitHub will autolink to THIS repo's issue or PR N, once each, in order. Code spans
     and fenced blocks are not autolinked; `owner/repo#N`, `repo#N`, `&#N;` and `file#L12` are not
     bare. The text may mean something else (an item of the file, another repo's PR): measured
-    2026-10-20, "Liga com o #1" (item 1) rendered as a link to PR #1 of magic_tutor."""
+    2026-10-20, "Liga com o #1" (item 1) rendered as a link to the repo's PR #1."""
     seen: list[int] = []
     for m in BARE_REF_RE.finditer(CODE_RE.sub(" ", md)):
         if int(m.group(1)) not in seen:

@@ -37,7 +37,7 @@ output and its exit status alike:
 ```
 
 `same` → go on, and say it in the closing report (`cache 2.18.3 = installed 2.18.4`). Anything
-else → *Run from the installed copy*. Measured 2026-10-18 (dotp-remake PR #7): loaded from
+else → *Run from the installed copy*. Measured 2026-10-18 (PR #7): loaded from
 `…/codereview/2.18.3/` with 2.18.4 installed, the two `coderabbit-pr` folders compared `same`, and
 the run closed with `unresolved: 0`. In the same session a hook-rewritten `diff` of two files that
 differed printed "Files are identical"; the sibling `codereview` measured the same rewrite exiting 0
@@ -60,7 +60,7 @@ comes from it. Then compare the two `SKILL.md`:
 
 In the closing report, name both versions (`loaded 4.5.2, ran from installed 4.5.5`) and say that
 `/reload-plugins` can make the next run load the installed copy, which checks again. Measured
-2026-10-30 (warehouse_explorer_api PR #4): with 2.27.18 installed, after two `/reload-plugins` and a
+2026-10-30 (PR #4): with 2.27.18 installed, after two `/reload-plugins` and a
 `/reload-skills`, typed while the agent was mid-turn and delivered to it as queued messages,
 `/codereview:coderabbit-pr` still loaded `…/codereview/2.27.17/`; the two `coderabbit-pr` folders
 compared `same`, and the run went on. Measured 2026-10-21
@@ -84,7 +84,7 @@ HEAD_REF=$(gh pr view "$PR" --json headRefName -q .headRefName)
   `main`, against a base cut before the work) → fix on the source branch, as the author says,
   and mirror it with `git push origin <source>:<head>` before 5.0. A worktree on the mirror
   commits where nobody develops, and the next mirror push stops being a fast-forward. Measured
-  2026-10-04 (projeto-final-vdr PR #3, `main` mirrored to `revisao-d75`): the fix went to `main`
+  2026-10-04 (PR #3, `main` mirrored to `revisao-d75`): the fix went to `main`
   as `4b08c16`, the mirror push was `b1f1224..4b08c16`, and 5.0 compared the head after it.
 - **They differ** → open a **worktree** on the PR branch and do the whole run there (fixes,
   checklists, tests), never `git checkout` in the user's checkout:

@@ -163,8 +163,8 @@
    de outra missão, ainda sem merge) sai do disco no `checkout`, e os arquivos que ele
    ignorava ficam, porque o git não toca em arquivo ignorado. Na branch nova eles
    aparecem como `??`, e não são do ticket: nada de `git add -A`. Diga ao dev, e
-   adicione só os seus arquivos, pelo nome. Medido no POR-11 (`apresentacoes`,
-   03/11/2026): o status saía limpo na `REP-929_apresentacao_manutencao_proativa`, e
+   adicione só os seus arquivos, pelo nome. Medido no POR-11
+   (03/11/2026): o status saía limpo na `REP-929_apresentacao_manutencao_proativa`, e
    depois do `checkout main` e do `checkout -b` vieram 119 arquivos `??` (13 MB de
    `docs/qa/evidence/`), que o `.gitignore` da pasta do deck, existente só naquela
    branch, ignorava. Reproduzido do zero num repo descartável (git 2.43.0).
@@ -207,8 +207,8 @@
    responde `origin/main` (medido em 05/10/2026 num repo descartável), e um
    `git push` ou `git pull` sem argumentos ali aponta para a base. O close faz
    `push -u` para a própria branch. Caso real: no PRC-65 (05/10/2026) o
-   `estimates-os_mcp` servia o MCP da `main`; o trabalho foi em
-   `../estimates-os_mcp-PRC-65`, e a `main` só andou no merge autorizado. O close
+   o repositório servia o MCP da `main`; o trabalho foi em
+   `../<repo>-PRC-65`, e a `main` só andou no merge autorizado. O close
    remove a worktree (`close.md` step 10).
 
 9. **Output:** Mostrar resumo final:
@@ -368,7 +368,7 @@ o próximo deck de outro projeto abriria ticket no lugar errado. Faça assim:
 
 Medido no REP-929 (16/10/2026): a issue e a branch foram abertas no
 `report_api`, a partir de `develop`. A branch espelhada nasceu em
-`~/repos/apresentacoes`, a partir de `main`, e as duas mediram `0 0`.
+`~/repos/<outro-repo>`, a partir de `main`, e as duas mediram `0 0`.
 
 ## Registrar cartão SEM começar o trabalho
 
@@ -414,7 +414,7 @@ deixa em "Tarefas pendentes" o que já foi entregue.
    status de categoria `done`. Os steps 8 a 10 não se aplicam, porque o PR já foi
    mergeado.
 
-Medido em 30/10/2026 no DEF-176, o PR #13 do `warehouse_explorer_web`, já em
+Medido em 30/10/2026 no DEF-176, o PR #13, já em
 produção. O `POST /issue` deu `201`, com sprint, pontos e responsável na
 releitura. O vínculo `Relates` ao DEF-162 deu `201`, o comentário `201` (releitura
 `dict 8`) e a transição `204`, e a releitura do status deu `Concluido`.

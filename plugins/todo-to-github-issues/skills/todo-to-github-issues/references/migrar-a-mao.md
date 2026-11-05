@@ -8,8 +8,8 @@ acima do primeiro achado deixa a seção vazia, porque ela vai só até o próxi
 
 A migração é à mão, e o formato é **o do kit**, nunca uma cópia daqui: o template
 `templates/todo.<OUTPUT_LANG>.md` e o sensor `tests/check-todo.sh` do `$SDD_HOME`. Os tetos de
-linha e de largura, a distância da âncora e o campo `descoberto por` são lidos de lá. Medido no
-`magic_tutor` em 2026-10-19 (6 itens `## N.`, o PR #9 do repo).
+linha e de largura, a distância da âncora e o campo `descoberto por` são lidos de lá. Medido em
+2026-10-19 (6 itens `## N.`, o PR #9 do repo).
 
 ## 1. Rascunho dentro do repo, medido pelo kit antes de trocar o arquivo
 

@@ -1,5 +1,12 @@
 # Changelog — ticket
 
+## [1.14.3] — 2026-11-05
+
+### Nomes de repositórios privados saem do texto
+
+Nomes de repositórios privados saem do texto, também nas entradas antigas deste arquivo.
+Onde a frase dependia do nome, ficou um termo genérico. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [1.14.2] — 2026-11-04
 
 ### Nenhum site Jira fixo, e os dados da empresa saem do texto
@@ -19,7 +26,7 @@
 
 ### Por quê
 
-No POR-11 (03/11/2026) a issue saiu do `portal_app`, e a branch espelhada nasceu no `apresentacoes`, que
+No POR-11 (03/11/2026) a issue saiu do `portal_app`, e a branch espelhada nasceu em outro repositório, que
 estava na `REP-929_apresentacao_manutencao_proativa`, de outra missão e ainda sem merge. O `git status --short` saía
 limpo antes da troca. Depois de `git checkout main` e `git checkout -b POR-11_apresentacao-diretoria`, ele mostrou
 119 arquivos `??` (13 MB de `docs/qa/evidence/`).
@@ -53,7 +60,7 @@ O `audit_skill_quality.py` já acusava antes desta versão:
 
 ### Por quê
 
-No `warehouse_explorer_web` (30/10/2026), o PR #13 foi mergeado e foi para produção sem cartão, e o
+Em 30/10/2026, o PR #13 foi mergeado e foi para produção sem cartão, e o
 dev pediu o cartão depois. A skill tinha dois caminhos, e nenhum servia: o sub-fluxo B cria branch e
 põe em "Em andamento" o que já acabou, e o "registrar sem começar" deixa em "Tarefas pendentes" o que
 já foi entregue. O que funcionou no DEF-176 foi o seguinte:
@@ -332,7 +339,7 @@ o bootstrap), indo às references pelo roteamento.
 
 O `start` A8 fazia `git checkout <base>` e `git pull` antes de criar a branch. Num checkout de
 onde um serviço roda, isso troca o código que o próximo restart carrega, e o `pull` na base já é
-deploy. No PRC-65 (05/10/2026) o `estimates-os_mcp` servia o MCP da `main`, e o JorUge teve de
+deploy. No PRC-65 (05/10/2026) o repositório servia o MCP da `main`, e o JorUge teve de
 pedir a worktree no argumento do `/ticket`. Partir de `origin/<base>` sem `--no-track` deixa a
 branch rastreando a base (medido num repo descartável: `@{u}` = `origin/main`), e um `push` ou
 `pull` sem argumentos aponta para ela.

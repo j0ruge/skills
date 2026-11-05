@@ -305,9 +305,9 @@ check("defang: applied on the report path",
 check("defang: applied on the TODO path", all("@codex" not in t.render_body(i, ctx) for i in items))
 
 # --- bare #N references ---------------------------------------------------------------------------
-# Measured 2026-10-20 (magic_tutor issue #34): the item said "Liga com o #1", meaning item 1 of the
+# Measured 2026-10-20 (issue #34): the item said "Liga com o #1", meaning item 1 of the
 # file (issue #10), and GitHub rendered the #1 as a link to PR #1. Half of the bare #N measured that
-# day (magic_tutor and the sdd kit) were right, so the plan names each target and never rewrites.
+# day (one project and the sdd kit) were right, so the plan names each target and never rewrites.
 check("refs: a bare #N in prose, in parentheses and after 'PR' is found, each once",
       t.bare_refs("Liga com o #1. Ver (#10) e o PR #29, de novo #1") == [1, 10, 29])
 check("refs: qualified, glued, entity, fragment and code are not",

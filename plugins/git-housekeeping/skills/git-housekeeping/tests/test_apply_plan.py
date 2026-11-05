@@ -294,7 +294,7 @@ class ApplyTest(unittest.TestCase):
         self.assertNotIn("feat/ação", self.fx.remote_branches())
 
     def test_symlink_ignorado_sai_e_o_destino_fica(self):
-        """O git worktree remove apaga o link, não o destino (magic_tutor, 2026-10-26)."""
+        """O git worktree remove apaga o link, não o destino (2026-10-26)."""
         self.merged("feat/w")
         wt = self.fx.worktree("wt-w", "feat/w")
         venv = self.root / "venv-do-checkout"

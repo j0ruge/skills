@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.2] — 2026-11-05
+
+### Nomes de repositórios privados saem do texto
+
+Nomes de repositórios privados saem do texto, também nas entradas antigas deste arquivo.
+Onde a frase dependia do nome, ficou um termo genérico. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [0.10.1] — 2026-11-04
 
 ### `LICENSE_MISSING` deixa de ser dívida da loja
@@ -447,7 +454,7 @@ Sem mudança na superfície de triggering — descrição inalterada.
 ### Motivação
 
 - Nesta sessão o retrofit foi aplicado à skill `abnt-academico`, que é **local** (vive em
-  `aula_veiga/.claude/skills/abnt-academico/`, fora do marketplace). O fluxo original assumia
+  `<outro-repo>/.claude/skills/abnt-academico/`, fora do marketplace). O fluxo original assumia
   `<REPO>/plugins/$ARGUMENTS/`, bump em `marketplace.json` e push para o `origin/main` do repo de
   skills — passos inválidos para uma skill local. Faltava distinguir os dois cenários, o que gerava
   confusão entre "retrofit enxuto" e "retrofit completo".

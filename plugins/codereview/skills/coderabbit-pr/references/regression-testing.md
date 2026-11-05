@@ -64,8 +64,8 @@ repo's CLAUDE.md declares; the fix head `8ab1942` got the same gate, 15/15.
 counts when the tree it ran on is the head's (`git rev-parse <commit you tested>^{tree}` equals
 `git rev-parse HEAD^{tree}`), the tree you fix has no local change, and the command is the one 4.1
 picks. A rebase or a cherry-pick that rebuilds the same content makes other commits with the same
-tree, and the hash is the proof, never the likeness of the steps. Measured 2026-10-25 (magic_tutor
-PR #103): the `TEST_CMD` ran, 952 passed, on a scratch cherry-pick of the branch onto `main`; the
+tree, and the hash is the proof, never the likeness of the steps. Measured 2026-10-25
+(PR #103): the `TEST_CMD` ran, 952 passed, on a scratch cherry-pick of the branch onto `main`; the
 rebased head `ee81a77` had the same tree, `9937589`, and after the fix 4.2 ran 955 passed: the 952
 and the 3 new tests.
 
@@ -75,8 +75,8 @@ lockfile, since an older branch can pin other versions than the main checkout (c
 `package.json` and the lockfile before reusing a `node_modules`), and copy the env file from the
 main checkout without printing it; delete the copy once 4.2 has run. A suite that fails to load
 for a missing variable ("Test suite failed to run", `ZodError … APP_SECRET`) is missing setup, not
-a pre-existing failure: never write it into the baseline. Measured 2026-10-30
-(warehouse_explorer_api): a `git archive` copy of `78018ca`, which carries tracked files only like
+a pre-existing failure: never write it into the baseline. Measured 2026-10-30:
+a `git archive` copy of `78018ca`, which carries tracked files only like
 a worktree, failed to run 5 of 33 suites while 171 tests passed; with the `.env` copied in, 33/33
 suites and 208 tests. On PR #4's worktree, whose `package.json` and `yarn.lock` differed from the
 main checkout, `yarn install --frozen-lockfile` and the copied `.env` gave a baseline of 63/63.
@@ -85,7 +85,7 @@ main checkout, `yarn install --frozen-lockfile` and the copied `.env` gave a bas
 to the repo come back modified after a run and land in the diff next to the fixes, where a
 `git add -A` takes them into the commit. After 4.0 and after 4.2, `git status --porcelain` lists
 only the files the fixes touched and the untracked checklists; restore anything else with
-`git restore -- <paths>` before staging. Measured 2026-10-30 (warehouse_explorer_api PR #4, a branch
+`git restore -- <paths>` before staging. Measured 2026-10-30 (PR #4, a branch
 cut before `coverage/` was untracked): `jest` rewrote 11 tracked `coverage/lcov-report/*.html`, and
 `git diff --stat` read 18 files; after `git restore -- coverage`, the 7 spec files of the fix.
 
@@ -126,7 +126,7 @@ Execute the test command after applying fixes, then restore the tracked files th
 - **New failures (failing tests not in baseline)**: caused by your fixes — diagnose and correct. These ARE regressions.
   **Rule out a flake first:** run the failing test alone a few times and its module once — from the
   directory and with the discovery flags the suite uses — and check whether it imports what you
-  changed. Measured 2026-10-04 (projeto-final-vdr PR #3): one `tearDown` `PermissionError`
+  changed. Measured 2026-10-04 (PR #3): one `tearDown` `PermissionError`
   (WinError 32, a lock file a helper process still held) in a full run, 30 of 30 green alone, in a
   module that does not import the fixed file; run from the repository root without `-s tests`, the
   same test "failed" 20 of 20 at import, which measures the command, not the test. A flake is not
@@ -144,7 +144,7 @@ summary that stays equal before and after the fix (a count, a total) does not sh
 equal. Run the head from a detached worktree (4.0) and the fix from the checkout over the same inputs,
 and diff the whole output. Before trusting an empty diff, prove each side loaded its own code with a
 token only the fix contains: a token both versions share passes on both sides, and the "identical"
-run compared the head with itself. Measured 2026-10-20 (magic_tutor PR #33): the cancellation counts
+run compared the head with itself. Measured 2026-10-20 (PR #33): the cancellation counts
 matched; the check of which `replays.py` each side imported, by a word the old file already had
 (`objetos`), printed `True` twice; by one only the fix added (`abilityGrpId`), `False`/`True`; the
 narration of the 88 replays then diffed `[]`.

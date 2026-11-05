@@ -298,7 +298,7 @@
     {
       "name": "deploy",
       "source": "./plugins/deploy",
-      "version": "3.3.5",
+      "version": "3.3.6",
       "description": "Promote code to staging (and on to production) through the repo's real CD pipeline. Reads each workflow's `on.push.branches` and `runs-on` instead of assuming — the wrong branch can deploy production, and a hosted job under a billing block never starts. Waits for CI green on the exact commit, promotes by PR merge commit, watches the run, then proves the deploy by the data. Triggers — deploy staging, promote to staging, subir para staging, CD pipeline, cd-staging, promover para produção.",
       "category": "development",
       "keywords": [
@@ -321,7 +321,7 @@
     {
       "name": "codereview",
       "source": "./plugins/codereview",
-      "version": "2.27.27",
+      "version": "2.27.28",
       "description": "Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.",
       "category": "quality",
       "keywords": [
@@ -471,7 +471,7 @@
     {
       "name": "retrofit-skill",
       "source": "./plugins/retrofit-skill",
-      "version": "0.10.1",
+      "version": "0.10.2",
       "description": "Apply non-obvious session lessons to a target skill in two modes — full (marketplace skill: bumps version, updates CHANGELOG/marketplace.json/README, commits and pushes) or lean (local skill in another repo: edits files + CHANGELOG and commits there, no bump or marketplace changes). Triggers — retrofit, skill-maintenance, session-lessons, lean-retrofit, local-skill.",
       "category": "development",
       "keywords": [
@@ -665,7 +665,7 @@
     {
       "name": "ticket",
       "source": "./plugins/ticket",
-      "version": "1.14.2",
+      "version": "1.14.3",
       "description": "Jira ticket lifecycle, integrated with Git — create issues/sub-issues and branches, close with an auto-generated summary. Per-repo config via `.jira-project`; discovers project-specific transitions instead of assuming. New issues are born in the active sprint with story points and fixVersion, each read back by the sensor that can see it. Triggers — ticket, Jira, criar issue, fechar ticket, sprint, story points, fixVersion, acli.",
       "category": "development",
       "keywords": [
@@ -746,7 +746,7 @@
     {
       "name": "kaizen-software",
       "source": "./plugins/kaizen-software",
-      "version": "1.4.16",
+      "version": "1.4.17",
       "description": "Metodologia Kaizen (melhoria contínua) para planejar, implementar e manter software — e para ensinar Kaizen ao time. Conduz as três fases pelo ciclo PDCA, verifica pelo artefato e não pelo rótulo da ferramenta, prefere poka-yoke a regra escrita, e mapeia os artefatos Kaizen nos que o projeto já tem (ADR, notas, TODO, CHANGELOG). Gatilhos — Kaizen, PDCA, kaizen log/retrospectiva, 5 porquês, poka-yoke, desperdício/dívida técnica, planejar feature, confirmar antes de apagar/limpar.",
       "category": "development",
       "keywords": [
@@ -943,7 +943,7 @@
     {
       "name": "todo-to-github-issues",
       "source": "./plugins/todo-to-github-issues",
-      "version": "2.9.1",
+      "version": "2.9.2",
       "description": "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote.",
       "category": "development",
       "keywords": [
@@ -1112,7 +1112,7 @@
     {
       "name": "git-housekeeping",
       "source": "./plugins/git-housekeeping",
-      "version": "0.5.1",
+      "version": "0.5.2",
       "description": "Safely deletes merged git branches, local and remote, and their worktrees. A read-only scan proves each merge by merge commit or by the merged PR's head sha; only the approved plan is deleted, with sha leases and two confirmations. Triggers — merged branches, branch cleanup, delete merged branches, stale worktrees, git housekeeping, prune branches.",
       "category": "development",
       "keywords": [

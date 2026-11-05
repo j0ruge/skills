@@ -5,8 +5,8 @@ Cada entrada registra **o que mudou e por quê** — a lição que a motivou, n�
 
 ## 2026-11-02 — o link errado que já foi espelhado, e a medida no título
 
-Publicado como **v2.9.0**. Saiu da fila do `retrofit-watch`: três sessões do `magic_tutor` (de 21 a
-22/10) e uma do `rea-projects` (02/11). Cada lição foi conferida no transcript.
+Publicado como **v2.9.0**. Saiu da fila do `retrofit-watch`: três sessões de um projeto (de 21 a
+22/10) e uma de outro (02/11). Cada lição foi conferida no transcript.
 
 - **O `REF?` não revisita o que já foi espelhado.**
   - No espelho do `TODO.md` do `sdd_agents`, o plano na `main` deu `UPDATE #312 L323 (anchor)` sem
@@ -17,7 +17,7 @@ Publicado como **v2.9.0**. Saiu da fila do `retrofit-watch`: três sessões do `
   - A causa era uma escolha escrita no código: o `REF?` só sai para o corpo que a rodada escreve,
     para não repetir as mesmas linhas a cada plano. O preço não estava escrito.
   - Agora o `--refs` varre todos os corpos quando alguém pede, e o plano padrão fica igual.
-- **A medida no título troca a chave.** O item 18 do `TODO.md` do `magic_tutor` dizia "O
+- **A medida no título troca a chave.** O item 18 de um `TODO.md` dizia "O
   docs/monitor.md tem 501 linhas, e 318 são dos replays". Nas três sessões seguintes o número foi
   501, 520 e 547, e cada vez o plano deu `CREATE` para o "novo" item e `ORPHAN` para a #39. A chave da
   #39 foi trocada à mão via REST três vezes: `a9fcf6bb` → `32ba80cb` → `d1b38e18` → `046f9784`. A
@@ -30,7 +30,7 @@ Publicado como **v2.9.0**. Saiu da fila do `retrofit-watch`: três sessões do `
 
 ## 2026-10-26 — o plano na branch do PR, antes do merge
 
-Publicado como **v2.8.3**. Saiu do espelho do `TODO.md` do `magic_tutor` depois do merge do PR #114
+Publicado como **v2.8.3**. Saiu do espelho do `TODO.md` de um projeto depois do merge do PR #114
 de lá (a revisão do draft), que trouxe os itens 58 a 64.
 
 - **O `REF?` chegou depois do merge.** O plano na `main` (`a328e42`, o #114 mergeado) deu 3 linhas
@@ -46,7 +46,7 @@ de lá (a revisão do draft), que trouxe os itens 58 a 64.
 
 ## 2026-10-25 — a órfã consertada sem o marcador, o motivo conferido e o worktree destacado
 
-Publicado como **v2.8.2**. Saiu do espelho do `TODO.md` do `magic_tutor` depois do merge do PR #101
+Publicado como **v2.8.2**. Saiu do espelho do `TODO.md` de um projeto depois do merge do PR #101
 de lá (missão `20261024-dica-na-hora` do kit sdd), que criou a #102 e deixou 4 órfãs.
 
 - **A missão apaga o item sem `RESOLVED by`.** As 4 órfãs saíram do arquivo no PR #101, sem o
@@ -55,32 +55,32 @@ de lá (missão `20261024-dica-na-hora` do kit sdd), que criou a #102 e deixou 4
   diria "não vamos fazer" sobre o que foi feito. Elas foram fechadas à mão como `completed`, com o
   commit e o PR, como a seção *Erros comuns* já dizia. Agora a linha e a dica dizem os dois casos.
 - **O motivo, conferido depois.** O `gh issue view N --json stateReason` deu `Unknown JSON field` no
-  gh 2.45.0, e o `gh api repos/j0ruge/magic_tutor/issues/N --jq .state_reason` deu `completed` nas 4.
+  gh 2.45.0, e o `gh api repos/<dono>/<repo>/issues/N --jq .state_reason` deu `completed` nas 4.
 - **O checkout da `main` estava ocupado:** o aluno jogava lá com o monitor ligado, e ele estava atrás
   do merge. O espelho rodou de um `git worktree add --detach … origin/main`: `permalinks at 8d1eaab`,
   e o plano final deu `create=0 update=0 orphans=0`.
 
 ## 2026-10-20 — o `#N` solto que o GitHub liga ao número errado
 
-Publicado como **v2.8.0**. Saiu do espelho do `TODO.md` do `magic_tutor` depois dos PRs #32 e #33
+Publicado como **v2.8.0**. Saiu do espelho do `TODO.md` de um projeto depois dos PRs #32 e #33
 de lá, que criou as issues #34 a #39.
 
 - **"Liga com o #1" virou link para o PR #1.** O item 19 citava o item 1 do arquivo (a issue #10). Na
   issue #34, o GitHub ligou o `#1` ao PR #1 ("revisão de código até nota A…"), conferido no HTML
   renderizado. O plano mostrou `CREATE` sem nenhum aviso, e a skill já protegia o `@nome` (`defang`),
   mas não o `#N`.
-- **Reescrever não serve.** Nas seções abertas do `magic_tutor` e do kit sdd havia 8 `#N` soltos.
+- **Reescrever não serve.** Nas seções abertas desse projeto e do kit sdd havia 8 `#N` soltos.
   Quatro estavam certos (`#11`, `#246`, `#247`, `#254`) e quatro apontavam para outro lugar: o item
   1, um PR do `portal_app` e dois do `quote_app`. Esses dois ainda saem como texto puro, e
   vão virar link errado quando o kit chegar ao #405. Por isso a saída é uma linha `REF?` com o
-  destino, e o conserto é na fonte: o `magic_tutor` abriu o PR #40 com "item 1 (#10)".
+  destino, e o conserto é na fonte: o projeto abriu o PR #40 com "item 1 (#10)".
 - **Conferido num plano real.** Na branch do PR #40, o plano mostrou
   `REF?    L12   #10 → issue #10: 1. Ver a dica de bloqueio chegar a tempo…`. Na `main`, sem corpo
   a escrever, não saiu nenhuma linha `REF?`.
 
 ## 2026-10-19 — migrar à mão, a numeração citada e espelhar da worktree
 
-Publicado como **v2.7.0**. São três lições da migração do `TODO.md` do `magic_tutor`: 6 itens no
+Publicado como **v2.7.0**. São três lições da migração de um `TODO.md`: 6 itens no
 formato `## N. Título`, migrados e espelhados no PR #9 de lá.
 
 - **Cada `##` era um achado.** O `--audit` deu `no open marker … (candidates: none)`, e nenhuma das

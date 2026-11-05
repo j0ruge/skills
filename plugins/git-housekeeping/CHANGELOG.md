@@ -1,10 +1,17 @@
 # Changelog — `git-housekeeping`
 
+## [0.5.2] — 2026-11-05
+
+### Nomes de repositórios privados saem do texto
+
+Nomes de repositórios privados saem do texto, também nas entradas antigas deste arquivo.
+Onde a frase dependia do nome, ficou um termo genérico. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [0.5.1] — 2026-11-03
 
 ### O passo 7 diz o que fazer com o item que o 1º plano não tinha
 
-Nasceu da limpeza do `magic_tutor` depois do PR #166.
+Nasceu da limpeza de um projeto depois do PR #166.
 
 - **O quê:** o passo 7 (Provar) do `SKILL.md` grava a análise da prova num `--plan` novo, e diz
   que um item do `SAI` que o 1º plano não tinha vem do repo que andou entre as duas análises: o
@@ -12,7 +19,7 @@ Nasceu da limpeza do `magic_tutor` depois do PR #166.
   fica como o registro do que foi aprovado; sobrescrito pela prova, um `apply_plan.py` rodado de
   novo levaria junto o que ninguém aprovou.
 - **Por quê:** a prova trouxe `SAI (2)`, `chore/todo-85-alvo-do-ataque` e
-  `chore/retrofit-atualizar-regras`, que outra sessão mergeou (PRs #173 e #175 do `magic_tutor`)
+  `chore/retrofit-atualizar-regras`, que outra sessão mergeou (PRs #173 e #175)
   entre a 1ª análise e a prova. O passo 7 só previa "vazio, ou só com o que foi recusado", e os
   dois não eram recusa. Lidos como falha do apply, ou cobertos pela aprovação dada para os outros
   cinco ramos, eles sairiam sem ninguém tê-los visto.
@@ -24,7 +31,7 @@ Nasceu da limpeza do `magic_tutor` depois do PR #166.
 
 ### Os ignorados que vão junto saem em três grupos: sem outra cópia, igual no principal, regeneráveis
 
-Nasceu da limpeza do `magic_tutor` depois dos PRs #150 a #152.
+Nasceu da limpeza de um projeto depois dos PRs #150 a #152.
 
 - **O quê:** o `Item` do worktree ganha `regen` e `copies`. Regenerável é o ignorado de nome
   conhecido (`REGENERAVEIS`: `__pycache__`, `node_modules`, `build`, `.pytest_cache`…), o
@@ -34,7 +41,7 @@ Nasceu da limpeza do `magic_tutor` depois dos PRs #150 a #152.
   `sem outra cópia: …; igual no principal: …; regeneráveis: …`, e o passo 2 do `SKILL.md` manda
   ler em voz alta só o primeiro grupo. O `ignored` não mudou: a recusa por ignorado novo do
   `apply_plan.py` segue igual.
-- **Por quê:** o worktree `23d3` do `magic_tutor` listava 16 ignorados num saco só. Entre eles
+- **Por quê:** o worktree `23d3` listava 16 ignorados num saco só. Entre eles
   estavam 11 caches ou venv (o `.venv-gui/` de 256 MB) e 3 mocks `.impeccable/*.png` iguais aos do
   checkout, e os rascunhos `.superpowers/sdd/` só existiam ali. Separar o que se perdia de fato
   custou três checagens à mão (`cmp` contra o checkout, `find .superpowers -type f`) antes da 1ª
@@ -48,14 +55,13 @@ Nasceu da limpeza do `magic_tutor` depois dos PRs #150 a #152.
 
 ### O symlink ignorado sai marcado, e o worktree com um processo dentro fica
 
-Nasceu da limpeza do `magic_tutor`, do `skills` e do `sdd_agents` depois do PR #115 do
-`magic_tutor`.
+Nasceu da limpeza de um projeto, do `skills` e do `sdd_agents` depois do PR #115 do primeiro.
 
 - **O symlink ignorado:**
   - **O quê:** o `Item` do worktree ganha `links` (nome → destino, lido com `os.readlink`), e o
     relatório mostra o link como `.venv → <destino> (link: só o link sai)`. O `SKILL.md` ganha a
     armadilha.
-  - **Por quê:** os 5 worktrees do `magic_tutor` listavam o `.venv` entre os "ignorados que vão
+  - **Por quê:** os 5 worktrees listavam o `.venv` entre os "ignorados que vão
     junto", sem a barra final, e nada dizia que era link. Ele apontava para o `.venv` do checkout,
     onde o monitor do aluno rodava, e foi preciso conferir à mão com `readlink` antes de aprovar.
     Depois do apply, o `.venv/bin/python` do checkout respondeu (3.12.3) e o monitor seguiu de pé.
@@ -76,7 +82,7 @@ Nasceu da limpeza do `magic_tutor`, do `skills` e do `sdd_agents` depois do PR #
     usando. Antes, só o cwd do próprio `analyze` protegia um worktree. Num worktree descartável, a
     varredura do `/proc` achou um `sleep` com o cwd dentro.
   - **Limite medido:** o processo do Claude Code fica com o cwd onde foi aberto. Esta sessão continuou
-    em `magic_tutor` depois de muitos `cd ~/.wt/…` pelo Bash. No mesmo dia, a ponta de
+    na pasta de abertura depois de muitos `cd ~/.wt/…` pelo Bash. No mesmo dia, a ponta de
     `sdd_agents-health-pula-catalogo` andou entre duas análises sem nenhum processo com o cwd lá
     dentro. A sessão que só entra pelo shell não segura o worktree.
   - **Testes:** `test_worktree_com_processo_dentro_fica`,
@@ -92,7 +98,7 @@ Nasceu da limpeza do `magic_tutor`, do `skills` e do `sdd_agents` depois do PR #
   da branch, sem o `origin/` que o relatório mostra, e que esse `--only` leva a branch local e a ref
   juntas. O `matches()` do `apply_plan.py` compara o nome cru do item, que o plano grava sem o remoto;
   o prefixo só entra no rótulo impresso.
-- **Por quê:** no pós-merge do PR #21 do dotp-remake (2026-10-25), o relatório mostrou
+- **Por quê:** no pós-merge do PR #21 (2026-10-25), o relatório mostrou
   `ref remote-tracking origin/plano-3-5-b`, e o passo 3 mandava usar "o nome que o relatório mostra".
   `apply_plan.py --scope local --only plano-3-5-b --only origin/plano-3-5-b --dry-run` saiu com rc 2
   (`--only fora do plano neste escopo: 'origin/plano-3-5-b'; o plano aceita: plano-3-5-b`), medido de
@@ -135,7 +141,7 @@ default do origin". Foram apagadas à mão, com a contenção provada antes de c
 
 ### A aprovação parcial do plano, sem editar o JSON
 
-Nasceu de uma limpeza no `dotp-remake`: o `analyze.py` pôs 16 itens em `SAI` (9 branches locais, 6
+Nasceu de uma limpeza: o `analyze.py` pôs 16 itens em `SAI` (9 branches locais, 6
 remotas e 1 worktree, todos com merge provado), e o usuário aprovou só a branch local que a tarefa
 pedia. O `apply_plan.py` apagava todo item `delete` do escopo, e a skill não tinha como aprovar
 parte do plano.

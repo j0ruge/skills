@@ -110,7 +110,7 @@ Read this in Phase A, before writing the loop that maps each CODE file to its te
   specifier of the changed tests: a relative one against the test's folder, a bare one against
   `baseUrl` (`tsconfig.json` or `jsconfig.json`), then try `<stem>.{ts,tsx,js,jsx}` and
   `<stem>/index.{ts,tsx,js,jsx}`. A `jest.mock('x')` does not count: a mocked module is not
-  exercised. Measured 2026-10-30 (warehouse_explorer_web, 9 CODE files): the name probe left
+  exercised. Measured 2026-10-30 (9 CODE files): the name probe left
   `src/hooks/index.tsx` at `NO_TESTS`, though `src/hooks/auth.test.tsx` imports `AppProvider from
   '.'`; counting `jest.mock` gave `src/hooks/auth.tsx` 3 tests where 1 imports it; and without
   `baseUrl`, `src/services/api.ts` lost `src/components/buscas.test.tsx` (`from 'services/api'`).
@@ -125,7 +125,7 @@ base equals `HEAD`, or when the session runs isolated in a worktree.
   context.
 - **A local base can be stale.** Without `origin/HEAD`, step 2 stops at the local `main`, which may
   sit merged PRs behind. When `git rev-list --count main..origin/main` is above 0, the base is
-  `origin/main`. Measured 2026-10-19 (magic_tutor): the local `main` was 24 commits behind, and its
+  `origin/main`. Measured 2026-10-19: the local `main` was 24 commits behind, and its
   merge base gave a 22-commit range holding two PRs already merged.
 - **A branch already merged diffs empty against `origin/<base>`** (its merge base is `HEAD`). When
   the user asks for that branch's code ("o código novo"), the range is what its PR brought:
@@ -139,7 +139,7 @@ base equals `HEAD`, or when the session runs isolated in a worktree.
   (`python -X pycache_prefix=$S/pyc`). Run each git command plainly, as parallel calls in one
   message; call it as `/usr/bin/git` where a hook rewrites `git` (the rtk hook's `rtk git` is
   refused too); write scripts to the scratchpad and spell their paths out. Measured 2026-10-19
-  (Claude Code, magic_tutor): the chain, the heredoc and the `$S` argument were refused, and the
+  (Claude Code): the chain, the heredoc and the `$S` argument were refused, and the
   split calls ran.
 - **The same hook can summarize `grep`.** Where its output decides a finding (a cross-file check,
   a reference count), call `/usr/bin/grep`: through the rtk hook,
@@ -197,11 +197,11 @@ compare the two versions first, the one Phase A read and that record's `version`
   section it points to, read from the installed folder, are that text (the lines around it are
   equal); with hunks in several phases, Read the installed `SKILL.md` whole. Go on from there, list
   the hunks in the Cost footprint, and say in the closing report that `/reload-plugins` can make the
-  next run load the installed copy, which checks again. Measured 2026-10-30 (warehouse_explorer_web
-  PR #11, round 2): with 2.27.18 installed, after a `/reload-plugins` typed while the agent was
+  next run load the installed copy, which checks again. Measured 2026-10-30
+  (PR #11, round 2): with 2.27.18 installed, after a `/reload-plugins` typed while the agent was
   mid-turn and delivered to it as a queued message, the round still loaded `…/codereview/2.27.17/`,
   two step hunks apart; it followed the installed text and closed at grade A one round later.
-- Measured 2026-10-18 (ui24_agent, rounds 4 to 10): the session had loaded 2.18.4 with 2.19.0
+- Measured 2026-10-18 (rounds 4 to 10): the session had loaded 2.18.4 with 2.19.0
   installed, and the 2.18.4 folder carried an `.orphaned_at` file. The folders differed in the
   references and in `scan_secrets.py` (2.19.0 added `scanned`), the two `SKILL.md` only in the
   version line. With `{SKILL_DIR}` at the installed folder the agents read the 2.19.0 contracts and
@@ -269,7 +269,7 @@ phase, and step 7 checks the doc against the diff, not against code the range le
   output was made. The same holds for a fact read in an exploration (the state at one message):
   save what it printed. A claim of absence ("none in X") needs its zero printed: a tally has no
   row for a zero (a Python `Counter` prints none), and a missing line proves nothing to a reader.
-- Measured 2026-10-23 (magic_tutor, PR #75): with the two measurement scripts as evidence, the
+- Measured 2026-10-23 (PR #75): with the two measurement scripts as evidence, the
   agent answered "there is no saved output" and left three claims of a protocol note (833
   appearances in 97 replays, a `[1, 376]` example, a one-annotation-per-target example)
   `needs reproduction`. Same doc and launch prompt, only the evidence swapped: the saved output
@@ -280,13 +280,13 @@ phase, and step 7 checks the doc against the diff, not against code the range le
 - **Every evidence file exists before the launch.** A fix that adds a claim needs its own saved
   output for the next round, and a path the prompt names but the session writes after the launch
   races the agent's read. `ls` the evidence list before launching: a missing path exits 2 and
-  names itself. Measured 2026-10-23 (magic_tutor, PR #77): round 1's fix added a sentence (two
+  names itself. Measured 2026-10-23 (PR #77): round 1's fix added a sentence (two
   replays gained a section) with no saved output; round 2's prompt named `secoes.out.txt` before
   it existed, and it was written just after the launch, in time only by luck.
 - **Read each evidence file before the launch, too.** A command that fails inside a pipe still
   leaves a plausible line, and the agent checks the doc against it. In zsh, `git show $ref:path`
   reads the `:c`, `:h` or `:t` after `$ref` as a modifier: brace the name, `"${ref}:path"`.
-  Measured 2026-10-25 (magic_tutor, PR #107): `git show $ref:conhecimento/decks/x.md | wc -c`
+  Measured 2026-10-25 (PR #107): `git show $ref:conhecimento/decks/x.md | wc -c`
   sent `5a42767^onhecimento/…` to git, which failed, and the evidence file said `5a42767^: 0` for
   a page of 20708 bytes; braced, it said 20708 and 22391.
 - **An `rc=` line saved after a pipe is the last command's status, not the script's.**
@@ -300,7 +300,7 @@ phase, and step 7 checks the doc against the diff, not against code the range le
   that labels the code "as it is" as the before and patches the after in memory measures the after
   twice once the change lands on HEAD. Extract a commit from before the change
   (`git archive <sha> | tar -x -C <tmp>`), put that folder first on the import path, and save both
-  runs as the evidence. Measured 2026-10-28 (magic_tutor, PR #128): a doc said a zero floor in a
+  runs as the evidence. Measured 2026-10-28 (PR #128): a doc said a zero floor in a
   score moved a replayed draft from B/R at pick 15 (13 cards) to W/B at pick 6. Re-run on HEAD, the
   measuring script printed its "as is" block identical to its "floor" block (W/B at pick 6 in both);
   on the archive of `3678343`, a commit from before the change, it printed B/R at pick 15, the doc's
@@ -310,7 +310,7 @@ phase, and step 7 checks the doc against the diff, not against code the range le
   every version: when the PR changes the code that measures (a path removed, a step added before
   the timer starts), read in each version where the measurement starts and ends
   (`git show <ref>:<file>`), and prefer a measure that starts at the same point in all of them, such
-  as the wall-clock total over a partial time. Measured 2026-10-31 (magic_tutor, PR #150, round 1):
+  as the wall-clock total over a partial time. Measured 2026-10-31 (PR #150, round 1):
   the agent checked every cell of a three-version table against the saved runs ("all match"), but
   the fix started its `JOGADA em` timer in `_em_fluxo`, after a subscription check, and the removed
   path started it in `perguntar`, before it; on the total time, the PR's headline went from −39% to
@@ -319,7 +319,7 @@ phase, and step 7 checks the doc against the diff, not against code the range le
 - **An agent's number that contradicts the doc is recomputed before it keeps its severity.** The
   agent reads the saved outputs by eye, so its range, count or ratio is a claim like the doc's.
   Recompute it from the same files, save that output beside the evidence, and only then edit the
-  doc toward it or keep the finding. Measured 2026-10-31 (magic_tutor, PR #150, round 2): a MEDIUM
+  doc toward it or keep the finding. Measured 2026-10-31 (PR #150, round 2): a MEDIUM
   said a tail "varied from 1.8 to 4.4 s within one version"; recomputed from the saved runs, it went
   from 1.8 to 2.6 s on `main` and from 2.5 to 3.8 s on the fix, so the finding fell to LOW, and the
   doc said "compatible, not isolated" instead of adopting the wrong range.
@@ -354,7 +354,7 @@ phase, and step 7 checks the doc against the diff, not against code the range le
 - **A sentence that confines a change to a list is a claim of absence about the rest.** "the
   split's section now opens at the cast (Replay22, 24 and 25)" says no other section moved. Save
   the per-item detail of everything that changed, not only the totals, so the agent can check the
-  list. Measured 2026-10-23 (magic_tutor, PR #77): the saved narration diff printed, beside the
+  list. Measured 2026-10-23 (PR #77): the saved narration diff printed, beside the
   totals (26 lines in, 0 out), the other changed lines per file, and the agent saw two more files
   (38 and 32 lines) whose sections had changed too, a LOW; the totals alone would have left it
   nothing to check.
@@ -369,7 +369,7 @@ phase, and step 7 checks the doc against the diff, not against code the range le
   own review. Sent to an agent as written this session, the doc gave the round's only MEDIUM: the
   cell left out a form the parser accepts (`FE_NUM_COLOURS` with `OP_GREATER_THAN`) and ended by
   calling any other operator an error, against a code file the range did not touch.
-- Measured 2026-10-24 (magic_tutor, PR #81): the branch's docs came from the session before the
+- Measured 2026-10-24 (PR #81): the branch's docs came from the session before the
   handoff, and no review had read them. Sent to agents as written this session, they gave round 1's
   only docs MEDIUM, `README.md:188`: a known-limitations line outside the diff's hunks that the new
   feature had made false; and 4 LOW.
@@ -379,7 +379,7 @@ phase, and step 7 checks the doc against the diff, not against code the range le
   sentence names, and grep the range's diff for that name, since the same pairing can sit in a file
   no agent read. The sentence stays only if the group holds the number; otherwise the count goes on
   the category and the name stays an example ("a trigger of the card itself, e.g. X: 76 of 619").
-- Measured 2026-10-21 (magic_tutor, a two-commit range): the totals matched the script (619, 129,
+- Measured 2026-10-21 (a two-commit range): the totals matched the script (619, 129,
   53, 76, 67), and the DOCS agent raised the log entry's "67 of 619" on one card as an inference,
   `needs reproduction`. Grouped by source card, the 76 came from 15 cards (21, 11, 10, 6, 6, …) and
   the named card had 12 target requests in all; the name grep found the same pairing in a test
@@ -485,7 +485,7 @@ These decide whether the rounds converge:
 - **`base=` is pasted from git's output, never retyped.** The head a round starts from was printed
   turns earlier, and a full sha rebuilt from memory names no commit. Take it from
   `git rev-parse <short sha>`, or the short sha as `git log --oneline` printed it, and paste that
-  string into Phase A and into every launch prompt. Measured 2026-10-25 (magic_tutor, PR #107,
+  string into Phase A and into every launch prompt. Measured 2026-10-25 (PR #107,
   round 3): one prompt's diff command carried `0fe9e979ecdf…`, while `git rev-parse 0fe9e97`
   gives `0fe9e97adcfed…`; that agent reviewed the right range only because its `Merge base:` line
   had the short sha.
@@ -532,7 +532,7 @@ These decide whether the rounds converge:
   base branch, so the round reviews the whole branch again. Before the round, run
   `git merge-base --is-ancestor <base> HEAD`; on rc 1, write the two-dot tree diff
   (`git -P diff <base> HEAD -- <file>`) out in every prompt and use it in Phase A's steps 5–8,
-  the secrets pre-scan included. Measured 2026-10-23 (magic_tutor, PR #77): after the fixup,
+  the secrets pre-scan included. Measured 2026-10-23 (PR #77): after the fixup,
   `git diff --stat 4f682e1...2bd9a7c` gave 6 files, +181/−47 (the branch), and
   `git diff --stat 4f682e1 2bd9a7c` 2 files, +7/−6 (the fix); the round over the two-dot range
   sent the two docs to one agent and came back clean.
@@ -541,7 +541,7 @@ These decide whether the rounds converge:
   the fix: it carries the base's new commits, inside the same files when the fix touches them, so
   the file list does not show them. Right after the rebase, before the first fix,
   `git rev-parse HEAD` is the rebased copy of the reviewed head: the next round's `base=`, with the
-  usual three-dot range. Measured 2026-10-24 (magic_tutor, PR #81): rebased over a merged PR,
+  usual three-dot range. Measured 2026-10-24 (PR #81): rebased over a merged PR,
   `6652602` became `68d8139`; `git diff --stat 6652602 daf045e` and
   `git diff --stat 68d8139 daf045e` listed the same 12 files, +160/−45 against +153/−44, and
   `git diff --stat 6652602 68d8139` showed the gap: 2 files, 8 lines of the merged PR, both files
@@ -555,7 +555,7 @@ These decide whether the rounds converge:
   three-dot range. A doc in the tree that cites an old sha (a checkpoint's Commit column, a plan, a
   handoff) now names a commit only the backup ref holds: search the tree for each old short sha
   before the round, since such a file is often outside the round's diff and no agent reads it.
-  Measured 2026-10-25 (magic_tutor, PR #112): a `filter-branch --tree-filter` over 27 unpushed
+  Measured 2026-10-25 (PR #112): a `filter-branch --tree-filter` over 27 unpushed
   commits turned the reviewed `fa5b44f` into `e1eb8a1`, and `base=e1eb8a1` gave the fix's 9 files;
   the search found the seven old shas of a checkpoint's Commit column, the round's cross-file LOW.
 - **Reproduce between rounds, not during one.** A mutant that confirms a `needs reproduction` finding
@@ -602,12 +602,12 @@ These decide whether the rounds converge:
   claims were reproduced and refuted.
 - **A note that records a 6.10 fix is in the next round's diff.** Describe the flagged line in
   words, never between backticks: the pre-scan reads the note as it read the flagged line
-  (detection-passes.md, 6.10, *The record of a 6.10 fix*). Measured 2026-11-05 (magic_tutor): the
+  (detection-passes.md, 6.10, *The record of a 6.10 fix*). Measured 2026-11-05: the
   round-1 note that quoted the old form was round 2's only pre-scan row.
 - **A text finding in code converges when the sentence is true on every path, or leaves.** A
   warning, a comment or a docstring is a claim, as a doc sentence is: fix it by saying what holds on
   each path that reaches it, the silent one included, or delete it. A rewording that is true on the
-  path the finding named comes back on the next path. Measured 2026-10-19 (magic_tutor, twelve
+  path the finding named comes back on the next path. Measured 2026-10-19 (twelve
   rounds whose LOW count fell from 9 to 2): the doc tail closed when the sentence named the case
   with no warning (a log with no time leaves the file at its time of writing, silently), and the
   next doc round came back with no findings; a warning that said the files kept "the time of
@@ -638,8 +638,8 @@ These decide whether the rounds converge:
   ```
   Reflow the paragraph, not the lines the fix wrote: from the first changed line to the end of the
   paragraph or list item. A span that stops at the last line written leaves a short line where it
-  meets the old text, and that line is the next round's LOW. Measured 2026-10-27 (magic_tutor,
-  `docs/monitor.md`): the fix reflowed its own six lines of a list item, and the last came out at 52
+  meets the old text, and that line is the next round's LOW. Measured 2026-10-27
+  (`docs/monitor.md`): the fix reflowed its own six lines of a list item, and the last came out at 52
   columns before the untouched text; the next round gave it a readability LOW. Reflowed one line
   further, it ended at 20 columns; reflowed to the end of the item, 18 lines, the round after came
   back clean.
@@ -652,7 +652,7 @@ These decide whether the rounds converge:
   ends for Python, so its line numbers drift from the AST's and tokenize's. `col_offset` counts
   UTF-8 bytes: replace in the encoded line. Then prove the diff: the two token streams have the same
   length, and every token that differs is a `NAME` changed by a pair of the map, counted per pair.
-  Measured 2026-10-18 (ui24_agent): a `cli.py` with one `\u2028` in a string literal gives 5633
+  Measured 2026-10-18: a `cli.py` with one `\u2028` in a string literal gives 5633
   lines to `splitlines()` and 5632 to the AST, and round 4's tokenize renamer stopped with
   `StopIteration` until the lines came from `StringIO`; round 10 renamed 54 locals in 7 files this
   way (182 occurrences, every one a `NAME` of the map) and the suite stayed green.
@@ -671,23 +671,23 @@ These decide whether the rounds converge:
   with two readings in a headless browser, over builds of the head the last round reviewed and of
   the fix: the element's `getComputedStyle` before and after, and the bounding box of the pixel
   difference between full-page screenshots, which must enclose only what the fix named. Measured
-  2026-10-30 (warehouse_explorer_web PR #13, round 2): the chip label went from `rgb(168, 168, 179)`
+  2026-10-30 (PR #13, round 2): the chip label went from `rgb(168, 168, 179)`
   to `rgb(108, 108, 128)` and the focused action from `rgb(197, 48, 48)` to `rgb(155, 44, 44)`; on
   six screens (three pages at 1440 and 390 px) the difference box was 27×10 px around the label,
   with the page sizes unchanged.
 - **Code this session wrote goes to an agent, as a doc does** (*Docs this session wrote*): a fix
   round's code or the change itself. With ≤3 CODE files the inline shortcut has the orchestrator
   grade its own code: send those files to Phase B agents, launch prompt unchanged. Measured
-  2026-10-19 (magic_tutor, rounds 2–4 over a two-file Python fix): the agent found each round's only
+  2026-10-19 (rounds 2–4 over a two-file Python fix): the agent found each round's only
   MEDIUM — a cached JSON body without `log` that crashed every later run, a `break` that left the
   older items unreachable — and a test written first went red on each. Measured again 2026-10-21 on
-  the change itself (magic_tutor PR #49: three CODE files the session wrote, reviewed inline, only
+  the change itself (PR #49: three CODE files the session wrote, reviewed inline, only
   the docs sent to agents): Codex then raised a P2 in `descricao.py` ("Include costs for cards
   without rules text"), accepted and fixed in `c21197f`.
 - **The clean round covers the head it read, and nothing committed after it.** The fix for the last
   LOW, be it a docstring, a comment or one reworded message, is a new head: the series closes on a
   round over it, with the code agent and the sweep (the bullet above), not on the round before it.
-  Measured 2026-10-19 (magic_tutor): the round over a two-line comment commit came back with a LOW
+  Measured 2026-10-19: the round over a two-line comment commit came back with a LOW
   in a comment the branch had written two rounds before (a 2 s resolution claimed for exFAT), which
   both earlier rounds had read without raising.
 - **A line older than the branch is not the round's.** The per-file agent reads the whole file, so a
@@ -696,15 +696,15 @@ These decide whether the rounds converge:
   (`git merge-base --is-ancestor <sha> <branch base>`; rc 0 means it is older). Report it labeled
   `pre-existing (not introduced by this branch)`: it does not count against the stop rule, and the
   user decides whether it is fixed here or goes to the tracker. A line outside the round's diff that
-  the branch wrote is the branch's own and counts. Measured 2026-10-19 (magic_tutor): the
+  the branch wrote is the branch's own and counts. Measured 2026-10-19: the
   comment-commit round above also raised a mistyped `--log` that read as "nothing new" at
   `arquivar.py:229`, written by `5a941e7d`, an ancestor of the branch base (`--is-ancestor`: rc 0).
 - **A doc that describes what the series changed belongs to every round.** Step 7 reads the docs in
   the round's CHANGED_FILES, and a re-review range holds only the last fix, so a doc whose clean
   round came before the series added a warning is never read again. In each round, grep the docs for
   every user-visible message or path the series added or changed since that doc's last clean round;
-  a doc you then edit goes to an agent (*Docs this session wrote*). Measured 2026-10-19
-  (magic_tutor): `docs/monitor.md` had its clean round before the date re-read and its warning
+  a doc you then edit goes to an agent (*Docs this session wrote*). Measured 2026-10-19:
+  `docs/monitor.md` had its clean round before the date re-read and its warning
   existed, three rounds passed without it, and writing the missing sentence exposed the warning text
   that was false on one path (*A text finding in code converges*, above).
 - **A fix to an amended decision greps every place that cites it.** A plan names a decision
@@ -728,7 +728,7 @@ Read this in Phase C when the reviewed code already runs (a cron job, a deployed
   does what that mount allows, not what the test's `tmp_path` does. When a finding rests on one
   (`utime`, `chmod`, a rename, a lock), run it on a throwaway file in the real destination folder,
   then delete the file. It is a write outside the scratchpad: do it between rounds, and name the
-  folder in the report. Measured 2026-10-19 (magic_tutor): a LOW `needs reproduction` on `os.utime`
+  folder in the report. Measured 2026-10-19: a LOW `needs reproduction` on `os.utime`
   in the Google Drive copy became HIGH. `/mnt/g` answered `PermissionError [Errno 1]` (drvfs files
   owned by root), while `/mnt/j` and ext4 accepted it, so every copy to the Drive had failed since
   the commit.
@@ -737,7 +737,7 @@ Read this in Phase C when the reviewed code already runs (a cron job, a deployed
   deployed build (the `dist/` in its volume, the image) and date it against the server repo's fix
   commits (`git log -1 --format=%ci <sha>`): the server's `master` can carry a fix its deployment
   lacks. Reads only, on hosts the session may read; for a host the user reserved, hand over the
-  command. Measured 2026-10-30 (warehouse_explorer_web PR #11, a client that renews its session
+  command. Measured 2026-10-30 (PR #11, a client that renews its session
   token): the API's `master` stored the new token on rotation (`1063062`, 14:50), while the staging
   `dist` (10:05 the same day) stored the old one with its revocation check (`35a1ca1`, 08:35) live,
   so every renewal signed the user out there. It was the review's top HIGH, and neither the diff

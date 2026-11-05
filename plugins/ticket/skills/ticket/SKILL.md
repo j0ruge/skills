@@ -4,7 +4,7 @@ description: "Jira ticket lifecycle, integrated with Git — create issues/sub-i
 argument-hint: "start (open) | split | close | status"
 compatibility: "Claude Code: o argument-hint acima é campo dele e só é lido no topo. Requer acli e credenciais Jira (JIRA_EMAIL, JIRA_API_TOKEN)."
 metadata:
-  version: 1.14.2
+  version: 1.14.3
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira

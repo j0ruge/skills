@@ -2,7 +2,7 @@
   {"query": "o coderabbit deixou 6 comentários no PR 219, verifica cada um contra o código atual e resolve as conversas", "should_trigger": true},
   {"query": "fix the copilot review comments on PR #45", "should_trigger": true},
   {"query": "Gemini e CodeRabbit comentaram no #88; faz o checklist por revisor, corrige o que for válido e roda os testes", "should_trigger": true},
-  {"query": "o codex review apontou dois problemas inline no PR 12 do ui24-agent, confere se procedem e corrige", "should_trigger": true},
+  {"query": "o codex review apontou dois problemas inline no PR 12, confere se procedem e corrige", "should_trigger": true},
   {"query": "resolve os comentários dos bots de revisão no PR aberto desta branch", "should_trigger": true},
   {"query": "CodeRabbit flagged a zero-width character in config.yaml on PR 301, check the actual bytes and fix it if it's real", "should_trigger": true},
   {"query": "os revisores automáticos já terminaram no PR 219; conserta tudo numa leva só e fecha as threads", "should_trigger": true},

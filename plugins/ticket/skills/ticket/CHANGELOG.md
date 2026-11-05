@@ -6,7 +6,7 @@ mudou e por quê** — a lição que a motivou, não só o diff.
 
 ## 2026-10-30 — cartão retroativo, testes do Jest e o `Concluido` do DEF (1.14.0)
 
-- O PR #13 do `warehouse_explorer_web` foi mergeado e foi para produção sem cartão. O DEF-176 nasceu
+- O PR #13 foi mergeado e foi para produção sem cartão. O DEF-176 nasceu
   pela criação do B, sem branch nem "Em andamento", e fechou pelos steps 3 a 7 do `close`. A
   releitura confirmou cada passo (`201`, `201`, `201`, `204`). Isso vira seção do `start.md`, e o
   `SKILL.md` aponta para ela.

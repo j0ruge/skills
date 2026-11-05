@@ -2,7 +2,7 @@
 name: git-housekeeping
 description: "Safely deletes merged git branches, local and remote, and their worktrees. A read-only scan proves each merge by merge commit or by the merged PR's head sha; only the approved plan is deleted, with sha leases and two confirmations. Triggers — merged branches, branch cleanup, delete merged branches, stale worktrees, git housekeeping, prune branches."
 metadata:
-  version: 0.5.1
+  version: 0.5.2
 ---
 
 # git-housekeeping
@@ -31,10 +31,10 @@ foram medidos no git 2.43.0 em 2026-10-20, num repo descartável.
   2026-10-25: quatro `retrofit-*` ficavam presas como se fossem a branch default.
 - O `.venv` que é symlink para o do checkout aparece entre os ignorados sem a barra final, porque
   para o git o link é arquivo. O `git worktree remove` apaga só o link, e o destino fica: medido em
-  2026-10-26 em 5 worktrees do magic_tutor, com um processo rodando do `.venv` do checkout. O
+  2026-10-26 em 5 worktrees, com um processo rodando do `.venv` do checkout. O
   relatório marca o link (`.venv → <destino> (link: só o link sai)`).
 - Os ignorados de um worktree misturam cache com o que só existe ali: em 2026-11-02, um worktree
-  do magic_tutor levava 16, entre eles 11 caches ou venv e 3 mocks iguais aos do checkout, e os
+  levava 16, entre eles 11 caches ou venv e 3 mocks iguais aos do checkout, e os
   rascunhos `.superpowers/` só existiam ali. O relatório os separa em `sem outra cópia`, `igual no
   principal` (byte a byte; pasta só até `TETO_ARQUIVOS` e `TETO_BYTES` de `housekeeping.py`) e
   `regeneráveis` (`REGENERAVEIS`, `*.egg-info`, venv pelo `pyvenv.cfg`, e o link).
@@ -108,7 +108,7 @@ o `apply_plan.py` reclassifica com o mesmo código que gerou o plano.
    só com o que foi recusado). Mostre o disco antes e depois e as linhas `desfazer:` que o
    `apply_plan.py` imprimiu. Um item do `SAI` que o 1º plano não tinha vem do repo que andou entre
    as duas análises (um PR mergeado no meio). Ele não é recusa nem falha do apply: mostre-o e peça
-   uma confirmação nova, porque a dos passos 3 e 5 não o cobre. Em 2026-11-03, no `magic_tutor`,
+   uma confirmação nova, porque a dos passos 3 e 5 não o cobre. Em 2026-11-03,
    outra sessão mergeou dois PRs no meio, e os dois ramos apareceram aí.
 
 Confirmação negada no passo 3: pare tudo. Negada no passo 5: o local fica feito e o remoto não.

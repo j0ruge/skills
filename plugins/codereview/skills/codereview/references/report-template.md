@@ -81,7 +81,7 @@ first (`/usr/bin/grep -n` on the names, ids or calls the input is built from). A
 feeds that input and asserts the defective output is the 6.12 shape *a test that pins the shape the
 code produces*, and a full review sends no TESTS file to an agent. The finding's Suggested Action
 and the Test Coverage Notes name it as a test the fix changes, not as a missing case. Measured
-2026-10-20 (magic_tutor, `9d0eda3..a569b03`): the report said none of the 14 new tests put a spell
+2026-10-20 (`9d0eda3..a569b03`): the report said none of the 14 new tests put a spell
 between two equal triggers; `test_gatilho_repetido_do_oponente_vira_uma_linha` had a Shock between
 them and asserted the merged `(×3)`, and the fix had to rewrite it.
 
@@ -91,7 +91,7 @@ one file, and a full review sends it no TESTS file. Before keeping such a findin
 tests for an assertion on that behavior (`/usr/bin/grep -n` on the element, state or call the claim
 names). A passing test that asserts the opposite refutes it: cite `test:line` under the Findings
 Table. One that asserts the same confirms it without a reproduction. Measured 2026-10-30
-(warehouse_explorer_web, round 3 of an sdd mission): two agents on different files said that a focus
+(round 3 of an sdd mission): two agents on different files said that a focus
 ref on a region and on the heading inside it "probably" leaves the focus on the region after a retry
 (one MEDIUM, one LOW); the page tests already asserted `document.activeElement` is the region while
 loading and the `<h1>` once the item loads (`Warehouse/index.test.tsx:178`, the same in Service and
@@ -138,7 +138,7 @@ sends no TESTS file to an agent, the build may leave tests out of its type repor
 them through babel, which strips the types. When the `tsconfig` `include` covers the tests, run
 `npx tsc --noEmit -p .` (a pure read) before this table: an error in a changed test file is a 6.4
 finding; an error only in unchanged files is pre-existing and goes to the Notes. Measured
-2026-10-30 (warehouse_explorer_web PR #11, `react-scripts` 3.4.1, whose
+2026-10-30 (PR #11, `react-scripts` 3.4.1, whose
 `config/webpack.config.js:694` keeps `'!**/?(*.)(spec|test).*'` out of the type report): round 1, a
 full review, reported none of the 4 `TS2305` errors in three new tests (`screen` and `fireEvent` are
 not in the types of `@testing-library/react` 9.5); `tsc --noEmit -p .` printed them, the build and

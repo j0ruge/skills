@@ -51,7 +51,7 @@ by hunk: classify every hunk of `git diff -U3` by finding **before** staging any
 fits no finding stops the split), stage each group with `git apply --cached -`, and commit.
 `git add -p` fed fixed answers (a here-doc of `n`/`y`) is the tempting shortcut, and it is blind:
 each answer goes to whichever hunk git shows next, so a wrong guess stages the other finding's hunk
-and the tree stays clean either way. Measured 2026-10-23 (magic_tutor PR #73): `n`, `y` on
+and the tree stays clean either way. Measured 2026-10-23 (PR #73): `n`, `y` on
 `docs/monitor.md` staged the second finding's hunk (`4 +++-` in `git diff --cached --stat`) instead
 of the first's (`2 +-`); the cached diff caught it before the commit. A
 derived artifact the code shifts (line anchors in a doc) is recomputed per commit against the
@@ -165,6 +165,6 @@ then wait, in the background, for `completed` on the new head with the registry'
 new round of this skill. With `findings=true`, read what was posted on the head before calling it a
 finding (registry, *Codex*). CodeRabbit reviews the push on its own: read its allowance line before
 asking (registry, *Coverage Per Commit*). Declined, the report names the fix commits as unreviewed.
-Measured 2026-10-25 (magic_tutor PR #103): Codex's P2 was on `ee81a77`, the fix went out as
+Measured 2026-10-25 (PR #103): Codex's P2 was on `ee81a77`, the fix went out as
 `693832e`, and the thread was resolved with `total: 1 unresolved: 0`. Only the user's
 `@codex review` brought `completed 693832e… findings=false` and a 👍 on the PR.

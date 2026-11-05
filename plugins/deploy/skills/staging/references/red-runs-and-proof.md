@@ -92,7 +92,7 @@ curl -s "https://<host>/static/js/$M" | cmp - "build/static/js/$M" && echo "serv
 
 - **Take the name from `build/index.html`.** A glob over `build/static/js/main.*` can match two
   files: an old build committed under `public/` is copied into every `build/`, unreferenced.
-  Measured 2026-10-30 (`warehouse_explorer_web`): `main.83dc85fa`, from a commit called "versão em
+  Measured 2026-10-30: `main.83dc85fa`, from a commit called "versão em
   produção", sat beside the real chunk in every build.
 - **The hash alone does not name the commit.** The Node version and an `update-browserslist-db`
   change the build's output, so compare against a build of the promoted sha made now, not against a
@@ -100,7 +100,7 @@ curl -s "https://<host>/static/js/$M" | cmp - "build/static/js/$M" && echo "serv
   code of `cac59e4`, by its style marks, under a chunk hash that a local build of `cac59e4` does not
   produce.
 
-Measured 2026-10-30 (`warehouse_explorer_web`, staging copies at 17:42 and 17:51): before the first
+Measured 2026-10-30 (staging copies at 17:42 and 17:51): before the first
 copy the served `index.html` cited `main.9a0629c3`, the previous build; after each copy both checks
 passed, for `main.8f4f31eb` and then `main.b68dfb71`.
 

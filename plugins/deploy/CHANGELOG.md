@@ -2,6 +2,13 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [3.3.6] — 2026-11-05
+
+### Nomes de repositórios privados saem do texto
+
+Nomes de repositórios privados saem do texto, também nas entradas antigas deste arquivo.
+Onde a frase dependia do nome, ficou um termo genérico. As medições continuam valendo, sem identificar a origem. O comportamento não muda.
+
 ## [3.3.5] — 2026-11-04
 
 ### Dados da empresa saem do texto
@@ -12,7 +19,7 @@ entradas antigas deste arquivo. As medições continuam valendo, sem identificar
 
 ## 2026-10-30 — A prova de um build estático copiado à mão — bump 3.3.3 → [3.3.4]
 
-**Por quê:** na homologação do `warehouse_explorer_web` (sem CI: o deploy é copiar o `build/` para o
+**Por quê:** na homologação de um projeto (sem CI: o deploy é copiar o `build/` para o
 volume do container), os três testes do Step 7 não diziam nada. Não roda migration, o container é o
 mesmo de antes (`Created` e `Image` não mudam), e o hostname já respondia 200 com o build anterior.
 O que provou as duas cópias de 30/10 (17:42 e 17:51) foi o bundle: o `index.html` servido citava o
@@ -67,7 +74,7 @@ com o detalhe na lição 118 da `cicd`.
 ## 2026-10-15 — Migration com constraint nova: sondar a base do ambiente com a expressão do próprio constraint — bump 3.2.0 → [3.3.0]
 
 **Por quê:** a promoção da 0.4.0 do `portal_app` (PR #31, `develop → staging`) carregava uma
-migration que troca dois `CHECK`s de `expenditure_requests` e o `CHECK` de ação da auditoria. Uma
+migration que troca dois `CHECK`s de uma tabela e o `CHECK` de ação da auditoria. Uma
 linha da base de staging que violasse um deles abortaria o `migrate deploy`, que roda antes da
 aplicação, e pararia o deploy inteiro. A skill não pedia sonda nenhuma: o Step 4 diffava os workflows
 e a pasta do agente, não as migrations, e só tratava migration depois do merge (`prisma migrate

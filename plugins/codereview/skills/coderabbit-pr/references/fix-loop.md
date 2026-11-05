@@ -42,7 +42,7 @@ symptom — including one that opens a new fail-open next to it. The regression 
 3. **Green** — the probe from step 1 passes. **Still red after the fix? Judge the probe before the
    fix.** A probe that went red at its first assertion (the missing key) never ran the others, so
    their expectations are unproven: check each against the fixture and the code that existed before
-   the fix. Measured 2026-10-03 (ui24-agent PR #73): all three post-fix failures were the probe's —
+   the fix. Measured 2026-10-03 (PR #73): all three post-fix failures were the probe's —
    a field the output never had, a fixture value assumed instead of read, a label the existing code
    already produced right. Bending the fix to match them would have shipped the regression.
 4. **Sabotage the fix.** Loosen or revert the line(s) the fix added — the guard becomes a no-op, the
@@ -50,14 +50,14 @@ symptom — including one that opens a new fail-open next to it. The regression 
    At least one must go red. If none does, the fix has no sensor: write the probe that catches the
    loosened version, then restore the fix. A common cause is a fake that stops earlier than the real
    thing: a fake stream that ends right after the event lets the end-of-stream fallback answer for
-   the branch you loosened. Give the fake the real lifetime. Measured 2026-10-23 (magic_tutor PR #73,
+   the branch you loosened. Give the fake the real lifetime. Measured 2026-10-23 (PR #73,
    `6fa6613`): with the fake process closing its output right after `registrou`, removing that
    branch's `set()` left all 38 tests green; kept open until shutdown, as the real `powershell.exe`
    is, the same sabotage went red. Prove the sabotage actually changed the file before
    trusting a "still green" — a sabotage that did not apply proves nothing. Count the loosened text
    in the file itself (`grep -cF '<loosened text>' <file>`), not with `git diff | grep '^+'`: a shell
    hook can swap in `rtk git diff`, which indents every changed line (`  +…`), so the grep finds
-   nothing on a file that did change. Measured 2026-10-19 (magic_tutor PR #8): on the same file,
+   nothing on a file that did change. Measured 2026-10-19 (PR #8): on the same file,
    `git diff` and `rtk proxy git diff` piped to `grep '^+.*2027'` printed the line, `rtk git diff`
    printed nothing (rc 1), and `grep -c` counted 1. The other way round, a sabotage that breaks the syntax proves nothing
    either: the program dies at whatever runs first. Loosen into valid code, and read the red —
@@ -68,7 +68,7 @@ symptom — including one that opens a new fail-open next to it. The regression 
    killed in between skips it, and with the fix still uncommitted the tree already shows a diff:
    `git status` cannot tell the fix from the sabotage. After any interruption, count each loosened
    text again (`grep -cF`): every count must be 0 before the suite is trusted. Measured 2026-10-19
-   (magic_tutor PR #21): the session ended during the last of a run of five sabotages, `"jogo": 0`
+   (PR #21): the session ended during the last of a run of five sabotages, `"jogo": 0`
    stayed in `monitor/replays.py`, and the count found it.
    **A window no probe can stop in** is the one exit: the sabotage only reorders effects inside a
    gap no deterministic test reaches, such as two assignments in a row in one shell process, which
@@ -99,7 +99,7 @@ that still calls the defect current: the doc paragraph that lists it as a known 
 changelog or KAIZEN entry, the PR body, a proposed text still waiting to be applied. Find them by
 the number and by the symbol, outside the frozen artifacts of past phases (handoffs, review
 rounds). Left alone, the PR ships the fix with its own docs saying the bug is still there, and the
-next issue mirror reopens it. Measured 2026-10-20 (magic_tutor PR #33): Codex's first P2 was
+next issue mirror reopens it. Measured 2026-10-20 (PR #33): Codex's first P2 was
 `TODO.md` #17, a residue the mission's review round had parked; the number was cited in
 `docs/monitor.md`, twice in `KAIZEN_LOG.md`, in the PR body and in a ⛔ text the DOCS phase had
 proposed. `55e17a5` deleted the item and rewrote those, `57ccb0b` applied the proposed text
@@ -111,7 +111,7 @@ A fix that changes a rule (a classifier, a filter, a matcher) leaves every figur
 with that rule stale. Re-run the measurement that produced the figure, the same script or its
 method, with the fix in place, and check that the denominator comes back unchanged before replacing
 the part: a probe written for the occasion measures another population, and its numbers look current
-while comparing with nothing. Measured 2026-10-20 (magic_tutor PR #33, `3ea5c0e`): a fresh script
+while comparing with nothing. Measured 2026-10-20 (PR #33, `3ea5c0e`): a fresh script
 counted `491` target prompts because it read a field the fixed rule itself clears; redone with the
 original `fonte_do_alvo.py` method the total came back to `619`, and the figure moved from 53 to 129.
 
