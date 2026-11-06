@@ -123,7 +123,14 @@ base equals `HEAD`, or when the session runs isolated in a worktree.
 - **Batching is the default.** Steps 1–3 run as one chain and steps 5–8 as parallel calls in one
   message, because every extra orchestrator turn is a main-model round-trip over the whole session
   context.
-- **A local base can be stale.** Without `origin/HEAD`, step 2 stops at the local `main`, which may
+- **The local `origin/HEAD` may not exist, so step 2 asks the server.** A clone can lack it, and a
+  chain that stops at `main` then reviews everything the default branch has not yet promoted. Offline,
+  `ls-remote` fails and the chain goes on to `main`; a repo whose PRs target another branch takes
+  `base=`. Measured 2026-11-06 (a private monorepo, flow `develop` → `staging` → `main`):
+  `git symbolic-ref refs/remotes/origin/HEAD` exited 128, and `git ls-remote --symref origin HEAD`
+  printed `refs/heads/develop`. Against `main`, the range was 687 commits and 706 files; against
+  `origin/develop`, the branch's own 15 and 15.
+- **A local base can be stale.** When step 2 lands on the local `main`, it may
   sit merged PRs behind. When `git rev-list --count main..origin/main` is above 0, the base is
   `origin/main`. Measured 2026-10-19: the local `main` was 24 commits behind, and its
   merge base gave a 22-commit range holding two PRs already merged.

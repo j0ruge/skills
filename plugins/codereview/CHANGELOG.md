@@ -2,6 +2,12 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.30] — 2026-11-06
+
+### A base vem do servidor quando o `origin/HEAD` local não existe
+
+O passo 2 da Phase A só lia o `origin/HEAD` local. Sem ele, parava no `main`, e num fluxo `develop` → `staging` → `main` isso põe no intervalo tudo o que ainda não foi promovido. Agora, antes do `main`, pergunta ao servidor com `git ls-remote --symref origin HEAD`, sem depender de arquivo de convenção do projeto. Medido em 2026-11-06, num monorepo privado: contra `main`, 687 commits e 706 arquivos; contra `origin/develop`, os 15 e 15 da branch. O `SKILL.md` não cresceu: a linha do passo 2 foi encurtada, sem perder caso.
+
 ## [2.27.29] — 2026-11-05
 
 ### Apelidos de projeto saem do texto

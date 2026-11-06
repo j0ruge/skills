@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.27.29
+  version: 2.27.30
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -89,10 +89,10 @@ Every step is a fixed command with one right answer, so it runs inline, not in a
 
 Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. Three Bash turns cover steps 1–8 — (1) steps 1–3, base-branch detection as one fallback chain, and `git ls-files '*handoff*'`, with the version and `installPath` read in separate calls (configuration.md, *Stale copy*); (2) step 4; (3) steps 5–8 as parallel calls in one message:
 
-1. Verify git repo:  `git rev-parse --is-inside-work-tree`
-2. Detect base branch (try: origin HEAD symbolic-ref, then main, then master); a stale local base, a merged branch or an isolated worktree: configuration.md, *Base and batching*
+1. Verify git repo: `git rev-parse --is-inside-work-tree`
+2. Base branch, in order: origin HEAD symbolic-ref, `git ls-remote --symref origin HEAD`, main, master; stale base, merged branch, worktree: configuration.md, *Base and batching*
 3. Current branch: `git rev-parse --abbrev-ref HEAD`
-4. Merge base:  `git merge-base {BASE_BRANCH} HEAD`, or the base commit the user names (`base=<sha>`, even in prose); an end other than `HEAD` is `head=<sha>` (configuration.md)
+4. Merge base: `git merge-base {BASE_BRANCH} HEAD`, or the base commit the user names (`base=<sha>`, even in prose); an end other than `HEAD` is `head=<sha>` (configuration.md)
 5. Changed files: `git diff {MERGE_BASE}...HEAD --name-only`
 6. Diff stats:  `git diff {MERGE_BASE}...HEAD --stat`
 7. Commit log:  `git log {MERGE_BASE}..HEAD --oneline --no-decorate`
