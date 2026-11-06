@@ -1,5 +1,11 @@
 # Changelog — ticket
 
+## [1.14.5] — 2026-11-06
+
+### O site do Jira também vem de `JIRA_URL`
+
+A skill manda carregar `~/.hermes/.env` e usar `JIRA_BASE_URL`, mas esse cofre guarda o endereço em `JIRA_URL`. Com a variável vazia, o `curl` não devolve JSON, e o erro aparece como `JSONDecodeError`, sem citar a variável; ao pé da letra, a skill ainda mandaria parar e pedir um endereço que já está no cofre. Agora, sem `JIRA_BASE_URL`, ela usa `JIRA_BASE_URL=${JIRA_BASE_URL:-$JIRA_URL}`, e só para e pede o site sem nenhuma das duas. Medido em 2026-11-06: com o fallback, `GET /myself` deu `200`; sem nenhuma, `curl` saiu com rc 3. Dívida anterior, fora deste retrofit: o `argument-hint` no topo do `SKILL.md` (A4 e G2 da auditoria).
+
 ## [1.14.4] — 2026-11-05
 
 ### Apelidos de projeto saem do texto

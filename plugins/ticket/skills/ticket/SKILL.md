@@ -4,7 +4,7 @@ description: "Jira ticket lifecycle, integrated with Git — create issues/sub-i
 argument-hint: "start (open) | split | close | status"
 compatibility: "Claude Code: o argument-hint acima é campo dele e só é lido no topo. Requer acli e credenciais Jira (JIRA_EMAIL, JIRA_API_TOKEN)."
 metadata:
-  version: 1.14.4
+  version: 1.14.5
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -16,9 +16,9 @@ Gerencia o ciclo de vida de tickets Jira integrado com Git, seguindo um fluxo pa
 `mcp__atlassian__*` quando disponível
 **Projeto Jira:** detectado dinamicamente — ver "Detecção de Projeto" abaixo
 **Branch naming:** `${BRANCH_PREFIX}-XXX_descricao_curta` (ex.: `REP-605_...`, `QUO-22_...`)
-**REST:** as chamadas `curl` abaixo usam `JIRA_BASE_URL` (`https://<site>.atlassian.net`), `JIRA_EMAIL` e
+**REST:** o `curl` usa `JIRA_BASE_URL` (`https://<site>.atlassian.net`), `JIRA_EMAIL` e
 `JIRA_API_TOKEN`; se faltarem no ambiente, carregue com `set -a; . ~/.hermes/.env; set +a`. Sem
-`JIRA_BASE_URL`, pare e peça o endereço do site: nenhum vem fixo aqui.
+`JIRA_BASE_URL`, use `JIRA_BASE_URL=${JIRA_BASE_URL:-$JIRA_URL}`. Sem as duas, pare e peça o site: nenhum vem fixo aqui.
 
 ## Referências
 
