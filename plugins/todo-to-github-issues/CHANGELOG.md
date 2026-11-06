@@ -3,6 +3,15 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.9.4] — 2026-11-06
+
+### O plano sem permalink lê o deslocamento de linha como `(anchor)`
+
+Com o `TODO.md` sujo ou o `HEAD` fora de qualquer branch remota, o plano escreve a âncora sem link, e o
+`update_kind` lia a diferença dos colchetes como texto: todo `UPDATE` só de âncora saía `(text)`. Agora um
+trecho de código conta igual com ou sem link (dois testes novos). O `SKILL.md` diz também que a órfã só
+mostra o commit da remoção depois do commit; sem ele, sai `removal not found`.
+
 ## [2.9.3] — 2026-11-05
 
 ### Apelidos de projeto saem do texto

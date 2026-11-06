@@ -3,6 +3,33 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-11-06 — o plano sem permalink e a órfã sem commit
+
+Publicado como **v2.9.4**. Saiu da retro de uma sessão de um projeto (05 e 06/11). A causa foi medida
+por uma sonda que roda o plano em três estados do mesmo `TODO.md`, com uma âncora deslocada e um item
+apagado:
+
+| Estado do `TODO.md` | âncora deslocada | órfã |
+|---|---|---|
+| sujo | `UPDATE (text)` | `removal not found` |
+| commitado numa branch sem push | `UPDATE (text)` | `left the file in <sha>` |
+| commitado, `HEAD` numa branch remota | `UPDATE (anchor)` | `left the file in <sha>` |
+
+- **O `(text)` falso.** Sem permalink (`ctx.sha` vazio: arquivo sujo ou `HEAD` fora do remoto), o
+  `render_body` escreve a âncora sem link, `` `arq:N` ``, e a issue viva tem `` [`arq:N`](…) ``. O
+  `update_kind` tirava o alvo dos links, mas guardava os colchetes. No plano rodado na branch de um PR
+  de limpeza, os 4 `UPDATE` só de âncora saíram `(text)`; depois do merge, rodados do `main`, os
+  mesmos 4 saíram `(anchor)`. É a causa do "rodado de uma branch, o mesmo item virou `text`" da
+  entrada de 02/11, que ficou sem explicação. Agora o `norm` lê um trecho de código com ou sem link,
+  e a sonda dá `(anchor)` nos três estados. Isso fecha também o *Erro comum* "Editar o corpo à mão
+  sem o link da âncora", que fica como história.
+- **A órfã precisa do commit.** O `last_text` procura a remoção no histórico do `HEAD`: sem commit,
+  sai `removal not found · last text unknown`, que lido às pressas parece "saiu por decisão". O
+  `SKILL.md` diz isso na linha `ORPHAN` e no conselho de rodar o plano na branch do PR, já commitado.
+- **Teste:** dois checks no `test_todo_issues.py`: a âncora com link de um lado só, com a linha
+  deslocada, dá `anchor`; o mesmo com uma palavra mudada dá `text`. O primeiro ficou vermelho antes
+  do conserto.
+
 ## 2026-11-02 — o link errado que já foi espelhado, e a medida no título
 
 Publicado como **v2.9.0**. Saiu da fila do `retrofit-watch`: três sessões de um projeto (de 21 a

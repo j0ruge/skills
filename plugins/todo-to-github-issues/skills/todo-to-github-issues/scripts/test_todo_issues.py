@@ -159,6 +159,19 @@ if len(_shas) == 2:
     check("permalinks at another sha + line shift -> UPDATE (anchor)",
           len(u) == 1 and "/blob/" + _shas[1] in u[0][1]["body"]
           and t.update_kind(u[0][0], u[0][1], ctx_new) == "anchor")
+    # A plan with no permalink (TODO.md dirty, or HEAD on no remote branch: ctx.sha None) renders the
+    # Âncora as a bare `arq:N`, while the live issue holds [`arq:N`](…). Kept, the brackets made every
+    # pure line shift read `text`: 4 of 4 in a plan run on a branch, measured 2026-11-06.
+    live_linked = as_issues(items, ctx_new)
+    u = [x for x in t.build_plan(reparsed(ia_block, shifted), live_linked).update if x[1]["number"] == ia_n]
+    check("a live Âncora with its link vs a render without one + line shift -> UPDATE (anchor)",
+          len(u) == 1 and "**Âncora:** [`" in u[0][1]["body"]
+          and "**Âncora:** [`" not in t.render_body(u[0][0], ctx)
+          and t.update_kind(u[0][0], u[0][1], ctx) == "anchor")
+    u = [x for x in t.build_plan(reparsed(ia_block, shifted + " palavra"), live_linked).update
+         if x[1]["number"] == ia_n]
+    check("the same, with a word changed -> UPDATE (text)",
+          len(u) == 1 and t.update_kind(u[0][0], u[0][1], ctx) == "text")
 else:
     check("the TODO.md's repo has two commits (permalink probe needs them)", False)
 old_style = copy.deepcopy(issues)

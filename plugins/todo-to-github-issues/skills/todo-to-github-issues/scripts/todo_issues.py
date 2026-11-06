@@ -619,11 +619,15 @@ def update_kind(it: Item, iss: dict, ctx: Ctx) -> str:
     positives of 86. Only a number after `:` inside backticks is normalized — a bare digit is content
     (`90 → 85`), and title and section (footer) changes stay `text`. A body rendered before the
     symbol moved to the Âncora line is read in today's layout: without that, every such issue came
-    back `text` on its next line shift (125 of 186 items of one `TODO.md` carry the symbol)."""
+    back `text` on its next line shift (125 of 186 items of one `TODO.md` carry the symbol). A code
+    span is read with or without its link: a plan with no permalink (file dirty, or HEAD on no remote
+    branch) renders the Âncora as a bare `` `arq:N` `` against the live `` [`arq:N`](…) ``, and the
+    brackets alone made 4 of 4 pure line shifts read `text` (measured 2026-11-06)."""
     def norm(b: str) -> str:
         b = LEGACY_SLOT_RE.sub(r"\1 \2\n\n", b.lstrip(), count=1)
         b = re.sub(r"<!--.*?-->", "", b, flags=re.S)
         b = re.sub(r"\]\([^)]*\)", "]", b)
+        b = re.sub(r"\[(`[^`\n]*`)\]", r"\1", b)
         return LINE_REF_RE.sub(r"\1:N`", b).strip()
     if iss.get("title") != issue_title(it):
         return "text"

@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.9.3
+  version: 2.9.4
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -74,7 +74,7 @@ importa conforme o modo: abra-os só para depurar ou alterar esse modo.
 | `UPDATE (text)` | texto, título ou seção mudou de verdade | leia o item antes do `--apply`; é o único `UPDATE` que pede olho |
 | `REF?` | um `#N` solto num corpo que esta rodada escreve (`CREATE`, `UPDATE (text)`), com o destino que o GitHub dará ao link | confira; se o texto quis dizer outra coisa, corrija a fonte (`dono/repo#N`, "item N") antes do `--apply`; `--refs` cobre os já espelhados |
 | `SKIP` | o corpo traz `RESOLVED by <hash>` e não existe issue | nada: não se abre card para achado já fechado; com o hash já na branch padrão, o `--fix` apaga o item |
-| `ORPHAN` | a issue está aberta, mas o item saiu do arquivo. A linha diz em que commit ele saiu e, se o último texto trazia `RESOLVED by`, quem o consertou (`fixed by …`) — lido no commit da remoção, nunca no `HEAD` | **`fixed by`:** `--close-orphans` fecha como concluída, citando o conserto e a remoção. **`no RESOLVED by`**: `--close-orphans` pula (`SKIP`); feche à mão. Consertado sem o marcador (a missão do kit sdd apaga o item assim): `gh issue close N --reason completed --comment "<commit e PR>"`; decidido, refutado ou adiado: `--reason "not planned" --comment "<para onde foi>"`. **`last text unknown`** (`removal not found`): a chave nunca saiu do histórico deste checkout — clone raso, arquivo renomeado, branch não mergeada (a de um PR aberto sai como `PENDING`). Desconhecido não é ausente: leia o último texto antes de escolher `completed` ou `not planned` |
+| `ORPHAN` | a issue está aberta, mas o item saiu do arquivo. A linha diz em que commit ele saiu e, se o último texto trazia `RESOLVED by`, quem o consertou (`fixed by …`) — lido no commit da remoção, nunca no `HEAD` | **`fixed by`:** `--close-orphans` fecha como concluída, citando o conserto e a remoção. **`no RESOLVED by`**: `--close-orphans` pula (`SKIP`); feche à mão. Consertado sem o marcador (a missão do kit sdd apaga o item assim): `gh issue close N --reason completed --comment "<commit e PR>"`; decidido, refutado ou adiado: `--reason "not planned" --comment "<para onde foi>"`. **`last text unknown`** (`removal not found`): a chave nunca saiu do histórico deste checkout — remoção ainda sem commit, clone raso, arquivo renomeado, branch não mergeada (a de um PR aberto sai como `PENDING`). Desconhecido não é ausente: leia o último texto antes de escolher `completed` ou `not planned` |
 | `PENDING` | a remoção não está no histórico, mas o item está na cabeça de um PR aberto: a issue nasceu de um `--apply` na branch do PR. Só a órfã sem remoção é procurada, com um `gh pr list` e o arquivo em cada cabeça (do git local, ou da API de conteúdo) | nada: deixe aberta, e `--close-orphans` a pula. Depois do merge, vira `OK` ou `UPDATE`. Limite: PR de fork (cabeça em outro repositório) não foi medido; se a cabeça não for lida, a issue segue `ORPHAN` |
 | `RENAME?` | par `ORPHAN` + `CREATE` com ≥ 85% do mesmo texto: o título mudou | confirme com o humano; se for o mesmo achado, rode o comando impresso **antes** do `--apply`, e a issue antiga vira `UPDATE` |
 | `CLOSED` | a issue foi fechada à mão, mas o item continua no arquivo | decisão humana: reabrir a issue ou apagar o item |
@@ -205,7 +205,7 @@ tem linhas próprias (`CREATE closed`, `LINK?`, `COMMENT`, `CLOSE`).
 - **Deixar um `#N` solto no item.** Na issue, o GitHub liga todo `#N` fora de crase ao `#N` **deste**
   repo, queira o texto o item N do arquivo ou o PR de outro repo: "Liga com o #1" (o item 1) virou
   link para o PR #1 (2026-10-20). Cada `REF?` do plano mostra o destino; o conserto é
-  na fonte, com `dono/repo#N` ou "item N". Rode o plano (sem `--apply`) na branch do PR, antes do
+  na fonte, com `dono/repo#N` ou "item N". Rode o plano (sem `--apply`) na branch do PR, já commitado, antes do
   merge: o `REF?` cobre os itens que o PR escreve, e o conserto vai no mesmo PR. Depois do merge, ele
   pede outro PR (#114 → #115, 2026-10-26).
 - **Espelhar a partir de uma branch de trabalho.** O script lê o `TODO.md` do diretório atual: numa
@@ -218,10 +218,10 @@ tem linhas próprias (`CREATE closed`, `LINK?`, `COMMENT`, `CLOSE`).
   Com o checkout da branch padrão ocupado ou atrás do remoto, espelhe de um worktree destacado,
   `git worktree add --detach <dir> origin/<padrão>` (2026-10-25: `permalinks at 8d1eaab`,
   e o plano final em `create=0 update=0 orphans=0`).
-- **Editar o corpo à mão sem o link da âncora.** O `UPDATE (anchor)` (`update_kind`) compara os
-  corpos sem o alvo dos links, mas com os colchetes: uma âncora escrita `` `arq:N` `` no lugar de
-  `` [`arq:N`](…) `` nunca mais é `(anchor)`, e cada linha deslocada volta como `UPDATE (text)` (kit
-  sdd, #239 e #236 em 2026-10-07). Edite partindo do corpo do `--dump`, que já traz o link.
+- **Editar o corpo à mão sem o link da âncora.** Até a 2.9.3, com `` `arq:N` `` no lugar de
+  `` [`arq:N`](…) ``, cada linha deslocada voltava `UPDATE (text)` (kit sdd, #239 e #236, 2026-10-07),
+  e no plano sem permalink (arquivo sujo, `HEAD` fora do remoto) também (2026-11-06). Desde a 2.9.4
+  o `update_kind` ignora esse link; edite do `--dump` para a issue não o perder.
 - **Vírgula no `###` da seção.** O GitHub recusa vírgula em nome de label (422 `Label.name is
   invalid`, sem dizer qual caractere; medido em 2026-09-24, `_label_safe`) e a primeira issue nunca sai. O script troca `, ` por ` · `
   na label (o texto da seção no arquivo não muda). O teto de 50 é de **caracteres**, não bytes:
