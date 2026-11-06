@@ -2,6 +2,22 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.39.4] — 2026-11-06
+
+### O auto-update também mata o runner, e a receita do vigia ficava verde
+
+- **Segundo modo do auto-update (§8a, lição 121, sintoma novo no índice).** O update pode apagar `bin/`
+  na camada gravável, e `restart: always` reinicia o mesmo contêiner, com rc 127 em laço. O texto
+  anterior só descrevia o modo em que o runner fica mudo, e levava a descartar este. Nenhuma linha
+  sai: "volta do `bin/` da imagem" ganha o limite de quando vale. O conserto vai marcado como não
+  verificado, e o que decide entre os dois modos, como não medido.
+- **Receita da camada C do §11 (lição 122).** Com zero runners ela fechava verde, e o rc estava
+  invertido sob `bash -e`: runner atrasado fechava 0, runner em dia fechava 1. Agora cada repo declara
+  os labels esperados, label ausente reprova, e o rc é explícito. Provado com um `gh` dublê, nos dois
+  sentidos, contra a receita extraída do próprio arquivo.
+- **Por quê:** dois runners ficaram duas semanas em laço, e o watchdog de um deles seguiu verde. O
+  entrypoint desregistra ao sair, então o runner some da lista, e não fica `offline`.
+
 ## [2.39.3] — 2026-11-05
 
 ### Apelidos de projeto saem do texto

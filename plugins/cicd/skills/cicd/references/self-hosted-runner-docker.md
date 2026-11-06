@@ -679,7 +679,7 @@ docker logs --tail 10 <runner> | grep -E 'Current runner version|Listening for J
 # Esperado: versão nova, "Listening for Jobs", SEM "deprecated". RestartCount volta a 0.
 ```
 
-**Fix durável — ligar o auto-update (recomendado)**. Ver §8a. Com auto-update o binário se atualiza em runtime e o §8 deixa de recorrer; `docker compose pull` periódico vira só cinto-e-suspensório.
+**Fix durável — ligar o auto-update (recomendado)**. Ver §8a. Com auto-update o binário se atualiza em runtime e o §8 deixa de recorrer; `docker compose pull` periódico vira só cinto-e-suspensório. ⚠️ O auto-update tem dois modos de falha medidos, ambos no §8a, e o segundo mata o runner.
 
 ### §8a. `DISABLE_AUTO_UPDATE` é footgun: qualquer valor não-vazio (até `"0"`) desliga
 
@@ -690,7 +690,8 @@ runner:
   environment:
     ACCESS_TOKEN: ${RUNNER_ACCESS_TOKEN:-}
     # NÃO definir DISABLE_AUTO_UPDATE — presença de QUALQUER valor desliga o auto-update.
-    # Sem a var, o binário se auto-atualiza quando o GitHub exige (evita o §8).
+    # Sem a var, o binário tenta se auto-atualizar quando o GitHub exige. Isso evita o §8,
+    # mas o update pode deixar o runner sem bin/ e matá-lo: ver o segundo modo, abaixo.
 ```
 
 Aplicar exige recriar o container (a env é lida no start): `docker compose up -d --force-recreate <runner>`. Confirmar que sumiu de fato: `docker exec <runner> printenv DISABLE_AUTO_UPDATE` deve **não** retornar nada.
@@ -710,6 +711,43 @@ semanas, não milhares — por isso não se parece com crashloop).
 Medido em 18/09/2026: `bin/` de ago/2024 (2.319.1) com `bin.2.337.0/` baixado em 1º/set,
 `DISABLE_AUTO_UPDATE` **ausente** (auto-update ligado), e o runner mudo mesmo assim. Quem
 conserta é o bump do `FROM` — nunca o runtime. Sintoma completo no §8b.
+</CRITICAL>
+
+<CRITICAL>
+**O mesmo update tem um segundo modo de falha: o runner não fica mudo, ele morre.** "Volta do
+`bin/` da imagem", acima, só vale para um contêiner **recriado**. `restart: always` reinicia o
+**mesmo** contêiner, com a mesma camada gravável: se o update apagou `bin/` nela, o `bin/` da
+imagem não volta.
+
+Medido em 06/11/2026, em dois runners de repos diferentes, com `EPHEMERAL=true` e
+`DISABLE_AUTO_UPDATE` ausente. O update para a 2.338.0 rodou em 22/10 e 23/10, e desde então o
+contêiner sai com rc 127 em laço, 64.713 e 57.969 falhas no log:
+
+```text
+ldd: ./bin/libcoreclr.so: No such file or directory
+./config.sh: line 80: ./bin/Runner.Listener: No such file or directory
+/entrypoint.sh: line 309: ./bin/Runner.Listener: No such file or directory
+Caught EXIT - Deregistering runner
+```
+
+Separe os dois modos pela camada gravável, que se lê com o contêiner em laço:
+
+```bash
+docker diff <runner> | grep -E '/actions-runner/bin(\.|$)'
+# D /actions-runner/bin + os bin.<versão> presentes: é este modo
+```
+
+**O `Caught EXIT - Deregistering runner` apaga o rastro na API:** o runner some da lista
+(`total_count` 0), em vez de ficar `offline`. Vigia que só olha os runners listados fica verde
+(§11 C, lição 122).
+
+**O conserto NÃO foi verificado.** Recriar o contêiner traz de volta o `bin/` da imagem, com a
+versão antiga, e o mesmo update pode ser oferecido de novo. O caminho provável é bumpar o `FROM`
+e decidir sobre o auto-update, mas isso é hipótese. Recrie um runner só, de forma controlada, e
+observe antes de repetir nos outros.
+
+Também **não se sabe** o que decide entre os dois modos: em 18/09 o `bin/` ficou no lugar, em
+22/10 sumiu. Não atribua à versão nem à imagem sem medir.
 </CRITICAL>
 
 > **Corolário — caveat à lição 45 (pin por digest)**: pinar a imagem do **runner** por digest é **contraproducente sem cadência de bump**. A lição 45 vale para `node`/`nginx`/`postgres` (imutabilidade desejável), mas o GitHub **força currency de versão** do runner — um digest congelado garante que, em 1–2 meses, a versão fica deprecada e cai no §8. Para o runner, escolha conscientemente: (a) `:latest` + auto-update ligado (sempre atual, menos reproduzível), OU (b) pin por digest + **cron/rotina mensal de `docker compose pull`**. Não pine sem o (b).
@@ -1015,15 +1053,45 @@ Dois gotchas que tornam ingênua a primeira tentativa:
 um sensor passa a aprovar exatamente o que existia para reprovar.
 
 ```bash
-ATUAL=$(gh api repos/actions/runner/releases/latest --jq '.tag_name' | tr -d v)
-gh api "repos/$REPO/actions/runners" \
-  --jq '.runners[] | select(.status=="online") | "\(.name)\t\(.version)"' |
+set -uo pipefail   # sem -e: a falha da API é tratada abaixo, como na camada A
+LABELS_ESPERADOS="${LABELS_ESPERADOS:?liste os labels que este repo precisa ter, ex.: staging production}"
+ATUAL=$(gh api repos/actions/runner/releases/latest --jq '.tag_name' | tr -d v) &&
+  RUNNERS=$(gh api "repos/$REPO/actions/runners?per_page=100") ||
+  { echo "::warning::Falha ao consultar a API: checagem de runner e de versão NÃO rodou."; exit 0; }
+
+FALHOU=0
+for LABEL in $LABELS_ESPERADOS; do
+  ONLINE=$(jq --arg l "$LABEL" \
+    '[.runners[] | select(.status=="online" and any(.labels[]; .name==$l))] | length' <<<"$RUNNERS")
+  if [ "$ONLINE" -lt 1 ]; then
+    echo "::error::Nenhum runner '$LABEL' online: offline, ou sumiu da lista (§8a, lição 122)"
+    FALHOU=1
+  fi
+done
+
 while IFS=$'\t' read -r NOME VERSAO; do
   ATRASO=$(( $(echo "$ATUAL" | cut -d. -f2) - $(echo "$VERSAO" | cut -d. -f2) ))
-  [ "$ATRASO" -ge "${MAX_MINORS_ATRASO:-1}" ] \
-    && echo "::error::$NOME em $VERSAO, $ATRASO minors atrás de $ATUAL — bumpe o FROM (§8a/§8b)"
-done
+  if [ "$ATRASO" -ge "${MAX_MINORS_ATRASO:-1}" ]; then
+    echo "::error::$NOME em $VERSAO, $ATRASO minors atrás de $ATUAL — bumpe o FROM (§8a/§8b)"
+    FALHOU=1
+  fi
+done < <(jq -r '.runners[] | select(.status=="online") | "\(.name)\t\(.version)"' <<<"$RUNNERS")
+
+exit "$FALHOU"
 ```
+
+⚠️ **A receita anterior desta seção tinha dois defeitos, medidos em 06/11/2026 com um `gh` dublê
+sob `bash -e`.** Com **zero** runners, o laço não rodava e o rc era 0. E o rc estava **invertido**:
+o `[ … ] && echo` era o último comando do laço, então o runner atrasado imprimia o `::error::` e
+fechava 0, enquanto o runner em dia fechava 1. `::error::` é só anotação, e quem reprova é o rc.
+Confira o seu vigia, se ele nasceu daquela versão.
+
+**Label esperado ausente reprova, e o repo declara os seus.** A lista fixa o que "ausente"
+significa: um repo sem produção não põe `production` nela. O atalho de iterar os ambientes de
+todos os repos e tratar a falta como `::warning::` + `continue` ("ok se o ambiente não existe
+aqui") fecha `success` com o runner morto, e foi assim que um watchdog real ficou verde com o
+`total_count` em 0 (lição 122). Recusar a lista vazia é o que impede o mesmo verde por configuração
+esquecida.
 
 ⚠️ **A documentação do endpoint NÃO lista `version` — a resposta viva lista.** O schema
 publicado para *list self-hosted runners* enumera `id`, `name`, `os`, `status`, `busy` e
