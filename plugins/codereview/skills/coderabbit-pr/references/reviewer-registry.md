@@ -2,6 +2,14 @@
 
 Maps AI reviewers to their origin, GitHub author, comment structure, and output file name.
 
+## Contents
+
+- [Supported Reviewers](#supported-reviewers) · [Comment Structures by Reviewer](#comment-structures-by-reviewer)
+  (Claude Code, CodeRabbit, Copilot, Gemini and Codex: where each posts, its severity markers and
+  what to discard)
+- [Detection Strategy](#detection-strategy) · [Coverage Per Commit](#coverage-per-commit) (what
+  counts as a review of the head, per reviewer) · [Extensibility](#extensibility)
+
 ## Supported Reviewers
 
 | Reviewer | GitHub Login(s) | Output File | Comment Style |
@@ -124,6 +132,14 @@ Posts in **three places** (measured on a `@codex review` request, 2026-10-01):
 **While the summary says `Running`, Codex is pending — case (b), not a pass.** At that moment
 `/pulls/{PR}/comments` holds zero Codex findings, and a wait loop that accepts *any* comment from
 the bot exits on the summary itself.
+
+**A "create an environment" reply is not Codex declining the review.** The bot's automatic pass at
+the PR's opening can answer only with the issue comment *"To use Codex here, create an environment
+for this repo"*, and a `@codex review` asked afterwards still runs the code review, with the
+summary, the review object and the findings above. Read the note as "not requested yet" (case b
+until someone asks), never as a reviewer that cannot run. Measured 2026-11-07 (a .NET rules
+engine, PR #24): the note at 18:09:43Z, when the PR opened; the request at 18:45:14Z had the
+summary `Running` on `c2f9bec` at 18:45:30Z and the review with one P2 at 18:47:21Z.
 
 **A `Completed` counts only with the head's sha in the same row.** The summary is one row,
 overwritten by each review: after a push it keeps saying `Completed` for the previous head until

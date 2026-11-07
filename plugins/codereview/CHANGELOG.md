@@ -2,6 +2,16 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.32] — 2026-11-07
+
+### O conserto do achado adiado reescreve as frases vivas que o davam como adiado
+
+Na `codereview`, `references/configuration.md`, seção *Re-review rounds*. O pipeline adia os LOW ao `TODO.md`, e a fase DOCS escreve o adiamento nos docs vivos: a entrada do `KAIZEN_LOG.md`, o roadmap, o corpo do PR. Na rodada manual do PR #24 de um motor de regras .NET, o `95f040f` consertou os LOW #5 a #12 da r1, e o `efec10f` marcou os itens do `TODO.md` com `RESOLVED by`, mas a entrada do `KAIZEN_LOG.md` seguiu dizendo que eles tinham ido ao backlog, uma vez com os números e outra sem. A r2 deu LOW nela, e a r3, depois de uma frase com o commit do conserto em cada lugar, nada. A regra da nota datada (*A phase record ages*) cobre só os registros de fase, e a vizinha (*A fix to an amended decision*) só o id de uma decisão. O bullet novo pede, no mesmo commit do conserto, o `grep` pelo número do achado e a leitura da entrada da missão em cada doc vivo, onde o adiamento pode estar escrito sem o número.
+
+### A resposta "create an environment" do Codex não é recusa
+
+Na `coderabbit-pr` (4.6.11), `references/reviewer-registry.md`, seção do Codex. Na abertura do PR #24, o Codex só comentou *"To use Codex here, create an environment for this repo"*, às 18:09:43Z. O `@codex review` pedido às 18:45:14Z rodou: o resumo ficou `Running` no `c2f9bec` às 18:45:30Z, e a revisão chegou às 18:47:21Z, com um P2. Lida como "Codex indisponível", a nota faria pular a revisão. O registro agora a lê como revisão ainda não pedida (caso b até alguém pedir).
+
 ## [2.27.31] — 2026-11-07
 
 ### O estado do CodeRabbit é check-run, não commit status

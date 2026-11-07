@@ -719,6 +719,18 @@ These decide whether the rounds converge:
   leaves the other citations on the old text, for a later round to find. `grep -n` the decision's
   id over the doc before the fix is done, and fix every hit in the same commit. Measured 2026-10-20
   (the plan in *Code inside docs*): the fix to the amended P10 left three more places citing it.
+- **A fix to a finding a round deferred rewrites every living sentence that calls it deferred.**
+  The bullet above, with the finding's number for the decision's id. A pipeline's DOCS phase writes
+  the deferral into the living docs (the backlog item, the mission's log entry, the roadmap, the PR
+  body), and the fix that closes the finding makes each of those sentences false. Before the fix
+  is done, `grep -n` the number (`r1 #5`) over them, and read the mission's own entry in each,
+  where the deferral can be written without the number. Rewrite every hit in the same commit, the
+  backlog item with the project's retire mark; a phase record keeps its body (*Docs this session
+  wrote*). Measured 2026-11-07 (a .NET rules engine, PR #24): `95f040f` fixed round 1's LOW #5 to
+  #12 and `efec10f` marked their `TODO.md` items `RESOLVED by`, but the `KAIZEN_LOG.md` entry still
+  said those LOW had gone to the backlog, once next to the numbers (`3.5e r1 #5 a #12`) and once
+  without them (``os LOW foram ao `TODO.md` e adiados``); round 2's agent gave it a LOW, and with a
+  clause naming the fix commit in each place, round 3 gave none.
 
 ## Runtime evidence
 
