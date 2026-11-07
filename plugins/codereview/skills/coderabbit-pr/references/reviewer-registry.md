@@ -255,6 +255,17 @@ P2 on `ed3729c`, posted 21:19Z, answered `commit_id` `85f7475`, the fix pushed a
 Codex names the commit in its own text: the "Reviewed commit" line of its review body or, when it
 found nothing and posted no review object, of its issue comment *"Didn't find any major issues"*.
 
+**CodeRabbit's state is a check-run, not a commit status.** `commits/$HEAD_SHA/status` answers `pending`
+with no entry, even once merged, and `CLEAN` proves nothing: `neutral` and `skipped` do not block it.
+
+```bash
+gh api "repos/$REPO/commits/$HEAD_SHA/check-runs" \
+  --jq '.check_runs[] | select(.app.slug == "coderabbitai") | "\(.status) \(.conclusion) \(.output.title)"'
+```
+
+`in_progress` is pending; `neutral` (*Review rate limited*), `cancelled` and `skipped` (*171 files exceed the
+limit of 150*) are case (b); only `success` (*Finished*) can mean a review ran. Measured 2026-11-07 (CHANGELOG 2.27.31).
+
 **CodeRabbit skips an incremental review in silence.** At the rate limit it posts no new review:
 it **edits** its walkthrough issue comment (`updated_at` moves, `created_at` does not) to
 `## Review limit reached`, and the skipped range is the *"… between <old sha> and <new sha>"* line

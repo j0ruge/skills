@@ -2,6 +2,23 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.31] — 2026-11-07
+
+### O estado do CodeRabbit é check-run, não commit status
+
+A `coderabbit-pr` (4.6.10) não citava check-run em arquivo nenhum. Quem espera o CodeRabbit em `commits/<sha>/status` recebe `pending` sem nenhuma entrada, mesmo com o PR já mergeado: um laço sobre esse endpoint saiu com "none" enquanto a revisão rodava. O `MERGEABLE CLEAN` também não prova revisão, porque `neutral` e `skipped` não bloqueiam. A `reviewer-registry.md` agora dá o comando e lê cada estado. No `SKILL.md`, o caso (b) passa de "check preso em `PENDING`" para "check que não é `success`", que inclui o `PENDING`.
+
+Check-run medido em 2026-11-07, no head de cada PR. O estado de merge dos PRs já mergeados é de 2026-11-02, antes do merge:
+
+| PR | Check-run | Merge |
+|---|---|---|
+| sdd_agents #381 | `in_progress`, *Review in progress* | `UNSTABLE` |
+| sdd_agents #380 | `completed success`, *Finished* | `CLEAN` |
+| sdd_agents #339 | `completed neutral`, *Review rate limited* | `CLEAN` |
+| sdd_agents #338 | `completed neutral`, *Review rate limited* | não medido |
+| sdd_agents #331 | `completed cancelled`, *Review cancelled* | não medido |
+| #23 de outro repo | `completed skipped`, *Review skipped: 171 files exceed the limit of 150* | `CLEAN` |
+
 ## [2.27.30] — 2026-11-06
 
 ### A base vem do servidor quando o `origin/HEAD` local não existe
