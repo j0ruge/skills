@@ -632,12 +632,16 @@ These decide whether the rounds converge:
   reflow, and a hand reflow joins two lines or drops a word that the next round reports. Measured
   2026-10-16: three hand reflows between rounds each left joined lines, and each came back as a LOW;
   the script below closed it, and was reused on 2026-10-17 for a shell header past 100 columns. It
-  keeps every backtick span whole and fails unless the words before and after match:
+  keeps every backtick span whole, and every other span `keep` names, and fails unless the words
+  before and after match:
 
   ```python
   import re, textwrap
-  def reflow(par: str, first: str = "- ", rest: str = "  ", width: int = 100) -> str:
-      glued = re.sub(r"`[^`]*`", lambda m: m[0].replace(" ", "\u00a0"), " ".join(par.split()))
+  def reflow(par: str, first: str = "- ", rest: str = "  ", width: int = 100,
+             keep: tuple = (r"`[^`]*`",)) -> str:
+      glued = " ".join(par.split())
+      for pat in keep:  # spans no line break may split: code spans, tokens a parser reads
+          glued = re.sub(pat, lambda m: m[0].replace(" ", "\u00a0"), glued)
       out = textwrap.fill(glued, width, initial_indent=first, subsequent_indent=rest,
                           break_long_words=False, break_on_hyphens=False).replace("\u00a0", " ")
       assert out.split() == first.split() + par.split(), "the reflow changed the words"
@@ -650,6 +654,19 @@ These decide whether the rounds converge:
   columns before the untouched text; the next round gave it a readability LOW. Reflowed one line
   further, it ended at 20 columns; reflowed to the end of the item, 18 lines, the round after came
   back clean.
+
+  Three inputs the script takes on trust. **The width** comes from the paragraph's typical full
+  line, never from its longest: the longest is often the line the fix just grew. Measured 2026-11-08
+  (`docs/knowledge/tooling.md`): the paragraph's lines measured 110, 174, 108, 96, 50, 106, 101, 98,
+  101 and 101 columns, the 174 being the line the fix had lengthened; a width taken from that
+  maximum folded the 10 lines into 7 of up to 168 columns, the file went back with `git checkout`,
+  and width 109 matched it. **A token a parser reads** goes in `keep`, like a code span: in a
+  `TODO.md`, `textwrap` left `RESOLVED` at the end of one line and `by 18c370d.` at the start of the
+  next, and the repo's `check-todo.sh --check` still printed `ok`; adding
+  `r"RESOLVED by [0-9a-f]{7,40}"` to `keep` holds the token on one line. **The paragraph** is found
+  by an anchor that occurs once, asserted (`assert text.count(anchor) == 1`): in a `KAIZEN_LOG.md`
+  whose entries open alike, the first match for the new entry's first line was an older entry, which
+  came out unchanged only because it was already wrapped at its own width.
 - **Rename identifiers by syntax position, never by `sed`.** A naming finding is the fix that
   touches the most lines, and a text substitution also rewrites strings, comments, attributes
   (`x.name`) and keyword arguments (`f(name=…)`). Rename the `ast.Name` and `ast.arg` nodes of the

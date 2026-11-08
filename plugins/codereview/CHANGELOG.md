@@ -2,6 +2,24 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.33] — 2026-11-08
+
+### A regra de formato que um arquivo escreve sobre si se confere no sensor que a aplica
+
+Na `codereview`, `references/detection-passes.md`, §6.5.2. Na r2 do PR #25 de um motor de regras .NET, o agente do `TODO.md` deu MEDIUM a uma linha `RECURRED` de 136 colunas, pela regra do cabeçalho do próprio arquivo ("Nenhuma linha física da seção aberta passa de 120 caracteres"). O `check-todo.sh --check` do kit passou, e o template do kit isenta a `RECURRED` bem formada: o cabeçalho era mais velho que o sensor. O achado real era o cabeçalho, LOW, e o conserto foi uma oração nele. A Fase C agora roda o sensor da regra, ou lê o template de onde o cabeçalho veio, antes de manter a severidade.
+
+### A requebra por script: a largura da linha típica, o token de parser colado e a âncora única
+
+Na `codereview`, `references/configuration.md`, *Re-review rounds*, item "Reflow prose by script". O script já colava as crases e conferia as palavras. Nas rodadas do mesmo PR, três requebras erraram no que ele recebe pronto:
+
+- a largura saiu da maior linha do parágrafo do `docs/knowledge/tooling.md`, uma de 174 colunas que o próprio conserto tinha alongado, e o parágrafo foi a 7 linhas de até 168. O arquivo voltou com `git checkout`, e a largura certa era 109;
+- o `textwrap` partiu `RESOLVED by 18c370d` entre duas linhas do `TODO.md`, e o `check-todo.sh --check` seguiu `ok`;
+- no `KAIZEN_LOG.md`, a primeira linha da entrada nova casou com uma entrada antiga de mesma abertura, que só saiu igual por já estar quebrada na largura dela.
+
+O script ganha o parâmetro `keep`, a lista dos padrões colados com nbsp. O padrão continua sendo as crases, e quem não passa o `keep` tem o mesmo resultado de antes. O item ganha as três regras. O trecho foi extraído do arquivo e rodado: sem o `keep`, a largura 117 deixa `RESOLVED` no fim de uma linha; com `r"RESOLVED by [0-9a-f]{7,40}"` no `keep`, o token fica inteiro. O parágrafo novo foi requebrado por esse mesmo script.
+
+Dívida pré-existente, não consertada aqui: os 3 C2 da auditoria (contratos de subagente lidos por caminho absoluto, exceção legítima) e o D1 de 157 trechos com cara de afirmação; o G1 segue SKIP nesta máquina (sem o `audit-skill.sh` do Hermes).
+
 ## [2.27.32] — 2026-11-07
 
 ### O conserto do achado adiado reescreve as frases vivas que o davam como adiado
