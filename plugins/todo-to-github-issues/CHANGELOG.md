@@ -3,6 +3,17 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.9.5] — 2026-11-08
+
+### O rc 1 do `--audit`/`--fix` é "há o que corrigir", não falha
+
+`--audit` e `--fix` sem `--write` saem com rc 1 quando há o diff AUTO ou um MANUAL, e rc 0 com o
+arquivo limpo; com `--write`, rc 1 é MANUAL pendente (`todo_format.py`, fim de `run`). Nada disso
+estava escrito. O `SKILL.md` diz agora como separar esse rc 1 da falha, que também sai com 1: o
+relatório traz a linha `summary`, e a falha não. A seção *Identidade* foi para
+`references/identidade.md`, sem mudar uma palavra, para abrir espaço: o `SKILL.md` estava a 36 chars
+do teto do C1. O comportamento não muda.
+
 ## [2.9.4] — 2026-11-06
 
 ### O plano sem permalink lê o deslocamento de linha como `(anchor)`

@@ -3,6 +3,31 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-11-08 — o rc 1 do `--fix` e a *Identidade* numa reference
+
+Publicado como **v2.9.5**. Saiu da retro de uma sessão de um projeto (07 e 08/11), no ciclo de limpeza
+do `TODO.md` depois de um PR que resolveu 7 itens.
+
+- **O rc 1 sem documento.** O `--fix` deu rc 1 com `diff only — rerun with --fix --write to apply
+  the AUTO part`, e o `--fix --write` seguinte deu rc 0 com o sensor limpo. O SKILL.md, as
+  references e o `--help` documentavam os rc 2 a 6, mas não o 1. Quem lê só o rc toma o "há o que
+  corrigir" por falha e para antes do `--write`. O código o faz de propósito, como um linter
+  (`todo_format.py`, fim de `run`): `return 1 if (pending or new != text) else 0` sem `--write`, e
+  `1 if pending` com ele.
+- **Por que a regra é a linha `summary`.** O rc 1 também é falha: o `main` do espelho não tem
+  `try/except`, e um `RuntimeError` do `gh` sai com traceback e rc 1. Nos modos de formato,
+  `raise SystemExit("…")` sai com rc 1, uma mensagem e nenhum traceback. Medido no interpretador: o
+  `--audit` num arquivo limpo dá rc 0 com `summary`; num arquivo sem marcador, rc 1 com `summary`;
+  e com um `--open-heading` que não casa, rc 1 sem `summary`. A primeira redação desta versão dizia
+  "a falha traz traceback", e o terceiro caso a desmentiu antes do commit.
+- **A *Identidade* foi para `references/identidade.md`.** O SKILL.md estava em 19.964 chars, a 36 do
+  limiar de 20 mil do C1, e a lição ocupa uns 330. O `repetidos.py` da `skill-refactoring` não achou
+  trecho repetido, então nada saiu por ser cópia. A seção foi movida inteira, com a diferença
+  conferida por `diff` (rc 0). Ela explica o porquê do script e serve a quem vai mudá-lo. No SKILL.md
+  ficou o que se usa ao escrever o item: a chave é o título, renomear deixa a antiga órfã
+  (`RENAME?`), e número que muda vai no corpo. A citação em `migrar-a-mao.md` (*Identidade*) segue
+  valendo.
+
 ## 2026-11-06 — o plano sem permalink e a órfã sem commit
 
 Publicado como **v2.9.4**. Saiu da retro de uma sessão de um projeto (05 e 06/11). A causa foi medida

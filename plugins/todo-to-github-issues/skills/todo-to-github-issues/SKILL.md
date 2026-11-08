@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.9.4
+  version: 2.9.5
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -97,6 +97,11 @@ python3 $S --fix --open-heading "Pendências"   # quando o --audit não sabe qua
 python3 $S --fix --lang pt-BR             # repo sem OUTPUT_LANG em .sdd/config.sh
 ```
 
+`--audit` e `--fix` saem como um linter: **rc 1 quando há o que corrigir** (o diff AUTO ou um
+MANUAL) e rc 0 com o arquivo limpo; com `--write`, rc 1 é MANUAL pendente. Esse rc 1 vem com a
+linha `summary auto=… manual=…`. Sem ela, o rc 1 é falha (uma mensagem, como a do `--open-heading`
+que não casa, ou um traceback), como o rc 2, 3 ou 6.
+
 `AUTO` é o que o script corrige sozinho, porque é determinístico e não perde nada:
 
 - a semente antiga do `sdd install`, **intocada** (mesmo blob), trocada pela variante do idioma;
@@ -147,26 +152,11 @@ tem linhas próprias (`CREATE closed`, `LINK?`, `COMMENT`, `CLOSE`).
 
 ## Identidade: por que o script faz assim
 
-- **A chave é só o título** (`<!-- todo-key -->` no corpo). Âncora `arquivo:linha` fica de fora
-  porque o número da linha muda a toda hora, e cada mudança viraria uma issue nova. O preço disso:
-  **renomear o título cria uma issue nova e deixa a antiga órfã**. O plano marca o par como
-  `RENAME?` e imprime o comando que copia a chave nova para a issue antiga. Número que muda vai no
-  corpo, não no título.
-- **As issues existentes vêm de `gh issue list`, nunca de `--search`.** O índice de busca do
-  GitHub pode atrasar (não medido aqui), e uma segunda rodada logo depois de uma queda criaria duplicatas.
-- **O `todo-hash` cobre título, seção e texto, e deixa os links de fora.** Assim um commit novo em
-  `HEAD` não reescreve 98 issues só porque o sha do permalink mudou.
-- **Cada issue sabe de que arquivo veio** (`<!-- todo-src -->`, ou o link do rodapé nas antigas).
-  Sem isso, rodar com `--file` num segundo arquivo lia **todo** o espelho do primeiro como órfão,
-  e um `--close-orphans` o fecharia inteiro.
-- **O corpo sai literal**: o texto do item, desquebrado em parágrafos, porque numa issue cada
-  quebra simples vira `<br>`. A âncora e todo link relativo viram links para o sha em `HEAD`, e
-  todo `@nome` fora de bloco de código ganha um espaço de largura zero depois da arroba: sem isso,
-  `` `@codex review` `` citado num achado fez o conector do Codex responder na issue (crase não
-  protege: bot lê o texto cru). Com o arquivo sujo ou com `HEAD` fora do remoto, o script avisa e gera
-  links sem número de linha. O símbolo que a âncora designa (`` `arq:N` (`símbolo`) ``) fica na linha
-  **Âncora:**; até a 2.5.0 ele abria o parágrafo seguinte (kit sdd #255, 2026-10-15), e o
-  `update_kind` lê esse corpo antigo como o de hoje, ou cada issue dele voltaria `UPDATE (text)`.
+A chave da issue é só o título: **renomear o título cria uma issue nova e deixa a antiga órfã** (o
+plano marca o par como `RENAME?`), e número que muda vai no corpo, não no título. O porquê de cada
+escolha do script (a chave, o `todo-hash`, o `gh issue list`, o `todo-src`, o corpo literal) está em
+`references/identidade.md`: leia antes de mudar o script, ou quando um corpo de issue sair diferente
+do item.
 
 ## Erros comuns
 
