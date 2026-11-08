@@ -2,6 +2,22 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.19] — 2026-11-08 — a cópia do ensaio sai do caminho de quem recebe
+
+**O quê:** em `references/kaizen-conceitos.md`, *Rótulo ≠ artefato* ganha a terceira direção do
+Check na cópia: quem recebe a entrega pode abrir o resíduo do ensaio. A cópia leva outro nome, ou
+é apagada ao fim com a ordem de quem decide; e, quando o relato não bate com a entrega, a data de
+acesso do ponto de entrada e o arquivo da primeira execução mostram qual foi aberto. O checklist
+de validação de plano (`references/templates.md`) ganha a cláusula.
+
+**Por quê:** numa sessão, o agente ensaiou o pacote de uma página de rotulagem numa cópia com o
+mesmo nome e o mesmo `.bat`, um nível abaixo da pasta entregue. O autor abriu a cópia e viu a
+fila concluída num pacote que nunca tinha usado, e o relato parecia defeito do programa. Só o
+`.bat` da cópia tinha acesso naquele dia, e a pasta entregue não tinha o arquivo de trava que nasce
+na primeira execução. A skill cobria o Check feito na cópia e o artefato no ponto de entrega, não
+o resíduo do ensaio no caminho de quem confere. A lição ficou fora do `SKILL.md`, que tinha 19.996
+caracteres, 4 abaixo do aviso C1: o passo 6 da Fase 2 já encaminha a *Rótulo ≠ artefato*.
+
 ## [1.4.18] — 2026-11-05 — apelidos de projeto saem do texto
 
 Os apelidos de projeto da limpeza anterior saem do texto, também nas entradas antigas deste arquivo.
