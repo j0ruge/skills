@@ -1,5 +1,53 @@
 # Changelog — zitadel-idp
 
+## [0.21.0] — 2026-11-09
+
+### Added
+
+- **Quirk 57: o PAT de um membro de org só enxerga as orgs dele, e a busca de usuários do v2 diz isso
+  com um `200` vazio** (`references/quirks.md`, uma linha no índice do `SKILL.md` e a receita nova em
+  `references/api-cheatsheet.md`). Um script que procura por e-mail antes de criar lê o vazio como "a
+  conta não existe". Se o username da conta existente é o e-mail, a criação esbarra em `409 User already
+  exists (V3-DKcYh)`. Se não é, como na conta criada pelo Console (Quirk 33), a criação passa, e duas
+  contas ficam com o mesmo e-mail verificado (Quirk 54). A sonda é o `POST /admin/v1/orgs/_search`, que
+  responde `403 AUTH-5mWD2` ao PAT de org.
+- **Quirk 58: a senha errada pela Session API conta para a política de lockout**, e a conta bloqueada
+  recusa até a senha certa, com `Errors.User.NotActive (SESSION-Gj4ko)`, que parece conta desativada.
+  Com a política padrão, ninguém é bloqueado. Fica dito: prove só a senha que acabou de definir.
+- **Receita "Provision real accounts by script"** (`references/api-cheatsheet.md`, mais uma linha na
+  tabela de tarefas do `SKILL.md`). Ela cobre, em ordem:
+  - o PAT de membro da instância, e o usuário de máquina com PAT curto quando nenhum PAT de admin
+    está ao alcance;
+  - a senha gerada pela política lida da instância, e conferida antes do envio;
+  - a busca antes de criar, e a união no grant da conta que já existe;
+  - a criação, a senha gravada, o grant, a prova do valor gravado e a releitura.
+- **Session API** (`references/api-cheatsheet.md` §Prove a user's password): a prova funciona com a
+  troca obrigatória pendente, e não a consome. A senha errada responde `400 COMMAND-3M0fs`.
+
+### Changed
+
+- **Quirk 39:** cada classe tem o seu código de erro. Sem símbolo, o código medido é `COMMA-ZDLwA`, e
+  não o `COMMAND-VoaRj` da maiúscula. Case o `400` e o `Password must contain`, nunca um id só.
+- **Quirk 56:** um ponto de dado depois de outra escrita. Logo depois do `AddHumanUser`, o
+  `GET /v2/users/{id}` já trouxe os valores novos. Depois de um `PUT` de perfil, segue não medido.
+
+- **Por quê:** em 09/11/2026, um projeto escreveu um script de contas para um IdP de produção que
+  também atende outros apps. Ele precisava achar as contas que já existem, não duplicar e-mail e provar
+  a senha temporária sem bloquear ninguém. Também precisava de um PAT, e o do bootstrap só existia
+  como segredo do CI.
+- **Evidência:** sondas no IdP de dev (v4.15.0) em 09/11/2026, com contas descartáveis, apagadas e
+  relidas com `404`:
+  - o PAT de `ORG_OWNER` achou 1 conta na própria org e 0 na outra, que o admin acha;
+  - o `orgs/_search` respondeu `403`, e a criação duplicou o e-mail no caso do username truncado;
+  - duas senhas erradas sob `maxPasswordAttempts: 2` deixaram a conta `USER_STATE_LOCKED`, e a política
+    voltou à padrão (`isDefault: true` relido).
+- **Não medido:** o menor papel de instância que basta, e a chamada que torna o usuário de máquina
+  membro da instância.
+- **Dívida pré-existente que este retrofit não toca:** o smoke Codex em `docs/codex/smokes.json` está
+  na 0.20.0. O `README.md` ainda diz "50 gotchas" na tabela de plataformas e "54 documented quirks" no
+  detalhe do plugin.
+- **Como reverter:** `git revert` do commit que traz esta entrada.
+
 ## [0.20.4] — 2026-11-05
 
 ### Apelidos de projeto saem do texto

@@ -1,7 +1,7 @@
 ---
 name: zitadel-idp
 metadata:
-  version: 0.20.4
+  version: 0.21.0
 description: "Self-hosted Zitadel v4 OIDC field guide — a numbered quirk catalogue, working docker-compose and an idempotent TypeScript bootstrap. High-friction traps: FirstInstance env placement, JWT/JWKS over self-signed HTTPS, `--tlsMode external` and the console's mixed-content `Failed to fetch`, v2.66→v4, API v1→v2, silent-renew, 401 storms, UI language from the `locale` claim. Triggers — zitadel, oidc self-hosted, JWKS, masterkey, v2.66→v4, tlsMode external, pre-cutover check, locale claim."
 ---
 
@@ -51,6 +51,7 @@ If you are merely calling a pre-existing Zitadel deployment from your code, you 
 | When proving a bootstrap actually wrote what the YAML declares, or reading who holds which role, with each account's e-mail (no PAT needed) | `references/troubleshooting.md` §"The bootstrap logs `reuse` for everything" |
 | When one account loops back to the login screen while others log in fine | `references/troubleshooting.md` §"One account loops back…" |
 | When creating a test/seed user and proving its password works, with no browser | `references/api-cheatsheet.md` §"Seed an admin user" + §"Prove a user's password without a browser" |
+| When provisioning real people's accounts by script — which PAT, the password policy, proving the password without locking anyone out | `references/api-cheatsheet.md` §"Provision real accounts by script" + Quirks 57 and 58 |
 | When driving the SPA's UI language from the user's IdP language (`locale` claim) | `references/spa-recipes.md` §"Recipe — UI language from the IdP" |
 | When changing an existing user's language (`preferredLanguage`) | `references/api-cheatsheet.md` §"Change an existing user's language" |
 
@@ -114,6 +115,8 @@ These bite first-time Zitadel integrators consistently. One line per quirk; the 
 54. Email is an attribute, not an identity: two accounts may share one, verified or not; key authorization on `sub`, or require `email_verified`.
 55. The v1 grants search obeys `x-zitadel-orgid`: with the user's org it finds nothing for a grant that lives in the org owning the project, and that empty result turns an update (PUT) into a duplicate create (POST).
 56. Right after a profile `PUT` answers `200`, `POST /v2/users` can still return the old value; poll before concluding the write was ignored, and do not repeat it.
+57. A PAT of an org member sees only its own orgs: `POST /v2/users` answers `200` with zero results for an account in another org, and creating it then duplicates the email (Quirk 54); probe with `/admin/v1/orgs/_search` first (`403 AUTH-5mWD2`).
+58. A wrong password through the Session API counts toward the lockout policy: past `maxPasswordAttempts` the account is `USER_STATE_LOCKED`, and even the right password then answers `Errors.User.NotActive (SESSION-Gj4ko)`.
 
 ## Migration v2.66 → v4 + API v2
 

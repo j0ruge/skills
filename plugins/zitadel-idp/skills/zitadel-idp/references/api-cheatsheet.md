@@ -37,6 +37,7 @@ See `tenant-org-mapping.md` for why this distinction matters.
 - [Create a human user](#create-a-human-user)
 - [Seed an admin user (bootstrap-time)](#seed-an-admin-user-bootstrap-time)
 - [Prove a user's password without a browser (Session API v2)](#prove-a-users-password-without-a-browser-session-api-v2)
+- [Provision real accounts by script](#provision-real-accounts-by-script)
 - [Re-reading bootstrap output after volume reset](#re-reading-bootstrap-output-after-volume-reset)
 - [Login policy tweaks (instance-wide UX)](#login-policy-tweaks-instance-wide-ux)
   - [`mfaInitSkipLifetime: "0s"` — disable the MFA setup re-prompt](#mfainitskiplifetime-0s--disable-the-mfa-setup-re-prompt)
@@ -410,6 +411,60 @@ jq -n --arg s "$SID" '{sessionId:$s}' \
 - A `sessionId` back means the user exists, is active and the password matched. Anything else is a failure — read `.message` before assuming it was the password.
 - It proves the **credential**, not the app: roles, redirect URIs and the `locale`/role claims are still the OIDC flow's business (→ Quirk 44 for the credential-free client check, Quirk 52 for the role loop).
 - Measured on v4.15.0 (2026-09-27): used to validate a freshly created e2e account before the suite ran; the Playwright login that followed passed first time.
+- **It works with a forced change pending, and does not consume it.** For an account created with `password.changeRequired: true`, the session opened (`201`) and `GET /v2/users/{userId}` still showed `human.passwordChangeRequired: true` afterwards, so a provisioning script can prove the temporary password it hands out. A wrong password answers `400 Password is invalid (COMMAND-3M0fs)`. Measured on v4.15.0 (2026-11-09).
+- **Each wrong password is a strike under the lockout policy** (Quirk 58): prove only a password you have just set, never one its owner may already have changed.
+
+---
+
+## Provision real accounts by script
+
+Creating people's accounts in a batch (managers, directors) differs from seeding a test user: the IdP may already hold some of them, through another app, and the passwords go to real people. The order below is what a throwaway run on v4.15.0 (2026-11-09) proved, with the accounts deleted afterwards.
+
+1. **The PAT must belong to an instance member** (Quirk 57). An org-scoped PAT answers the email search with an empty `200` for accounts in other orgs. Probe before the first search, and stop on `403 No matching permissions found (AUTH-5mWD2)`:
+
+   ```http
+   POST /admin/v1/orgs/_search
+   { "query": { "limit": 1000 } }
+   ```
+
+   When no admin PAT is reachable (the bootstrap PAT may live only as a CI secret), create a machine user with a PAT that expires in a few days, write the token straight to a `0600` file and never print it. These two calls answered `200`, in the org named by the header:
+
+   ```http
+   POST /management/v1/users/machine
+   x-zitadel-orgid: ${orgId}
+
+   { "userName": "provisioning-batch", "name": "Provisioning", "description": "one-off batch", "accessTokenType": "ACCESS_TOKEN_TYPE_BEARER" }
+   ```
+
+   ```http
+   POST /management/v1/users/${machineUserId}/pats
+   x-zitadel-orgid: ${orgId}
+
+   { "expirationDate": "${expiresAt}" }
+   ```
+
+   `expiresAt` is an RFC 3339 instant a few days ahead. The response carries `tokenId` and `token`. The org membership (`POST /management/v1/orgs/me/members` with `{"userId": …, "roles": ["ORG_OWNER"]}`, also `200`) is the one that is **not** enough. Make the machine user an instance member with `IAM_OWNER` instead; that call was not measured here. When the batch is done, `DELETE /v2/users/${machineUserId}` answered `200`, and the `GET` then `404`.
+
+2. **Generate the temporary password to the policy the instance reports, and check it before sending** (Quirk 39). Every class has its own error id, so a check before the call turns a generator regression into a refusal, instead of a `400` in the middle of the batch:
+
+   ```http
+   GET /v2/settings/password/complexity
+   ```
+
+   It returns `{"settings": {"minLength": "8", "requiresUppercase": true, "requiresLowercase": true, "requiresNumber": true, "requiresSymbol": true, …}}`. `minLength` is a **string** in v2. The v1 twin (`GET /management/v1/policies/password/complexity`) names the flags `hasUppercase`, `hasLowercase`, `hasNumber` and `hasSymbol`.
+
+3. **Search by email before creating**, with `TEXT_QUERY_METHOD_EQUALS_IGNORE_CASE`.
+   - **More than one match:** stop (Quirk 54).
+   - **One match:** do not create. Add the roles to the existing grant by union, never replacing the other apps' roles (§"User grants", Quirk 55). Leave the password alone, and do not probe it (Quirk 58).
+
+4. **Create, then prove in the destination**, in this order:
+   - Create with `username` equal to the email (Quirk 33), `email.isVerified: true` when the instance has no SMTP (Quirk 35) and `password.changeRequired: true`.
+   - Store the temporary password where its owner will get it.
+   - Grant the roles.
+   - Prove the **stored** value through the Session API (§"Prove a user's password without a browser").
+   - Re-read the account with `GET /v2/users/${userId}`: verified, change pending, language. Right after the create it already returned the new values (Quirk 56).
+
+   Storing before the grant means a failure leaves an account whose password someone has, rather than one nobody can open. A second run then finds every account and writes nothing.
 
 ---
 
