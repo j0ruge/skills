@@ -192,6 +192,50 @@ class TestQuantoLeu(RepoComPR):
         self.assertEqual(scan_secrets.scan_diff(diff).scanned, {"files": 2, "added_lines": 2})
 
 
+class TestSenhaInterpoladaNaConnectionString(unittest.TestCase):
+    """A senha de uma connection string que é só a interpolação de uma variável é lida na hora de rodar.
+
+    Até a 2.27.33 a exceção do `${…}` olhava o casamento inteiro, que começa no esquema, e nunca
+    a senha: o `DATABASE_URL` de um compose, com a senha vinda do `.env`, saía CRITICAL e forçava a
+    nota F sem segredo nenhum (medido em 2026-11-09, num monorepo privado). O esquema e a
+    URL são montados aqui na hora, para que este arquivo não carregue a forma que o padrão procura.
+    """
+
+    ESQUEMA = "postgres" + "ql"
+
+    def achados(self, senha: str) -> list:
+        """Varre um diff de uma linha de compose com a senha dada e devolve só os achados desse padrão."""
+        url = f"{self.ESQUEMA}://app:{senha}@db:5432/app"
+        diff = f"diff --git a/c.yml b/c.yml\n--- /dev/null\n+++ b/c.yml\n@@ -0,0 +1 @@\n+  DATABASE_URL: {url}\n"
+        return [f for f in scan_secrets.scan_diff(diff).findings if f.kind == "Credentialed Connection String"]
+
+    @staticmethod
+    def aleatoria() -> str:
+        """Uma senha nova a cada chamada, para nenhum literal ficar neste arquivo."""
+        return "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
+
+    def test_senha_que_e_interpolacao_nao_vira_achado(self):
+        formas = ("${APP_DB_PASSWORD}", "${APP_DB_PASSWORD:?defina-no-env}", "${APP_DB_PASSWORD:-}", "<senha>")
+        for forma in formas:
+            with self.subTest(forma):
+                self.assertEqual(self.achados(forma), [])
+
+    def test_canario_com_senha_literal_segue_achado(self):
+        # Sem este, um conserto que desligasse o padrão passaria nos casos acima.
+        senha = self.aleatoria()
+        achados = self.achados(senha)
+        self.assertEqual(len(achados), 1)
+        self.assertEqual(achados[0].severity, "CRITICAL")
+        self.assertNotIn(senha, achados[0].snippet)
+
+    def test_padrao_nao_vazio_e_senha_escrita_na_linha(self):
+        # `${X:-valor}` cai no valor quando a variável falta: é uma senha literal no arquivo. Até a
+        # 2.27.33 ela saía achado (porque nada ali era julgado), e o conserto não pode calá-la.
+        for forma in (f"${{APP_DB_PASSWORD:-{self.aleatoria()}}}", f"${{APP_DB_PASSWORD-{self.aleatoria()}}}"):
+            with self.subTest(forma):
+                self.assertEqual(len(self.achados(forma)), 1)
+
+
 class TestDiffForaDoAscii(unittest.TestCase):
     """O stdin do Windows (cp1252 com surrogateescape) e os cabeçalhos `+++` com TAB e com aspas."""
 

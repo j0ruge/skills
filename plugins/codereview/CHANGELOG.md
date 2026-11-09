@@ -2,6 +2,16 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.34] — 2026-11-09
+
+### A senha de uma connection string que é só uma variável interpolada não é credencial
+
+Na `codereview`, `scripts/scan_secrets.py` e `references/detection-passes.md`, §6.10. No padrão `Credentialed Connection String`, a exceção do placeholder julgava o casamento inteiro, que começa no esquema, e não a senha. Por isso uma senha que era só a interpolação de uma variável de compose (`${NOME}`, `${NOME:?mensagem}`, `${NOME:-}`) nunca chegava à regra do `${…}` que o `Generic Password` já aplica. Na rodada 1 de um monorepo privado (2026-11-09), a URL do banco no compose de produção, com a senha lida do env do deploy, foi a única linha CRITICAL e forçou a nota F, sem nada a rotacionar. A mesma linha estava no compose de staging desde setembro.
+
+Agora o padrão julga o grupo da senha. Um padrão não vazio (`${NOME:-valor}`, `${NOME-valor}`) segue como achado, porque o valor está escrito na linha: o conserto medido primeiro o calava, e a medida de lado o pegou antes do commit. Os outros placeholders que o `looks_like_placeholder` aceita (`<…>`, `***`) também deixam de marcar uma connection string. `TestSenhaInterpoladaNaConnectionString` prende os três lados, e o canário com senha aleatória segue CRITICAL. A suíte do scanner passa com 25 de 25. No diff real da branch (44 arquivos, 4232 linhas), a 2.27.33 dá duas linhas e a 2.27.34 dá só a outra, um literal num teste. O gitleaks não marcou a linha em nenhuma das duas.
+
+Dívida pré-existente, não consertada aqui: os 3 C2 da auditoria (contratos de subagente lidos por caminho absoluto, exceção legítima) e o D1. O `SKILL.md` segue com 19.998 chars, colado no teto, e por isso a lição não entrou nele.
+
 ## [2.27.33] — 2026-11-08
 
 ### A regra de formato que um arquivo escreve sobre si se confere no sensor que a aplica

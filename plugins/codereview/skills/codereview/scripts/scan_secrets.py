@@ -172,6 +172,9 @@ ENV_LOOKUP_PATTERNS = [
 INTERPOLATION_RE = re.compile(
     r"#?\{[a-z_][\w.]*(\[[^\]]*\])*(![rsa])?(:[^{}]*)?\}|%\([a-z_]\w*\)[sdr]")
 
+# `${VAR:-valor}` e `${VAR-valor}`: quando a variável falta, vale o valor, que está escrito na linha.
+PADRAO_NAO_VAZIO_RE = re.compile(r"\$\{[A-Za-z_][A-Za-z0-9_]*:?-[^}]+\}")
+
 # Caminhos onde placeholder values são esperados — não disparar Env Assignment
 # nem Generic Password se o valor parecer placeholder.
 ENV_TEMPLATE_FILE_PATTERNS = [
@@ -373,6 +376,12 @@ def scan_diff(diff_text: str) -> ScanResult:
                 # Decide se o valor é placeholder.
                 if "val" in match.groupdict() and match.group("val") is not None:
                     raw_val = match.group("val")
+                elif "pwd" in match.groupdict() and match.group("pwd") is not None:
+                    # A connection string julga a senha, e não o casamento, que começa no esquema:
+                    # sem isso o `${VAR}` de um compose nunca chega à exceção (medido em 2026-11-09).
+                    # O `${VAR:-valor}` com valor segue achado: é a senha escrita na linha.
+                    pwd = match.group("pwd")
+                    raw_val = match.group(0) if PADRAO_NAO_VAZIO_RE.fullmatch(pwd) else pwd
                 else:
                     raw_val = match.group(0)
 
