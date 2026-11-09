@@ -31,6 +31,9 @@ state to fall back on and nobody has yet learned what "normal" looks like.
 - [§10. `migrate deploy` green does not say WHICH role the application runs as](#10-migrate-deploy-green-does-not-say-which-role-the-application-runs-as)
 - [§11. A gate that observes shared state through its OWN connection measures itself](#11-a-gate-that-observes-shared-state-through-its-own-connection-measures-itself)
 - [§12. A loop's HEALTHCHECK: `pgrep -f` finds itself, and an unconditional heartbeat lies](#12-a-loops-healthcheck-pgrep--f-finds-itself-and-an-unconditional-heartbeat-lies)
+- [§13. One deploy script for two environments: the discriminator comes from the environment's name, never from its config file](#13-one-deploy-script-for-two-environments-the-discriminator-comes-from-the-environments-name-never-from-its-config-file)
+- [§13a. The compose cannot be shared, so guard the copy with an equality contract, not a checklist](#13a-the-compose-cannot-be-shared-so-guard-the-copy-with-an-equality-contract-not-a-checklist)
+- [§14. A production deploy agent on a repo without branch protection: gate on ancestry through the compare API](#14-a-production-deploy-agent-on-a-repo-without-branch-protection-gate-on-ancestry-through-the-compare-api)
 - [Symptoms → section](#symptoms--section)
 
 ## §1. Capture the rollback tag from immutable tags only
@@ -627,6 +630,131 @@ test, not by asking the system "is there such a process?" — in production the 
 
 ---
 
+## §13. One deploy script for two environments: the discriminator comes from the environment's name, never from its config file
+
+When staging and production share one deploy script, what differs moves to a file per
+environment (`infra/<env>/env.env`: the compose project and the hostnames). The trap is to
+put the **discriminator** in that same file too. Say the TLD is the discriminator (`.net` is
+staging, `.com` is production). With the TLD in the file, a production file with one staging
+name pasted in is self-consistent, and every check that reads the file agrees with it.
+
+The script maps the environment's name to the TLD, then rejects every name in the file that
+does not end in it, before the build:
+
+```bash
+load_environment() {
+  local name
+  case "${ENVIRONMENT:-}" in
+    staging)    TLD=net; OTHER_TLD=com ;;
+    production) TLD=com; OTHER_TLD=net ;;
+    *) echo "ENVIRONMENT='${ENVIRONMENT:-}'; expected staging or production" >&2; return 1 ;;
+  esac
+  . "infra/${ENVIRONMENT}/env.env" || return 1
+  for name in SPA_HOST API_HOST IDP_HOST; do
+    [[ "${!name:-}" =~ ^[a-z0-9.-]+\.example\.${TLD}$ ]] || {
+      echo "${name}='${!name:-}'; expected a *.example.${TLD} name for ${ENVIRONMENT}" >&2
+      return 1
+    }
+  done
+}
+```
+
+- **Gate both directions.** The served bundle and the compose fail on `OTHER_TLD`, not only
+  when they lack `TLD`. "Contains `.com`" still passes with a `.net` left beside it.
+- **Sensor:** run the script with stubs on `PATH` (§6c). The sabotage "accept any TLD" turned
+  2 cases red (measured 2026-11-09).
+
+---
+
+## §13a. The compose cannot be shared, so guard the copy with an equality contract, not a checklist
+
+The compose is the file the host's `docker compose` reads, so each environment keeps its own
+copy, and copies drift. If a hardening lands in staging and is missing in production, nothing
+complains. A checklist of assertions on the production file (has `init: true`, no `ports:`)
+only catches what someone remembered to list. And a check on the production file can never
+see a change that was made only in staging.
+
+Instead, assert that production **is** staging with the environment swapped:
+
+```typescript
+const SWAPS: Array<[RegExp, string]> = [[/example\.net/g, "example.com"], [/acme-staging/g, "acme-prod"]];
+const swap = (v: unknown): unknown =>
+  typeof v === "string" ? SWAPS.reduce((s, [from, to]) => s.replace(from, to), v)
+  : Array.isArray(v) ? v.map(swap)
+  : v !== null && typeof v === "object"
+    ? Object.fromEntries(Object.entries(v).map(([k, x]) => [swap(k), swap(x)]))
+    : v;
+
+it("production is staging with the environment swapped, and nothing else", () => {
+  const expected = swap(parse(read("infra/staging/docker-compose.yml"))) as Compose;
+  Object.assign(expected.services.deployer.environment,
+    { ENVIRONMENT: "production", BRANCH: "main", ANCESTOR: "staging" });
+  const prod = parse(read("infra/production/docker-compose.yml")) as Compose;
+  delete prod.services.deployer.deploy; // deliberate: the agent's CPU/memory cap, measured in its own case
+  expect(prod).toEqual(expected);
+});
+```
+
+- **Parse, don't grep.** The YAML parser drops the comments, which text sensors read by
+  mistake (§6b), and the `toEqual` diff gives the path of the drift.
+- **Name each deliberate difference.** Remove it from the comparison by name, with the reason
+  (a resource cap, a backup service only production has), and measure it in a case of its
+  own. Never loosen the comparison as a whole.
+- **Sabotages that went red** (2026-11-09): `init` removed from production, a tweak made only
+  in staging, a `.net` left in production.
+
+---
+
+## §14. A production deploy agent on a repo without branch protection: gate on ancestry through the compare API
+
+Without branch protection, nothing stops a commit pushed straight to `main` that never went
+through staging. The agent that deploys `main` can ask the API, before it downloads the
+tree, whether the sha is already in `staging`'s history:
+
+```bash
+# 0 deploy · 1 the API failed: do NOT record the attempt, ask again next loop · 2 refuse
+check_ancestor() {
+  local status
+  [[ -n "${ANCESTOR:-}" ]] || return 0          # the staging agent has nothing to check
+  # A failed request leaves $status empty and falls to *): the pipe drops gh_get's rc (§8).
+  status="$(gh_get "compare/${ANCESTOR}...$1" | jq -r '.status')"
+  case "$status" in
+    identical|behind) return 0 ;;               # $1 is ANCESTOR's head or one of its ancestors
+    ahead|diverged)   return 2 ;;               # $1 carries commits ANCESTOR never had
+    *) return 1 ;;
+  esac
+}
+```
+
+`status` describes the head relative to the base. Measured 2026-11-09 against a real repo:
+`compare/staging...<staging head>` gives `identical`, `…<staging^1>` gives `behind`, and
+`…<develop head>` gives `diverged`, because develop lacks staging's promotion merge commits.
+
+- **An API failure is not recorded.** Record it as an attempt, and one network blip skips
+  that sha forever.
+- **A refusal is recorded.** It publishes `deploy/production = failure` once. If it is not
+  recorded, it publishes again every loop.
+- **Sensor:** run the agent's real loop twice with a `gh` stub. Each of these sabotages went
+  red: `compare` accepting `ahead`, an API failure becoming a recorded refusal, and the
+  production agent started without `ANCESTOR`.
+
+**The consequence: the promotion `staging → main` becomes a fast-forward.** A merge commit
+on `main` is not in `staging`'s history (`ahead`), so it is refused. And none of GitHub's PR
+merge methods keeps the SHA: the merge commit uses `--no-ff`, squash makes one new commit,
+and rebase-and-merge "creates new commit SHAs" (GitHub docs, *About merge methods on GitHub*,
+read 2026-11-09). Promote by pushing the ref. Without `--force`, git refuses a push that is
+not a fast-forward:
+
+```bash
+gh api repos/<o>/<r>/compare/staging...main --jq .status   # must be behind (or identical)
+git push origin <staging-sha>:refs/heads/main
+```
+
+If `main` ever got a merge commit or a direct commit, that compare says `diverged`, and no
+fast-forward exists until someone decides how `main` gets back into `staging`'s line.
+
+---
+
 ## Symptoms → section
 
 | Symptom | Section |
@@ -656,3 +784,7 @@ test, not by asking the system "is there such a process?" — in production the 
 | A bundle-size / warning gate has never failed a build | §6c |
 | Deploy green, then the script exits 1 with `unbound variable` | §8 |
 | Agent container `healthy` with the loop dead, or failing every iteration | §12 |
+| A staging name in the production config file (or the reverse) passes every check that reads the file | §13 |
+| A hardening added to the staging compose is missing in production, and the production contract is green | §13a |
+| A commit pushed straight to `main` reaches production without ever being on staging | §14 |
+| The production agent refuses a promotion that came in through a PR merge (`ahead`) | §14 |

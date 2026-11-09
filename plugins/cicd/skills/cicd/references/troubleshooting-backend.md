@@ -22,6 +22,7 @@ Backend-specific troubleshooting scenarios. For shared infrastructure scenarios,
   - [Biome 2.x config error (`unknown key "ignore"`)](#biome-2x-config-error-unknown-key-ignore)
   - [`ERR_CONNECTION_REFUSED` via browser (nginx-proxy OK)](#err_connection_refused-via-browser-nginx-proxy-ok)
   - ["No pending migrations" but app crashes with missing column/table](#no-pending-migrations-but-app-crashes-with-missing-columntable)
+  - [`npm audit fix` (no `--force`) proposes `change prisma X => Y` with Y lower](#npm-audit-fix-no---force-proposes-change-prisma-x--y-with-y-lower)
 - [Monorepo npm workspaces — armadilhas de build/runtime na imagem](#monorepo-npm-workspaces--armadilhas-de-buildruntime-na-imagem)
   - [`ERR_MODULE_NOT_FOUND` / `ERR_UNKNOWN_FILE_EXTENSION` ao rodar `node dist/index.js`](#err_module_not_found--err_unknown_file_extension-ao-rodar-node-distindexjs)
   - [Vite/Build do frontend falha resolvendo um sibling — `npm ci -w` escopado não basta](#vitebuild-do-frontend-falha-resolvendo-um-sibling--npm-ci--w-escopado-não-basta)
@@ -207,6 +208,33 @@ docker run --rm -e DB_URL=<url> --network <network> \
   ghcr.io/<org>/<image>:staging \
   npx prisma migrate deploy --schema packages/backend/prisma/schema.prisma
 ```
+
+---
+
+### `npm audit fix` (no `--force`) proposes `change prisma X => Y` with Y lower
+
+**Symptom:** `npm audit` flags `prisma` and `@prisma/config` (through `deepmerge-ts`,
+[GHSA-ggr8-5vv4-36mx](https://github.com/advisories/GHSA-ggr8-5vv4-36mx)), and the "safe" fix
+the dry-run proposes is a **downgrade**: `change prisma 6.19.3 => 6.12.0`, with
+`@prisma/client` left at 6.19.3. The CLI that runs `prisma generate` and `migrate deploy` no
+longer matches the client.
+
+**Cause:** without `--force`, `audit fix` stays inside the range the `package.json` declares
+(`"prisma": "^6.0.0"`), and any version in it that sits outside the vulnerable range counts
+as a fix, a lower one included: 6.12.0 is below `6.13.0-dev.1 - 7.10.0`. "Not a major" does
+not mean "not a downgrade". Measured 2026-11-09 with npm 12.0.2, with and without
+`--omit=dev`. With `--omit=dev` the same dry-run also lists 628 packages as `remove`
+(27 without the flag).
+
+**Fix:**
+
+1. Always read `npm audit fix --dry-run` first, and look for `change <pkg> X => Y` with Y < X.
+2. Raise only the package whose vulnerable path you can reach, inside its parent's range:
+   `npm update <pkg> --package-lock-only`, then read the lockfile diff. Only the intended
+   entries should move (a `body-parser` 2.3.0 → 2.4.0 took `qs` along, and nothing else).
+3. `npm ci`, then `npm ls` with no `invalid`, then the full gate.
+4. What you cannot reach gets a written reason, and its real fix is the major bump that
+   leaves the range the `npm audit` output prints.
 
 ---
 

@@ -2,6 +2,34 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.40.0] — 2026-11-09
+
+### Dois ambientes de uma fonte só, e a produção que só aceita o que passou pelo staging
+
+Lições de uma sessão que preparou a produção de um projeto que já tinha staging no ar, com agente de
+deploy no host e sem proteção de branch.
+
+- **O discriminador sai do nome do ambiente (§13, lição 124).** Quando os dois ambientes têm o mesmo
+  script de deploy, o TLD não pode morar no arquivo do ambiente. Se morasse, um nome de staging colado
+  no arquivo de produção ficaria coerente consigo mesmo. O script mapeia o ambiente para o TLD, e o
+  bundle e o compose reprovam o TLD do outro ambiente.
+- **O compose copiado ganha contrato de igualdade (§13a, lição 125).** A produção tem de ser o staging
+  com o ambiente trocado. Cada diferença deliberada sai da comparação pelo nome. Uma lista de cheques
+  nunca veria o ajuste feito só no staging.
+- **Gate de ancestralidade no agente de produção (§14, lição 126).** O agente consulta
+  `compare/<staging>...<sha>` e aceita só `identical` ou `behind`. Uma falha da API não é registrada, e
+  a recusa é. Consequência: a promoção vira fast-forward por `git push`, porque nenhum método de merge
+  de PR do GitHub preserva o SHA. Os estados do compare foram medidos num repo real, e o comportamento
+  do rebase-and-merge foi lido na doc do GitHub, os dois em 09/11.
+- **`npm audit fix` sem `--force` rebaixa o CLI do Prisma (lição 123, `troubleshooting-backend.md`).**
+  Ele propõe `prisma 6.19.3 => 6.12.0` e deixa o `@prisma/client` em 6.19.3, porque uma versão abaixo
+  da faixa vulnerável, ainda dentro do `^6`, conta como conserto. Reproduzido com npm 12.0.2. O
+  conserto verificado é `npm update <pkg> --package-lock-only` com o diff do lockfile.
+- **Contagens do roteamento.** O `SKILL.md` dizia "74 rows" e "109 numbered lessons" quando o índice
+  já tinha 79 linhas e as lições iam até a 122 (dívida anterior). Agora diz 81 e 126, medidos
+  depois desta edição.
+- **Fora desta versão:** o smoke do Codex (`docs/codex/smokes.json`) continua na 2.38.0.
+
 ## [2.39.4] — 2026-11-06
 
 ### O auto-update também mata o runner, e a receita do vigia ficava verde

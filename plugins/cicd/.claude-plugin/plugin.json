@@ -4,7 +4,7 @@
   "author": {
     "name": "Chewiesoft"
   },
-  "version": "2.39.4",
+  "version": "2.40.0",
   "category": "development",
   "keywords": [
     "cicd",
@@ -92,7 +92,10 @@
     "environment-branch-no-deploy",
     "actionlint",
     "actionlint-shellcheck-blind",
-    "workflow-yaml-lint"
+    "workflow-yaml-lint",
+    "ancestry-gate",
+    "fast-forward-promotion",
+    "compose-equality-contract"
   ],
   "platforms": [
     "claude-code",

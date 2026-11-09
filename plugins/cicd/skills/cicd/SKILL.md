@@ -1,7 +1,7 @@
 ---
 name: cicd
 metadata:
-  version: 2.39.4
+  version: 2.40.0
 description: "GitHub Actions / Docker / GHCR pipeline troubleshooting and config, auto-routed by stack (Node/Prisma, Django/gunicorn, Vite). Self-hosted runner runbook — what breaks when you move a billed job onto one, which runner to trust for production — deploy-time proof (rollback with re-smoke, backup gates that check the dump), and Actions minute economics. Triggers — CI/CD, GitHub Actions, job never starts, Actions minutes/quota, GHCR auth, self-hosted runner, deploy queued, rollback/backup gate."
 ---
 
@@ -84,12 +84,12 @@ Frontend:          checkout → install → lint → typecheck → test (Vitest)
 
 | Condition | Reference |
 | --- | --- |
-| When you have an error message or symptom and don't know the layer yet (all tags, 74 rows) | `references/symptom-index.md` |
-| When another file cites a lesson by number, or you want every lesson on one theme (109 numbered lessons + theme index) | `references/lessons-learned.md` |
+| When you have an error message or symptom and don't know the layer yet (all tags, 81 rows) | `references/symptom-index.md` |
+| When another file cites a lesson by number, or you want every lesson on one theme (126 numbered lessons + theme index) | `references/lessons-learned.md` |
 | When the failure is shared infra: GHCR `unauthorized` / TLS timeout, nginx-proxy network, SSL/ACME certificate (3a/3b/3c), runner via systemd offline, concurrency, monorepo npm (`exec`, ESLint v9, hoisting), deploy keys, `.env` whitespace, composite action, `actionlint` | `references/troubleshooting-shared.md` |
 | When the runner is a container (`FROM myoung34/github-runner`, `infra/docker/runner/`): crashloop, `404 registration`, `registration has been deleted`, `version deprecated`, PAT 401, mute runner, silent `queued`, host paths, missing binaries or `buildx` | `references/self-hosted-runner-docker.md` |
 | Before configuring a new environment's shared infra (runner, GHCR, DNS) | `references/checklist-shared.md` |
-| When a Node/Prisma backend fails, by exit code or message (Zod, Prisma, Jest, Biome, stale migration image, monorepo `tsx` runtime, `--omit=dev`) | `references/troubleshooting-backend.md` |
+| When a Node/Prisma backend fails, by exit code or message (Zod, Prisma, Jest, Biome, stale migration image, monorepo `tsx` runtime, `--omit=dev`, an `npm audit fix` that downgrades) | `references/troubleshooting-backend.md` |
 | Before a backend deploy (secrets, tests, build) | `references/checklist-backend.md` |
 | When Jest tests pass locally and fail in CI (fix patterns) | `references/test-fixes-backend.md` |
 | When the frontend fails (blank page, VITE_*, React Router 404, Alpine healthcheck, Vitest/jsdom, vacuous typecheck, test-log noise) | `references/troubleshooting-frontend.md` |
@@ -98,7 +98,7 @@ Frontend:          checkout → install → lint → typecheck → test (Vitest)
 | If the backend is Django/gunicorn (collectstatic/WhiteNoise, ALLOWED_HOSTS healthcheck-400, CSRF/proxy-SSL, migrate one-off, two-origin CORS) | `references/django-backend.md` |
 | When the constraint is the Actions minute quota: measuring per job, self-hosted as lever, `paths-ignore`, cold cache, billing block, manual deploy while the block lasts, leaving Actions (environment secrets) | `references/ci-cost-minutes.md` |
 | When moving a billed job to self-hosted, or a migrated job now fails: toolchain, service-container network, `container:` and runner version, which runner for the tag `cd-production`, repo debt revealed (root runner, test timeouts), `.env`/snapshot in CI, gate job turned tautological, build without `setup-buildx`/`gha` cache, Testcontainers behind the socket | `references/self-hosted-job-migration.md` |
-| When designing or doubting the part of CD that proves the deploy: immutable rollback tag, re-smoke, gate order, backup proven by the artifact, proving the sensor, `cmd \| tail` dropping the exit code, `vars` repo vs environment, state gates, DB role, self-measuring gates, `trap ERR` rollback, text-only sensors, a deploy agent's HEALTHCHECK | `references/cd-verification-and-rollback.md` |
+| When designing or doubting the part of CD that proves the deploy: immutable rollback tag, re-smoke, gate order, backup proven by the artifact, proving the sensor, `cmd \| tail` dropping the exit code, `vars` repo vs environment, state gates, DB role, self-measuring gates, `trap ERR` rollback, text-only sensors, a deploy agent's HEALTHCHECK, one script and one copied compose for two environments, a production agent's ancestry gate | `references/cd-verification-and-rollback.md` |
 
 The long references open with a "when to read" block that maps key symptoms to sections.
 
@@ -122,6 +122,7 @@ One line each; read the numbered lesson in `references/lessons-learned.md` when 
 - **`paths-ignore` also skips a push that changes zero files** (a new environment branch, `--allow-empty`). Add `workflow_dispatch` before cutting the branch (lesson 81). A tag-triggered workflow runs the file from the tagged commit (lesson 76).
 - **A job moved to self-hosted breaks on what the hosted image gave for free:** `cache: 'yarn'` invokes yarn, `127.0.0.1` is the containerized runner's own loopback, `container:` needs the runner's node24, the runner is root, test timeouts were calibrated on a dev machine. The job that watches a runner cannot run on it (lessons 71–73, 80, 101, 102).
 - **Containerized runner:** bind mounts resolve on the host but CLI paths (`--env-file`, `-f`) resolve inside the container, the image must carry every binary the workflow calls, and the CD's `up -d` never recreates the runner (lessons 89, 90, 97).
+- **Two environments from one source:** derive the TLD from the environment's name and refuse every config name that does not end in it; guard the copied compose with a parsed-equality contract, not a checklist. Without branch protection the production agent deploys only `identical`/`behind` from `compare/<staging>...<sha>`, so promote by fast-forward: no PR merge method keeps the SHA (lessons 124–126).
 - **VITE_* are baked at build time**, so changing the secret without rebuilding is a no-op, and a build-time image needs an environment suffix on its tag or a fast-forward promotion makes production overwrite staging (lessons 18, 64).
 - **`docker run` does not pull and `compose run`/`up` does not rebuild when the tag exists locally**, so a stale image applies old migrations or declarations, green (lessons 29, 91).
 - **On a host that builds its own images, `docker rmi` frees no disk:** the layers stay in the BuildKit cache, and only `docker builder prune` returns them. A prune that runs only after the build means the build must fit the disk free before promotion: prune before the build too, keep the live and the rollback `sha-*` by name, and refuse the build below a measured cold-build size (lessons 118, 120). `--all` frees nothing more: it only adds `shared` records, layers that live images still hold (lesson 119).
