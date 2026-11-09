@@ -2,6 +2,32 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [3.4.0] — 2026-11-09
+
+### O salto à produção atrás de um gate de ancestralidade é fast-forward, e o agente velho se julga pelo que deixa de dar
+
+**Por quê:** a skill dizia "Same procedure" para a produção e mandava promover por PR com merge
+commit. Num repo sem proteção de branch, o agente de produção pode aceitar só sha que já está na
+história da branch de staging (`compare/<staging>...<sha>` em `identical` ou `behind`, `cicd` lição
+126). Nenhum método de merge de PR deixa a cabeça da produção num sha assim, então quem seguisse a
+skill teria o PR recusado pelo agente, e a branch de produção ficaria `ahead` da staging (e
+`diverged` assim que a staging andasse), sem fast-forward possível até alguém reescrevê-la.
+
+- **Promoting to production** ganha a quarta diferença: procurar o gate antes de escolher o
+  mecanismo e, havendo gate, conferir o `compare` e empurrar o sha da staging. O dump passa a vir
+  "antes do merge ou do push".
+- **Step 5** aponta a exceção, para quem para nele não promover a produção por PR.
+- **Step 4 e `references/no-actions-agent.md`:** com a pasta do agente no diff, a pergunta deixa
+  de ser "o host roda essa versão?" e vira "o que o agente velho deixa de dar à árvore promovida?".
+  Uma mudança que só liga um comportamento de outro ambiente não pede rebuild. A mesma pergunta
+  vale ao contrário: um script de deploy que passa a exigir uma entrada nova reprova num agente que
+  não a fornece, mesmo sem a pasta do agente no diff. O caso medido está na reference.
+
+Medido em 2026-11-09: a doc *About merge methods on GitHub* (o merge usa `--no-ff`, o squash faz
+"a single commit", o rebase "creates new commit SHAs"); o `man git-push` do git 2.43 (`rejected`
+quando "not a fast-forward and you did not force the update"); a recusa do agente, provada por
+sabotagem nos testes dele. **Não medido:** o push do fast-forward contra uma produção no ar.
+
 ## [3.3.7] — 2026-11-05
 
 ### Apelidos de projeto saem do texto

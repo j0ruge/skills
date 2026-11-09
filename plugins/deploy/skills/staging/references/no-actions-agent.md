@@ -26,9 +26,9 @@ gh api repos/<o>/<r>/commits/$(git rev-parse "origin/$TARGET")/statuses \
 | Step | With Actions | With a host agent |
 | --- | --- | --- |
 | 3 — gate | CI run green on the exact sha | the local gate on the PR head (`local/ci` status) is evidence; the **agent** gates the merge commit itself, on the server, before deploying |
-| 4 — sensors | workflow files in the diff move the pipeline in this very push | the agent's own directory in the diff (`git diff origin/$TARGET origin/$SOURCE --name-only -- <agent-dir>/`) moves **nothing** on merge: before merging, prove the host already runs that version (the file on the host, or the tool inside the agent container); if it does not, update and rebuild the agent first, by the runbook |
+| 4 — sensors | workflow files in the diff move the pipeline in this very push | the agent's own directory in the diff (`git diff origin/$TARGET origin/$SOURCE --name-only -- <agent-dir>/`) moves **nothing** on merge. Before merging, ask what the agent on the host fails to give the promoted tree: an environment variable, a secret it forwards, a mount, a tool in its image. Answer it on the host (the file there, or the tool inside the agent container); if anything is missing, update and rebuild the agent first, by the runbook. A change that only turns on behaviour for another environment (a variable only the production agent sets) needs no rebuild for this promotion: say why. Ask it the other way too, even when that directory is not in the diff: a deploy script that now requires a new input refuses to run on an agent that does not provide it, and what provides it can live outside the agent's directory (the `environment:` of the compose copy on the host) |
 | 4 — disk | the build runs on the runner's disk; a self-hosted runner on the environment host needs the same check | the agent builds the images **on the environment host**, and the prune that runs is the one in the **promoted tree** (`git show origin/$SOURCE:<deploy-script>`), not the one on the environment branch. If it prunes only after the build, the build must fit the disk free before the merge. If it also prunes before the build (`cicd` lesson 120), it still frees only the project's own images, and below its floor it refuses **before** the build: a red deploy with nothing changed, fixed by freeing disk and re-requesting the same head (Step 7), not by a new promotion. Either way, before merging read `df -h /` and `docker system df` there. `docker rmi` of an image built on that host frees nothing while the BuildKit cache holds its layers; `docker builder prune -f --filter until=168h` does (`cicd` lesson 118), and `--all` frees nothing more, because it only adds layers that live images still hold (`cicd` lesson 119) |
-| 5 — promote | PR merge commit | the same: the merge on the environment branch **is** the trigger |
+| 5 — promote | PR merge commit | the same for staging: the merge on the environment branch **is** the trigger. A production agent with an ancestry gate refuses the merge commit, and that hop is a fast-forward push (`SKILL.md`, *Promoting to production*) |
 | 6 — watch | `gh run list --branch "$TARGET"` | the commit statuses of the merge commit, or the repo's follow script. Nothing in 2 minutes = the agent is down or cannot authenticate: read its logs on the host |
 | 7 — red | `gh run rerun --failed` | one attempt per (sha, request): a red deploy is **not** retried on its own. Re-request through the repo's request command, and only for the **head** — the agent never reads an older sha |
 | 7 — proof | the same | the same: `docker ps` image tags, the data, the hostname, then the e2e |
@@ -54,3 +54,13 @@ from `develop` to `staging`: the Step 4 diff over `infra/deployer/` listed `Dock
 it changes nothing on the host, so before the merge the host was probed:
 `docker exec acme-staging-deployer docker buildx version` answered, the rebuild of the day before
 was in place, and the promotion went ahead: gate 15/15 on the host, deploy, then the staging e2e.
+
+**2026-11-09, the check that needed no rebuild.** A promotion was about to carry two changes. One
+was in the agent: an ancestry gate that only the production agent turns on, through a variable the
+staging agent never sets. The other was in the deploy script, which now stops before touching
+Docker when the environment's name is missing. The agent's directory was in the diff, so the
+earlier rule said rebuild first. Reading both sides answered it. The gate stays off while its
+variable is unset, and the host's compose had passed the environment's name to the staging agent
+since before the change (`git show <base>:<compose> | grep <VAR>`, and `git diff <base> HEAD --
+<compose>` empty). No rebuild was needed before that promotion, which had not run yet when this was
+written.

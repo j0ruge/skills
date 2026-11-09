@@ -2,7 +2,7 @@
 name: staging
 description: "Promote code to staging (and on to production) through the repo's real CD pipeline. Reads each workflow's `on.push.branches` and `runs-on` instead of assuming — the wrong branch can deploy production, and a hosted job under a billing block never starts. Waits for CI green on the exact commit, promotes by PR merge commit, watches the run, then proves the deploy by the data. Triggers — deploy staging, promote to staging, subir para staging, CD pipeline, cd-staging, promover para produção."
 metadata:
-  version: 3.3.7
+  version: 3.4.0
 ---
 
 ## Deploy to Staging
@@ -168,7 +168,7 @@ git diff origin/$TARGET origin/$SOURCE --name-only -- <migrations-dir>/  # does 
 | more than 1 merge base | criss-cross, typically a hotfix straight to production that was merged back; GitHub marks the PR `CONFLICTING` while `merge-tree` is clean | the same back-merge, even with nothing to reconcile; confirm the tree did not change |
 | a long backlog | the next deploy is not incremental | say the number; have the rollback target ready **before** pushing (tag the serving image `pre-<version>` when the pipeline only publishes a mobile tag) |
 | workflow files change | a staging change runs in this very push; a production change waits for the next production promotion | say which case you are in |
-| the host agent's files change | the agent's image and scripts on the host do not change with the merge, unlike the gate and deploy scripts it reads from the sha | before merging, prove the host already runs that version; if not, rebuild the agent first. Read `references/no-actions-agent.md` |
+| the host agent's files change | the agent's image and scripts on the host do not change with the merge, unlike the gate and deploy scripts it reads from the sha | before merging, ask what the agent on the host fails to give the promoted tree: a variable, a secret it forwards, a mount, a tool in its image. If anything, rebuild the agent first; a change that only turns on behaviour for another environment needs no rebuild here, and you say why. Read `references/no-actions-agent.md` |
 | a migration adds a CHECK, NOT NULL, UNIQUE or FK | `migrate deploy` runs before the app, on rows no test ever saw; one violating row aborts it and stops the whole deploy | before merging, probe the environment's DB with **the new constraint's own expression** (`count(*) WHERE NOT (<expr>)`) in a `READ ONLY` transaction; every count must be 0. Read `references/promotion-sensors.md` |
 
 Reconciliation also makes **the target's debt your gate**, and a PR fully matched by `paths-ignore`
@@ -194,6 +194,9 @@ actually identical.
 If the repo's convention is a direct push instead of a PR, follow the
 convention — check how previous promotions were made (`git log --merges
 origin/$TARGET -5`) rather than imposing one.
+
+**Production behind an ancestry gate is the exception:** its agent refuses a merge commit, so
+that hop is a fast-forward push (see *Promoting to production*).
 
 Whatever the mechanism: **push only `$TARGET`.** Do not "sync" the production
 branch as a side effect. If the user wants production, that is a separate,
@@ -255,20 +258,42 @@ above holds. Do not exit silently on failure.
 
 Same procedure, one step further along the chain: `SOURCE` becomes the staging
 branch, `TARGET` becomes the branch whose push triggers the production workflow.
-Three differences that matter:
+Four differences that matter:
 
 - **Ask first.** Staging is reversible in practice; production is visible to
   real users. Confirm explicitly, even if the user asked for "deploy" in general
   terms earlier in the conversation.
+- **The production hop may have to be a fast-forward, not a PR.** Without branch
+  protection, a production agent can deploy only a sha already in the staging
+  branch's history: it asks `compare/<staging>...<sha>` and refuses `ahead` or
+  `diverged` (`cicd` lesson 126). No PR merge method leaves the production head on
+  such a sha: merge adds a `--no-ff` merge commit, squash makes a single new commit,
+  and rebase "creates new commit SHAs" (GitHub docs, *About merge methods on
+  GitHub*, read 2026-11-09). Look for the gate before choosing: an ancestor
+  variable or a `compare` call in the agent, or the runbook. If it is there, push
+  the staging sha. Without `--force`, git rejects a push that is not a
+  fast-forward (`man git-push`):
+
+  ```bash
+  gh api repos/<o>/<r>/compare/<staging>...<prod> --jq .status   # behind or identical
+  git push origin <staging-sha>:refs/heads/<prod>
+  ```
+
+  A PR merged into production anyway leaves it `ahead` of staging, and `diverged`
+  once staging moves on: the agent refuses every head after it, and no
+  fast-forward exists until someone decides how the branch returns to the staging
+  line. The refusal is proved by sabotage in the agent's
+  tests; on 2026-11-09 the push itself had not yet run against a live production.
 - **Workflow changes cross over here.** Edits to `cd-production.yml` that rode
-  along in an earlier promotion are inert until this merge — the production
+  along in an earlier promotion are inert until this promotion — the production
   pipeline that runs is the one in the commit you are pushing now.
-- **Dump the production database before the merge, and verify it.** An image
+- **Dump the production database before the merge or the push, and verify it.** An image
   rollback target does not undo a migration. Take `pg_dump -Fc` (or the engine's
   equivalent) inside the production DB container, then confirm the expected
   tables are in it with `pg_restore --list`. Copy it off the host and check the
-  sha256 matches on both copies. Put the path and hash in the PR body. If there
-  is no verified dump, the merge does not happen. In one 0.9.0 promotion
+  sha256 matches on both copies. Put the path and hash in the PR body, or in the
+  promotion record when the hop is a push. If there
+  is no verified dump, the promotion does not happen. In one 0.9.0 promotion
   carrying 11 migrations, the user had to ask for this mid-flow, because the
   procedure only implied it.
 
