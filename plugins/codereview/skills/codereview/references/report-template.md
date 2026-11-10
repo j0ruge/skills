@@ -144,6 +144,15 @@ full review, reported none of the 4 `TS2305` errors in three new tests (`screen`
 not in the types of `@testing-library/react` 9.5); `tsc --noEmit -p .` printed them, the build and
 jest stayed green, and the fix took the count to 0.
 
+When no `tsconfig` covers the tests (a test folder outside every `include`, run by vitest or tsx,
+which strip types), pass the changed test files to `tsc` with `--strict` and the module settings
+they run under, not a sibling's `tsconfig`: a sibling's options raise errors of their own. Keep only
+the errors on added lines; the rest are pre-existing. Measured 2026-11-09 (vitest over
+`infra/__tests__/`): with the options of the `tsconfig` that covers the repo's scripts folder, 23
+errors, all from those options (TS1470 and `noUncheckedIndexedAccess`); with
+`npx tsc --noEmit --strict --target ESNext --module ESNext --moduleResolution Bundler
+--allowImportingTsExtensions --types node <files>`, rc 0.
+
 | Production File | Test Status | Test File | Notes |
 |----------------|------------|-----------|-------|
 | src/components/Quote.tsx | WITH_TESTS | src/test/Quote.test.tsx | Updated in this branch |

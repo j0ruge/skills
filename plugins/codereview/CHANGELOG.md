@@ -2,6 +2,20 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.35] — 2026-11-09
+
+### Cinco lições da série de oito rodadas de uma branch de infra: o mutante filtrado, o typecheck dos testes sem tsconfig, o bloco de shell do doc e a medição lida no sha em que rodou
+
+Todas em `references/`, porque o `SKILL.md` está com 19.998 chars, colado no teto. Ele só troca a versão. Vieram das rodadas 1 a 8 do `/codereview` na branch da produção de um monorepo TypeScript (2026-11-09).
+
+- **`configuration.md`, *Re-review rounds*: um mutante rodado com filtro de nome não sobreviveu.** O `-t`, o `-k` e o `--filter` tiram da corrida o caso que o mataria. Um `/59` no lugar do `/60` da idade em minutos de um gate de backup sobreviveu com `-t "backup ok"`, e morreu sem o filtro, com um caso de 1 h no arquivo. Abaixo de 59 minutos, as duas divisões dão o mesmo número.
+- **`report-template.md`, o typecheck dos testes: quando nenhum `tsconfig` cobre os testes.** Passe os arquivos alterados ao `tsc` com `--strict` e o módulo em que rodam, e não com o `tsconfig` de uma pasta vizinha, e guarde só os erros das linhas adicionadas. Com as opções do `tsconfig` da pasta de scripts do repositório, foram 23 erros só das opções (TS1470 e `noUncheckedIndexedAccess`). Com `--strict`, ESNext e Bundler, rc 0.
+- **`configuration.md`, *Code inside docs*: um bloco de shell que alguém cola se prova rodando o próprio bloco, em cada shell em que roda.** O bloco sai do doc, e não de uma cópia redigitada. Só a escrita vira dry-run, e roda um caso por conferência. Um "Medido" sobre um bloco com várias guardas só cobre as guardas que algum caso exercitou. No zsh 5.9, as letras `a A c e h l q Q r s t u f g` depois de `$VAR:` são modificadores, e `"$S:refs/heads/main"` chega ao git como `<sha>efs/heads/main`. No bash 5.2.21, a linha fica literal (medido nos dois shells). Na rodada 1, nenhum agente marcou o bloco do fast-forward de um runbook de produção, e quem achou o defeito foi a medição.
+- **`per-file-agent.md`, a linha do DOCS:** o agente de DOCS marca o `"$VAR:<letra>"` num bloco de shell cercado, com `"${VAR}:…"` como conserto. É MEDIUM quando a linha escreve, e LOW nos outros casos.
+- **`configuration.md`, *Docs this session wrote*: uma medição prova o código do sha em que rodou.** Uma docstring nova dizia que cada `ok` de uma corrida no IdP de dev tinha passado pelo `deuCerto`, que hoje exige um objeto JSON. No `6f16d75`, o commit que registrou a corrida, o `deuCerto` só lia o status. O agente de DOCS lê a afirmação contra o `HEAD`, então a leitura no sha da medição cabe ao orquestrador.
+
+Dívida pré-existente: nenhum ERRO ou AVISO no baseline da auditoria (`--claims --desc-budget 0`).
+
 ## [2.27.34] — 2026-11-09
 
 ### A senha de uma connection string que é só uma variável interpolada não é credencial

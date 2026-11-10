@@ -323,6 +323,14 @@ phase, and step 7 checks the doc against the diff, not against code the range le
   path started it in `perguntar`, before it; on the total time, the PR's headline went from −39% to
   −27%. A derived difference (total − partial) did not isolate the offset in round 2: it also
   carries the rest of the answer.
+- **A measurement proves the code at the sha it ran on.** A "Medido" that vouches for a guard of
+  today's code holds only if that guard was the same at the measurement's sha. Read it there
+  (`git show <sha>:<file>`), pass that output as the evidence, and write the claim for what the old
+  code checked. The DOCS agent reads the claim against `HEAD`, so this one is the orchestrator's.
+  Measured 2026-11-09 (an IdP account script, the fix of a round's LOWs): a new docstring said every
+  `ok` of a run against the dev IdP had passed through `deuCerto`, which now requires a JSON object;
+  at `6f16d75`, the commit that recorded the run, `deuCerto` read only the status, so the run proved
+  nothing about JSON. Caught before the commit, by reading the guard at that sha.
 - **An agent's number that contradicts the doc is recomputed before it keeps its severity.** The
   agent reads the saved outputs by eye, so its range, count or ratio is a claim like the doc's.
   Recompute it from the same files, save that output beside the evidence, and only then edit the
@@ -476,6 +484,17 @@ launches no agent, and the report grades code nobody read.
   outside its range comes back as a gap. Measured 2026-10-20: the agent of lines 354–645 of a plan
   reported the docstring rule missing in I3 and I4, which § Contexto, lines 105–106, already set
   for every new file.
+- **A shell block a person pastes is proved by running that block, in each shell it runs in.**
+  Extract it from the doc, not from a retyped copy; swap only its write for a dry run
+  (`git push --dry-run`); and run one case per check it makes, with a stub on the `PATH` for a call
+  only the target host answers. A "Medido" over a block with several guards covers only the guards
+  a case exercised. zsh reads a letter after `$VAR:` as a modifier: in zsh 5.9, `a A c e h l q Q r
+  s t u f g` all are, so `"$S:refs/heads/main"` reaches git as `<sha>efs/heads/main`, while bash
+  5.2.21 keeps it literal. Brace the name: `"${S}:refs/heads/main"`. Measured 2026-11-09 (a
+  production runbook): round 1's agents did not flag the `"$S:refs/heads/main"` of a fast-forward
+  block; the block extracted from the doc, run under zsh with `--dry-run`, sent git a refspec without
+  the `:`, and with `${S}` its four cases (one per check, two with a stubbed `gh`) passed in both
+  shells.
 - Measured 2026-10-13 (`j0ruge/sdd_agents` PR #247, codereview 2.14.1): a 10-file docs-only diff
   classified 0 CODE; the 1184-line plan, split into two ranges (`1–505`, `506–632 + 973–1184`),
   gave two sonnet agents with findings, one of them a confirmed MEDIUM.
@@ -591,6 +610,12 @@ These decide whether the rounds converge:
   tests red. Assert "once" and "changes" before writing: a later round's fix moves or repeats the
   anchor (measured 2026-10-18: `except FileNotFoundError:` appeared twice after one, and the assert
   stopped the run before any file was touched).
+- **A mutant run under a name filter is not a survivor.** `vitest -t`, `pytest -k` and `--filter`
+  run only the cases whose names match, and the case that kills the mutant may be outside them. Run
+  the whole related test file, with a case at the boundary the mutant moves. Measured 2026-11-09 (a
+  shell backup gate, vitest): a `/59` in place of `/60` in the age in minutes survived under
+  `-t "backup ok"`, and died without the filter once a case at 1 h was in the file; below 59 minutes
+  the two divisions give the same number.
 - **Ask the fixer for the smallest change that closes the finding.** A new mechanism is new surface
   for the next round. Measured 2026-10-05, twelve rounds over ~670 lines: 8, 16, 13, 15, 9, 4, 5, 2,
   4, 4, 1, 0 findings; the atomic write one round asked for brought 4 of the next round's 15. With
