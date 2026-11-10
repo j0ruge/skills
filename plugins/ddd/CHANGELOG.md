@@ -2,6 +2,19 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [0.6.0] — 2026-11-10
+
+### Revisão de linguagem em artefato sem código
+
+O Modo 1 ganha a subseção "Revisão de linguagem em artefato sem código", e a lista de entradas aponta para ela.
+
+Lição de uma sessão real: a skill foi chamada para validar uma missão sem código de produto (um manual de
+usuário e um deck de treinamento) contra o glossário do projeto. Nenhum dos quatro modos casava, nenhuma
+reference foi carregada, e a revisão saiu à mão. Ela achou divergência real: o plano dizia "enviar" onde a
+interface e o glossário dizem "Submeter", e a página publicada usava o nome de um estado para outro ponto do
+fluxo. O princípio já estava em `strategic-design.md` e em `refactoring-and-insights.md` §4.1; faltavam a rota
+e os passos. A `description` não muda.
+
 ## [0.5.4] — 2026-11-05
 
 ### Apelidos de projeto saem do texto

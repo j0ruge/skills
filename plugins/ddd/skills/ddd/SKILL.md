@@ -1,7 +1,7 @@
 ---
 name: ddd
 metadata:
-  version: 0.5.4
+  version: 0.6.0
 description: Domain-Driven Design toolkit — analyzes codebases for DDD violations, guides strategic design (event storming, context mapping), generates legacy→DDD migration specs. Language-agnostic. Synthesizes Evans + Vernon + modular-monolith practice. Triggers — DDD, bounded context, aggregate, event storming, hexagonal, legacy migration, architecture review.
 ---
 
@@ -25,6 +25,7 @@ Considere o argumento antes de prosseguir. Entradas válidas incluem (mas não s
 - `spec [projeto]` → gerar spec de conversão para DDD
 - `explain [conceito]` → ensinar/esclarecer conceito DDD (ex.: "explain aggregate", "explain bounded context")
 - `review [path]` → revisão de código com heurísticas DDD — de um codebase, ou do diff de uma tarefa/PR (ver "Review de diff" no Modo 1)
+- `review` de um plano, manual, deck ou outro texto sem código → ver "Revisão de linguagem em artefato sem código" no Modo 1
 
 ---
 
@@ -70,6 +71,22 @@ Ao receber a solicitação, identifique **qual dos 4 modos** se aplica (pode ser
 - **Foco:** seções 1-6 de `references/code-review-heuristics.md` (ver "Heurísticas sobre granularidade" lá). Carregue outra reference só se o diff tocar o tema dela.
 - **Perguntas sobre a mudança:** criou transação que modifica mais de um agregado? Regra nova caiu no application service em vez do agregado? Evento ou payload novo/mudado (e quem consome)? Import novo entre módulos/bounded contexts?
 - **Saída curta:** resumo de 2-3 linhas, achados com severidade e evidência `arquivo:linha`, e o que está bom — não o relatório completo do template abaixo.
+
+#### Revisão de linguagem em artefato sem código
+
+**Quando:** o alvo é prosa (plano de missão, manual de usuário, deck de treinamento, página de base de conhecimento) e o diff de código é vazio. As heurísticas táticas não se aplicam, mas a linguagem ubíqua vale também na documentação (`references/strategic-design.md` § Ubiquitous Language; `references/refactoring-and-insights.md` §4.1). "Não há código" não encerra a revisão.
+
+**Carregue só** essas duas seções. Sem fan-out.
+
+1. **Colha os termos** do artefato: substantivos do domínio, verbos de ação e nomes de estado.
+2. **Cruze com duas fontes do projeto:** o glossário versionado e os rótulos que a interface mostra (dicionário de i18n, enums de estado). Leia as duas no arquivo, não de memória.
+3. **Liste três tipos de achado**, com a linha do artefato e a linha da fonte:
+   - **sinônimo:** o texto diz "enviar" e a interface diz "Submeter";
+   - **termo que mudou de sentido:** o nome continua válido, mas hoje designa outro estado do fluxo, e por isso passa em qualquer conferência de vocabulário;
+   - **termo com dois sentidos:** o cargo na empresa e o papel no sistema com o mesmo nome.
+4. **Saída curta:** tabela de achados com severidade e o ajuste de cada um, mais o que está bom. Se a divergência puder voltar, proponha um sensor: um teste que reprova rótulo citado fora do dicionário.
+
+Plano ou handoff escrito por agente também é artefato: o sinônimo costuma nascer ali e ser copiado para o texto final.
 
 ### Modo 2 — Strategic Design (workshops, descoberta, context map)
 
