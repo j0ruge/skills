@@ -1,5 +1,34 @@
 # Changelog — zitadel-idp
 
+## [0.23.0] — 2026-11-10
+
+### Added
+
+- **Quirk 59: o "Add Human User" do Console, com senha inicial, não oferece exigir a troca, e a conta nasce com
+  `passwordChangeRequired: false`** (`references/quirks.md`; linha 59 no índice do `SKILL.md`; ponteiro na tabela de
+  provisionamento). A opção de senha inicial só mostra Senha e Confirmar Senha. A pessoa fica, para sempre, com uma
+  senha que o administrador escolheu e conhece, ao contrário do caminho da API com `password.changeRequired: true`.
+  O Console manda a criação por Connect binário, então a captura da requisição não mostra o campo: lê-se a conta
+  depois. Medido em 2026-11-10 na v4.15.0: no dev, numa conta descartável apagada depois, o `GET /v2/users/{id}`
+  veio sem `passwordChangeRequired`; na produção, uma conta criada à mão no mesmo dia tinha
+  `password_change_required = f` na projeção. Forçar a troca depois numa conta assim não foi medido.
+
+### Changed
+
+- **Quirk 53: o idioma não definido aparece como `und` na API v2 e NULL na projeção**, a mesma tag raiz que o claim
+  emite como `null`. A lição veio de um erro desta sessão: lido como idioma real, o `und` de três contas de produção
+  levou à conclusão de que a SPA as mostraria em inglês, e a projeção e o `spa-recipes.md` desfizeram isso.
+- **`api-cheatsheet.md`, "Provision real accounts by script", passo 1:** o `IAM_OWNER` da conta de serviço, que
+  estava "não medido", foi dado pelo Console (página de administradores da instância,
+  `/ui/console/instance/members`) e provado em produção: a sondagem de orgs viu 2, o lote criou 4 contas e somou
+  papel a outras 2. A página só abre para membro da instância, e no dev quem não é caiu no início do Console, sem
+  erro. Quem tem papel de instância se lê sem PAT na `projections.instance_members4`. No fim do lote, desativar em
+  vez de apagar: o PAT da própria conta respondeu `200` ao `POST /v2/users/{id}/deactivate`, e `401` na chamada
+  seguinte; a projeção passou ao estado `2`, e a conta segue membro da instância, inativa.
+
+Gate da auditoria: nenhum `NOVO`. Os INFO de antes (D1, F4) seguem iguais. O smoke do Codex
+(`docs/codex/smokes.json`) segue na 0.20.0, atrás desde antes desta versão.
+
 ## [0.22.0] — 2026-11-10
 
 ### Added
