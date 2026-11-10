@@ -1,5 +1,47 @@
 # Changelog — zitadel-idp
 
+## [0.22.0] — 2026-11-10
+
+### Added
+
+- **O audience e a org dona do projeto, lidos sem PAT** (`references/troubleshooting.md`, §"The bootstrap logs
+  `reuse` for everything", parágrafo "The audience and the org that owns the project"; ponteiro na Quirk 47 e na
+  linha "no PAT needed" da tabela do `SKILL.md`). O `projectId` é o audience (Quirks 13 e 47) e o `resource_owner` é
+  a org que um script de contas precisa (Quirk 55). Os dois são colunas da `projections.projects4`, e num ambiente
+  novo ninguém ainda tem PAT para a API. Medido em 2026-11-10 em duas instâncias v4.15.0, com a comparação feita só
+  por veredito, sem imprimir valor. No staging, o `AUTH_AUDIENCE` de um backend com login funcionando era o `id` do
+  projeto. Na produção, o audience de outro app, com logins reais, também era. O padrão que isso evita: o audience
+  de produção ficar "a medir" até alguém conseguir um PAT.
+
+### Fixed
+
+- **Quirk 7: o `orgId` só é numérico quando o Zitadel o gera** (`references/quirks.md`, Gotcha 7 do `SKILL.md` e a
+  definição em `references/tenant-org-mapping.md`). A Quirk dizia "numeric like `100000000000000001`". Uma org ou um
+  projeto criados por v2 com id determinístico (Quirk 26) ficam com o id que o bootstrap declarou. Medido em
+  2026-11-10: na produção (`projections.projects4`) e no dev (`bootstrap.json`), a org e o projeto têm forma de
+  UUIDv7 (`019dfeb2-…`), e o `clientId` segue numérico (Quirk 29). O padrão que isso evita: uma validação de org id
+  como número, copiada da skill, reprovar um id legítimo. Os exemplos que só contrastam o `orgId` com o `tenantId`
+  ficaram como estavam.
+- **O PAT do FirstInstance fica legível por todo usuário do host** (`references/docker-compose-bootstrap.md`, §2, e
+  uma frase na Quirk 2). O `admin.pat` é o PAT `IAM_OWNER`. Medido em 2026-11-10, num dev v4.15.0, com `stat`: o
+  arquivo é `0644`, do uid `1000` (o processo do container), com `ctime` igual ao `mtime` do FirstInstance, ou seja,
+  sem `chmod` depois; e o diretório é `0777`, do conserto do próprio §2. A mitigação (`chmod 600` e `chown` sem o
+  `0777`) entra marcada como **não verificada**, com o custo dela: o script do host que lê o PAT como outro usuário
+  deixa de lê-lo. O `0777` do passo de CI (Quirk 38) não mudou: lá o runner é efêmero e de um usuário só, e esse caso
+  não foi medido.
+
+### Notas
+
+- **Gates:** a auditoria da `skill-quality-audit` dá 0 erros e 0 avisos antes e depois, e o `audit_gate.py` não
+  acusa `NOVO` nem `SUMIU`. O `validate-versions.py` passa (o único aviso é do `ticket`), e o
+  `check_release_sync.py` confere a versão nos quatro lugares e a description em 487 caracteres.
+- **Dívida pré-existente que este retrofit não toca:**
+  - o smoke Codex em `docs/codex/smokes.json` segue na 0.20.0;
+  - o `README.md` segue com "50 gotchas" e "54 documented quirks";
+  - os 3 FAILs do `test_codex_distribution` (`bwrap: setting up uid map: Permission denied`) repetem no base
+    `c3087b1`, medido com `unittest discover -s tests -p 'test_codex_distribution.py'`, e os outros 77 testes passam.
+- **Como reverter:** `git revert` do commit que traz esta entrada.
+
 ## [0.21.0] — 2026-11-09
 
 ### Added

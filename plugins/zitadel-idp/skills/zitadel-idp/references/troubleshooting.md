@@ -982,6 +982,15 @@ Three choices in that query are not cosmetic:
 
 Compare against these projections, never against a report rendered from the YAML catalog: such a report prints a column for every **declared** role, whether the instance has it or not. Measured 2026-10-05 on a v4.15.0 production instance: the generated matrix showed a `quote.consultor` column, and `project_roles4` had no such role — the bootstrap that would create it had never reached that environment.
 
+**The audience and the org that owns the project, same path.** The backend's audience is the `projectId` (Quirks 13 and 47), and a script that provisions accounts needs the org that owns the project (Quirk 55). The API answer needs a PAT again; on a new environment nobody has one yet. Both are columns of the projects projection, whose suffix you discover like the tables above (`projects4` in v4.15.0):
+
+```bash
+docker exec -i <postgres-idp-ctr> psql -U zitadel -d zitadel -Atc \
+  "select id, name, resource_owner from projections.projects4 where name = '<project>';"
+```
+
+`id` is the audience and `resource_owner` is the owning org. Check a configured audience against it by verdict, never by printing it: both values into shell variables on the same host, and only `equal` or `different` on the output. Measured 2026-11-10 on two v4.15.0 instances, staging and production. On staging, the `AUTH_AUDIENCE` of a backend whose logins worked was the `projects4.id` of its project. In production, another app with real logins had that project's `id` as its audience. So the row is the audience a new environment needs, read before anyone holds a PAT. In production, the `id` and the `resource_owner` were both UUIDv7-shaped (`019dfeb2-…`), not numeric (Quirk 7).
+
 ⚠️ **Do not run this through a templating layer that eats `{{ }}`** (Ansible's `shell` module does, and `docker ps --format '{{.Names}}'` blows up there) — put the SQL in a file, or wrap it in `{% raw %}`.
 
 **Then fix the gate, not just the instance**: a deploy whose product is *state* needs an assertion about that state. The cheapest one is derived from the declaration you already have — every `roles[].key` in the YAML must appear in the bootstrap's own output as `created` or `reuse`. That catches the stale-input case too, which a query against the instance does not (a stale run and a correct run leave the same instance once someone fixes it by hand).

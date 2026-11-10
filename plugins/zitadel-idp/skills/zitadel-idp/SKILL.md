@@ -1,7 +1,7 @@
 ---
 name: zitadel-idp
 metadata:
-  version: 0.21.0
+  version: 0.22.0
 description: "Self-hosted Zitadel v4 OIDC field guide — a numbered quirk catalogue, working docker-compose and an idempotent TypeScript bootstrap. High-friction traps: FirstInstance env placement, JWT/JWKS over self-signed HTTPS, `--tlsMode external` and the console's mixed-content `Failed to fetch`, v2.66→v4, API v1→v2, silent-renew, 401 storms, UI language from the `locale` claim. Triggers — zitadel, oidc self-hosted, JWKS, masterkey, v2.66→v4, tlsMode external, pre-cutover check, locale claim."
 ---
 
@@ -48,7 +48,7 @@ If you are merely calling a pre-existing Zitadel deployment from your code, you 
 | When running a role rename/migration across environments (declare-first, the grant tool, per-environment state) | `references/role-migration.md` |
 | When a Gotchas line below matches and you need its symptom, cause, fix and evidence | `references/quirks.md` |
 | When you hit a confusing error and want a quick lookup | `references/troubleshooting.md` |
-| When proving a bootstrap actually wrote what the YAML declares, or reading who holds which role, with each account's e-mail (no PAT needed) | `references/troubleshooting.md` §"The bootstrap logs `reuse` for everything" |
+| When proving a bootstrap actually wrote what the YAML declares, or reading who holds which role, with each account's e-mail, or the `projectId` and the org that owns it (no PAT needed) | `references/troubleshooting.md` §"The bootstrap logs `reuse` for everything" |
 | When one account loops back to the login screen while others log in fine | `references/troubleshooting.md` §"One account loops back…" |
 | When creating a test/seed user and proving its password works, with no browser | `references/api-cheatsheet.md` §"Seed an admin user" + §"Prove a user's password without a browser" |
 | When provisioning real people's accounts by script — which PAT, the password policy, proving the password without locking anyone out | `references/api-cheatsheet.md` §"Provision real accounts by script" + Quirks 57 and 58 |
@@ -65,7 +65,7 @@ These bite first-time Zitadel integrators consistently. One line per quirk; the 
 4. `/admin/v1/orgs/_setup` needs a human admin; create the org with v2 `AddOrganization`.
 5. Human-user payload differs by API family: v1 `userName` + `firstName`/`lastName`, v2 `username` + `givenName`/`familyName`; v4 also rejects `clockSkew > 5s`.
 6. A user created without `initialPassword` stays `initial`, and `_deactivate` fails with `COMMAND-ke0fw`.
-7. Domain `tenantId` ≠ numeric `orgId`; Management calls need the number in `x-zitadel-orgid`.
+7. Domain `tenantId` ≠ `orgId` (numeric only when Zitadel mints it, Quirk 26); Management calls need it in `x-zitadel-orgid`.
 8. Grants search is the global `/management/v1/users/grants/_search`; the per-user path answers `405`.
 9. `loginV2.required=true` is the default from v3 on; without the Login UI v2 container the authorize flow hits `{"code":5,"message":"Not Found"}`.
 10. `/silent-renew` must be in the app's `redirectUris`, or every `prompt=none` returns `400` and the SPA loops.

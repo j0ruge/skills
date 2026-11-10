@@ -84,6 +84,13 @@ docker compose -f docker-compose.zitadel.yml up -d
 
 `down -v` is required: a partial setup leaves orphan events in the Postgres volume. The next attempt fails with `Errors.Instance.Domain.AlreadyExists` (SQL duplicate key) because it tries to insert an instance that's half-there. There is no recoverable state — wipe the DB volume.
 
+⚠️ **The PAT that lands in this directory is readable by every user on the host.** `admin.pat` is the `Org.Machine` PAT, which means `IAM_OWNER` (§1). Measured 2026-11-10 on a v4.15.0 dev instance with `stat`:
+- the file is `0644`, owned by uid `1000`, the container's process;
+- its `ctime` equals its `mtime`, the moment of FirstInstance, so nobody ran `chmod` on it afterwards. A umask only removes bits, so the `0644` is what Zitadel asked for;
+- the directory is `0777`, from the fix above.
+
+On a workstation shared by several people, anyone can read that token. A tighter setup is `chmod 600` on the file after the first boot, and the `chown` without the `chmod 0777`. **That mitigation is not verified.** It also has a known cost: a host script that reads `admin.pat` as another user, such as a bootstrap run by your own login, then needs to run as uid `1000` or through `sudo`.
+
 The image is **distroless** — no shell, no `ls`, no `cat`. Use a sidecar Alpine container for any volume inspection: `docker run --rm -v <volume>:/x alpine ls -la /x`.
 
 ## §3. External domain, Host header, and sslip.io
