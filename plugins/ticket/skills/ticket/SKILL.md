@@ -4,7 +4,7 @@ description: "Jira ticket lifecycle, integrated with Git — create issues/sub-i
 argument-hint: "start (open) | split | close | status"
 compatibility: "Claude Code: o argument-hint acima é campo dele e só é lido no topo. Requer acli e credenciais Jira (JIRA_EMAIL, JIRA_API_TOKEN)."
 metadata:
-  version: 1.14.5
+  version: 1.14.6
 ---
 
 # Skill: Ticket — Gestão de Tickets Jira
@@ -104,8 +104,8 @@ Analise o argumento passado pelo usuário e execute o comando correspondente:
    `acli jira board list-sprints --id $BOARD --state active --json`, a de `"state": "active"`
    **mesmo com `endDate` no passado**; gravar com
    `mcp__atlassian__editJiraIssue(issueIdOrKey: "${PROJECT}-XXX", fields: { "customfield_10020": SPRINT_ID })`
-   (**número puro**, `405`). Issue existente só tem esse caminho: o `acli` não escreve custom fields
-   no `edit` — sem MCP, diga isso ao dev. Se ele recusar, registrar que optou por pular.
+   (**número puro**, `405`). Sem MCP, o `PUT /rest/api/3/issue/<KEY>` grava (`campos.md`); o `acli`
+   não escreve custom fields no `edit`. Se ele recusar, registrar que optou por pular.
 5. **Sem score** → **proponha um número** com justificativa de uma linha (escopo, arquivos, migração,
    teste novo) e deixe o dev confirmar — pedir do nada deixa o campo vazio. Gravar com
    `editJiraIssue(..., fields: { "customfield_10016": N })`.
@@ -279,7 +279,7 @@ sempre a releitura do campo pelo REST.
 | O `acli` imprime `✗ Failure: …` e **sai 0** | `&&` e `$?` são decorativos; `workitem search` sem match não imprime **nada** (nem "0 results"). Releia o campo. |
 | JQL logo depois de criar (`sprint in openSprints()`) | **Lag de indexação**: volta vazia por segundos com o campo gravado (medido). `sprint list-workitems` pagina (~30 itens) e perde o cartão novo. Desempate: `references/campos.md §Conferir que gravou`, quando a JQL divergir do `GET`. |
 | `--assignee` com o e-mail | O `userEmail` da sessão não é necessariamente a conta Jira; o erro (`✗ Failure: ... can't be edited: unexpected error, trace id: …`) não nomeia a causa. Use `@me`. |
-| `json: unknown field "additionalAttributes"` no `edit` | O `acli` aceita a chave **só no `create`**; issue existente → MCP `editJiraIssue` (v1.3.22). |
+| `json: unknown field "additionalAttributes"` no `edit` | O `acli` aceita a chave **só no `create`**; issue existente → `PUT` REST ou MCP (v1.3.22). |
 | `body:` no `addCommentToJiraIssue` | O servidor valida **depois** de receber o corpo: `MCP error -32602: ... Required at commentBody` custa reenviar o resumo inteiro (medido em 18/09/2026). |
 | `acli jira workitem comment --key …` | `comment` é grupo (`create`/`list`/`update`/`delete`/`visibility`); dá `✗ Error: unknown flag: --key`. Use `comment create`. |
 | `acli comment list --json` como sensor | Achata o ADF para texto puro: comentário perfeito aparece como string crua (medido em 11/09/2026). Confira pelo REST (`references/close.md` step 5). |

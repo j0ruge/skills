@@ -13,7 +13,7 @@
   - [Descobrir os IDs dos campos](#descobrir-os-ids-dos-campos-não-confie-nos-números)
   - [Descobrir a sprint ativa](#descobrir-a-sprint-ativa) · [Quando não aparece sprint ativa](#quando-não-aparece-sprint-ativa)
   - [Issue nova — `create --from-json`](#issue-nova--create---from-json-não-precisa-de-mcp)
-  - [Issue existente — MCP `editJiraIssue`](#issue-existente--mcp-editjiraissue)
+  - [Issue existente — REST `PUT` ou MCP `editJiraIssue`](#issue-existente--rest-put-ou-mcp-editjiraissue)
 - [fixVersion (rótulo de release)](#fixversion-rótulo-de-release)
   - [Criar a issue numa chamada só (REST)](#criar-a-issue-numa-chamada-só-rest)
   - [Os dois ids que o `POST /issue` exige](#os-dois-ids-que-o-post-issue-exige-e-de-onde-vêm)
@@ -31,7 +31,7 @@ confiabilidade, não por elegância.
 | Situação | Caminho | Precisa de MCP? |
 |---|---|---|
 | Issue **nova** | `acli jira workitem create --from-json` com `additionalAttributes` | ❌ não |
-| Issue **existente** | `mcp__atlassian__editJiraIssue` | ✅ sim |
+| Issue **existente** | `PUT /rest/api/3/issue/<KEY>` (os campos numa chamada) ou `mcp__atlassian__editJiraIssue` | ❌ não |
 | Conferir o que gravou | `GET /issue/<KEY>?fields=…` (imediato; a JQL tem lag — ver §Conferir que gravou) | ❌ não |
 
 ### Descobrir os IDs dos campos (não confie nos números)
@@ -118,7 +118,22 @@ acli jira workitem create --from-json /tmp/nova-issue.json
 - `description` é **ADF**, não markdown — o `--from-json` não converte.
 - Omitir a chave quando o dev não informou o valor (não mandar `null`).
 
-### Issue existente — MCP `editJiraIssue`
+### Issue existente — REST `PUT` ou MCP `editJiraIssue`
+
+O REST grava sprint, score e `fixVersions` numa chamada, sem MCP. Medido em 10/11/2026: o `PUT` abaixo, com
+os três campos, respondeu `204`, e o `GET` de §Conferir que gravou leu a sprint ativa, os pontos e a versão.
+A sprint vai como **id em número puro**, como na criação; omita o campo que o dev não informou.
+
+```bash
+set -a; . ~/.hermes/.env; set +a
+curl -s -o /dev/null -w 'PUT %{http_code}\n' -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -X PUT \
+  -H 'Content-Type: application/json' \
+  -d '{"fields":{"customfield_10020":405,"customfield_10016":8,"fixVersions":[{"id":"<VERSION_ID>"}]}}' \
+  "$JIRA_BASE_URL/rest/api/3/issue/${PROJECT}-XXX"
+```
+
+O `204` diz que a requisição foi aceita, não o que ficou gravado: releia sempre. Com o MCP autenticado,
+o caminho equivalente é:
 
 ```text
 mcp__atlassian__editJiraIssue(issueIdOrKey: "${PROJECT}-XXX", fields: { "customfield_10020": 405 })
@@ -129,9 +144,9 @@ mcp__atlassian__editJiraIssue(issueIdOrKey: "${PROJECT}-XXX", fields: { "customf
 > `json: unknown field "additionalAttributes"` (v1.3.22). A assimetria é real:
 > `create` aceita custom fields, `edit` não. Também não existe comando de sprint
 > que mova work items (`acli jira sprint` só faz create/update/view/delete/
-> list-workitems). Portanto, para issue já criada **não há caminho sem MCP** —
-> se ele não estiver disponível, diga isso ao dev (ele pode arrastar no board)
-> em vez de seguir como se tivesse dado certo.
+> list-workitems). Portanto, para issue já criada o `acli` **não tem caminho**:
+> use o `PUT` acima, ou o MCP. Até a 1.14.5 esta nota dizia que não havia caminho
+> sem MCP, e o `PUT` de 10/11/2026 provou o contrário.
 
 > **MCP não-autenticado ou sem as tools de escrita?** Numa sessão nova o servidor
 > atlassian pode expor só `authenticate`/`complete_authentication`. Antes de
@@ -148,7 +163,8 @@ mcp__atlassian__editJiraIssue(issueIdOrKey: "${PROJECT}-XXX", fields: { "customf
 > (RFC 9728) que permite ao cliente achar o servidor de autorização sozinho.
 > Depois de corrigir, chame `mcp__atlassian__authenticate` e repasse a URL ao dev.
 > Enquanto isso, transição (`--status "<status-destino>"`) e comentário (ADF via
-> `--body-file`) seguem funcionando pelo `acli`.
+> `--body-file`) seguem funcionando pelo `acli`, e sprint, score e `fixVersion` pelo
+> `PUT` REST (§Issue existente).
 
 ## fixVersion (rótulo de release)
 

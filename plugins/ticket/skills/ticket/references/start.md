@@ -72,10 +72,9 @@
        2. Extrair o `id` (pedir ao dev para escolher se houver mais de uma)
        3. Atribuir via MCP: `mcp__atlassian__editJiraIssue(issueIdOrKey: "${PROJECT}-XXX", fields: { "customfield_10020": SPRINT_ID })`
           — o valor é o **número puro** (`405`), não `{ "id": 405 }`.
-          ⚠️ Para issue **já existente** este é o único caminho automatizado: o
-          `acli` **não escreve custom fields no `edit`** (ver `SKILL.md`
-          §Armadilhas). Se o MCP não estiver disponível, diga isso ao dev em vez de
-          seguir como se tivesse funcionado.
+          Sem MCP, o `PUT /rest/api/3/issue/${PROJECT}-XXX` grava o mesmo campo
+          (`campos.md` §Issue existente). O `acli` **não escreve custom fields no
+          `edit`** (ver `SKILL.md` §Armadilhas).
      - Se não: continuar sem sprint (registrar que o dev optou por pular)
    - Se já tem sprint: mostrar qual é e continuar
 
@@ -89,7 +88,7 @@
        estimativa é o que destrava a pontuação; pedir um número do nada é o
        que faz o campo ficar vazio.
      - Se sim: atribuir via MCP: `mcp__atlassian__editJiraIssue(issueIdOrKey: "${PROJECT}-XXX", fields: { "customfield_10016": N })`
-       (mesma ressalva do passo 4 — `acli edit` não grava este campo)
+       ou pelo `PUT` REST do passo 4 (o `acli edit` não grava este campo)
      - Se não: continuar sem score
    - Se já tem story points: mostrar e continuar
 
@@ -264,8 +263,8 @@
 
    O caminho confiável é `--from-json` com `additionalAttributes`, que aceita
    custom fields **na criação**. Isso é o que impede o cartão de nascer no
-   backlog: criar primeiro e tentar editar depois depende do MCP autenticado, e
-   quando ele não está o cartão fica órfão.
+   backlog: criar primeiro e editar depois é uma escrita a mais, e se ela falhar
+   calada o cartão fica órfão (por isso a releitura do passo 6 do Sub-fluxo A).
 
    ```bash
    cat > /tmp/${PROJECT}-new.json <<'JSON'
@@ -291,8 +290,8 @@
    - `description` aqui é **ADF**, não markdown (o `--from-json` não converte)
    - Capturar a key retornada (ex.: `REP-605` ou `QUO-32`)
    - Se a versão do `acli` não tiver `--from-json`, criar sem custom fields
-     (`create` simples) e gravá-los via `mcp__atlassian__editJiraIssue`,
-     avisando o dev que sprint/score dependem do MCP autenticado
+     (`create` simples) e gravá-los pelo `PUT /rest/api/3/issue/<KEY>` ou pelo
+     `mcp__atlassian__editJiraIssue` (`campos.md` §Issue existente), e reler
 
    **Quando houver fixVersion, prefira o REST — ele faz tudo numa chamada.** O
    `--from-json` do `acli` não escreve `fixVersions`. O comando, os dois ids

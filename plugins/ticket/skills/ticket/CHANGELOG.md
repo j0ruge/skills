@@ -4,6 +4,14 @@ Registro por sessão da skill; o changelog **versionado** é `plugins/ticket/CHA
 (a entrada 1.4.0 de 2026-09-03 resume o que está aqui). Cada entrada registra **o que
 mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-11-10 — a sprint e os pontos de uma issue existente pelo REST (1.14.6)
+
+- Ao abrir um cartão que já existia, a sprint, os pontos e a fixVersion foram gravados num só
+  `PUT /rest/api/3/issue/<KEY>`, sem o MCP, e o `GET` confirmou os três. A skill dizia que
+  issue existente só tinha o caminho do MCP.
+- Lição: o `acli` não escreve custom fields no `edit`, mas o REST escreve; o MCP passa a ser
+  uma das duas saídas, e não a única. A releitura continua sendo o sensor.
+
 ## 2026-10-30 — cartão retroativo, testes do Jest e o `Concluido` do DEF (1.14.0)
 
 - O PR #13 foi mergeado e foi para produção sem cartão. O DEF-176 nasceu

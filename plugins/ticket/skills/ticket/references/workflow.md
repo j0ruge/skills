@@ -158,8 +158,8 @@ curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
 - **`create` escreve custom fields, `edit` não.** `create --from-json` aceita
   `additionalAttributes` (sprint/story points na criação, sem MCP);
   `edit --from-json` rejeita a mesma chave com
-  `json: unknown field "additionalAttributes"`. Issue existente → MCP
-  `editJiraIssue`. Detalhe em `campos.md` §Sprint e Story Points (o SKILL.md
+  `json: unknown field "additionalAttributes"`. Issue existente → `PUT`
+  REST ou MCP `editJiraIssue`. Detalhe em `campos.md` §Sprint e Story Points (o SKILL.md
   roteia essa reference).
 - `--generate-json` (em `create` e `edit`) imprime o template aceito por
   `--from-json` — é a forma de checar quais chaves a sua versão suporta, em vez

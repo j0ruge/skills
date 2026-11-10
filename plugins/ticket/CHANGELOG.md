@@ -1,5 +1,18 @@
 # Changelog — ticket
 
+## [1.14.6] — 2026-11-10
+
+### Issue existente: sprint, score e fixVersion também pelo `PUT` REST
+
+A skill dizia, em quatro lugares, que o MCP `editJiraIssue` era o único caminho automatizado para gravar sprint e
+story points numa issue já criada, e mandava avisar o dev quando o MCP faltasse. Medido em 2026-11-10: um
+`PUT /rest/api/3/issue/<KEY>` com `customfield_10020` (id da sprint em número puro), `customfield_10016` e
+`fixVersions` respondeu `204`, e o `GET` de releitura leu a sprint ativa, os pontos e a versão. Agora o `campos.md`
+traz o `curl` desse `PUT` como caminho sem MCP, com o MCP como equivalente; o `start.md`, o `workflow.md` e duas
+frases do `SKILL.md` deixam de dizer "só pelo MCP". A releitura segue obrigatória: o `204` diz que a requisição foi
+aceita, não o que ficou gravado. O `SKILL.md` não cresceu (19.993 → 19.988 chars). Dívida anterior, fora deste
+retrofit: o `argument-hint` no topo do `SKILL.md` (A4 e G2 da auditoria).
+
 ## [1.14.5] — 2026-11-06
 
 ### O site do Jira também vem de `JIRA_URL`
