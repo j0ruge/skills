@@ -2,6 +2,30 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.20] — 2026-11-09 — o pacote se confere extraído, não só pelo hash dos membros
+
+**O quê:** em `references/kaizen-conceitos.md`, *Rótulo ≠ artefato* ganha o caso do pacote ao
+lado do caso do `core.fileMode`. Quem extrai recebe o que o arquivo compactado guarda. O zip
+montado arquivo a arquivo não leva pasta vazia, e o manifesto por arquivo também não a lista.
+Então o Check confere, na cópia extraída, o que o ponto de entrada exige (as pastas que ele
+declara, a permissão de execução), e não só o hash de cada membro.
+
+**Por quê:** numa sessão, o zip de um pacote de rotulagem conferia os 1.795 arquivos pelo sha256
+do manifesto, e o `testzip` dava verde. A contagem nas duas pontas, como manda a armadilha
+"Validador verde não prova que nada sumiu", bateu, porque as duas pontas tinham o mesmo ponto
+cego. Faltava a pasta vazia onde o `.bat` mandava gravar a trava, e a ferramenta exige a pasta
+antes de criá-la: a página pararia ao abrir na máquina de quem recebe. Um zip mínimo, com e sem a
+entrada `pasta/`, extraído pelo `Expand-Archive`, mostrou a diferença, e a entrada foi acrescentada
+antes da entrega.
+
+**Por que na reference e não no `SKILL.md`:** o `SKILL.md` tinha 19.996 caracteres, 4 abaixo do
+AVISO do C1. O `repetidos.py` da `skill-refactoring` não achou nada repetido, e enxugar a própria
+armadilha liberaria umas 30 a 40 letras para uma lição de ~250. A Fase 2 (item 6) já manda o
+leitor a *Rótulo ≠ artefato* no passo de verificação e cita "o pacote" como artefato.
+
+**Dívida que já existia:** o `SKILL.md` está no teto de caracteres do C1. A próxima lição que
+precisar entrar nele pede uma passada própria da `skill-refactoring`, com autorização de reparo.
+
 ## [1.4.19] — 2026-11-08 — a cópia do ensaio sai do caminho de quem recebe
 
 **O quê:** em `references/kaizen-conceitos.md`, *Rótulo ≠ artefato* ganha a terceira direção do
