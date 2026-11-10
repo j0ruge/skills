@@ -2,6 +2,14 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.40.1] — 2026-11-09
+
+### O status de commit só é aceito depois do push
+
+Na `ci-cost-minutes.md`, §5a, item 1. A receita publica o resultado do gate local como status de commit pela API de Statuses, e não dizia que o sha precisa já estar no GitHub. Numa branch de missão de um repositório privado sem Actions, o POST do `local/ci` antes do push voltou `HTTP 422: No commit found for SHA`, que se lê como falha do gate ou do token. Depois do `git push`, o mesmo POST voltou `success`, relido em `commits/<sha>/statuses`. A ordem fica escrita: gate no sha, push e status.
+
+Dívida pré-existente, não consertada aqui: o smoke do Codex em `docs/codex/smokes.json` é da 2.38.0, duas versões atrás. Nenhum ERRO ou AVISO no baseline da auditoria (`--claims --desc-budget 0`).
+
 ## [2.40.0] — 2026-11-09
 
 ### Dois ambientes de uma fonte só, e a produção que só aceita o que passou pelo staging

@@ -359,7 +359,10 @@ funcionou, espelhando o job `deploy` em vez de improvisar:
 
 1. **Gate local** com os mesmos passos das composite actions de CI, e o resultado publicado como
    status de commit (`gh api -X POST repos/<o>/<r>/statuses/<sha> -f context=local/ci …`), que não é
-   Actions e não passa pela cota.
+   Actions e não passa pela cota. O sha precisa já estar no GitHub: antes do push, a API responde
+   `HTTP 422: No commit found for SHA`, que não é falha do gate nem do token. A ordem é gate no sha,
+   push e status, relido em `gh api repos/<o>/<r>/commits/<sha>/statuses`. Medido em 2026-11-09, num
+   repositório privado sem Actions: o POST antes do push deu 422, e o mesmo POST depois deu `success`.
 2. **Build e push local com as tags do pipeline** (`sha-<short>` + móvel). O token do `gh`
    normalmente **não** tem `write:packages`: `gh auth refresh -h github.com -s write:packages` é
    interativo, então quem roda é o humano. Os `build-args` saem do workflow, e um `VITE_*` que
