@@ -2,6 +2,30 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.36] — 2026-11-10
+
+### Um estado mais curto que uma amostra não se mede por polling
+
+Em `references/`, porque o `SKILL.md` segue com 19.998 chars, colado no teto. Ele só troca a versão.
+Veio da revisão do PR de docs que registra a prova de restauração da produção de um monorepo
+TypeScript (2026-11-10).
+
+- **`configuration.md`, *Docs this session wrote*: um estado que dura menos que uma amostra não se
+  mede por polling.** Uma afirmação de que algo vale por um instante (um servidor temporário, uma
+  trava entre duas escritas) se confere contra o tempo da evidência antes de ficar. Um laço cuja
+  amostra custa mais que a janela imprime as transições em volta e nunca o estado, e essa ausência
+  passa por prova. A evidência é o horário da própria fonte (o log, a trilha), e um resultado de
+  polling só entra com o custo da amostra ao lado da janela. O agente de DOCS confere a afirmação
+  contra a saída salva, e não a saída contra o tempo dela: o cheque é de quem salva a evidência.
+  - Medido em 2026-11-10, no init do `postgres:17-alpine`: um laço de `docker exec … pg_isready` com
+    `sleep 0.1` nunca viu o servidor temporário. O log o teve pronto às 35.374 e com o pedido de
+    parada às 35.469, uma janela de 95 ms. Só o `exec` mais o `sleep` custavam 176 ms por amostra
+    naquela estação. A frase do doc ("o `pg_isready` responde que sim aos dois") foi reescrita para
+    dizer só o que o log mostrou.
+
+Gate da auditoria: nenhum `NOVO`. Os INFO de antes (B6, C2×3, D1) seguem iguais, e são dívida
+anterior a esta versão.
+
 ## [2.27.35] — 2026-11-09
 
 ### Cinco lições da série de oito rodadas de uma branch de infra: o mutante filtrado, o typecheck dos testes sem tsconfig, o bloco de shell do doc e a medição lida no sha em que rodou

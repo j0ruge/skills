@@ -399,6 +399,20 @@ phase, and step 7 checks the doc against the diff, not against code the range le
   `needs reproduction`. Grouped by source card, the 76 came from 15 cards (21, 11, 10, 6, 6, …) and
   the named card had 12 target requests in all; the name grep found the same pairing in a test
   comment ("74 times in the replays"), a TESTS file no agent reads on a full review.
+- **A state that lasts less than one sample is not measured by polling.** A claim that something
+  holds for a moment (a temporary server, a lock between two writes, a retry window) is checked
+  against the evidence's timing before it is kept: a loop whose sample costs more than the window
+  prints the transitions around it and never the state, and that absence reads as proof either way.
+  Take the source's own timestamps (its log, an audit trail) as the evidence and write the claim for
+  what they show; a polled result goes in with the sample cost next to the window. The DOCS agent
+  checks the claim against the saved output, not the output against its timing, so this one is
+  yours while saving the evidence.
+- Measured 2026-11-10 (a production runbook, the init of `postgres:17-alpine`): a loop of
+  `docker exec … pg_isready` and two `docker logs` with a 0.1 s sleep printed `nao` at 77 and
+  1359 ms and `pronto` at 1601 ms, never the temporary server. Its log had it ready at 35.374 and
+  asked to shut down at 35.469, a 95 ms window, and the `exec` plus the sleep alone cost 176 ms per
+  sample on that station. The doc's sentence (`pg_isready` answers yes to both servers) was rewritten
+  to state only what the log showed.
 
 ## Several repositories
 
