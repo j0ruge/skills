@@ -2,6 +2,16 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-11-10 — a training deck in two parts, part 1 as reading material (v1.6.0)
+- A training deck whose part 1 each manager re-presents to the team, built on the 1.5.2 template with a sibling deck's
+  look (photo cover and dark close).
+- Lessons added:
+  - the dark close showed the footer over the photo: the template now hides it on any `.dark` slide;
+  - printing one part with its notes below each slide, with its three checks and the blank-PDF trap, in `engine.md`;
+  - cropping screenshots so the screen's text is readable in the room, in `layout-and-type.md`.
+- The independent reviewer still found 2 factual errors after every gate was green (a quotation confused with a cost,
+  a quarter column read as a month), which the existing gotcha on the builder's review already covers.
+
 ## 2026-11-03 — Portal, the code review on the eve of the talk (v1.5.0)
 - A code review of the finished deck and its tools, after a wording change that entered the footer with every gate
   green.

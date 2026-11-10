@@ -3,6 +3,24 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.6.0] — 2026-11-10
+
+### O rodapé some na lâmina escura, e o PDF de uma parte com as notas
+
+- `assets/deck-template.html`: a lâmina com a classe `dark` (o fechamento sobre a foto) põe `dark-mode` no palco, e o
+  rodapé some como na capa. Por quê: num deck de treinamento, o fechamento escuro com foto, que a skill recomenda,
+  mostrou o logo, a linha de progresso e o número da página por cima da foto, porque o motor só escondia o rodapé na
+  capa. Visto vermelho numa cópia da amostra com uma lâmina `.dark` (o `check-fit` não a listava em "sem rodapé") e
+  verde depois ("sem rodapé: 1, 9"); `check-fit` e `check-presenter` verdes na amostra.
+- `references/engine.md`, seção *One part with its notes*: a receita para dar a uma parte do deck um PDF com a nota
+  embaixo de cada lâmina (`?part=N&notes` antes do motor, `@page` mais alto só nesse modo, `min-height` para nota longa
+  virar página a mais), as três provas e a armadilha de a classe do `<body>` ser a do bloco, que deu um PDF de uma
+  página em branco com saída 0. Por quê: o treinamento em que a parte 1 é repassada por outros pedia isso, e a skill
+  não tinha como. O trecho de código foi rodado na amostra do template.
+- `references/layout-and-type.md`, componente *Screenshot*: recortar a captura até a parte que a lâmina comenta.
+  Por quê: a seção do formulário reduzida a uma coluna deixou a letra com 10 a 12 px no palco, medida na captura.
+- `SKILL.md`: um gotcha e um item no passo 8, que apontam para o detalhe.
+
 ## [1.5.2] — 2026-11-05
 
 ### Apelidos de projeto saem do texto

@@ -36,6 +36,7 @@ JS at the bottom of `assets/deck-template.html`.
 | Key hint | Shown on mouse move (`body.hint`), hidden 2.5 s after the mouse stops. Never while the presenter window is open (`pwin` alive; a hello also clears it), in the popup or in print. Right after an F5 it can show until the first hello (≤ 1 s) |
 | Steps | On a slide with `data-steps="N"`, arrows, click, swipe and the popup's buttons reveal the next step before changing slide, and going back lands on the slide fully revealed. A block not yet revealed gets `.later` (transparent, its space kept, so nothing jumps); `data-at` on the section carries the step for custom styling. Messages carry `{deck, step, t0, gen}`, and the popup shows "etapa s/N" and what the next click does. The hash stays `#N`, because `check-presenter` reads it; `#N.s` opens on step s, for screenshots |
 | Print | One slide per page at 1920×1080 (`@page`). The footer is hidden, and `data-print` (classification · section · NN / TT) is drawn by `::after`. Every step prints revealed |
+| Dark slide | A `<section class="slide dark">` (a close over a photo) puts `dark-mode` on the stage, which hides the footer as on the cover. Before 1.6.0 only the cover hid it, and the footer showed over the photo |
 | Footer labels | One label per section on the progress line, the last one anchored right. Two labels closer than 24 px get `.tight`, and only the active one shows. Measured after the first `show()` (the page number narrows the line) and again on `document.fonts.ready` (a self-hosted font changes the widths) |
 | Hover tip | `mouseover` on the stage finds the nearest `[data-tip],[data-g]`, fills `#tip` (inside the stage, so it scales with it) and places it below the term, or above when it would cross the bottom, clamped 64 px from the sides. Position is screen px ÷ the stage scale. It closes on `mouseout` to a non-term and on every slide change, and hides the key hint (in a call the hint would go out with the tip). Print hides it and the dotted underline |
 | Motion | `.enter` fades 8 px in 450 ms without backwards fill; `prefers-reduced-motion` turns it off, and every transition with it, because `shoot.sh` captures that way |
@@ -48,6 +49,55 @@ google-chrome --headless=new --no-pdf-header-footer --virtual-time-budget=4000 \
 ```
 
 `shoot.sh` does this and asserts page count == slide count.
+
+## One part with its notes
+
+When others re-present one part of the deck (a training whose part 1 each manager repeats to the team), hand them that
+part as a PDF with each slide's notes below it, so the PDF is also the script. Measured on a training deck (10/11/2026),
+where the names were `parte` and `roteiro`:
+
+- Mark every slide `data-part="1"` or `"2"`.
+- A script placed **before** the engine reads `?part=N&notes`. It removes the slides of the other parts, so the engine
+  counts and numbers only what is left (`01 / 09`). In `notes` mode it adds, after each slide, a block with that slide's
+  notes, a class on `<body>` and a `<style>` with a taller `@page`.
+- In print, that mode turns `break-after` off on `.slide` and on for the block, which takes `min-height`, never
+  `height`. A note too long for the page then becomes one more page, which the page count catches, instead of being cut.
+  A page of 1920×1700 with a 620 px block fitted notes of up to 123 words at 27 px, with room to spare.
+- **The class on `<body>` must not be the block's class.** With `.roteiro{display:none}` for the screen and `roteiro`
+  also on `<body>`, the whole document vanished in print, and Chrome wrote a one-page blank PDF with exit 0. Debug print
+  layout with Playwright, `page.emulateMedia({ media: 'print' })` plus `getBoundingClientRect()`: every box had height 0.
+- Prove the PDF with three checks: the page count equals the part's slides (`pdfinfo`); no title (the slide's `h2`) of
+  the other parts appears in `pdftotext` with whitespace normalized; the first ~60 characters of each note appear. Run
+  the title detector on the full deck's PDF first and require it to find every title there: titles wrap across lines,
+  and a negative check that cannot fail would pass blind.
+
+```js
+(() => {
+  const q = new URLSearchParams(location.search), part = q.get('part');
+  if (part) document.querySelectorAll('.slide').forEach(s => { if (s.dataset.part !== part) s.remove(); });
+  if (!q.has('notes')) return;
+  document.body.classList.add('notes-mode');  // not 'notes-block', or print hides everything
+  document.querySelectorAll('.slide').forEach(s => {
+    const b = document.createElement('div');
+    b.className = 'notes-block';
+    b.innerHTML = s.querySelector('.notes')?.innerHTML || '';
+    s.after(b);
+  });
+  const pg = document.createElement('style');
+  pg.textContent = '@page{size:1920px 1700px;margin:0}';
+  document.head.append(pg);
+})();
+```
+
+```css
+.notes-block{display:none}
+@media print{
+  body.notes-mode .slide{break-after:auto}
+  body.notes-mode .notes-block{display:block;width:1920px;min-height:620px;padding:44px 128px 40px;break-after:page;background:var(--bg)}
+}
+```
+
+Print it with the Chrome line of *Export*, on `file://…/deck.html?part=1&notes`.
 
 ## Regression check
 

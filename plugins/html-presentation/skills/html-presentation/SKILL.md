@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.5.2"
+  version: "1.6.0"
 ---
 
 # HTML Presentation
@@ -130,6 +130,8 @@ its slide; one of the six fixes in the origin session did.
   `classification · section · NN / TT` from `data-print`. Set `<body data-classification="…">`. The cover carries
   only `01 / TT`, so write the classification on the cover itself (the template's credit line).
 - `dist/roteiro-de-fala.md`: rehearsal script with a cumulative clock.
+- One part as reading material, each slide with its notes below it (a training whose part 1 others re-present):
+  read `references/engine.md` § One part with its notes before building it.
 - Optional post-event kit: attendance, recording, minutes template, email to absentees with a reading
   deadline.
 
@@ -224,6 +226,10 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
   Before 1.4.2, `check-presenter` read the N panel clock by the word "decorrido", and a panel translated to English
   crashed it with a `TypeError` (Portal deck, 03/11/2026). It now reads the first `<span>` of the bar, so keep the
   elapsed time there.
+- **Footer over the photo on a dark close.** The engine hid the footer only on the cover, so a closing
+  `<section class="slide dark">` with a photo showed the logo, the progress line and the page number over it
+  (training deck, 10/11/2026). Since 1.6.0 the template hides it on any `.dark` slide, and `check-fit` lists that
+  slide under "sem rodapé". An older deck needs the `dark-mode` line ported into its `show()`.
 
 ## Files
 

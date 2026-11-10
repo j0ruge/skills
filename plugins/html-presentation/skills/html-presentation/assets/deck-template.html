@@ -88,6 +88,8 @@ b,strong{font-weight:600;color:var(--fg)}
 #pageno{font-family:var(--mono);font-size:20px;font-weight:500;color:var(--fg3)}
 #pageno b{color:var(--fg);font-weight:600}
 .cover-mode #footer{opacity:0;pointer-events:none}
+/* Lâmina escura com foto (a .slide com a classe dark, o fechamento): o rodapé saía por cima da foto */
+.dark-mode #footer{opacity:0;pointer-events:none}
 
 /* ── Componentes ──────────────────────────────────────────────────────── */
 .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-low);padding:36px 40px}
@@ -479,6 +481,7 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
       slides[i].querySelectorAll('[data-step]').forEach(el => el.classList.toggle('later', +el.dataset.step > st));
     }
     stage.classList.toggle('cover-mode', i === 0);
+    stage.classList.toggle('dark-mode', slides[i].classList.contains('dark'));
     fill.style.width = (i === 0 ? 0 : (i - 1) / span * 100) + '%';
     secEls.forEach(([n, el]) => el.classList.toggle('on', n === slides[i].dataset.section));
     document.getElementById('pageno').innerHTML = `<b>${pad(i + 1)}</b> / ${pad(N)}`;

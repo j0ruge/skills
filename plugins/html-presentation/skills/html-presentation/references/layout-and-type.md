@@ -36,6 +36,12 @@ The slide padding is 112 / 128 / 150. The bottom 150 px belong to the footer, so
   project's visual grammar, with invented neutral names. They beat screenshots: translatable, sharp when
   projected, no real data. Put numbered pins on the *edges* of the mockup (position the card
   `relative`) so they never cover text, and mark the mockup illustrative in its `aria-label`.
+- **Screenshot** (the real screen of the system the talk teaches): crop it to the part the slide talks about, so the
+  screen's own text stays readable on the stage. In a training deck (10/11/2026) a 1563 px wide form section, shrunk
+  into a 1040 px column, left its letters 10 to 12 px tall (ink from ascender to descender, measured on the capture
+  and scaled by 0.665); a 560 px crop of the controls the slide pointed at, shown at 760 px, brought them to 20 to
+  24 px. Crop with a script holding a table of boxes over the original capture, so a recapture is cropped the same
+  way, and put the numbered pins on the crop's edges, as for mockups.
 - **Hover tip** (`data-tip`, `data-g` + `#glossario`): text in another language (titles, a poem, a colophon) and
   terms the audience may not know. The questions the presenter asks after reading the deck are the list: in the
   Farel deck (19/10/2026) they became the glossary entries, and the slides stayed as clean as before. Write each
