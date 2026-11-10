@@ -3,6 +3,19 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.9.6] — 2026-11-10
+
+### A órfã sem `RESOLVED by` ganha um roteiro para fechar à mão
+
+A linha `ORPHAN … no RESOLVED by — close by hand` diz em que commit o item saiu, e não para onde ele
+foi. Numa rodada de um projeto, quatro órfãs tinham quatro destinos: a seção decidida, um título novo
+com o texto reescrito abaixo dos 85% do `RENAME?`, uma divisão em duas partes e um conserto feito 27
+dias antes da remoção. A `references/fechar-orfa-a-mao.md` diz como descobrir cada destino e qual
+motivo dar ao fechar. O `SKILL.md` a cita na linha `ORPHAN` e em *Erros comuns*. O script não muda.
+A ideia de o plano marcar o sucessor pelo commit da remoção ficou de fora: o mesmo commit tirou um
+item e acrescentou outro sem relação com ele. O smoke do Codex segue na 2.8.0, dívida anterior a
+esta versão.
+
 ## [2.9.5] — 2026-11-08
 
 ### O rc 1 do `--audit`/`--fix` é "há o que corrigir", não falha

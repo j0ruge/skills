@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.9.5
+  version: 2.9.6
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -74,7 +74,7 @@ importa conforme o modo: abra-os só para depurar ou alterar esse modo.
 | `UPDATE (text)` | texto, título ou seção mudou de verdade | leia o item antes do `--apply`; é o único `UPDATE` que pede olho |
 | `REF?` | um `#N` solto num corpo que esta rodada escreve (`CREATE`, `UPDATE (text)`), com o destino que o GitHub dará ao link | confira; se o texto quis dizer outra coisa, corrija a fonte (`dono/repo#N`, "item N") antes do `--apply`; `--refs` cobre os já espelhados |
 | `SKIP` | o corpo traz `RESOLVED by <hash>` e não existe issue | nada: não se abre card para achado já fechado; com o hash já na branch padrão, o `--fix` apaga o item |
-| `ORPHAN` | a issue está aberta, mas o item saiu do arquivo. A linha diz em que commit ele saiu e, se o último texto trazia `RESOLVED by`, quem o consertou (`fixed by …`) — lido no commit da remoção, nunca no `HEAD` | **`fixed by`:** `--close-orphans` fecha como concluída, citando o conserto e a remoção. **`no RESOLVED by`**: `--close-orphans` pula (`SKIP`); feche à mão. Consertado sem o marcador (a missão do kit sdd apaga o item assim): `gh issue close N --reason completed --comment "<commit e PR>"`; decidido, refutado ou adiado: `--reason "not planned" --comment "<para onde foi>"`. **`last text unknown`** (`removal not found`): a chave nunca saiu do histórico deste checkout — remoção ainda sem commit, clone raso, arquivo renomeado, branch não mergeada (a de um PR aberto sai como `PENDING`). Desconhecido não é ausente: leia o último texto antes de escolher `completed` ou `not planned` |
+| `ORPHAN` | a issue está aberta, mas o item saiu do arquivo. A linha diz em que commit ele saiu e, se o último texto trazia `RESOLVED by`, quem o consertou (`fixed by …`) — lido no commit da remoção, nunca no `HEAD` | **`fixed by`:** `--close-orphans` fecha como concluída, citando o conserto e a remoção. **`no RESOLVED by`**: `--close-orphans` pula (`SKIP`); feche à mão, depois de ler `references/fechar-orfa-a-mao.md`. Consertado sem o marcador (a missão do kit sdd apaga o item assim): `gh issue close N --reason completed --comment "<commit e PR>"`; decidido, refutado ou adiado: `--reason "not planned" --comment "<para onde foi>"`. **`last text unknown`** (`removal not found`): a chave nunca saiu do histórico deste checkout — remoção ainda sem commit, clone raso, arquivo renomeado, branch não mergeada (a de um PR aberto sai como `PENDING`). Desconhecido não é ausente: leia o último texto antes de escolher `completed` ou `not planned` |
 | `PENDING` | a remoção não está no histórico, mas o item está na cabeça de um PR aberto: a issue nasceu de um `--apply` na branch do PR. Só a órfã sem remoção é procurada, com um `gh pr list` e o arquivo em cada cabeça (do git local, ou da API de conteúdo) | nada: deixe aberta, e `--close-orphans` a pula. Depois do merge, vira `OK` ou `UPDATE`. Limite: PR de fork (cabeça em outro repositório) não foi medido; se a cabeça não for lida, a issue segue `ORPHAN` |
 | `RENAME?` | par `ORPHAN` + `CREATE` com ≥ 85% do mesmo texto: o título mudou | confirme com o humano; se for o mesmo achado, rode o comando impresso **antes** do `--apply`, e a issue antiga vira `UPDATE` |
 | `CLOSED` | a issue foi fechada à mão, mas o item continua no arquivo | decisão humana: reabrir a issue ou apagar o item |
@@ -177,7 +177,9 @@ do item.
 - **Ler o `MANUAL` como tarefa do script.** Tudo ali exige julgamento: o que é decidido, para onde
   vai uma análise, qual heading guarda os achados. Pergunte; não escolha pelo humano.
 - **Fechar órfã sem ler.** `--close-orphans` nunca é o primeiro comando. Primeiro o plano, depois
-  confira cada `ORPHAN`.
+  confira cada `ORPHAN`. A linha `no RESOLVED by` não diz para onde o item foi: decidido, retitulado
+  abaixo do `RENAME?`, dividido ou consertado antes de sair. Antes de fechar a issue à mão, leia
+  `references/fechar-orfa-a-mao.md`, que diz como achar cada destino e qual motivo dar.
 - **Esperar que o `--close-orphans` feche o item que saiu por decisão.** Ele só fecha a órfã cujo
   último texto trazia `RESOLVED by <hash>`, e pula as outras com `SKIP`: item refutado, adiado ou
   levado para outro lugar (cabeçalho de sensor, YAGNI) fica aberto até alguém fechá-lo à mão como

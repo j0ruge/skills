@@ -3,6 +3,27 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-11-10 — fechar à mão a órfã sem `RESOLVED by`
+
+Publicado como **v2.9.6**. Saiu da retro de uma sessão de um projeto, na ressincronização do espelho
+depois de um PR de 17 commits: o plano deu 5 `CREATE`, 3 `UPDATE` e 4 `ORPHAN … no RESOLVED by`.
+
+- **A mesma linha para quatro destinos.** Uma órfã foi para a seção decidida (o `+` do diff da
+  remoção trazia a linha lá). Outra ganhou título novo e texto reescrito: saiu como `ORPHAN` mais um
+  `CREATE`, sem `RENAME?`, porque o texto ficou abaixo dos 85% de `guess_renames`. Uma terceira foi
+  dividida, e a parte que ficou nasceu num commit posterior, fora do diff da remoção. A quarta tinha
+  sido consertada 27 dias antes de sair, num commit que não tocou o `TODO.md`.
+- **O que achou cada destino.** `git show <remoção> -- TODO.md` mostrou os dois primeiros. O conserto
+  só apareceu com `git log -S'<trecho que a Direção pedia>' -- <arquivo da âncora>`: o `-S` com o
+  título, que a skill já ensinava, acha a remoção e não o conserto.
+- **Por que o script não marca o sucessor.** O commit que mandou um item para a seção decidida
+  acrescentou outro sem relação com ele, então "mesmo commit" daria falso positivo nesta mesma rodada.
+- **Medido junto.** O `gh` 2.85.0 só aceita `--reason completed` ou `not planned`
+  (`gh issue close --help`), sem "duplicada". A órfã retitulada fechou como `not planned`, apontando a
+  issue nova, e os quatro motivos foram relidos por `.state_reason`. O nome do arquivo do `--dump`
+  termina na `todo-key` que a issue recebe (`L<linha>-<chave>.md`, conferido numa issue criada na
+  mesma rodada), e é dali que sai a chave para refazer a de uma issue retitulada.
+
 ## 2026-11-08 — o rc 1 do `--fix` e a *Identidade* numa reference
 
 Publicado como **v2.9.5**. Saiu da retro de uma sessão de um projeto (07 e 08/11), no ciclo de limpeza
