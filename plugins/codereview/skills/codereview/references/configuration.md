@@ -270,6 +270,14 @@ phase, and step 7 checks the doc against the diff, not against code the range le
 - Send it to a Phase B agent in the same batch, launch prompt unchanged, with category
   `DOCS (written this session; evidence: <path or none>)` — also when Phase B otherwise runs inline
   (≤3 CODE files). The agent's contract says what a DOCS file gets.
+- **Records written from one template go in one agent per kind.** Bug records, scenarios and
+  charters that share a template and their evidence go in one launch, one `File:` line each, not
+  one agent per file and not the cap of 3 of CODE grouping: the agent reads the template once and
+  checks every record against the same evidence. Measured 2026-11-11 (codereview 2.27.36, the
+  records of a QA cycle): 7 bug records in one agent came back with `END_OF_FILE_REVIEW`, 9 files
+  read in full, 2 findings and 4 tool calls; 8 scenarios, 5 charters and 2 QA docs in another came
+  back with it, 17 files read in full, 6 findings and 3 tool calls. The largest measured batch is
+  those 15 files.
 - **The evidence is the measurement's saved output, not its script.** The agent's contract forbids
   running the project's commands, so a script path checks nothing: save each measurement's stdout
   to a file (`script > out.txt`) and pass that file, with the script beside it only as how the

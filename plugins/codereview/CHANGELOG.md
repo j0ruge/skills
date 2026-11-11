@@ -2,6 +2,41 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.37] — 2026-11-11
+
+### O teste de contrato ganha agente, os registros de um modelo vão em lote e o canário é gerado na hora
+
+Em `references/`, porque o `SKILL.md` segue com 19.998 chars, colado no teto. Ele só troca a versão.
+As três lições vieram das 6 rodadas de uma revisão `full` de 62 arquivos de um monorepo TypeScript
+(2026-11-11), que fechou em A depois de um F na rodada 1.
+
+- **`runtime-routing.md`, seção nova *Teste de contrato numa revisão `full`*.** O `SKILL.md` só manda
+  TESTS a agente no foco 6.12, e o 6.11, que vale sempre, nunca chegava a um teste numa revisão
+  `full`. Um contrato de rótulos que pulava calado, com `.filter(existsSync)`, a página que faltasse
+  só foi pego porque o agente do plano leu o teste. A rodada 1 lançou 15 agentes por arquivo, e
+  nenhum recebeu um dos 4 TESTS mudados. Agora, o TESTS mudado que lê arquivo do repositório pelo
+  caminho vai a um agente, como `TESTS (contract)`, até 3 por agente. O `grep` que os acha pegou 3
+  dos 4, e só os 3: a regra custaria 1 agente ali. O `per-file-agent.md` ganha o bullet do que um
+  `TESTS (contract)` recebe, e a linha *Optional gate that vanishes* do 6.11 ganha a forma
+  `paths.filter(existsSync)`.
+- **`configuration.md`, *Docs this session wrote*: registros de um mesmo modelo vão num agente por
+  tipo.** Isso vale para bugs, cenários e charters com a mesma evidência, e não usa o teto de 3 do
+  agrupamento de CODE. Medido: 7 bugs num agente (9 arquivos lidos inteiros, 2 achados, 4 tool
+  calls) e 15 cenários, charters e docs em outro (17 lidos inteiros, 6 achados, 3 tool calls),
+  os dois com `END_OF_FILE_REVIEW`.
+- **`detection-passes.md`, pass 6.10: o canário de teste com nome de segredo.** O campo
+  `tokenSecret` de um servidor falso, com uma frase entre aspas, foi a única linha da rodada 1 e
+  forçou o F, sem segredo na branch. A linha fica, com a prova de que não há o que rotacionar, e o
+  remédio é o valor gerado a cada corrida (`randomBytes`), e não o campo renomeado. O valor
+  aleatório deixa também o teste de vazamento mais afiado: ele pode procurar os 8 primeiros
+  caracteres, o segredo cortado ao meio, sem casar com uma palavra de mensagem. Medido no
+  `scan_secrets.sh`, com `regex` e `gitleaks`:
+  - o literal deu `Generic Password` (o gitleaks não o acusou);
+  - o valor gerado deu `findings: []`;
+  - um controle de 16 hex inventados, como literal no mesmo campo, saiu pelos dois scanners.
+
+  O item 2 do bloco de remediação passa a citar o canário gerado na hora.
+
 ## [2.27.36] — 2026-11-10
 
 ### Um estado mais curto que uma amostra não se mede por polling

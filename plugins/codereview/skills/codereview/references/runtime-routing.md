@@ -39,6 +39,31 @@ Medido em fases REVIEW do `sdd run`:
 Ali a causa era do kit, que passou a liberar a pasta. A linha vale para qualquer sessão cujo `Read`
 não alcança o cache de plugins.
 
+## Teste de contrato numa revisão `full`
+
+O `SKILL.md` só manda um arquivo TESTS a agente no foco de qualidade de teste (6.12). Numa revisão
+`full`, então, nenhum agente lê os testes, e o 6.11, que vale sempre, não chega a eles. Quem fica
+descoberto é o teste de contrato: ele lê pelo caminho arquivos do repositório (doc, config, script
+lido como texto) e é o único sensor deles. O agente do módulo que ele importa revisa o módulo, e não
+o teste.
+
+Numa revisão `full`, cada TESTS mudado que lê arquivo do repositório pelo caminho vai a um agente,
+no mesmo lote da fase B, com a categoria `TESTS (contract)`, o prompt de lançamento sem mudança e
+até 3 arquivos por agente. Ache-os com
+`grep -lE 'readFileSync|readFile\(|existsSync|readdirSync|glob'` sobre os TESTS mudados, num
+script em bash: o zsh aborta o glob que não casa.
+
+Medido em 2026-11-11 (codereview 2.27.36, revisão `full` de 62 arquivos de um monorepo TypeScript):
+
+- a rodada 1 lançou 15 agentes por arquivo, e nenhum recebeu um dos 4 TESTS mudados;
+- um deles era o contrato de rótulos de duas páginas de manual. Ele pulava calado, com
+  `.filter(existsSync)`, a página que faltasse, e o piso de vacuidade só cobria a outra;
+- o achado (MEDIUM, sensor cego) veio do agente do plano, que leu o teste para conferir a frase "o
+  contrato cobre os dois arquivos". O agente do módulo que o teste importa leu 4 arquivos e não o
+  citou;
+- dos 4 TESTS, 3 leem arquivo pelo caminho, e o grep acima acha esses 3 e só eles: a regra custaria
+  1 agente.
+
 ## Coleta sem perda
 
 Mantenha um registro por tarefa: `{id, model, base, head, files, raw_result,
