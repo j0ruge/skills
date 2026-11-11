@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.9.6
+  version: 2.9.7
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -46,7 +46,9 @@ python3 $S --apply --close-orphans      # só depois de ler as linhas ORPHAN do 
 
 Opções: `--file` (padrão `TODO.md`), `--repo OWNER/NAME` (padrão: o repo do arquivo, via `gh`;
 obrigatório num clone cujo `origin` é um caminho local), `--dump DIR` (grava os corpos
-renderizados em disco, sem rede) e `--allow-empty` (backlog esvaziado de propósito; *Erros comuns*). Mexeu no script? Rode `python3 scripts/test_todo_issues.py
+renderizados em disco, sem rede, cada um em `L<linha>-<todo-key>.md`: a linha do plano com 4
+dígitos, `L106` → `L0106-9ca6949e1738.md`; o número do item não entra no nome) e `--allow-empty`
+(backlog esvaziado de propósito; *Erros comuns*). Mexeu no script? Rode `python3 scripts/test_todo_issues.py
 <TODO.md de um repo real, já no esqueleto, com 5+ itens>`, que não usa a rede. Com menos itens o
 primeiro caso reprova de propósito: o teste apaga 4 itens e precisa que sobre um. Casos de
 gatilho (deve e não deve disparar): `assets/trigger-evals.json`, no formato do `skill-creator`.

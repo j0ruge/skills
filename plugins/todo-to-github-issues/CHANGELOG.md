@@ -3,6 +3,17 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.9.7] — 2026-11-11
+
+### O nome do arquivo do `--dump`
+
+O `--dump DIR` grava cada corpo em `L<linha>-<todo-key>.md`, com a linha do item no arquivo em 4
+dígitos (`todo_issues.py`, `f"L{it.start:04d}-{it.key}.md"`), e o `SKILL.md` não dizia isso. Numa
+sessão de um projeto, conferir um `UPDATE (text)` pelo dump começou pelo número do item: a busca
+voltou vazia e o `sed` caiu na pasta. O `SKILL.md` diz agora, na linha das opções, que o nome vem
+da linha `L<N>` do plano. O script não muda. O smoke do Codex segue na 2.8.0, dívida anterior a
+esta versão.
+
 ## [2.9.6] — 2026-11-10
 
 ### A órfã sem `RESOLVED by` ganha um roteiro para fechar à mão

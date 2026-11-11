@@ -3,6 +3,22 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-11-11 — o nome do arquivo do `--dump` no `SKILL.md`
+
+Publicado como **v2.9.7**. Saiu da retro de uma sessão de um projeto, na ressincronização do espelho
+depois de uma missão sdd: o plano deu 5 `CREATE` e 2 `UPDATE (text)`.
+
+- **A busca pelo número do item volta vazia.** Para ler os dois `UPDATE (text)` antes do `--apply`, o
+  arquivo do item 32 foi procurado no dump pelo número. Não achou nada, e o `sed` caiu na pasta
+  (`sed: read error on …-dump/: Is a directory`). O dump nomeia o corpo pela linha do item e pela
+  chave (`L0106-9ca6949e1738.md`), e a linha é a da coluna `L106` do plano.
+- **Correção conferida.** Achado pela linha do plano, o `diff` contra o corpo vivo
+  (`gh issue view N --json body`) mostrou as duas mudanças reais, e o plano final deu
+  `create=0 update=0 orphans=0`.
+- **Onde entrou.** Na linha das opções do `SKILL.md`, no `--dump DIR`. O formato do nome já estava
+  nesta página (a entrada de 2026-11-10, *Medido junto*), mas não no `SKILL.md`, que é o que a
+  sessão lê. Ficou em 19.367 chars, abaixo do aviso de 20 mil do C1.
+
 ## 2026-11-10 — fechar à mão a órfã sem `RESOLVED by`
 
 Publicado como **v2.9.6**. Saiu da retro de uma sessão de um projeto, na ressincronização do espelho
