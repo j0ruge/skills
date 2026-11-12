@@ -2,6 +2,33 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.6.0] — 2026-11-12
+
+Lições da mesma prova de DR da 1.5.0, vistas depois dela: o conjunto confrontado com o host e com
+a configuração que o gerou, e um runbook de restore revisado por agentes em sessão nova. Tudo em
+`backup-pipeline-e-falha-silenciosa.md`. Os comandos novos rodaram, somente leitura, num host real
+de 46 containers antes de entrar aqui.
+
+- **Conte MCE pelo journal, nunca pelo `dmesg`** (§2.5, "Reset abrupto"). Sintoma que teria
+  evitado: um monitor por `dmesg | grep -c 'Hardware Error'` foi de 4 a 0 sem reset, 1h55 depois
+  do boot, porque o buffer de anel girou. O `journalctl -k -b 0` seguia em 4. A alternativa
+  `dmesg | grep` que a 1.5.0 dava ao lado do `journalctl` saiu, porque estava errada.
+- **O diretório do compose e o `build.context` são receita, fora de volume e de bind** (§3.3 e
+  uma linha na checklist BACKUP do `SKILL.md`). Sintoma: o compose e o `.env` de produção de um
+  cofre de senhas não estavam em backup nenhum, e o contexto do build de um site ficava fora da
+  lista do tar. Varredura pelo label `com.docker.compose.project.working_dir`, com a leitura de
+  `AUSENTE` (o compose rodou dentro de um runner, deployer ou painel) e as três armadilhas que a
+  primeira versão da sonda pegou no host: `config_files` relativo, `--no-interpolate` recusando
+  `${VAR:-/caminho}:/destino` e checkout de runner limpo.
+- **Mudou o modo de backup de um banco, muda o registro da sonda** (§1.1). Sintoma: a sonda de um
+  conjunto reprovou por expectativa velha, procurando o dump de um banco que tinha ido para o
+  snapshot frio. Lá, o registro é o `.ibd` da tabela dentro do tar.
+- **Sensor de cobertura: fixture do dado real, e a configuração que produziu o conjunto** (§5,
+  item 7). Sintomas: uma matriz com teste verde e zero linhas de compose no host real (a fixture
+  escrita à mão tinha a mesma chave errada); e, com a lista de hoje, a matriz dava como coberto um
+  compose que tinha 0 membros no tar.
+- Smoke do Codex: segue o da 1.3.3 (nenhum arquivo novo, e a contagem de recursos não mudou).
+
 ## [1.5.0] — 2026-11-12
 
 Lições de um teste de DR no mesmo dia da 1.4.0: o conjunto de um servidor restaurado em stacks

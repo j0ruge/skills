@@ -102,6 +102,13 @@ a tabela `pages` (as páginas estão em `entity_page_data`). Então:
   ```
 
 - glob exato na sonda: `<banco>_*` também casa com `<banco>_outro_*`.
+- **mudou o modo de backup de um banco, mude o registro da sonda no mesmo commit.** Um banco que
+  passou de dump a snapshot frio do datadir não tem mais dump para o `grep`, e a sonda que
+  procura o dump reprova por expectativa velha. No snapshot frio, o registro é o arquivo da
+  tabela dentro do tar do datadir:
+  `tar -tzf <tar>.tar.gz | grep -c '<caminho-do-datadir>/<banco>/<tabela>.ibd'` (o membro sai sem
+  a `/` inicial). Medido em 2026-11-12: a sonda de um conjunto reprovou só por isso, num wiki
+  cujo banco tinha ido para o snapshot frio.
 
 Para dumps em formato custom (`pg_dump -Fc`), troque as perguntas 1 e 2 por
 `pg_restore -l <dump> | wc -l`, que lista o índice do arquivo sem restaurar nada e falha
@@ -370,13 +377,19 @@ não guarda nada a preservar.
   uptime de uma amostra. Medido em 2026-11-12: o uptime lido no fim de uma cópia dizia que não
   tinha havido reset, e o boot seguinte começou segundos depois.
 - **Antes de culpar carga ou temperatura, leia o Machine Check do boot seguinte**
-  (`dmesg | grep 'Hardware Error'` ou `journalctl -b <n> -k`): o kernel registra no boot o erro
-  que o CPU guardou antes de reiniciar. Quatro resets do mesmo dia com a mesma CPU, o mesmo
-  banco (L1D) e endereços com os mesmos 12 bits baixos apontaram defeito de hardware, inclusive
-  o reset que veio com carga baixa. Desligar o núcleo a quente
+  (`journalctl -k -b <n> | grep -c 'Hardware Error'`, com `<n>` tirado da lista de boots): o
+  kernel registra no boot o erro que o CPU guardou antes de reiniciar. Quatro resets do mesmo
+  dia com a mesma CPU, o mesmo banco (L1D) e endereços com os mesmos 12 bits baixos apontaram
+  defeito de hardware, inclusive o reset que veio com carga baixa. Desligar o núcleo a quente
   (`echo 0 > /sys/devices/system/cpu/cpu<N>/online`, ele e o irmão de hyperthread) segurou 37
   min de cópia sem novo reset nem MCE novo. Para persistir isso numa unit, trave-a na máquina
   (UUID do DMI): o disco pode mudar de máquina, e lá o mesmo número é um núcleo saudável.
+- **Conte MCE pelo journal, nunca pelo `dmesg`.** O `dmesg` lê o buffer de anel do kernel, que
+  gira: as linhas do boot saem dele e a contagem cai sem que nada tenha mudado. Medido em
+  2026-11-12: um monitor por `dmesg | grep -c 'Hardware Error'` foi de 4 a 0 sem reset, 1h55
+  depois do boot, porque o buffer tinha girado e a primeira linha dele já não era do boot. O
+  `journalctl -k -b 0` seguia em 4. O boot anterior só aparece com journal persistente
+  (`journalctl --list-boots` lista mais de um).
 
 ---
 
@@ -434,6 +447,45 @@ docker ps -q | xargs -r docker inspect \
 Cada `Source` de bind mount com dado insubstituível é um caminho que o backup de
 volumes **não** cobre — trate-o como diretório a incluir explicitamente (com a
 mesma checagem de existência do §2.4), não como algo que "o `volume ls` pega".
+
+**O diretório do compose e o `build.context` também ficam de fora.** Nenhum dos dois é volume
+nem bind mount: são a receita do container, e um host novo com o dado e sem a receita não sabe
+subir o serviço. O diretório de cada projeto está no label
+`com.docker.compose.project.working_dir`. O contexto do build está no compose e pode morar fora
+do diretório do projeto. Medido em 2026-11-12, num host com 46 containers: o compose e o `.env`
+de produção de um cofre de senhas não estavam em backup nenhum (só o volume dele estava), e o
+`build.context` de um site (`/root/docker/<app>`) ficava fora do diretório do compose e fora da
+lista do tar. Para varrer (somente leitura; imprime caminhos, nunca o compose nem o env):
+
+```bash
+L=$(docker ps -aq | xargs -r docker inspect --format \
+  '{{.Name}}|{{index .Config.Labels "com.docker.compose.project.working_dir"}}|{{index .Config.Labels "com.docker.compose.project.config_files"}}')
+echo "$L" | awk -F'|' '$2==""' | wc -l   # sem label; se der o total de containers, a chave está errada
+echo "$L" | cut -d'|' -f2,3 | sort -u | while IFS='|' read -r wd files; do
+  [ -n "$wd" ] || continue
+  [ -d "$wd" ] || { echo "AUSENTE $wd"; continue; }
+  echo "existe $wd"; cd "$wd" || continue  # o config_files pode ser relativo ao working_dir
+  args=(); IFS=',' read -ra fl <<< "$files"; for f in "${fl[@]}"; do args+=(-f "$f"); done
+  { docker compose "${args[@]}" config --no-interpolate --format json \
+      || docker compose "${args[@]}" config --format json; } 2>/dev/null </dev/null \
+    | python3 -c 'import json, sys
+for n, s in json.load(sys.stdin).get("services", {}).items():
+    if s.get("build"): print("build", sys.argv[1], n, "->", s["build"].get("context"))' "$wd" 2>/dev/null \
+    || echo "LER À MÃO $wd"
+done
+```
+
+As duas formas do `config` existem porque o `--no-interpolate` (Compose 2.35.1, medido em
+2026-11-12) recusa um volume escrito como `${VAR:-/caminho}:/destino` (`too many colons`). A
+segunda interpola, e por isso o Python imprime só o contexto. Numa task `shell:` do Ansible, o
+`--format` vai dentro de `{% raw %}`. Leitura:
+
+| Saída | O que fazer |
+|---|---|
+| `existe` | o diretório entra na lista do tar, com a checagem do §2.4, e cada `build` que não estiver sob ele também |
+| `AUSENTE` | o compose rodou dentro de outro container. Um runner de CI (`/runner/_work/…`) ou um deployer (`<dir>/<sha>/…`) tem a receita no repositório: anote o repo e o commit. Um painel como o Portainer (`/data/compose/<id>`) a guarda no volume dele: confira que o volume está no conjunto |
+| `LER À MÃO` | o `config` falhou nas duas formas, ou o arquivo do compose sumiu (checkout de runner limpo). Não quer dizer "sem build": abra o compose ou trate como `AUSENTE` |
+| sem label | o container não veio do compose (`docker run`). A receita é o comando, e só existe se alguém a escreveu |
 
 ### 3.2 Renomear container é mudança de duas pontas
 
@@ -551,3 +603,19 @@ A diferença é exatamente o que você está decidindo perder.
    que a exclusão tirou. Medido em 2026-11-12: 28,6 GB excluídos do tar semanal (e copiados à
    parte) apareciam como cobertos pelo tar. O caminho excluído só conta como coberto se
    apontar a outra cópia, e o manifesto dela tiver arquivos sob o prefixo declarado.
+7. **Prove o sensor de cobertura no dado real, e contra a configuração que produziu o conjunto.**
+   Duas falhas medidas em 2026-11-12, e nas duas o sensor não acusou nada:
+   - **Verde na fixture, cego no real.** O coletor de inventário guardava o label
+     `com.docker.compose.project.working_dir` sem o prefixo, como `project.working_dir`, e a
+     primeira versão de uma matriz lia `working_dir`. A fixture, escrita à mão, usava a mesma
+     chave errada: o teste passou e a matriz real saiu com zero linhas de compose. Faça a
+     fixture a partir da saída real do coletor (redigida), e faça o sensor imprimir quantos
+     itens viu de cada classe: zero numa classe que o host tem é falha, não "nada a cobrir".
+     No `inspect`, uma chave de label errada (`com.docker.compose.working_dir`) deixou 46 de 46
+     containers sem label, e a contagem do §3.3 denuncia isso.
+   - **Cruze o conjunto com a configuração que o produziu, não com a de hoje.** Um caminho
+     acrescentado à lista do tar depois da rodada aparece como coberto. Com a lista de hoje, a
+     matriz dava o compose de um cofre de senhas como coberto pelo tar, e o tar tinha 0 membros
+     dele. Gere a matriz com a lista do commit que rodou o backup
+     (`git show <sha>:host_vars/<host>.yml`, com o sha anotado no log da rodada), e confira o
+     caminho no índice do próprio tar (`tar -tzf`), que é o que o conjunto tem de fato.

@@ -1,7 +1,7 @@
 ---
 name: ansible-docker-backup-restore
 metadata:
-  version: 1.5.0
+  version: 1.6.0
 description: "Back up and restore a Linux server's Docker services with Ansible — volume tars, pg_dump/mysqldump, snapshot-guarded overwrite, and proof the nightly backup still runs. Catches restores that look green but are broken: 200s serving the wrong page, auth-plugin drift in restored datadirs, silently dead backups. Proves a dump by its contents, not its size. Triggers — ansible, backup, restore, disaster recovery, mysqldump, retention, dump integrity, backup healthcheck lies."
 ---
 
@@ -190,6 +190,7 @@ BACKUP — o restore não terminou sem isto
 [ ] nenhuma task com `ignore_errors` e `no_log` juntos
 [ ] preflight confere `docker ps` vs inventário nos DOIS sentidos (declarado-ausente falha; em-execução-não-declarado avisa)
 [ ] bind mounts com dado insubstituível incluídos à mão — `docker volume ls` não os enxerga
+[ ] diretório do compose (label `…project.working_dir`) e `build.context` de cada container no backup — receita não é volume nem bind
 [ ] push cliente→host de backup verificado DESTE host (não generalizado de outro)
 [ ] acesso de push com menor privilégio: chave dedicada + `rrsync -wo`, provada sem abrir shell
 [ ] nenhum rsync vivo no destino ANTES de gerar o conjunto (a trava do `rrsync -wo` presa por sessão órfã)
