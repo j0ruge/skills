@@ -80,6 +80,13 @@ Se QA estiver solicitado, adaptar suas jornadas à superfície nativa. Comprovar
 o build examinado; registrar resultados e limitações. Um teste de lógica verde
 não substitui a janela. “120 FPS” permanece hipótese até ser medido.
 
+## Armadilhas da automação
+
+Leia [QA headless](references/headless-qa.md) quando automatizar uma sessão gráfica
+compartilhada ou quando o OCR contradisser a ação. O roteiro separa display virtual,
+renderizador escolhido e resultado funcional; a preferência de cada usuário fica
+nas instruções do seu projeto.
+
 Fontes: [GPUI](https://gpui.rs/), [API 0.2.2](https://docs.rs/gpui/0.2.2/gpui/),
 [build Linux do Zed](https://zed.dev/docs/development/linux).
 Para toolchain e Cargo, complementar com `$rust` quando disponível.

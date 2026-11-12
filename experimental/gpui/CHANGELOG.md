@@ -3,6 +3,20 @@
 Skill sem versão: fica em `experimental/`, fora dos catálogos (ver `../README.md`).
 Cada entrada leva a data e o motivo.
 
+## 2026-11-12 — QA isolado e oráculo da ação
+
+- Nova referência de QA headless para Xvfb com renderizador de software, sem
+  disputar teclado/mouse no desktop em uso. O SKILL.md roteia sua leitura também
+  quando o OCR divergir da ação. Não estabelece uma preferência universal nem
+  adiciona dependências ao aplicativo.
+- A ação precisa de efeito verificável: OCR sob o cursor e variações como está/este
+  causaram falsos negativos; confirmar a operação no estado da fixture e usar um
+  marcador visual estável resolveu os probes sem mudar o produto para agradar o OCR.
+- Escopo medido: Ubuntu 24.04/X11, Rust 1.97.0, GPUI 0.2.2/component 0.5.1;
+  abertura, criação e exit 0 em Xvfb/llvmpipe; seis jornadas de foco e quatro de
+  inicialização aprovadas. Não é medição de latência nem validação de outros backends.
+- Experimental, sem bump ou catálogo. Dívidas anteriores permanecem no histórico.
+
 ## 2026-11-12 — entrada no repositório
 
 A skill nasceu como skill pessoal do Codex em `~/.codex/skills/gpui`, fora do git. Ela veio para
