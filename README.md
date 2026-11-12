@@ -632,6 +632,12 @@ Field guide for recovering a Linux server's Docker services from backup, and for
 
 </details>
 
+## Experimental skills
+
+`experimental/` holds skills we keep under version control but **do not recommend yet**. They are in no
+catalog, `install.py` does not offer them, and they carry no version. Right now that means `rust` and `gpui`.
+Their status, the symlink install and the path to `plugins/` are in [experimental/README.md](experimental/README.md).
+
 ## Auto-updates
 
 For private repo auto-updates at startup, set a GitHub token with `repo` scope:

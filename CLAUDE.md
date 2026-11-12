@@ -16,6 +16,7 @@ skills/
 │   └── marketplace.json          # Marketplace catalog (lists all plugins)
 ├── plugins/                      # Plugin directories (one per plugin)
 │   └── .gitkeep
+├── experimental/                 # Immature skills: versioned, NOT published (see experimental/README.md)
 ├── .claude/
 │   ├── commands/                 # Speckit commands (SDD dev tools, NOT marketplace content)
 │   └── settings.json             # Team distribution config
@@ -28,6 +29,7 @@ skills/
 
 - **`.claude-plugin/marketplace.json`** — The marketplace catalog. Lists all available plugins with their source paths. This is the entry point Claude Code reads when registering the marketplace.
 - **`plugins/`** — Each subdirectory is a self-contained plugin with its own `.claude-plugin/plugin.json` manifest.
+- **`experimental/`** — Skills that are not mature enough to recommend. They stay out of every catalog and out of `install.py`, carry no version, and keep a `CHANGELOG.md` each. `validate-versions.py` does not check them, so run the auditor by hand. Promotion to `plugins/` follows *Adding a New Plugin* below (see `experimental/README.md`).
 - **`.claude/settings.json`** — Registers this repo as a known marketplace for team auto-discovery.
 - **`install.py`** — Interactive installer. Handles both Claude Code (shows installation commands) and Cursor (copies and adapts skills to `~/.cursor/skills/` or `.cursor/skills/`).
 

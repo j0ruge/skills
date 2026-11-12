@@ -1,0 +1,4 @@
+interface:
+  display_name: "Rust"
+  short_description: "Toolchain, Cargo e verificação de projetos Rust"
+  default_prompt: "Use $rust para verificar o projeto e definir a validação das mudanças em Rust."

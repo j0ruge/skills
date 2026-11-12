@@ -1,0 +1,4 @@
+interface:
+  display_name: "GPUI"
+  short_description: "APIs GPUI, ambiente gráfico e QA de interface nativa"
+  default_prompt: "Use $gpui para conferir a versão, o ambiente e a validação da interface desktop."
