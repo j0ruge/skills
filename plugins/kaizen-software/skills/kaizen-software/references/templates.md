@@ -81,7 +81,7 @@ escrita na tabela de desperdícios.
 - [ ] Check no artefato que chega ao destino, não no rótulo nem na cópia local; a cópia do ensaio fora do caminho de quem recebe (outro nome, outro ponto de entrada); o número copiado para a prosa conferido pelo valor, e recalculado das contagens brutas quando sai com menos casas do que o artefato gravou
 - [ ] Filtro de saída (máscara, redação, resumo que esconde o corpo) em lista do que pode sair, com vermelho provado por segredo falso em cada forma (célula, linha solta, bloco, erro) antes do primeiro dado real
 - [ ] Premissa do pedido sobre acesso ou exposição ("é interno", "é restrito") conferida na permissão do destino, não na palavra de quem pediu
-- [ ] Estado e fontes herdados de handoff ou resumo ("não enviado", "o registro está em X") relidos no destino antes de entrar no plano
+- [ ] Estado e fontes herdados de handoff ou resumo ("não enviado", "o registro está em X") relidos no destino antes de entrar no plano; status de job com vários alvos conferido por alvo (ele rodou?) antes de virar fato do plano
 - [ ] Inventário do que falta cruzado com todas as listas de pendências do projeto (a tabela do handoff e as listas abaixo dela, o ledger, o TODO, o tracker), não só com a primeira
 - [ ] Decisão do usuário que fala dos dados ("o especialista vence", "vale a versão de produção") aplicada e contada nos dados antes de ir ao registro; se a mesma fonte deu dois valores ao mesmo item, ela tem dois sentidos e volta como pergunta
 - [ ] Poka-yoke antes de regra escrita; a regra que sobrar diz por que nenhum degrau acima coube

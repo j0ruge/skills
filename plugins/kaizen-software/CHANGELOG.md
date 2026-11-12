@@ -2,6 +2,23 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.21] — 2026-11-12 — o status de um job de vários alvos só fala do alvo que falhou
+
+**O quê:** em `references/kaizen-conceitos.md`, *Rótulo ≠ artefato* ganha o caso do job que
+percorre alvos em sequência e sai no primeiro erro. O código de saída é um só, os alvos depois do
+erro nem rodaram, e o "error" acaba lido como falha deles. O Check confere por alvo se ele rodou
+(linha de início no log, artefato datado no destino). Em `references/templates.md`, o item do
+checklist sobre estado herdado de handoff ganha a mesma conferência.
+
+**Por quê:** numa sessão de planejamento de recuperação de desastre, um plano anterior registrava
+o backup semanal como falha do segundo servidor. Os três logs mostraram outra coisa: `grep -c` do
+nome de cada playbook deu 2 para o primeiro alvo e 0 para o segundo. O script saía quando o
+primeiro falhava, e o segundo estava havia três execuções sem ser tentado e um mês sem cópia
+completa. A separação dos alvos ficou planejada e ainda não foi executada, e o texto diz isso.
+
+**Por que na reference e não no `SKILL.md`:** o `SKILL.md` segue com 19.996 caracteres, encostado
+no AVISO do C1. A lição é um caso a mais de uma regra que o `SKILL.md` já manda ler no Check.
+
 ## [1.4.20] — 2026-11-09 — o pacote se confere extraído, não só pelo hash dos membros
 
 **O quê:** em `references/kaizen-conceitos.md`, *Rótulo ≠ artefato* ganha o caso do pacote ao
