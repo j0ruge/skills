@@ -27,6 +27,7 @@ e reparou que a última pasta no destino era de dias atrás. A causa raiz foi o
   - [3.1 A variável "documentada" que o código não lê](#31-a-variável-documentada-que-o-código-não-lê)
   - [3.3 `docker volume ls` não enxerga bind mount](#33-docker-volume-ls-não-enxerga-bind-mount)
   - [3.2 Renomear container é mudança de duas pontas](#32-renomear-container-é-mudança-de-duas-pontas)
+  - [3.4 Imagem que saiu do registry](#34-imagem-que-saiu-do-registry)
 - [§4. A aritmética da retenção](#4-a-aritmética-da-retenção)
 - [§5. Exclusões: a decisão de apagar dado para sempre](#5-exclusões-a-decisão-de-apagar-dado-para-sempre)
   - [Regras](#regras)
@@ -83,6 +84,24 @@ domínio (a razão social da empresa, o código da filial padrão, um e-mail de 
 ela não aparece, você tem um arquivo que passa nas perguntas 1 e 2 e ainda assim não é o
 backup daquele banco — dump apontado para o cluster errado, para um banco homônimo vazio,
 ou de antes da carga inicial.
+
+**O valor conhecido também se supõe errado.** O nome da tabela depende da versão e da
+configuração do app, e a suposição envelhece. Medido em 2026-11-12: o MediaWiki usa o
+prefixo de `$wgDBprefix` (`mw_page`, não `page`), e o BookStack v26.09.2 não tem mais
+a tabela `pages` (as páginas estão em `entity_page_data`). Então:
+
+- tire o nome da config viva do app (o `LocalSettings.php`, a versão da imagem), não da
+  memória nem de um handoff;
+- prefira ``INSERT INTO `<tabela>` `` (há dado) a `CREATE TABLE` (só há esquema);
+- num dump `--all-databases`, confira **em que banco** o registro cai: o mesmo dump pode
+  trazer uma cópia legada com o mesmo nome de tabela noutro banco, e o `grep` passa por
+  ela. Para mapear tabela → banco:
+
+  ```bash
+  gzip -dc <dump>.sql.gz | awk '/^USE `/{db=$2} /^CREATE TABLE `<tabela>`/{print db}'
+  ```
+
+- glob exato na sonda: `<banco>_*` também casa com `<banco>_outro_*`.
 
 Para dumps em formato custom (`pg_dump -Fc`), troque as perguntas 1 e 2 por
 `pg_restore -l <dump> | wc -l`, que lista o índice do arquivo sem restaurar nada e falha
@@ -323,6 +342,28 @@ pior que restrição nenhuma, porque ninguém volta a olhar. E cuidado com o des
 com `rrsync`, o caminho é **relativo** a `<dir>` — mandar `:/opt/backups/x/`
 absoluto vira `<dir>/opt/backups/x/`.
 
+**A trava do `rrsync` e a sessão órfã.** Com `-wo`, o `rrsync` tranca o diretório
+(`flock` exclusivo; só `-no-lock` desliga, e `-ro` já o implica — medido na ajuda do
+`rrsync` do rsync 3.2.7). Se o cliente morre no meio do push (reset abrupto, queda de
+energia), o TCP não se fecha. Com `ClientAliveInterval 0`, que é o padrão do sshd, a
+sessão do lado do host de backup segue viva até o keepalive do kernel
+(`sysctl net.ipv4.tcp_keepalive_time`, 7200 s no padrão) e segura a trava. O push
+seguinte sai com rc 12 (`Another instance of rrsync is already accessing this
+directory`) — **depois** de gerar o staging inteiro. Visto em 2026-11-12: ~20 min de
+tar no cliente para cair no rsync, com a sessão órfã viva havia 1h36. Duas
+contramedidas:
+
+- **No preflight, antes de qualquer dump ou tar:** liste os processos do host de backup
+  e barre se algum `rrsync` ou `rsync --server` tiver o destino como argumento, com
+  fronteira de caminho (`<dest>(/|\s|$)`, para que `<dest>-legado` não case), e mostre
+  PID e hora de início. É barato e transforma a falha do fim numa falha em segundos.
+- **Na raiz:** `ClientAliveInterval`/`ClientAliveCountMax` no sshd do host de backup, para
+  que uma sessão morta caia em minutos. Isso muda o sshd do host inteiro: é decisão do dono.
+
+Encerrar a sessão órfã à mão (o `sshd` pai) só depois de conferir, com
+`ss -tnop state established '( sport = :22 )'`, de que IP ela vem e que o destino dela
+não guarda nada a preservar.
+
 ---
 
 ## §3. Anatomia do pipeline, e onde cada etapa falha
@@ -390,6 +431,34 @@ O mesmo vale para qualquer variável que referencie o container por nome em outr
 lugar (senha lida por `selectattr`, por exemplo): um nome que não casa devolve
 lista vazia, e um `| first` sobre lista vazia quebra a play em um lugar que não
 tem nada a ver com o problema.
+
+### 3.4 Imagem que saiu do registry
+
+O `levantamento-e-escopo.md` §4 confere as imagens **no restore**, quando o host
+original pode já ter morrido. A mesma pergunta tem de ser feita no backup, enquanto
+o host vive: o dado está no conjunto, mas a imagem que sabe abri-lo pode não se
+baixar mais de lugar nenhum. Medido em 2026-11-12: `docker manifest inspect
+docker.io/bitnami/mariadb:10.5-debian-10` → `no such manifest`, e o mesmo em
+`bitnamilegacy/`, com a imagem rodando dois bancos vivos no host.
+
+```bash
+ssh <user>@<host> 'docker ps -a --format "{{.Image}}" | sort -u' | while read -r img; do
+  ssh <user>@<host> "timeout 30 docker manifest inspect '$img' >/dev/null 2>&1" </dev/null \
+    && echo "ok   $img" || echo "NÃO $img"
+done
+```
+
+O `</dev/null` no `ssh` de dentro não é enfeite: sem ele, o `ssh` lê o resto da lista
+pelo stdin e o laço para na primeira imagem.
+
+- **Construída no host** (sem registry): esperado. Ou ela tem receita no backup
+  (Dockerfile, compose), ou entra em `docker save` no conjunto.
+- **De terceiro e sumiu:** entra em `docker save` no conjunto. Trocar a origem é decisão
+  do dono (regra inviolável 5); guardar a imagem exata não troca nada.
+- **`unauthorized`, mesmo a partir do próprio host:** não prova nem que existe nem que
+  sumiu. Registre como lacuna, com quem pode conferir (um token do registry privado).
+  Uma imagem de CI marcada pelo commit (`sha-<hash>`) costuma ser recriável pelo próprio
+  CI, e isso também vai escrito.
 
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: ansible-docker-backup-restore
 metadata:
-  version: 1.3.3
+  version: 1.4.0
 description: "Back up and restore a Linux server's Docker services with Ansible — volume tars, pg_dump/mysqldump, snapshot-guarded overwrite, and proof the nightly backup still runs. Catches restores that look green but are broken: 200s serving the wrong page, auth-plugin drift in restored datadirs, silently dead backups. Proves a dump by its contents, not its size. Triggers — ansible, backup, restore, disaster recovery, mysqldump, retention, dump integrity, backup healthcheck lies."
 ---
 
@@ -190,6 +190,8 @@ BACKUP — o restore não terminou sem isto
 [ ] bind mounts com dado insubstituível incluídos à mão — `docker volume ls` não os enxerga
 [ ] push cliente→host de backup verificado DESTE host (não generalizado de outro)
 [ ] acesso de push com menor privilégio: chave dedicada + `rrsync -wo`, provada sem abrir shell
+[ ] nenhum rsync vivo no destino ANTES de gerar o conjunto (a trava do `rrsync -wo` presa por sessão órfã)
+[ ] imagens em uso conferidas com `docker manifest inspect`; as que não se baixam vão em `docker save`
 [ ] playbook de backup rodado ponta a ponta, PLAY RECAP com failed=0
 [ ] backup do dia no destino: um dump por banco esperado, volumes conferidos
 [ ] cada dump abre (`gzip -t`) E tem dados (blocos `COPY`) — tamanho não prova

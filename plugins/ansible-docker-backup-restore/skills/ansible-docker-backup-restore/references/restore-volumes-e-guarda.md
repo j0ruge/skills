@@ -245,3 +245,24 @@ Se a guarda cria e popula o volume antes do `up`, declare-o no compose com
 pré-existente contra a própria declaração e recusa um volume que ele não criou
 (faltam os labels `com.docker.compose.*`). De quebra, `external` impede que um
 `docker compose down -v` acidental apague o dado.
+
+## 7. Restore isolado (teste de DR): origem e destino com nomes diferentes
+
+A guarda costuma usar **um** nome para duas coisas: o volume Docker e o tar
+(`<vol>_<data>.tar`). Num restore de teste em outro host, o destino não pode ter o
+nome da origem: colide com o que já roda lá, e a limpeza do teste precisa achar só os
+volumes dele. Separe as duas variáveis:
+
+- `vol` continua sendo a **origem**: só ela compõe o caminho do tar, no staging e no
+  host de backup;
+- o **destino** é `vol_alvo` = `<prefixo>` ~ `vol` (ex.: `drtest-<stack>_`), e é ele
+  que vai em **toda** operação sobre o volume: `docker volume inspect`/`create`, o
+  mountpoint, o nome do snapshot, a asserção de mountpoint seguro e o
+  `docker ps --filter volume=`.
+
+Com prefixo vazio como padrão, o comportamento é idêntico ao de antes. Prove as duas
+pontas (medido em 2026-11-12, com `docker` falso e o tar real, e depois com a regressão
+da guarda em Docker de verdade): com prefixo, nada é criado nem inspecionado com o nome
+de origem; com o destino já populado, a guarda preserva olhando o **destino**. E no
+compose da stack de teste o volume entra como `external: true` com `name:` prefixado
+(§6).

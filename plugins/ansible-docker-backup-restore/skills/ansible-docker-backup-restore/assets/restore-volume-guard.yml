@@ -12,6 +12,9 @@
 # O princípio: NADA é apagado antes de o substituto estar no disco e provado
 # íntegro. A versão anterior limpava primeiro e buscava depois — um rsync que
 # falhasse deixava o volume vazio e o serviço fora do ar.
+#
+# Aqui origem e destino têm o mesmo nome (`vol`). Para restore isolado de teste,
+# com outro nome de destino, ver references/restore-volumes-e-guarda.md §7.
 
 - name: "[volumes] Verificar se o volume {{ vol }} já existe"
   ansible.builtin.command: "docker volume inspect {{ vol }}"

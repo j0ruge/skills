@@ -2,6 +2,43 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.0] — 2026-11-12
+
+Lições de uma sessão de DR num servidor cujo hardware resetava sob carga. O que já estava coberto
+(chave `rrsync -wo` com caminho relativo, a pergunta 3 do §1.1, `failed_when: false` que nunca
+derruba a play, `manifest inspect` antes do restore, `compose_project` pelo prefixo do volume) não
+foi reescrito.
+
+- **A trava do `rrsync` presa por sessão órfã** (`backup-pipeline-e-falha-silenciosa.md` §2.5).
+  Sintoma que teria evitado: o cliente resetou no meio do push, o TCP não fechou, e com
+  `ClientAliveInterval 0` a sessão do servidor segurou o `flock` do `rrsync -wo` por 1h36; o push
+  seguinte gerou o staging inteiro (~20 min de tar num host frágil) para cair no rsync com rc 12.
+  Contramedidas: preflight que barra com `rrsync`/`rsync --server` vivo no destino, com fronteira
+  de caminho, e `ClientAliveInterval` como raiz. A trava padrão foi conferida na ajuda do
+  `rrsync` do rsync 3.2.7 (`-no-lock`; `-ro` o implica).
+- **O valor conhecido também se supõe errado** (§1.1). Sintoma: dois registros de um handoff não
+  existiam no dump real — o MediaWiki usa `$wgDBprefix` (`mw_page`) e o BookStack v26.09.2 não
+  tem mais `pages` (páginas em `entity_page_data`); e o dump `--all-databases` trazia um `page`
+  legado noutro banco, que um `grep` teria aceitado. Tirar o nome da config viva, preferir
+  `INSERT INTO`, conferir o bloco `USE`, glob exato.
+- **Imagem que saiu do registry, vista no backup** (§3.4 novo, checklist do `SKILL.md`). Sintoma:
+  `bitnami/mariadb:10.5-debian-10` com `no such manifest` (também em `bitnamilegacy/`) rodando
+  dois bancos vivos, fora do `docker save`; o §4 do levantamento só pergunta isso no restore,
+  quando o host pode já ter morrido. `unauthorized` a partir do próprio host não prova nada e
+  vira lacuna.
+- **`failed_when: false` engole a falha da ação** (`provas-que-nao-mentem.md` §6). Sintoma: script
+  não achado reaparecendo duas tarefas depois como `undefined variable`. `failed_when:
+  <registro>.rc is not defined`.
+- **`script:` relativo num arquivo incluído** (`ambiente-e-armadilhas-ansible.md` §6): a busca não
+  vai à pasta acima de `tasks/` (medido com `-vv`).
+- **Restore isolado com origem e destino diferentes** (`restore-volumes-e-guarda.md` §7 novo;
+  comentário no topo de `assets/restore-volume-guard.yml`, sem mudar a lógica do asset).
+- Dívida que já existia: o `metadata.version` do `SKILL.md` estava em 1.3.3 com o plugin em
+  1.3.4; os dois vão a 1.4.0. O smoke Codex em `docs/codex/smokes.json` continua sendo da 1.3.3
+  (a mudança é só de texto em references, checklist e um comentário de asset).
+- Números: `SKILL.md` 200 → 202 linhas; `backup-pipeline-e-falha-silenciosa.md` 464 → 533 linhas.
+- Como reverter: `git revert` do commit que traz esta entrada.
+
 ## [1.3.4] — 2026-10-22
 
 Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.

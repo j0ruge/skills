@@ -200,6 +200,14 @@ de propósito (item 2 acima) — o que significa que **ela nunca derruba a play*
 Toda prova que precisa bloquear tem que ser um `assert` explícito em
 `post_tasks`, não uma expectativa sobre o resultado da role.
 
+O mesmo `failed_when: false` que deixa o vermelho da sonda chegar ao `assert` engole
+também a falha **da própria ação**: script não achado, interpretador ausente. O
+resultado vem sem `rc`, e o erro reaparece duas tarefas depois como `undefined
+variable`, longe da causa. Visto em 2026-11-12, na primeira execução real de uma sonda
+chamada de um playbook fora da raiz do repo. Use `failed_when: <registro>.rc is not
+defined`: o vermelho da sonda (rc 1) segue para o `assert`, e a ação que nem rodou falha
+ali mesmo, com a mensagem verdadeira.
+
 ## 7. O erro que aparece no log pode ser o secundário
 
 Antes de formular hipótese a partir de uma mensagem de erro, verifique **de que
