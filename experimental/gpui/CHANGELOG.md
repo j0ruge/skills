@@ -3,6 +3,20 @@
 Skill sem versão: fica em `experimental/`, fora dos catálogos (ver `../README.md`).
 Cada entrada leva a data e o motivo.
 
+## 2026-11-12 — Identidade da cópia e observação após jobs
+
+- O QA identifica por hash a cópia que executa, mantendo o caminho de origem
+  separado. Um probe trocou o alias imediatamente após copiar e reproduziu
+  `SHA256 reportado não identifica a cópia executada`. Calcular o hash da cópia
+  passou; sabotar o cálculo numa cópia do driver voltou a falhar.
+- Checagens de ausência de efeito aguardam o trabalho assíncrono. Quando as
+  escritas são serializadas, um commit de controle confirmado fornece a barreira
+  antes de comparar os registros anteriores. O mutante específico de Enter
+  compilou e foi detectado com `Enter alterou uma seleção oculta` após essa
+  confirmação; a leitura imediata anterior não tinha esse sensor de conclusão.
+- Referência ampliada no modo lean, sem alterar gatilho ou versão. O aviso B4
+  preexistente de caminho absoluto permanece fora do escopo deste retrofit.
+
 ## 2026-11-12 — QA isolado e oráculo da ação
 
 - Nova referência de QA headless para Xvfb com renderizador de software, sem

@@ -24,6 +24,11 @@ janela GPUI real em outro servidor gráfico; não é teste de DOM.
    associe PID, janela, DISPLAY e logs à mesma execução. Finalize os processos
    criados pelo teste, inclusive em falha, e preserve as evidências necessárias.
 
+Se o roteiro fixar o build copiando o executável, use uma cópia exclusiva e
+estável durante a execução; calcule o hash dessa cópia e execute esse mesmo
+caminho. Registre o caminho de origem separadamente: um rebuild ou uma troca do
+alias original após copiar não pode mudar a identidade atestada pelo relatório.
+
 Se o ambiente não executar a janela, registre bloqueio e o teste restante. Não
 converta ausência de execução em Pass. Um probe de ambiente também não comprova
 que a aplicação abriu, aceitou entrada, persistiu ou encerrou corretamente.
@@ -45,6 +50,15 @@ Um caso negativo tem controle positivo: depois de mostrar que a seleção oculta
 não recebe uma ação, prove que uma entrada visível ainda consegue gerar o efeito
 esperado. A contagem de jornadas executadas precisa corresponder às selecionadas;
 resultado vazio ou erro de ferramenta não significa aprovação.
+
+Em verificações de ausência de efeito, aguarde a conclusão do trabalho disparado
+pela entrada antes de comparar a fixture. Se a ação enfileirar sua escrita antes
+do controle, na mesma fila serial, confirme a persistência dessa escrita de
+controle e então compare os registros anteriores por suas identidades. Use a
+confirmação correspondente ao controle, não um indicador de sucesso anterior.
+Quando o job ainda puder enfileirar outra escrita ou executar em paralelo,
+aguarde sua própria conclusão. Uma leitura do banco logo após a tecla pode
+anteceder uma alteração indevida.
 
 ## Evidência e limites
 
