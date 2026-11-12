@@ -89,6 +89,13 @@ indisponíveis, sem nenhuma relação com o incidente de disco: um moveu tags
 fixadas para fora do namespace gratuito (o serviço quebraria no próximo pull de
 qualquer forma), outro tornou o repositório privado.
 
+**Imagem fixada por digest:** `docker manifest inspect '<img>@sha256:<digest>'` pode sair com
+`manifest verification failed` com a imagem inteira no registry. Medido em 2026-11-12 com o
+digest de índice de um `postgres:17`: o `inspect` falhou e o `docker pull` pelo mesmo digest
+baixou a imagem. Antes de marcar um digest como INDISPONIVEL, tente o `pull` num host onde
+baixar não atrapalha. Não troque o digest pela tag: no mesmo dia, a tag `postgres:17` de outro
+host apontava para outro build.
+
 Descobrir isso agora transforma horas de bloqueio numa lista de pendências
 conhecida. **Se uma imagem sumiu: pare e pergunte ao dono.** Procure o namespace
 novo e apresente a opção — trocar publicador de imagem não é decisão sua

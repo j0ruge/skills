@@ -4,6 +4,17 @@ Abra antes de escrever em qualquer volume ou subir qualquer compose. É o arquiv
 mais denso da skill porque é onde mora o código que decide se dado de produção
 sobrevive.
 
+
+## Sumário
+
+- [§1. A armadilha nº 1: nome de projeto compose](#1-a-armadilha-nº-1-nome-de-projeto-compose)
+- [§2. A guarda anti-sobrescrita](#2-a-guarda-anti-sobrescrita)
+- [§3. O formato do tar não é o que a extensão diz](#3-o-formato-do-tar-não-é-o-que-a-extensão-diz)
+- [§4. Volume pré-populado e o entrypoint da imagem](#4-volume-pré-populado-e-o-entrypoint-da-imagem) — inclui a config efetiva fora do volume
+- [§5. Bind mount de arquivo único](#5-bind-mount-de-arquivo-único)
+- [§6. Volume criado fora do Compose](#6-volume-criado-fora-do-compose)
+- [§7. Restore isolado (teste de DR)](#7-restore-isolado-teste-de-dr-origem-e-destino-com-nomes-diferentes) — inclui o pré-staging sem SSH e a trava de isolamento
+
 ---
 
 ## 1. A armadilha nº 1: nome de projeto compose
@@ -225,6 +236,25 @@ falha de formas que não apontam para permissão.
 Corolário: depois de restaurar um volume de aplicação, ajuste dono e modos
 explicitamente, e só então considere o serviço no ar.
 
+### A config efetiva pode não ser a do volume
+
+Em muitas aplicações a variável de ambiente do container vence o arquivo de config (no
+Laravel, env real vence o `.env`; conferido no app restaurado: o `config('app.key')` era o
+da env, não o do `.env`). O volume restaurado traz o arquivo, não a env. Medido em
+2026-11-12: o `APP_KEY` do `.env` dentro do volume de uma aplicação Laravel era uma chave
+antiga, e a produção rodava com a do compose. Um restore pelo `.env` subiria com a chave
+errada, e o que foi cifrado com a de produção (MFA, sessões) não decifraria.
+
+Antes de restaurar, compare **por hash** (nunca imprima o valor) cada segredo da env do
+container com o do arquivo no volume. Onde divergir, a fonte é o compose, e ele precisa estar
+no backup: confira o membro no tar.
+
+O caminho inverso também engana: **estado na camada do container não vai para o backup de
+volumes.** Na mesma imagem, só cache e sessões apontavam para o volume, e o marcador de
+manutenção do Laravel (`storage/framework/down`) ficava na camada do container. A aplicação
+restaurada subiu servindo, com a origem em manutenção. Liste o volume (`tar -tf`) antes de
+supor que um estado foi junto.
+
 ## 5. Bind mount de arquivo único
 
 Duas armadilhas, ambas silenciosas:
@@ -266,3 +296,20 @@ da guarda em Docker de verdade): com prefixo, nada é criado nem inspecionado co
 de origem; com o destino já populado, a guarda preserva olhando o **destino**. E no
 compose da stack de teste o volume entra como `external: true` com `name:` prefixado
 (§6).
+
+**Sem SSH entre o host de backup e o de teste.** O fallback rsync da guarda (buscar o tar no
+host de backup) não funciona se um não confia no outro. Passe os arquivos pela máquina do
+operador, em fluxo (`ssh <backup> cat <arq> | ssh <teste> 'cat > <arq>.part'`), sem gravar nada
+no disco local, e só promova o `.part` para o nome final depois de conferir o tamanho contra o
+manifesto do conjunto e o sha256 nas duas pontas. A guarda **usa o arquivo do staging se ele
+existir**: um arquivo pela metade com o nome final seria restaurado como se fosse o backup.
+Arquivo final que já existe e diverge da origem: falhe, não sobrescreva. Teste a conferência
+de sha256 com uma corrupção que **mantém o tamanho**; acrescentar um byte deixa a conferência
+de tamanho pegar primeiro, e o teste do sha256 passa sem provar nada (medido em 2026-11-12).
+
+**Trave o isolamento da stack de teste na borda.** Dado restaurado é dado de produção. Antes de
+copiar qualquer compose de teste, um checker recusa: rede sem `internal: true` (inclusive a
+`default`, que o compose cria para serviço sem `networks:`), porta publicada,
+`VIRTUAL_HOST`/`LETSENCRYPT_HOST`, bind para caminho do host, `restart` diferente de `"no"` e
+projeto, container ou volume sem o prefixo de teste (sem ele, a limpeza não acha só o que é do
+teste). Prove o checker com uma cópia sabotada para cada violação.

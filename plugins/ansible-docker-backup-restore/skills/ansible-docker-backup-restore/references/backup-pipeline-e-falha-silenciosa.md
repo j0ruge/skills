@@ -364,6 +364,20 @@ Encerrar a sessão órfã à mão (o `sshd` pai) só depois de conferir, com
 `ss -tnop state established '( sport = :22 )'`, de que IP ela vem e que o destino dela
 não guarda nada a preservar.
 
+**Reset abrupto do cliente no meio do backup.** Duas leituras erradas custam caro:
+
+- **"Sem reset" se prova pela lista de boots** (`journalctl --list-boots`, `last -x`), não pelo
+  uptime de uma amostra. Medido em 2026-11-12: o uptime lido no fim de uma cópia dizia que não
+  tinha havido reset, e o boot seguinte começou segundos depois.
+- **Antes de culpar carga ou temperatura, leia o Machine Check do boot seguinte**
+  (`dmesg | grep 'Hardware Error'` ou `journalctl -b <n> -k`): o kernel registra no boot o erro
+  que o CPU guardou antes de reiniciar. Quatro resets do mesmo dia com a mesma CPU, o mesmo
+  banco (L1D) e endereços com os mesmos 12 bits baixos apontaram defeito de hardware, inclusive
+  o reset que veio com carga baixa. Desligar o núcleo a quente
+  (`echo 0 > /sys/devices/system/cpu/cpu<N>/online`, ele e o irmão de hyperthread) segurou 37
+  min de cópia sem novo reset nem MCE novo. Para persistir isso numa unit, trave-a na máquina
+  (UUID do DMI): o disco pode mudar de máquina, e lá o mesmo número é um núcleo saudável.
+
 ---
 
 ## §3. Anatomia do pipeline, e onde cada etapa falha
@@ -531,3 +545,9 @@ tar -cvf /dev/null <pasta> 2>/dev/null | wc -l                      # sem
 ```
 
 A diferença é exatamente o que você está decidindo perder.
+
+6. **Todo sensor de cobertura lê a mesma lista de exclusão.** Uma matriz que dá como coberto
+   todo caminho sob os diretórios do tar, sem descontar as exclusões, mostra como protegido o
+   que a exclusão tirou. Medido em 2026-11-12: 28,6 GB excluídos do tar semanal (e copiados à
+   parte) apareciam como cobertos pelo tar. O caminho excluído só conta como coberto se
+   apontar a outra cópia, e o manifesto dela tiver arquivos sob o prefixo declarado.

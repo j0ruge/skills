@@ -2,6 +2,43 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.5.0] — 2026-11-12
+
+Lições de um teste de DR no mesmo dia da 1.4.0: o conjunto de um servidor restaurado em stacks
+isoladas num host de teste, com contagem igual nas duas pontas. Tudo medido nessa sessão. O que já
+estava coberto (`manifest inspect` antes do restore, o ping que responde às duas fases do MySQL, a
+forma `--all-databases` do dump) ganhou a borda nova no mesmo lugar, sem seção repetida.
+
+- **Banco novo: quem é o root depende do init da imagem** (`restore-bancos.md` §4b). Sintoma que
+  teria evitado: num `lscr.io/linuxserver/mariadb:11.4.8` novo, o `root@localhost` só entra por
+  `unix_socket` e a senha da env vale para `root@'%'`; com `skip_name_resolve=0` até TCP em
+  127.0.0.1 vira `localhost`. Um import com `-p<senha>` abortou a guarda com `ERROR 1045`. A
+  origem, de um init antigo, só tinha `root@'%'` com senha. Sondar e ter modo socket.
+- **`mysqladmin ping` sai 0 com Access denied** (§3). A espera por ping passou e a consulta
+  seguinte levou `ERROR 1045`.
+- **`--all-databases` traz os usuários de produção** (§5b). Os grants só trocam no `FLUSH`;
+  depois dele o root do restore levou `ERROR 1045` pelo socket e pela senha (conferido), e a
+  reexecução bateria na guarda. Contar e pré-checar pelo usuário da aplicação.
+- **A config efetiva pode não ser a do volume** (`restore-volumes-e-guarda.md` §4). O `APP_KEY`
+  do `.env` de um volume Laravel era outro; a produção usava o do compose (env vence `.env`).
+  Comparar por hash. E o marcador de manutenção ficava na camada do container, fora do backup.
+- **Pré-staging sem SSH entre os hosts e trava de isolamento da stack de teste** (§7). Fluxo pela
+  máquina do operador com `.part`, manifesto e sha256; a corrupção do teste tem de manter o
+  tamanho, senão o sha256 nunca é exercitado (a primeira versão do teste caiu nisso).
+- **SQLite com WAL, contado numa cópia** (`provas-que-nao-mentem.md` §4c). Sabotagem sem o WAL:
+  2 usuários onde havia 3.
+- **Imagem por digest** (`levantamento-e-escopo.md` §4). `docker manifest inspect` com digest de
+  índice falhou com `manifest verification failed`; o `docker pull` pelo mesmo digest baixou.
+  O checklist do SKILL.md, que mandava só o `inspect`, agora diz isso.
+- **Sensor de cobertura e exclusões** (`backup-pipeline-e-falha-silenciosa.md` §5, item 6). Uma
+  matriz que ignorava o `container_dirs_exclude` dava 28,6 GB excluídos como cobertos.
+- **Reset abrupto do cliente** (§2.5, depois da sessão órfã). "Sem reset" pela lista de boots,
+  não pelo uptime (o uptime enganou); o Machine Check do boot seguinte apontou defeito de CPU.
+- **Quatro armadilhas de Ansible** (`ambiente-e-armadilhas-ansible.md` §6): `fail_msg` renderizado
+  com o assert verdadeiro, chave `copy` de dict virando método, aspas aninhadas em `$( )` no
+  `shell:` livre, `regex_search` com barra dupla em bloco literal.
+- Smoke do Codex: segue o da 1.3.3 (nenhum arquivo novo; a contagem de recursos não mudou).
+
 ## [1.4.0] — 2026-11-12
 
 Lições de uma sessão de DR num servidor cujo hardware resetava sob carga. O que já estava coberto

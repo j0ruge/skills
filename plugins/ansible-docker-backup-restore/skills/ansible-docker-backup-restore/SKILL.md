@@ -1,7 +1,7 @@
 ---
 name: ansible-docker-backup-restore
 metadata:
-  version: 1.4.0
+  version: 1.5.0
 description: "Back up and restore a Linux server's Docker services with Ansible — volume tars, pg_dump/mysqldump, snapshot-guarded overwrite, and proof the nightly backup still runs. Catches restores that look green but are broken: 200s serving the wrong page, auth-plugin drift in restored datadirs, silently dead backups. Proves a dump by its contents, not its size. Triggers — ansible, backup, restore, disaster recovery, mysqldump, retention, dump integrity, backup healthcheck lies."
 ---
 
@@ -174,7 +174,9 @@ Abra `references/backup-pipeline-e-falha-silenciosa.md` e siga.
 ```
 RESTORE
 [ ] inventário do que roda hoje lido; contagem, volumes e ID de rede anotados
-[ ] TODAS as imagens validadas com `docker manifest inspect` antes de começar
+[ ] TODAS as imagens validadas com `docker manifest inspect` antes de começar (por digest: confirme com `pull`)
+[ ] banco novo: como o root entra (senha ou socket) sondado antes do import; `FLUSH` depois de um `--all-databases`
+[ ] segredos da env do container comparados por hash com os do volume (a config efetiva pode ser outra)
 [ ] origens de backup ENUMERADAS por escrito antes de declarar algo perdido
 [ ] nome de projeto compose explícito, derivado do PREFIXO DO VOLUME
 [ ] guarda anti-sobrescrita testada em volume descartável

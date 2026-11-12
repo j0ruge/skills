@@ -165,6 +165,19 @@ filtro mudou. Nos dois casos, uma sonda deliberada distingue em segundos.
 Pergunta única que resolve: **"isto teria me mostrado um positivo?"** Se você não sabe
 responder, o resultado negativo não é evidência.
 
+## 4c. SQLite: conte com o WAL, numa cópia
+
+Aplicação com SQLite em modo WAL (o Vaultwarden, por exemplo) tem linhas que ainda estão só no
+`db.sqlite3-wal`, e o tar de um volume vivo leva esse arquivo. Duas formas de errar:
+
+- **contar só o `db.sqlite3`** erra para baixo, e erra diferente antes e depois de a aplicação
+  subir, porque ela faz checkpoint ao abrir. A comparação origem × restaurado mente;
+- **abrir o original** para contar muda a evidência: o SQLite faz checkpoint e apaga o WAL ao
+  fechar a última conexão.
+
+Copie `db.sqlite3`, `-wal` e `-shm` (os que existirem) para um temporário e conte lá. Medido em
+2026-11-12 com uma sabotagem: sem o WAL, a contagem deu 2 usuários onde havia 3.
+
 ## 5. Aguarde de verdade antes de asserir
 
 Sem espera, a asserção de containers dispara logo após o `compose up` e **passa
