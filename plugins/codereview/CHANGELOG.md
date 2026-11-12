@@ -2,6 +2,24 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.27.38] — 2026-11-12
+
+### Foco nativo e artefatos de mutação conferidos no executável
+
+- O pass 6.7 passa a incluir UI nativa: último elemento filtrado, controle removido,
+  carga com erro e diálogo reaberto. Mantém `needs reproduction` para a consequência
+  inferida do framework e o contracaso de foco redirecionado para um alvo persistente.
+  No GPUI 0.2.2, seis jornadas do controle corrigido passaram; quatro sabotagens
+  independentes de foco compilaram e falharam nas suas jornadas headless.
+- `configuration.md` e o fix-loop do `coderabbit-pr` distinguem cópia do fonte de
+  isolamento de build. Em Cargo 1.97.0, um target comum manteve o alias MUTANT mesmo
+  após build original fresh; o target separado preservou o hash do controle enquanto
+  o mutante executou. A ocorrência no binário nativo também foi encerrada com
+  restauração do controle e conferência de hash. `coderabbit-pr`: 4.6.12.
+- As descriptions e os gatilhos permanecem iguais; detalhes ficam nas referências,
+  preservando o orçamento dos dois SKILL.md. A auditoria comparativa da proposta
+  separa as dívidas anteriores; não se reivindica redução de custo por esta edição.
+
 ## [2.27.37] — 2026-11-11
 
 ### O teste de contrato ganha agente, os registros de um modelo vão em lote e o canário é gerado na hora

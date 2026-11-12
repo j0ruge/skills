@@ -330,7 +330,7 @@ When a check-then-act pattern is ambiguous (single-user CLI tool, idempotent rea
 
 ### 6.7 Accessibility
 
-Applies to any frontend framework that renders HTML.
+Applies to HTML frontends and native interfaces with a focus/context graph.
 
 **When `frameworkPatterns` is `react|vue|angular|node`:**
 
@@ -338,6 +338,16 @@ Applies to any frontend framework that renders HTML.
 - **Form buttons without explicit type**: `<button>` in `<form>` without `type="button"`. → **MEDIUM**
 - **Interactive elements without keyboard support**: Clickable `<div>` without `role`, `tabIndex`, `onKeyDown`. → **MEDIUM**
 - **Images without alt text**: `<img>` without `alt` attribute. → **LOW**
+
+**UI nativa, inclusive com `frameworkPatterns=generic`:** examine o destino do foco
+quando a última linha visível sai de um filtro, quando um controle focado é excluído,
+quando a carga falha antes de montar o formulário e quando um diálogo é solicitado
+de novo. Um handle ainda existente não comprova que seu elemento continua desenhado.
+Se os atalhos dependem do contexto do foco, confira o despacho na versão resolvida
+do framework e um destino de retorno que continue montado. Marque a consequência
+como `needs reproduction` até haver prova; um caminho que já redireciona para um
+controle persistente não recebe achado. A comprovação funcional usa a janela nativa,
+em display isolado quando disponível; DOM não prova esse comportamento.
 
 **A CSS claim about size, shift or overflow is a runtime claim.** One styled file holds neither the global reset (`box-sizing`) nor the font that sets a width, so a per-file agent that did not read the global stylesheet files such a claim `needs reproduction`. Phase C reads the reset and measures the box in a headless browser with the page's font loaded (`getBoundingClientRect`) before it keeps the severity. Measured 2026-10-30 (PR #13): a MEDIUM said a 10px focus border "grows the input by about 8px" and shifts the layout, but `* { box-sizing: border-box }` and the input's fixed height make the border grow inward; a LOW said "Enviando…" overflowed a 180px form, and Chromium with Roboto 700 loaded measured the button at 101.4px, 2.6px inside it. Both were dropped.
 

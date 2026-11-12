@@ -619,6 +619,19 @@ These decide whether the rounds converge:
   2026-10-05: a mutant "passed" that way and failed once the cache was isolated. Not the
   `PYTHONPYCACHEPREFIX` variable: `-I` ignores every `PYTHON*` variable, so it is dropped in silence
   (measured 2026-10-17: `sys.pycache_prefix` was `None` and the `.pyc` landed next to the source).
+- **Copiar o fonte não isola os artefatos do mutante.** Em Cargo, um `CARGO_TARGET_DIR`
+  compartilhado com o checkout pode trocar o executável público mesmo que o fonte original
+  permaneça intacto. Use um target dedicado ao laboratório (`--target-dir`), sem publicar
+  os binários desse laboratório como controle. Um build `fresh` com exit 0 não comprova a
+  identidade do arquivo executado: registre o hash do controle antes, o executável de cada
+  variante e o hash restaurado depois. Uma restauração por cópia usa um controle previamente
+  validado, não um arquivo escolhido apenas pelo nome. Esse isolamento não transforma erro
+  de compilação em mutante detectado; a regra abaixo continua valendo.
+  Medido em 2026-11-12, Cargo 1.97.0: após o build da cópia no target comum, o executável
+  imprimiu MUTANT e o build original `fresh` continuou imprimindo MUTANT; com target separado,
+  o mutante imprimiu MUTANT e o hash do controle permaneceu igual. O mesmo tipo de troca
+  havia sido observado num binário GPUI. [Configuração oficial do target](https://doc.rust-lang.org/cargo/reference/config.html#buildtarget-dir).
+
 - **A mutant that does not build is not a kill.** A broken build exits non-zero like a red test, but
   prints neither of the runner's summary lines (`Passed!|Failed!`), so a filter on them stays mute. Write the
   mutant as an exact text replacement that occurs once and must change the file, keep every symbol it leaves in use,

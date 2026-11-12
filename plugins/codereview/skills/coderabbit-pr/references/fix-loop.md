@@ -64,6 +64,13 @@ symptom — including one that opens a new fail-open next to it. The regression 
    it must be the probe of the rule you loosened. Measured 2026-10-05 (sdd_agents PR #222):
    `tbl = 1` → `:` is not awk, and the selftest went red at an unrelated probe; redone as
    `tbl = 0`, it went red at the probe of the rule.
+   **A cópia também precisa de saída de build isolada.** Num projeto Cargo, dê ao laboratório
+   um `--target-dir` próprio; compartilhar o target com o produto pode trocar seu executável
+   sem editar o checkout. Registre o hash do controle antes da sabotagem e confira-o ao final.
+   Um build original `fresh` não é prova de restauração: em Cargo 1.97.0, medido em 2026-11-12,
+   o alias público continuou sendo o mutante após exit 0. Se houve compartilhamento, restaure
+   um controle validado e confira seu hash antes de executar ou entregar o binário.
+
    **An interrupted run leaves the sabotage in the file.** The restore runs after the probes, so a run
    killed in between skips it, and with the fix still uncommitted the tree already shows a diff:
    `git status` cannot tell the fix from the sabotage. After any interruption, count each loosened
