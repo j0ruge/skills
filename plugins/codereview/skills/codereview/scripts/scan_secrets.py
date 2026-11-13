@@ -257,6 +257,33 @@ def looks_like_placeholder(raw_value: str) -> bool:
     return False
 
 
+# Variável de shell sem chaves (`"$VAR"`) e expressão Jinja (`'{{ var }}'`) como valor INTEIRO.
+VAR_DE_SHELL_RE = re.compile(r"\$[A-Za-z_][A-Za-z0-9_]*")
+EXPRESSAO_JINJA_RE = re.compile(r"\{\{[^{}]+\}\}")
+ARQUIVO_DE_SHELL_RE = re.compile(r"\.(?:sh|bash|zsh|ksh|j2)$|(?:^|/)[^./]+$")
+
+
+def is_runtime_reference(raw_value: str, path: str) -> bool:
+    """Decide se o valor inteiro é uma leitura em tempo de execução, e não um literal.
+
+    - Expressão Jinja inteira (`{{ var }}`, `{{ var | filtro }}`): o template rende antes de rodar.
+      Com literal dentro (`default("x")`) o padrão nem casa o valor inteiro, e a linha segue achado.
+    - Variável de shell sem chaves (`$VAR`), entre aspas duplas ou sem aspas: em MAIÚSCULAS vale em
+      qualquer arquivo (convenção de ambiente); em minúsculas, só em arquivo de shell, porque fora
+      dele um cifrão seguido de letras pode ser a própria senha. Aspas simples não expandem.
+    """
+    v = raw_value.strip()
+    aspas = v[:1] if v[:1] in "\"'" else ""
+    nucleo = v.strip("\"'").strip()
+    if EXPRESSAO_JINJA_RE.fullmatch(nucleo):
+        return True
+    if aspas == "'":
+        return False
+    if VAR_DE_SHELL_RE.fullmatch(nucleo):
+        return nucleo[1:].isupper() or bool(ARQUIVO_DE_SHELL_RE.search(path))
+    return False
+
+
 def line_has_env_lookup(full_line: str) -> bool:
     return any(p.search(full_line) for p in ENV_LOOKUP_PATTERNS)
 
@@ -386,6 +413,10 @@ def scan_diff(diff_text: str) -> ScanResult:
                     raw_val = match.group(0)
 
                 if looks_like_placeholder(raw_val):
+                    continue
+
+                # `"$VAR"` sem chaves e `'{{ var }}'`: o valor é lido ao rodar (medido em 2026-11-12).
+                if is_runtime_reference(raw_val, path):
                     continue
 
                 # `.env.example` etc. NUNCA disparam Env Assignment / Generic

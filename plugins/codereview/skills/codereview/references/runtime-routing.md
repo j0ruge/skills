@@ -53,6 +53,11 @@ até 3 arquivos por agente. Ache-os com
 `grep -lE 'readFileSync|readFile\(|existsSync|readdirSync|glob'` sobre os TESTS mudados, num
 script em bash: o zsh aborta o glob que não casa.
 
+Esse grep só conhece JavaScript. Em teste Python, ou shell que embute Python, acrescente
+`|open\(|read_text\(|safe_load`. O resultado é uma lista de candidatos, e não a lista final: o
+padrão também casa a leitura de um arquivo temporário que o próprio teste criou. Fique com os que
+leem um caminho do repositório (a role, o playbook, o `defaults`), e só esses vão a agente.
+
 Medido em 2026-11-11 (codereview 2.27.36, revisão `full` de 62 arquivos de um monorepo TypeScript):
 
 - a rodada 1 lançou 15 agentes por arquivo, e nenhum recebeu um dos 4 TESTS mudados;
@@ -63,6 +68,11 @@ Medido em 2026-11-11 (codereview 2.27.36, revisão `full` de 62 arquivos de um m
   citou;
 - dos 4 TESTS, 3 leem arquivo pelo caminho, e o grep acima acha esses 3 e só eles: a regra custaria
   1 agente.
+
+Medido em 2026-11-12 (codereview 2.27.38, revisão `full` de 78 arquivos de um repositório de
+playbooks, com testes em shell e Python): dos 22 TESTS mudados, o grep de JavaScript achou 3 e o
+grep estendido achou 13. Entre esses 13 estavam os que carregam as tasks de uma role com
+`safe_load(open(…))` e conferem o texto delas, que nenhum agente por arquivo tinha recebido.
 
 ## Coleta sem perda
 

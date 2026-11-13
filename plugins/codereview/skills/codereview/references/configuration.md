@@ -500,7 +500,9 @@ launches no agent, and the report grades code nobody read.
 - **A long doc goes to more than one agent**, each with a line range on its `File:` line
   (`docs/x/01-plano.md (category: CODE, lines 1–505)`); the rest of the launch prompt stays
   verbatim. The ≤3-file inline shortcut does not apply here: inline, the main model reads the
-  whole doc.
+  whole doc. A long CODE file split the same way needs Phase C to dedup by `{file, line}` across
+  the ranges and to drop what an agent reports outside its own: until 2.27.38 the agent's contract
+  did not bind it to the range, and 2 of 2 agents ignored it (per-file-agent.md, *Scope*).
 - **The range names the sections that bind it** (`lines 354–645; also 105–106, § Contexto`). Past
   ~600 lines the agent reads only the changed regions (per-file-agent.md), so a rule written
   outside its range comes back as a gap. Measured 2026-10-20: the agent of lines 354–645 of a plan
@@ -808,6 +810,17 @@ These decide whether the rounds converge:
   said those LOW had gone to the backlog, once next to the numbers (`3.5e r1 #5 a #12`) and once
   without them (``os LOW foram ao `TODO.md` e adiados``); round 2's agent gave it a LOW, and with a
   clause naming the fix commit in each place, round 3 gave none.
+- **A test written for a fix asserts the guard's own message, and a finding about a future edit
+  is LOW with a written verdict.** Two things kept the rounds from converging. A test that greps
+  the output for a word the task's name also carries goes green when the guard never ran: assert
+  the text of the guard's failure message, and that nothing was written. And an agent that reads a
+  fix asks what would happen if someone later changed a default, a block or a flag that today has
+  one value; that is a hypothetical, graded LOW, with the verdict (what the code does today, and
+  where) written in the fix record so the next round's Phase C can cite it instead of grading it
+  again. Measured 2026-11-12 (the branch in detection-passes.md 6.10, four rounds): the MEDIUMs
+  went 30, about 30, 12 and 3. Round 2 stayed at round 1's count because the fixes' own tests and
+  records were its findings; 3 of round 3's 12 were closed by a written verdict with no code
+  change, and round 4 was the first to come back in single digits.
 
 ## Runtime evidence
 

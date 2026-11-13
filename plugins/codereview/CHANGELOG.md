@@ -2,6 +2,42 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.28.0] — 2026-11-13
+
+### O scanner reconhece a variável de shell sem chaves e a expressão Jinja; três lições de uma revisão de 78 arquivos
+
+Minor, porque o `scan_secrets.py` muda de comportamento. O `SKILL.md` segue com 19.998 chars e só
+troca a versão: o resto está no scanner e em `references/`. As lições vieram das 4 rodadas de uma
+revisão `full` de um repositório de playbooks Ansible (2026-11-12), que saiu de F para segredos 0
+e nenhum HIGH.
+
+- **Scanner (`scripts/scan_secrets.py`, função `is_runtime_reference`).** O valor que é só uma
+  variável de shell sem chaves, entre aspas duplas ou sem aspas, ou só uma expressão Jinja, deixa
+  de ser achado. Antes só a forma com chaves era isenta: 10 linhas `Generic Password` forçaram a
+  nota F num branch sem credencial literal, e 8 delas liam o valor de uma variável. Limites, todos
+  com teste: nome em minúsculas só é isento em arquivo de shell; aspas simples seguem achado;
+  `default(…)` com literal dentro do Jinja segue achado; o canário literal segue acusado pelo
+  regex e pelo gitleaks. 7 testes novos (`TestLeituraEmTempoDeExecucao`); a suíte foi de 25 para
+  32, todos verdes. Registrado em `detection-passes.md`, 6.10.
+- **Teste de contrato fora do JavaScript (`runtime-routing.md`).** O grep que acha os testes de
+  contrato só conhecia `readFileSync` e parentes. Nos 22 TESTS mudados daquela revisão ele achou
+  3; com `open\(|read_text\(|safe_load` achou 13. A reference passa a dizer que o resultado é
+  lista de candidatos, porque o padrão também casa arquivo temporário do próprio teste.
+- **Faixa de linhas em arquivo de código (`per-file-agent.md`, `configuration.md`).** O contrato
+  do agente não o prendia à faixa `lines A–B`. Em 2 de 2 tentativas de dividir um arquivo longo de
+  código, um agente reportou fora da faixa e o outro revisou o arquivo inteiro: 6 achados
+  duplicados. O contrato agora limita os achados à faixa, e a fase C deduplica por arquivo e linha.
+- **Convergência das rodadas (`configuration.md`, *Re-review rounds*).** Os MEDIUM foram 30, cerca
+  de 30, 12 e 3. Duas regras novas: o teste escrito para um conserto confere o texto da mensagem
+  da guarda, e não uma palavra que o nome da task também carrega; e o achado sobre uma edição
+  futura hipotética é LOW, com o veredito escrito no registro do conserto para a rodada seguinte
+  citar.
+
+Sem linha removida e sem mudança de `description`. O `/claude-api prompt-audit` que o `CLAUDE.md`
+do repositório pede a cada retrofit ficou para uma tarefa à parte, por decisão do dono.
+
+Reverter: `git revert` deste commit; o scanner volta a acusar as duas formas.
+
 ## [2.27.38] — 2026-11-12
 
 ### Foco nativo e artefatos de mutação conferidos no executável

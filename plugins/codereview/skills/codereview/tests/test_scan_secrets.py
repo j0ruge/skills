@@ -236,6 +236,62 @@ class TestSenhaInterpoladaNaConnectionString(unittest.TestCase):
                 self.assertEqual(len(self.achados(forma)), 1)
 
 
+class TestLeituraEmTempoDeExecucao(unittest.TestCase):
+    """Variável de shell sem chaves e expressão Jinja como valor inteiro são leitura em tempo de execução.
+
+    Até a 2.27.38 só a forma com chaves era isenta: num repositório de playbooks, 8 das 10 linhas
+    acusadas liam a senha de uma variável e forçaram a nota F sem credencial nenhuma (medido em
+    2026-11-12). A linha é montada aqui na hora, para este arquivo não carregar a forma procurada.
+    """
+
+    CHAVE = "DB_" + "PASS" + "WORD"
+
+    def achados(self, valor: str, caminho: str = "tasks/main.yml") -> list:
+        """Varre um diff de uma linha `CHAVE=<valor>` no caminho dado e devolve os achados do padrão."""
+        diff = (f"diff --git a/{caminho} b/{caminho}\n--- /dev/null\n+++ b/{caminho}\n"
+                f"@@ -0,0 +1 @@\n+    {self.CHAVE}={valor}\n")
+        return [f for f in scan_secrets.scan_diff(diff).findings if f.kind == "Generic Password"]
+
+    @staticmethod
+    def aleatoria() -> str:
+        """Um valor novo a cada chamada, para nenhum literal ficar neste arquivo."""
+        return "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
+
+    def test_variavel_de_ambiente_sem_chaves_nao_vira_achado(self):
+        self.assertEqual(self.achados('"$APP_DB_SENHA"'), [])
+
+    def test_variavel_minuscula_so_e_isenta_em_arquivo_de_shell(self):
+        self.assertEqual(self.achados('"$senha_lida"', "scripts/roda.sh"), [])
+        self.assertEqual(self.achados('"$senha_lida"', "bin/roda"), [])
+        # Fora de shell, cifrão e letras minúsculas podem ser a própria senha.
+        self.assertEqual(len(self.achados('"$senha_lida"', "config/app.json")), 1)
+
+    def test_aspas_simples_nao_expandem_no_shell(self):
+        self.assertEqual(len(self.achados("'$APP_DB_SENHA'", "scripts/roda.sh")), 1)
+
+    def test_expressao_jinja_inteira_nao_vira_achado(self):
+        for forma in ("'{{ senha_do_banco }}'", '"{{ item.senha | quote }}"', "'{{senha}}'"):
+            with self.subTest(forma):
+                self.assertEqual(self.achados(forma), [])
+
+    def test_padrao_literal_dentro_do_jinja_segue_achado(self):
+        # O valor de reserva está escrito na linha, como no `${X:-valor}`.
+        forma = "'{{ senha | default(\"" + self.aleatoria() + "\") }}'"
+        self.assertEqual(len(self.achados(forma)), 1)
+
+    def test_literal_com_cifrao_ou_chaves_no_meio_segue_achado(self):
+        for forma in (f'"${self.aleatoria()}-{self.aleatoria()}"', f'"{self.aleatoria()}$APP_DB_SENHA"',
+                      f'"x{{{{ {self.aleatoria()} }}}}y"'):
+            with self.subTest(forma):
+                self.assertEqual(len(self.achados(forma)), 1)
+
+    def test_canario_literal_segue_achado(self):
+        senha = self.aleatoria()
+        achados = self.achados(f'"{senha}"')
+        self.assertEqual(len(achados), 1)
+        self.assertNotIn(senha, achados[0].snippet)
+
+
 class TestDiffForaDoAscii(unittest.TestCase):
     """O stdin do Windows (cp1252 com surrogateescape) e os cabeçalhos `+++` com TAB e com aspas."""
 
