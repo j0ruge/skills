@@ -1,5 +1,40 @@
 # Changelog — env-docs-sync
 
+## [0.1.1] — 2026-11-13
+
+Adoção do plugin numa página de verdade, que herdava do livro e já guardava um `.env` colado à mão.
+Duas lições viraram receita na `references/kb.md`. Nenhum comportamento muda.
+
+### Por quê
+
+- **A trava recusou, e a skill não dizia como restringir.** Ela também vale para o dry-run do
+  `migrate`, porque o `DestinoKb.substituir_pagina` lê as permissões antes do `page replace`, com ou
+  sem `--apply`. O primeiro `content-permissions update` saiu rc 2 (`--confirm <id> não bate com o
+  alvo page/<id>`): ali o `--confirm` é o alvo inteiro, e não o id que o `page replace` recebe.
+- **A página tinha conteúdo, e a skill não dizia como inspecioná-lo.** O primeiro `pages read`
+  imprimiu um trecho do corpo, que era o `.env` colado à mão. Só passaram comentários, mas o
+  segredo estava a poucas linhas. Listar só os headings e comparar cada `<pre>` por linhas com os
+  arquivos da Varredura mostrou, sem imprimir valor, que o bloco era igual a um `.env*` local e que
+  o `migrate` não perdia nada.
+
+### Changed
+
+- `references/kb.md` §2: subseção "Restringir a página antes do primeiro `migrate`". Ler a ACL do
+  livro, gravá-la na página sem herança e com o fallback todo `false` (`--confirm page/<id>`),
+  reler e só então migrar. O `render-page` é o que mostra a estrutura antes disso. E quem entra em
+  `doc.allowed_roles` é decisão da pessoa.
+- `references/kb.md` §4: subseção "Antes de migrar uma página que já tem conteúdo". Nunca imprimir
+  o corpo. Comparar os `<pre>` com os arquivos locais, ler o `units.lost` do dry-run e levar à
+  pessoa o bloco sem par.
+- `SKILL.md`: a linha de roteamento da `kb.md` cita esses dois casos. A lição não ganhou linha em
+  *Armadilhas*, porque o `SKILL.md` estava a 139 chars do aviso C1 (20 mil).
+
+### Fora desta versão
+
+- O hook pode escrever entre a liberação da trava e o `migrate`. O PostToolUse do shell dispara a
+  cada comando, e a página ainda não tem os h2 do template. Na adoção, o caso foi evitado rodando
+  as permissões e o `migrate` num comando só. Ele não foi reproduzido, e fica para investigar.
+
 ## [0.1.0] — 2026-10-27
 
 Primeira versão publicada, feita por incrementos: o núcleo puro com testes offline, a entrada do hook

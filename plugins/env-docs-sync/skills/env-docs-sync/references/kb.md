@@ -42,6 +42,32 @@ da página. Ele recusa sem escrever, com `ErroDePermissao`, quando:
 A regra falha fechado: resposta sem um dos campos, item ilegível ou `view` nulo contam como
 visível. A recusa vira aviso com exit 0 no hook e rc 1 na CLI, e o estado não muda.
 
+### Restringir a página antes do primeiro `migrate`
+
+Página nova num livro costuma herdar dele, e a trava a recusa até no dry-run: o
+`DestinoKb.substituir_pagina` chama `conferir_permissao()` antes do `page replace`, com ou sem
+`--apply`. Antes de restringir, a estrutura nova só se vê pelo `render-page`, que grava a página em
+0600 sem passar pela trava e sem ler os ambientes ssh. A restrição sai pela mesma CLI:
+
+1. Leia a ACL do livro: `content-permissions read book <id do livro>`. Os `role_id` saem dali.
+2. Grave na página a mesma ACL, ou uma mais estreita, sem herança e com o fallback todo `false`:
+   `content-permissions update page <id> --body '<json>' --confirm page/<id> --apply`. Sem
+   `--apply`, rc 4 com o corpo que iria.
+
+   ```json
+   {"role_permissions": [{"role_id": 5, "view": true, "create": false, "update": false, "delete": false}],
+    "fallback_permissions": {"inheriting": false, "view": false, "create": false, "update": false, "delete": false}}
+   ```
+
+3. Releia com `content-permissions read page <id>`, e só então rode o `migrate`.
+
+O `--confirm` daqui é o alvo inteiro, `page/<id>`, e não o id que o `page replace` recebe. Com o id
+puro, a CLI sai rc 2 com `--confirm <id> não bate com o alvo page/<id>`. Copiar a ACL do livro não
+muda quem vê a página, mas muda o que ela mostra: os valores de todos os ambientes, produção
+inclusive. Quem entra em `doc.allowed_roles` é decisão da pessoa, e não do agente. Medido em
+2026-11-13 num BookStack v26.09: rc 2 com o id puro, rc 0 com `page/<id>` e, na releitura,
+`inheriting: false`.
+
 ## 3. A escrita de um bloco
 
 1. **Trava**, uma vez por destino.
@@ -67,6 +93,25 @@ Ela lê **todos** os ambientes, inclusive os ssh. Se um deles falhar, nada é en
 nova perderia aqueles blocos. Ela passa pela mesma trava. Sem `--apply`, imprime o dry-run da CLI
 (contagens de unidades, bytes e sha curto, nunca texto) e sai com rc 4. Com `--apply --state <arquivo>`,
 grava o estado do que foi publicado, inclusive o das seções derivadas.
+
+### Antes de migrar uma página que já tem conteúdo
+
+O `migrate` troca a página inteira. Quando ela já guarda algo, como um `.env` colado à mão, confira
+o que sai sem imprimir o corpo: o `pages read` devolve `html` e `raw_html` com os valores, e um
+trecho impresso "para dar uma olhada" já põe o segredo na transcrição.
+
+1. Liste só os headings e o número de `<pre>`, com um filtro que não imprime o resto.
+2. Compare cada `<pre>` com os arquivos da Varredura (texto sem tags, entidades resolvidas, linhas
+   sem espaço no fim) e imprima só "igual" ou "diferente", com as contagens de linhas.
+3. Um bloco igual a um arquivo local volta na Seção do ambiente dele. Um bloco sem par sai da
+   revisão corrente: fica no histórico de revisões e no `backup` que a CLI grava, mas leve isso à
+   pessoa antes do `--apply`.
+4. No dry-run do `migrate`, `units.lost` conta as unidades que a página perde. Leia esse número
+   junto com a comparação do passo 2.
+
+Medido em 2026-11-13: uma página com um `<pre>` colado à mão, igual linha a linha a um `.env*` da
+Varredura. O dry-run deu `lost: 4` das 7 unidades antigas, e o conteúdo do `<pre>` voltou no Bloco
+de arquivo dele.
 
 ### As seções derivadas depois da migração
 

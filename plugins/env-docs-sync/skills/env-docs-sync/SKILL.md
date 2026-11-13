@@ -5,7 +5,7 @@ license: MIT
 compatibility: Python 3.11+, só biblioteca padrão (testado com o 3.12.3 e o 3.11.14), git 2.31+. Hooks medidos em 2026-10-27 no Claude Code 2.1.309 e no codex-cli 0.164.0 (payload real capturado nos dois; trust do Codex conferido contra o hooks/list do app-server, também no 0.165.0). Sync remoto com o ssh do OpenSSH (medido no 9.6p1) e, para host com senha, o sshpass (medido no 1.09). CI/CD pelo GitHub CLI 2.85.0, opcional. Destino kb conferido contra o KB de staging (BookStack v26.09) em 2026-10-27.
 metadata:
   author: JorUge
-  version: "0.1.0"
+  version: "0.1.1"
 ---
 
 # env-docs-sync
@@ -24,7 +24,7 @@ O exemplo completo e fictício está em `assets/env-docs.example.json`.
 | `references/config.md` | ao escrever, revisar ou depurar uma `.env-docs.json`: schema campo a campo, padrões e o arquivo de estado |
 | `references/hosts.md` | ao mexer no hook, depurar um disparo ou um trust do Codex: o payload, o ambiente e a pasta de dados medidos no Claude Code e no Codex, o algoritmo do trust com as fontes e o oráculo, e a receita de captura |
 | `references/safety.md` | antes de mudar qualquer caminho por onde passa conteúdo de `.env*`: o que pode sair, por onde, e os testes que provam |
-| `references/kb.md` | ao configurar o backend `kb`, depurar uma escrita recusada ou migrar a página: os comandos da CLI, a trava de permissão, a escrita de um bloco e o que foi medido no KB de staging |
+| `references/kb.md` | ao configurar o backend `kb`, depurar uma escrita recusada ou migrar a página, inclusive a que herda do livro ou já tem conteúdo: os comandos da CLI, a trava de permissão, a escrita de um bloco e o que foi medido no KB de staging |
 
 ## Linguagem
 

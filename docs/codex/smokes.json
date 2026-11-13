@@ -142,17 +142,17 @@
     },
     {
       "plugin": "env-docs-sync",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "skills": [
         "env-docs-sync:env-docs-sync"
       ],
       "paths": [
-        "/home/joruge/.wt/codex-smoke-eds/home/plugins/cache/chewiesoft-marketplace/env-docs-sync/0.1.0/skills/env-docs-sync/references/hosts.md"
+        "/home/joruge/.wt/codex-smoke-eds-011/home/plugins/cache/chewiesoft-marketplace/env-docs-sync/0.1.1/skills/env-docs-sync/references/kb.md"
       ],
       "read_commands": [
-        "/usr/bin/zsh -lc 'head -n 3 /home/joruge/.wt/codex-smoke-eds/home/plugins/cache/chewiesoft-marketplace/env-docs-sync/0.1.0/skills/env-docs-sync/references/hosts.md'"
+        "/usr/bin/zsh -lc \"grep -n '\"'^### '\"' /home/joruge/.wt/codex-smoke-eds-011/home/plugins/cache/chewiesoft-marketplace/env-docs-sync/0.1.1/skills/env-docs-sync/references/kb.md\""
       ],
-      "conclusion": "NAMES: env-docs-sync:env-docs-sync\nHEADING: # Hosts: o que o hook recebe e onde o estado mora\n(codex-cli 0.165.0, 2026-10-27, CODEX_HOME descartável instalado do catálogo local do repositório; install --codex --apply: 4 hooks trusted no hooks/list; codex exec com apply_patch num sandbox apontado para uma página sintética, sem --dangerously-bypass-hook-trust: SessionStart, PostToolUse e Stop Completed, página da revisão 13 para a 15, status 3 ok e rc 0)"
+      "conclusion": "NAMES: env-docs-sync:env-docs-sync\nHEADINGS: 45:### Restringir a página antes do primeiro `migrate` | 97:### Antes de migrar uma página que já tem conteúdo | 116:### As seções derivadas depois da migração | 157:### Disparo ao vivo nos dois hosts (CA4)\n(codex-cli 0.169.0, 2026-11-13, CODEX_HOME descartável instalado do catálogo local do repositório: descoberta e leitura de references/kb.md pelo cache, idêntico à fonte. A 0.1.1 só muda documentação, e os hooks não foram disparados nela: o smoke deles é o da 0.1.0, codex-cli 0.165.0, 2026-10-27, com 4 hooks trusted no hooks/list e SessionStart, PostToolUse e Stop Completed sem --dangerously-bypass-hook-trust)"
     },
     {
       "plugin": "executar-task",
