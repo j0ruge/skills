@@ -2,6 +2,38 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.28.2] — 2026-11-13
+
+### O token de um stub de sessão num teste: tirar o campo, e a convenção do repositório não isenta
+
+Patch: só prosa, um parágrafo novo no `references/detection-passes.md`, logo depois do canário de
+teste (6.10). O passo 8 da fase C manda ler esse arquivo pelo bloco de remediação. O `SKILL.md` segue
+com 19.997 chars e só troca a versão.
+
+- **O que aconteceu.** A lição veio de um monorepo TypeScript privado, em 2026-11-13, com a
+  codereview 2.28.1. Na rodada 1, a varredura de segredos acusou `Generic Password` (HIGH, arquivo de
+  teste) no `accessToken: "<palavras>"` que um teste novo de frontend passa ao stub de sessão. Foi a
+  única linha (2 arquivos, 443 linhas acrescentadas), e ela forçou a nota F numa branch sem segredo
+  nenhum.
+- **Por que o bloco de remediação não serviu.** Ele manda usar variável de ambiente, rotacionar,
+  reescrever a história e instalar o ggshield. O valor não autentica em lugar nenhum, então não havia
+  o que rotacionar nem segredo para pôr no ambiente.
+- **O que resolveu.** O parágrafo do canário (2.27.37) manda gerar o valor a cada corrida, mas antes
+  vale perguntar se o código testado lê o campo. Ali o cliente da API não manda o cabeçalho
+  `Authorization` quando o token está vazio, e os dublês das requisições não o conferem. Tirar o campo
+  bastou: a rodada 2 leu 4 arquivos e 56 linhas, `regex` e `gitleaks` em `scanners`, e deu
+  `findings: []`.
+- **Por que a convenção não isenta.** 24 arquivos de teste antigos tinham a mesma linha, e a varredura
+  só lê as linhas que a branch acrescenta. O literal passa nos arquivos que o têm e reprova todo teste
+  novo que o copia. Os antigos não são da branch e ficam fora do conserto. A regra de convenção do
+  passo 4 da fase C já não alcança o 6.10, que nunca se rebaixa, e o parágrafo diz isso no caso em
+  que a convenção mais tenta.
+
+Sem linha removida, sem mudança de `description` e sem mudança no `scan_secrets.py`, porque a
+detecção estava certa.
+
+Reverter: `git revert` deste commit.
+
 ## [2.28.1] — 2026-11-13
 
 ### O linter que a suíte pulou e o corpo do PR aberto: duas lições de uma revisão de branch inteiro
