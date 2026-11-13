@@ -97,6 +97,17 @@ ref on a region and on the heading inside it "probably" leaves the focus on the 
 loading and the `<h1>` once the item loads (`Warehouse/index.test.tsx:178`, the same in Service and
 Shelfs), green at the reviewed head.
 
+**An open PR's body may already declare the finding.** The body of the branch's PR often lists what
+an earlier review deferred and the decisions the branch made, and no agent reads it. When the branch
+has an open PR, read its body before closing the list (`gh pr view --json body -q .body`, a pure
+read). A finding the body already declares, deferred or decided, is not new: write
+`declared in the PR body (<where>)` in its Finding cell and keep it off the fix list, as a verdict an
+earlier round wrote is cited (configuration.md, *Re-review rounds*). Its severity and the grade stay
+as they are, and a case the body's reason did not cover reopens it. Measured 2026-11-12 (PR #391, a
+full review of a bash repo's branch): two of the report's 21 LOW were already in the body, one as a
+deferred Minor of the branch's final review and one as a recorded decision, and they were seen only
+while the fixes were being prepared, after the report.
+
 If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, then as many LOW findings as fit within the 50-finding cap. Below the table, list every LOW the cap cut, one line per finding (`file:line — finding`), under "_{n} additional LOW findings, one line each:_". The list stays in the report, the skill's only output (it writes no file, SKILL.md *Operating Constraints*): a flow that lists the deferred LOWs in the PR body takes them from there, and re-running per file path to see them costs a review. Measured 2026-10-17 (a .NET rules engine, PR #6): round 1 had 65 LOW, and the 18 the cap cut were missing from the report.
 
 ---
@@ -152,6 +163,20 @@ the errors on added lines; the rest are pre-existing. Measured 2026-11-09 (vites
 errors, all from those options (TS1470 and `noUncheckedIndexedAccess`); with
 `npx tsc --noEmit --strict --target ESNext --module ESNext --moduleResolution Bundler
 --allowImportingTsExtensions --types node <files>`, rc 0.
+
+**A linter the project's suite skipped was run by nobody.** A suite that finds no linter installed
+can print a skip line (`(linter absent — skipped)`) and still exit 0, so its green says nothing about
+lint. When the suite's output, or a log the branch carries, says so, run the linter yourself over the
+files the suite lints, on the base and on the head, without moving the tree (configuration.md,
+*Re-review rounds*), and report only the difference. Compare by file, rule and message, never by
+line: the diff shifts the base's warnings, and a comparison by line reports them as new. A warning
+only the head has is a finding in the changed file; the base's warnings are pre-existing and go to
+the Notes, with the linter version that ran. Use a copy already on the machine (a tool cache, a
+venv, `npx --no-install`) and do not install one: the review is read-only (SKILL.md *Operating
+Constraints*). Measured 2026-11-12 (PR #391, a bash repo): every suite run in the branch said
+`(linter absent — skipped)`; `shellcheck` 0.11.0 `-S warning`, found in a tool cache, gave 4
+warnings on the base and 7 on the head, and the 3 new ones (one SC2034, two SC2010) became a MEDIUM
+whose fix took the head back to the base's 4.
 
 | Production File | Test Status | Test File | Notes |
 |----------------|------------|-----------|-------|

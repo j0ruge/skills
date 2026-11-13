@@ -2,6 +2,32 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.28.1] — 2026-11-13
+
+### O linter que a suíte pulou e o corpo do PR aberto: duas lições de uma revisão de branch inteiro
+
+Patch: só prosa, no `references/report-template.md`, que o passo 10 da fase C manda ler. O
+`SKILL.md` segue com 19.997 chars e só troca a versão. As lições vieram de uma revisão `full` de um
+branch de um repositório bash (PR #391, 2026-11-12): nota B, com 4 MEDIUM e 21 LOW.
+
+- **O linter que a suíte pulou (*Test Coverage*).** Toda corrida da suíte no branch dizia
+  `(linter absent — skipped)` e saía 0. O `shellcheck` 0.11.0 `-S warning`, achado num cache de
+  ferramentas, deu 4 avisos na base e 7 no head. Os 3 novos (um SC2034 e dois SC2010) viraram um
+  MEDIUM, e o conserto levou o head de volta aos 4 da base. A regra é rodar o linter na base e no
+  head, sem mover a árvore e sem instalar nada, e relatar só a diferença, por arquivo, regra e
+  mensagem, nunca por linha.
+- **O corpo do PR aberto (*Findings Table*).** Dois dos 21 LOW já estavam no corpo do PR: um como
+  Minor adiada da revisão final do branch e outro como decisão registrada. Só foram vistos ao
+  preparar os consertos, depois do relatório. A seção *Re-review rounds* do `configuration.md`
+  cobre o veredito de uma rodada anterior desta skill, não o que o corpo do PR declara, e nenhum
+  passo lia o corpo. A regra é ler o corpo antes de fechar a lista e marcar o achado já declarado,
+  que sai da lista de consertos e mantém a severidade.
+
+Sem linha removida e sem mudança de `description`. O `/claude-api prompt-audit` que o `CLAUDE.md`
+do repositório pede a cada retrofit ficou para uma tarefa à parte, como na 2.28.0.
+
+Reverter: `git revert` deste commit.
+
 ## [2.28.0] — 2026-11-13
 
 ### O scanner reconhece a variável de shell sem chaves e a expressão Jinja; três lições de uma revisão de 78 arquivos
