@@ -292,6 +292,64 @@ class TestLeituraEmTempoDeExecucao(unittest.TestCase):
         self.assertNotIn(senha, achados[0].snippet)
 
 
+class TestDefaultComLiteralNoJinja(unittest.TestCase):
+    """Um `default('…')` com literal dentro de uma expressão Jinja é o valor escrito na linha.
+
+    A prompt audit de 2026-11-13 mediu duas falhas na mesma forma. Sem aspas em volta, numa linha
+    com forma de `.env` ou como senha de uma connection string, a expressão inteira casava a isenção
+    do Jinja e a linha sumia. Entre aspas, o grupo do valor parava na aspa de dentro, e a máscara
+    deixava o literal no snippet, que o relatório copia para o chat. As chaves são montadas na hora
+    e o literal é aleatório, para este arquivo não carregar a forma procurada.
+    """
+
+    CHAVE_ENV = "API_" + "KEY"
+    CHAVE_SENHA = "pass" + "word"
+
+    @staticmethod
+    def aleatoria() -> str:
+        """Um valor novo a cada chamada, para nenhum literal ficar neste arquivo."""
+        return "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
+
+    @staticmethod
+    def varrer(linha: str, caminho: str = "deploy/app.conf") -> list:
+        """Varre um diff de uma linha no caminho dado e devolve todos os achados."""
+        diff = (f"diff --git a/{caminho} b/{caminho}\n--- /dev/null\n+++ b/{caminho}\n"
+                f"@@ -0,0 +1 @@\n+{linha}\n")
+        return scan_secrets.scan_diff(diff).findings
+
+    def test_default_com_literal_numa_linha_de_env_e_achado_mascarado(self):
+        for filtro in ("default", "d"):
+            with self.subTest(filtro):
+                literal = self.aleatoria()
+                achados = self.varrer(f"{self.CHAVE_ENV}={{{{ lido | {filtro}('{literal}') }}}}")
+                self.assertEqual([f.kind for f in achados], ["Env Assignment"])
+                self.assertNotIn(literal, achados[0].snippet)
+
+    def test_default_com_literal_como_senha_da_connection_string_e_achado(self):
+        literal = self.aleatoria()
+        esquema = "postgres" + "://"
+        achados = self.varrer(f"url: {esquema}app:{{{{x|default('{literal}')}}}}@db/app", "deploy/app.yml")
+        self.assertEqual([f.kind for f in achados], ["Credentialed Connection String"])
+        self.assertNotIn(literal, achados[0].snippet)
+
+    def test_entre_aspas_a_mascara_cobre_o_valor_inteiro(self):
+        for externa, interna in (('"', "'"), ("'", '"')):
+            with self.subTest(externa=externa):
+                literal = self.aleatoria()
+                valor = f"{externa}{{{{ x | default({interna}{literal}{interna}) }}}}{externa}"
+                achados = self.varrer(f"{self.CHAVE_SENHA}: {valor}", "deploy/app.yml")
+                self.assertEqual([f.kind for f in achados], ["Generic Password"])
+                self.assertNotIn(literal, achados[0].snippet)
+
+    def test_leitura_sem_literal_de_reserva_segue_isenta(self):
+        # O conserto não pode transformar em achado o Jinja que só lê: uma variável, um lookup do
+        # ambiente com o nome entre aspas, ou um `default` sem literal.
+        for valor in ("{{ chave_do_cofre }}", "{{ lookup('env', 'X') }}", "{{ x | default(omit) }}",
+                      "{{ x | default(outra_variavel) }}"):
+            with self.subTest(valor):
+                self.assertEqual(self.varrer(f"{self.CHAVE_ENV}={valor}"), [])
+
+
 class TestDiffForaDoAscii(unittest.TestCase):
     """O stdin do Windows (cp1252 com surrogateescape) e os cabeçalhos `+++` com TAB e com aspas."""
 

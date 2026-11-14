@@ -260,6 +260,8 @@ def looks_like_placeholder(raw_value: str) -> bool:
 # Variável de shell sem chaves (`"$VAR"`) e expressão Jinja (`'{{ var }}'`) como valor INTEIRO.
 VAR_DE_SHELL_RE = re.compile(r"\$[A-Za-z_][A-Za-z0-9_]*")
 EXPRESSAO_JINJA_RE = re.compile(r"\{\{[^{}]+\}\}")
+# `| default('x')` e o apelido `| d('x')`: o valor de reserva está escrito na linha.
+DEFAULT_COM_LITERAL_RE = re.compile(r"\|\s*(?:default|d)\s*\(\s*[\"']")
 ARQUIVO_DE_SHELL_RE = re.compile(r"\.(?:sh|bash|zsh|ksh|j2)$|(?:^|/)[^./]+$")
 
 
@@ -267,7 +269,10 @@ def is_runtime_reference(raw_value: str, path: str) -> bool:
     """Decide se o valor inteiro é uma leitura em tempo de execução, e não um literal.
 
     - Expressão Jinja inteira (`{{ var }}`, `{{ var | filtro }}`): o template rende antes de rodar.
-      Com literal dentro (`default("x")`) o padrão nem casa o valor inteiro, e a linha segue achado.
+      A exceção é o `default('x')` (ou `d('x')`) com literal: quando a variável falta, vale o
+      literal, que está escrito na linha, como no `${VAR:-valor}`. Sem aspas em volta (forma de
+      `.env`, senha de connection string) a expressão inteira casa o padrão, e só esta exceção a
+      mantém achado.
     - Variável de shell sem chaves (`$VAR`), entre aspas duplas ou sem aspas: em MAIÚSCULAS vale em
       qualquer arquivo (convenção de ambiente); em minúsculas, só em arquivo de shell, porque fora
       dele um cifrão seguido de letras pode ser a própria senha. Aspas simples não expandem.
@@ -276,7 +281,7 @@ def is_runtime_reference(raw_value: str, path: str) -> bool:
     aspas = v[:1] if v[:1] in "\"'" else ""
     nucleo = v.strip("\"'").strip()
     if EXPRESSAO_JINJA_RE.fullmatch(nucleo):
-        return True
+        return not DEFAULT_COM_LITERAL_RE.search(nucleo)
     if aspas == "'":
         return False
     if VAR_DE_SHELL_RE.fullmatch(nucleo):
@@ -288,8 +293,23 @@ def line_has_env_lookup(full_line: str) -> bool:
     return any(p.search(full_line) for p in ENV_LOOKUP_PATTERNS)
 
 
+def fim_do_valor_entre_aspas(line: str, value_start: int, value_end: int) -> int:
+    """Estende o fim do valor até a aspa que fecha a de abertura, do mesmo tipo.
+
+    O grupo `val` para na primeira aspa de qualquer tipo, e num valor com a outra aspa dentro
+    (`"{{ x | default('…') }}"`) a máscara parava no meio e o snippet mostrava o literal. Sem a aspa
+    que fecha, a máscara vai ao fim da linha.
+    """
+    abertura = line[value_start:value_start + 1]
+    if abertura not in ("\"", "'"):
+        return value_end
+    fecha = line.find(abertura, value_start + 1)
+    return len(line) if fecha == -1 else max(value_end, fecha + 1)
+
+
 def mask_snippet(line: str, value_start: int, value_end: int, max_len: int = 120) -> str:
     """Mascara o intervalo do valor com `***`. Trunca para `max_len`."""
+    value_end = fim_do_valor_entre_aspas(line, value_start, value_end)
     masked = line[:value_start] + "***" + line[value_end:]
     masked = masked.strip()
     if len(masked) > max_len:

@@ -2,6 +2,41 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.28.4] — 2026-11-14
+
+### O `default('…')` do Jinja: achado em toda forma, e a máscara cobre o valor inteiro
+
+Patch: um conserto no `scripts/scan_secrets.py`, com teste, e uma frase no 6.10. O defeito apareceu
+na prompt audit da 2.28.3, fora do escopo dela, e foi conferido com valor inventado. Tinha dois
+efeitos.
+
+- **Linha que sumia.** Sem aspas em volta (`API_KEY={{ x | default('…') }}`, ou a senha de uma
+  connection string), a expressão inteira casava o `EXPRESSAO_JINJA_RE`, que aceita aspas e
+  parênteses por dentro. Com isso o `is_runtime_reference` a isentava, embora a própria docstring
+  dissesse que um literal dentro "nem casa o valor inteiro".
+  - **Conserto:** a isenção agora recusa uma expressão com o filtro `default` ou `d` aplicado a um
+    argumento entre aspas (`DEFAULT_COM_LITERAL_RE`). O valor de reserva está escrito na linha, como
+    no `${VAR:-valor}`.
+  - **O que segue isento:** o Jinja que só lê, como `{{ var }}`, `{{ lookup('env', 'X') }}`,
+    `default(omit)` ou `default(outra_variavel)`.
+- **Literal no relatório.** Entre aspas (`password: "{{ x | default('…') }}"`), o grupo do valor
+  parava na aspa de dentro, e o `mask_snippet` deixava o literal no snippet. O relatório copia o
+  snippet para o chat.
+  - **Conserto:** `fim_do_valor_entre_aspas` estende a máscara até a aspa que fecha a de abertura,
+    do mesmo tipo, ou até o fim da linha.
+- **Teste visto vermelho.** O `TestDefaultComLiteralNoJinja` tem 4 casos e 7 subcasos. Antes do
+  conserto, 3 subcasos não acusavam nada e 2 mostravam o literal; a guarda da leitura sem literal
+  ficou verde nos dois estados.
+- **Sabotagem.** Cada metade foi desfeita sozinha, e o teste dela ficou vermelho: 3 falhas sem a
+  exceção do `default`, 2 sem a máscara estendida.
+- **Por que o sensor anterior não via.** O `test_padrao_literal_dentro_do_jinja_segue_achado`
+  contava o achado, mas não olhava o snippet.
+- **Resultado:** a suíte da skill tem 36 testes, todos verdes.
+
+Sem mudança de `description` e sem linha removida.
+
+Reverter: `git revert` deste commit.
+
 ## [2.28.3] — 2026-11-14
 
 ### Prompt audit: fatos que o repositório desmentia, e os exemplos que ensinavam o relatório proibido
