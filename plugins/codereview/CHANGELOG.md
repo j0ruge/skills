@@ -2,6 +2,25 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.28.5] — 2026-11-14
+
+### Duas linhas da 2.28.4 que a própria varredura de segredos acusava
+
+Patch: sem mudança de comportamento. A varredura do diff da 2.28.4 (`c291722..749f95a`, 8 arquivos e
+120 linhas) dava dois `Generic Password`. Rodou antes do commit, mas num encadeamento que só olhou o
+rc do comando, e não a lista de achados, e o commit seguiu.
+
+- **A nota do CHANGELOG** citava entre crases a forma acusada: um campo de senha com a expressão
+  Jinja entre aspas. É o que o 6.10 manda não fazer ("the record of a 6.10 fix describes the flagged
+  line in words"). Agora ela a descreve em palavras.
+- **No teste**, a constante que monta o nome do campo terminava numa palavra-chave do padrão e
+  recebia um texto entre aspas, e por isso casava. Ela foi renomeada (`NOME_DO_CAMPO`).
+
+Um gate que só olha o rc de um comando que imprime achados não é gate: a varredura agora para o
+fluxo quando a lista não vem vazia.
+
+Reverter: `git revert` deste commit.
+
 ## [2.28.4] — 2026-11-14
 
 ### O `default('…')` do Jinja: achado em toda forma, e a máscara cobre o valor inteiro
@@ -19,9 +38,9 @@ efeitos.
     no `${VAR:-valor}`.
   - **O que segue isento:** o Jinja que só lê, como `{{ var }}`, `{{ lookup('env', 'X') }}`,
     `default(omit)` ou `default(outra_variavel)`.
-- **Literal no relatório.** Entre aspas (`password: "{{ x | default('…') }}"`), o grupo do valor
-  parava na aspa de dentro, e o `mask_snippet` deixava o literal no snippet. O relatório copia o
-  snippet para o chat.
+- **Literal no relatório.** Entre aspas (um campo de senha cujo valor é a expressão Jinja com o
+  `default` dentro), o grupo do valor parava na aspa de dentro, e o `mask_snippet` deixava o
+  literal no snippet. O relatório copia o snippet para o chat.
   - **Conserto:** `fim_do_valor_entre_aspas` estende a máscara até a aspa que fecha a de abertura,
     do mesmo tipo, ou até o fim da linha.
 - **Teste visto vermelho.** O `TestDefaultComLiteralNoJinja` tem 4 casos e 7 subcasos. Antes do

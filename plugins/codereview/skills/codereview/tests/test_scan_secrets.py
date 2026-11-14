@@ -303,7 +303,7 @@ class TestDefaultComLiteralNoJinja(unittest.TestCase):
     """
 
     CHAVE_ENV = "API_" + "KEY"
-    CHAVE_SENHA = "pass" + "word"
+    NOME_DO_CAMPO = "pass" + "word"
 
     @staticmethod
     def aleatoria() -> str:
@@ -337,7 +337,7 @@ class TestDefaultComLiteralNoJinja(unittest.TestCase):
             with self.subTest(externa=externa):
                 literal = self.aleatoria()
                 valor = f"{externa}{{{{ x | default({interna}{literal}{interna}) }}}}{externa}"
-                achados = self.varrer(f"{self.CHAVE_SENHA}: {valor}", "deploy/app.yml")
+                achados = self.varrer(f"{self.NOME_DO_CAMPO}: {valor}", "deploy/app.yml")
                 self.assertEqual([f.kind for f in achados], ["Generic Password"])
                 self.assertNotIn(literal, achados[0].snippet)
 
