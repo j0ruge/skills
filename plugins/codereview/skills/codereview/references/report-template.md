@@ -45,7 +45,7 @@ Always render this section, even when clean (this tells the user the pass ran). 
 
 **Status**: `PASS` (0 rows) / `BLOCKED` (≥1 row) / `NOT RUN` (`errors` carries `empty input`, or `scanned.files` is below the CHANGED_FILES count).
 
-`NOT RUN` is never the final status: 0 rows over a diff the scanner never read is not a pass. Re-run Phase A step 8 over the same range and pathspecs as step 5, and grade only once the two counts match. `scanned.files` counts the `diff --git` headers, so a binary file, a mode change and a pure rename count too, as in `--name-only`. Measured 2026-10-18: `printf '' | scan_secrets.sh` gave `findings: []`, `errors: []` and rc 0 up to 2.18.6; on two ranges of one repo, `scanned.files` equalled `git diff --name-only | wc -l` (62 and 9 files).
+`NOT RUN` is never the final status: 0 rows over a diff the scanner never read is not a pass. Re-run Phase A step 8 over the same range and pathspecs as step 5, and grade only once the two counts match. `scanned.files` counts the `diff --git` headers, so a binary file, a mode change and a pure rename count too, as in `--name-only`. Measured 2026-10-18: on two ranges of one repo, `scanned.files` equalled `git diff --name-only | wc -l` (62 and 9 files).
 
 `scanned.added_lines` can exceed the `git diff --numstat` sum without anything being wrong: on Git for Windows `git check-attr diff -- x.pdf` answers `astextplain`, so its `git diff` carries a changed PDF's text, which `--numstat` counts as binary. Measured 2026-11-04 on one range: 26,358 on Git for Windows and 25,982 in WSL, the 376 extra lines all from 4 PDFs, with `scanned.files` at 126 on both.
 
@@ -79,11 +79,12 @@ combat, 506.4); round 2 raised it again, its two mutants survived, and the PR to
 says its input is untested, or that its fix needs a new case, grep the test files for that input
 first (`/usr/bin/grep -n` on the names, ids or calls the input is built from). A test that already
 feeds that input and asserts the defective output is the 6.12 shape *a test that pins the shape the
-code produces*, and a full review sends no TESTS file to an agent. The finding's Suggested Action
-and the Test Coverage Notes name it as a test the fix changes, not as a missing case. Measured
-2026-10-20 (`9d0eda3..a569b03`): the report said none of the 14 new tests put a spell
-between two equal triggers; `test_gatilho_repetido_do_oponente_vira_uma_linha` had a Shock between
-them and asserted the merged `(×3)`, and the fix had to rewrite it.
+code produces*, and a full review sends a TESTS file to an agent only as a contract test
+(runtime-routing.md). The finding's Suggested Action and the Test Coverage Notes name it as a test
+the fix changes, not as a missing case. Measured 2026-10-20 (`9d0eda3..a569b03`): the report said
+none of the 14 new tests put a spell between two equal triggers;
+`test_gatilho_repetido_do_oponente_vira_uma_linha` had a Shock between them and asserted the merged
+`(×3)`, and the fix had to rewrite it.
 
 **A behavior claim marked `needs reproduction` may already be settled by a changed test.** A per-file
 agent infers runtime behavior (where the focus lands, which ref wins, what renders while loading) from
@@ -144,16 +145,16 @@ If more than 50 findings total, show all CRITICAL/HIGH/MEDIUM findings first, th
 
 ### Test Coverage
 
-**The tests' types are checked by no one unless the review runs the typecheck.** A full review
-sends no TESTS file to an agent, the build may leave tests out of its type report, and jest can run
-them through babel, which strips the types. When the `tsconfig` `include` covers the tests, run
-`npx tsc --noEmit -p .` (a pure read) before this table: an error in a changed test file is a 6.4
-finding; an error only in unchanged files is pre-existing and goes to the Notes. Measured
-2026-10-30 (PR #11, `react-scripts` 3.4.1, whose
-`config/webpack.config.js:694` keeps `'!**/?(*.)(spec|test).*'` out of the type report): round 1, a
-full review, reported none of the 4 `TS2305` errors in three new tests (`screen` and `fireEvent` are
-not in the types of `@testing-library/react` 9.5); `tsc --noEmit -p .` printed them, the build and
-jest stayed green, and the fix took the count to 0.
+**The tests' types are checked by no one unless the review runs the typecheck.** A full review sends
+TESTS files to an agent only as contract tests (runtime-routing.md), the build may leave tests out
+of its type report, and jest can run them through babel, which strips the types. When the `tsconfig`
+`include` covers the tests, run `npx tsc --noEmit -p .` (a pure read) before this table: an error in
+a changed test file is a 6.4 finding; an error only in unchanged files is pre-existing and goes to
+the Notes. Measured 2026-10-30 (PR #11, `react-scripts` 3.4.1, whose `config/webpack.config.js:694`
+keeps `'!**/?(*.)(spec|test).*'` out of the type report): round 1, a full review, reported none of
+the 4 `TS2305` errors in three new tests (`screen` and `fireEvent` are not in the types of
+`@testing-library/react` 9.5); `tsc --noEmit -p .` printed them, the build and jest stayed green,
+and the fix took the count to 0.
 
 When no `tsconfig` covers the tests (a test folder outside every `include`, run by vitest or tsx,
 which strip types), pass the changed test files to `tsc` with `--strict` and the module settings
@@ -341,6 +342,8 @@ names both (`loaded 2.25.2 = marketplace, installed 2.19.0`).
 
 ## Examples
 
+Every run renders the full *Report Structure* above; the examples differ only in their input.
+
 ### Minimal run — full review
 
 ```bash
@@ -348,43 +351,10 @@ names both (`loaded 2.25.2 = marketplace, installed 2.19.0`).
 /codereview
 ```
 
-**Expected output (excerpt)**:
-
-```text
-# Code Review: feature/my-feature
-
-**Branch**: `feature/my-feature` → `main`
-Files changed: 4 | Insertions: 87 | Deletions: 23
-
-### Findings Summary
-| # | Severity | File | Line | Description |
-|---|----------|------|------|-------------|
-| 1 | HIGH     | src/utils/pdf/fillPdfWithJson.ts | 45 | Unhandled promise rejection ... |
-
-### Grade: B
-```
-
 ### .NET project — minimal run
 
 ```bash
 /codereview fileExtensions=cs frameworkPatterns=dotnet
-```
-
-**Expected output (excerpt)**:
-
-```text
-# Code Review: 001-licencemanager-decoupling
-
-**Branch**: `001-licencemanager-decoupling` → `master`
-Files changed: 6 | Insertions: 320 | Deletions: 45
-
-### Findings Summary
-| # | Severity | File | Line | Description |
-|---|----------|------|------|-------------|
-| 1 | HIGH     | LicenseService.cs | 67 | IDisposable RSACryptoServiceProvider not wrapped in `using` |
-| 2 | MEDIUM   | MainWindowViewModel.cs | 112 | File dialog in ViewModel — consider abstracting behind interface |
-
-### Grade: B
 ```
 
 ### Focused run — security only
@@ -400,11 +370,10 @@ Non-security detection passes are skipped; the report marks them as "Not analyze
 ## Troubleshooting
 
 - **"Error: not a git repository"** — Run the command from inside the project directory where `.git` is present. A folder that never had a repo is reviewed from a git dir in the scratchpad (configuration.md, *Folder without git*).
-- **"Cannot review base branch against itself"** — Checkout a feature branch before running; the command cannot diff the base branch against itself.
 - **"Error: detached HEAD state"** — Attach HEAD to a branch with `git checkout <branch-name>` before running.
-- **Report shows 0 changed files** — Ensure at least one commit exists on the current branch that is not yet on the base branch (`git log main..HEAD` should be non-empty).
-- **More than 50 findings truncated** — Run focused reviews per area (e.g. `/codereview security`) to narrow scope and surface all findings within the cap.
-- **Hallucinated line numbers in report** — This violates Analysis Integrity rules. Re-run the command; if the issue persists, increase context by reading fewer full files and relying on diffs.
+- **"No changes detected"** — the branch has no commit the base lacks and the tree is clean. Uncommitted work is reviewed in `worktree` mode (configuration.md), on the base branch too; under an explicit path scope, empty output is a pathspec error (configuration.md, *Path-scoped reviews*).
+- **More than 50 findings** — nothing is cut: the LOWs past the cap are listed one line each below the Findings Table.
+- **Hallucinated line numbers in report** — Line numbers come only from the diff or the file actually read (SKILL.md, *Operating Principles and Gotchas*). Re-run the command; if the issue persists, increase context by reading fewer full files and relying on diffs.
 
 ---
 

@@ -2,6 +2,61 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.28.3] — 2026-11-14
+
+### Prompt audit: fatos que o repositório desmentia, e os exemplos que ensinavam o relatório proibido
+
+Patch: só prosa. É o `/claude-api prompt-audit` que o `CLAUDE.md` do repositório pede a cada
+retrofit, e que a 2.28.0, a 2.28.1 e a 2.28.2 tinham adiado.
+
+- **Escopo e linha de base.** A auditoria leu 2.385 linhas: o `SKILL.md`, as 7 references e o
+  `trigger-evals.json`. Teve como linha de base a auditoria de 2026-09-03, aplicada na 1.18.0.
+- **Resultado.** 7 achados de confiança alta, 3 média e 10 baixa. Os 10 de confiança baixa ficaram
+  só no relatório.
+- **O que entrou.** 20 dos 21 hunks propostos, conferidos um a um contra o código:
+  - **Os exemplos do `report-template.md`** fechavam em `### Grade: B` em prosa, sem a tabela
+    Overall Grade nem as outras seções obrigatórias. Era o relatório que a 1.13.0 proibiu, ensinado
+    pelo próprio molde. Saíram, e uma linha diz que toda corrida desenha a estrutura inteira.
+  - **O *Troubleshooting*** tinha três itens obsoletos:
+    - "Cannot review base branch", que o modo `worktree` (2.3.0) aposentou;
+    - o corte de 50 achados, quando os LOW passaram a sair uma linha cada (2.18.4);
+    - a seção *Analysis Integrity*, apagada na 2.0.0.
+
+    Os três agora apontam as regras de hoje.
+  - **"Uma revisão `full` não manda TESTS a agente"**, em três lugares (`report-template.md` duas
+    vezes, `configuration.md` uma). Deixou de valer na 2.27.37 para os testes de contrato, e o texto
+    agora diz isso.
+  - **"Sonnet agents"**, em três lugares do `detection-passes.md`, viraram os agentes da fase B. O
+    modelo é o `REVIEW_MODEL` desde a 2.27.16, e no Codex não é o Sonnet.
+  - **A tabela do 6.10** ganhou o prefixo `[A-Za-z_]*`, `auth_token` e `client_secret`, e a lista
+    de placeholders ganhou `none`, `example`, `todo` e `tbd`. Os dois agora batem com
+    `scripts/scan_secrets.py` (`PATTERNS` e `PLACEHOLDER_TOKENS`).
+  - **`CRITICO/ALTO`** no `uiLibReducedRigor` virou `CRITICAL/HIGH`, as severidades que existem.
+  - **O roteamento do `configuration.md` no `SKILL.md`** dizia "only when" em quatro casos, e o corpo
+    o cita em nove pontos. Agora diz "where cited below, and when…": o caso "the folder has no repo"
+    saiu da lista porque o corpo o cita (*Error Handling*). O `SKILL.md` foi de 19.997 para 19.991
+    chars.
+  - **A história de versão foi para o presente.** Os casos foram "up to 2.13.0", "until 2.27.38",
+    "Up to 2.27.33", "Since 2.28.0" e "up to 2.18.6". As datas e as medições ficaram, só o "antes da
+    versão X" saiu. Os três bullets "Measured" do *Stale copy* (2026-10-18 e 2026-10-19) foram
+    fundidos num só, com os três resultados.
+- **O que ficou de fora, como decisão adiada.** A troca do "Plan on roughly ten tool calls" do
+  `per-file-agent.md` por uma condição de parada. Ela muda o custo dos agentes, e a sonda foi uma
+  corrida de cada lado (4 contra 6 chamadas), o que não decide. Fica para o Cost footprint de várias
+  rodadas.
+- **Flags da auditoria, sem mudança agora:**
+  - consolidar os 92 "Measured" do `configuration.md` e a casuística do 6.10;
+  - o `gpt-6.1-terra` fixo, com o plugin sem a plataforma `codex`;
+  - o `uiLibReducedRigor=false`, que não tem caminho até o agente;
+  - a description sem aspas no frontmatter, contra o `CLAUDE.md` do repositório.
+- **Achado fora do escopo, no script.** Um `default('<literal>')` do Jinja: a máscara do snippet
+  cobria só parte do valor, e o `Env Assignment` não acusava a linha. Vai na 2.28.4, com teste.
+
+Sem mudança de `description`. O relatório e o diff da auditoria ficam fora do repositório, como o
+`CLAUDE.md` pede.
+
+Reverter: `git revert` deste commit.
+
 ## [2.28.2] — 2026-11-13
 
 ### O token de um stub de sessão num teste: tirar o campo, e a convenção do repositório não isenta

@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.28.2
+  version: 2.28.3
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -33,9 +33,9 @@ This skill is **stack-agnostic**. Defaults target TypeScript/React but all value
 The agents read their own contract by absolute path (`{SKILL_DIR}/references/…`); the orchestrator
 reads a file only at the step that needs it:
 
-- `references/configuration.md` — only when `$ARGUMENTS` has `key=value` overrides or names
-  a repo besides the cwd, the folder has no repo, the stack is not TypeScript/React or a doc holds
-  code a step runs.
+- `references/configuration.md` — where cited below, and when `$ARGUMENTS` has `key=value` overrides
+  or names a repo besides the cwd, the stack is not TypeScript/React or a doc holds code a step
+  runs.
 - `references/per-file-agent.md` — read it yourself only if Phase B runs inline (≤3 CODE files):
   the Phase B agent contract.
 - `references/sweep-agent.md` — read it yourself when the sweep runs inline or the agent under-reports

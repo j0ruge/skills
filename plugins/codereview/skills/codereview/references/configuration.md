@@ -22,7 +22,7 @@
 | `fileExtensions` | `["ts", "tsx"]` | Extensions considered source code. Extend with `["js","jsx","vue","svelte","py","go"]` etc. |
 | `testFilePatterns` | `["**/*.{test,spec}.{ts,tsx}", "**/test/**"]` | Globs that identify test files (resolved relative to `baseDir`). |
 | `generatedDirs` | `["src/components/ui/**", "prisma/**", "**/generated/**"]` | Globs for auto-generated or UI-lib directories — classified as `UI_LIB` (reduced-rigor). |
-| `uiLibReducedRigor` | `true` | When `true`, `UI_LIB` files receive only CRITICO/ALTO checks. Set to `false` to apply full analysis. |
+| `uiLibReducedRigor` | `true` | When `true`, `UI_LIB` files receive only CRITICAL/HIGH checks. Set to `false` to apply full analysis. |
 | `frameworkPatterns` | `react` | Framework hint controlling which framework-specific rules are active. Options: `react` \| `vue` \| `angular` \| `node` \| `dotnet` \| `generic`. |
 | `configFilePatterns` | `["*.config.*", "tsconfig*", ".env*", "package.json"]` | Globs matched as CONFIG files. |
 | `styleFilePatterns` | `["**/*.css", "**/*.scss", "**/*.less"]` | Globs matched as STYLES files. |
@@ -208,24 +208,10 @@ compare the two versions first, the one Phase A read and that record's `version`
   (PR #11, round 2): with 2.27.18 installed, after a `/reload-plugins` typed while the agent was
   mid-turn and delivered to it as a queued message, the round still loaded `…/codereview/2.27.17/`,
   two step hunks apart; it followed the installed text and closed at grade A one round later.
-- Measured 2026-10-18 (rounds 4 to 10): the session had loaded 2.18.4 with 2.19.0
-  installed, and the 2.18.4 folder carried an `.orphaned_at` file. The folders differed in the
-  references and in `scan_secrets.py` (2.19.0 added `scanned`), the two `SKILL.md` only in the
-  version line. With `{SKILL_DIR}` at the installed folder the agents read the 2.19.0 contracts and
-  the pre-scan reported `scanned`; the old rule (any `diff -rq` difference means `/reload-plugins`)
-  would have stopped round 4 in Phase A. A later update left the same session at 2.18.4 against
-  2.20.0, again one line apart.
-- Measured 2026-10-18 (a .NET rules engine, rounds 1 to 7): loaded 2.20.0 with 2.21.2 installed,
-  the two `SKILL.md` four hunks apart besides the version — a pointer to `assets/trigger-evals.json`
-  (read only when changing the description), the cost note's ratio, the read-only sentence
-  reworded, and the stale-copy pointer now naming this section. No step among them: the review went
-  on from the installed folder and closed at grade A; the version-only rule would have stopped it
-  in round 1.
-- Measured 2026-10-19 (the same engine, PR #10, round 2): loaded 2.20.0 with 2.22.0 installed,
-  seven hunks apart besides the version, one of them a step (Phase B sends each DOCS file this
-  session wrote to an agent). Applied from the installed `SKILL.md` hunk and *Docs this session
-  wrote*, that step gave the round its only MEDIUM; the rule that stopped on a step hunk would have
-  halted the round in Phase A and waited for the user.
+- Measured 2026-10-18 and 2026-10-19, three sessions that went on from the installed folder: one
+  line apart (2.18.4 loaded, 2.19.0 installed: the agents read the 2.19.0 contracts and the pre-scan
+  reported `scanned`), four hunks apart with no step (2.20.0 and 2.21.2: grade A), and seven hunks
+  apart with one step (2.20.0 and 2.22.0: that step gave the round its only MEDIUM).
 
 **Loaded copy newer than the installPath:** `claude plugin marketplace update` caches the
 marketplace's current version of every installed plugin, but only a `claude plugin update` that
@@ -499,10 +485,10 @@ launches no agent, and the report grades code nobody read.
   (*Path-scoped reviews*). The other docs in the diff stay DOCS.
 - **A long doc goes to more than one agent**, each with a line range on its `File:` line
   (`docs/x/01-plano.md (category: CODE, lines 1–505)`); the rest of the launch prompt stays
-  verbatim. The ≤3-file inline shortcut does not apply here: inline, the main model reads the
-  whole doc. A long CODE file split the same way needs Phase C to dedup by `{file, line}` across
-  the ranges and to drop what an agent reports outside its own: until 2.27.38 the agent's contract
-  did not bind it to the range, and 2 of 2 agents ignored it (per-file-agent.md, *Scope*).
+  verbatim. The ≤3-file inline shortcut does not apply here: inline, the main model reads the whole
+  doc. A long CODE file split the same way needs Phase C to dedup by `{file, line}` across the
+  ranges and to drop what an agent reports outside its own: the agent's contract binds it to the
+  range (per-file-agent.md, *Scope*), and this dedup is the check that it held.
 - **The range names the sections that bind it** (`lines 354–645; also 105–106, § Contexto`). Past
   ~600 lines the agent reads only the changed regions (per-file-agent.md), so a rule written
   outside its range comes back as a gap. Measured 2026-10-20: the agent of lines 354–645 of a plan
@@ -746,12 +732,14 @@ These decide whether the rounds converge:
   value from the start of the session: measured 2026-10-05, four rounds flagged "CLAUDE.md says 1284
   tests" while the file, updated by each round's commit, already said 1336, 1352, 1362 and 1363.
   `grep` the current file before keeping a docs-drift finding.
-- **The tests a fix adds get no agent.** On a full review Phase B sends TESTS only on a test-quality
-  focus, so the round after a fix grades Test Coverage on test files nobody read. Back that grade with
-  one mutant per guard the fix added, run against its tests (*Reproduce between rounds*; 6.12, *One
-  case for two guards*), and give the mutant count in the Test Coverage row. Measured 2026-10-17: round
-  2 diffed 14 new test files (788 lines) and launched no agent for them; the 24 mutants run after round
-  1's fixes and the 12 after round 2's, all killed, were what the two A grades stood on.
+- **The tests a fix adds get no agent, unless they are contract tests.** On a full review Phase B
+  sends TESTS only on a test-quality focus, or as `TESTS (contract)` when they read repo files by
+  path (runtime-routing.md), so the round after a fix grades Test Coverage on test files nobody
+  read. Back that grade with one mutant per guard the fix added, run against its tests (*Reproduce
+  between rounds*; 6.12, *One case for two guards*), and give the mutant count in the Test Coverage
+  row. Measured 2026-10-17: round 2 diffed 14 new test files (788 lines) and launched no agent for
+  them; the 24 mutants run after round 1's fixes and the 12 after round 2's, all killed, were what
+  the two A grades stood on.
 - **A CSS fix has no guard to mutate: measure it.** A style fix (a color, a selector, a size) adds
   no branch for a mutant to kill, and a unit test of its value is a change detector. Back its grade
   with two readings in a headless browser, over builds of the head the last round reviewed and of
