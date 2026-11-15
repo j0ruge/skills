@@ -24,7 +24,7 @@ The reads are independent — issue them as one batch of parallel tool calls, th
 
 - Apply ALL applicable detection passes — or only the focused subset when the launch prompt names a focus area (mapping below).
 - For UI_LIB files, only flag CRITICAL and HIGH issues.
-- For a DOCS file (the orchestrator sends one it wrote this session), pass 6.5 is the core: every factual claim — path, count, name, version, license, what a source can or cannot answer — must match the evidence the category names, or what the doc cites; spot-check a few on disk. 6.10 and 6.11 still apply. A fenced shell block in it runs in the reader's shell, often zsh, which reads a letter after `$VAR:` as a modifier: `"$S:refs/heads/main"` loses the `:r` and reaches git as `<sha>efs/heads/main`. Flag it with `"${S}:…"` as the fix: MEDIUM when the line writes (a push, an `rm`, a file), LOW otherwise.
+- For a DOCS file (the orchestrator sends one it wrote this session), pass 6.5 is the core: every factual claim — path, count, name, version, license, what a source can or cannot answer — must match the evidence the category names, or what the doc cites; spot-check a few on disk. 6.10 and 6.11 still apply. A fenced shell block in it runs in the reader's shell, often zsh, which reads a letter after `$VAR:` as a modifier: `"$S:refs/heads/main"` loses the `:r` and reaches git as `<sha>efs/heads/main`. Flag it with `"${S}:…"` as the fix: MEDIUM when the line writes (a push, an `rm`, a file), LOW otherwise. Each documentation finding carries a `Kind:` line (*Output format*).
 - A DOCS file that is an Agent Skill's `SKILL.md` also routes its reader: each `references/<file>` it cites says when to read it ("read X if Y", the agentskills.io best practice). A citation that only names the file, as in a parenthesis, is a LOW. Measured 2026-10-25 (PR #107): a fix turned "(o comando acima)" into a parenthesis holding only the reference's path; the next round's agent checked that the file exists and returned no findings, and the skill's own audit caught it (F1).
 - A `TESTS (contract)` file reads repo files by path and is the only sensor of what it reads: pass 6.11 is the core, with the question of 6.12 turned on that input — if a file it reads went missing or changed, would it go red? A list of paths filtered by existence (`.filter(existsSync)`) answers no for every file it drops.
 - Your own context is not the session's: the model name, the commit attribution and the date in your system prompt belong to this subagent, whose model is selected by the runtime while the orchestrator may run another model. Never flag a doc for disagreeing with them; a model or a `Co-Authored-By` trailer in a doc is checked against the repo (`git log --format=%B`, its CLAUDE.md), or left alone. Measured 2026-10-20 (a plan under review): an agent flagged the plan's `Co-Authored-By: Claude Opus 5.5` because its own reminder said Sonnet 5.5, while the session's attribution and the branch's 16 commits said Opus 5.5.
@@ -54,7 +54,13 @@ Your final message is the only thing the orchestrator sees — your tool outputs
 N. [SEVERITY] {category} — {file}:{line} — {title}
    Description: {what the issue is, referencing actual code}
    Suggestion: {concrete fix direction}
+   Kind: behavior — contradicted by {file}:{line}  |  Kind: behavior — missing evidence: {what}  |  Kind: form
 ```
+
+The `Kind:` line, in one of its three forms, goes only on a documentation finding: pass 6.5.1, pass 6.5.2, or Readability on a comment. Pass 6.5.3 and every other pass carry none. The kind never changes the severity, which still comes from pass 6.5.
+
+- **`behavior`**: the sentence states a behavior, value, state or guarantee that the code or the evidence contradicts (cite the `file:line` that contradicts it); or it states a measurement or an absence that the evidence your category names does not show (name what is missing); or it is a command in the doc that fails when run (cite the `file:line` that makes it fail).
+- **`form`**: the sentence is true but badly written, incomplete or points to a less exact place, such as a missing subject, a pointer to a file that exists but is not where the item lives, a list of examples that reads as complete, or an ambiguously worded count; also a missing docstring graded LOW.
 
 If no issues were found, return `No findings for {FILE_PATH}` — a clean result is a valid outcome; don't invent findings. Reference only line numbers you actually saw in the diff or file content. Note any imports from other changed files for cross-reference by the orchestrator.
 
