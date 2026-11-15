@@ -150,9 +150,9 @@ The agent returns a numbered findings list (`N. [SEVERITY] {category} — {file}
 **Grouping**: files that import from each other share an agent when possible (max 3), catching intra-group issues without the main model. A **TOCTOU** race spanning files (service reads, controller acts) is flagged single-file with "cross-file verification needed"; Phase C judges it.
 
 **Verification round.** On a re-review whose `PROSE_SCOPE` has a `DOCS` or `DOC_ONLY` file, read
-`references/verification-round.md` before launching. When its conditions hold (the earlier round's open
-findings in hand, no `verify=off`), each file with prose units goes to a verifier agent, never inline,
-and every other file of the range keeps this phase as written.
+`references/verification-round.md` first: it holds the conditions and the routing. When they hold, the
+files it routes go to verifier agents, never inline, and every other file of the range keeps this phase
+as written.
 
 ### Phase B2: Dead Code Sweep (review-model agent, parallel)
 

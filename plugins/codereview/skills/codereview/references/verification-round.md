@@ -7,6 +7,7 @@ Read this when a re-review range (`base=` from an earlier round) has prose files
 All of these hold, or the re-review runs as a full round (SKILL.md, Phases B and C as written):
 
 - `base=` names the head an earlier round reviewed, and the review is not in `worktree` mode (configuration.md): an uncommitted fix gives the script no range.
+- The `base=` commit is an ancestor of the head: `git merge-base --is-ancestor {MERGE_BASE} HEAD` (`head=<sha>` in place of `HEAD`) exits 0. After a fixup or a rebase the script's three-dot range would cover the whole branch, so the re-review runs as a full round.
 - The session holds that round's open findings (number, `file:line`, kind, claim), in the conversation or in a file it names; without that list, the re-review runs as a full round. The list stays with the session: no prompt carries it.
 - The user passed no `verify=off`, and the session knows of no changed comment line inside a multi-line string or heredoc (*Which files*); when it knows of one, it falls back to a full round on its own.
 - `prose_units.py` exited 0. A non-zero exit means no scope, never "no prose files", and the report says the round ran in full.
@@ -18,11 +19,11 @@ A file goes to a verifier only when `PROSE_SCOPE` gives it `kind` `DOCS` or `DOC
 
 The script errs toward `CODE` — only line comments (`//`, `#`, `--`) count, so a changed block-comment line, a renamed, re-moded, new or deleted code file, a directive line, `.yml`/`.yaml`/`.toml`, `requirements*.txt`, `CMakeLists.txt` and a prose file whose changes land in no unit all take the full flow — with one declared limit: a `#`, `//` or `--` line inside a multi-line string or heredoc still counts as a comment. A session that sees such a line among a `DOC_ONLY` file's changes runs the round in full.
 
-The sweep (Phase B2) is skipped only in a verification round that leaves no CODE or CONFIG file of the range outside the verifiers. A full round, `worktree` mode included, runs it as written.
+The sweep (Phase B2) is skipped only in a verification round where no file of the range left outside the verifiers is `kind: CODE` (the script's) or a file Phase A classified CONFIG. A full round, `worktree` mode included, runs it as written.
 
 ## Launch
 
-One verifier takes at most 400 unit lines (`unit_lines`) and 12 files. Above that, split by file across more verifiers in the same batch; a single file over 400 unit lines splits by unit ranges, each verifier given only its own ranges on its `Units:` line. `model: REVIEW_MODEL` on every call. Emit only the launch prompt below, placeholders filled — nothing added, nothing removed; exception: a refused `Read` under `{SKILL_DIR}` (runtime-routing.md, *Contrato ilegível*). Under `head=<sha>`, write that sha for `HEAD` in the diff and the `Range:` line (configuration.md, `head`).
+One verifier takes at most 400 unit lines (`unit_lines`) and 12 files. Above that, split by file across more verifiers in the same batch; a single file over 400 unit lines splits by unit ranges, each verifier given only its own ranges on its `Units:` line. `model: REVIEW_MODEL` on every call. Emit only the launch prompt below, placeholders filled — nothing added, nothing removed; exception: a refused `Read` under `{SKILL_DIR}` (runtime-routing.md, *Contrato ilegível*). Under `head=<sha>`, write that sha for `HEAD` in the diff and the `Range:` line.
 
 ```
 Agent(model: REVIEW_MODEL, prompt: "
@@ -39,13 +40,13 @@ Start with ONE batch of parallel tool calls: Read {SKILL_DIR}/references/verify-
 ")
 ```
 
-A verifier whose message does not end in `END_OF_VERIFICATION` is relaunched once, with the same files, base and head. When the sentinel is still missing, its files take the full flow in this round (a per-file agent each, and the sweep by the rule above), and their open findings stay open until that flow answers.
+A verifier whose message does not end in `END_OF_VERIFICATION`, or whose `Units read:` is below the number of units it was given, counts as missing its sentinel: it is relaunched once, with the same files, base and head. When it still falls short, its files take the full flow in this round (a per-file agent each, and the sweep by the rule above), and their open findings stay open until that flow answers.
 
 ## Closing the earlier round's findings (Phase C, after step 1)
 
-For each open finding of the earlier round:
+For each open finding of the earlier round, read the range's diff over its lines. One whose lines the diff did not touch, on any file, in the range or outside it, stays open and counts in the grade, unless a written verdict dismissed it. One the diff touched closes by its file's path:
 
-- On a file a verifier held: read the range's diff over its lines. It closes only when its unit was read by a verifier whose message ended in `END_OF_VERIFICATION`, the diff touched that unit, and the verifier gave no `behavior` there. One whose lines the diff did not touch stays open and counts in the grade, unless a written verdict dismissed it.
+- On a file a verifier held: it closes only when its unit was read by a verifier whose message ended in `END_OF_VERIFICATION` and whose `Units read:` covered every unit it was given, the diff touched that unit, and the verifier gave no `behavior` there.
 - On a file that took today's flow (`kind: CODE`, or a verifier's files after its relaunch failed): it closes by today's rule, on what that flow's agent reports.
 
 From a verifier's *Outside scope* list, a `behavior` on a line the branch wrote counts like any finding. The rest (a `form`, or a line older than the branch) does not count and is not dropped: list it in the report for the project's tracker.

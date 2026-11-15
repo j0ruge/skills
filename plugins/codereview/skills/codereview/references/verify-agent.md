@@ -6,15 +6,15 @@ You are the verifier of a `codereview` verification round: the re-review of a fi
 
 1. `Read {SKILL_DIR}/references/verify-agent.md` — this contract.
 2. `git -P diff {MERGE_BASE}...HEAD -- {PROSE_FILES}` — the fix.
-3. Each unit on your `Units:` line, by its line range: `Read {path}` with `offset` at the unit's start line and `limit` = end − start + 1 (`sed -n '{start},{end}p' {path}` where `Read` takes no range). Never read a whole file. When your `Range:` ends at a sha, not `HEAD`, the disk does not hold that state: read each unit as `git -P show {sha}:{path} | sed -n '{start},{end}p'`.
+3. Each unit on your `Units:` line, by its line range: `Read {path}` with `offset` at the unit's start line and `limit` = end − start + 1 (`sed -n '{start},{end}p' {path}` where `Read` takes no range). Never read a whole file. When your `Range:` ends at a sha, not `HEAD`, the disk does not hold that state, and every read goes to the sha: each unit as `git -P show {sha}:{path} | sed -n '{start},{end}p'`, a line cited in checks 2 and 3 as `git -P show {sha}:{path}`, and the identifier search of check 3 as `git -P grep -n -F -e '<id>' {sha} -- '*.md' '*.txt'`.
 
 The launch prompt batches the first two; if your first batch held only those, read every unit in the next one, all in parallel. A unit that cannot be judged alone, such as a table row without its header or a list item without its lead-in sentence, may take the few lines around it as context. Plan on roughly ten tool calls in total.
 
 ## Three checks on each unit
 
 1. **Inside the unit.** Read the unit whole and check whether any sentence contradicts another sentence of the same unit: a fix that rewrites one sentence often leaves its neighbor saying the opposite.
-2. **The changed lines against the code or the evidence.** Check every claim on a line of the unit's `changed` list by the rules of the next section.
-3. **The identifiers in the project's docs.** Grep the identifiers your `Identifiers:` line gives for that file, several per call: `/usr/bin/grep -rn -F -e '<id>' -e '<id>' --include='*.md' --include='*.txt' --exclude-dir=node_modules {REPO}`. Report only a sentence the new text now contradicts; a hit that agrees with it, or only names the identifier, is not a finding.
+2. **The changed lines against the code or the evidence.** Check every claim on a line of the unit's `changed` list by the rules of the next section; at a sha, read the code there too (item 3 above).
+3. **The identifiers in the project's docs.** Grep the identifiers your `Identifiers:` line gives for that file, several per call: `/usr/bin/grep -rn -F -e '<id>' -e '<id>' --include='*.md' --include='*.txt' --exclude-dir=node_modules {REPO}`, or the `git -P grep` of item 3 above at a sha. Report only a sentence the new text now contradicts; a hit that agrees with it, or only names the identifier, is not a finding.
 
 A finding sits on the sentence that is wrong. When that sentence lies outside your units, it goes to the *Outside scope* list.
 
@@ -22,7 +22,7 @@ A finding sits on the sentence that is wrong. When that sentence lies outside yo
 
 You do not load `detection-passes.md`. These are the rules of its pass 6.5 that reach a changed sentence:
 
-- Every factual claim (path, `path:line`, count, name, version, license, what a source can or cannot answer) matches the code, the evidence on your `Evidence:` line, or what the text cites. Check each on disk, with a `Read` of the cited line or a `/usr/bin/grep`.
+- Every factual claim (path, `path:line`, count, name, version, license, what a source can or cannot answer) matches the code, the evidence on your `Evidence:` line, or what the text cites. Check each on disk, with a `Read` of the cited line or a `/usr/bin/grep`, or at the sha when your `Range:` ends at one (item 3 of *Load*).
 - A doc comment that no longer matches what it documents ("returns X" while the code returns Y) is HIGH.
 - A number the text gives as the change's measured result, which the evidence does not measure validly (two timings from different starting points, a "before" taken on the "after" code), is HIGH; a count or a date that is merely off is MEDIUM or LOW.
 - A measurement, or a claim of absence ("none in X"), needs its saved output on the `Evidence:` line, with the zero printed for an absence; a script path is not evidence. Without it, the finding is `behavior — missing evidence`.

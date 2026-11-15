@@ -73,6 +73,12 @@ class TestRodadaDeVerificacao(unittest.TestCase):
         self.assertIn("closes only when its unit was read by a verifier whose message ended in "
                       "`END_OF_VERIFICATION`", t)
 
+    def test_achado_que_o_conserto_nao_tocou_fica_aberto_em_qualquer_arquivo(self):
+        t = RODADA.read_text(encoding="utf-8")
+        secao = t[t.index("## Closing the earlier round's findings"):]
+        self.assertLess(secao.index("stays open and counts in the grade"),
+                        secao.index("\n- On a file"))
+
     def test_verificador_nunca_roda_inline(self):
         self.assertIn("never inline", RODADA.read_text(encoding="utf-8"))
 
