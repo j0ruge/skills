@@ -391,6 +391,24 @@ class TestComentarioETipo(RepoTemporario):
                                  "b.rs": sem_cerca.replace("os dois", "os dois números")})
         self.assertEqual((self.tipo("a.rs"), self.tipo("b.rs")), ("CODE", "DOC_ONLY"))
 
+    def test_apagar_a_marca_de_um_bloco_lido_por_ferramenta_e_code(self):
+        # head apaga o "// Output:" de um exemplo do Go (o teste deixa de rodar), as duas cercas de um
+        # doctest do Rust e, noutro arquivo, o doctest cercado inteiro; num controle, apaga uma linha
+        # de prosa do comentário, e o controle fica DOC_ONLY
+        exemplo = ('package x\n\nimport "fmt"\n\n// ExampleF mostra o F.\nfunc ExampleF() {\n'
+                   '\tfmt.Println("um")\n\t// Output:\n\t// um\n}\n')
+        doc = ("/// Soma.\n/// Dois números.\n///\n/// ```\n/// assert_eq!(soma(1, 1), 2);\n/// ```\n"
+               "pub fn soma(a: i32, b: i32) -> i32 { a + b }\n")
+        sem_cerca = "/// Soma.\n/// Dois números.\npub fn soma(a: i32, b: i32) -> i32 { a + b }\n"
+        self.base = self.gravar({"x_test.go": exemplo, "a.rs": doc, "b.rs": doc, "c.rs": sem_cerca})
+        self.head = self.gravar({
+            "x_test.go": exemplo.replace("\t// Output:\n", ""),
+            "a.rs": doc.replace("/// ```\n", ""),
+            "b.rs": doc.replace("///\n/// ```\n/// assert_eq!(soma(1, 1), 2);\n/// ```\n", ""),
+            "c.rs": sem_cerca.replace("/// Dois números.\n", "")})
+        self.assertEqual([self.tipo(nome) for nome in ("x_test.go", "a.rs", "b.rs", "c.rs")],
+                         ["CODE", "CODE", "CODE", "DOC_ONLY"])
+
 
 class TestSaida(RepoTemporario):
     def test_json_de_um_intervalo_misto(self):

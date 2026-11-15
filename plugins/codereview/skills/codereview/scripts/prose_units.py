@@ -444,6 +444,12 @@ def _tipo(caminho: str, bloco: list[str] | None) -> str:
     if any(linha.startswith(_CABECALHO_DE_CODIGO) for linha in bloco[1:inicio]):
         return "CODE"
     mudadas = [linha[1:] for linha in bloco[inicio:] if linha.startswith(("+", "-"))]
+    # A marca apagada de um bloco que uma ferramenta lê (o `// Output:`, a cerca do doctest) não está
+    # mais no head, onde _bloco_lido_por_ferramenta olha: sem ela o exemplo ou o doctest deixa de rodar.
+    marca = (_SAIDA_DO_GO_RE if nome.endswith("_test.go") else
+             _CERCA_DO_RUST_RE if nome.endswith(".rs") else None)
+    if marca and any(linha.startswith("-") and marca.match(linha[1:]) for linha in bloco[inicio:]):
+        return "CODE"
     # Sem linha mudada (binário), nada mostra que o diff é só comentário.
     if mudadas and all(_so_comentario(linha, extensao) for linha in mudadas):
         return "DOC_ONLY"
@@ -461,7 +467,8 @@ def file_kind(repo: Path, base: str, head: str, path: str) -> str:
     as duas listas abaixo dela) nem, em C e C++, `//` terminado em `\\`. Comentário de bloco (`/*`,
     ` * texto`, `*/`) e docstring entre aspas triplas não contam. DOCS ou DOC_ONLY que existe no head e
     fica sem unidade nenhuma também é CODE, e DOC_ONLY com uma unidade que uma ferramenta lê inteira
-    (_SAIDA_DO_GO_RE). O resto é CODE.
+    (_SAIDA_DO_GO_RE), ou com a marca de um bloco desses apagada (o `// Output:` num `_test.go`, a
+    cerca num `.rs`). O resto é CODE.
     """
     arquivo = _diff_por_arquivo(repo, base, head).get(path)
     if arquivo is None:

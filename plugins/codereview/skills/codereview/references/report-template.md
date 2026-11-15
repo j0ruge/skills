@@ -26,7 +26,7 @@ If `$ARGUMENTS` specified a focus area, note: **Focus**: {focus area}
 
 On a re-review (`base=` from an earlier round), one more line, in one of two forms:
 
-- `**Round**: Verification round: {n} files, {u} units — the Documentation grade covers only these units`, where `{n}` files went to verifiers with `{u}` units in all (verification-round.md) and every other file took today's flow. The verifiers do not read the text around the edited units, so an A there is not a clean file: the line says so.
+- `**Round**: Verification round: {n} files, {u} units — the Documentation grade covers only these units`, where `{n}` files went to verifiers with `{u}` units in all (verification-round.md) and every other file took today's flow. The verifiers do not read the text around the edited units, so an A there is not a clean file: the line says so. A file a verifier held that went back to today's flow (a `not prose` report, a failed relaunch) is not counted in `{n}` or `{u}`. A `[HIGH] not prose` item only routes its file: it is never a row of the Findings Table, never graded and never listed under *Should Fix*.
 - `**Round**: ran in full: {reason}`, naming the condition of verification-round.md, *When it runs*, that failed (`verify=off`, `worktree mode`, `base not an ancestor`, `no open-findings list`, `prose_units.py rc {n}`, `no agent`), or `no prose file` when `PROSE_SCOPE` had no `DOCS` or `DOC_ONLY` file.
 
 **If the Secrets Detection table below has ≥1 row**, prepend this banner to the entire report (before the H1) and do not remove it:

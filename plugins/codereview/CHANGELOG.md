@@ -46,7 +46,9 @@ os arquivos inteiros. Desenho em
     traz `noqa`, `coding:` ou `coding=` em qualquer ponto, em qualquer caixa;
   - uma linha de um bloco de comentário que uma ferramenta lê inteiro: o bloco com `Output:` de um
     exemplo do Go num `_test.go`, o bloco logo acima do `import "C"` (o preâmbulo do cgo) e o bloco
-    `///` ou `//!` do Rust com cerca (o doctest).
+    `///` ou `//!` do Rust com cerca (o doctest);
+  - a linha apagada que marca um bloco desses: o `// Output:` num `_test.go` (sem ela o exemplo
+    deixa de rodar) e a cerca de um bloco `///` ou `//!` num `.rs`.
 
   Numa re-rodada, a fase A o roda no passo 9 e entrega o `PROSE_SCOPE` às fases B e C; nessas
   rodadas, o `DOC_ONLY` da Test Coverage sai dele.
@@ -61,7 +63,8 @@ os arquivos inteiros. Desenho em
     (`runtime-routing.md`). Cada um leva até 400 linhas de unidade e 12 arquivos.
   - Uma linha das unidades que uma ferramenta obedece, compila ou roda (diretiva, doctest, preâmbulo
     do cgo, comentário dentro de string ou heredoc) volta do verificador como HIGH `not prose`, e o
-    arquivo dela vai para o fluxo de hoje na rodada.
+    arquivo dela vai para o fluxo de hoje na rodada. Esse item só roteia: não entra na tabela de
+    achados nem na nota, e o arquivo sai da conta da linha `Round` do relatório.
   - Da lista *Outside scope*, o verificador nunca corta um `behavior`: os `form` completam até cinco
     itens, e a linha `Cut:` diz quantos ficaram de fora.
   - Nenhum prompt recebe achado de rodada anterior. A sessão guarda a lista e, na fase C, fecha um
@@ -126,7 +129,7 @@ skill no `f5c79e2`, agentes em `opus` e três execuções por intervalo.
 
 ### Testes e tamanho
 
-- `tests/test_prose_units.py` (44 testes) cobre o script, e `tests/test_prose_contract.py` (23)
+- `tests/test_prose_units.py` (45 testes) cobre o script, e `tests/test_prose_contract.py` (24)
   prende os trechos das references que o verificador e a fase C leem pelo texto, os espaços do
   relatório e a lista de diretivas, que tem de estar inteira no `verification-round.md`. O
   `test_scan_secrets.py` não muda (36 testes).

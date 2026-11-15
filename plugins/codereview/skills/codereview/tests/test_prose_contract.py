@@ -139,6 +139,11 @@ class TestRelatorioDaRodada(unittest.TestCase):
             self.assertIn(trecho, t)
         self.assertIn("`ran in full: {reason}`", RODADA.read_text(encoding="utf-8"))
 
+    def test_arquivo_devolvido_ao_fluxo_de_hoje_fica_fora_da_conta_e_da_nota(self):
+        texto = TEMPLATE.read_text(encoding="utf-8")
+        for trecho in ("is not counted in `{n}` or `{u}`", "never a row of the Findings Table"):
+            self.assertIn(trecho, texto)
+
     def test_achado_que_segue_aberto_vira_linha_da_tabela(self):
         self.assertIn("carried over from #{n}", TEMPLATE.read_text(encoding="utf-8"))
         self.assertIn("carried over", RODADA.read_text(encoding="utf-8"))
