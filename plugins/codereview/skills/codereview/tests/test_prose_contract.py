@@ -26,8 +26,13 @@ class TestContratoDeProsa(unittest.TestCase):
         t = (REF / "report-template.md").read_text(encoding="utf-8")
         self.assertIn("### Documentation row", t)
         self.assertIn("**Deferred (form)**", t)
-        self.assertIn("| A | no CRITICAL, HIGH or MEDIUM documentation finding, and no `behavior` finding |", t)
-        self.assertIn("| B | a MEDIUM documentation finding, or a LOW `behavior` finding |", t)
+        for linha in (
+                "| A | no CRITICAL, HIGH or MEDIUM documentation finding, and no `behavior` finding |",
+                "| B | a MEDIUM documentation finding, a LOW `behavior` finding, or exactly one HIGH "
+                "documentation finding |",
+                "| C | two or more HIGH documentation findings |",
+                "| D or F | a CRITICAL documentation finding, by the scale above |"):
+            self.assertIn(linha, t)
 
 
 if __name__ == "__main__":

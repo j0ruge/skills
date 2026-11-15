@@ -57,10 +57,10 @@ N. [SEVERITY] {category} — {file}:{line} — {title}
    Kind: behavior — contradicted by {file}:{line}  |  Kind: behavior — missing evidence: {what}  |  Kind: form
 ```
 
-The `Kind:` line, in one of its three forms, goes only on a documentation finding: pass 6.5.1, pass 6.5.2, or Readability on a comment. Pass 6.5.3 and every other pass carry none. The kind never changes the severity, which still comes from pass 6.5.
+The `Kind:` line, in one of its three forms, goes only on a documentation finding: pass 6.5.1, pass 6.5.2, or Readability on a comment. Pass 6.5.3 and every other pass carry none. The kind never changes the severity, which still comes from the pass that raised it.
 
-- **`behavior`**: the sentence states a behavior, value, state or guarantee that the code or the evidence contradicts (cite the `file:line` that contradicts it); or it states a measurement or an absence that the evidence your category names does not show (name what is missing); or it is a command in the doc that fails when run (cite the `file:line` that makes it fail).
-- **`form`**: the sentence is true but badly written, incomplete or points to a less exact place, such as a missing subject, a pointer to a file that exists but is not where the item lives, a list of examples that reads as complete, or an ambiguously worded count; also a missing docstring graded LOW.
+- **`behavior`**: the sentence states a behavior, value, state or guarantee of the system that the code or the evidence contradicts (cite the `file:line` that contradicts it); or it states a measurement or an absence that the evidence your category names does not show (name what is missing); or it is a command in the doc that fails when run (cite the `file:line` that makes it fail).
+- **`form`**: the sentence is true but badly written, incomplete or points to a less exact place, such as a missing subject, a pointer to a file that exists but is not where the item lives, a list of examples that reads as complete, or an ambiguously worded count; also a missing docstring, at any severity.
 
 If no issues were found, return `No findings for {FILE_PATH}` — a clean result is a valid outcome; don't invent findings. Reference only line numbers you actually saw in the diff or file content. Note any imports from other changed files for cross-reference by the orchestrator.
 

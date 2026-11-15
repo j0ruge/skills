@@ -5,7 +5,7 @@ This file defines the full Markdown report structure for the codereview skill.
 ## Contents
 
 - [Report Structure](#report-structure): [Secrets Detection](#-secrets-detection) · [Findings Table](#findings-table) · [Test Coverage](#test-coverage) · [Documentation Sync](#documentation-sync) · [Dead Code & Cleanup](#-dead-code--cleanup) · [Overall Grade](#overall-grade) · [Recommended Actions](#recommended-actions) · [Cost footprint](#cost-footprint)
-- [Grading Scale](#grading-scale): [Documentation row](#documentation-row) · [Examples](#examples) · [Troubleshooting](#troubleshooting)
+- [Grading Scale](#grading-scale) ([Documentation row](#documentation-row)) · [Examples](#examples) · [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -298,23 +298,28 @@ Rate each criterion A through F:
 ### Documentation row
 
 The Documentation row of the Overall Grade comes from this table, not from a free reading of the
-scale above. It grades the findings of 6.5.1, 6.5.2 and Readability on a comment; 6.5.3 (contract
-drift in tests) stays out of it and has no kind.
+scale above. It grades the findings of 6.5.1, 6.5.2 and Readability on a comment; a Readability
+finding on a comment is graded in this row only, not also in Code Quality (Zen). A 6.5.3 finding
+(contract drift in tests) is graded in the Test Coverage row and gets no kind.
 
 | Grade | Condition |
 |---|---|
 | A | no CRITICAL, HIGH or MEDIUM documentation finding, and no `behavior` finding |
-| B | a MEDIUM documentation finding, or a LOW `behavior` finding |
-| C or worse | a HIGH or CRITICAL documentation finding, by the scale above |
+| B | a MEDIUM documentation finding, a LOW `behavior` finding, or exactly one HIGH documentation finding |
+| C | two or more HIGH documentation findings |
+| D or F | a CRITICAL documentation finding, by the scale above |
 
 - Each documentation finding carries a kind (per-file-agent.md, *Output format*), and the session
-  gives one, by the same definitions, to each finding Phase C step 7 raises itself.
+  gives one, by the same definitions, to each finding Phase C step 7 raises itself. A missing
+  docstring is `form` at any severity: the table grades MEDIUM and HIGH by severity whatever the
+  kind.
 - In Phase C, a `behavior` finding that cites no `file:line` contradicting it and names no missing
   evidence becomes `form`.
 - A LOW `form` finding lowers neither this row nor the Overall row. It goes to *Deferred (form)* in
   Recommended Actions, not to *Consider Fixing*.
-- A `pre-existing` finding (configuration.md, *Re-review rounds*) stays out of the grade, as it
-  already stays out of the stop rule, and stays listed: the user decides where it goes.
+- A `pre-existing` documentation finding (configuration.md, *Re-review rounds*) stays out of this
+  row's letter, as it already stays out of the stop rule, and stays listed: the user decides where
+  it goes.
 
 Measured 2026-11-15 (a .NET rules engine, PR #30, four rounds): the table gives B, B, B, A, the letters the session gave by judgment.
 
@@ -336,12 +341,12 @@ Measured 2026-11-15 (a .NET rules engine, PR #30, four rounds): the table gives 
 
 **Consider Fixing (MEDIUM/LOW)**:
 
-- Brief summary of improvements, grouped by theme
+- Brief summary of improvements, grouped by theme, except the LOW `form` documentation findings: they go to *Deferred (form)*
 - If none: `_None._`
 
 **Deferred (form)**:
 
-- Each LOW `form` documentation finding with file:line. They do not lower the grade and ask for no round.
+- Each LOW `form` documentation finding with file:line. They lower neither the Documentation row nor the Overall grade, and ask for no round.
 - If none: `_None._`
 
 ---
