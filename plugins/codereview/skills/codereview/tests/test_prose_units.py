@@ -113,6 +113,16 @@ class TestLinhasMudadas(RepoTemporario):
         m = self.mudadas()["doc.md"]
         self.assertEqual((m["added"], m["removed_at"]), ([], [3]))
 
+    def test_cr_solto_numa_linha_nao_abre_arquivo_fantasma(self):
+        # base: linhas 1..10; head: troca a linha 2 por uma com CR solto antes de um `diff --git`, e a 10.
+        # Lido em modo texto, o CR virava quebra de linha e o hunk da linha 10 ia para o arquivo fantasma.
+        linhas = [str(n) for n in range(1, 11)]
+        self.base = self.gravar({"doc.md": "\n".join(linhas) + "\n"})
+        linhas[1] = "DOIS\rdiff --git a/fantasma.md b/fantasma.md"
+        linhas[9] = "DEZ"
+        self.head = self.gravar({"doc.md": "\n".join(linhas) + "\n"})
+        self.assertEqual(self.mudadas(), {"doc.md": {"added": [2, 10], "removed_at": [], "status": "M"}})
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -65,7 +65,8 @@ def _blocos(texto: str) -> list[list[str]]:
     """Um bloco por arquivo do diff, cada um começando no `diff --git`.
 
     Corta em "\\n", e não com splitlines: um form feed ou um \\r dentro de uma linha do arquivo
-    abriria uma linha falsa, que poderia começar com `diff --git`.
+    abriria uma linha falsa, que poderia começar com `diff --git`. Pelo mesmo motivo, o texto tem de
+    vir de bytes decodificados, e não do modo texto do subprocess, que troca o \\r por "\\n".
     """
     blocos: list[list[str]] = []
     for linha in texto.split("\n"):
@@ -118,15 +119,17 @@ def changed_lines(repo: Path, base: str, head: str) -> dict[str, dict]:
     `added` são as linhas `+` no head. `removed_at` é, para cada hunk sem linha `+`, a linha do head
     logo depois do corte (mínimo 1); num corte no fim do arquivo ela passa da última linha. Arquivo
     apagado sai pelo caminho que tinha na base; renomeado, pelo caminho novo. Erro do git sobe como
-    subprocess.CalledProcessError.
+    subprocess.CalledProcessError, com o stderr em bytes.
     """
     # Os prefixos, a cor e o diff externo vêm explícitos porque a config do usuário muda os três.
     # O --end-of-options impede que um sha começado por `-` vire opção (um --output gravaria arquivo).
+    # A saída vem em bytes: em modo texto, o subprocess troca um \r solto numa linha do arquivo por
+    # "\n", e o resto da linha viraria uma linha do diff (até um `diff --git` de arquivo fantasma).
     texto = subprocess.run(
         ["git", "-P", "-C", str(repo), "diff", "-U0", "--find-renames", "--no-color", "--no-ext-diff",
          "--src-prefix=a/", "--dst-prefix=b/", "--end-of-options", f"{base}...{head}", "--"],
-        capture_output=True, encoding="utf-8", errors="replace", check=True,
-    ).stdout
+        capture_output=True, check=True,
+    ).stdout.decode("utf-8", "replace")
     mudadas: dict[str, dict] = {}
     for bloco in _blocos(texto):
         caminho, info = _arquivo_do_bloco(bloco)
