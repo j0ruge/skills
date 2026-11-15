@@ -518,6 +518,18 @@ launches no agent, and the report grades code nobody read.
 Read this whenever `base=` names the head an earlier round reviewed (SKILL.md, *Re-review the fix*).
 These decide whether the rounds converge:
 
+- **A prose-only fix gets a verification round, not a full one.** On a re-review, each file
+  `scripts/prose_units.py` marks `DOCS` or `DOC_ONLY` goes to a verifier that reads only the units
+  around the changed lines, checks their claims against the code or the evidence and greps their
+  identifiers in the project's docs (SKILL.md, Phase B, *Verification round*, for when it runs and
+  `verify=off`; `references/verify-agent.md` for the contract); a `CODE` file keeps the per-file
+  agent and the sweep. Declared limit: older drift outside the edited units is not sought; it is
+  the first round's job. On such a fix the verifier stands in for the code agent and the sweep that
+  *The clean round covers the head it read* asks for. Measured 2026-11-15 (a .NET rules engine,
+  PR #30, rounds 3 to 6): four full rounds and 16 agents took the Documentation row from B to A,
+  the r5 MEDIUM sat in a bullet whose last sentence r4's fix had rewritten while its first still
+  said the opposite, and the r4 MEDIUM lay outside the edited units, where a verification round
+  would not have looked.
 - **`base=` is pasted from git's output, never retyped.** The head a round starts from was printed
   turns earlier, and a full sha rebuilt from memory names no commit. Take it from
   `git rev-parse <short sha>`, or the short sha as `git log --oneline` printed it, and paste that
