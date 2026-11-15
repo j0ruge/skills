@@ -2,6 +2,109 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.29.0] — 2026-11-15
+
+### Nota escrita para a prosa e rodada de verificação para o conserto que só mexe em prosa
+
+Minor: comportamento novo, sem quebrar argumento existente. Levar a linha Documentation a A depois
+de um conserto de docs custava várias rodadas completas, e cada uma mandava agentes novos relerem
+os arquivos inteiros. Desenho em
+`docs/superpowers/specs/2026-11-15-codereview-rodada-de-prosa-design.md`, medição no
+`…-medicao.md` ao lado.
+
+- **Tipo do achado de documentação (`per-file-agent.md`, *Output format*).** Todo achado do 6.5.1,
+  do 6.5.2 ou de Readability num comentário traz uma linha `Kind:`. É `behavior` quando o código ou
+  a evidência contradiz a frase (com o `file:line` que a contradiz), quando falta a evidência de uma
+  medição ou de uma ausência, ou quando um comando do doc falha. É `form` quando a frase é
+  verdadeira mas mal escrita, incompleta ou aponta um lugar menos exato. O tipo não muda a
+  severidade. Na fase C, um `behavior` que não cita `file:line` nem nomeia a evidência que falta
+  vira `form`, e a sessão dá tipo também aos achados que ela mesma levanta.
+- **A linha Documentation sai de uma tabela (`report-template.md`, *Documentation row*).** A: nenhum
+  achado de documentação CRITICAL, HIGH ou MEDIUM, e nenhum `behavior`. B: um MEDIUM, um LOW
+  `behavior` ou exatamente um HIGH. C: dois HIGH ou mais. D ou F: um CRITICAL, pela escala. Um LOW
+  `form` vai para a seção nova *Deferred (form)* das Recommended Actions: não baixa essa linha nem a
+  Overall e não pede rodada. Um achado `pre-existing` fica fora da letra e segue listado.
+- **A série de rodadas para** na primeira rodada sem MEDIUM ou pior e sem `behavior` (`SKILL.md`,
+  *Re-review the fix*), e não mais na primeira que não acha nada.
+- **`scripts/prose_units.py`, novo.** De um intervalo do git, imprime em JSON o tipo de cada arquivo
+  (`DOCS`, `DOC_ONLY` ou `CODE`), as unidades de prosa em volta de cada linha mudada (o parágrafo, o
+  item de lista com as continuações, a linha da tabela, o bloco cercado; em código, o bloco de
+  comentário) e os identificadores entre crases das linhas novas. Só biblioteca padrão, não grava
+  arquivo, e erro do git sai com rc 2. Na dúvida, `CODE`: só comentário de linha conta (`//`, `#`,
+  `--`), e saem `CODE` uma linha de comentário de bloco mudada, um arquivo de código renomeado, com
+  modo trocado, novo ou apagado, uma linha de diretiva, `.yml`/`.yaml`/`.toml`, `requirements*.txt`,
+  `CMakeLists.txt` e um arquivo de prosa sem unidade. Numa re-rodada, a fase A o roda no passo 9 e
+  entrega o `PROSE_SCOPE` às fases B e C; nessas rodadas, o `DOC_ONLY` da Test Coverage sai dele.
+- **Rodada de verificação (`references/verification-round.md` para a sessão,
+  `references/verify-agent.md` para o verificador).** Na re-rodada (`base=` de uma rodada anterior)
+  de um conserto que só mexeu em prosa, cada arquivo `DOCS` ou `DOC_ONLY` com unidade vai a um
+  agente verificador. Ele lê só as unidades, confere as linhas mudadas contra o código ou a
+  evidência, procura nos docs do projeto os identificadores delas e devolve os achados, com tipo,
+  até o `END_OF_VERIFICATION`. Os outros arquivos do intervalo seguem o fluxo de hoje.
+  - O verificador é sempre agente, nunca inline: sem agente, a re-rodada é completa
+    (`runtime-routing.md`). Cada um leva até 400 linhas de unidade e 12 arquivos.
+  - Nenhum prompt recebe achado de rodada anterior. A sessão guarda a lista e, na fase C, fecha um
+    achado aberto só quando o conserto tocou a unidade dele e um verificador com a sentinela e todas
+    as unidades lidas não deu `behavior` ali. O achado cujas linhas o conserto não tocou continua
+    aberto, em qualquer arquivo.
+  - A varredura (fase B2) só é pulada quando nenhum arquivo fora dos verificadores é `CODE` ou
+    CONFIG.
+  - `verify=off` força a rodada completa de hoje. A re-rodada também é completa em modo
+    `worktree`, quando o `base=` não é ancestral do head (depois de um fixup ou de um rebase),
+    quando a sessão não tem a lista dos achados abertos e quando o `prose_units.py` sai com rc
+    diferente de 0.
+
+### Limites declarados
+
+- **Drift antigo fora das unidades editadas não é procurado** por uma rodada de verificação: é
+  trabalho da primeira rodada. A medição mostra o preço: no intervalo da r4, o fluxo de hoje achou o
+  MEDIUM da r4 original, 15 linhas abaixo de uma unidade editada do mesmo arquivo, e o verificador
+  não o achou.
+- **Uma linha com `#`, `//` ou `--` dentro de uma string de várias linhas ou de um heredoc ainda
+  conta como comentário.** A sessão que vê uma linha dessas entre as mudanças de um arquivo
+  `DOC_ONLY` roda a rodada completa.
+- **O verificador custa mais ou menos o mesmo que um agente por arquivo:** 138.729 tokens em média,
+  contra 106.908 a 159.997 dos agentes do fluxo de hoje na r4. A economia vem de um agente no lugar
+  de vários.
+
+### Medição
+
+Repetição, só de leitura, sobre quatro rodadas gravadas de um motor de regras .NET (PR #30), com a
+skill no `f5c79e2`, agentes em `opus` e três execuções por intervalo.
+
+- **Escopo.** O script saiu com rc 0 nos quatro intervalos. Na r4, 11 arquivos de prosa deram 14
+  unidades e 91 linhas, e 2 arquivos saíram `CODE`; na r5, 7 arquivos deram 8 unidades e 34 linhas;
+  na r6, 4 arquivos deram 6 unidades e 26 linhas. A r3, primeira rodada sobre aqueles docs, segue
+  completa.
+- **Verificadores.** As 9 execuções terminaram em `END_OF_VERIFICATION` e leram todas as unidades
+  recebidas.
+- **Alvos.** O MEDIUM da r5, uma contradição dentro de um item de lista criada pelo conserto da r4
+  (`behavior`), saiu em 3 de 3 execuções; os dois `form` da r6, em 2 de 3 cada; a célula de tabela
+  da r4 que dizia "sem bloco" ao lado da forma com bloco, em 0 de 3.
+- **Achados novos.** Em 3 de 3 execuções, a r6 deu uma frase da mesma célula de tabela que só vale
+  sem bloco (conferida no código; o head do PR ainda a carrega), e a r4 deu uma frase com a relação
+  entre os predicados invertida. A lista *Outside scope* apontou frases em outros cinco docs que o
+  texto novo passou a contradizer, e nenhuma das quatro rodadas originais as tinha relatado.
+- **Custo, no intervalo da r4.** O fluxo de hoje leu os mesmos 11 arquivos de prosa em 4 agentes,
+  514.268 tokens no total; o verificador gastou em média 144.035, 3,6 vezes menos. O fluxo de hoje
+  achou o que o verificador não achou: 3 `behavior` fora das unidades, entre eles o MEDIUM da r4
+  original, e o alvo "sem bloco", desta vez como `behavior`.
+- **Limites da medição.** Um projeto só, em português, com docs densos. Os tokens das rodadas
+  originais não foram gravados: a comparação é contra uma execução do fluxo de hoje, só nos arquivos
+  de prosa.
+
+### Testes e tamanho
+
+- `tests/test_prose_units.py` (37 testes) cobre o script, e `tests/test_prose_contract.py` (13)
+  prende os trechos das references que o verificador e a fase C leem pelo texto. O
+  `test_scan_secrets.py` não muda (36 testes).
+- O `SKILL.md` vai de 248 para 259 linhas e de 19.991 para 21.288 chars; o detalhe fica nas
+  references. Ele passa dos 20.000 chars que o `validate-versions.py` recomenda para o corpo, o que dá
+  aviso e não falha o gate. Sem mudança de `description`.
+
+Reverter: `git revert` dos commits da branch. Para só desligar a rodada de verificação numa
+revisão, `verify=off`; o tipo do achado e a tabela da Documentation seguem valendo.
+
 ## [2.28.5] — 2026-11-14
 
 ### Duas linhas da 2.28.4 que a própria varredura de segredos acusava

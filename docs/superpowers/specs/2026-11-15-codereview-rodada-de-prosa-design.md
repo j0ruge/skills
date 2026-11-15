@@ -1,6 +1,6 @@
 # codereview: nota escrita para prosa e rodada de verificação
 
-**Data:** 2026-11-15 · **Estado do desenho:** `draft` · **Implementação:** `not_started`
+**Data:** 2026-11-15 · **Estado do desenho:** `approved` · **Implementação:** `implemented`
 
 ## Por quê
 
