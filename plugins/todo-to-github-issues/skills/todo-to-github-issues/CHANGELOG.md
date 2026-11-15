@@ -3,6 +3,25 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
+## 2026-11-15 — o `TEST_CMD` verde não libera o plano
+
+Publicado como **v2.9.8**. Saiu da retro de uma sessão de um projeto: depois de commitar a revisão
+(com o `TEST_CMD` verde), o plano do espelho recusou o `TODO.md`.
+
+- **O sintoma.** `FAIL  the kit's sensor refuses TODO.md (rc 1)`, com três violações do tipo
+  ``anchor `<arquivo>:104` is off target — nearest `<símbolo>` is at line 119``. O `TEST_CMD` do mesmo commit
+  tinha dado `ok … 0 new shape violation(s) against origin/main (3 inherited)`.
+- **A causa.** O `TEST_CMD` passa `--baseline origin/<padrão>` ao `check-todo.sh`, e a âncora que um
+  commit anterior deslocou conta como herdada. O `sensor_gate` do `todo_issues.py` chama o sensor
+  sem baseline: o espelho mede o arquivo inteiro, porque é o arquivo inteiro que vai para as issues.
+  O comportamento do script está certo; o `SKILL.md` não avisava.
+- **Correção conferida.** Os três itens foram reancorados na linha atual do símbolo num commit
+  próprio, com push; o plano rodou, o `--apply` criou as oito issues, e o plano final deu
+  `create=0 update=0`.
+- **Onde entrou.** Um item em *Erros comuns*, logo depois de "Espelhar antes de acertar o formato",
+  que é a outra recusa antes do plano. O `SKILL.md` ficou em 19.800 chars, abaixo do aviso de 20 mil
+  do C1.
+
 ## 2026-11-11 — o nome do arquivo do `--dump` no `SKILL.md`
 
 Publicado como **v2.9.7**. Saiu da retro de uma sessão de um projeto, na ressincronização do espelho

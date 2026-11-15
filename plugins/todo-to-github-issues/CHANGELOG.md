@@ -3,6 +3,18 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.9.8] — 2026-11-15
+
+### O `TEST_CMD` verde não libera o plano
+
+O `TEST_CMD` de um repo sdd roda o sensor do kit com `--baseline origin/<padrão>`, que reprova só a
+violação nova: uma âncora que outro commit deslocou conta como herdada (`ok … (3 inherited)`). O plano
+roda o mesmo sensor sem baseline (`sensor_gate`, em `todo_issues.py`) e recusa o arquivo inteiro (rc 4,
+`the kit's sensor refuses TODO.md (rc 1)`, com `nearest … is at line N`). Numa sessão de um projeto,
+três itens antigos travaram as oito issues novas da revisão. O `SKILL.md` ganha o caso em *Erros comuns*:
+reancorar na linha atual do símbolo num commit próprio, com push, e rodar o plano de novo. O script não
+muda. O smoke do Codex segue na 2.8.0, dívida anterior a esta versão.
+
 ## [2.9.7] — 2026-11-11
 
 ### O nome do arquivo do `--dump`

@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.9.7
+  version: 2.9.8
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -167,6 +167,11 @@ do item.
   `RESOLVIDO por` não é lido pelo espelho: `--fix` o converte.
 - **Espelhar antes de acertar o formato.** Num arquivo sem marcador o espelho recusa (rc 4). A
   ordem é `--audit` → `--fix` → `--fix --write` → os `MANUAL` com o humano → commit → plano.
+- **Contar com o `TEST_CMD` verde para o plano.** O do repo roda o sensor com `--baseline`, que lê a
+  âncora deslocada por outro commit como herdada (`ok … (3 inherited)`); o plano o roda sem baseline
+  (`sensor_gate`) e recusa o arquivo (rc 4, `the kit's sensor refuses`, `nearest … is at line N`).
+  Em 2026-11-14, três itens antigos travaram oito issues novas. Reancore-os num commit próprio, com
+  push, e rode o plano de novo.
 - **Deixar as órfãs esperando a migração do formato.** Um `TODO.md` anterior a uma regra nova do
   sensor recusa o plano (rc 4) até ser migrado — em 2026-10-09, `--audit` deu
   `manual=206`, quase todas `designates no symbol` (ADR 0015 §2 do kit) — e o espelho para: lá, 8
