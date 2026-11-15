@@ -244,6 +244,47 @@ class TestComentarioETipo(RepoTemporario):
         self.head = self.gravar({"c.yml": "# outro comentário\nchave: 1\n"})
         self.assertEqual(self.tipo("c.yml"), "CODE")
 
+    # Só comentário de linha conta: sem analisar o arquivo, linha de comentário de bloco não se
+    # distingue de código.
+
+    def test_codigo_depois_de_comentario_fechado_na_linha_e_code(self):
+        # head troca "/* a */ int x = 1;" por "/* a */ int x = 2;"
+        self.base = self.gravar({"v.c": "/* a */ int x = 1;\n"})
+        self.head = self.gravar({"v.c": "/* a */ int x = 2;\n"})
+        self.assertEqual(self.tipo("v.c"), "CODE")
+
+    def test_linha_dentro_de_bloco_javadoc_e_code(self):
+        # head troca só a linha " * Texto antigo." de dentro do bloco /** ... */
+        java = "class J {\n    /**\n     * Texto antigo.\n     */\n    void m() {}\n}\n"
+        self.base = self.gravar({"J.java": java})
+        self.head = self.gravar({"J.java": java.replace("Texto antigo.", "Texto novo.")})
+        self.assertEqual(self.tipo("J.java"), "CODE")
+
+    def test_arquivo_so_de_comentario_apagado_e_code(self):
+        # head apaga Doc.cs, que só tinha comentário
+        self.base = self.gravar({"Doc.cs": "/// só comentário\n/// mais um\n"})
+        git(self.repo, "rm", "-q", "Doc.cs")
+        self.head = self.gravar({})
+        self.assertEqual(self.tipo("Doc.cs"), "CODE")
+
+    def test_cmakelists_txt_e_code(self):
+        # head troca o nome do executável
+        self.base = self.gravar({"CMakeLists.txt": "add_executable(a a.c)\n"})
+        self.head = self.gravar({"CMakeLists.txt": "add_executable(b a.c)\n"})
+        self.assertEqual(self.tipo("CMakeLists.txt"), "CODE")
+
+    def test_codigo_embrulhado_em_colchete_longo_de_lua_e_code(self):
+        # head põe "--[==[" antes do código e "--]==]" depois
+        self.base = self.gravar({"l.lua": "local x = 1\nreturn x\n"})
+        self.head = self.gravar({"l.lua": "--[==[\nlocal x = 1\n--]==]\nreturn x\n"})
+        self.assertEqual(self.tipo("l.lua"), "CODE")
+
+    def test_comentario_de_c_terminado_em_barra_e_code(self):
+        # head põe uma barra invertida no fim do comentário: em C, ela emenda a linha de baixo ao comentário
+        self.base = self.gravar({"e.c": "// texto\nint x = 1;\n"})
+        self.head = self.gravar({"e.c": "// texto \\\nint x = 1;\n"})
+        self.assertEqual(self.tipo("e.c"), "CODE")
+
     def test_bloco_de_comentario_apagado_inteiro_e_code(self):
         # head apaga as três linhas "///": o diff é só comentário, mas não sobra unidade para ler
         self.base = self.gravar({"A.cs": CS})

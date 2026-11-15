@@ -307,18 +307,22 @@ def markdown_units(lines: list[str], targets: list[int]) -> list[tuple[int, int]
 # Na dúvida, CODE: um arquivo dado como DOC_ONLY por engano esconde código do revisor de código.
 _EXTENSOES_DE_DOC = (".md", ".txt")
 _TXT_DE_CODIGO = ("requirements*.txt", "cmakelists.txt")  # nome do arquivo, em minúsculas
-# Linha de comentário, sem o recuo. O `*` sozinho só vale seguido de espaço, `/` ou fim de linha, para
-# que `*p = 1;` não passe por comentário. YAML e TOML ficam fora: num bloco escalar, `#` é conteúdo.
+# Só comentário de linha, sem o recuo. Sem analisar o arquivo, uma linha de comentário de bloco
+# (`/*`, ` * texto`, `*/`) não se distingue de código (`/* a */ int x = 1;`, a continuação `* b;`):
+# ela não casa com prefixo nenhum daqui e faz o arquivo CODE. YAML e TOML ficam fora: num bloco
+# escalar, `#` é conteúdo.
 _COMENTARIO_RE = {
     **dict.fromkeys((".cs", ".ts", ".tsx", ".js", ".jsx", ".java", ".go", ".rs", ".c", ".h", ".cpp",
-                     ".swift", ".kt"), re.compile(r"\s*(?://|/\*|\*(?=\s|/|$))")),
+                     ".swift", ".kt"), re.compile(r"\s*//")),
     **dict.fromkeys((".py", ".sh", ".rb"), re.compile(r"\s*#")),
     **dict.fromkeys((".lua", ".sql"), re.compile(r"\s*--")),
 }
-# Linha mudada que faz o arquivo CODE mesmo sendo comentário: o delimitador sozinho de um bloco (abrir
-# ou fechar um em volta de código não muda linha nenhuma do código) e a diretiva lida por ferramenta.
-_DELIMITADOR_RE = re.compile(r"\s*(?:/\*|\*/|--\[\[|--\]\])\s*$")
+# Comentário de linha mudado que ainda assim faz o arquivo CODE: o colchete longo do Lua, de qualquer
+# nível, que abre ou fecha um comentário de bloco (`--[[`, `--[==[`, `--]]`, `--]==]`); a diretiva lida
+# por ferramenta; e, em C e C++, o `//` terminado em `\`, que emenda a linha de baixo ao comentário.
+_COLCHETE_LONGO_RE = re.compile(r"\s*--(?:\[=*\[|\]=*\])")
 _DIRETIVA_RE = re.compile(r"\s*(?:#!|//go:|// \+build|/// <reference|# -\*-)")
+_EMENDA_DE_LINHA = (".c", ".h", ".cpp")
 # Cabeçalho do diff que muda o arquivo além das linhas: renomeação, modo, arquivo novo ou apagado.
 _CABECALHO_DE_CODIGO = ("rename from ", "old mode ", "new file mode ", "deleted file mode ")
 _CRASES_RE = re.compile(r"`([^`]+)`")
@@ -331,8 +335,8 @@ def _extensao(caminho: str) -> str:
 def comment_units(lines: list[str], targets: list[int], path: str) -> list[tuple[int, int]]:
     """Intervalos (início, fim), 1-indexados e inclusivos, dos blocos de comentário que contêm os alvos.
 
-    Linha de comentário é a que, sem o recuo, começa com um prefixo da extensão de `path` (`*` só
-    seguido de espaço, `/` ou fim de linha); o bloco é o trecho contíguo delas. Alvo fora de
+    Só comentário de linha conta: linha de comentário é a que, sem o recuo, começa com o prefixo da
+    extensão de `path` (`//`, `#` ou `--`); o bloco é o trecho contíguo delas. Alvo fora de
     comentário (a linha logo depois de um corte, uma linha em branco, o corte no fim do arquivo) cai
     no bloco da linha de cima, como a linha em branco do Markdown; se ela também não é comentário, o
     alvo fica sem unidade. Saem em ordem e sem repetição.
@@ -358,11 +362,15 @@ def comment_units(lines: list[str], targets: list[int], path: str) -> list[tuple
     return sorted(achadas)
 
 
-def _so_comentario(linha: str, padrao: re.Pattern) -> bool:
-    """A linha mudada é vazia, ou comentário que não é delimitador sozinho nem diretiva."""
+def _so_comentario(linha: str, extensao: str) -> bool:
+    """A linha mudada é vazia, ou comentário de linha que não muda código (ver _COLCHETE_LONGO_RE)."""
     if not linha.strip():
         return True
-    return bool(padrao.match(linha)) and not _DELIMITADOR_RE.match(linha) and not _DIRETIVA_RE.match(linha)
+    if not _COMENTARIO_RE[extensao].match(linha):
+        return False
+    if _COLCHETE_LONGO_RE.match(linha) or _DIRETIVA_RE.match(linha):
+        return False
+    return not (extensao in _EMENDA_DE_LINHA and linha.rstrip().endswith("\\"))
 
 
 def _tipo(caminho: str, bloco: list[str] | None) -> str:
@@ -374,15 +382,14 @@ def _tipo(caminho: str, bloco: list[str] | None) -> str:
     extensao = _extensao(nome)
     if extensao in _EXTENSOES_DE_DOC:
         return "CODE" if any(fnmatchcase(nome, padrao) for padrao in _TXT_DE_CODIGO) else "DOCS"
-    padrao = _COMENTARIO_RE.get(extensao)
-    if padrao is None or bloco is None:
+    if extensao not in _COMENTARIO_RE or bloco is None:
         return "CODE"
     inicio = _inicio_dos_hunks(bloco)
     if any(linha.startswith(_CABECALHO_DE_CODIGO) for linha in bloco[1:inicio]):
         return "CODE"
     mudadas = [linha[1:] for linha in bloco[inicio:] if linha.startswith(("+", "-"))]
     # Sem linha mudada (binário), nada mostra que o diff é só comentário.
-    if mudadas and all(_so_comentario(linha, padrao) for linha in mudadas):
+    if mudadas and all(_so_comentario(linha, extensao) for linha in mudadas):
         return "DOC_ONLY"
     return "CODE"
 
@@ -392,9 +399,10 @@ def file_kind(repo: Path, base: str, head: str, path: str) -> str:
 
     Na dúvida, CODE. `.md` e `.txt` são DOCS, menos `requirements*.txt` e `CMakeLists.txt`. Extensão da
     tabela de comentário é DOC_ONLY quando o arquivo não foi renomeado, criado, apagado nem mudou de
-    modo, e o diff -U0 tem linha `+` ou `-` e toda linha `+` e `-` é vazia ou comentário, sem ser
-    delimitador sozinho de bloco (`/*`, `*/`, `--[[`, `--]]`) nem diretiva (`#!`, `//go:`,
-    `// +build`, `/// <reference`, `# -*-`); docstring entre aspas triplas não é comentário. DOCS ou
+    modo, e o diff -U0 tem linha `+` ou `-` e toda linha `+` e `-` é vazia ou comentário de linha
+    (`//`, `#`, `--`), sem ser colchete longo do Lua (`--[==[`, `--]==]`, de qualquer nível), diretiva
+    (`#!`, `//go:`, `// +build`, `/// <reference`, `# -*-`) nem, em C e C++, `//` terminado em `\\`.
+    Comentário de bloco (`/*`, ` * texto`, `*/`) e docstring entre aspas triplas não contam. DOCS ou
     DOC_ONLY que existe no head e fica sem unidade nenhuma também é CODE. O resto é CODE.
     """
     arquivo = _diff_por_arquivo(repo, base, head).get(path)
