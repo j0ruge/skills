@@ -316,17 +316,18 @@
     },
     {
       "plugin": "todo-to-github-issues",
-      "version": "2.8.0",
+      "version": "2.9.8",
       "skills": [
         "todo-to-github-issues:todo-to-github-issues"
       ],
       "paths": [
-        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/todo-to-github-issues/2.8.0/skills/todo-to-github-issues/SKILL.md",
-        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/todo-to-github-issues/2.8.0/skills/todo-to-github-issues/assets/trigger-evals.json"
+        "/home/pc_admin/.wt/codex-smoke-ttgi-298/home/plugins/cache/chewiesoft-marketplace/todo-to-github-issues/2.9.8/skills/todo-to-github-issues/SKILL.md",
+        "/home/pc_admin/.wt/codex-smoke-ttgi-298/home/plugins/cache/chewiesoft-marketplace/todo-to-github-issues/2.9.8/skills/todo-to-github-issues/assets/trigger-evals.json"
       ],
-      "conclusion": "Vou usar a skill indicada para conferir, apenas por leitura, o `SKILL.md` e o recurso de avaliação no cache instalado.\n\ntodo-to-github-issues:todo-to-github-issues — Próximo passo: obter arquivo/repositório alvo e modo (padrão `plan`); nome compatível e `assets/trigger-evals.json` presente e legível, resolvido relativo à skill; não há fallback de template embarcado: formato/sensor dependem do kit sdd externo; Python ≥3.8, bash, git e gh autenticado são requisitos ainda não verificados.",
+      "conclusion": "Vou consultar a skill instalada e o arquivo de avaliações apenas por leitura, sem executar scripts nem acessar o GitHub.\n\nSkills do plugin: apenas `todo-to-github-issues` (v2.9.8).\nPróximo passo previsto: executar o plano padrão com `python3 scripts/todo_issues.py`; não executado.\nRecursos: `SKILL.md` e `assets/trigger-evals.json`, relativo à skill, presentes e legíveis; JSON com 19 casos (10 positivos, 9 negativos).\nLacunas: avaliações não cobrem explicitamente consulta documental como esta; requisitos e funcionamento não verificados. Nenhum acesso ao GitHub.",
       "read_commands": [
-        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/todo-to-github-issues/2.8.0/skills/todo-to-github-issues/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/todo-to-github-issues/2.8.0/skills/todo-to-github-issues/assets/trigger-evals.json'"
+        "/usr/bin/zsh -lc 'cat /home/pc_admin/.wt/codex-smoke-ttgi-298/home/plugins/cache/chewiesoft-marketplace/todo-to-github-issues/2.9.8/skills/todo-to-github-issues/SKILL.md'",
+        "/usr/bin/zsh -lc 'cat /home/pc_admin/.wt/codex-smoke-ttgi-298/home/plugins/cache/chewiesoft-marketplace/todo-to-github-issues/2.9.8/skills/todo-to-github-issues/assets/trigger-evals.json'"
       ]
     },
     {

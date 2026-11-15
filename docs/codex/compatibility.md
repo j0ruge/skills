@@ -3,7 +3,7 @@
 Inventário dos 33 plugins: 31 auditados em 2026-10-22; `windows-games-linux` entrou em 2026-10-23 sem avaliação Codex (`not_checked`), e `env-docs-sync` entrou em 2026-10-27, avaliado na entrada. Apenas `supported` entra no catálogo.
 Os smokes cobrem instalação, descoberta, leitura no cache e entrada de cada workflow;
 operações integrais de domínio e dependências autenticadas não fazem parte do smoke.
-Ubuntu 24.04/CLI 0.163.0 é a cobertura medida (o `hook-builder` 0.2.0, em 2026-10-27, na 0.164.0, e o `env-docs-sync` 0.1.0, no mesmo dia, na 0.165.0); desktop, macOS e Windows permanecem
+Ubuntu 24.04/CLI 0.163.0 é a cobertura medida (o `hook-builder` 0.2.0, em 2026-10-27, na 0.164.0, o `env-docs-sync` 0.1.0, no mesmo dia, na 0.165.0, e o `todo-to-github-issues` 2.9.8, em 2026-11-15, na 0.167.1); desktop, macOS e Windows permanecem
 `not_checked`. Isso inclui a execução Windows de WPF/limpeza/WSL, mesmo quando o pacote carrega.
 Versão mínima ainda não estabelecida. Veja [verification.md](verification.md).
 
@@ -34,7 +34,7 @@ Versão mínima ainda não estabelecida. Veja [verification.md](verification.md)
 | skill-quality-audit | `supported` | `skills/skill-claim-check/SKILL.md`<br>`skills/skill-quality-audit/SKILL.md`<br>`skills/skill-refactoring/SKILL.md`<br>`skills/skill-self-containment/SKILL.md` | 15 arquivos de scripts/referências/templates/assets | Python 3; validadores externos opcionais. Quatro skills mantidas juntas; resolução por diretórios irmãos, sem instalar outro plugin. |
 | statusline | `unsupported` | `commands/setup.md` | 0 arquivos de scripts/referências/templates/assets | Runtime e status-line API do Claude Code. Comando setup escreve configurações e script exclusivos do Claude. |
 | ticket | `supported` | `skills/ticket/SKILL.md` | 7 arquivos de scripts/referências/templates/assets | acli, Git, Jira; JIRA_BASE_URL/JIRA_EMAIL/JIRA_API_TOKEN para REST; MCP opcional. Sem credenciais no pacote. argument-hint permanece para Claude e é ignorado no Codex; configure as variáveis no seu ambiente. |
-| todo-to-github-issues | `supported` | `skills/todo-to-github-issues/SKILL.md` | 12 arquivos de scripts/referências/templates/assets | Python, Git, gh autenticado e kit sdd instalado. O kit externo é dependência declarada; scripts empacotados são conferidos sem criar issues. |
+| todo-to-github-issues | `supported` | `skills/todo-to-github-issues/SKILL.md` | 12 arquivos de scripts/referências/templates/assets | Python, Git, gh autenticado e kit sdd instalado. O kit externo é dependência declarada; scripts empacotados são conferidos sem criar issues. Smoke de 2026-11-15 no codex-cli 0.167.1, num `CODEX_HOME` descartável: instalação da 2.9.8, descoberta `todo-to-github-issues:todo-to-github-issues` e leitura do `SKILL.md` e do `assets/trigger-evals.json` pelo cache. |
 | ts-library | `supported` | `skills/ts-library/SKILL.md` | 6 arquivos de scripts/referências/templates/assets | Node/gerenciador do projeto, TypeScript, Git. Ferramentas da biblioteca dependem do projeto consumidor. |
 | unlovable | `supported` | `skills/unlovable/SKILL.md` | 0 arquivos de scripts/referências/templates/assets | Node e ferramentas React/Vite do projeto. Workflow específico para migrar projetos Lovable. |
 | whisper-preprocess | `supported` | `skills/whisper-preprocess/SKILL.md` | 2 arquivos de scripts/referências/templates/assets | Python, ffmpeg, Whisper e modelos locais; hardware adequado. Dependências e processamento de áudio não executados pelo smoke. |
