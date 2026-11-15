@@ -195,7 +195,7 @@ whose fix took the head back to the base's 4.
 > - `Total_CODE` — total number of files classified as CODE in the changed-files list, minus the `DOC_ONLY` ones.
 > - `STALE_TESTS` files are **excluded** from the numerator (they have a test file but it was not updated, so coverage is considered incomplete).
 > - Files classified as TESTS, CONFIG, or UI_LIB are not counted in either numerator or denominator.
-> - `DOC_ONLY` — a CODE file whose diff changes only comments or docstrings: every `+`/`-` line of `git diff -U0 {MERGE_BASE}...HEAD -- <file>` is a comment in its language (`//`, `///`, `/* */`, `#`, a docstring). No test was due, so it counts in neither numerator nor denominator; list it with this status. On a re-review `scripts/prose_units.py` decides it in Phase A (`kind: DOC_ONLY`); on a first round decide it here, in Phase C: Phase A's probe only sees whether a test exists and whether it changed. Measured 2026-10-18 (a .NET rules engine, the 7th round of a PR): 6 of 15 CODE files changed only XML doc; the formula read 67% (10/15), with four of them as `STALE_TESTS` and two as `WITH_TESTS` only because a test of the same suite changed for another reason. Without them it was 8/9 (89%).
+> - `DOC_ONLY` — a CODE file whose diff changes only comments or docstrings: every `+`/`-` line of `git diff -U0 {MERGE_BASE}...HEAD -- <file>` is a comment in its language (`//`, `///`, `/* */`, `#`, a docstring). No test was due, so it counts in neither numerator nor denominator; list it with this status. On a re-review `scripts/prose_units.py` decides it in Phase A (`kind: DOC_ONLY`), counting only line comments (`//`, `#`, `--`), so a file whose diff touches a block comment or a docstring is `CODE` there; on a first round decide it here, in Phase C: Phase A's probe only sees whether a test exists and whether it changed. Measured 2026-10-18 (a .NET rules engine, the 7th round of a PR): 6 of 15 CODE files changed only XML doc; the formula read 67% (10/15), with four of them as `STALE_TESTS` and two as `WITH_TESTS` only because a test of the same suite changed for another reason. Without them it was 8/9 (89%).
 > - `WITH_TESTS (indirect)` — no test file carries the CODE file's name, but a test changed in this range imports it. It counts in the numerator. Probing by name alone misses use cases tested through one shared suite: on a 31-file range (measured 2026-10-01) it found 5 files with tests, and the import probe found 15.
 > - The import probe does not see transitive coverage (a component exercised only through its parent's test). Judge it in Phase C and say so in Notes, instead of leaving `NO_TESTS` unqualified.
 
@@ -309,7 +309,7 @@ finding on a comment is graded in this row only, not also in Code Quality (Zen).
 | C | two or more HIGH documentation findings |
 | D or F | a CRITICAL documentation finding, by the scale above |
 
-When more than one row holds, the lowest letter applies.
+When more than one row holds, the worst of those letters applies.
 
 - Each documentation finding carries a kind (per-file-agent.md, *Output format*), and the session
   gives one, by the same definitions, to each finding Phase C step 7 raises itself. A missing

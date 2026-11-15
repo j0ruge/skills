@@ -13,6 +13,7 @@ from pathlib import Path
 
 REF = Path(__file__).resolve().parent.parent / "references"
 SKILL = REF.parent / "SKILL.md"
+RODADA = REF / "verification-round.md"
 
 
 class TestContratoDeProsa(unittest.TestCase):
@@ -47,19 +48,42 @@ class TestRodadaDeVerificacao(unittest.TestCase):
         self.assertNotIn("Read {SKILL_DIR}/references/detection-passes.md", t)
 
     def test_skill_roteia_e_diz_quando_ler(self):
-        t = SKILL.read_text(encoding="utf-8")
-        for trecho in ("scripts/prose_units.py", "references/verify-agent.md",
-                       "verify=off", "without that list, the re-review runs as a full round"):
-            self.assertIn(trecho, t)
+        onde = {
+            SKILL: ("scripts/prose_units.py", "references/verify-agent.md",
+                    "references/verification-round.md",
+                    "read it when a re-review range (`base=` from an earlier round) has"),
+            RODADA: ("verify=off", "without that list, the re-review runs as a full round"),
+        }
+        for arquivo, trechos in onde.items():
+            t = arquivo.read_text(encoding="utf-8")
+            for trecho in trechos:
+                self.assertIn(trecho, t, arquivo.name)
 
     def test_skill_fica_abaixo_do_teto(self):
         self.assertLess(len(SKILL.read_text(encoding="utf-8").splitlines()), 280)
 
     def test_prompt_do_verificador_nao_leva_achado_anterior(self):
-        t = SKILL.read_text(encoding="utf-8")
+        t = RODADA.read_text(encoding="utf-8")
         ini = t.index("Read {SKILL_DIR}/references/verify-agent.md")
         bloco = t[ini: t.index('")', ini)]
         self.assertNotIn("finding", bloco.lower())
+
+    def test_fechamento_exige_verificador_com_a_sentinela(self):
+        t = RODADA.read_text(encoding="utf-8")
+        self.assertIn("closes only when its unit was read by a verifier whose message ended in "
+                      "`END_OF_VERIFICATION`", t)
+
+    def test_verificador_nunca_roda_inline(self):
+        self.assertIn("never inline", RODADA.read_text(encoding="utf-8"))
+
+    def test_roteamento_aceita_a_sentinela_do_verificador(self):
+        self.assertIn("END_OF_VERIFICATION", (REF / "runtime-routing.md").read_text(encoding="utf-8"))
+
+    def test_skill_tem_no_maximo_263_linhas(self):
+        self.assertLessEqual(len(SKILL.read_text(encoding="utf-8").splitlines()), 263)
+
+    def test_rodada_de_verificacao_tem_no_maximo_60_linhas(self):
+        self.assertLessEqual(len(RODADA.read_text(encoding="utf-8").splitlines()), 60)
 
 
 if __name__ == "__main__":

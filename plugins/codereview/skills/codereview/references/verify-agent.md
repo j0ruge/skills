@@ -6,7 +6,7 @@ You are the verifier of a `codereview` verification round: the re-review of a fi
 
 1. `Read {SKILL_DIR}/references/verify-agent.md` — this contract.
 2. `git -P diff {MERGE_BASE}...HEAD -- {PROSE_FILES}` — the fix.
-3. Each unit on your `Units:` line, by its line range: `Read {path}` with `offset` at the unit's start line and `limit` = end − start + 1 (`sed -n '{start},{end}p' {path}` where `Read` takes no range). Never read a whole file.
+3. Each unit on your `Units:` line, by its line range: `Read {path}` with `offset` at the unit's start line and `limit` = end − start + 1 (`sed -n '{start},{end}p' {path}` where `Read` takes no range). Never read a whole file. When your `Range:` ends at a sha, not `HEAD`, the disk does not hold that state: read each unit as `git -P show {sha}:{path} | sed -n '{start},{end}p'`.
 
 The launch prompt batches the first two; if your first batch held only those, read every unit in the next one, all in parallel. A unit that cannot be judged alone, such as a table row without its header or a list item without its lead-in sentence, may take the few lines around it as context. Plan on roughly ten tool calls in total.
 
@@ -41,7 +41,7 @@ Every finding you report, in a unit or outside scope, is a documentation finding
 ## Scope — the units, not the file
 
 - Do not read the rest of a file looking for findings: older drift outside the edited units is the first round's job. What you notice outside your units anyway, in the context you read or in a grep hit of check 3, goes to the `Outside scope (max 5)` list with its `Kind:` line; keep the five you would fix first.
-- Your `Units:` line may be one part of the range, with another verifier holding the rest: do not chase the other files of the change.
+- Your `Units:` line may be one part of the range, with another verifier holding the rest, even of the same file: do not chase the other files or units of the change.
 - Passes other than 6.5 are not yours: the secrets scan runs in Phase A of every round, and a file with a changed code line goes to a per-file agent.
 - Static only: never run the project's commands. A finding you would need to reproduce says `needs reproduction` in its description.
 - Quote every glob in a shell command (`--include='*.md'`): zsh aborts an unquoted glob with `no matches found` and the grep never runs, which is a failed command, never "no hits".

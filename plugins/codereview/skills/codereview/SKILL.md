@@ -38,8 +38,9 @@ reads a file only at the step that needs it:
   runs.
 - `references/per-file-agent.md` — read it yourself only if Phase B runs inline (≤3 CODE files):
   the Phase B agent contract.
-- `references/verify-agent.md` — read it yourself only when a verification round runs inline; the verifier
-  loads it: the contract of Phase B's *Verification round*.
+- `references/verification-round.md` — read it when a re-review range (`base=` from an earlier round) has
+  prose files: when the verification round runs, its launch and its Phase C closing rule. The verifier,
+  always an agent, loads its own contract, `references/verify-agent.md`.
 - `references/sweep-agent.md` — read it yourself when the sweep runs inline or the agent under-reports
   and you redo the deepsearch: the Phase B2 contract.
 - `references/detection-passes.md` — read it yourself when a phase runs inline, and in Phase C for the
@@ -101,7 +102,7 @@ Apply any `$ARGUMENTS` overrides before classifying, and keep the raw outputs. T
 8. Secrets pre-scan — runs on every review, whatever its size or focus:
    `git diff {MERGE_BASE}...HEAD --unified=0 | bash {SKILL_DIR}/scripts/scan_secrets.sh`
    (`{SKILL_DIR}` = absolute path of this SKILL.md's directory). It prints JSON `{findings:[...], scanners:[...], errors:[...]}`; keep it verbatim as `SECRETS_PRESCAN`, the authoritative source for Phase C's Secrets Detection table and F-grade gate. A crash or non-JSON output means the scan did not run: warn the user and re-run it — an absent payload is never "scan returned clean".
-9. Re-review only (`base=` from an earlier round), in step 8's batch: `python3 {SKILL_DIR}/scripts/prose_units.py --repo . --base {MERGE_BASE} --head HEAD`; keep its JSON as `PROSE_SCOPE` (each file's `kind`, units and identifiers, and the `totals`). A non-zero exit means no scope, never "no prose files": the round runs in full, and the report says so.
+9. Re-review only (`base=` from an earlier round), in step 8's batch: `python3 {SKILL_DIR}/scripts/prose_units.py --repo . --base {MERGE_BASE} --head HEAD`, where `head=<sha>` replaces `HEAD` as in steps 4–8; keep its JSON as `PROSE_SCOPE` (each file's `kind`, units and identifiers, and the `totals`). A non-zero exit means no scope, never "no prose files": the round runs in full, and the report says so. `worktree` mode has no verification round.
 
 Classify each changed file:
 - EXCLUDED: lock files, node_modules, dist, build, .next, min files, binaries, .claude/ (unless named; rules/ and skills/ are DOCS, their scripts CODE)
@@ -148,23 +149,10 @@ The agent returns a numbered findings list (`N. [SEVERITY] {category} — {file}
 
 **Grouping**: files that import from each other share an agent when possible (max 3), catching intra-group issues without the main model. A **TOCTOU** race spanning files (service reads, controller acts) is flagged single-file with "cross-file verification needed"; Phase C judges it.
 
-**Verification round.** A re-review sends each file `PROSE_SCOPE` marks `DOCS` or `DOC_ONLY` to a verifier, not to a per-file agent, when three conditions hold: `base=` names the head an earlier round reviewed; the session holds that round's open findings (number, `file:line`, kind, claim), in the conversation or in a file it names (without that list, the re-review runs as a full round); and `$ARGUMENTS` has no `verify=off`. Each `kind: CODE` file goes to the per-file agents and the sweep as before, and a range with none launches no sweep. One verifier takes at most 400 unit lines (`unit_lines`) and 12 files; above that, split by file across more verifiers, in the same batch.
-The script errs toward `CODE` — only line comments (`//`, `#`, `--`) count, so a changed block-comment line, a renamed, re-moded, new or deleted code file, a directive line, `.yml`/`.yaml`/`.toml`, `requirements*.txt`, `CMakeLists.txt` and a prose file whose changes land in no unit all take the full flow — with one declared limit: a `#`, `//` or `--` line inside a multi-line string or heredoc still counts as a comment, so a session that sees such a file in the range passes `verify=off`. A verifier's message without `END_OF_VERIFICATION` is partial, as in Phase C step 1. Launch prompt, placeholders filled, nothing added (the open findings stay with the session):
-
-```
-Agent(model: REVIEW_MODEL, prompt: "
-Start with ONE batch of parallel tool calls: Read {SKILL_DIR}/references/verify-agent.md and run
-`git -P diff {MERGE_BASE}...HEAD -- {PROSE_FILES}`. Then follow verify-agent.md exactly.
-
-- Repository: {REPO}
-- Range: {MERGE_BASE}...HEAD
-- Units: {one line per unit: path:start-end (changed: n, n)}
-- Identifiers: {per file, from PROSE_SCOPE}
-- Evidence: {path or none, per file}
-- Skill dir: {SKILL_DIR}
-- Hard rules: {CLAUDE.md prohibitions, verbatim, or none}
-")
-```
+**Verification round.** On a re-review whose `PROSE_SCOPE` has a `DOCS` or `DOC_ONLY` file, read
+`references/verification-round.md` before launching. When its conditions hold (the earlier round's open
+findings in hand, no `verify=off`), each file with prose units goes to a verifier agent, never inline,
+and every other file of the range keeps this phase as written.
 
 ### Phase B2: Dead Code Sweep (review-model agent, parallel)
 
@@ -205,7 +193,7 @@ Under-report (no `END_OF_DEAD_CODE_SWEEP`, or a bare status sentence) → re-run
 After all review-model agents return, the main model:
 
 1. **Collects all findings** from review-model agents into a unified list. A per-file message without its `END_OF_FILE_REVIEW` line is partial: keep what it reports and mark the file `partially analyzed` in the report
-   - **After a verification round**, for each open finding of the earlier round, read the range's diff over its lines. It closes when the diff touched its unit and the verifier gave no `behavior` there; one whose lines the diff did not touch stays open and counts in the grade, unless a written verdict dismissed it. From the verifier's *Outside scope* list, a `behavior` on a line the branch wrote counts like any finding; a `form` does not.
+   - **After a verification round**, close the earlier round's open findings by verification-round.md, *Closing the earlier round's findings*.
 2. **Merges the Phase A secrets pre-scan with pass-6.10 findings from the per-file agents.**
    - `secrets_prescan.findings` is **authoritative** — every entry is real (regex matched + exception filter applied) and goes straight into the Secrets Detection table.
    - Agent 6.10 findings are **supplemental** (context the regex missed, e.g. a custom DSL with a non-standard keyword). One NOT already in `secrets_prescan` (by `{file, line, kind}`) enters the table only if (a) it shows a concrete literal credential, not a category like "potential leak", AND (b) it matches a 6.10 category or a clear equivalent; otherwise drop it as low-signal speculation.

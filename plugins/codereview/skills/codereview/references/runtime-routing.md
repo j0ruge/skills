@@ -16,8 +16,10 @@ liberada recebe o próximo grupo. O modelo principal faz a fase C.
 
 Confira os nomes aceitos na ferramenta disponível antes do lançamento. Se o
 modelo escolhido não estiver disponível, informe a limitação e execute inline
-com o modelo principal. Não abra outro CLI para contornar o roteamento. Não
-omita `model` numa delegação para herdar silenciosamente o modelo principal.
+com o modelo principal. O verificador da rodada de verificação é a exceção: ele
+nunca roda inline, e sem agente a re-rodada é completa (`verification-round.md`).
+Não abra outro CLI para contornar o roteamento. Não omita `model` numa
+delegação para herdar silenciosamente o modelo principal.
 Registre no Cost footprint o modelo usado, inclusive fallback e relançamentos.
 Esta adaptação do fluxo não declara compatibilidade dos demais comandos do plugin.
 
@@ -25,8 +27,8 @@ Esta adaptação do fluxo não declara compatibilidade dos demais comandos do pl
 
 Se nesta sessão um `Read` dentro de `{SKILL_DIR}` foi negado, inclusive o desta referência, o
 agente também não vai ler o próprio contrato. Ele então revisa sem as passadas ou para pedindo uma
-permissão que ninguém concede, e volta sem o marcador. Nesse caso, e só nele, os dois
-prompts de lançamento (por arquivo e varredura) ganham uma linha no fim, e nada além dela:
+permissão que ninguém concede, e volta sem o marcador. Nesse caso, e só nele, os três
+prompts de lançamento (por arquivo, varredura e verificador) ganham uma linha no fim, e nada além dela:
 `If Read is denied on {SKILL_DIR}, read those files with cat through Bash.`
 
 Medido em fases REVIEW do `sdd run`:
@@ -86,8 +88,8 @@ Ao receber um resultado, confira:
 
 1. O ID corresponde à tarefa, à base, ao HEAD congelado e aos arquivos enviados.
 2. O transporte não indica truncamento, saída omitida ou limite excedido.
-3. A mensagem final termina em `END_OF_FILE_REVIEW` ou
-   `END_OF_DEAD_CODE_SWEEP`, conforme o contrato, e contém os contadores.
+3. A mensagem final termina em `END_OF_FILE_REVIEW`, `END_OF_DEAD_CODE_SWEEP`
+   ou `END_OF_VERIFICATION`, conforme o contrato, e contém os contadores.
 
 Um JSON válido ou um marcador encontrado dentro de um lote não prova que todas
 as respostas chegaram inteiras. Se a leitura do lote foi cortada, recupere cada
