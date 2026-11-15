@@ -24,6 +24,11 @@ Output the following Markdown report directly in the conversation:
 
 If `$ARGUMENTS` specified a focus area, note: **Focus**: {focus area}
 
+On a re-review (`base=` from an earlier round), one more line, in one of two forms:
+
+- `**Round**: Verification round: {n} files, {u} units — the Documentation grade covers only these units`, where `{n}` files went to verifiers with `{u}` units in all (verification-round.md) and every other file took today's flow. The verifiers do not read the text around the edited units, so an A there is not a clean file: the line says so.
+- `**Round**: ran in full: {reason}`, naming the condition of verification-round.md, *When it runs*, that failed (`verify=off`, `worktree mode`, `base not an ancestor`, `no open-findings list`, `prose_units.py rc {n}`, `no agent`), or `no prose file` when `PROSE_SCOPE` had no `DOCS` or `DOC_ONLY` file.
+
 **If the Secrets Detection table below has ≥1 row**, prepend this banner to the entire report (before the H1) and do not remove it:
 
 ```markdown
@@ -58,13 +63,18 @@ When Status is `BLOCKED`:
 
 ### Findings Table
 
-| # | Severity | Category | File | Line(s) | Finding | Suggested Action |
-|---|----------|----------|------|---------|---------|-----------------|
-| 1 | CRITICAL | Security | src/api/client.ts | 23 | API key hardcoded | Move to environment variable |
-| 2 | HIGH | Bug | src/hooks/useQuote.ts | 45-48 | Missing useEffect dep | Add `quoteId` to dependency array |
-| ... | | | | | | |
+| # | Severity | Category | Kind | File | Line(s) | Finding | Suggested Action |
+|---|----------|----------|------|------|---------|---------|-----------------|
+| 1 | CRITICAL | Security | — | src/api/client.ts | 23 | API key hardcoded | Move to environment variable |
+| 2 | HIGH | Bug | — | src/hooks/useQuote.ts | 45-48 | Missing useEffect dep | Add `quoteId` to dependency array |
+| 3 | MEDIUM | 6.5.2 | behavior | docs/api.md | 12 | Says the route returns 404; `src/api/routes.ts:40` returns 410 | Write 410 |
+| ... | | | | | | | |
 
 Order by: CRITICAL first, then HIGH, MEDIUM, LOW. Within same severity, group by file.
+
+**Kind** is `behavior` or `form` on a documentation finding (*Documentation row*) and `—` on every other one. The Documentation row and the next round's open-findings list (verification-round.md) read it from this column.
+
+**Carried over.** After a verification round, each earlier-round finding that stays open (verification-round.md, *Closing the earlier round's findings*) is a row of this table, its Finding cell starting with `carried over from #{n}:`, the number it had in that round. It counts in the grade like a new one.
 
 **A finding with several parts gets a verdict per part.** A per-file agent often bundles parts under
 one number ("six untested branches"). When Phase C keeps some and drops others, each dropped part is
@@ -322,6 +332,9 @@ When more than one row holds, the worst of those letters applies.
 - A `pre-existing` documentation finding (configuration.md, *Re-review rounds*) stays out of this
   row's letter, as it already stays out of the stop rule, and stays listed: the user decides where
   it goes.
+- After a verification round, the letter covers the edited units, the files of today's flow and the
+  carried-over findings, not the older text around the units (verification-round.md), and the
+  report's `Round` line says so.
 
 Measured 2026-11-15 (a .NET rules engine, PR #30, four rounds): the table gives B, B, B, A, the letters the session gave by judgment.
 
@@ -351,6 +364,11 @@ Measured 2026-11-15 (a .NET rules engine, PR #30, four rounds): the table gives 
 - Each LOW `form` documentation finding with file:line. They lower neither the Documentation row nor the Overall grade, and ask for no round.
 - If none: `_None._`
 
+**Outside scope (tracker)**, rendered only after a verification round:
+
+- Each item of the verifiers' *Outside scope* lists that does not count (a `form`, or a line older than the branch), with file:line and kind, for the project's tracker (verification-round.md); then `{k} forms cut by the verifiers`, the total of their `Cut:` lines, when it is above 0.
+- If none: `_None._`
+
 ---
 
 ### Cost footprint
@@ -358,8 +376,10 @@ Measured 2026-11-15 (a .NET rules engine, PR #30, four rounds): the table gives 
 The last line of every report — one line, so cost can be compared across runs without opening logs:
 
 ```markdown
-_Cost footprint: skill v{X}, {N} per-file agents ({model}), sweep {yes/no} ({model} | inline | skipped), {M} files read in full, agent tool calls {min}–{max}, orchestrator Bash calls {K}._
+_Cost footprint: skill v{X}, {N} per-file agents ({model}), {v} verifiers ({model}), sweep {yes/no} ({model} | inline | skipped), {M} files read in full, agent tool calls {min}–{max}, orchestrator Bash calls {K}._
 ```
+
+`{v} verifiers` counts every verifier of a verification round, relaunches included (runtime-routing.md), and is `0 verifiers` on any other round: with the per-file agents beside it, the round's saving can be measured again from the reports.
 
 Agent tool calls come from the harness when it reports them: the `<usage>` block of the agent's result or task notification (`<tool_uses>14</tool_uses>`). The agents' trailer lines (`Tool calls: … | Files read in full: …` on per-file agents, `TOOL_CALLS:` on the sweep) are the fallback for tool calls and the source of files read in full. The agent's own count runs low: measured 2026-10-13, the trailers said 6 and 9 where the harness counted 10 and 14. Orchestrator Bash calls come from its own Phase A. Pair the line with `/cost` before and after the run to measure a change to this skill.
 

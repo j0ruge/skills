@@ -31,16 +31,20 @@ You do not load `detection-passes.md`. These are the rules of its pass 6.5 that 
 - A `references/<file>` that an Agent Skill's `SKILL.md` cites says when to read it; a citation that only names the file is LOW.
 - Your model name, commit attribution and date belong to you, not to the session: never flag a doc for disagreeing with them.
 
+## A line that is not prose
+
+The script that built your `Units:` line can take a comment line that a tool reads for prose. A line of your units that a tool obeys, compiles or runs when the project builds, lints or tests is not prose: a directive (`// @ts-ignore`, `# noqa`, `//go:build`), a doctest, a cgo preamble, a `#`, `//` or `--` line inside a multi-line string or heredoc. Report each as `N. [HIGH] not prose — {file}:{line} — {what reads it}`, the line quoted in its Description, `Suggestion: review this file in today's flow` and no `Kind:` line. Do not judge its claims: the orchestrator sends the file to a code reviewer.
+
 ## Kind
 
-Every finding you report, in a unit or outside scope, is a documentation finding, so every one carries a `Kind:` line in one of three forms. The kind never changes the severity.
+Every other finding you report, in a unit or outside scope, is a documentation finding, so each one carries a `Kind:` line in one of three forms. The kind never changes the severity.
 
 - **`behavior`**: the sentence states a behavior, value, state or guarantee of the system that the code or the evidence contradicts (`Kind: behavior — contradicted by {file}:{line}`, the line that contradicts it); or a measurement or an absence that the evidence does not show (`Kind: behavior — missing evidence: {what}`); or it is a command that fails when run (`Kind: behavior — contradicted by {file}:{line}`, the line that makes it fail).
 - **`form`**: the sentence is true but badly written, incomplete or points to a less exact place, such as a missing subject, a pointer to a file that exists but is not where the item lives, a list of examples that reads as complete, or an ambiguously worded count; also a missing docstring, at any severity (`Kind: form`).
 
 ## Scope — the units, not the file
 
-- Do not read the rest of a file looking for findings: older drift outside the edited units is the first round's job. What you notice outside your units anyway, in the context you read or in a grep hit of check 3, goes to the `Outside scope (max 5)` list with its `Kind:` line; keep the five you would fix first.
+- Do not read the rest of a file looking for findings: older drift outside the edited units is the first round's job. What you notice outside your units anyway, in the context you read or in a grep hit of check 3, goes to the *Outside scope* list with its `Kind:` line. Never cut a `behavior`: list every one, then the `form`s you would fix first while the list holds fewer than five items, and give the number of `form`s you left out on its `Cut:` line.
 - Your `Units:` line may be one part of the range, with another verifier holding the rest, even of the same file: do not chase the other files or units of the change.
 - Passes other than 6.5 are not yours: the secrets scan runs in Phase A of every round, and a file with a changed code line goes to a per-file agent.
 - Static only: never run the project's commands. A finding you would need to reproduce says `needs reproduction` in its description.
@@ -58,13 +62,14 @@ N. [SEVERITY] {category} — {file}:{line} — {title}
    Kind: behavior — contradicted by {file}:{line}  |  Kind: behavior — missing evidence: {what}  |  Kind: form
 ```
 
-`{category}` is `6.5.1`, `6.5.2` or `Readability` (on a comment). With no finding in your units, the list is the single line `No findings in {n} units`: a clean result is a valid outcome, so don't invent findings. Reference only line numbers you saw in the diff or in a unit you read. Then, filled in:
+`{category}` is `6.5.1`, `6.5.2`, `Readability` (on a comment) or `not prose`. With no finding in your units, the list is the single line `No findings in {n} units`: a clean result is a valid outcome, so don't invent findings. Reference only line numbers you saw in the diff or in a unit you read. Then, filled in:
 
 ```
-Outside scope (max 5):
+Outside scope (every behavior, then forms up to 5 items in all):
 - [SEVERITY] {category} — {file}:{line} — {title}
   Kind: {one of the three forms}
 - ... (or 'none')
+Cut: {n}
 
 Units read: {n} | Tool calls: {n}
 END_OF_VERIFICATION

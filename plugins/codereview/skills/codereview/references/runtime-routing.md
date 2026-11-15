@@ -17,10 +17,12 @@ liberada recebe o próximo grupo. O modelo principal faz a fase C.
 Confira os nomes aceitos na ferramenta disponível antes do lançamento. Se o
 modelo escolhido não estiver disponível, informe a limitação e execute inline
 com o modelo principal. O verificador da rodada de verificação é a exceção: ele
-nunca roda inline, e sem agente a re-rodada é completa (`verification-round.md`).
+nunca roda inline, e sem agente a re-rodada é completa e o relatório diz
+`ran in full: no agent` (`verification-round.md`).
 Não abra outro CLI para contornar o roteamento. Não omita `model` numa
 delegação para herdar silenciosamente o modelo principal.
-Registre no Cost footprint o modelo usado, inclusive fallback e relançamentos.
+Registre no Cost footprint o modelo usado, inclusive fallback e relançamentos,
+e os verificadores à parte dos agentes por arquivo (`{v} verifiers`).
 Esta adaptação do fluxo não declara compatibilidade dos demais comandos do plugin.
 
 ## Contrato ilegível

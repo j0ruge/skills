@@ -8,12 +8,17 @@ Todo achado de documentação traz um tipo, `behavior` ou `form`, e a linha Docu
 tabela escrita, não da leitura livre da escala. O verificador da rodada de verificação e a Fase C
 leem esses trechos pelo texto: se um deles some ou muda de redação, este teste fica vermelho.
 """
+import sys
 import unittest
 from pathlib import Path
 
 REF = Path(__file__).resolve().parent.parent / "references"
 SKILL = REF.parent / "SKILL.md"
 RODADA = REF / "verification-round.md"
+TEMPLATE = REF / "report-template.md"
+VERIFICADOR = REF / "verify-agent.md"
+sys.path.insert(0, str(REF.parent / "scripts"))
+import prose_units  # noqa: E402
 
 
 class TestContratoDeProsa(unittest.TestCase):
@@ -40,8 +45,35 @@ class TestContratoDeProsa(unittest.TestCase):
 class TestRodadaDeVerificacao(unittest.TestCase):
     def test_contrato_do_verificador_existe_e_fecha_com_a_sentinela(self):
         t = (REF / "verify-agent.md").read_text(encoding="utf-8")
-        for trecho in ("END_OF_VERIFICATION", "Outside scope (max 5)", "Kind:"):
+        for trecho in ("END_OF_VERIFICATION", "Outside scope (every behavior, then forms up to 5 items in all):",
+                       "Kind:"):
             self.assertIn(trecho, t)
+
+    def test_verificador_nunca_corta_behavior_e_diz_quantos_cortou(self):
+        t = VERIFICADOR.read_text(encoding="utf-8")
+        for trecho in ("Never cut a `behavior`", "Cut: {n}"):
+            self.assertIn(trecho, t)
+
+    def test_linha_que_nao_e_prosa_vai_para_o_fluxo_de_hoje(self):
+        self.assertIn("[HIGH] not prose — {file}:{line}", VERIFICADOR.read_text(encoding="utf-8"))
+        t = RODADA.read_text(encoding="utf-8")
+        for trecho in ("`[HIGH] not prose`", "its file then takes today's flow in this round"):
+            self.assertIn(trecho, t)
+
+    def test_rodada_lista_as_diretivas_do_script(self):
+        # o texto diz exatamente o que o script pega; uma forma nova no script sem a frase deixa vermelho
+        t = RODADA.read_text(encoding="utf-8")
+        for forma in prose_units._DIRETIVAS_NO_INICIO + prose_units._DIRETIVAS_EM_QUALQUER_PONTO:
+            self.assertIn(f"`{forma}`", t)
+        self.assertIn("only the verifier's backstop covers them", t)
+
+    def test_so_arquivos_da_lista_files_vao_a_verificador(self):
+        self.assertIn("is on Phase A's FILES list", RODADA.read_text(encoding="utf-8"))
+
+    def test_achado_tocado_sem_verificador_nunca_some(self):
+        t = RODADA.read_text(encoding="utf-8")
+        secao = t[t.index("## Closing the earlier round's findings"):]
+        self.assertIn("it is never dropped", secao)
 
     def test_verificador_nao_carrega_os_passes_de_codigo(self):
         t = (REF / "verify-agent.md").read_text(encoding="utf-8")
@@ -90,6 +122,34 @@ class TestRodadaDeVerificacao(unittest.TestCase):
 
     def test_rodada_de_verificacao_tem_no_maximo_60_linhas(self):
         self.assertLessEqual(len(RODADA.read_text(encoding="utf-8").splitlines()), 60)
+
+
+class TestRelatorioDaRodada(unittest.TestCase):
+    """O relatório mostra o que a rodada fez: sem esses espaços, um A da Documentation numa rodada de
+    verificação se lê como arquivo limpo, e a economia não se mede de novo."""
+
+    def test_findings_table_tem_a_coluna_kind(self):
+        self.assertIn("| # | Severity | Category | Kind | File | Line(s) | Finding | Suggested Action |",
+                      TEMPLATE.read_text(encoding="utf-8"))
+
+    def test_cabecalho_diz_a_rodada_e_o_alcance_da_nota(self):
+        t = TEMPLATE.read_text(encoding="utf-8")
+        for trecho in ("**Round**: Verification round: {n} files, {u} units — the Documentation grade "
+                       "covers only these units", "**Round**: ran in full: {reason}"):
+            self.assertIn(trecho, t)
+        self.assertIn("`ran in full: {reason}`", RODADA.read_text(encoding="utf-8"))
+
+    def test_achado_que_segue_aberto_vira_linha_da_tabela(self):
+        self.assertIn("carried over from #{n}", TEMPLATE.read_text(encoding="utf-8"))
+        self.assertIn("carried over", RODADA.read_text(encoding="utf-8"))
+
+    def test_relatorio_tem_o_balde_fora_do_escopo(self):
+        self.assertIn("**Outside scope (tracker)**", TEMPLATE.read_text(encoding="utf-8"))
+        self.assertIn("*Outside scope (tracker)* bucket", RODADA.read_text(encoding="utf-8"))
+
+    def test_cost_footprint_conta_os_verificadores(self):
+        self.assertIn("{v} verifiers ({model})", TEMPLATE.read_text(encoding="utf-8"))
+        self.assertIn("{v} verifiers", (REF / "runtime-routing.md").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
