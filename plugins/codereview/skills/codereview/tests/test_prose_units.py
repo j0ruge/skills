@@ -291,6 +291,106 @@ class TestComentarioETipo(RepoTemporario):
         self.head = self.gravar({"A.cs": "class A {\n    void M() {}\n}\n"})
         self.assertEqual(self.tipo("A.cs"), "CODE")
 
+    def test_linha_de_barras_com_fecho_de_bloco_e_code(self):
+        # head põe um "*/" no comentário: dentro de um /* ... */, ele fecha o bloco e o resto é código
+        self.base = self.gravar({"f.c": "// texto\nint x = 1;\n"})
+        self.head = self.gravar({"f.c": "// texto */ int y = 2;\nint x = 1;\n"})
+        self.assertEqual(self.tipo("f.c"), "CODE")
+
+    def test_fecho_de_colchete_longo_no_meio_da_linha_de_lua_e_code(self):
+        # head põe "]]" e "]==]" no meio de um comentário "--": dentro de um bloco longo, fecham o bloco
+        self.base = self.gravar({"a.lua": "-- texto\nlocal x = 1\n", "b.lua": "-- texto\nlocal x = 1\n"})
+        self.head = self.gravar({"a.lua": "-- texto ]] local y = 2\nlocal x = 1\n",
+                                 "b.lua": "-- texto ]==] local y = 2\nlocal x = 1\n"})
+        self.assertEqual((self.tipo("a.lua"), self.tipo("b.lua")), ("CODE", "CODE"))
+
+    # Comentário que uma ferramenta lê não é prosa: a diretiva, o pragma e o comentário mágico mudam o
+    # que o compilador, o verificador de tipos, o linter ou o teste fazem.
+
+    DIRETIVAS = [  # (arquivo, a linha que o head põe no lugar de um comentário de prosa)
+        ("a.ts", "// @ts-ignore"),
+        ("b.ts", "// @ts-expect-error: o tipo vem errado"),
+        ("c.ts", "// @ts-nocheck"),
+        ("d.js", "// eslint-disable-next-line no-console"),
+        ("e.js", "// prettier-ignore"),
+        ("f.py", "# noqa: E501"),
+        ("g.py", "# ruff: noqa"),
+        ("h.py", "# type: ignore[attr-defined]"),
+        ("i.py", "# pylint: disable=invalid-name"),
+        ("j.go", "//nolint:errcheck"),
+        ("k.go", "// nolint"),
+        ("l.cpp", "// NOLINTNEXTLINE(bugprone-branch-clone)"),
+        ("m.rb", "# frozen_string_literal: true"),
+        ("n.py", "# coding: utf-8"),
+        ("o.py", "# vim: set fileencoding=utf-8 :"),
+        ("Package.swift", "// swift-tools-version:5.9"),
+        ("p.go", "// +kubebuilder:validation:Minimum=1"),
+        ("q.sql", "-- +goose Up"),
+        ("r.lua", "---@type integer"),
+        ("s.js", "//# sourceMappingURL=s.js.map"),
+        ("t.go", "//lint:ignore SA1019 motivo"),
+    ]
+
+    @staticmethod
+    def _prefixo(caminho: str) -> str:
+        return {".py": "#", ".rb": "#", ".sql": "--", ".lua": "--"}.get(Path(caminho).suffix, "//")
+
+    def test_diretiva_lida_por_ferramenta_e_code(self):
+        # head troca, em cada arquivo, a linha de prosa pela diretiva; num controle de cada extensão,
+        # por outra linha de prosa, e o controle fica DOC_ONLY
+        controles = {f"controle{Path(c).suffix}" for c, _ in self.DIRETIVAS}
+        base = {c: f"{self._prefixo(c)} texto de prosa\ncodigo()\n" for c, _ in self.DIRETIVAS}
+        base |= {c: f"{self._prefixo(c)} texto de prosa\ncodigo()\n" for c in controles}
+        self.base = self.gravar(base)
+        head = {c: f"{linha}\ncodigo()\n" for c, linha in self.DIRETIVAS}
+        head |= {c: f"{self._prefixo(c)} outro texto de prosa\ncodigo()\n" for c in controles}
+        self.head = self.gravar(head)
+        for caminho in sorted(controles):
+            with self.subTest(caminho=caminho):
+                self.assertEqual(self.tipo(caminho), "DOC_ONLY")
+        for caminho, linha in self.DIRETIVAS:
+            with self.subTest(linha=linha):
+                self.assertEqual(self.tipo(caminho), "CODE")
+
+    def test_toda_forma_da_lista_de_diretivas_e_code(self):
+        # head troca o comentário de prosa por um com a forma: no começo do texto ou no meio dele
+        inicio, qualquer = prose_units._DIRETIVAS_NO_INICIO, prose_units._DIRETIVAS_EM_QUALQUER_PONTO
+        linhas = [f"# {forma} x" for forma in inicio] + [f"# texto {forma.upper()} x" for forma in qualquer]
+        self.base = self.gravar({f"f{i}.py": "# texto\nx = 1\n" for i in range(len(linhas))})
+        self.head = self.gravar({f"f{i}.py": f"{linha}\nx = 1\n" for i, linha in enumerate(linhas)})
+        for i, linha in enumerate(linhas):
+            with self.subTest(linha=linha):
+                self.assertEqual(self.tipo(f"f{i}.py"), "CODE")
+
+    def test_saida_esperada_de_exemplo_go_e_code(self):
+        # head troca a linha de saída esperada de um exemplo, abaixo do "// Output:"; num controle, o
+        # comentário de doc acima da função, e o controle fica DOC_ONLY
+        exemplo = ('package x\n\nimport "fmt"\n\n// ExampleF mostra o F.\nfunc ExampleF() {\n'
+                   '\tfmt.Println("um")\n\t// Output:\n\t// um\n}\n')
+        self.base = self.gravar({"x_test.go": exemplo, "y_test.go": exemplo})
+        self.head = self.gravar({"x_test.go": exemplo.replace("// um", "// dois"),
+                                 "y_test.go": exemplo.replace("mostra o F.", "mostra a função F.")})
+        self.assertEqual((self.tipo("x_test.go"), self.tipo("y_test.go")), ("CODE", "DOC_ONLY"))
+
+    def test_preambulo_do_cgo_e_code(self):
+        # head troca o C do comentário logo acima do import "C"; num controle sem o import, fica DOC_ONLY
+        preambulo = 'package x\n\n// #include <stdio.h>\n// int um(void) { return 1; }\nimport "C"\n'
+        self.base = self.gravar({"c.go": preambulo, "d.go": preambulo.replace('import "C"', "var v = 1")})
+        self.head = self.gravar({"c.go": preambulo.replace("return 1", "return 2"),
+                                 "d.go": preambulo.replace('import "C"', "var v = 1")
+                                 .replace("return 1", "return 2")})
+        self.assertEqual((self.tipo("c.go"), self.tipo("d.go")), ("CODE", "DOC_ONLY"))
+
+    def test_doctest_do_rust_e_code(self):
+        # head troca o assert de um bloco cercado no comentário de doc; num controle sem cerca, fica DOC_ONLY
+        doc = ("/// Soma.\n///\n/// ```\n/// assert_eq!(soma(1, 1), 2);\n/// ```\n"
+               "pub fn soma(a: i32, b: i32) -> i32 { a + b }\n")
+        sem_cerca = "/// Soma os dois.\npub fn soma(a: i32, b: i32) -> i32 { a + b }\n"
+        self.base = self.gravar({"a.rs": doc, "b.rs": sem_cerca})
+        self.head = self.gravar({"a.rs": doc.replace("), 2)", "), 3)"),
+                                 "b.rs": sem_cerca.replace("os dois", "os dois números")})
+        self.assertEqual((self.tipo("a.rs"), self.tipo("b.rs")), ("CODE", "DOC_ONLY"))
+
 
 class TestSaida(RepoTemporario):
     def test_json_de_um_intervalo_misto(self):
