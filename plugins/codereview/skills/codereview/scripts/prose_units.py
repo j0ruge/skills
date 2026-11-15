@@ -23,6 +23,7 @@ import re
 import subprocess
 import sys
 from collections.abc import Callable
+from fnmatch import fnmatchcase
 from functools import partial
 from pathlib import Path, PurePosixPath
 
@@ -303,13 +304,23 @@ def markdown_units(lines: list[str], targets: list[int]) -> list[tuple[int, int]
 # Comentário em código, tipo do arquivo e identificadores.
 # ---------------------------------------------------------------------------
 
+# Na dúvida, CODE: um arquivo dado como DOC_ONLY por engano esconde código do revisor de código.
 _EXTENSOES_DE_DOC = (".md", ".txt")
-_PREFIXOS_DE_COMENTARIO = {
+_TXT_DE_CODIGO = ("requirements*.txt", "cmakelists.txt")  # nome do arquivo, em minúsculas
+# Linha de comentário, sem o recuo. O `*` sozinho só vale seguido de espaço, `/` ou fim de linha, para
+# que `*p = 1;` não passe por comentário. YAML e TOML ficam fora: num bloco escalar, `#` é conteúdo.
+_COMENTARIO_RE = {
     **dict.fromkeys((".cs", ".ts", ".tsx", ".js", ".jsx", ".java", ".go", ".rs", ".c", ".h", ".cpp",
-                     ".swift", ".kt"), ("//", "/*", "*", "*/")),
-    **dict.fromkeys((".py", ".sh", ".rb", ".yml", ".yaml", ".toml"), ("#",)),
-    **dict.fromkeys((".lua", ".sql"), ("--",)),
+                     ".swift", ".kt"), re.compile(r"\s*(?://|/\*|\*(?=\s|/|$))")),
+    **dict.fromkeys((".py", ".sh", ".rb"), re.compile(r"\s*#")),
+    **dict.fromkeys((".lua", ".sql"), re.compile(r"\s*--")),
 }
+# Linha mudada que faz o arquivo CODE mesmo sendo comentário: o delimitador sozinho de um bloco (abrir
+# ou fechar um em volta de código não muda linha nenhuma do código) e a diretiva lida por ferramenta.
+_DELIMITADOR_RE = re.compile(r"\s*(?:/\*|\*/|--\[\[|--\]\])\s*$")
+_DIRETIVA_RE = re.compile(r"\s*(?:#!|//go:|// \+build|/// <reference|# -\*-)")
+# Cabeçalho do diff que muda o arquivo além das linhas: renomeação, modo, arquivo novo ou apagado.
+_CABECALHO_DE_CODIGO = ("rename from ", "old mode ", "new file mode ", "deleted file mode ")
 _CRASES_RE = re.compile(r"`([^`]+)`")
 
 
@@ -320,17 +331,18 @@ def _extensao(caminho: str) -> str:
 def comment_units(lines: list[str], targets: list[int], path: str) -> list[tuple[int, int]]:
     """Intervalos (início, fim), 1-indexados e inclusivos, dos blocos de comentário que contêm os alvos.
 
-    Linha de comentário é a que, sem o recuo, começa com um prefixo da extensão de `path`; o bloco é
-    o trecho contíguo delas. Alvo fora de comentário (a linha logo depois de um corte, uma linha em
-    branco, o corte no fim do arquivo) cai no bloco da linha de cima, como a linha em branco do
-    Markdown; se ela também não é comentário, o alvo fica sem unidade. Saem em ordem e sem repetição.
+    Linha de comentário é a que, sem o recuo, começa com um prefixo da extensão de `path` (`*` só
+    seguido de espaço, `/` ou fim de linha); o bloco é o trecho contíguo delas. Alvo fora de
+    comentário (a linha logo depois de um corte, uma linha em branco, o corte no fim do arquivo) cai
+    no bloco da linha de cima, como a linha em branco do Markdown; se ela também não é comentário, o
+    alvo fica sem unidade. Saem em ordem e sem repetição.
     """
-    prefixos = _PREFIXOS_DE_COMENTARIO.get(_extensao(path))
-    if prefixos is None:
+    padrao = _COMENTARIO_RE.get(_extensao(path))
+    if padrao is None:
         return []
 
     def comentario(i: int) -> bool:
-        return 0 <= i < len(lines) and lines[i].lstrip().startswith(prefixos)
+        return 0 <= i < len(lines) and bool(padrao.match(lines[i]))
 
     achadas: set[tuple[int, int]] = set()
     for alvo in targets:
@@ -346,18 +358,31 @@ def comment_units(lines: list[str], targets: list[int], path: str) -> list[tuple
     return sorted(achadas)
 
 
+def _so_comentario(linha: str, padrao: re.Pattern) -> bool:
+    """A linha mudada é vazia, ou comentário que não é delimitador sozinho nem diretiva."""
+    if not linha.strip():
+        return True
+    return bool(padrao.match(linha)) and not _DELIMITADOR_RE.match(linha) and not _DIRETIVA_RE.match(linha)
+
+
 def _tipo(caminho: str, bloco: list[str] | None) -> str:
-    """DOCS, DOC_ONLY ou CODE de um arquivo, pelo bloco dele no diff -U0 (None: fora do diff)."""
-    extensao = _extensao(caminho)
+    """DOCS, DOC_ONLY ou CODE de um arquivo, pelo bloco dele no diff -U0 (None: fora do diff).
+
+    Não olha as unidades: um DOCS ou DOC_ONLY sem unidade nenhuma vira CODE em _entrada.
+    """
+    nome = PurePosixPath(caminho).name.lower()
+    extensao = _extensao(nome)
     if extensao in _EXTENSOES_DE_DOC:
-        return "DOCS"
-    prefixos = _PREFIXOS_DE_COMENTARIO.get(extensao)
-    if prefixos is None or bloco is None:
+        return "CODE" if any(fnmatchcase(nome, padrao) for padrao in _TXT_DE_CODIGO) else "DOCS"
+    padrao = _COMENTARIO_RE.get(extensao)
+    if padrao is None or bloco is None:
         return "CODE"
-    mudadas = [linha[1:] for linha in bloco[_inicio_dos_hunks(bloco):] if linha.startswith(("+", "-"))]
-    # Sem linha mudada (só o modo, renomeação pura, binário), nada mostra que o diff é só comentário,
-    # e o arquivo segue o fluxo de código.
-    if mudadas and all(not m.strip() or m.lstrip().startswith(prefixos) for m in mudadas):
+    inicio = _inicio_dos_hunks(bloco)
+    if any(linha.startswith(_CABECALHO_DE_CODIGO) for linha in bloco[1:inicio]):
+        return "CODE"
+    mudadas = [linha[1:] for linha in bloco[inicio:] if linha.startswith(("+", "-"))]
+    # Sem linha mudada (binário), nada mostra que o diff é só comentário.
+    if mudadas and all(_so_comentario(linha, padrao) for linha in mudadas):
         return "DOC_ONLY"
     return "CODE"
 
@@ -365,12 +390,17 @@ def _tipo(caminho: str, bloco: list[str] | None) -> str:
 def file_kind(repo: Path, base: str, head: str, path: str) -> str:
     """"DOCS", "DOC_ONLY" ou "CODE" do arquivo `path` (caminho no head) no intervalo base...head.
 
-    `.md` e `.txt` são DOCS. Extensão com prefixo de comentário conhecido é DOC_ONLY quando o diff -U0
-    tem linha `+` ou `-` e toda linha `+` e `-` é comentário ou vazia; docstring entre aspas triplas
-    não é comentário. O resto é CODE.
+    Na dúvida, CODE. `.md` e `.txt` são DOCS, menos `requirements*.txt` e `CMakeLists.txt`. Extensão da
+    tabela de comentário é DOC_ONLY quando o arquivo não foi renomeado, criado, apagado nem mudou de
+    modo, e o diff -U0 tem linha `+` ou `-` e toda linha `+` e `-` é vazia ou comentário, sem ser
+    delimitador sozinho de bloco (`/*`, `*/`, `--[[`, `--]]`) nem diretiva (`#!`, `//go:`,
+    `// +build`, `/// <reference`, `# -*-`); docstring entre aspas triplas não é comentário. DOCS ou
+    DOC_ONLY que existe no head e fica sem unidade nenhuma também é CODE. O resto é CODE.
     """
     arquivo = _diff_por_arquivo(repo, base, head).get(path)
-    return _tipo(path, None if arquivo is None else arquivo[1])
+    if arquivo is None:
+        return _tipo(path, None)
+    return _entrada(repo, head, path, *arquivo)["kind"]
 
 
 def identifiers(lines: list[str], added: list[int]) -> list[str]:
@@ -401,7 +431,8 @@ def _linhas_no_head(repo: Path, head: str, caminho: str) -> list[str]:
     Corta só em "\\n", como o git conta as linhas (um \\r solto não abre linha); o "\\n" final não abre
     linha.
     """
-    linhas = _git(repo, "cat-file", "blob", f"{head}:{caminho}").decode("utf-8", "replace").split("\n")
+    linhas = _git(repo, "cat-file", "blob", "--end-of-options", f"{head}:{caminho}"
+                  ).decode("utf-8", "replace").split("\n")
     if linhas[-1] == "":
         linhas.pop()
     return linhas
@@ -427,22 +458,30 @@ def _unidades_com_mudancas(
             for inicio, fim in unidades]
 
 
+def _entrada(repo: Path, head: str, caminho: str, info: dict, bloco: list[str]) -> dict:
+    """A entrada do arquivo no JSON: tipo, status, unidades e identificadores."""
+    tipo = _tipo(caminho, bloco)
+    unidades: list[dict] = []
+    nomes: list[str] = []
+    if tipo != "CODE" and info["status"] != "D":
+        linhas = _linhas_no_head(repo, head, caminho)
+        unidades_de = markdown_units if tipo == "DOCS" else partial(comment_units, path=caminho)
+        unidades = _unidades_com_mudancas(linhas, info, unidades_de)
+        if unidades:
+            nomes = identifiers(linhas, info["added"])
+        else:
+            # Nada para o verificador ler (o bloco de comentário apagado inteiro, só linha em branco,
+            # renomeação pura): o arquivo segue o fluxo de código.
+            tipo = "CODE"
+    return {"path": caminho, "kind": tipo, "status": info["status"], "units": unidades, "identifiers": nomes}
+
+
 def _escopo(repo: Path, base: str, head: str) -> dict:
     """O escopo da rodada de verificação no intervalo base...head, na forma do JSON do CLI."""
     # Resolvidos uma vez: o JSON diz o commit lido, e um `HEAD` que ande no meio não mistura commits.
     base, head = _commit(repo, base), _commit(repo, head)
-    arquivos = []
-    for caminho, (info, bloco) in _diff_por_arquivo(repo, base, head).items():
-        tipo = _tipo(caminho, bloco)
-        unidades: list[dict] = []
-        nomes: list[str] = []
-        if tipo != "CODE" and info["status"] != "D":
-            linhas = _linhas_no_head(repo, head, caminho)
-            unidades_de = markdown_units if tipo == "DOCS" else partial(comment_units, path=caminho)
-            unidades = _unidades_com_mudancas(linhas, info, unidades_de)
-            nomes = identifiers(linhas, info["added"])
-        arquivos.append({"path": caminho, "kind": tipo, "status": info["status"],
-                         "units": unidades, "identifiers": nomes})
+    arquivos = [_entrada(repo, head, caminho, info, bloco)
+                for caminho, (info, bloco) in _diff_por_arquivo(repo, base, head).items()]
     return {
         "base": base, "head": head, "files": arquivos,
         "totals": {

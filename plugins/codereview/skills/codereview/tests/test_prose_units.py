@@ -184,6 +184,72 @@ class TestComentarioETipo(RepoTemporario):
         linhas = ["o `Foo.Bar` chama o `X` e o `Foo.Bar` de novo", "velha `Baz.Qux`"]
         self.assertEqual(prose_units.identifiers(linhas, [1]), ["Foo.Bar"])
 
+    # Na dúvida, CODE: um arquivo dado como DOC_ONLY por engano esconde código do revisor.
+
+    def test_renomeado_com_comentario_trocado_e_code(self):
+        # head: git mv foo.py bar.py e troca só o comentário
+        codigo = "".join(f"x{n} = {n}\n" for n in range(20))
+        self.base = self.gravar({"foo.py": "# comentário\n" + codigo})
+        git(self.repo, "mv", "foo.py", "bar.py")
+        self.head = self.gravar({"bar.py": "# outro comentário\n" + codigo})
+        self.assertEqual(self.mudadas()["bar.py"]["status"], "R")
+        self.assertEqual(self.tipo("bar.py"), "CODE")
+
+    def test_mudanca_de_modo_com_comentario_e_code(self):
+        # head: chmod +x em s.sh e troca só o comentário
+        self.base = self.gravar({"s.sh": "# comentário\necho oi\n"})
+        (self.repo / "s.sh").chmod(0o755)
+        self.head = self.gravar({"s.sh": "# outro comentário\necho oi\n"})
+        self.assertEqual(self.tipo("s.sh"), "CODE")
+
+    def test_arquivo_de_codigo_novo_so_de_comentario_e_code(self):
+        # head: acrescenta n.go, que só tem comentário
+        self.base = self.gravar({"doc.md": MD})
+        self.head = self.gravar({"n.go": "// só comentário\n// mais um\n"})
+        self.assertEqual(self.tipo("n.go"), "CODE")
+
+    def test_desreferencia_em_c_e_code(self):
+        # head troca "*p = 1;" por "*p = 0;"
+        self.base = self.gravar({"p.c": "void f(int *p) {\n    *p = 1;\n}\n"})
+        self.head = self.gravar({"p.c": "void f(int *p) {\n    *p = 0;\n}\n"})
+        self.assertEqual(self.tipo("p.c"), "CODE")
+
+    def test_codigo_embrulhado_em_bloco_de_comentario_e_code(self):
+        # head põe uma linha "/*" antes da função e uma "*/" depois
+        self.base = self.gravar({"u.c": "int f(void) {\n    return 1;\n}\n"})
+        self.head = self.gravar({"u.c": "/*\nint f(void) {\n    return 1;\n}\n*/\n"})
+        self.assertEqual(self.tipo("u.c"), "CODE")
+
+    def test_diretiva_go_build_e_code(self):
+        # head troca "//go:build linux" por "//go:build windows"
+        self.base = self.gravar({"x.go": "//go:build linux\n\npackage x\n"})
+        self.head = self.gravar({"x.go": "//go:build windows\n\npackage x\n"})
+        self.assertEqual(self.tipo("x.go"), "CODE")
+
+    def test_shebang_trocado_e_code(self):
+        # head troca "#!/bin/sh" por "#!/bin/bash"
+        self.base = self.gravar({"m.sh": "#!/bin/sh\necho oi\n"})
+        self.head = self.gravar({"m.sh": "#!/bin/bash\necho oi\n"})
+        self.assertEqual(self.tipo("m.sh"), "CODE")
+
+    def test_requirements_txt_e_code(self):
+        # head sobe a versão de uma dependência
+        self.base = self.gravar({"requirements.txt": "requests==2.0\n"})
+        self.head = self.gravar({"requirements.txt": "requests==2.1\n"})
+        self.assertEqual(self.tipo("requirements.txt"), "CODE")
+
+    def test_comentario_em_yml_e_code(self):
+        # head troca só a linha de comentário: num bloco escalar, um "#" é conteúdo
+        self.base = self.gravar({"c.yml": "# comentário\nchave: 1\n"})
+        self.head = self.gravar({"c.yml": "# outro comentário\nchave: 1\n"})
+        self.assertEqual(self.tipo("c.yml"), "CODE")
+
+    def test_bloco_de_comentario_apagado_inteiro_e_code(self):
+        # head apaga as três linhas "///": o diff é só comentário, mas não sobra unidade para ler
+        self.base = self.gravar({"A.cs": CS})
+        self.head = self.gravar({"A.cs": "class A {\n    void M() {}\n}\n"})
+        self.assertEqual(self.tipo("A.cs"), "CODE")
+
 
 class TestSaida(RepoTemporario):
     def test_json_de_um_intervalo_misto(self):
@@ -204,7 +270,17 @@ class TestSaida(RepoTemporario):
         self.base = self.gravar({"a.md": MD})
         git(self.repo, "mv", "a.md", "b.md")
         self.head = self.gravar({"b.md": MD.replace("Outro", "Mais um")})
-        self.assertIn("b.md", {f["path"] for f in self.rodar_cli()["files"]})
+        por = {f["path"]: f for f in self.rodar_cli()["files"]}
+        self.assertIn("b.md", por)
+        self.assertEqual(por["b.md"]["status"], "R")
+        self.assertNotIn("a.md", por)
+
+    def test_corte_no_fim_do_md_cai_na_ultima_unidade(self):
+        # base: 4 linhas; head: sem a linha 4, e o corte passa da última linha do head
+        self.base = self.gravar({"doc.md": "# Título\n\nUm parágrafo\nque continua.\n"})
+        self.head = self.gravar({"doc.md": "# Título\n\nUm parágrafo\n"})
+        por = {f["path"]: f for f in self.rodar_cli()["files"]}
+        self.assertEqual(por["doc.md"]["units"], [{"start": 3, "end": 3, "changed": [3]}])
 
     def test_sha_inexistente_sai_com_rc_2(self):
         self.base = self.gravar({"doc.md": MD})
