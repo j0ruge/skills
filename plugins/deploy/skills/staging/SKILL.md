@@ -2,7 +2,7 @@
 name: staging
 description: "Promote code to staging (and on to production) through the repo's real CD pipeline. Reads each workflow's `on.push.branches` and `runs-on` instead of assuming — the wrong branch can deploy production, and a hosted job under a billing block never starts. Waits for CI green on the exact commit, promotes by PR merge commit, watches the run, then proves the deploy by the data. Triggers — deploy staging, promote to staging, subir para staging, CD pipeline, cd-staging, promover para produção."
 metadata:
-  version: 3.4.0
+  version: 3.4.1
 ---
 
 ## Deploy to Staging
@@ -311,10 +311,14 @@ Four differences that matter:
 
 - The image tag and the runner label come from the workflow, not from this
   skill — read them there if the user asks.
-- `gh pr merge` sometimes merges successfully and then fails while updating the
-  local checkout, which reads as "the merge failed". Confirm with
-  `gh pr view <n> --json state,mergeCommit` before retrying, or you will try to
-  merge something already merged.
+- `gh pr merge` can merge and still report a failure: it fails while updating the
+  local checkout, or the API answers `502` after the merge landed. Before retrying,
+  ask the base branch on the server, not the PR: `git fetch origin`, then
+  `git merge-base --is-ancestor <head-sha> origin/<base>` and the parents of the
+  new base head (`git cat-file -p origin/<base> | grep ^parent`). After the `502`,
+  `gh pr view` showed `OPEN` with no `mergeCommit` and the REST API `merged=false`
+  for 37 min, until the PR was closed by hand (2026-11-16). Don't merge again:
+  close the PR with a comment naming the merge commit.
 - After a squash merge, `git branch -d` refuses with "not fully merged" even
   when every change is integrated — it tests ancestry, and squash breaks it. The
   sensor that actually settles it is content: `git diff <target> <branch>` empty

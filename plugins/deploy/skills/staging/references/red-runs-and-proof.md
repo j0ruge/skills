@@ -104,6 +104,32 @@ Measured 2026-10-30 (staging copies at 17:42 and 17:51): before the first
 copy the served `index.html` cited `main.9a0629c3`, the previous build; after each copy both checks
 passed, for `main.8f4f31eb` and then `main.b68dfb71`.
 
+#### A route-split SPA: the change lives in a chunk `index.html` never cites
+
+To prove the served bundle carries the change, grep it for a marker the change adds. With routes
+split by `React.lazy` or a dynamic `import()`, the page's code sits in a chunk that only another
+chunk names, so on a correct deploy the chunks `index.html` cites lack the marker. Follow the chunk
+names inside the fetched chunks until no new one appears, then grep (Vite's `assets/`; adjust the
+pattern to the bundler's path):
+
+```bash
+U=https://<host>; D=$(mktemp -d)
+curl -s "$U/" | grep -oE '/assets/[A-Za-z0-9_.-]+\.js' | sort -u | while read -r p; do curl -s "$U$p" -o "$D/${p##*/}"; done
+n=0; while [ "$(ls "$D" | wc -l)" -ne "$n" ]; do n=$(ls "$D" | wc -l)
+  grep -ohE 'assets/[A-Za-z0-9_.-]+\.js' "$D"/*.js | sort -u | while read -r p; do
+    [ -f "$D/${p##*/}" ] || curl -s "$U/$p" -o "$D/${p##*/}"; done
+done
+grep -l '<marker>' "$D"/*.js      # rc 1 = no chunk has it
+```
+
+- **Pick a string the minifier keeps:** a literal or a property key the change adds, never a local
+  name. The minifier renames functions, components and variables.
+
+Measured 2026-11-16 on a Vite SPA, on staging and production: the 5 chunks `index.html` cited
+lacked the marker; following the imports reached 21 chunks, and the marker, a key of the navigation
+`state`, sat in the page's chunk. The fix's local function and component names were in no chunk. The
+snippet above ran in bash and zsh: rc 0 with the key, rc 1 with the function's name.
+
 #### A red e2e after the deploy is not yet a verdict on the deploy
 
 A suite that runs against a shared environment carries its own debt: a test account with the wrong

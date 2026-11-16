@@ -2,6 +2,32 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [3.4.1] — 2026-11-16
+
+### O merge que voltou com erro se confere pela base, e a prova pelo bundle segue os chunks carregados sob demanda
+
+**Por quê:** duas leituras erradas que a skill deixava acontecer, as duas medidas numa promoção real.
+
+- **Gotchas, `gh pr merge`.** O Gotcha mandava confirmar um merge que "falhou" com
+  `gh pr view <n> --json state,mergeCommit`. Numa resposta `502` da API, o merge já estava na base
+  (o merge commit com a base e o head do PR como pais), e o `gh pr view` dizia `OPEN`, sem
+  `mergeCommit`. A REST dizia `merged=false`, e o PR ficou assim 37 min, até ser fechado à mão.
+  Quem seguisse a skill mergearia de novo. O sensor passa a ser a base no servidor
+  (`git merge-base --is-ancestor <head> origin/<base>` e os pais da cabeça nova), que serve também
+  para o caso que já estava lá, o merge que falha ao atualizar o checkout local. Esse caso fica, porque
+  não há prova de que esteja obsoleto. Com o head na base, a saída é fechar o PR com um comentário que
+  cite o merge commit, e não mergear de novo.
+- **`references/red-runs-and-proof.md`, uma seção nova.** Numa SPA com rotas `React.lazy` ou
+  `import()` dinâmico, a página fica num chunk que só outro chunk cita. Procurar o marcador da mudança
+  nos chunks do `index.html` dá vazio num deploy certo: foram 5 chunks sem o marcador, e 21 depois de
+  seguir os imports, com o marcador no chunk da página, no staging e na produção. A seção traz o laço que segue os nomes até
+  não aparecer chunk novo, testado no bash e no zsh (rc 0 com o marcador e rc 1 sem ele). Traz também a
+  escolha do marcador: um literal ou uma chave de propriedade, porque o minificador troca os nomes
+  locais, e a função e o componente do conserto não apareciam em chunk nenhum.
+
+A `description` não muda. O smoke do Codex (`docs/codex/smokes.json`) segue na 3.3.1, atrás da 3.4.0
+desde antes deste retrofit: é dívida, e não regressão.
+
 ## [3.4.0] — 2026-11-09
 
 ### O salto à produção atrás de um gate de ancestralidade é fast-forward, e o agente velho se julga pelo que deixa de dar
