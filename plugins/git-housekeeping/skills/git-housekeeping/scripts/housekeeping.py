@@ -29,6 +29,10 @@ PR_FIELDS = "number,headRefName,headRefOid,baseRefName,isCrossRepository"
 REGENERAVEIS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".nox",
                 ".hypothesis", "node_modules", "build", "dist", "htmlcov", ".coverage", ".next",
                 ".turbo", ".parcel-cache"}
+# bin/ e obj/ só são saída do build do .NET com o projeto na pasta-mãe. Sem ele, um bin/ ignorado
+# pode ser script de quem usa, e fica sem outra cópia. Em 2026-11-15, de 8 a 12 deles por worktree
+# enterravam no relatório o único log sem cópia.
+PROJETO_DOTNET = (".csproj", ".fsproj", ".vbproj")
 # A pasta ignorada só é comparada com a do worktree principal até aqui; acima, nada se afirma.
 TETO_ARQUIVOS = 2000
 TETO_BYTES = 64 * 1024 * 1024
@@ -102,6 +106,8 @@ class Item:
     links: dict = field(default_factory=dict)
     regen: list = field(default_factory=list)
     copies: list = field(default_factory=list)
+    # Pasta sem outra cópia → [arquivos, KiB]: o nome sozinho não diz o que ela guarda.
+    lost_dirs: dict = field(default_factory=dict)
     author: str = ""
 
 
@@ -290,23 +296,41 @@ def has_commit(repo, sha: str) -> bool:
 
 def dir_kb(path) -> int:
     """KiB ocupados por uma pasta, sem seguir symlink: o que o `du -sk` diria, sem depender dele."""
-    total = 0
+    return conta_pasta(path)[1]
+
+
+def conta_pasta(path) -> tuple:
+    """(arquivos, KiB) de uma pasta, sem seguir symlink; os KiB são os do `dir_kb`."""
+    count = total = 0
     for root, _dirs, files in os.walk(path):
         for name in files:
             try:
                 st = os.lstat(os.path.join(root, name))
             except OSError:
                 continue
+            count += 1
             blocks = getattr(st, "st_blocks", None)
             total += blocks * 512 if blocks is not None else st.st_size
-    return total // 1024
+    return count, total // 1024
 
 
 def regeneravel(path) -> bool:
-    """O ignorado se recria: cache ou saída conhecida pelo nome, ou um venv (tem pyvenv.cfg)."""
-    name = os.path.basename(os.path.normpath(path))
+    """O ignorado se recria: cache ou saída conhecida pelo nome, um venv (tem pyvenv.cfg), ou o
+    bin/ e o obj/ de um projeto .NET (o projeto está na pasta-mãe)."""
+    path = os.path.normpath(path)
+    name = os.path.basename(path)
     return (name in REGENERAVEIS or name.endswith(".egg-info")
-            or os.path.isfile(os.path.join(path, "pyvenv.cfg")))
+            or os.path.isfile(os.path.join(path, "pyvenv.cfg"))
+            or (name in ("bin", "obj") and _tem_projeto_dotnet(os.path.dirname(path))))
+
+
+def _tem_projeto_dotnet(folder) -> bool:
+    """A pasta tem um arquivo de projeto .NET (`PROJETO_DOTNET`)."""
+    try:
+        names = os.listdir(folder)
+    except OSError:
+        return False
+    return any(n.endswith(PROJETO_DOTNET) and os.path.isfile(os.path.join(folder, n)) for n in names)
 
 
 def copia_igual(src, dst) -> bool:
@@ -618,6 +642,8 @@ def _classify_worktree(facts: Facts, wt: Worktree, base: dict) -> Item:
             out.regen.append(x)
         elif main and copia_igual(path, os.path.join(main, x.rstrip("/"))):
             out.copies.append(x)
+        elif os.path.isdir(path):
+            out.lost_dirs[x] = list(conta_pasta(path))
     return out
 
 

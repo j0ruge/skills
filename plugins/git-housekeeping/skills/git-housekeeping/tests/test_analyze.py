@@ -126,6 +126,31 @@ class AnalyzeCliTest(unittest.TestCase):
         self.assertLess(linha.index("sem outra cópia"), linha.index("igual no principal"))
         self.assertLess(linha.index("igual no principal"), linha.index("regeneráveis"))
 
+    def test_pasta_sem_outra_copia_mostra_arquivos_e_tamanho(self):
+        """Em 2026-11-15, o nome .superpowers/ escondia 44 rascunhos: a linha diz quantos e quanto."""
+        self.fx.branch("feat/s"); self.fx.merge("feat/s", pr=False)
+        wt = self.fx.worktree("wt-s", "feat/s")
+        with open(self.fx.clone / ".git" / "info" / "exclude", "a", encoding="utf-8") as f:
+            f.write(".superpowers/\nnotas/\n.env.local\n")
+        (wt / ".superpowers" / "sdd").mkdir(parents=True)
+        for n in ("a.md", "b.md", "sdd/c.md"):
+            (wt / ".superpowers" / n).write_text(n)
+        (wt / "notas").mkdir(); (wt / "notas" / "a.md").write_text("só aqui")
+        (wt / ".env.local").write_text("X=1\n")
+        r = run(self.fx, "--repo", self.fx.clone, "--plan", self.plan)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        linha = next(x for x in r.stdout.splitlines() if "wt-s" in x)
+        # O arquivo solto fica só com o nome; a pasta leva arquivos e tamanho, no singular também.
+        self.assertRegex(linha, r"sem outra cópia: ⚠ \.env\.local, \.superpowers/ \(3 arquivos, \d+ KB\), "
+                                r"notas/ \(1 arquivo, \d+ KB\)")
+
+    def test_conteudo_passa_a_mb_a_partir_de_1_mb(self):
+        sys.path.insert(0, str(ANALYZE.parent))
+        import analyze
+        self.assertEqual(analyze._conteudo(3, 2048), "(3 arquivos, 2.0 MB)")
+        self.assertEqual(analyze._conteudo(1, 1024), "(1 arquivo, 1.0 MB)")
+        self.assertEqual(analyze._conteudo(1, 1023), "(1 arquivo, 1023 KB)")
+
     def test_worktree_so_com_regeneraveis_diz_nada_sem_copia(self):
         self.fx.branch("feat/c"); self.fx.merge("feat/c", pr=False)
         wt = self.fx.worktree("wt-c", "feat/c")

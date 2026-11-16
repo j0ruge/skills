@@ -25,6 +25,11 @@ def mb(kb: int) -> str:
     return f"{kb / 1024:.1f} MB"
 
 
+def _conteudo(files: int, kb: int) -> str:
+    """O que uma pasta sem outra cópia guarda: `(44 arquivos, 816 KB)`; de 1 MB para cima, em MB."""
+    return f"({files} arquivo{'' if files == 1 else 's'}, {mb(kb) if kb >= 1024 else f'{kb} KB'})"
+
+
 def _label(plan: dict, item: dict) -> str:
     """O nome que o usuário reconhece: a ref remote-tracking leva o remoto na frente."""
     return f"{plan['remote']}/{item['name']}" if item["kind"] == "remote-tracking" else item["name"]
@@ -32,14 +37,17 @@ def _label(plan: dict, item: dict) -> str:
 
 def _ignored(item: dict) -> str:
     """Os ignorados do worktree em três grupos: sem outra cópia (o que se perde de fato, com ⚠ no
-    .env*), igual no worktree principal, e regeneráveis (o link conta aqui: só o link sai)."""
+    .env*; a pasta com os arquivos e o tamanho), igual no worktree principal, e regeneráveis (o
+    link conta aqui: só o link sai)."""
     if not item["ignored"]:
         return "nenhum"
     links, regen, copies = item.get("links", {}), item.get("regen", []), item.get("copies", [])
+    lost_dirs = item.get("lost_dirs", {})
 
     def name(x):
         return (("⚠ " if Path(x.rstrip("/")).name.startswith(".env") else "") + x
-                + (f" → {links[x]} (link: só o link sai)" if x in links else ""))
+                + (f" → {links[x]} (link: só o link sai)" if x in links else "")
+                + (f" {_conteudo(*lost_dirs[x])}" if x in lost_dirs else ""))
 
     lost = [name(x) for x in item["ignored"] if x not in regen and x not in copies]
     parts = [f"sem outra cópia: {', '.join(lost) or 'nenhum'}"]

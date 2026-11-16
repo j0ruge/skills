@@ -1,5 +1,31 @@
 # Changelog — `git-housekeeping`
 
+## [0.6.0] — 2026-11-15
+
+### `bin/` e `obj/` de projeto .NET são regeneráveis, e a pasta sem outra cópia diz o que guarda
+
+Nasceu da limpeza de dois repositórios, depois do merge de um PR de docs.
+
+- **O quê (1):** o `regeneravel()` também aceita `bin/` e `obj/` quando a pasta-mãe tem um
+  arquivo de projeto .NET (`PROJETO_DOTNET`: `*.csproj`, `*.fsproj`, `*.vbproj`). Um `bin/` sem o
+  projeto ao lado continua `sem outra cópia`, porque pode ser script de quem usa.
+- **Por quê (1):** num projeto .NET, os três worktrees que saíam listavam de 8 a 12 `bin/` e
+  `obj/` em `sem outra cópia`. O único ignorado que se perdia de fato, um `.sdd/logs/`, ficou
+  enterrado no meio deles. No worktree que ficou, o critério acertou os 16 `bin/` e `obj/`.
+- **O quê (2):** o `Item` do worktree ganha `lost_dirs`, com `[arquivos, KiB]` de cada pasta
+  `sem outra cópia`, e o relatório mostra `.superpowers/ (44 arquivos, 816 KB)`, em MB de 1 MB
+  para cima. O arquivo solto continua só com o nome. O passo 2 do `SKILL.md` manda dizer os dois
+  números. O plano segue na versão 1: o campo é opcional, e o `apply_plan.py` lê o plano velho.
+- **Por quê (2):** o relatório dizia só `sem outra cópia: .superpowers/`, e a limpeza tinha sido
+  autorizada pensando num único rascunho daquela pasta. Um `find .superpowers -type f` à mão
+  achou 44 arquivos: briefs, relatórios de revisão e o progresso de uma rodada inteira. Eles
+  foram arquivados antes do apagamento. É a mesma checagem à mão que a 0.5.0 registrou.
+- **Testes:** `DotnetBinObjTest` (`test_classify.py`: `bin/` e `obj/` com o `.csproj` ao lado, e
+  `bin/` sem ele), um em `IgnoradosPorGrupoTest` (a contagem de uma pasta com subpasta) e dois em
+  `test_analyze.py` (a linha do relatório, com singular e plural, e a troca para MB). Os cinco
+  falharam contra os scripts da 0.5.2; a suíte foi de 79 para 84.
+- **Dívida que fica:** o smoke do Codex em `docs/codex/smokes.json` ainda é o da 0.1.0.
+
 ## [0.5.2] — 2026-11-05
 
 ### Nomes de repositórios privados saem do texto

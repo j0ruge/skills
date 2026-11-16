@@ -430,3 +430,56 @@ class IgnoradosPorGrupoTest(unittest.TestCase):
     def test_pasta_com_arquivo_a_mais_no_worktree_nao_e_copia(self):
         (self.wt / "iguais" / "tres.txt").write_text("3")
         self.assertNotIn("iguais/", self.item().copies)
+
+    def test_pasta_sem_outra_copia_traz_arquivos_e_tamanho(self):
+        """Em 2026-11-15, o nome .superpowers/ escondia 44 rascunhos: o plano guarda a contagem."""
+        (self.wt / "notas" / "b.md").write_text("b")
+        (self.wt / "notas" / "sub").mkdir(); (self.wt / "notas" / "sub" / "c.md").write_text("c")
+        i = self.item()
+        files, kb = i.lost_dirs["notas/"]
+        self.assertEqual(files, 3)
+        self.assertGreaterEqual(kb, 0)
+        self.assertEqual(list(i.lost_dirs), ["notas/"])   # só pasta, e só a sem outra cópia
+
+
+class DotnetBinObjTest(unittest.TestCase):
+    """bin/ e obj/ com o projeto .NET na pasta-mãe são saída do build. Em 2026-11-15, de 8 a 12
+    deles por worktree caíam em `sem outra cópia` e enterravam o único log que se perdia."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        fx = self.fx = Fixture(Path(self.tmp.name))
+        app = fx.clone / "src" / "App"
+        app.mkdir(parents=True)
+        (app / "App.csproj").write_text("<Project/>\n")   # rastreado: o worktree fica limpo
+        fx.git(fx.clone, "add", "-A")
+        fx.git(fx.clone, "commit", "-q", "-m", "projeto .NET")
+        fx.git(fx.clone, "push", "-q", "origin", "main")
+        with open(fx.clone / ".git" / "info" / "exclude", "a", encoding="utf-8") as f:
+            f.write("bin/\nobj/\n")
+        fx.branch("feat/n"); fx.merge("feat/n", pr=False)
+        wt = fx.worktree("wt-n", "feat/n")
+        for d in ("bin", "obj"):
+            (wt / "src" / "App" / d).mkdir()
+            (wt / "src" / "App" / d / "App.dll").write_bytes(b"MZ")
+        (wt / "bin").mkdir(); (wt / "bin" / "meu-script").write_text("#!/bin/sh\n")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def item(self):
+        with mock.patch.dict(os.environ, self.fx.env()):
+            items = hk.classify(hk.load_facts(self.fx.clone))
+        return next(i for i in items if i.kind == "worktree")
+
+    def test_bin_e_obj_com_projeto_ao_lado_sao_regeneraveis(self):
+        i = self.item()
+        self.assertEqual(i.decision, "delete", i.reason)
+        self.assertIn("src/App/bin/", i.regen)
+        self.assertIn("src/App/obj/", i.regen)
+
+    def test_bin_sem_projeto_ao_lado_fica_sem_outra_copia(self):
+        """Sem o projeto, um bin/ ignorado pode ser script de quem usa."""
+        i = self.item()
+        self.assertNotIn("bin/", i.regen)
+        self.assertEqual(i.lost_dirs["bin/"][0], 1)

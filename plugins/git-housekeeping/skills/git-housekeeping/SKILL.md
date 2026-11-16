@@ -2,7 +2,7 @@
 name: git-housekeeping
 description: "Safely deletes merged git branches, local and remote, and their worktrees. A read-only scan proves each merge by merge commit or by the merged PR's head sha; only the approved plan is deleted, with sha leases and two confirmations. Triggers — merged branches, branch cleanup, delete merged branches, stale worktrees, git housekeeping, prune branches."
 metadata:
-  version: 0.5.2
+  version: 0.6.0
 ---
 
 # git-housekeeping
@@ -37,7 +37,9 @@ foram medidos no git 2.43.0 em 2026-10-20, num repo descartável.
   levava 16, entre eles 11 caches ou venv e 3 mocks iguais aos do checkout, e os
   rascunhos `.superpowers/` só existiam ali. O relatório os separa em `sem outra cópia`, `igual no
   principal` (byte a byte; pasta só até `TETO_ARQUIVOS` e `TETO_BYTES` de `housekeeping.py`) e
-  `regeneráveis` (`REGENERAVEIS`, `*.egg-info`, venv pelo `pyvenv.cfg`, e o link).
+  `regeneráveis` (`REGENERAVEIS`, `*.egg-info`, venv pelo `pyvenv.cfg`, `bin/` e `obj/` com
+  `*.csproj`, `*.fsproj` ou `*.vbproj` na pasta-mãe, e o link). Sem essa regra, em 2026-11-15,
+  de 8 a 12 `bin/` e `obj/` de .NET por worktree enterravam o único log sem cópia.
 - `%(upstream:track)` não diz `[gone]` enquanto a ref remote-tracking velha existe. O "sumiu do
   remoto" só sai confiável do `git ls-remote`.
 - `git remote get-url` aplica o `insteadOf`. O `owner/repo` do GitHub sai da URL crua
@@ -84,7 +86,9 @@ o `apply_plan.py` reclassifica com o mesmo código que gerou o plano.
    resuma o que fica: é ali que o usuário vê o que a skill não vai apagar, e por quê. Do worktree que
    sai, leia em voz alta os ignorados `sem outra cópia`, sobretudo os marcados com ⚠ (`.env*`): são
    o que se perde de fato. Os outros dois grupos basta citar. Cite só o nome; nunca abra nem imprima
-   o conteúdo.
+   o conteúdo. A pasta vem com os arquivos e o tamanho (`.superpowers/ (44 arquivos, 816 KB)`):
+   diga os dois, porque o nome não mostra o que ela guarda. Em 2026-11-15, uma limpeza foi
+   autorizada pensando num rascunho, e a pasta levava 44.
 
 3. **1ª confirmação: o local** (branches locais, worktrees e refs remote-tracking). Pergunte com a
    lista na frente do usuário. Se ele aprovar só parte, passe um `--only <nome>` por item aprovado
