@@ -1,0 +1,23 @@
+{
+  "name": "prompt-cache-audit",
+  "description": "Audits prompt caching before anyone tunes it. Measures Claude Code's cache from local transcripts (hit rate, TTL, misses by cause, context size) and reviews code that calls the Claude API directly, ending with the cost in money. Triggers — prompt caching, cache hit rate, cache_control, cache TTL, low cache hit rate, API cost.",
+  "author": {
+    "name": "Chewiesoft"
+  },
+  "version": "0.1.0",
+  "category": "development",
+  "keywords": [
+    "prompt-caching",
+    "cache-hit-rate",
+    "cache-control",
+    "claude-code",
+    "claude-api",
+    "cost",
+    "transcripts",
+    "audit"
+  ],
+  "platforms": [
+    "claude-code"
+  ],
+  "skills": "./skills"
+}

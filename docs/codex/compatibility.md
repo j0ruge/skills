@@ -1,6 +1,6 @@
 # Compatibilidade Codex
 
-Inventário dos 33 plugins: 31 auditados em 2026-10-22; `windows-games-linux` entrou em 2026-10-23 sem avaliação Codex (`not_checked`), e `env-docs-sync` entrou em 2026-10-27, avaliado na entrada. Apenas `supported` entra no catálogo.
+Inventário dos 34 plugins: 31 auditados em 2026-10-22; `windows-games-linux` entrou em 2026-10-23 sem avaliação Codex (`not_checked`), `env-docs-sync` entrou em 2026-10-27, avaliado na entrada, e `prompt-cache-audit` entrou em 2026-11-17 como `unsupported`. Apenas `supported` entra no catálogo.
 Os smokes cobrem instalação, descoberta, leitura no cache e entrada de cada workflow;
 operações integrais de domínio e dependências autenticadas não fazem parte do smoke.
 Ubuntu 24.04/CLI 0.163.0 é a cobertura medida (o `hook-builder` 0.2.0, em 2026-10-27, na 0.164.0, o `env-docs-sync` 0.1.0, no mesmo dia, na 0.165.0, e o `todo-to-github-issues` 2.9.8, em 2026-11-15, na 0.167.1); desktop, macOS e Windows permanecem
@@ -28,6 +28,7 @@ Versão mínima ainda não estabelecida. Veja [verification.md](verification.md)
 | kaizen-software | `supported` | `skills/kaizen-software/SKILL.md` | 4 arquivos de scripts/referências/templates/assets | Leitura/escrita de Markdown e ferramentas do projeto. Referências e templates PDCA locais; sem dependência de runtime Claude. |
 | n8n-ops | `supported` | `skills/n8n-ops/SKILL.md` | 4 arquivos de scripts/referências/templates/assets | n8n, ferramentas do projeto, API/autenticação quando usada. MCP é opcional; o alvo precisa de URL/credenciais próprias. |
 | pdf-generation | `supported` | `skills/pdf-generation/SKILL.md` | 3 arquivos de scripts/referências/templates/assets | Biblioteca PDF escolhida por stack; navegador quando necessário. Comparação de bibliotecas é recurso empacotado; geração/exportação integral não testada. |
+| prompt-cache-audit | `unsupported` | `skills/prompt-cache-audit/SKILL.md` | 2 arquivos de scripts/referências/templates/assets | Python 3. O script lê os transcritos locais do Claude Code (`~/.claude/projects`), que o Codex não grava. |
 | release | `supported` | `skills/release/SKILL.md` | 0 arquivos de scripts/referências/templates/assets | Git e gh autenticado; versão informada explicitamente. Somente $release:release; agents/openai.yaml impede ativação implícita no Codex. |
 | retrofit-skill | `partial` | `commands/retrofit-skill.md` | 3 arquivos de scripts/referências/templates/assets | Clone deste marketplace, Python, Git e auditor irmão. O comando depende de <REPO>/plugins/ e caminhos de instalação do Claude; autocontenção no cache e integração com outros plugins não comprovadas. |
 | retrofit-watch | `partial` | `skills/retrofit-watch/SKILL.md` | 2 arquivos de scripts/referências/templates/assets | Adaptação local Codex em funcionamento nesta sessão. O plugin da loja ainda contém hooks/transcript Claude e não empacota a camada Codex; instalação nativa dessa camada pelo catálogo não comprovada. |

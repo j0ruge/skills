@@ -1,0 +1,16 @@
+[
+  {"query": "recebi um email da anthropic dizendo que minha taxa de acerto de cache de prompt está baixa, o que eu faço?", "should_trigger": true},
+  {"query": "como eu configuro o prompt caching no claude code pra gastar menos?", "should_trigger": true},
+  {"query": "meu limite da assinatura acaba rápido, o cache do claude code tá funcionando?", "should_trigger": true},
+  {"query": "is my app's cache_control actually hitting? cache_read_input_tokens is always low", "should_trigger": true},
+  {"query": "vale a pena ligar o TTL de 1 hora do cache de prompt?", "should_trigger": true},
+  {"query": "audit prompt caching in this service that calls the Claude API", "should_trigger": true},
+  {"query": "quanto do meu gasto com a API dá pra economizar com cache de prompt?", "should_trigger": true},
+  {"query": "why does my Claude Code session rewrite the whole cache after lunch?", "should_trigger": true},
+  {"query": "configura um cache redis pra essa API em node", "should_trigger": false},
+  {"query": "limpa o cache do npm e do docker que o disco encheu", "should_trigger": false},
+  {"query": "adiciona cache-control: max-age nos headers das imagens estáticas", "should_trigger": false},
+  {"query": "escreve um prompt de sistema para um bot de atendimento", "should_trigger": false},
+  {"query": "qual o preço do modelo mais barato da anthropic?", "should_trigger": false},
+  {"query": "configura a status line do claude code com o uso da janela de 5h", "should_trigger": false}
+]
