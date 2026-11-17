@@ -483,3 +483,46 @@ class DotnetBinObjTest(unittest.TestCase):
         i = self.item()
         self.assertNotIn("bin/", i.regen)
         self.assertEqual(i.lost_dirs["bin/"][0], 1)
+
+
+class GodotCacheTest(unittest.TestCase):
+    """A .godot/ com o project.godot na pasta-mãe é o cache de importação, que o Godot 4 refaz ao
+    abrir o projeto. Em 2026-11-17, 7 dos 10 worktrees que saíam a listavam em `sem outra cópia`,
+    ao lado dos dois `.sdd/logs/` que só existiam ali."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        fx = self.fx = Fixture(Path(self.tmp.name))
+        game = fx.clone / "src" / "Game"
+        game.mkdir(parents=True)
+        (game / "project.godot").write_text("config_version=5\n")   # rastreado
+        fx.git(fx.clone, "add", "-A")
+        fx.git(fx.clone, "commit", "-q", "-m", "projeto Godot")
+        fx.git(fx.clone, "push", "-q", "origin", "main")
+        with open(fx.clone / ".git" / "info" / "exclude", "a", encoding="utf-8") as f:
+            f.write(".godot/\n")
+        fx.branch("feat/g"); fx.merge("feat/g", pr=False)
+        wt = fx.worktree("wt-g", "feat/g")
+        (wt / "src" / "Game" / ".godot").mkdir()
+        (wt / "src" / "Game" / ".godot" / "uid_cache.bin").write_bytes(b"\0")
+        (wt / ".godot").mkdir(); (wt / ".godot" / "notas.txt").write_text("só aqui\n")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def item(self):
+        with mock.patch.dict(os.environ, self.fx.env()):
+            items = hk.classify(hk.load_facts(self.fx.clone))
+        return next(i for i in items if i.kind == "worktree")
+
+    def test_godot_com_projeto_ao_lado_e_regeneravel(self):
+        i = self.item()
+        self.assertEqual(i.decision, "delete", i.reason)
+        self.assertIn("src/Game/.godot/", i.regen)
+        self.assertNotIn("src/Game/.godot/", i.lost_dirs)
+
+    def test_godot_sem_projeto_ao_lado_fica_sem_outra_copia(self):
+        """Sem o project.godot, uma .godot/ ignorada pode guardar o que só existe ali."""
+        i = self.item()
+        self.assertNotIn(".godot/", i.regen)
+        self.assertEqual(i.lost_dirs[".godot/"][0], 1)

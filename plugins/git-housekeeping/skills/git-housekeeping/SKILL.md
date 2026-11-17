@@ -2,7 +2,7 @@
 name: git-housekeeping
 description: "Safely deletes merged git branches, local and remote, and their worktrees. A read-only scan proves each merge by merge commit or by the merged PR's head sha; only the approved plan is deleted, with sha leases and two confirmations. Triggers — merged branches, branch cleanup, delete merged branches, stale worktrees, git housekeeping, prune branches."
 metadata:
-  version: 0.6.0
+  version: 0.7.0
 ---
 
 # git-housekeeping
@@ -38,8 +38,9 @@ foram medidos no git 2.43.0 em 2026-10-20, num repo descartável.
   rascunhos `.superpowers/` só existiam ali. O relatório os separa em `sem outra cópia`, `igual no
   principal` (byte a byte; pasta só até `TETO_ARQUIVOS` e `TETO_BYTES` de `housekeeping.py`) e
   `regeneráveis` (`REGENERAVEIS`, `*.egg-info`, venv pelo `pyvenv.cfg`, `bin/` e `obj/` com
-  `*.csproj`, `*.fsproj` ou `*.vbproj` na pasta-mãe, e o link). Sem essa regra, em 2026-11-15,
-  de 8 a 12 `bin/` e `obj/` de .NET por worktree enterravam o único log sem cópia.
+  `*.csproj`, `*.fsproj` ou `*.vbproj` na pasta-mãe, `.godot/` com `project.godot` na pasta-mãe,
+  e o link). Sem essa regra, em 2026-11-15, de 8 a 12 `bin/` e `obj/` de .NET por worktree
+  enterravam o único log sem cópia.
 - `%(upstream:track)` não diz `[gone]` enquanto a ref remote-tracking velha existe. O "sumiu do
   remoto" só sai confiável do `git ls-remote`.
 - `git remote get-url` aplica o `insteadOf`. O `owner/repo` do GitHub sai da URL crua

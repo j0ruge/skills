@@ -1,5 +1,27 @@
 # Changelog — `git-housekeeping`
 
+## [0.7.0] — 2026-11-17
+
+### A `.godot/` de um projeto Godot é regenerável
+
+Nasceu da limpeza dos worktrees de um projeto .NET com cliente Godot.
+
+- **O quê:** o `regeneravel()` também aceita a pasta `.godot/` quando a pasta-mãe tem o
+  `project.godot` (`PROJETO_GODOT`). Uma `.godot/` sem o projeto ao lado continua `sem outra
+  cópia`. A armadilha dos ignorados, no `SKILL.md`, cita a regra nova.
+- **Por quê:** 7 dos 10 worktrees que saíam listavam a `.godot/` do cliente em `sem outra cópia`
+  (de 40 a 46 arquivos e de 11,0 a 12,0 MB cada uma). Ela é o cache de importação, que o Godot 4
+  refaz ao abrir o projeto. Os únicos ignorados que se perdiam de fato, dois `.sdd/logs/`,
+  apareciam ao lado dela, e foram copiados para fora antes do apagamento. É o mesmo padrão que a
+  0.6.0 tirou com o `bin/` e o `obj/` do .NET.
+- **Conferido antes de editar:** nos 4 worktrees que restavam com `.godot/`, o `project.godot`
+  estava na pasta-mãe; depois da mudança, o `regeneravel()` devolve `True` para essa pasta e
+  segue `False` para o `.cache/` do mesmo worktree, que só aquele projeto sabe regenerar.
+- **Testes:** `GodotCacheTest` (`test_classify.py`: a `.godot/` com o `project.godot` ao lado, e
+  a `.godot/` sem ele). O primeiro falhou contra os scripts da 0.6.0, e o segundo já passava: é a
+  guarda da regra. A suíte foi de 84 para 86.
+- **Dívida que fica:** o smoke do Codex em `docs/codex/smokes.json` ainda é o da 0.1.0.
+
 ## [0.6.0] — 2026-11-15
 
 ### `bin/` e `obj/` de projeto .NET são regeneráveis, e a pasta sem outra cópia diz o que guarda

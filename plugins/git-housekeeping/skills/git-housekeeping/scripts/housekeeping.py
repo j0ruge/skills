@@ -33,6 +33,10 @@ REGENERAVEIS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".
 # pode ser script de quem usa, e fica sem outra cópia. Em 2026-11-15, de 8 a 12 deles por worktree
 # enterravam no relatório o único log sem cópia.
 PROJETO_DOTNET = (".csproj", ".fsproj", ".vbproj")
+# .godot/ só é o cache de importação do Godot 4 com o projeto na pasta-mãe; o Godot a refaz ao abrir
+# o projeto. Sem ele, fica sem outra cópia. Em 2026-11-17, 7 de 10 worktrees a listavam ao lado dos
+# dois `.sdd/logs/` que só existiam ali.
+PROJETO_GODOT = "project.godot"
 # A pasta ignorada só é comparada com a do worktree principal até aqui; acima, nada se afirma.
 TETO_ARQUIVOS = 2000
 TETO_BYTES = 64 * 1024 * 1024
@@ -315,13 +319,15 @@ def conta_pasta(path) -> tuple:
 
 
 def regeneravel(path) -> bool:
-    """O ignorado se recria: cache ou saída conhecida pelo nome, um venv (tem pyvenv.cfg), ou o
-    bin/ e o obj/ de um projeto .NET (o projeto está na pasta-mãe)."""
+    """O ignorado se recria: cache ou saída conhecida pelo nome, um venv (tem pyvenv.cfg), o bin/ e
+    o obj/ de um projeto .NET ou a .godot/ de um projeto Godot (o projeto está na pasta-mãe)."""
     path = os.path.normpath(path)
     name = os.path.basename(path)
     return (name in REGENERAVEIS or name.endswith(".egg-info")
             or os.path.isfile(os.path.join(path, "pyvenv.cfg"))
-            or (name in ("bin", "obj") and _tem_projeto_dotnet(os.path.dirname(path))))
+            or (name in ("bin", "obj") and _tem_projeto_dotnet(os.path.dirname(path)))
+            or (name == ".godot"
+                and os.path.isfile(os.path.join(os.path.dirname(path), PROJETO_GODOT))))
 
 
 def _tem_projeto_dotnet(folder) -> bool:
