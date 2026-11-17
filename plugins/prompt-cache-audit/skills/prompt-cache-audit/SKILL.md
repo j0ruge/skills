@@ -2,7 +2,7 @@
 name: prompt-cache-audit
 description: "Audits prompt caching before anyone tunes it. Measures Claude Code's cache from local transcripts (hit rate, TTL, misses by cause, context size) and reviews code that calls the Claude API directly, ending with the cost in money. Triggers — prompt caching, cache hit rate, cache_control, cache TTL, low cache hit rate, API cost."
 metadata:
-  version: 0.1.0
+  version: 0.1.1
 ---
 
 # prompt-cache-audit
@@ -62,7 +62,9 @@ Só leitura, só biblioteca padrão. Saída 2 quando não há transcritos ou o f
 3. **Contexto grande.** Leitura de cache é barata por token e cara em volume. Com mediana de centenas de milhares
    de tokens, o que reduz gasto é contexto menor: conversa nova por tarefa, instruções de projeto enxutas,
    exploração ampla em subagente.
-4. **Troca de modelo, effort ou modo rápido no meio da conversa.** Cada um tem o próprio cache; escolha no começo.
+4. **Troca de modelo ou de modo rápido no meio da conversa.** Cada modelo e cada velocidade tem o próprio cache:
+   escolha no começo. O effort depende do modelo: nos mais novos a troca mantém o cache, nos outros invalida. A
+   lista de quais está na página de cache do Claude Code (abaixo), em "Actions that invalidate the cache".
 
 Se nada na lista tiver número que justifique, a resposta é "não mexer", e ela vai no relatório com os números.
 

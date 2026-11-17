@@ -1,5 +1,16 @@
 # Changelog — `prompt-cache-audit`
 
+## [0.1.1] — 2026-11-17
+
+### Trocar o effort não invalida o cache em todo modelo
+
+- A 0.1.0 dizia que modelo, effort e modo rápido têm cada um o próprio cache. Para o effort isso não vale nos modelos
+  mais novos, em que a troca mantém o cache. O item 4 de "O que decidir" agora separa os casos e aponta a seção
+  "Actions that invalidate the cache" da página de cache do Claude Code, lida em 2026-11-17, em vez de fixar a lista
+  de modelos.
+- Achado ao conferir na própria página as afirmações da 0.1.0 sobre terceiros, o que não tinha sido feito antes de
+  publicar.
+
 ## [0.1.0] — 2026-11-17
 
 ### Primeira versão: medir o cache de prompt antes de mexer nele
