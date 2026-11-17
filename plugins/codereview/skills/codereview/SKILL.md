@@ -1,7 +1,7 @@
 ---
 name: codereview
 metadata:
-  version: 2.29.0
+  version: 2.30.0
 description: Pre-PR review with severity grading and tiered model routing. Detects TOCTOU races, accessibility gaps, hardcoded secrets, silent-blinding sensors (swallowed errors, negative verdicts, gates aimed at the wrong file), docs drift, and dead code via a whole-repo sweep. Report carries an Overall Grade table + Recommended Actions. Stack-agnostic, TypeScript/React defaults. Triggers — code review, pre-PR, secrets scan, accessibility audit, dead code, silent failure, code health.
 ---
 
@@ -19,6 +19,8 @@ Read the user input before proceeding (if not empty). Valid inputs:
 - Key-value overrides: `baseDir=app/ fileExtensions=ts,js`
 - Focus in prose ("look at the separator") or a review handoff's risk list (Phase A): run `full`, prompts
   unchanged; answer each named point in Phase C and say where it was checked
+- `até nota A` / `until grade A`: review rounds with the fixes between them, each round read-only
+  (configuration.md, *Re-review rounds*)
 
 Defaults are `baseDir=src/`, `fileExtensions=ts,tsx`, `frameworkPatterns=react`, tests `**/*.{test,spec}.{ts,tsx}` and `**/test/**`, UI_LIB `src/components/ui/**`, `prisma/**`, `**/generated/**`, CONFIG `*.config.*`, `tsconfig*`, `.env*`, `package.json`.
 

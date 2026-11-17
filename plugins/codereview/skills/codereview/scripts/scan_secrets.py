@@ -605,6 +605,13 @@ def run_gitleaks(repo_root: str, scan_dir: str, scope: dict[str, set[int]], resu
             result.errors.append(f"gitleaks exit {proc.returncode}: {proc.stderr.strip()[:200]}")
             return
         if not proc.stdout.strip():
+            if proc.returncode == 1:
+                # rc 1 sem relatório: a config do repo não carregou (FTL), e nada foi varrido.
+                # A causa é a última linha do stderr; antes dela vem o banner, e as cores saem.
+                ultima = (proc.stderr.strip().splitlines() or [""])[-1]
+                causa = re.sub(r"\x1b\[[0-9;]*m", "", ultima)[:200]
+                result.errors.append(f"gitleaks exit 1 sem relatório: {causa}")
+                return
             result.scanners.append("gitleaks")
             return
         data = json.loads(proc.stdout)

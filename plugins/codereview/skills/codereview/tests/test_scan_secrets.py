@@ -107,6 +107,15 @@ class TestGitleaksVeSoODiff(RepoComPR):
         self.pr_com_token_na_linha_3()
         self.assertEqual(self.do_gitleaks(self.scan()), [])
 
+    def test_gitleaks_toml_quebrada_nao_passa_por_limpa(self):
+        """O gitleaks 8.16 sai 1 sem relatório quando não carrega a config (medido em 2026-11-17)."""
+        (self.repo / ".gitleaks.toml").write_text("[extend]\nuseDefault = true\n[[rules]\nid = \"x\"\n")
+        self.pr_com_token_na_linha_3()
+        res = self.scan()
+        self.assertNotIn("gitleaks", res["scanners"])
+        self.assertTrue(any(e.startswith("gitleaks exit 1 sem relatório") for e in res["errors"]),
+                        res["errors"])
+
 
 @unittest.skipUnless(TEM_GITLEAKS, "gitleaks fora do PATH")
 class TestTypedHashManifest(RepoComPR):
@@ -438,9 +447,9 @@ class TestFiltroDeEscopo(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.pasta, True)
         self.escopo = {"app.py": {2}}
 
-    def rodar(self, funcao, saida: str):
+    def rodar(self, funcao, saida: str, stderr: str = ""):
         resultado = scan_secrets.ScanResult()
-        feito = subprocess.CompletedProcess([], 1, stdout=saida, stderr="")
+        feito = subprocess.CompletedProcess([], 1, stdout=saida, stderr=stderr)
         with mock.patch.object(scan_secrets.shutil, "which", return_value="/bin/scanner"), \
                 mock.patch.object(scan_secrets.subprocess, "run", return_value=feito) as run:
             funcao(resultado)
@@ -458,6 +467,15 @@ class TestFiltroDeEscopo(unittest.TestCase):
         args, kwargs = run.call_args
         self.assertEqual(kwargs["cwd"], self.pasta)
         self.assertEqual(args[0][args[0].index("--source") + 1], ".")
+
+    def test_gitleaks_rc_1_sem_relatorio_e_erro(self):
+        """rc 1 com stdout vazio é a config que não carregou, não uma varredura limpa."""
+        res, _ = self.rodar(
+            lambda r: scan_secrets.run_gitleaks(".", self.pasta, self.escopo, r), "",
+            stderr="FTL unable to load gitleaks config, err: While parsing config")
+        self.assertEqual(res.scanners, [])
+        self.assertEqual(len(res.errors), 1)
+        self.assertIn("unable to load gitleaks config", res.errors[0])
 
     def test_ggshield_recebe_a_pasta_do_escopo_e_filtra(self):
         def entidade(nome, linha):

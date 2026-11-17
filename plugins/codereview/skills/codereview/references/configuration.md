@@ -515,8 +515,21 @@ launches no agent, and the report grades code nobody read.
 
 ## Re-review rounds
 
-Read this whenever `base=` names the head an earlier round reviewed (SKILL.md, *Re-review the fix*).
-These decide whether the rounds converge:
+Read this whenever `base=` names the head an earlier round reviewed (SKILL.md, *Re-review the fix*),
+and when the user asks for rounds until a grade. These decide whether the rounds converge:
+
+- **A series asked by grade (`até nota A`, `until grade A`) is review rounds with the fixes between
+  them.** Each round runs as written, read-only, and ends in its report. Once every agent has
+  returned, the session fixes the findings outside the review (the smallest change: *Ask the fixer*,
+  below), commits the fixes, and launches the next round with `base=` the head that round reviewed,
+  pasted from git. A finding left unfixed gets its verdict written where the next round's Phase C
+  reads it, and a guard the fix adds gets a mutant (*The tests a fix adds*). The series stops at the
+  stop rule (SKILL.md, *Re-review the fix*), an A with no MEDIUM, not an A that keeps a minor one;
+  the LOW stay in *Consider Fixing* for the user to decide. A series asked to clear the LOW as well
+  stops at the first round with no finding. Measured 2026-11-17 (a single-file HTML deck and its QA
+  suite, codereview 2.28.5): round 1 gave about 15 MEDIUM and the pre-scan row of detection-passes.md
+  6.10, *A base64 image*; rounds 2 and 3 one MEDIUM each, both in the fix of that row; round 4 none,
+  with 8 LOW. The series' 14 mutants were all killed.
 
 - **A prose-only fix gets a verification round, not a full one.** On a re-review, each file
   `scripts/prose_units.py` marks `DOCS` or `DOC_ONLY` with at least one unit goes to a verifier

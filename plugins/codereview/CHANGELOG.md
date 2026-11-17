@@ -2,6 +2,54 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.30.0] — 2026-11-17
+
+### Série de rodadas até a nota A, exceção do gitleaks presa a uma regra, e a config quebrada que passava por limpa
+
+Minor: uma entrada nova (`até nota A`) e uma mudança de comportamento no pré-scan, sem quebrar
+argumento existente. As três lições vêm de um `/codereview` em quatro rodadas sobre um deck HTML de
+arquivo único com suíte de QA em Python e bash (codereview 2.28.5, 17/11).
+
+- **Base64 de imagem num HTML único (`detection-passes.md`, 6.10).** Caso novo no formato "prove it,
+  keep the row, fix it in the repo". A `easypost-test-api-token` do gitleaks casou dentro da base64
+  de uma foto em data URI, e foi a única linha do pré-scan na rodada 1. A primeira exceção, uma
+  `[allowlist]` global por linha, foi o MEDIUM da rodada 2, porque cegava todas as regras daquela
+  linha. Medido no gitleaks 8.16 do apt, com tokens gerados na hora: com a allowlist global, uma
+  chave AWS no lugar da base64 e um `ghp_` no `alt` passam. O `[[allowlists]]` com `targetRules` é
+  ignorado sem aviso. A `[[rules]]` de mesmo id com `[rules.allowlist]` isenta só a foto, e o
+  controle sem config pega as quatro linhas. A receita traz o `strings` que lê a regra padrão do
+  binário e o `apt-cache policy` no lugar do `gitleaks version`, que imprime `version is set by
+  build process`.
+- **Sensor no repositório para a exceção escrita como conserto (mesmo 6.10).** Na rodada 3, a prova
+  da exceção estava só no scratchpad e voltou como MEDIUM. Agora a recomendação é levar os canários
+  para a suíte do projeto. O gitleaks sai 1 também quando não carrega a config, então cada caso que
+  espera rc 1 confere `leaks found` na saída. No deck, essa seção matou os três mutantes da config.
+- **`scripts/scan_secrets.py`: rc 1 sem relatório vira erro.** Medido: com a `.gitleaks.toml` do
+  repositório quebrada, o pré-scan devolvia `findings: []`, `gitleaks` em `scanners` e `errors: []`,
+  o mesmo verde de uma varredura limpa. Agora ele grava a última linha do stderr (o `FTL`), já sem
+  as cores, em `errors`, e não lista o `gitleaks`. A fase C já avisa quando `errors` não vem vazio
+  (passo 8). Dois testes novos em `tests/test_scan_secrets.py` (38 no total): um com subprocess
+  simulado, que vale sem gitleaks, e um com o gitleaks real e TOML quebrado. Os dois mutantes do
+  conserto (condição desligada, `return` removido) morreram nos dois testes.
+- **`até nota A` / `until grade A` (`SKILL.md`, entradas válidas; `configuration.md`, *Re-review
+  rounds*).** O pedido era recorrente e a skill não o listava, enquanto as restrições diziam
+  read-only. Cada rodada continua read-only, e a sessão conserta entre as rodadas: commit, `base=`
+  colado do git, veredito escrito para o achado não consertado e mutante por guarda nova. A série
+  para na regra de parada que já existia (uma A sem MEDIUM), com os LOW em *Consider Fixing*.
+  Medido: rodada 1 com cerca de 15 MEDIUM e a linha do pré-scan, rodadas 2 e 3 com 1 MEDIUM cada,
+  rodada 4 com 0 MEDIUM e 8 LOW, e 14 mutantes mortos na série.
+
+### Tamanho e exceção ao gate
+
+O `SKILL.md` vai de 259 para 261 linhas e de 21.288 para 21.427 chars. O aviso C1 (acima de 20.000
+chars) já vinha da 2.29.0 e mudou só de contagem. A exceção é declarada: a entrada nova tem de estar
+na lista de entradas válidas, que é onde o orquestrador lê o `$ARGUMENTS`, e o detalhe fica no
+`configuration.md`. Enxugar o `SKILL.md` fica para uma tarefa própria de `skill-refactoring`. O
+aviso C2 do `configuration.md` também é anterior a esta versão. Sem mudança de `description`.
+
+Reverter: `git revert` deste commit. Para voltar só o pré-scan ao comportamento anterior, desfazer o
+bloco `if proc.returncode == 1:` de `run_gitleaks` e os dois testes que o prendem.
+
 ## [2.29.0] — 2026-11-15
 
 ### Nota escrita para a prosa e rodada de verificação para o conserto que só mexe em prosa
