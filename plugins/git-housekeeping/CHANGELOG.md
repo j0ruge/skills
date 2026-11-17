@@ -1,5 +1,59 @@
 # Changelog — `git-housekeeping`
 
+## [0.8.0] — 2026-11-17
+
+### As pastas de rascunho: um segundo fluxo, com prova e quarentena
+
+Nasceu da limpeza de `~/.wt`, logo depois da 0.7.0. A pasta tinha 516 entradas, e só 15 eram
+worktrees. As outras (handoffs, `tmp.*`, rascunhos de missão, estudos) ficaram de fora da skill e
+foram limpas à mão, com scripts de sessão, num inventário, num cruzamento dos handoffs e em três
+lotes aprovados um a um. O dono pediu que esse trabalho virasse parte da skill.
+
+- **O quê:** `scripts/scratch.py` (as regras), `scratch_scan.py` (só lê: grava o plano e imprime
+  SAI, SAI SE A LEITURA CONFIRMAR, NÃO PROVADO e FICA) e `scratch_apply.py`. O apply reconfere cada
+  item e o move para `<raiz>/.housekeeping-lixeira/<data>/`, com um `desfazer:` por item. O
+  `--purge` apaga os lotes velhos e é o único passo sem volta. O `SKILL.md` ganha a seção *Pastas
+  de rascunho*, com o fluxo em seis passos. As regras e os casos ficam em
+  `references/pastas-de-rascunho.md`.
+- **Por quê, regra a regra** (cada uma é um caso da limpeza à mão):
+  - **A prova é de conteúdo, não de nome nem de idade.** Do `plan-6a-scratch`, que parecia saída
+    regenerável, 1117 dos 4823 arquivos não tinham cópia igual na extração oficial. Por isso existem
+    o blob no histórico de um `--repo`, a mensagem de commit, o clone limpo e o `--igual`
+    (byte a byte).
+  - **A citação segura, e a cadeia também.** O julgamento dos handoffs pelo conteúdo deixou sair 7
+    que outros, que ficavam, mandavam ler. Agora o texto de toda entrada que fica é fonte, até parar.
+  - **O handoff que é a única descrição de uma pasta que fica, fica.** Eram 3.
+  - **O handoff é lido pelo agente.** O script confere os shas, os PRs e os anexos e deixa o handoff
+    em `review`. Se as pendências foram cumpridas é julgamento. O apply só o move com `--only`, e o
+    passo 3 do fluxo manda ler o `HANDOFF.md` antes da confirmação.
+  - **O baseline do retrofit sai só com o diff no histórico.** Um `tmp.*` com `aplicar.py` ao lado
+    do `antes.json` era trabalho, e o `diff.txt` pode ser a única cópia de uma edição não publicada.
+  - **Quarentena em vez de `rm`.** A pasta solta não tem o `desfazer` do git, e a skill promete um
+    para tudo o que apaga. A decisão foi do dono.
+  - **O apply reconfere o caminho e o tipo.** Duas pastas de PR que pareciam arquivos foram puladas
+    pela guarda de tipo da limpeza à mão. Agora a guarda é do script, com o conteúdo, o processo e a
+    citação de agora.
+- **Achado no ensaio do scan sobre o `~/.wt` real** (só leitura, 403 entradas, de 89 a 128 s):
+  - o `node_modules/` de um bundle extraído para estudo (102,8 MB, sem lockfile) saía como
+    regenerável. Fora de um repo, ele agora pede o lockfile ao lado; `build/` e `dist/` não contam;
+  - dois dos quatro `--repo` não tinham `origin/HEAD`, e a default caía no HEAD local, 269 commits
+    atrás num deles. Agora vem a branch que o remoto anuncia;
+  - o sha só de dígitos (3,7% dos shas de 7 caracteres, como o `1719887`) era ignorado. O handoff
+    com um commit desses fora da default passaria para a leitura. Era também a causa de um teste
+    intermitente.
+- **Achado no veredito dos CLAIM do gate:** a prova pelo histórico usava todas as refs do remoto
+  (`--remotes`). Um blob que só a ref de uma branch apagada no remoto alcançava contava como cópia,
+  e o clone aninhado nessa branch, como limpo. O próximo `fetch --prune` levaria a única cópia. Agora
+  só a branch viva prova (existe no `ls-remote`, com a ponta igual ou à frente da local).
+- **Testes:** `tests/test_scratch.py`, com 36 testes, um por regra. Dos 31 primeiros, 28 falharam
+  contra a 0.7.0; os outros 3 esperavam rc 2, que o python também dá para o script ausente. Por isso
+  cada regra foi sabotada (15 sabotagens), e o teste dela ficou vermelho. O `gh` falso da
+  `fixture.py` também responde ao `gh api` de issues e PRs. A suíte foi de 86 para 122.
+- **Gatilho:** a `description` cita as pastas de rascunho, e o `assets/trigger-evals.json` ganhou 3
+  casos positivos e 2 negativos (25 no total). O "meu disco C: tá cheio" continua negativo. O
+  otimizador da `skill-creator` não rodou sobre eles: fica como sugestão.
+- **Dívida que fica:** o smoke do Codex em `docs/codex/smokes.json` ainda é o da 0.1.0.
+
 ## [0.7.0] — 2026-11-17
 
 ### A `.godot/` de um projeto Godot é regenerável

@@ -9,6 +9,9 @@
   {"query": "after the release I want to prune every feature branch that's already merged into main, both local and on GitHub", "should_trigger": true},
   {"query": "tem worktree registrado apontando pra pasta que nem existe mais e branch sobrando de PR fechado, arruma isso", "should_trigger": true},
   {"query": "faz a faxina de branches desse repo mas não mexe na staging nem na production", "should_trigger": true},
+  {"query": "tenho uns 100 handoffs velhos em ~/.wt, quais dá pra apagar sem perder nada que ainda serve?", "should_trigger": true},
+  {"query": "limpa as pastas tmp.* e os rascunhos de missão que sobraram no ~/.wt das sessões antigas", "should_trigger": true},
+  {"query": "my scratch folder of past agent sessions has hundreds of old handoffs and temp dirs, clean out the ones that are safe to drop", "should_trigger": true},
   {"query": "cria uma branch nova feat/login a partir da main e abre o PR", "should_trigger": false},
   {"query": "o merge da feat/relatorio na main deu conflito no package-lock, me ajuda a resolver", "should_trigger": false},
   {"query": "o repo tá com 3 GB por causa de um binário antigo no histórico, como reescrevo o histórico pra tirar?", "should_trigger": false},
@@ -18,5 +21,7 @@
   {"query": "meu disco C: tá cheio, o que posso apagar?", "should_trigger": false},
   {"query": "faz rebase da minha branch na main e resolve os conflitos", "should_trigger": false},
   {"query": "lista os PRs abertos que estão esperando review há mais de uma semana", "should_trigger": false},
-  {"query": "apaga a tag v1.2.0 que eu criei errado no remoto", "should_trigger": false}
+  {"query": "apaga a tag v1.2.0 que eu criei errado no remoto", "should_trigger": false},
+  {"query": "escreve um handoff desta sessão pra próxima continuar de onde parei", "should_trigger": false},
+  {"query": "limpa o cache do npm e do pip, tá ocupando muito espaço", "should_trigger": false}
 ]

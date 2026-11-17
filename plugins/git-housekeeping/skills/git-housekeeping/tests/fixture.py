@@ -4,6 +4,7 @@ O clone aponta `origin` para https://github.com/acme/demo.git, e um `insteadOf` 
 local: o housekeeping deriva o owner/repo do gh pela URL crua, e nenhum push sai da máquina. O gh
 falso devolve os PRs de `prs.json` (chaves "merged" e "open"). O git roda isolado da configuração
 do usuário (GIT_CONFIG_GLOBAL=/dev/null), para um hooksPath ou uma assinatura global não vazarem.
+O `gh api` devolve as issues e os PRs de `issues.json` (a lista do endpoint `issues` do GitHub).
 
 Também roda como CLI, para a avaliação montar um cenário:
     python3 fixture.py <pasta> --scenario 1|2|3
@@ -28,6 +29,9 @@ GIT_ENV = {
 FAKE_GH = '''
 import json, os, sys
 args = sys.argv[1:]
+if args[:1] == ["api"] and not os.environ.get("FAKE_GH_FAIL"):
+    print(json.dumps(json.load(open(os.environ["FAKE_GH_ISSUES"]))))
+    sys.exit(0)
 if args[:2] != ["pr", "list"] or os.environ.get("FAKE_GH_FAIL"):
     print("gh falso: falha pedida", file=sys.stderr)
     sys.exit(1)
@@ -68,6 +72,7 @@ class Fixture:
         self.nogh = self.base / "bin-sem-gh"
         self.prs_file = self.base / "prs.json"
         self.prs = {"merged": [], "open": []}
+        self.issues_file = self.base / "issues.json"
         self._n = 0
         self._write_bins()
         self.git(self.base, "init", "-q", "--bare", "-b", "main", str(self.bare))
@@ -91,11 +96,23 @@ class Fixture:
         if not link.exists():
             link.symlink_to(shutil.which("git"))
         self.prs_file.write_text(json.dumps(self.prs), encoding="utf-8")
+        if not self.issues_file.exists():
+            self.issues_file.write_text("[]", encoding="utf-8")
 
     def env(self, gh: bool = True, **extra: str) -> dict:
         """O ambiente de quem roda o housekeeping nesta fixture: git isolado e o gh falso (ou nenhum)."""
         path = f"{self.bin}{os.pathsep}{os.environ.get('PATH', '')}" if gh else str(self.nogh)
-        return {**os.environ, **GIT_ENV, "PATH": path, "FAKE_GH_PRS": str(self.prs_file), **extra}
+        return {**os.environ, **GIT_ENV, "PATH": path, "FAKE_GH_PRS": str(self.prs_file),
+                "FAKE_GH_ISSUES": str(self.issues_file), **extra}
+
+    def add_issue(self, number: int, state: str, pr: bool = False, merged: bool = False) -> None:
+        """Uma issue (ou um PR, com `pr`) no `gh api` falso, no formato do endpoint `issues`."""
+        items = json.loads(self.issues_file.read_text(encoding="utf-8"))
+        item = {"number": number, "state": state}
+        if pr:
+            item["pull_request"] = {"merged_at": "2026-01-02T00:00:00Z" if merged else None}
+        items.append(item)
+        self.issues_file.write_text(json.dumps(items), encoding="utf-8")
 
     def git(self, cwd, *args: str) -> str:
         """git na fixture, com o ambiente dela."""

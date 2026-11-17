@@ -1,15 +1,16 @@
 ---
 name: git-housekeeping
-description: "Safely deletes merged git branches, local and remote, and their worktrees. A read-only scan proves each merge by merge commit or by the merged PR's head sha; only the approved plan is deleted, with sha leases and two confirmations. Triggers — merged branches, branch cleanup, delete merged branches, stale worktrees, git housekeeping, prune branches."
+description: "Safely deletes merged git branches (local and remote) and their worktrees, and clears session scratch folders (old handoffs, temp dirs). A read-only scan proves each merge and each folder's other copy; only the approved plan runs, with sha leases, a quarantine and confirmations. Triggers — merged branches, branch cleanup, stale worktrees, git housekeeping, prune branches, old handoffs, scratch folders."
 metadata:
-  version: 0.7.0
+  version: 0.8.0
 ---
 
 # git-housekeeping
 
 Apaga as branches que já foram mergeadas, locais e no remoto, e os worktrees delas, sem perder
 trabalho. Quem decide é o dado: um script que só lê prova cada merge, e outro só apaga o que o
-usuário aprovou, provando de novo na hora.
+usuário aprovou, provando de novo na hora. Um segundo fluxo, com prova e confirmação próprias, limpa
+as pastas de rascunho que não são worktree (seção *Pastas de rascunho*).
 
 ## Armadilhas
 
@@ -56,7 +57,8 @@ foram medidos no git 2.43.0 em 2026-10-20, num repo descartável.
 
 Diga ao usuário antes de prometer disco: **apagar uma branch libera quase nada.** A ref tem bytes, e
 os objetos só saem com `gc` depois que o reflog expira. O espaço sai dos **worktrees** que vão
-embora, com tudo o que tinham dentro. O relatório mostra os dois números separados.
+embora, com tudo o que tinham dentro. O relatório mostra os dois números separados. A pasta de
+rascunho que sai vai para a quarentena, e o disco só libera no `--purge`.
 
 ## Os scripts
 
@@ -64,13 +66,17 @@ embora, com tudo o que tinham dentro. O relatório mostra os dois números separ
 carregá-la, em "Base directory for this skill"). Precisam de Python 3.9+ (só stdlib; o código usa
 `str.removeprefix`), git 2.31+ (`rev-parse --path-format=absolute`) e, para provar squash merge, o
 `gh` autenticado. As regras de classificação moram em `housekeeping.py`, que as duas CLIs importam:
-o `apply_plan.py` reclassifica com o mesmo código que gerou o plano.
+o `apply_plan.py` reclassifica com o mesmo código que gerou o plano. As das pastas de rascunho moram
+em `scratch.py`, da mesma forma.
 
 | Script | O que faz | rc |
 |---|---|---|
 | `analyze.py --repo <repo> --remote origin --plan <arquivo>` | `git fetch` (sem prune), consulta o remoto e o gh, grava o plano e imprime o relatório. Não apaga nada. | 0 ok; 2 remoto que não responde, repo inválido ou plano dentro do repo |
 | `analyze.py --scan <pasta>` | Uma linha por repo da pasta. Sem rede, sem plano, sem escrever nada. | 0 |
 | `apply_plan.py --plan <arquivo> --scope local\|remote [--only <nome>]... [--dry-run]` | Reclassifica cada item `delete` do escopo com os fatos de agora e apaga o que ainda passa. O `--only` restringe aos nomes aprovados. | 0 tudo feito; 1 algo recusado; 2 plano inválido ou `--only` fora do plano |
+| `scratch_scan.py --root <pasta> --repo <repo>... --plan <arquivo>` | Classifica cada entrada da pasta de rascunho, grava o plano e imprime o relatório. Não move nada. | 0 ok; 2 raiz inválida, plano dentro dela ou `--repo` que não é repo |
+| `scratch_apply.py --plan <arquivo> [--only <nome>]... [--dry-run]` | Reconfere e move para a quarentena o que sai; o handoff só com `--only`. | 0 tudo feito; 1 algo recusado; 2 plano inválido ou `--only` fora do que pode sair |
+| `scratch_apply.py --purge --root <pasta> --older-than <dias> [--dry-run]` | Apaga os lotes da quarentena mais velhos que isso. É o único passo sem volta. | 0 |
 
 ## Fluxo (um repo)
 
@@ -162,6 +168,38 @@ git config --add housekeeping.protect 'deploy/*'
 Para "quais repos têm mais branch velha", rode `analyze.py --scan <pasta>` e mostre a tabela. Ela
 usa o último fetch de cada repo (a data aparece na linha) e conta só o merge commit como prova. Daí
 ofereça o fluxo completo no repo que o usuário escolher, um por vez.
+
+## Pastas de rascunho
+
+Para o que não é worktree numa pasta como `~/.wt` (handoffs, `tmp.*`, rascunhos de missão, estudos),
+quando o usuário pede para limpá-la. É uma etapa à parte, depois do fluxo das branches, com
+confirmação própria. Aqui não há merge para provar: a entrada sai quando tudo o que ela guarda tem
+outra cópia ou se recria, e fica quando algo vivo a cita, quando é recente ou quando tem um processo
+dentro. As regras, cada uma com o caso que a criou, a leitura dos handoffs e a quarentena estão em
+`references/pastas-de-rascunho.md`. Leia a reference antes do passo 3.
+
+1. **Analisar.** Passe cada repo de onde vêm os handoffs da pasta, depois de um `git fetch` em cada
+   um (o scan não faz fetch). Grave o plano fora da raiz: dentro dela, o scan recusa com rc 2.
+
+   ```bash
+   python3 "$SCRIPTS/scratch_scan.py" --root ~/.wt --repo <repo> --repo <outro> --plan <scratchpad>/rascunho.json
+   ```
+
+2. **Mostrar o relatório.** Mostre `SAI` e `SAI SE A LEITURA CONFIRMAR` inteiros, cada item com o
+   tamanho e o motivo. `NÃO PROVADO` e `FICA` podem passar de cem itens. Agrupe-os pelo motivo, com a
+   contagem e os nomes, e mostre-os inteiros se o usuário pedir.
+3. **Ler os handoffs.** O script confere o que é mecânico: os shas na default, os PRs fechados, os
+   anexos com outra cópia. Se as pendências foram cumpridas é julgamento. Leia o `HANDOFF.md` de cada
+   item do grupo da leitura e mostre o veredito com a frase que o sustenta. A pendência que só existe
+   no handoff o segura.
+4. **Confirmar.** Uma confirmação, com a lista do que sai e os handoffs que a leitura liberou.
+5. **Mover.** `scratch_apply.py --plan <plano>` move o grupo `SAI`; passe um `--only <nome>` por item,
+   se a aprovação for parcial, e um `--only` por handoff liberado. Rode antes com `--dry-run`. Tudo
+   vai para `<raiz>/.housekeeping-lixeira/<data>/`, e cada item imprime um `desfazer:`. A recusa
+   segue a regra de *Quando o apply recusa*: não mova o item à mão (`mv`, `rm`).
+6. **Provar.** Rode o scan de novo, com outro `--plan`, e mostre os `desfazer:`. Diga que o disco não
+   liberou nada: a quarentena ocupa o mesmo espaço até o `--purge`, que só roda quando o usuário
+   pede, depois de um `--dry-run` e de uma confirmação só para ele.
 
 ## Desfazer
 
