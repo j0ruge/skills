@@ -255,6 +255,40 @@ class ApplyTest(unittest.TestCase):
         self.assertNotIn("feat/a", self.fx.remote_branches())
         self.assertIn("feat/b", self.fx.remote_branches())
 
+    def pr_aberto(self, name="feat/pr") -> Path:
+        """Branch publicada com PR aberto e um worktree limpo nela; devolve a pasta."""
+        tip = self.fx.branch(name)
+        self.fx.add_pr("open", name, tip)
+        return self.fx.worktree("wt-pr", name)
+
+    def test_a_pedido_so_sai_com_only(self):
+        """Sem --only a pasta do PR fica; com o caminho dela, sai, e a branch fica local e no remoto."""
+        wt = self.pr_aberto()
+        plan = self.analyze()
+        r = self.apply("--plan", plan, "--scope", "local")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertTrue(wt.exists())
+        self.assertIn("a pedido: 1 worktree(s) ficam", r.stdout)
+        r = self.apply("--plan", plan, "--scope", "local", "--only", wt)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertFalse(wt.exists())
+        self.assertIn("feat/pr", self.fx.local_branches())
+        self.assertIn("feat/pr", self.fx.remote_branches())
+        undo = [line for line in r.stdout.splitlines() if line.startswith("desfazer: git worktree add ")]
+        self.assertEqual(len(undo), 1, r.stdout)
+        self.assertIn(" feat/pr ", undo[0])
+
+    def test_a_pedido_que_ganhou_commit_e_recusado(self):
+        """O commit feito na pasta depois do plano só existe ali: o --only é recusado, e ela fica."""
+        wt = self.pr_aberto()
+        plan = self.analyze()
+        self.fx.commit("depois do plano", cwd=wt)
+        r = self.apply("--plan", plan, "--scope", "local", "--only", wt)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("recusado:", r.stdout)
+        self.assertIn("não está no origin", r.stdout)
+        self.assertTrue(wt.exists())
+
     def test_only_que_nao_casa_e_uso_invalido(self):
         """Nome que não é delete no escopo sai com rc 2 e nada muda, em vez do "nada a apagar" com rc 0."""
         self.merged("feat/a")

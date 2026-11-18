@@ -17,7 +17,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import housekeeping as hk  # noqa: E402
 
-GROUPS = (("delete", "SAI"), ("unproven", "NÃO PROVADO (fica)"), ("keep", "FICA"))
+GROUPS = (("delete", "SAI"), (hk.A_PEDIDO, "SAI SÓ A PEDIDO (a branch fica; --only <caminho>)"),
+          ("unproven", "NÃO PROVADO (fica)"), ("keep", "FICA"))
 
 
 def mb(kb: int) -> str:
@@ -66,16 +67,18 @@ def render(plan: dict) -> str:
     if not plan.get("procs_checked", True):
         # Sem /proc, a sessão aberta num worktree não segura o worktree: quem lê precisa saber.
         lines[-1:-1] = ["processos nos worktrees: não conferido (sem /proc)"]
-    if not any(i["decision"] == "delete" for i in plan["items"]):
+    if not any(i["decision"] in ("delete", hk.A_PEDIDO) for i in plan["items"]):
         lines += ["Nada a limpar.", ""]
     for decision, title in GROUPS:
         group = [i for i in plan["items"] if i["decision"] == decision]
+        if decision == hk.A_PEDIDO and not group:
+            continue   # o grupo só aparece quando tem item: nos outros repos seria uma linha a mais à toa
         lines.append(f"{title} ({len(group)})")
         for i in group:
             line = f"  {hk.KIND_PT[i['kind']]:<19} {_label(plan, i)}  {i['sha'][:7]}  {i['reason']}"
             if i["author"]:
                 line += f"  [último commit: {i['author']}]"
-            if i["kind"] == "worktree" and decision == "delete" and i["action"] == "remove":
+            if i["kind"] == "worktree" and decision in ("delete", hk.A_PEDIDO) and i["action"] == "remove":
                 line += f"  [{mb(i['kb'])}; ignorados que vão junto: {_ignored(i)}]"
             lines.append(line)
         lines.append("")

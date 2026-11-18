@@ -177,13 +177,75 @@ class ClassificacaoTest(unittest.TestCase):
         i = self.item("worktree", "wt-detached")
         self.assertEqual((i.decision, i.action), ("delete", "remove"), i.reason)
 
-    def test_worktree_em_branch_que_fica_fica(self):
-        """O worktree segue a decisão da branch dele."""
-        self.assertDecision("worktree", "wt-unmerged", "keep", reason="que fica")
+    def test_worktree_em_branch_que_fica_sai_so_a_pedido(self):
+        """A branch fica; a pasta limpa e publicada, só com o --only (antes da 0.9.0, ficava sempre)."""
+        self.assertDecision("worktree", "wt-unmerged", hk.A_PEDIDO, reason="que fica")
+        self.assertDecision("worktree", "wt-unmerged", hk.A_PEDIDO, reason="sai só com --only")
+        self.assertDecision("local-branch", "wip/wt-unmerged", "keep")
 
     def test_o_conteudo_do_env_nunca_e_lido(self):
         """O plano tem o nome do .env.local, nunca o que está dentro."""
         self.assertNotIn("nao-imprima", repr(self.items))
+
+
+class SoAPastaTest(unittest.TestCase):
+    """O worktree de uma branch que fica: sai só a pedido quando nada dele existe só ali."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Quatro PRs: limpo e publicado, com commit só local, com .env só no worktree, atrás do remoto."""
+        cls.tmp = tempfile.TemporaryDirectory()
+        fx = cls.fx = Fixture(Path(cls.tmp.name))
+        tip = fx.branch("feat/pr"); fx.add_pr("open", "feat/pr", tip)
+        wt = fx.worktree("wt-pr", "feat/pr")
+        (wt / "node_modules" / "pkg").mkdir(parents=True)
+        (wt / "node_modules" / "pkg" / "index.js").write_text("x")
+        tip = fx.branch("feat/adiante"); fx.add_pr("open", "feat/adiante", tip)
+        fx.commit("só neste worktree", cwd=fx.worktree("wt-adiante", "feat/adiante"))
+        tip = fx.branch("feat/env"); fx.add_pr("open", "feat/env", tip)
+        (fx.worktree("wt-env", "feat/env") / ".env.local").write_text("SEGREDO=nao-imprima\n")
+        fx.branch("feat/atras"); fx.worktree("wt-atras", "feat/atras")
+        fx.remote_commit("feat/atras")
+        with mock.patch.dict(os.environ, fx.env()):
+            cls.items = hk.classify(hk.load_facts(fx.clone))
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def wt(self, name):
+        """O item do worktree pela pasta."""
+        for i in self.items:
+            if i.kind == "worktree" and hk.same_path(i.name, self.fx.base / name):
+                return i
+        self.fail(f"sem worktree {name}")
+
+    def test_pr_aberto_limpo_sai_so_a_pedido(self):
+        """Árvore limpa, ponta no remoto e só regeneráveis: o worktree sai a pedido; a branch fica."""
+        i = self.wt("wt-pr")
+        self.assertEqual((i.decision, i.action), (hk.A_PEDIDO, "remove"), i.reason)
+        self.assertIn("head do PR aberto", i.reason)
+        self.assertIn("origin/feat/pr", i.reason)
+        self.assertIn("node_modules/", i.regen)
+        branch = next(x for x in self.items if x.kind == "local-branch" and x.name == "feat/pr")
+        self.assertEqual(branch.decision, "keep", branch.reason)
+
+    def test_ponta_a_frente_do_remoto_fica(self):
+        """O commit que só existe no worktree se perderia com a pasta."""
+        i = self.wt("wt-adiante")
+        self.assertEqual(i.decision, "keep", i.reason)
+        self.assertIn("não está no origin", i.reason)
+
+    def test_env_so_no_worktree_fica_e_nao_e_lido(self):
+        """O .env.local sem outra cópia segura a pasta; o motivo diz o nome, nunca o conteúdo."""
+        i = self.wt("wt-env")
+        self.assertEqual(i.decision, "keep", i.reason)
+        self.assertIn(".env.local", i.reason)
+        self.assertNotIn("nao-imprima", repr(self.items))
+
+    def test_local_atras_do_remoto_sai_a_pedido(self):
+        """O que falta na ponta local está no remoto, e não no worktree."""
+        self.assertEqual(self.wt("wt-atras").decision, hk.A_PEDIDO, self.wt("wt-atras").reason)
 
 
 class ProvaSemGhTest(unittest.TestCase):

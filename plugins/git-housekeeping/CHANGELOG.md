@@ -1,5 +1,40 @@
 # Changelog — `git-housekeeping`
 
+## [0.9.0] — 2026-11-18
+
+### Só a pasta, a branch fica: o worktree que sai a pedido
+
+Nasceu de um pedido de limpeza: "essa pasta confunde; se não tiver nada não salvo, pode remover".
+Era o worktree de uma branch com PR aberto, publicada, sem diff e só com 3 `__pycache__/*.pyc`
+ignorados. O `analyze.py` o pôs em FICA (`está na branch …, que fica: head do PR aberto #N`), porque
+o worktree herdava a decisão da branch antes de qualquer prova sobre a pasta. A pasta saiu à mão,
+com as provas refeitas uma a uma e sem a reconferência do apply.
+
+- **O quê:** o worktree de uma branch que fica ganha a decisão `on-request`, no grupo novo
+  `SAI SÓ A PEDIDO (a branch fica; --only <caminho>)`. Isso vale quando a árvore está limpa, a ponta
+  está contida na branch do remoto (a do upstream ou a de mesmo nome) e todos os ignorados são
+  regeneráveis ou iguais no principal. Ele só sai com `--only <caminho>`. Sem o `--only`, o apply o
+  deixa e avisa quantos esperam o pedido. A branch e o PR ficam, e o `desfazer:` traz a pasta de
+  volta. O grupo só aparece no relatório quando tem item.
+- **Por quê assim:** a pasta de um PR aberto é onde ele recebe os ajustes, e por isso não sai sem o
+  usuário pedir; mas, quando nada dela existe só ali, tirá-la a pedido é seguro, e o caminho à mão
+  pulava a classificação dos ignorados, o `/proc` e a reconferência.
+- **O que continua em FICA, com o motivo:** a ponta com commit que não está no remoto (`a ponta tem
+  commit que não está no origin`) e o ignorado sem outra cópia, como um `.env.local` (o nome sai no
+  motivo, nunca o conteúdo).
+- **O recheck** compara a decisão de agora com a do plano, e não mais com `delete` fixo. Um item que
+  mudou de grupo entre o plano e o apply é recusado.
+- **Mudança de comportamento:** o worktree limpo de qualquer branch publicada que fica, e não só de
+  PR aberto, passa de FICA para SAI SÓ A PEDIDO. O formato do plano não muda (`PLAN_VERSION` 1), e
+  um `apply_plan.py` 0.8.0 lendo um plano novo ignora o item `on-request`, sem apagá-lo.
+- **Testes:** 7 novos (122 → 129): o PR aberto limpo sai a pedido; ficam a ponta à frente do
+  remoto e o `.env.local` só no worktree (sem ler o conteúdo); a ponta local atrás do remoto sai a
+  pedido; sem `--only` a pasta fica e com ele sai, com a branch local e remota intactas; o commit
+  feito depois do plano faz o `--only` ser recusado; o grupo aparece no relatório só quando tem item.
+  Cinco mutantes das guardas novas, cinco mortos.
+- **Como reverter:** `git revert` deste commit; os planos gerados pela 0.9.0 continuam legíveis pela
+  0.8.0.
+
 ## [0.8.0] — 2026-11-17
 
 ### As pastas de rascunho: um segundo fluxo, com prova e quarentena

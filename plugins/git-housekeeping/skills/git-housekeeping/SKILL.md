@@ -2,7 +2,7 @@
 name: git-housekeeping
 description: "Safely deletes merged git branches (local and remote) and their worktrees, and clears session scratch folders (old handoffs, temp dirs). A read-only scan proves each merge and each folder's other copy; only the approved plan runs, with sha leases, a quarantine and confirmations. Triggers — merged branches, branch cleanup, stale worktrees, git housekeeping, prune branches, old handoffs, scratch folders."
 metadata:
-  version: 0.8.0
+  version: 0.9.0
 ---
 
 # git-housekeeping
@@ -73,7 +73,7 @@ em `scratch.py`, da mesma forma.
 |---|---|---|
 | `analyze.py --repo <repo> --remote origin --plan <arquivo>` | `git fetch` (sem prune), consulta o remoto e o gh, grava o plano e imprime o relatório. Não apaga nada. | 0 ok; 2 remoto que não responde, repo inválido ou plano dentro do repo |
 | `analyze.py --scan <pasta>` | Uma linha por repo da pasta. Sem rede, sem plano, sem escrever nada. | 0 |
-| `apply_plan.py --plan <arquivo> --scope local\|remote [--only <nome>]... [--dry-run]` | Reclassifica cada item `delete` do escopo com os fatos de agora e apaga o que ainda passa. O `--only` restringe aos nomes aprovados. | 0 tudo feito; 1 algo recusado; 2 plano inválido ou `--only` fora do plano |
+| `apply_plan.py --plan <arquivo> --scope local\|remote [--only <nome>]... [--dry-run]` | Reclassifica cada item `delete` do escopo com os fatos de agora e apaga o que ainda passa. O `--only` restringe aos nomes aprovados, e só ele tira um worktree `SAI SÓ A PEDIDO`. | 0 tudo feito; 1 algo recusado; 2 plano inválido ou `--only` fora do plano |
 | `scratch_scan.py --root <pasta> --repo <repo>... --plan <arquivo>` | Classifica cada entrada da pasta de rascunho, grava o plano e imprime o relatório. Não move nada. | 0 ok; 2 raiz inválida, plano dentro dela ou `--repo` que não é repo |
 | `scratch_apply.py --plan <arquivo> [--only <nome>]... [--dry-run]` | Reconfere e move para a quarentena o que sai; o handoff só com `--only`. | 0 tudo feito; 1 algo recusado; 2 plano inválido ou `--only` fora do que pode sair |
 | `scratch_apply.py --purge --root <pasta> --older-than <dias> [--dry-run]` | Apaga os lotes da quarentena mais velhos que isso. É o único passo sem volta. | 0 |
@@ -89,13 +89,13 @@ em `scratch.py`, da mesma forma.
 
    rc 2: mostre o erro e pare. Sem o remoto não há prova, e um plano com dado velho é pior que nenhum.
 
-2. **Mostrar o relatório inteiro**: os três grupos (`SAI`, `NÃO PROVADO`, `FICA`) e o disco. Não
-   resuma o que fica: é ali que o usuário vê o que a skill não vai apagar, e por quê. Do worktree que
-   sai, leia em voz alta os ignorados `sem outra cópia`, sobretudo os marcados com ⚠ (`.env*`): são
-   o que se perde de fato. Os outros dois grupos basta citar. Cite só o nome; nunca abra nem imprima
-   o conteúdo. A pasta vem com os arquivos e o tamanho (`.superpowers/ (44 arquivos, 816 KB)`):
-   diga os dois, porque o nome não mostra o que ela guarda. Em 2026-11-15, uma limpeza foi
-   autorizada pensando num rascunho, e a pasta levava 44.
+2. **Mostrar o relatório inteiro**: os grupos (`SAI`, `NÃO PROVADO`, `FICA` e, quando houver,
+   `SAI SÓ A PEDIDO`) e o disco. Não resuma o que fica: é ali que o usuário vê o que a skill não vai
+   apagar, e por quê. Do worktree que sai, leia em voz alta os ignorados `sem outra cópia`,
+   sobretudo os marcados com ⚠ (`.env*`): são o que se perde de fato. Os outros dois grupos basta
+   citar. Cite só o nome; nunca abra nem imprima o conteúdo. A pasta vem com os arquivos e o tamanho
+   (`.superpowers/ (44 arquivos, 816 KB)`): diga os dois, porque o nome não mostra o que ela guarda.
+   Em 2026-11-15, uma limpeza foi autorizada pensando num rascunho, e a pasta levava 44.
 
 3. **1ª confirmação: o local** (branches locais, worktrees e refs remote-tracking). Pergunte com a
    lista na frente do usuário. Se ele aprovar só parte, passe um `--only <nome>` por item aprovado
@@ -127,6 +127,14 @@ Confirmação negada no passo 3: pare tudo. Negada no passo 5: o local fica feit
 **Autorização dada na própria mensagem.** "Pode apagar o local sem perguntar" é a confirmação do
 passo 3: mostre o relatório e siga. Ela não cobre o passo 5. "Do remoto, só me mostra" quer dizer
 parar no passo 5 com a lista.
+
+**Só a pasta, a branch fica.** O worktree de uma branch que fica (PR aberto, não mergeada) vai para
+`SAI SÓ A PEDIDO` quando nada dele existe só ali: árvore limpa, ponta contida na branch do remoto e
+ignorados só regeneráveis ou iguais no principal. Ele sai só quando o usuário pede aquela pasta, com
+`--only <caminho>` no passo 4: sem o pedido, é ali que o PR recebe os ajustes. A branch e o PR
+ficam, e o `desfazer:` traz a pasta de volta. Um commit só ali ou um ignorado sem outra cópia (um
+`.env`) a deixa em `FICA`, com o motivo. Até a 0.8.0 ela herdava o `FICA` da branch, e em
+2026-11-18 a pasta de um PR aberto, já publicada, só saiu à mão, sem a reconferência do apply.
 
 ## Quando o apply recusa
 

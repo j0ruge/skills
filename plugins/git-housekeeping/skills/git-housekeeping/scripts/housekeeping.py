@@ -40,6 +40,8 @@ PROJETO_GODOT = "project.godot"
 # A pasta ignorada só é comparada com a do worktree principal até aqui; acima, nada se afirma.
 TETO_ARQUIVOS = 2000
 TETO_BYTES = 64 * 1024 * 1024
+# O worktree de uma branch que fica e que não guarda nada só ali: sai só com o --only do usuário.
+A_PEDIDO = "on-request"
 KIND_PT = {"worktree": "worktree", "local-branch": "branch local",
            "remote-branch": "branch remota", "remote-tracking": "ref remote-tracking"}
 
@@ -627,12 +629,50 @@ def _classify_worktree(facts: Facts, wt: Worktree, base: dict) -> Item:
     if wt.branch:
         b = base.get(wt.branch)
         if b is None or b.decision != "delete":
-            return item("keep", f"está na branch {wt.branch}, que fica" + (f": {b.reason}" if b else ""))
+            return _a_pedido(facts, wt, item,
+                             f"está na branch {wt.branch}, que fica" + (f": {b.reason}" if b else ""))
         out = item("delete", f"a branch {wt.branch} sai: {b.reason}", "remove")
     elif is_ancestor(facts.repo, wt.head, facts.default_sha):
         out = item("delete", f"HEAD destacado, já contido na {facts.default}", "remove")
     else:
         return item("keep", f"HEAD destacado fora da {facts.default}")
+    return _ignorados(facts, wt, out)
+
+
+def _publicado(facts: Facts, wt: Worktree) -> str:
+    """A branch do remoto que já contém a ponta do worktree (`origin/x`), ou "" se há commit só aqui.
+
+    Vale a do upstream, e sem upstream a de mesmo nome. A ponta atrás da remota também conta: o que
+    falta nela está no remoto, e não no worktree.
+    """
+    local = next((b for b in facts.local if b.name == wt.branch), None)
+    name = (local.upstream_name if local and local.upstream_remote == facts.remote and local.upstream_name
+            else wt.branch)
+    sha = facts.remote_heads.get(name, "")
+    if sha and has_commit(facts.repo, sha) and is_ancestor(facts.repo, wt.head, sha):
+        return f"{facts.remote}/{name}"
+    return ""
+
+
+def _a_pedido(facts: Facts, wt: Worktree, item, fica: str) -> Item:
+    """O worktree limpo de uma branch que fica: sai só a pedido, se nada dele existe só ali.
+
+    A pasta de um PR aberto é onde ele recebe os ajustes, e por isso não sai sem o usuário pedir. Mas
+    pode sair: em 2026-11-18 uma assim, já publicada, só saiu à mão, sem a reconferência do apply.
+    """
+    onde = _publicado(facts, wt)
+    if not onde:
+        return item("keep", f"{fica}; a ponta tem commit que não está no {facts.remote}")
+    out = _ignorados(facts, wt, item(A_PEDIDO, f"{fica}; a pasta não guarda nada só ali (árvore limpa, "
+                                               f"ponta no {onde}): sai só com --only", "remove"))
+    sem_copia = [x for x in out.ignored if x not in out.regen and x not in out.copies]
+    if sem_copia:
+        return item("keep", f"{fica}; ignorados sem outra cópia no worktree: {', '.join(sem_copia)}")
+    return out
+
+
+def _ignorados(facts: Facts, wt: Worktree, out: Item) -> Item:
+    """Preenche o tamanho e os ignorados do worktree que pode sair, em três grupos."""
     out.kb = dir_kb(wt.path)
     listing = git(wt.path, "status", "--porcelain", "-z", "--ignored",
                   "--untracked-files=normal").split("\0")

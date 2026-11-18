@@ -52,6 +52,19 @@ class AnalyzeCliTest(unittest.TestCase):
         r = run(self.fx, "--repo", self.fx.clone, "--plan", self.plan)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("Nada a limpar.", r.stdout)
+        self.assertNotIn("SAI SÓ A PEDIDO", r.stdout)   # vazio, o grupo não aparece
+
+    def test_worktree_a_pedido_tem_grupo_proprio(self):
+        """A pasta de um PR aberto aparece em SAI SÓ A PEDIDO, com os ignorados, e não em SAI."""
+        tip = self.fx.branch("feat/pr")
+        self.fx.add_pr("open", "feat/pr", tip)
+        self.fx.worktree("wt-pr", "feat/pr")
+        r = run(self.fx, "--repo", self.fx.clone, "--plan", self.plan)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("SAI SÓ A PEDIDO (a branch fica; --only <caminho>) (1)", r.stdout)
+        self.assertIn("SAI (0)", r.stdout)
+        self.assertIn("ignorados que vão junto: nenhum", r.stdout)
+        self.assertNotIn("Nada a limpar.", r.stdout)
 
     def test_plano_dentro_do_repo_recusado(self):
         """O plano dentro da árvore a sujaria e faria o pre-push recusar o próximo push."""

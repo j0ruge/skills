@@ -4,7 +4,8 @@
 `apply_plan.py --plan <arquivo> --scope local|remote [--only <nome>]... [--dry-run]`. O plano é a
 lista do que pode sair, não a prova: cada item é reclassificado com os fatos de agora, e o que mudou
 é recusado. Uma recusa nunca é contornada com outro comando (-D, --force, --no-verify): vai para o
-relatório. O `--only` restringe aos itens que o usuário aprovou, pelo nome do relatório.
+relatório. O `--only` restringe aos itens que o usuário aprovou, pelo nome do relatório, e é o único
+jeito de tirar um worktree `on-request` (SAI SÓ A PEDIDO): sem ele, esses ficam.
 rc 0 tudo feito; 1 algum item recusado ou falhou; 2 plano ou uso inválido (`--only` fora do plano).
 """
 from __future__ import annotations
@@ -16,6 +17,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import housekeeping as hk  # noqa: E402
+
+# O que pode sair: o `delete` por padrão, e o `on-request` só quando o --only o nomeia.
+SAEM = ("delete", hk.A_PEDIDO)
 
 
 class Run:
@@ -133,16 +137,16 @@ def apply_remote(facts: hk.Facts, items: list, run: Run) -> None:
 
 
 def recheck(plan: dict, scope: str, now: dict, run: Run) -> list:
-    """Os itens `delete` do escopo que ainda são `delete`, com o mesmo sha e a mesma ação."""
+    """Os itens que saem do escopo e que ainda têm a decisão do plano, o mesmo sha e a mesma ação."""
     ok = []
     for raw in plan["items"]:
-        if raw["decision"] != "delete" or raw["scope"] != scope:
+        if raw["decision"] not in SAEM or raw["scope"] != scope:
             continue
         item = hk.Item(**raw)
         cur = now.get((item.kind, item.name))
         if cur is None:
             run.refuse(label(item, plan["remote"]), "não existe mais")
-        elif cur.decision != "delete":
+        elif cur.decision != item.decision:
             run.refuse(label(item, plan["remote"]), f"agora é {cur.decision}: {cur.reason}")
         elif cur.sha != item.sha:
             run.refuse(label(item, plan["remote"]),
@@ -167,12 +171,12 @@ def matches(raw: dict, name: str) -> bool:
 
 
 def select_only(plan: dict, scope: str, only: list) -> tuple:
-    """Deixa `delete` só os itens que o --only nomeia; devolve (erro de uso ou "", quantos ficaram fora).
+    """Deixa saindo só os itens que o --only nomeia; devolve (erro de uso ou "", quantos ficaram fora).
 
-    Um nome que não casa com item `delete` do escopo é erro antes de apagar qualquer coisa: o filtro
-    que não casa daria "nada a apagar" com rc 0, igual a um plano vazio.
+    Um nome que não casa com item do escopo que possa sair é erro antes de apagar qualquer coisa: o
+    filtro que não casa daria "nada a apagar" com rc 0, igual a um plano vazio.
     """
-    deletable = [raw for raw in plan["items"] if raw["decision"] == "delete" and raw["scope"] == scope]
+    deletable = [raw for raw in plan["items"] if raw["decision"] in SAEM and raw["scope"] == scope]
     unknown = [n for n in only if not any(matches(raw, n) for raw in deletable)]
     if unknown:
         accepted = ", ".join(sorted({raw["name"] for raw in deletable})) or "nenhum"
@@ -215,12 +219,16 @@ def main(argv=None) -> int:
         print("erro: o plano tem item com escopo trocado (o escopo segue o tipo do item)",
               file=sys.stderr)
         return 2
-    left_out = 0
+    left_out, a_pedido = 0, 0
     if args.only:
         err, left_out = select_only(plan, args.scope, args.only)
         if err:
             print(f"erro: {err}", file=sys.stderr)
             return 2
+    else:
+        for raw in plan["items"]:
+            if raw["decision"] == hk.A_PEDIDO and raw["scope"] == args.scope:
+                raw["decision"], a_pedido = "keep", a_pedido + 1
     try:
         common = hk.git(plan["repo"], "rev-parse", "--path-format=absolute", "--git-common-dir").strip()
         if not hk.same_path(common, plan["git_common_dir"]):
@@ -238,6 +246,8 @@ def main(argv=None) -> int:
     print("\n".join(run.lines) or "nada a apagar neste escopo")
     if left_out:
         print(f"fora do --only: {left_out} item(s) deste escopo ficam")
+    if a_pedido:
+        print(f"a pedido: {a_pedido} worktree(s) ficam; para tirar um, passe o caminho dele com --only")
     # Do último apagado ao primeiro: o worktree só volta depois que a branch dele voltou.
     for line in reversed(run.undo):
         print(f"desfazer: {line}")
