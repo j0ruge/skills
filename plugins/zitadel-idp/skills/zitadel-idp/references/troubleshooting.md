@@ -965,6 +965,12 @@ docker exec -i <postgres-idp-ctr> psql -U zitadel -d zitadel -Atc \
   "select table_name from information_schema.tables
     where table_schema='projections' and table_name ~ '^(user_grants|users)[0-9]+(_humans)?$';"
 
+# Two generations of one projection can coexist after an upgrade (Quirk 61), and the older one
+# is frozen. The live one is the generation with a recent `last_updated`:
+docker exec -i <postgres-idp-ctr> psql -U zitadel -d zitadel -Atc \
+  "select projection_name, last_updated from projections.current_states
+    where projection_name ~ '^projections\.(user_grants|users)[0-9]+$' order by 1;"
+
 docker exec -i <postgres-idp-ctr> psql -U zitadel -d zitadel -c \
   "select u.username, h.email, h.is_email_verified, u.state, g.roles, g.change_date
      from projections.user_grants5 g

@@ -1,5 +1,30 @@
 # Changelog — zitadel-idp
 
+## [0.24.0] — 2026-11-18
+
+### Added
+
+- **Quirk 60: um lote com o e-mail deduzido do nome cria a segunda conta de quem já tinha uma com outra
+  grafia** (`references/quirks.md`; linha 60 no índice do `SKILL.md`; um item no passo 3 de "Provision real
+  accounts by script", no `api-cheatsheet.md`). A busca por e-mail exato responde "não existe", o lote cria a
+  conta com os papéis e nada falha. A quirk 54 também não dispara, porque os e-mails diferem. A pessoa segue
+  entrando com a conta antiga, sem papel, e o app que liga uma função a um e-mail aponta para a conta que
+  ninguém usa. Medido em 2026-11-18 numa produção v4.15.0, só lendo: de oito endereços deduzidos do nome para o
+  lote de 2026-11-10, um duplicou uma conta de 2026-08-09 que diferia numa letra, e outro não era o endereço que
+  a pessoa usa. Quem achou os dois foi o censo pelas projeções com regex no radical do nome, e não a busca exata. A
+  correção depois do fato (papéis por união na conta antiga, o app apontando para ela, a nova desativada) está
+  marcada como **não medida**.
+- **Quirk 61: a descoberta do sufixo das projeções pode devolver duas gerações, e a mais velha está
+  congelada** (`references/quirks.md`; linha 61 no índice; a consulta do `projections.current_states` na receita
+  "who holds which role", no `troubleshooting.md`). Medido em 2026-11-18 na mesma produção: `users13`,
+  `instance_features2` e `smtp_configs5` pararam em 2026-05-07, ao lado de `users14`, `instance_features5` e
+  `smtp_configs6`, atualizadas no dia. A `users13` tinha 2 linhas e a `users14`, 20. A consulta nova foi rodada
+  como está no texto e devolveu `user_grants5` e `users14` do dia e a `users13` de 2026-05-07.
+
+### Debt
+
+- O smoke do Codex (`docs/codex/smokes.json`) segue na 0.20.0, de antes deste retrofit e dos dois anteriores.
+
 ## [0.23.0] — 2026-11-10
 
 ### Added

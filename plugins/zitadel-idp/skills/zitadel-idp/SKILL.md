@@ -1,7 +1,7 @@
 ---
 name: zitadel-idp
 metadata:
-  version: 0.23.0
+  version: 0.24.0
 description: "Self-hosted Zitadel v4 OIDC field guide — a numbered quirk catalogue, working docker-compose and an idempotent TypeScript bootstrap. High-friction traps: FirstInstance env placement, JWT/JWKS over self-signed HTTPS, `--tlsMode external` and the console's mixed-content `Failed to fetch`, v2.66→v4, API v1→v2, silent-renew, 401 storms, UI language from the `locale` claim. Triggers — zitadel, oidc self-hosted, JWKS, masterkey, v2.66→v4, tlsMode external, pre-cutover check, locale claim."
 ---
 
@@ -118,6 +118,8 @@ These bite first-time Zitadel integrators consistently. One line per quirk; the 
 57. A PAT of an org member sees only its own orgs: `POST /v2/users` answers `200` with zero results for an account in another org, and creating it then duplicates the email (Quirk 54); probe with `/admin/v1/orgs/_search` first (`403 AUTH-5mWD2`).
 58. A wrong password through the Session API counts toward the lockout policy: past `maxPasswordAttempts` the account is `USER_STATE_LOCKED`, and even the right password then answers `Errors.User.NotActive (SESSION-Gj4ko)`.
 59. The Console's "Add Human User" with an initial password has no "must change" option, so the account is born with `passwordChangeRequired: false`; for real people, create through the API with `password.changeRequired: true`.
+60. A batch with e-mails derived from names creates a second account for anyone who already had one under another spelling; the exact e-mail search cannot see it, and a census by name stem in the projections can.
+61. The projection-suffix discovery can return two generations (`users13` next to `users14`), and the older one is frozen since the upgrade; `projections.current_states` says which one is live.
 
 ## Migration v2.66 → v4 + API v2
 
