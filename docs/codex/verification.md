@@ -460,3 +460,18 @@ foram conferidos. README, matriz e handoff agora usam `partial`; a distinção e
 fontes estão em [compatibility.md](compatibility.md#retrofit-watch-local-no-codex).
 O catálogo continua com 25 plugins. Esta correção não altera o pacote nem a
 instalação pessoal ou as modificações existentes no repo Hermes.
+
+## Retrofit da kaizen-software 1.4.22
+
+Em 2026-11-18, no Codex CLI 0.170.0, a versão 1.4.22 foi instalada em
+perfil temporário com `codex plugin marketplace add` e `codex plugin add`.
+O cache da instalação continha o `SKILL.md` e `references/limpeza.md` byte a
+byte iguais ao candidato. A chamada `skills/list` encontrou a entrada
+`kaizen-software:kaizen-software` nesse cache. O cliente também descobriu uma
+instalação antiga exposta pelo diretório global de skills. A prova cobre a
+instalação, a descoberta e os arquivos da nova versão.
+
+A suíte geral registrou 77 testes aprovados e três falhas tanto na base como
+com o patch. As três falhas vieram de `bwrap: setting up uid map: Permission denied`
+nos cenários de distribuição. O teste de instalação da skill usou um perfil
+temporário separado e dispensou o Bubblewrap.

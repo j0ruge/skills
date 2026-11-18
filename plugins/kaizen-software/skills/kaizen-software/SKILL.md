@@ -1,7 +1,7 @@
 ---
 name: kaizen-software
 metadata:
-  version: 1.4.21
+  version: 1.4.22
 description: "Metodologia Kaizen (melhoria contínua) para planejar, implementar e manter software — e para ensinar Kaizen ao time. Conduz as três fases pelo ciclo PDCA, verifica pelo artefato e não pelo rótulo da ferramenta, prefere poka-yoke a regra escrita, e mapeia os artefatos Kaizen nos que o projeto já tem (ADR, notas, TODO, CHANGELOG). Gatilhos — Kaizen, PDCA, kaizen log/retrospectiva, 5 porquês, poka-yoke, desperdício/dívida técnica, planejar feature, confirmar antes de apagar/limpar."
 ---
 
@@ -72,7 +72,7 @@ A manutenção é onde o Kaizen mora de verdade — o sistema em produção é o
 
 **Para ações irreversíveis** (apagar branch/arquivo/volume, migration destrutiva, revogar acesso, publicar, desligar ou reconfigurar o que só se alcança pelo canal que a ação derruba): a regra "incrementos pequenos e reversíveis" perde o segundo adjetivo justamente onde ele mais valia, então a ordem passa a fazer o trabalho que a reversibilidade fazia.
 
-1. **Gemba por artefato, nunca por rótulo.** O que autoriza apagar não é o rótulo da ferramenta ("PR MERGED", "backup healthy", "já está em produção") — é ter olhado e visto que nada se perde. Prove por conteúdo (hash, diff, existência do arquivo), não por nome nem por assunto de commit: dois artefatos com o mesmo título podem ser coisas diferentes, e o inverso também acontece.
+1. **Gemba por artefato, nunca por rótulo.** Quando houver cópia a preservar, confira o destino por hash, diff ou leitura. Ao mover ou remover um caminho, inclusive via Lixeira, confira as referências que o usam. Leia [references/limpeza.md](references/limpeza.md) para decidir como tratá-las antes da ação.
 2. **Fatie de modo que o passo reversível venha primeiro.** Apagar a cópia local antes da remota, arquivar antes de excluir, marcar antes de remover. A divergência que você não previu aparece no primeiro passo, quando ainda custa uma verificação em vez de uma perda.
 3. **Jidoka vale mais aqui do que em qualquer outro lugar.** Qualquer surpresa no passo reversível interrompe a sequência inteira até ser explicada — mesmo que pareça ruído, e principalmente se a explicação for "deve ser normal". A explicação mais barata costuma ser perguntar a quem tem acesso ao artefato (o usuário, o dono, o time): o que some ou muda antes da hora muitas vezes foi mexido por alguém com direito de mexer, e uma pergunta custa uma linha. A investigação por conta própria (logs, histórico, lixeira) fica para quando essa pessoa não pode responder, e a sequência continua parada até a resposta.
 4. **Anote os identificadores antes de destruir** (SHAs, caminhos, IDs) na saída da sessão. É a rede de segurança mais barata que existe, e só serve se for escrita antes.

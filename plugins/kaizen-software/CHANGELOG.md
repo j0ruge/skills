@@ -2,6 +2,17 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.22] — 2026-11-18 — verifica referências antes de retirar um caminho
+
+**O quê.** A checagem de limpeza passa a procurar consumidores do caminho
+original, decidir o que fazer com vínculos ativos e conferir o resultado a
+partir do consumidor.
+
+**Por quê.** Em uma limpeza, os hashes das imagens conferiam com o destino.
+A busca literal encontrou imagens incorporadas em uma nota. Mover os originais
+para a Lixeira deixou os caminhos usados pela nota indisponíveis. A verificação
+de conteúdo e a resolução da referência precisam de checagens próprias.
+
 ## [1.4.21] — 2026-11-12 — o status de um job de vários alvos só fala do alvo que falhou
 
 **O quê:** em `references/kaizen-conceitos.md`, *Rótulo ≠ artefato* ganha o caso do job que
