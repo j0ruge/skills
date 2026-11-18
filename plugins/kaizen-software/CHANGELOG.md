@@ -2,6 +2,37 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.23] — 2026-11-18 — o achado e o vermelho também são rótulo
+
+**O quê:** em `references/kaizen-conceitos.md`, *Rótulo ≠ artefato* ganha dois trechos. *O achado
+também é rótulo*, ao lado de *O zero também é rótulo*: com o stderr no mesmo fluxo do filtro, a
+mensagem "X não encontrado" traz o nome X, e a sonda que filtra pelo nome dá achado onde a coisa
+não existe. O filtro passa a casar com o formato da resposta de sucesso, e o caso sabotado é um
+alvo que não tem a coisa. *O vermelho também é rótulo*, ao lado do status de job de vários alvos:
+`grep -c` imprime `0` e sai com 1, e a orquestração marca como falha o caso bom. No `SKILL.md`, a
+armadilha "Sonda verde, ou zero, porque não leu o artefato" ganha uma frase que aponta para os
+dois.
+
+**Por quê:** numa varredura de containers, `nginx -v 2>&1 || openresty -v 2>&1` filtrado por
+`grep -iE "nginx version|openresty"` deu achado nos 32 containers de um host e nos 49 de outro,
+porque `sh: openresty: not found` casa com o filtro. Com `nginx version|openresty/`, a segunda
+rodada listou os 7 containers com nginx num host e nenhum no outro. Na mesma sessão,
+`grep -c "exited on signal"` devolveu `0` em três hosts, e a ferramenta de orquestração marcou os
+três como `FAILED | rc=1`.
+
+**O que foi medido para o segundo trecho:** a sessão não corrigiu o rc. A forma
+`grep -c PADRAO arquivo || [ $? -eq 1 ]` foi medida em 2026-11-18 num teste local e descartável
+(GNU grep 3.11; bash, dash e zsh): contagem zero, rc 0; contagem 2, rc 0; arquivo inexistente,
+rc 1 com a mensagem do grep no stderr. O rc 2 original do grep não se preserva nessa forma, e o
+texto diz isso.
+
+**Por que na reference e não no `SKILL.md`:** o `SKILL.md` tinha 19.923 caracteres, 77 abaixo do
+AVISO do C1, e a armadilha inteira pede uns 700. Ficou com 19.992. A Fase 2 (item 6) já manda o
+leitor a *Rótulo ≠ artefato*.
+
+**Dívida que já existia:** o `SKILL.md` segue no teto do C1 (registrado na 1.4.20). O smoke do
+Codex em `docs/codex/smokes.json` segue na 1.4.3.
+
 ## [1.4.22] — 2026-11-18 — verifica referências antes de retirar um caminho
 
 **O quê.** A checagem de limpeza passa a procurar consumidores do caminho
