@@ -2,6 +2,15 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-11-18 — a business-plan deck, the user's review of a finished build (v1.6.1)
+- A 40-slide deck redone from someone else's PowerPoint, with every gate green and an independent review done.
+  The user then rejected the cover and the org chart, and found one redesigned slide weaker than its source.
+- Lessons added, all in `layout-and-type.md`:
+  - measure the cover photo: landscape, at least 1920 px wide, full-bleed, veil over the whole slide;
+  - a diagram that comes as an image in the source is redrawn in HTML;
+  - name the visual idea of a source slide before redrawing it, and keep it.
+- The cover fix is proven by two earlier decks; the other two were planned in this session and not yet shot.
+
 ## 2026-11-10 — a training deck in two parts, part 1 as reading material (v1.6.0)
 - A training deck whose part 1 each manager re-presents to the team, built on the 1.5.2 template with a sibling deck's
   look (photo cover and dark close).

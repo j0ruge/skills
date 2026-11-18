@@ -54,9 +54,19 @@ The slide padding is 112 / 128 / 150. The bottom 150 px belong to the footer, so
   (03/11/2026) the slide said "dashed = the future release", but Archify also draws the decline, which exists
   today, as a red dashed line; in the PDF the decline read as future. Name the stroke by its color too ("purple
   dashes"), and repeat outside the image, at deck scale, what its small text says.
+- **Source diagram** (an org chart or a flow that comes as an image inside the source deck): redraw it in HTML
+  with the deck's tokens. It carries text, and shrunk to fit a column the text stops reading. In a business-plan
+  deck (18/11/2026) an org chart of 1600×1062 px, shown at 1232 px wide, left the names unreadable on the stage,
+  in the source's own colors, and the user rejected the slide. When one box per person does not fit at the
+  label scale, group people under their role.
 - **Photo** (cover and close): it needs a license that allows reuse, and the credit goes on the slide. In the
   Portal deck (03/11/2026) Unsplash's search asked for a login, and Wikimedia Commons (Featured pictures) gave a
-  CC BY photo with a named author. Record the author, license, URL, crop and sha256 in `material/`.
+  CC BY photo with a named author. Record the author, license, URL, crop and sha256 in `material/`. Measure the
+  file before choosing it: a cover photo is landscape and at least as wide as the stage (1920 px), set full-bleed
+  with the veil over the whole slide. In a business-plan deck (18/11/2026) a portrait photo of 426×945 px,
+  stretched into a 680×1080 strip under a gradient that stopped at 48% of it, showed streaks in the fade, and
+  the user rejected the cover. Two earlier decks with a 1920 px landscape photo and a full veil were the
+  covers the user pointed to as good.
 - **Close** (`.close`): 3 principles + a dark contact panel with the address in mono and the deadline.
 - **Agenda** (`.agenda`, for talks of about 30 minutes or more): one row per `data-section`. Fill the minutes
   from the notes instead of typing them, or they drift after the first timing change. Inside the template's
@@ -72,6 +82,14 @@ The slide padding is 112 / 128 / 150. The bottom 150 px belong to the footer, so
   `data-t="5"`; questions stay on the close. Before writing an "Acesso em", confirm the URL answers
   (`curl -s -o /dev/null -w '%{http_code}' -L <url>`). Cite a page that blocks bots by the archived copy you
   actually read.
+
+## Redesigning someone else's slide
+
+The fidelity rule keeps the words and the numbers; the slide's visual idea needs the same care. Before
+redrawing a source slide, name what its picture says (a trajectory, a comparison, a hierarchy) and keep that in
+the new composition. In a business-plan deck (18/11/2026) the source showed eight systems on a rising curved
+arrow, from a database to what comes next; the redesign kept every name on a straight line with dots, and the
+user found it less interesting than the original.
 
 ## Refuse
 

@@ -3,6 +3,31 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.6.1] — 2026-11-18
+
+### A foto da capa se mede, o diagrama da fonte se redesenha, e a ideia visual do original fica
+
+Só `references/layout-and-type.md` muda. O `SKILL.md` está a 19.210 chars, perto do teto, e a reference é lida
+ao compor as lâminas. O comportamento dos scripts e do template não muda.
+
+- Componente *Photo*: a foto da capa é paisagem, com pelo menos a largura do palco (1920 px), em tela cheia e com
+  o véu sobre a lâmina inteira. Por quê: num deck de plano de negócios, uma foto retrato de 426×945 px esticada
+  numa faixa de 680×1080 px, com o véu até 48% dela, mostrou riscos no fade, e o usuário reprovou a capa. As
+  capas que ele apontou como boas, de dois decks anteriores, usam foto paisagem de 1920 px com véu inteiro.
+- Componente novo *Source diagram*: organograma ou fluxo que vem como imagem dentro do deck de origem é
+  redesenhado em HTML. Por quê: no mesmo deck, o organograma de 1600×1062 px, mostrado a 1232 px de largura, deixou
+  os nomes ilegíveis, e o usuário reprovou a lâmina.
+- Seção nova *Redesigning someone else's slide*: nomear a ideia visual da lâmina de origem e mantê-la. Por quê:
+  a seta em curva ascendente da origem virou uma linha reta com pontos, e o usuário achou a lâmina menos
+  interessante que a original.
+
+As três falhas foram observadas em 18/11/2026, na revisão do deck pelo usuário. A correção da capa tem os dois
+decks anteriores como prova. As do diagrama e da ideia visual foram planejadas e ainda não capturadas: a
+confirmar na execução do plano daquele deck.
+
+A mesma revisão pediu para tirar o azul de um gráfico. O componente *Chart* já dizia "one series, one hue" e
+destacar só a barra que importa; nada mudou ali.
+
 ## [1.6.0] — 2026-11-10
 
 ### O rodapé some na lâmina escura, e o PDF de uma parte com as notas
