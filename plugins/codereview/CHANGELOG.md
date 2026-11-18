@@ -2,6 +2,37 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.30.1] — 2026-11-18
+
+### O corpo do CodeRabbit em 2026-11: limpo antes de ler, Minor só no corpo, severidade pela palavra
+
+Patch: a `coderabbit-pr` (4.6.13) passa a ler um formato que mudou, sem mudar comportamento nem
+gatilho. As três lições vêm de uma rodada da skill sobre o PR #414 do `j0ruge/sdd_agents`
+(CodeRabbit sobre `3b8c711`, 38 achados; codereview 2.28.5, 18/11).
+
+- **Limpar o HTML antes de ler.** A projeção `--jq` da fase 1.3 tira o ruído do JSON, não o HTML
+  de dentro de cada corpo (`<picture>`, `<details>`, `<!-- -->`). Medido: 900 + 971 linhas
+  extraídas, 331 + 204 depois do filtro que agora está na `reviewer-registry.md`, com os 20
+  comentários inline, os 18 achados do corpo e os 17 `Prompt for AI Agents` intactos. O filtro só
+  remove um bloco de metadado cujo rótulo é exatamente um dos conhecidos: o primeiro, escrito na
+  sessão com `re.I` e palavras soltas (`Script`, `Tools`), apagaria os achados de um arquivo sob
+  `scripts/` ou `tools/`, o que o controle negativo mostrou. A registry manda provar a contagem
+  antes e depois. No `SKILL.md`, o limiar de delegar a interpretação passa a medir o texto limpo
+  (`>1500 cleaned lines (registry)`), com −1 char: o arquivo está em 19 996 chars, a 4 do aviso C1.
+- **A forma de 2026-11 do corpo.** Bloco `Minor comments: N` por arquivo; o aviso *"Critical,
+  Major severity comments were prioritized as inline"* quer dizer que os Minor só existem no corpo
+  (20 inline, 17 no corpo); `Additional comments: N` pode trazer um Major fora do diff marcado
+  **Unverified finding**, que é achado a conferir; e o `Prompt to fix all issues` repete todos os
+  achados, então entra nos metadados, junto com `Review info`, `Run configuration`, `Commits` e
+  `Files selected for processing`. A forma antiga (`🧹 Nitpick`, `⚠️ Outside diff range`) fica
+  descrita, porque nada prova que sumiu de todo repo.
+- **Severidade pela palavra.** O emoji virou um ícone SVG (`review-comment-icons-v1/major-16.svg`,
+  `amber-16.svg`): 0 de 38 achados traziam emoji. A tabela do `checklist-template.md` já aceitava a
+  palavra; a frase do par e a linha `Potential issue` agora dizem isso.
+
+Dívida, fora deste patch: o `SKILL.md` da `coderabbit-pr` está a 4 chars do aviso C1 (20 000), e
+o próximo retrofit dela não cabe sem a `skill-refactoring`.
+
 ## [2.30.0] — 2026-11-17
 
 ### Série de rodadas até a nota A, exceção do gitleaks presa a uma regra, e a config quebrada que passava por limpa

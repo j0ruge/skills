@@ -1,7 +1,7 @@
 ---
 name: coderabbit-pr
 metadata:
-  version: 4.6.12
+  version: 4.6.13
 description: Resolves AI review comments on a GitHub PR — auto-detects CodeRabbit, Copilot, Gemini, Codex; creates per-reviewer checklists, verifies findings against current code (with byte-exact inspection when reviewers cite invisible/control characters), applies fixes, runs regression tests, resolves GitHub conversations, then cleans up its own checklist files. Triggers — coderabbit, copilot review, gemini review, codex review, fix PR review.
 ---
 
@@ -155,8 +155,8 @@ gh api "repos/$REPO/pulls/$PR/reviews" --paginate --jq '.[] | select(.body != ""
 Carry the CLI candidate objects collected in 1.2 into this step; parse them by the registry
 before treating a reviewer as zero-findings.
 
-**Interpretation — delegate only when the output is genuinely big** (roughly >1500 lines, or 3+
-reviewers each with a long review body): hand *that text* to a cheaper-model agent per reviewer, in
+**Interpretation — delegate only when the output is genuinely big** (>1500 cleaned lines (registry),
+or 3+ reviewers with a long body): hand *that text* to a cheaper-model agent per reviewer, in
 parallel. Otherwise structure it yourself. Either way, produce a **numbered list** with, per finding:
 sequential number; severity (CRITICAL/HIGH/MEDIUM/LOW; for the markers, `references/reviewer-registry.md`); file
 path and line; title (bold text or first sentence); 1-2 sentence summary; whether a code suggestion is

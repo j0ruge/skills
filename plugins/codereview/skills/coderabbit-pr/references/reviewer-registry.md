@@ -6,7 +6,7 @@ Maps AI reviewers to their origin, GitHub author, comment structure, and output 
 
 - [Supported Reviewers](#supported-reviewers) · [Comment Structures by Reviewer](#comment-structures-by-reviewer)
   (Claude Code, CodeRabbit, Copilot, Gemini and Codex: where each posts, its severity markers and
-  what to discard)
+  what to discard; for CodeRabbit, also how to clean its HTML before reading)
 - [Detection Strategy](#detection-strategy) · [Coverage Per Commit](#coverage-per-commit) (what
   counts as a review of the head, per reviewer) · [Extensibility](#extensibility)
 
@@ -69,6 +69,15 @@ Posts in **up to three places**:
    - `🧹 Nitpick comments` section with `<details>/<summary>` blocks per file
    - `⚠️ Outside diff range comments` section with same structure
    - Each finding: `` `LINES`: _CATEGORY_ | _SEVERITY_ `` followed by `**TITLE**`
+   - **The 2026-11 shape** (measured 2026-11-18, sdd_agents PR #414, 38 findings): a
+     `Minor comments: N` block with one `<details>` per file (`<path>: N`), each finding
+     `` `LINES`: **<icon> Minor** · **<category>** · **<effort>** `` and then `**TITLE**`. A note
+     *"Due to the large number of review comments, Critical, Major severity comments were
+     prioritized as inline comments"* means the Minor ones live **only** in the body (there: 20
+     inline, 17 in the body). An `Additional comments: N` block (`<path>-<a>-<b>: N`) can hold a
+     Major outside the diff marked **Unverified finding** (*"Verification ran but could not
+     confirm"*): still a finding to verify, never metadata. `Prompt to fix all issues` repeats every
+     finding: counting it doubles the list.
 3. **Issue comment** (`/issues/{PR}/comments`), marked
    `<!-- This is an auto-generated comment: summarize by coderabbit.ai -->` — walkthrough and run
    info. Never a finding, but read it for coverage: the Free plan below, the rate limit in
@@ -89,9 +98,40 @@ gh api "repos/$REPO/issues/$PR/comments" --paginate \
   --jq '.[] | select(.user.login == "coderabbitai[bot]") | .body' | grep -c 'on the Free plan'
 ```
 
-**Severity markers**: `🔴` Critical = CRITICAL, `🟠` Major = HIGH, `🟡` Minor or Medium = MEDIUM, `🔵` Low = LOW, `Refactor suggestion` = MEDIUM — emoji and word come as a pair (`**🟡 Minor**`); mapping in `checklist-template.md`
+**Severity markers**: `🔴` Critical = CRITICAL, `🟠` Major = HIGH, `🟡` Minor or Medium = MEDIUM, `🔵` Low = LOW, `Refactor suggestion` = MEDIUM — emoji and word come as a pair (`**🟡 Minor**`); in the 2026-11 shape the emoji is an SVG icon (`review-comment-icons-v1/major-16.svg`, `amber-16.svg`) and only the word is text (0 emoji in 38 findings): match the word; mapping in `checklist-template.md`
 
-**Metadata to discard**: walkthrough summaries, "Actionable comments posted" headers, paused review notices (not a finding, but a coverage fact: *Coverage Per Commit*), `<!-- fingerprinting:... -->` blocks
+**Metadata to discard**: walkthrough summaries, "Actionable comments posted" headers, paused review notices (not a finding, but a coverage fact: *Coverage Per Commit*), `<!-- fingerprinting:... -->` blocks, and the `Review info`, `Run configuration`, `Commits`, `Files selected for processing` and `Prompt to fix all issues` blocks
+
+**Clean the bodies before reading them.** The `--jq` projection of Phase 1.3 drops the JSON noise,
+not the HTML inside each body (`<picture>` icons, `<details>` wrappers, `<!-- -->` state). Send the
+two extraction commands to files and read the cleaned copy: on PR #414 the output went from
+900 + 971 lines to 331 + 204, with the 20 inline comments, the 18 body findings and the 17
+`Prompt for AI Agents` blocks intact. Keep those prompts: each is the shortest statement of its
+finding. Measure the 1.3 delegation threshold on the cleaned text.
+
+```python
+import re, sys   # python3 -I clean.py < raw.txt > clean.txt
+META = ('Review info', 'Run configuration', 'Commits', 'Files selected for processing',
+        'Files ignored due to path filters', 'Prompt to fix all issues')
+LABEL = r'(?:' + '|'.join(map(re.escape, META)) + r')(?::\s*\d+)?'
+BLOCK = re.compile(r'<details>\s*<summary>(?:<picture>.*?</picture>)?\s*(?:<strong>)?\s*' + LABEL
+                   + r'\s*(?:</strong>)?\s*</summary>(?:(?!<details>)[\s\S])*?</details>')
+t = sys.stdin.read()
+while True:                      # innermost first, until nothing changes
+    t2 = BLOCK.sub('', t)
+    if t2 == t: break
+    t = t2
+t = re.sub(r'<picture>[\s\S]*?</picture>', '', t)
+t = re.sub(r'<!--[\s\S]*?-->', '', t)
+t = re.sub(r'</?(?:details|summary|blockquote|dl|dd|br|img|strong|sub|sup|a)\b[^>]*>', '', t)
+print(re.sub(r'\n[ \t]*(?:\n[ \t]*)+', '\n', t))
+```
+
+A block is dropped only when its label is **exactly** one of `META`, case-sensitive: a loose match
+(`re.I` on `Script` or `Tools`) also drops the findings of a file under `scripts/` or `tools/`,
+and a run that drops a finding looks like a clean one. Prove the copy kept every finding before
+reading it: the `^ID: ` lines of the inline file and the `` ^`<lines>`: `` lines of the body file
+count the same in the raw and the cleaned copy.
 
 ### GitHub Copilot (`copilot-pull-request-reviewer[bot]` / `Copilot`)
 
