@@ -39,6 +39,7 @@ Hit an error and want to know what to fix? Search this file. Each row is keyed o
 - [SMTP / invitation errors](#smtp--invitation-errors)
   - [Invitation emails not arriving](#invitation-emails-not-arriving)
   - ["Invitation link expired" too quickly](#invitation-link-expired-too-quickly)
+  - [Self-registration: the code never arrives, and the account is in state 6 in the default org](#self-registration-the-code-never-arrives-and-the-account-is-in-state-6-in-the-default-org)
 - [Reverse proxy / TLS termination](#reverse-proxy--tls-termination)
   - [Zitadel won't start (or won't accept traffic) when fronted by a TLS-terminating reverse proxy](#zitadel-wont-start-or-wont-accept-traffic-when-fronted-by-a-tls-terminating-reverse-proxy)
   - [Zitadel admin Console: `(unknown) Failed to fetch` (environment.json `api` http vs `issuer` https)](#zitadel-admin-console-unknown-failed-to-fetch-environmentjson-api-http-vs-issuer-https)
@@ -636,6 +637,42 @@ docker logs <zitadel-container> 2>&1 | grep -iE "smtp|mail.send"
 **Cause**: link TTL on Zitadel side is short (default 1 hour for invites, 30 min for password reset).
 
 **Fix**: configure `DefaultInstance.PasswordReset.TTL` and similar via env or Console. Don't extend beyond 24 hours — older links become a security risk.
+
+### Self-registration: the code never arrives, and the account is in state 6 in the default org
+
+**Symptom**: someone says they registered on the login screen and "the confirmation code never arrives".
+
+**Cause**: Quirk 62. Registration is on by default, the instance has no SMTP, and Login v1 put the account in the instance's default org, where an org-scoped PAT does not look (Quirk 57).
+
+**Diagnose with no PAT**, read-only, from the projections. The suffixes are the v4.15.0 ones; discover them and read the live generation as in §"The bootstrap logs `reuse` for everything" (Quirk 61):
+
+```sql
+-- 1. Is there an SMTP configuration at all? 0 means no code ever leaves the IdP.
+select count(*) as smtp_configs from projections.smtp_configs6;
+
+-- 2. Which login policy governs registration? A lone is_default row means every org uses it.
+select coalesce(o.name, '(instance default)') as owner, p.is_default, p.allow_register,
+       p.allow_username_password, p.hide_password_reset, p.change_date::date
+  from projections.login_policies5 p
+  left join projections.orgs1 o on o.id = p.aggregate_id and o.instance_id = p.instance_id
+ order by p.is_default desc, 1;
+
+-- 3. The accounts stuck in state 6 (initial), with their org and grant count.
+select u.creation_date::date, u.username, h.is_email_verified,
+       coalesce(o.name, u.resource_owner) as org, o.id = i.default_org_id as default_org,
+       (select count(*) from projections.user_grants5 g
+         where g.user_id = u.id and g.instance_id = u.instance_id) as grants
+  from projections.users14 u
+  join projections.instances i on i.id = u.instance_id
+  left join projections.users14_humans h on h.user_id = u.id and h.instance_id = u.instance_id
+  left join projections.orgs1 o on o.id = u.resource_owner and o.instance_id = u.instance_id
+ where u.state = 6
+ order by u.creation_date;
+```
+
+Put the SQL in a file and feed it to `docker exec -i <postgres-idp-ctr> psql -U zitadel -d zitadel`, never through a layer that templates `{{ }}`. A row with `default_org = t`, `is_email_verified = f` and `grants = 0` looks like a registration that never finished. An account created without a password is in state 6 too (Quirk 6), so read the creation date as well. These three queries ran on 2026-11-19, read-only. As written here, they ran against a v4.15.0 dev instance with no SMTP and registration on, where they found no stuck account and showed the org `ZITADEL` as the default one. Against a v4.15.0 production instance, the same joins ran without the `default_org` column, and the result is the measurement in Quirk 62.
+
+**Fix**: decide registration before configuring SMTP, and change `allowRegister` without zeroing the rest of the policy (Quirk 62: the `PUT` copies every field). Before provisioning that person's account, run the census by name stem (Quirk 60), because the stuck account may carry another address. What to do with the stuck account was not measured.
 
 ## Reverse proxy / TLS termination
 

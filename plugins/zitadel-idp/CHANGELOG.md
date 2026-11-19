@@ -1,5 +1,36 @@
 # Changelog — zitadel-idp
 
+## [0.25.0] — 2026-11-19
+
+### Added
+
+- **Quirk 62: o auto-cadastro vem ligado, e sem SMTP prende a pessoa e põe a conta onde o PAT de uma org não vê**
+  (`references/quirks.md`; linha 62 no índice do `SKILL.md`; seção nova "Self-registration: the code never
+  arrives…" em "SMTP / invitation errors", no `troubleshooting.md`). O `AllowRegister: true` é o default da
+  instância (`cmd/defaults.yaml:1150` na `v4.15.0`), e o Login v1 cria a conta na org padrão da instância quando o
+  pedido não nomeia org (`determineResourceOwner`, `register_handler.go:44-49`). Medido em 2026-11-19 numa produção
+  v4.15.0, só lendo as projeções: nenhuma configuração de SMTP, uma única política de login (a padrão, com
+  `allow_register=true`) e três contas em estado 6, sem e-mail verificado, sem grant, na org criada com a
+  instância. Uma das pessoas escreveu que "o código de confirmação nunca chega". A skill já tinha o beco sem saída
+  do SMTP na criação pelo Console (quirk 35) e a cegueira do PAT de org (quirk 57), mas não o caminho pelo
+  autoatendimento, nem o aviso de que ligar o SMTP com o cadastro aberto dá conta verificada a qualquer um (isso
+  está marcado como **dedução**). Também do código, e **não executado**: o `PUT /admin/v1/policies/login` copia
+  todos os campos do corpo (`login_policy_converter.go:11-31`), então um corpo só com `allowRegister` desliga o
+  login por senha. O que fazer com as contas presas não foi medido.
+- As três consultas do diagnóstico rodaram como estão no texto num IdP de dev v4.15.0 (rc 0, nenhuma conta
+  presa, `ZITADEL` como org padrão). Na produção, rodaram os mesmos joins, sem a coluna `default_org`.
+
+### Changed
+
+- Quirk 35: uma frase depois de "configure SMTP" manda decidir o auto-cadastro antes (quirk 62).
+- `api-cheatsheet.md`, "Provision real accounts by script", passo 3: um item sobre a conta do auto-cadastro, que
+  só o PAT de membro da instância acha (quirk 57) e que papel nenhum destrava.
+
+### Debt
+
+- O smoke do Codex (`docs/codex/smokes.json`) segue na 0.20.0.
+- A seção de detalhes do README (linha 349) ainda diz "54 documented quirks". A tabela, na linha 170, está em 62.
+
 ## [0.24.0] — 2026-11-18
 
 ### Added

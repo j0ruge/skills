@@ -1,7 +1,7 @@
 ---
 name: zitadel-idp
 metadata:
-  version: 0.24.0
+  version: 0.25.0
 description: "Self-hosted Zitadel v4 OIDC field guide — a numbered quirk catalogue, working docker-compose and an idempotent TypeScript bootstrap. High-friction traps: FirstInstance env placement, JWT/JWKS over self-signed HTTPS, `--tlsMode external` and the console's mixed-content `Failed to fetch`, v2.66→v4, API v1→v2, silent-renew, 401 storms, UI language from the `locale` claim. Triggers — zitadel, oidc self-hosted, JWKS, masterkey, v2.66→v4, tlsMode external, pre-cutover check, locale claim."
 ---
 
@@ -120,6 +120,7 @@ These bite first-time Zitadel integrators consistently. One line per quirk; the 
 59. The Console's "Add Human User" with an initial password has no "must change" option, so the account is born with `passwordChangeRequired: false`; for real people, create through the API with `password.changeRequired: true`.
 60. A batch with e-mails derived from names creates a second account for anyone who already had one under another spelling; the exact e-mail search cannot see it, and a census by name stem in the projections can.
 61. The projection-suffix discovery can return two generations (`users13` next to `users14`), and the older one is frozen since the upgrade; `projections.current_states` says which one is live.
+62. Self-registration is on by default (`allowRegister`): with no SMTP the person is stuck on the code screen, the account lands in the instance's default org out of an org-scoped PAT's sight, and SMTP must wait for that decision.
 
 ## Migration v2.66 → v4 + API v2
 

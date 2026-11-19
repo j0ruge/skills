@@ -457,6 +457,7 @@ Creating people's accounts in a batch (managers, directors) differs from seeding
 
 3. **Search by email before creating**, with `TEXT_QUERY_METHOD_EQUALS_IGNORE_CASE`.
    - **When the list's e-mails were derived from names**, the exact search cannot see the person's existing account under another spelling (Quirk 60). Confirm each address where the person receives mail, and run the census by name stem from the projections (`troubleshooting.md §"The bootstrap logs reuse for everything"`) for every row before creating.
+   - **An account the person made by self-registration** lives in the instance's default org, in state `6`, unverified and with no grant (Quirk 62). Only the instance-member PAT of step 1 can find it (Quirk 57). Roles alone do not let the person in: the code screen comes from the unverified e-mail, not from the grants. What to do with such an account was not measured.
    - **More than one match:** stop (Quirk 54).
    - **One match:** do not create. Add the roles to the existing grant by union, never replacing the other apps' roles (§"User grants", Quirk 55). Leave the password alone, and do not probe it (Quirk 58).
 
