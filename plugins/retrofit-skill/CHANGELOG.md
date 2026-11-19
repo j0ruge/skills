@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.10.3] — 2026-11-19
+
+- **O argumento é só o nome da skill** (topo do comando, *Armadilhas* §11). Sintoma que teria
+  evitado: chamado com o nome e as lições num argumento só, o `$ARGUMENTS` virou
+  `<REPO>/plugins/<nome> — duas lições…/` em todos os caminhos, no escopo do commit e na busca do
+  bloco do `marketplace.json`. Agora o comando diz para usar a primeira palavra como nome e o resto
+  como notas.
+- **O `rc` de cada gate se lê sem pipe** (passo 4, *Armadilhas* §11). Sintoma: em zsh,
+  `unittest … | tail -3; echo $?` deu `rc=0` com `FAILED (failures=3)`, e o `${PIPESTATUS[0]}`
+  saiu vazio. Sem pipe, `rc=1`.
+- O `metadata.version` do comando estava em 0.10.0 desde a 0.10.1, e o `plugin.json` em 0.10.2. O
+  bump põe os dois na 0.10.3.
+
 ## [0.10.2] — 2026-11-05
 
 ### Nomes de repositórios privados saem do texto

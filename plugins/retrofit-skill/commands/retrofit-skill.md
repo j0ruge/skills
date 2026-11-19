@@ -1,7 +1,7 @@
 ---
 description: Apply non-obvious session lessons to a target skill in two modes — full (marketplace skill: bumps version, updates CHANGELOG/marketplace.json/README, commits and pushes) or lean (local skill in another repo: edits files + CHANGELOG and commits there, no bump or marketplace changes). Triggers — retrofit, skill-maintenance, session-lessons, lean-retrofit, local-skill.
 metadata:
-  version: 0.10.0
+  version: 0.10.3
 ---
 
 A régua deste retrofit é a família `skill-quality-audit`: um baseline antes de
@@ -11,6 +11,10 @@ quando a lição muda a `description`.
 
 Analise as lições aprendidas nesta sessão e aplique as relevantes à skill
 `$ARGUMENTS`.
+
+O argumento é **o nome da skill, e só ele**. Ele entra em cada caminho, na busca do bloco no
+`marketplace.json` e no escopo do commit. Se ele trouxer mais que um nome (as lições, uma frase),
+use a primeira palavra como o nome e trate o resto como notas da sessão (*Armadilhas*, §11).
 
 ## Princípio: nada ou melhor, nunca pior
 
@@ -222,6 +226,9 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
      - Rode `python3 -m unittest discover -s tests`. Falha que também aparece no base é dívida,
        não regressão. Prove isso no base, sem `checkout` (*Armadilhas*, §10).
    - Rode o **gate da auditoria** (seção abaixo) em cada skill tocada.
+   - **Leia o `rc` de cada gate sem pipe.** Com `| tail` ou `| grep`, o `$?` é o do último
+     comando, e o zsh não tem `PIPESTATUS`. Mande a saída para um arquivo, guarde o `rc` e só
+     então leia o arquivo (*Armadilhas*, §11).
    - **Verifique por releitura, não por ter editado.** Ter rodado o `sed` não
      prova que o arquivo mudou: um padrão que não casou falha em silêncio, e a
      description é a superfície de triggering — com os arquivos fora de sincronia,

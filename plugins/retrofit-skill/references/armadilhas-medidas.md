@@ -2,13 +2,13 @@
 
 O comando `retrofit-skill` traz cada regra em uma ou duas linhas. Aqui está a história medida
 que a justifica, movida do comando na 0.7.1 sem reescrita (as seções 7 e 8 nasceram aqui, na
-0.7.3, a 9, na 0.9.0, e a 10, na 0.10.0). Leia a seção quando quiser contestar
+0.7.3, a 9, na 0.9.0, a 10, na 0.10.0, e a 11, na 0.10.3). Leia a seção quando quiser contestar
 ou afrouxar a regra correspondente: é o que se perde se ela sair.
 
 Sumário: 1. Symlink, não cópia · 2. Repo atrás do remoto · 3. Outra sessão no mesmo checkout ·
 4. Cheque dos quatro lugares · 5. O `--stat` como último sensor · 6. Orçamento da spec ·
 7. Windows chamando o WSL · 8. A cópia instalada atrás da fonte · 9. Sensor citado não é sensor rodado ·
-10. Plugin que também vai para o Codex
+10. Plugin que também vai para o Codex · 11. O argumento e o pipe
 
 ## 1. `~/.claude/skills/<nome>` costuma ser um symlink, não uma cópia
 
@@ -245,3 +245,26 @@ limpo, e o Codex ainda tinha quatro lugares por fazer.
   Git, `codex plugin marketplace upgrade <loja>` atualiza a cópia e também os plugins instalados
   (`docs/codex/verification.md`, CLI 0.163.0). Em 27/10, a loja não estava configurada no `~/.codex`
   desta máquina, e não havia o que atualizar.
+
+## 11. O argumento e o pipe: dois jeitos de o próprio fluxo mentir
+
+**O argumento vira o nome em todo lugar.** Em 19/11/2026, o comando foi chamado com o nome da
+skill seguido das duas lições, num argumento só. O `$ARGUMENTS` foi trocado ao pé da letra, e o
+prompt saiu com caminhos como `<REPO>/plugins/<nome> — duas lições verificadas nesta sessão: …/`,
+com o mesmo texto no escopo do commit e na busca do bloco no `marketplace.json`. O retrofit só
+andou porque o nome era a primeira palavra, e foi lido assim. A regra do topo do comando diz
+isso.
+
+**O `rc` de um pipe é o do último comando.** No mesmo retrofit, na estação, em zsh:
+
+```bash
+python3 -m unittest discover -s tests 2>&1 | tail -3; echo "rc_tests=$?"   # rc_tests=0
+python3 -m unittest discover -s tests > ut.txt 2>&1; echo "rc_tests=$?"     # rc_tests=1, FAILED (failures=3)
+```
+
+O primeiro dava o gate como verde, com 3 falhas. O `${PIPESTATUS[0]}`, que salvaria no bash,
+saiu vazio, porque o zsh não tem essa variável. Com o `validate-versions.py | grep`, o mesmo
+padrão deu `rc` vazio. As 3 falhas eram dívida: se repetiram no base, num worktree do
+`origin/main` (§10). O conserto é o arquivo: a saída vai para ele, o `rc` fica guardado, e só
+depois vem o `grep`.
+
