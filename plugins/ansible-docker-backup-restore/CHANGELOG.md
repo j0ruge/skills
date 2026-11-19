@@ -2,6 +2,15 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.7.1] — 2026-11-19
+
+- **A prova do papel da aplicação, depois de restaurar, pede uma consulta antes** (`restore-bancos.md`
+  §6). Sintoma que teria evitado: num staging restaurado sobre a base no ar, o `pg_stat_activity` lido
+  logo depois do `healthy` mostrava só a sessão do operador, e a prova de que a aplicação entrava como
+  `lighthouse_app`, e não como o dono, saía vazia. O pool do ORM conecta na primeira consulta, e o
+  healthcheck do container não toca o banco. Depois de um `/health/ready`, apareceu `lighthouse_app|1`.
+- Smoke do Codex: segue o da 1.3.3 (nenhum arquivo novo).
+
 ## [1.7.0] — 2026-11-19
 
 Lições de uma remoção cirúrgica na produção: uma demanda de teste, com as linhas dela numa trilha
