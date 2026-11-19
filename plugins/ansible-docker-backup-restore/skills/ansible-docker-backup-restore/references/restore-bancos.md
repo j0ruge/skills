@@ -169,3 +169,59 @@ segunda contagem.
 Guarde o dump de segurança do estado anterior antes de qualquer import
 destrutivo, e cite o caminho dele na mensagem de erro: quem estiver lendo o
 aborto às três da manhã precisa saber para onde correr.
+
+## 7. Antes de apagar linhas de um banco no ar: copie, e prove que a cópia volta
+
+Quando alguém decide apagar umas poucas linhas da produção (um teste criado por engano, uma exceção
+a uma regra de "nada se apaga"), o dump não basta como rede. O dump do dia pode ser **anterior** à
+última mudança da linha (`SKILL.md`, "Uma postura"). E restaurar um dump inteiro para recuperar
+quatro linhas é uma operação sobre a base no ar, que raramente tem procedimento. Copie só as linhas,
+num formato que volta sozinho.
+
+**A cópia: uma linha de JSON por linha de tabela,** lida pelo dono, numa transação somente leitura,
+para um arquivo `0600` que não sobrescreve outro. Imprima só o hash e a contagem por tabela, porque
+o conteúdo traz identificador de pessoa e texto livre:
+
+```sh
+umask 077; [ ! -e "$ARQ" ] || exit 1
+docker exec -i <container-postgres> sh -c 'psql -q -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -v ON_ERROR_STOP=1' > "$ARQ" <<'SQL'
+begin transaction read only;
+select json_build_object('tabela','<tabela>','linha',row_to_json(t)) from <tabela> t where <filtro>;
+rollback;
+SQL
+sha256sum "$ARQ"
+```
+
+- **Sem o `-q`, o `psql` grava `BEGIN` e `ROLLBACK` no meio do arquivo**, entre as linhas de JSON.
+  A cópia fica com cara de boa e não carrega.
+- **Tabela sem FK para a linha-mãe não some em cascata, e não dá erro.** Uma trilha de auditoria
+  append-only costuma não ter FK, de propósito. Apagar só a linha-mãe deixa as filhas órfãs, em
+  silêncio. Liste toda tabela que guarda o id, e não só as que o `pg_constraint` mostra.
+
+**A volta,** por uma tabela temporária e `jsonb_populate_record`. Carregue o arquivo em `csv`, com
+aspas e delimitador que nunca aparecem no texto, e **nunca** em `format text`: o formato texto
+interpreta as barras invertidas que o JSON usa para escapar `\n` e `\"`. Num ensaio com
+`postgres:17-alpine`, uma linha com quebra de linha, barra e aspas no texto reprovou o `\copy` em
+`format text` e voltou idêntica em `csv`.
+
+```sql
+create temp table copia (l jsonb);
+\copy copia (l) from '<arquivo>' with (format csv, quote e'\x01', delimiter e'\x02')
+insert into <tabela> select (jsonb_populate_record(null::<tabela>, l->'linha')).* from copia where l->>'tabela' = '<tabela>';
+```
+
+**O `DELETE`, numa transação só, conferindo cada contagem dentro dela.** Num bloco `DO`:
+- trave a linha-mãe com `FOR UPDATE`, filtrando pelo id **e** pelo estado e pela versão lidos
+  antes, para não apagar uma versão que mudou no meio-tempo;
+- apague as filhas, depois a mãe, e confira cada `GET DIAGNOSTICS n = ROW_COUNT` contra o esperado;
+- depois de cada tabela, confira com `EXISTS` que nenhuma linha daquele id sobrou.
+
+Uma diferença levanta `raise exception`, e a transação inteira volta. Com `ON_ERROR_STOP=1`, o
+`psql` sai com `rc` 3, e esse é o `rc` do script. Medido num pipe com `| tail`, o `rc` é o do
+`tail` (regra 7).
+
+**Ensaie antes, num Postgres descartável do mesmo major, com as migrations do banco.** Semeie a
+linha-alvo e uma linha de controle. As sabotagens (versão trocada, uma linha filha a mais, um evento
+de outro tipo) abortam sem apagar nada. A corrida real apaga só o alvo, e o controle fica inteiro.
+A cópia volta, e o `to_jsonb` da linha restaurada é igual ao do arquivo. A falha do `format text`
+só aparece com texto livre real: o dado sintético do ensaio precisa ter `\n`, barra e aspas.

@@ -2,6 +2,27 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.7.0] — 2026-11-19
+
+Lições de uma remoção cirúrgica na produção: uma demanda de teste, com as linhas dela numa trilha
+append-only e numa outbox, apagada como dono do banco numa transação só. Os scripts foram ensaiados
+num `postgres:17-alpine` descartável, com as migrations do banco, antes de rodar.
+
+- **"Está no backup" só vale se o dump é posterior à última mudança da linha** (`SKILL.md`, "Uma
+  postura", espelho do "não existe em backup"). Sintoma que teria evitado: um handoff garantia que
+  a linha a apagar estava "nos dumps diários". O ciclo rodava às 06:00 UTC, a linha mudou às 18:15
+  UTC, e o `zcat <dump> | grep -c <id>` deu 0 no dump do dia (o mais novo nas duas pontas), na
+  cópia do host de backup, enquanto o registro conhecido deu 1. A linha saiu da produção sem cópia em backup nenhum.
+- **A cópia das linhas antes do `DELETE`, e a prova de que ela volta** (`restore-bancos.md` §7, e
+  uma linha no roteamento do `SKILL.md`). Três armadilhas medidas no ensaio:
+  - sem `-q`, o `psql` gravou `BEGIN` e `ROLLBACK` no meio da cópia em JSON;
+  - o `\copy` em `format text` reprovou a volta de uma linha com quebra de linha, barra e aspas, e
+    em `csv` com aspas e delimitador improváveis ela voltou idêntica (`to_jsonb` igual);
+  - trilha append-only sem FK não some em cascata, e apagar só a linha-mãe deixaria órfãs sem erro.
+  O `DELETE` vai num bloco `DO` com `FOR UPDATE` pela versão lida, `ROW_COUNT` conferido e `EXISTS`
+  do que sobrou. As três sabotagens do ensaio abortaram sem apagar nada.
+- Smoke do Codex: segue o da 1.3.3 (nenhum arquivo novo, e a contagem de recursos não mudou).
+
 ## [1.6.0] — 2026-11-12
 
 Lições da mesma prova de DR da 1.5.0, vistas depois dela: o conjunto confrontado com o host e com

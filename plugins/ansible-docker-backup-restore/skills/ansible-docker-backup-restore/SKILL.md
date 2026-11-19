@@ -1,7 +1,7 @@
 ---
 name: ansible-docker-backup-restore
 metadata:
-  version: 1.6.0
+  version: 1.7.0
 description: "Back up and restore a Linux server's Docker services with Ansible — volume tars, pg_dump/mysqldump, snapshot-guarded overwrite, and proof the nightly backup still runs. Catches restores that look green but are broken: 200s serving the wrong page, auth-plugin drift in restored datadirs, silently dead backups. Proves a dump by its contents, not its size. Triggers — ansible, backup, restore, disaster recovery, mysqldump, retention, dump integrity, backup healthcheck lies."
 ---
 
@@ -50,6 +50,14 @@ sincronizações para nuvem, cópias manuais de alguém. Um site inteiro foi dad
 como perdido depois de varrer quatro origens; estava numa quinta, criada por um
 script que ninguém tinha aberto.
 
+**E "está no backup" só é verdade se o dump é posterior à última mudança do
+registro.** Antes de apagar contando com a cópia, compare o horário do dump mais
+novo com o `updated_at` da linha, e procure o id dentro dele
+(`zcat <dump> | grep -c <id>`), junto com um registro que você sabe que está lá,
+para o zero não ser cego. Um handoff garantia que uma linha a apagar da produção
+estava "nos dumps diários". O ciclo rodava às 06:00 UTC e a linha mudou às 18:15
+UTC: o id deu 0 no dump do dia, e o registro conhecido deu 1.
+
 ---
 
 ## Roteamento — quando abrir cada reference
@@ -62,6 +70,7 @@ Leia a linha que descreve o que você está prestes a fazer.
 | escrever ou rodar o primeiro playbook | `references/ambiente-e-armadilhas-ansible.md` |
 | escrever em qualquer volume, ou subir um compose | `references/restore-volumes-e-guarda.md` |
 | importar um dump SQL, **ou subir um banco sobre datadir restaurado** | `references/restore-bancos.md` |
+| **apagar linhas de um banco no ar** (exceção, limpeza, teste criado por engano) | `references/restore-bancos.md` §7 |
 | **declarar `VIRTUAL_HOST` ou mexer em TLS** | `references/proxy-reverso-e-tls.md` — **gate** |
 | **encerrar um restore, ou desconfiar de um backup** | `references/backup-pipeline-e-falha-silenciosa.md` — **gate** |
 | reportar resultado, despachar subagente, **ou depurar erro que não fecha** | `references/provas-que-nao-mentem.md` |
