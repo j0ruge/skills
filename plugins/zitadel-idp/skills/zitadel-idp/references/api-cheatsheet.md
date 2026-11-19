@@ -447,6 +447,17 @@ Creating people's accounts in a batch (managers, directors) differs from seeding
 
    When the batch is done, `DELETE /v2/users/${machineUserId}` answered `200`, and the `GET` then `404`. Deactivating keeps the account on record instead: in production, the machine user's own PAT answered `200` to `POST /v2/users/${machineUserId}/deactivate` (empty JSON body), and the next call with that PAT got `401`; the projection then read state `2`. The user stays an instance member, inactive, so reactivating it brings the power back.
 
+   **Send the PAT from a file, too, never as an argument.** A `curl -H "Authorization: Bearer $PAT"` puts the token in the process list and in any tool transcript that records the command. Build a header file once, `0600`, pass it with `-H @file`, and delete it when the batch ends:
+
+   ```bash
+   umask 077; H=$(mktemp)
+   printf 'Authorization: Bearer %s\n' "$(tr -d '[:space:]' < "$PAT_FILE")" > "$H"
+   curl -s -o /dev/null -w '%{http_code}\n' -H @"$H" "$IDP/v2/users/$USER_ID"
+   rm -f "$H"
+   ```
+
+   The `tr` drops the newline that pasting into the token file adds. Measured 2026-11-19 on v4.15.0: the `DELETE /v2/users` and the `GET` of step 3 answered `200` and `404` this way.
+
 2. **Generate the temporary password to the policy the instance reports, and check it before sending** (Quirk 39). Every class has its own error id, so a check before the call turns a generator regression into a refusal, instead of a `400` in the middle of the batch:
 
    ```http
@@ -457,7 +468,7 @@ Creating people's accounts in a batch (managers, directors) differs from seeding
 
 3. **Search by email before creating**, with `TEXT_QUERY_METHOD_EQUALS_IGNORE_CASE`.
    - **When the list's e-mails were derived from names**, the exact search cannot see the person's existing account under another spelling (Quirk 60). Confirm each address where the person receives mail, and run the census by name stem from the projections (`troubleshooting.md §"The bootstrap logs reuse for everything"`) for every row before creating.
-   - **An account the person made by self-registration** lives in the instance's default org, in state `6`, unverified and with no grant (Quirk 62). Only the instance-member PAT of step 1 can find it (Quirk 57). Roles alone do not let the person in: the code screen comes from the unverified e-mail, not from the grants. What to do with such an account was not measured.
+   - **An account the person made by self-registration** lives in the instance's default org, in state `6`, unverified and with no grant (Quirk 62). Only the instance-member PAT of step 1 can find it (Quirk 57). Roles alone do not let the person in: the code screen comes from the unverified e-mail, not from the grants. Delete it, then create the account in the project's org with the same e-mail. First prove, with no PAT, that nobody used it: zero rows for its `user_id` in `projections.user_grants5` and in `projections.sessions8`, and a `change_date` equal to its `creation_date` in `projections.users14`. Then `DELETE /v2/users/${userId}`: it answered `200`, and the `GET` then `404`. The username (the e-mail) is free again, and step 4 creates the new account with it. Measured 2026-11-19 on a v4.15.0 staging instance.
    - **More than one match:** stop (Quirk 54).
    - **One match:** do not create. Add the roles to the existing grant by union, never replacing the other apps' roles (§"User grants", Quirk 55). Leave the password alone, and do not probe it (Quirk 58).
 

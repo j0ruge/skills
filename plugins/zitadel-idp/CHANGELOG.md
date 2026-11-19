@@ -1,5 +1,24 @@
 # Changelog — zitadel-idp
 
+## [0.25.1] — 2026-11-19
+
+### Changed
+
+- **A conta presa do auto-cadastro se apaga, e o e-mail volta a ficar livre** (Quirk 62, `troubleshooting.md`
+  §"Self-registration…" e o passo 3 de `api-cheatsheet.md` §"Provision real accounts by script"). Os três lugares
+  diziam que isso "não foi medido". Medido em 2026-11-19 num staging v4.15.0, numa conta de 01/10 na org padrão,
+  estado `6`, sem e-mail verificado: antes, só lendo, 0 linhas em `projections.user_grants5` e em
+  `projections.sessions8`, e `change_date` igual à `creation_date`. Com o PAT de um membro da instância,
+  `DELETE /v2/users/{userId}` respondeu `200`, e o `GET`, `404`. A conta nova, com o mesmo username (o e-mail),
+  nasceu na org do projeto, e a senha guardada passou na Session API. Sintoma que teria evitado: a pessoa sem
+  acesso, porque ninguém sabia se apagar era seguro, ou uma segunda conta com o mesmo e-mail (Quirk 54).
+- **O PAT do provisionamento sai de um arquivo de cabeçalho, e não de argumento** (`api-cheatsheet.md`, passo 1).
+  O passo já gravava o token num arquivo `0600`, mas as receitas o mandavam por `curl -H "Authorization: Bearer
+  $PAT"`, que o põe na lista de processos e em toda transcrição que registra o comando. Agora: `-H @arquivo`,
+  `0600`, apagado no fim, com o `tr` que tira a quebra de linha da colagem. As receitas que já passam
+  `-H "Authorization: Bearer $PAT"` ficam como estão (dívida, fora deste retrofit).
+- Smoke do Codex: segue o da 0.20.0 (nenhum arquivo novo, e a contagem de recursos não mudou).
+
 ## [0.25.0] — 2026-11-19
 
 ### Added

@@ -672,7 +672,7 @@ select u.creation_date::date, u.username, h.is_email_verified,
 
 Put the SQL in a file and feed it to `docker exec -i <postgres-idp-ctr> psql -U zitadel -d zitadel`, never through a layer that templates `{{ }}`. A row with `default_org = t`, `is_email_verified = f` and `grants = 0` looks like a registration that never finished. An account created without a password is in state 6 too (Quirk 6), so read the creation date as well. These three queries ran on 2026-11-19, read-only. As written here, they ran against a v4.15.0 dev instance with no SMTP and registration on, where they found no stuck account and showed the org `ZITADEL` as the default one. Against a v4.15.0 production instance, the same joins ran without the `default_org` column, and the result is the measurement in Quirk 62.
 
-**Fix**: decide registration before configuring SMTP, and change `allowRegister` without zeroing the rest of the policy (Quirk 62: the `PUT` copies every field). Before provisioning that person's account, run the census by name stem (Quirk 60), because the stuck account may carry another address. What to do with the stuck account was not measured.
+**Fix**: decide registration before configuring SMTP, and change `allowRegister` without zeroing the rest of the policy (Quirk 62: the `PUT` copies every field). Before provisioning that person's account, run the census by name stem (Quirk 60), because the stuck account may carry another address. Then delete the stuck account and create the person's account in the project's org, with the same e-mail (`api-cheatsheet.md §"Provision real accounts by script"`, step 3; measured on v4.15.0, Quirk 62).
 
 ## Reverse proxy / TLS termination
 
