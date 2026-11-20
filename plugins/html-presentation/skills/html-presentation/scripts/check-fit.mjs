@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Layout check for the built deck: fails when a slide leaves the window, clips text, runs under its source line or
-// enters the footer.
+// Layout check for the built deck: fails when a slide leaves the window, clips text, runs under its source line,
+// enters the footer, or has a source line that grew into the left margin.
 //
 // Usage: node check-fit.mjs dist/<name>.html
 // Exit:  0 everything fits · 1 a slide failed · 2 could not measure (no slides, no #stage or #footer, navigation that
@@ -30,8 +30,12 @@ function measure() {
   const box = slide.getBoundingClientRect();
   const srcEl = slide.querySelector('.src');
   const srcBottom = srcEl ? srcEl.getBoundingClientRect().bottom : null;
+  // The source line is anchored right and grows to the left, on one line: a long one enters the slide's left padding
+  // and still sits inside the slide's box, so the edge check below does not see it.
+  const padLeft = parseFloat(getComputedStyle(slide).paddingLeft) * (box.width / (slide.offsetWidth || box.width));
   const label = (el) => `${el.tagName.toLowerCase()}.${el.className?.baseVal ?? el.className}`.slice(0, 60);
   const bad = new Set();
+  if (srcEl && padLeft > 0 && srcEl.getBoundingClientRect().left < box.left + padLeft - 1) bad.add(`fonte na margem esquerda: ${label(srcEl)}`);
   let lowest = 0;
   let who = '';
   for (const el of slide.querySelectorAll('*')) {

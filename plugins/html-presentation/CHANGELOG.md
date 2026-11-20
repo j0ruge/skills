@@ -3,6 +3,22 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.6.3] — 2026-11-20
+
+### `check-fit.mjs` reprova a linha de fonte que entra na margem esquerda
+
+A `.src` é ancorada à direita (`right:128px`) e cresce para a esquerda numa linha só. Com texto longo ela entra no
+`padding` esquerdo da lâmina e continua dentro da caixa da lâmina, então o cheque "fora da lâmina" não a vê. No deck
+de uma defesa de TCC (20/11/2026), duas correções do revisor puseram frases na `.src` das lâminas 8 e 10; a linha
+começou em x = 80 no palco de 1920, com margem de 128, e o `check-fit` respondeu "encaixe ok: 17 lâminas em 4
+tamanhos". Só a captura mostrou.
+
+- `scripts/check-fit.mjs`: compara a borda esquerda da `.src` com o `padding-left` da lâmina, na escala do palco, e
+  reprova com `fonte na margem esquerda`. Lâmina sem `padding` não é medida.
+- `SKILL.md`: meia frase no gotcha *Source line under the content*.
+- Prova: o deck com a `.src` longa falha nos quatro tamanhos; o deck corrigido e o template passam; com a
+  comparação desligada o deck defeituoso volta a passar (mutante morto pelo caso).
+
 ## [1.6.2] — 2026-11-20
 
 ### A identidade do deck se pergunta no brief, e sem `DESIGN.md` ela se deriva do site

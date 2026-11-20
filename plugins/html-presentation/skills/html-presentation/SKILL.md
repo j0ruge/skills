@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.6.2"
+  version: "1.6.3"
 ---
 
 # HTML Presentation
@@ -219,7 +219,7 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
   `--photo:url(...)` it was 569 KB (IACS deck, 30/09/2026).
 - **Source line under the content.** `.src` sits at a fixed spot above the footer (`position:absolute`), so
   content that grows runs under it: 3 slides of the IACS deck (30/09/2026), one of them after a review fix.
-  Look for it in every shot; `check-fit.mjs` fails it too.
+  Look for it in every shot; `check-fit.mjs` fails it too, and a long `.src` that grows into the left margin.
 - **Content inside the footer, with every gate green.** The footer sits inside the slide, so a box can enter it
   without leaving the slide. A request that wrapped to 2 lines put the `.act` box 20 px into the footer, with
   `build.py`, `shoot.sh`, `check-presenter` and the deck's own secrecy check green, and a first sensor that compared

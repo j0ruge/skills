@@ -2,6 +2,12 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-11-20 — the same TCC deck, second review round (v1.6.3)
+- Two review fixes added sentences to the source line of slides 8 and 10. `.src` is anchored right and grows left on
+  one line; it entered the left margin (x = 80 of a 128 px padding) with `check-fit.mjs` green in all four sizes.
+- Lesson added: `check-fit.mjs` fails a `.src` that starts left of the slide's padding (gotcha *Source line under
+  the content*). In the deck, the sentences moved into the slide body.
+
 ## 2026-11-20 — a TCC defence deck, re-skinned mid-build (v1.6.2)
 - A 17-slide deck for a 15-minute defence, built on the employer's `DESIGN.md` because the user named that file.
   With the university's logo already in the footer, the user asked for the university's identity instead. The
