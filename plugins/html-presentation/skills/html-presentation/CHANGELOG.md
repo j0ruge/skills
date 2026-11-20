@@ -2,6 +2,16 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-11-20 — a TCC defence deck, re-skinned mid-build (v1.6.2)
+- A 17-slide deck for a 15-minute defence, built on the employer's `DESIGN.md` because the user named that file.
+  With the university's logo already in the footer, the user asked for the university's identity instead. The
+  deck was re-skinned twice: first from the logo and CSS color counts, then again after a screenshot of the site.
+- Lessons added: the brief asks whose identity governs (`SKILL.md`, step 1); *Identity without a DESIGN.md*
+  (`layout-and-type.md`); the Playwright version comes from the build named in the launch error (`SKILL.md`,
+  step 6); a color-field cover needs its own print rule (gotcha *Photo or dark slide lost in the PDF*).
+- Not applied: the template's `'Minha Sans'` comment and the `.contact::before` bar, both flagged by the impeccable
+  detector. They are false positives of that detector, and the template is better with them.
+
 ## 2026-11-18 — a business-plan deck, the user's review of a finished build (v1.6.1)
 - A 40-slide deck redone from someone else's PowerPoint, with every gate green and an independent review done.
   The user then rejected the cover and the org chart, and found one redesigned slide weaker than its source.

@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.6.1"
+  version: "1.6.2"
 ---
 
 # HTML Presentation
@@ -19,7 +19,8 @@ What makes this more than "slides in HTML":
 - **One source of truth.** The slide HTML holds the speaker notes; the script (`roteiro-de-fala.md`) and the
   presenter window are generated from them, so they never drift.
 - **The project's identity, not a theme.** Tokens come from the project's `DESIGN.md`, adapted to
-  projection scale. No `DESIGN.md` → the template's neutral palette.
+  projection scale. No `DESIGN.md` → derive one (`references/layout-and-type.md`, *Identity without a
+  DESIGN.md*) or use the template's neutral palette.
 - **An independent reviewer.** The person who built the deck can't see what it lost from the source. A fresh
   reviewer with no build context compares slide by slide.
 
@@ -35,7 +36,9 @@ language. If the user already said it, don't ask again.
 A requirements file that does not fit the subject (guidelines for another course, a second `DESIGN.md` in the
 package) means the wrong file came along: ask which one governs before planning, even when the prompt says not
 to ask. In the Farel deck (19/10/2026) the prompt patched "the guidelines talk about Church Fathers" over the
-wrong course's guidelines, and the package's own `DESIGN.md` lost to the project's.
+wrong course's guidelines, and the package's own `DESIGN.md` lost to the project's. A `DESIGN.md` of one
+organization for a talk given at another (the employer's, at a university defence) is the same case: ask whose
+identity governs, even when the user named the file. In the TCC deck (20/11/2026) the answer came mid-build.
 
 ### 2. Read the whole source
 
@@ -109,7 +112,8 @@ in `shoot.sh`), and pass those shots to the reviewer.
 With Playwright installed, also run `node <skill>/scripts/check-presenter.mjs dist/<name>.html`. It drives the
 deck and the presenter window together and fails when the engine copy inside the deck regressed; a deck with
 `data-steps` also gets the step checks. Without a global install, `npm i --prefix <dir> playwright@<version>`
-(the one whose `chromium-NNNN` is already in `~/.cache/ms-playwright`, so nothing downloads) and run it with
+(the one whose `chromium-NNNN` is already in `~/.cache/ms-playwright`, so nothing downloads; a wrong guess fails
+at launch and names the build it wants: 1.58.0 uses 1208, 20/11/2026) and run it with
 `NODE_PATH=<dir>/node_modules`.
 
 Also run `node <skill>/scripts/check-fit.mjs dist/<name>.html`, with the same Playwright. It fails when a slide
@@ -208,7 +212,8 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
   Print also takes `.slide::after` for the `data-print` footer, so a slide decorated with `::after` (a dawn
   glow on a dark cover) loses either the decoration or its page number. Put both in one print rule:
   `content:attr(data-print)` over the decoration's background, `inset:0`, text aligned bottom-right
-  (cell-group deck, 01/10/2026).
+  (cell-group deck, 01/10/2026). A cover on a full brand-color field needs the same two-class rule
+  (`.slide.cover{background:…}` in `@media print`); `page.emulateMedia({media:'print'})` shows it.
 - **Deck several times heavier than its assets.** `build.py` inlines every `url(assets/...)` separately:
   one photo used by four rules (screen and print, cover and close) made a 1.7 MB deck; declared once as
   `--photo:url(...)` it was 569 KB (IACS deck, 30/09/2026).

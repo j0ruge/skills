@@ -3,6 +3,24 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.6.2] — 2026-11-20
+
+### A identidade do deck se pergunta no brief, e sem `DESIGN.md` ela se deriva do site
+
+Só documentação muda: `SKILL.md` (quatro frases) e `references/layout-and-type.md` (uma seção). O comportamento
+dos scripts e do template não muda.
+
+- Brief: um `DESIGN.md` de uma organização numa fala dada em outra pede a pergunta de qual identidade governa,
+  mesmo quando o usuário citou o arquivo. Por quê: num deck de defesa de TCC, o `DESIGN.md` era da empresa do
+  autor e o logo do rodapé era da universidade; o usuário pediu a troca com o deck pronto.
+- Seção nova *Identity without a DESIGN.md*: derivar do logo e do CSS do site, olhar a captura antes de escolher
+  superfícies, trocar a fonte licenciada por uma livre de mesmo modelo, medir os pares e registrar a origem. Por
+  quê: o primeiro `DESIGN.md`, feito só da contagem de cores, deu um deck que não lembrava o site, e a capa foi
+  refeita depois da captura.
+- Passo 6: a versão do Playwright sai do build que o erro de lançamento nomeia (1.58.0 usa o 1208, conferido no
+  `browsers.json` do pacote em 20/11/2026). Por quê: o primeiro palpite, 1.57.0, pediu o build 1200.
+- Gotcha da impressão: capa em campo de cor precisa da mesma regra de duas classes da capa com foto.
+
 ## [1.6.1] — 2026-11-18
 
 ### A foto da capa se mede, o diagrama da fonte se redesenha, e a ideia visual do original fica

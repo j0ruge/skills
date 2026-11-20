@@ -91,6 +91,21 @@ the new composition. In a business-plan deck (18/11/2026) the source showed eigh
 arrow, from a database to what comes next; the redesign kept every name on a straight line with dots, and the
 user found it less interesting than the original.
 
+## Identity without a DESIGN.md
+
+When the organization of the talk has no `DESIGN.md`, derive one before falling back to the neutral palette.
+
+- Measure the logo (its most frequent opaque pixels) and read the site's CSS: colors by frequency, `font-family`,
+  radii, shadows. A skill that writes a `DESIGN.md` from a URL does this with a grounding rule; use one if installed.
+- Look at a screenshot of the site before choosing surfaces. Frequencies give the palette, not how the site uses
+  it. In the TCC deck (20/11/2026) a `DESIGN.md` made from the logo and the CSS counts gave a quiet blue-on-white
+  deck; the screenshot showed a full yellow hero, uppercase titles and a short magenta rule, and the cover was redone.
+- A licensed site font (Adobe Fonts) cannot be inlined. Pick an open font of the same model, self-host it, and
+  record the swap (Futura PT became Jost in that deck).
+- Measure every pair you take from the site: its white on yellow measured 1.47:1, and the deck put the brand blue
+  on the yellow instead (6.27:1).
+- Write in the `DESIGN.md` where each value came from and what was not found (no brand manual, in that deck).
+
 ## Refuse
 
 - A kicker or eyebrow label above the title; the footer already says where you are.
