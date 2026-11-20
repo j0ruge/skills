@@ -39,7 +39,7 @@ Close the apps that own them first. Prefer each tool's own clean command: it kno
 | LM Studio / GGUF models (`%USERPROFILE%\.cache\lm-studio\models`) | the app is not installed; the user uses another runtime; dates | delete the folder; remove its `bin` from PATH afterwards |
 | HuggingFace models (`hub\models--org--name`) | last write date; no installed package uses it (search site-packages of the venvs) | delete the model folder (re-downloadable) |
 | HF duplicate storage | on Windows without symlinks, `blobs\` and `snapshots\` both hold full copies | Developer Mode makes new downloads use symlinks; old models stay duplicated until re-downloaded |
-| Ollama models (`%USERPROFILE%\.ollama\models`) | `ollama list`; the user's intent | `ollama rm <model>` — never delete blobs by hand |
+| Ollama models (`%USERPROFILE%\.ollama\models`) | `ollama list`; the user's intent | `ollama rm <model>` — never delete blobs by hand while Ollama stays. To remove Ollama itself: its per-user uninstaller (`safe-deletion.md` § Uninstalling a program), then `~\.ollama`, `%LOCALAPPDATA%\Ollama` and the `OLLAMA_*` user variables (2026-11: 2.8 GB program + 5.2 GB models + 1.5 GB data) |
 | Duplicate files | **full SHA256** equal (`dups.ps1`), re-hash right before deleting | delete the extra copies, keep one; re-check the kept copy exists |
 | Same content, two containers (`.nsp` + `.nsp.7z`, `.zip` + extracted folder) | `zipverify.ps1` IDENTICAL for zips; base-name match + the user's choice for other formats | keep one form |
 | Old installers / firmware in Downloads | dates, the device/app no longer in use | user's call — list them with sizes |
@@ -83,10 +83,12 @@ Media, games, courses, ROM collections, project archives. Give evidence, never a
 
 | Item | Check before |
 |---|---|
-| Docker Desktop + `docker_data.vhdx` | production or test? `docker system df`; uninstall if unused, else `docker system prune -a` (add `--volumes` only for test data) |
+| Docker Desktop + `docker_data.vhdx` | production or test? `docker system df`; uninstall if unused, else `docker system prune -a` (add `--volumes` only for test data). Daemon off and test-only data: `wsl-docker.md` § Docker Desktop |
 | Unity editors (`Program Files\Unity\Hub\Editor\<ver>`) | Unity Hub › Installs; projects registered |
 | Several Python installs with heavy packages | which one is default (`py -0p`, `where python`); which projects use the others |
-| SDKs (Windows SDK, Android SDK/NDK, .NET packs) | the user's current dev targets; remove through their installers |
+| SDKs (Windows SDK, Android SDK/NDK, .NET packs) | the user's current dev targets; remove through their installers. Windows SDKs install side by side, one Uninstall entry per version (10.0.22621 and 10.0.26100, ~2.4 GB each, 2026-11); `Windows Kits\10\Include` lists the versions on disk — keep the one the projects target |
+| Git worktrees and agent scratch folders (e.g. `~/.wt`, often inside WSL) | per worktree: `git status --porcelain` empty and `git merge-base --is-ancestor HEAD origin/main` true; then `git worktree remove <path>` without `--force` (it refuses a dirty tree), branches stay. A squash-merged branch shows as not merged and stays — the safe side. Loose drafts and logs next to them are the user's call by age; keep `handoff-*` notes. 2026-11: an 11 GB `~/.wt` held 13 worktrees of 3.4 GB, the rest was loose scratch, one folder 3.6 GB. Inside WSL the gain reaches C: only after compaction (`wsl-docker.md`) |
+| App VM disks (Claude Desktop `%APPDATA%\Claude\vm_bundles`, 8.1 GB in 2026-11) | whether the user uses the desktop features that run the VM — a Claude Code-only user does not; quit the app first |
 | TeX Live, game launchers, trial software | usage; uninstall properly |
 | Repos duplicated between Windows and WSL | which copy is live (`git log -1`, dates); never assume from memory |
 
@@ -105,5 +107,5 @@ Media, games, courses, ROM collections, project archives. Give evidence, never a
 - `pagefile.sys` while a crash/BSOD investigation is open (full/automatic dumps need it). Check the machine's notes first.
 - `C:\Windows\Installer`, `WinSxS`, `System32\DriverStore` by hand.
 - A WSL distro's `ext4.vhdx` that is in use — measure inside instead (`wsl-docker.md`).
-- App VMs (e.g. Claude Desktop `vm_bundles`), live browser profiles, password managers' data.
+- An app's VM disk while the app runs (closed and unused, it is a § 6 decision), live browser profiles, password managers' data.
 - Anything only "probably" duplicated.

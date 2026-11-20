@@ -19,11 +19,17 @@ wsl -d <distro> -- bash -lc "df -h /; du -xh --max-depth=2 ~ 2>/dev/null | sort 
 ```
 
 If `df` used ≈ the vhdx size, compacting gains nothing (one run, 2026-10: 32 GB used inside a 33.4 GB vhdx). Clean inside first
-(`~/.cache`, `npm cache clean --force`, `yarn cache clean`, `pip cache purge`, `sudo apt clean`), then compact if the
-gap is worth it. Starting a stopped distro just to measure is harmless but say that you did.
+(`~/.cache`, `npm cache clean --force`, `yarn cache clean`, `pip cache purge`, `sudo apt clean`, merged git worktrees
+and old scratch — `catalog.md` § 6), then compact if the gap is worth it. Starting a stopped distro just to measure is
+harmless but say that you did. Until the compaction, space freed inside is not free on the Windows drive: report the
+two numbers apart.
 
 Compacting needs admin: `wsl --shutdown`, then `Optimize-VHD -Path <vhdx> -Mode Full` (Hyper-V module) or diskpart
 (`select vdisk file=<vhdx>`, `attach vdisk readonly`, `compact vdisk`, `detach vdisk`).
+
+`wsl --shutdown` stops **every** distro and kills whatever the user has open in WSL — shells, editors, agents. Ask
+before it and leave compaction for the end of the session; in 2026-11 the user had a live WSL session and deferred
+it. To stop only Docker's backend, `wsl --terminate docker-desktop` leaves the user's distro running.
 
 ## Docker Desktop
 
@@ -31,6 +37,10 @@ Compacting needs admin: `wsl --shutdown`, then `Optimize-VHD -Path <vhdx> -Mode 
 the machine's Docker holds production data. If it is test-only: `docker system prune -a --volumes`; otherwise
 `docker system prune -a` without `--volumes`. Then compact `docker_data.vhdx` as above (Docker Desktop stopped).
 If Docker is not used at all, uninstalling Docker Desktop removes the program and the vhdx.
+
+With Docker Desktop stopped, `docker system df` cannot connect to the engine. If the data is test-only: stop just its
+backend (`wsl --terminate docker-desktop`) and delete `%LOCALAPPDATA%\Docker\wsl\disk\docker_data.vhdx` (13.5 GB in
+2026-11); uninstall later if the program goes too.
 
 ## An old vhdx in a dead profile
 

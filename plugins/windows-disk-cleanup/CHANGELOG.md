@@ -1,5 +1,43 @@
 # Changelog — `windows-disk-cleanup`
 
+## [0.3.0] — 2026-11-20
+
+### Desinstalar programas, worktrees e o que a ferramenta deixa no ambiente
+
+Lições de uma limpeza real do C:, de 5,7 para 53 GB livres, sem a skill instalada (feita à mão; o que faltou nela está aqui):
+
+- **`references/safe-deletion.md`, nova seção "Uninstalling a program":** o comando vem do `QuietUninstallString`.
+  Entrada em HKCU é instalação por usuário e dispensa admin (Apidog, Insomnia, Ollama). Entrada em HKLM (Docker
+  Desktop, Windows SDK) precisa de elevação: os passos vão num `.ps1` com `Start-Transcript`, rodado com
+  `-Verb RunAs -File`. O `-Command` inline montado com here-string de aspas duplas transformou as linhas de log em
+  comandos (`docker: unknown command: docker rc=`), o que pareceu falha de desinstalação. A primeira tentativa saiu
+  com 1 e nada removido, e a segunda funcionou. A prova é a chave do registro e a pasta, não o código de saída.
+  Sobras do Squirrel (`packages\`, `Update.exe`, `.dead`, 0,46 GB) e do NSIS (pasta vazia) são arquivos do programa.
+- **`safe-deletion.md`, "After deleting a tool's folder":** cópia do PATH antes de mexer; as variáveis `OLLAMA_*` e
+  `HERMES_*` continuaram em `HKCU:\Environment` depois do `SetEnvironmentVariable(<v>, $null, 'User')` no
+  PowerShell 7.6, e só saíram com `Remove-ItemProperty`; terminais abertos mantêm o ambiente antigo.
+- **`references/wsl-docker.md`:** `wsl --shutdown` derruba todas as sessões abertas no WSL. O usuário estava com
+  uma e adiou a compactação. Agora a skill manda perguntar antes e compactar por último. O espaço liberado dentro da
+  distro é reportado à parte, porque só chega ao C: depois da compactação. `wsl --terminate docker-desktop` para só
+  o Docker. Com o daemon desligado e dados de teste, o `docker_data.vhdx` (13,5 GB) sai direto.
+- **`references/catalog.md` § 6:**
+  - worktrees e pastas de scratch: um `~/.wt` de 11 GB tinha só 3,4 GB em 13 worktrees. A remoção é por worktree
+    (limpo, ancestral do `origin/main`, `git worktree remove` sem `--force`). Squash-merge fica, que é o lado seguro.
+  - Windows SDKs lado a lado (22621 e 26100, cerca de 2,4 GB cada).
+  - remoção do Ollama inteiro, além do `ollama rm`.
+- **`catalog.md` § 8, regra corrigida:** o `vm_bundles` do Claude Desktop (8,1 GB) estava em "não tocar" e foi
+  apagado a pedido de um usuário que só usa o Claude Code, sem erro. Passou para § 6 como decisão do usuário, com o
+  app fechado. Em § 8 fica o disco de VM de app **com o app aberto**.
+- **`SKILL.md`:** três linhas nas armadilhas (shutdown do WSL, elevação, variáveis), duas linhas de verificação, e o
+  escopo passa a 2026-10 e 2026-11. O `metadata.version` estava em 0.2.1 com o plugin em 0.2.2 (o commit `98a207d`
+  subiu só o `plugin.json`, e nem o `validate-versions.py` nem o `check_release_sync.py` comparam esse campo).
+  Agora os dois estão em 0.3.0.
+
+Dívida que não foi tratada aqui:
+- falta um sensor para o `metadata.version` do `SKILL.md`.
+- o smoke do Codex em `docs/codex/smokes.json` segue em 0.2.1: o `codex` do WSL desta máquina é o atalho npm do
+  Windows e sai com `node: not found`.
+
 ## [0.2.2] — 2026-10-22
 
 Distribuição individual no catálogo Codex após instalação isolada, descoberta e smoke seguro de entrada dos workflows. Conteúdo canônico compartilhado com Claude Code/Cursor. Requisitos e limites em `docs/codex/compatibility.md` na raiz do marketplace.

@@ -2,7 +2,7 @@
 name: windows-disk-cleanup
 description: "Frees Windows disk space without losing data: inventories drives, proves duplicates by hash (hardlinks discounted), deletes only in user-authorized rounds — manifest and reversible step first, re-measure after. Knows dev caches, Drive cache, old profiles, WSL/Docker disks. Triggers — disk full, free up space, C: full, clean disk, what can I delete."
 metadata:
-  version: 0.2.1
+  version: 0.3.0
 ---
 
 # Windows disk cleanup — measure, prove, delete in rounds, keep it from refilling
@@ -110,6 +110,9 @@ Prefer a mechanism over a reminder:
 | Trusting memory/notes about where things are | look on disk; notes go stale (repos reappear, dumps vanish) |
 | Treating an `E` log line after a change as caused by it | compare with older logs first |
 | Deleting what an uninstaller left behind as junk | it is what the program created (saves, replays, configs): show it, copy what the user keeps, verify by hash, then delete (`scripts/steam-games.ps1` lists Steam's) |
+| `wsl --shutdown` to compact a vhdx while the user works in WSL | it stops every distro and kills their open shells, editors and agents: ask first, do the Windows-side rounds before, compact last; to stop only Docker's backend, `wsl --terminate docker-desktop` (`references/wsl-docker.md`) |
+| Elevating an uninstall with an inline `-Command` and reading only its exit code | `QuietUninstallString` in a `.ps1` with `Start-Transcript`, run with `-Verb RunAs -File`; then check the Uninstall key is gone (`references/safe-deletion.md` § Uninstalling a program) |
+| Trusting `[Environment]::SetEnvironmentVariable(<v>, $null, 'User')` to delete a removed tool's variable | check `HKCU:\Environment`; remove with `Remove-ItemProperty` (`references/safe-deletion.md` § After deleting a tool's folder) |
 
 ## Output
 
@@ -120,7 +123,7 @@ and the next decision that is the user's. Keep jargon out of the summary; detail
 
 ## Scope & verification
 
-This skill describes third-party behavior observed on Windows 10/11 in 2026-10. Before asserting any of it — and
+This skill describes third-party behavior observed on Windows 10/11 in 2026-10 and 2026-11. Before asserting any of it — and
 before saying a feature does **not** exist — check the source:
 
 | Topic | Where to confirm |
@@ -131,6 +134,8 @@ before saying a feature does **not** exist — check the source:
 | Steam installs | `steamapps\appmanifest_*.acf` |
 | WSL / Docker disks | `wsl --help`, `docker system df`, `Get-Help Optimize-VHD` |
 | WinSxS, restore points | `Dism /Online /Cleanup-Image /AnalyzeComponentStore`, `vssadmin list shadowstorage` |
+| Uninstall commands | `UninstallString` / `QuietUninstallString` under the three `...\CurrentVersion\Uninstall` keys (HKLM, WOW6432Node, HKCU) |
+| Git worktrees | `git worktree list`, `git help worktree` (`remove` refuses a dirty tree without `--force`) |
 
 ## Evaluating this skill
 

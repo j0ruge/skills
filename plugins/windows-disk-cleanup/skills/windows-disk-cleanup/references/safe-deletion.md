@@ -34,11 +34,44 @@ Read this before deleting anything, even once the user has authorized it.
 - Folders in `%TEMP%` created by elevated installers return "Permission denied" without admin; files held open by
   running apps (tray tools, editors) fail even as admin. Measure them (usually MB) and move on.
 
+## Uninstalling a program
+
+Read this before running any uninstaller (round 6). Quit the program first.
+
+```powershell
+$k = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+     'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*',
+     'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*'
+Get-ItemProperty $k -ErrorAction SilentlyContinue | Where-Object DisplayName -match '<name>' |
+  Select-Object PSPath, DisplayName, UninstallString, QuietUninstallString
+```
+
+- Prefer `QuietUninstallString`. With only `UninstallString` (Docker Desktop has just `uninstall`), look up the
+  vendor's silent flag instead of guessing one.
+- An entry under **HKCU** is a per-user install and needs no admin (2026-11: Apidog `/currentuser /S`, Insomnia
+  `Update.exe --uninstall -s`, Ollama `unins000.exe /SILENT`).
+- An entry under **HKLM** needs admin. From a non-admin session, write the steps to a `.ps1` in the plan folder —
+  `Start-Transcript <log>`, the uninstall command, `"rc=$LASTEXITCODE"`, `Stop-Transcript` — and run it with
+  `Start-Process pwsh -Verb RunAs -ArgumentList '-NoProfile','-File',<ps1> -Wait -PassThru` (`powershell` without
+  PowerShell 7). Tell the user a UAC prompt is coming. Do not build the script inline as `-Command` from a
+  double-quoted here-string: in 2026-11 the log lines became commands (`docker: unknown command: docker rc=`), which
+  looked like an uninstall failure. The first try that day returned 1 with nothing removed (UAC not accepted or not
+  seen); the retry worked. Retry once, then hand the user the commands for an admin shell.
+- **Verify by artifact**: the Uninstall entry is gone and the program folder is gone or holds only leftovers.
+- **Leftovers**: program files left behind are safe to delete once the entry is gone — Squirrel installers leave
+  `packages\`, `Update.exe` and a `.dead` marker (0.46 GB for Insomnia, 2026-11); NSIS can leave an empty folder.
+  Anything else follows the leftover rule in `SKILL.md` (it can be personal data).
+
 ## After deleting a tool's folder
 
+- Save the user PATH to a file in the plan folder before editing it.
 - PATH entries that pointed into it now dangle (e.g. `...\lm-studio\bin`): list with
   `[Environment]::GetEnvironmentVariable('Path','User') -split ';' | Where-Object { $_ -and -not (Test-Path $_) }`
   and offer to remove them.
+- User variables the tool set (`OLLAMA_*`, `HERMES_HOME`, 2026-11): remove with
+  `Remove-ItemProperty 'HKCU:\Environment' -Name <v>` and check with `(Get-Item 'HKCU:\Environment').GetValueNames()`.
+  With PowerShell 7.6, `[Environment]::SetEnvironmentVariable(<v>, $null, 'User')` left all six in the key.
+- Terminals and apps already open keep the old PATH and variables until reopened — say so.
 - Shortcuts, scheduled tasks or services that pointed there: `refs-scan.ps1` again on the old path.
 
 ## Your own footprint
