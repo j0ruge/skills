@@ -2,6 +2,22 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.24] — 2026-11-21 — o verde também é rótulo das condições medidas
+
+**O quê:** em `references/kaizen-conceitos.md`, *Rótulo ≠ artefato* ganha *O verde também é rótulo das condições
+medidas*, depois de *O vermelho também é rótulo*. A sonda herdada mede as condições para as quais foi escrita, e o verde
+dela não fala de uso fora delas: antes de aceitar o verde, compare essas condições com as do Gemba e meça a que faltar.
+O `SKILL.md` muda só a versão. Ele tem 19.992 chars, a 8 do aviso C1 da `skill-quality-audit` (`WARN_CHARS = 20000`),
+e a armadilha "Sonda verde, ou zero, porque não leu o artefato" e o passo 6 da Fase 2 já apontam para *Rótulo ≠ artefato*.
+
+**Por quê:** num deck de aula, o teste de encaixe (`check-fit.mjs` da `html-presentation`: 1920×1080, 1366×768,
+1280×720 e 1366×657) passou nas 23 lâminas, e o deck ia ser usado só no tablet e no celular do professor, em escala de
+0,20 a 0,43. Nas telas deitadas a síntese de uma lâmina entrava 27 px no rodapé, e só a captura mostrou. Uma medida da
+folga do rodapé nas 23 lâminas, em quatro telas de toque, ficou vermelha nesse caso e verde depois da correção.
+
+**Dívida que fica:** o smoke Codex do plugin (`docs/codex/smokes.json`) é da 1.4.3. Para pôr um ponteiro desta lição no
+`SKILL.md`, ele precisa antes ser comprimido (`skill-refactoring`), numa tarefa à parte.
+
 ## [1.4.23] — 2026-11-18 — o achado e o vermelho também são rótulo
 
 **O quê:** em `references/kaizen-conceitos.md`, *Rótulo ≠ artefato* ganha dois trechos. *O achado
