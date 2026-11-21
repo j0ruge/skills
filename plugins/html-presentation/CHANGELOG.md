@@ -3,6 +3,24 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.7.0] — 2026-11-21
+
+### Componente novo: imagem que cresce com o mouse (`.zoom`)
+
+No deck de uma defesa de TCC (21/11/2026), a lâmina mostrava uma tela real de 895 × 560 px, e a banca não lia os
+textos dela do fundo da sala. O autor pediu que a foto crescesse com o mouse sobre ela. O efeito foi escrito à mão no
+deck; a primeira escala (1.7) entrou 41 px no rodapé, e só a medição da caixa mostrou, porque o `check-fit.mjs` e o
+`shoot.sh` olham a lâmina em repouso.
+
+- `assets/deck-template.html`: classe `.zoom`, com a escala em `--zoom` (padrão 1.5) e o ponto fixo em
+  `--zoom-origin`. O resto da lâmina escurece. A impressão não muda.
+- `references/layout-and-type.md`: entrada *Zoom on hover*, com a medição da caixa ampliada, o limite dos dois
+  sensores, o PDF com a imagem pequena e o aviso de que o `build.py` embute a imagem no `dist/`.
+- O `SKILL.md` só muda a versão: está a menos de 200 caracteres do teto de 20 mil.
+- Prova: no template, uma imagem com `.zoom` medida antes, durante e depois do mouse.
+- Dívida anotada, sem conserto aqui: o `build.py` grava sempre `roteiro-de-fala.md`, e um segundo deck na mesma
+  pasta `dist/` sobrescreve o roteiro do primeiro.
+
 ## [1.6.3] — 2026-11-20
 
 ### `check-fit.mjs` reprova a linha de fonte que entra na margem esquerda

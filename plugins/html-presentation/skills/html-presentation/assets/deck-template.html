@@ -104,6 +104,10 @@ b,strong{font-weight:600;color:var(--fg)}
 .chip.neutral{background:var(--neutral-bg);color:var(--neutral-fg)}
 .ico{stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .src{position:absolute;right:128px;bottom:124px;font-size:19px;color:var(--fg3);text-align:right;line-height:1.4}
+/* Imagem que cresce com o mouse: --zoom é a escala, --zoom-origin o ponto que fica parado. Meça a caixa
+   ampliada: ela tem de ficar dentro do palco e acima do rodapé (references/layout-and-type.md). */
+.zoom{position:relative;transform-origin:var(--zoom-origin,left center);transition:transform .2s ease,box-shadow .2s ease;cursor:zoom-in}
+.zoom:hover{transform:scale(var(--zoom,1.5));z-index:60;box-shadow:0 0 0 2000px rgb(0 0 0/.5),0 24px 80px rgb(0 0 0/.45)}
 .pin{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:9999px;background:var(--brand-strong);color:#fff;font-family:var(--mono);font-weight:600;font-size:19px}
 
 .cols{display:grid;gap:64px;flex:1;min-height:0}

@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.6.3"
+  version: "1.7.0"
 ---
 
 # HTML Presentation

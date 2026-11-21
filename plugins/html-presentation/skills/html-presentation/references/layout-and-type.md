@@ -42,6 +42,14 @@ The slide padding is 112 / 128 / 150. The bottom 150 px belong to the footer, so
   and scaled by 0.665); a 560 px crop of the controls the slide pointed at, shown at 760 px, brought them to 20 to
   24 px. Crop with a script holding a table of boxes over the original capture, so a recapture is cropped the same
   way, and put the numbered pins on the crop's edges, as for mockups.
+- **Zoom on hover** (`class="zoom"` on an `<img>`): a real screen or a photo that the room cannot read at slide
+  size grows while the mouse is over it, and the rest of the slide dims. Set the scale in `--zoom` (default 1.5) and
+  the fixed point in `--zoom-origin` (default `left center`). Measure the enlarged box with Playwright
+  (`getBoundingClientRect` after `mouse.move`): it must stay inside the stage and above the footer. In a TCC defence
+  deck (21/11/2026) an 895 × 560 image at 1.7 went 41 px into the footer, and 1.55 stopped 1 px above it.
+  `check-fit.mjs` and `shoot.sh` see only the resting state, so they pass either way. The PDF shows the small image:
+  what the slide needs must be readable without the zoom. `build.py` inlines the image into `dist/` (HTML and PDF);
+  an image kept out of the repository must have its `dist/` files ignored too, or it returns through them.
 - **Hover tip** (`data-tip`, `data-g` + `#glossario`): text in another language (titles, a poem, a colophon) and
   terms the audience may not know. The questions the presenter asks after reading the deck are the list: in the
   Farel deck (19/10/2026) they became the glossary entries, and the slides stayed as clean as before. Write each

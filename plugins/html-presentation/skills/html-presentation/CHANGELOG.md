@@ -2,6 +2,16 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-11-21 — the same TCC deck, version 2 with a real screen (v1.7.0)
+- The user asked for the photo on slide 3 to grow under the mouse. Written by hand in the deck: `transform:scale`
+  from `left center`, a dimming `box-shadow`, `z-index` above the content.
+- The first scale, 1.7, put the enlarged image 41 px into the footer with `check-fit.mjs` green: it measures the
+  resting slide. 1.55 stopped 1 px above the footer. The box was measured with Playwright, without opening the image.
+- The image is private. The source references it by path, but `build.py` inlines it, so `dist/` HTML and PDF had to
+  be ignored as well.
+- Lesson added: component `.zoom` in the template and the entry *Zoom on hover* in `references/layout-and-type.md`.
+- Not fixed here: a second deck built into the same `dist/` overwrites `roteiro-de-fala.md`.
+
 ## 2026-11-20 — the same TCC deck, second review round (v1.6.3)
 - Two review fixes added sentences to the source line of slides 8 and 10. `.src` is anchored right and grows left on
   one line; it entered the left margin (x = 80 of a 128 px padding) with `check-fit.mjs` green in all four sizes.
