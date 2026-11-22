@@ -47,7 +47,7 @@ python3 scripts/sabotar.py <pasta do curso> <pasta nova> --bancada <bancada>
 ```
 
 - A bancada, as capturas e as cópias sabotadas ficam fora de qualquer repositório e fora do `/tmp`.
-- `rodar-tudo.sh` grava cada execução em `<bancada>/execucoes/<data-hora>-<pid>/`. Duas execuções ao mesmo tempo não se pisam. Sai 1 se algo falhar.
+- `rodar-tudo.sh` grava cada execução em `<bancada>/execucoes/<data-hora>-<pid>/`. Duas execuções ao mesmo tempo não se pisam. Sai 1 se algo falhar, e 2 se a bancada ou o curso não existem.
 - `sabotar.py` desfaz cada correção numa cópia. Todo sensor tem de falhar na sua cópia (MORTO). Sensor VIVO não prova nada.
 - Um sensor por defeito, sempre provado por sabotagem. O método de QA, o modelo de bug e a revisão de conteúdo por aula estão em `references/qa.md`.
 - Confira cada DOI de um arquivo de fontes com `python3 scripts/conferir-dois.py <arquivo.md>`.

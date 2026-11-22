@@ -2,15 +2,20 @@
 # Roda o conferir.js e todos os sensores de sensores/ sobre um curso. Cada execução ganha a própria pasta,
 # <bancada>/execucoes/<AAAAMMDD-HHMMSS>-<pid>/, com conferir.out, capturas/, <sensor>.out e resumo.txt:
 # duas execuções ao mesmo tempo não se pisam. Os seis sensores de aula rodam só em lessons/*.html.
-# Sai 1 se o conferir.js ou algum sensor falhar.
+# Sai 1 se o conferir.js ou algum sensor falhar. Sai 2 sem os dois argumentos, se a bancada ou o curso
+# não existem, ou se o resumo.txt não foi escrito: sem resumo, nada foi medido.
 # Uso: bash rodar-tudo.sh <bancada do preparar.sh> <pasta do curso>
 set -u
-B="${1:?informe a bancada}"; E="${2:?informe a pasta do curso}"
+[ $# -eq 2 ] || { echo "uso: bash rodar-tudo.sh <bancada do preparar.sh> <pasta do curso>" >&2; exit 2; }
+B="$1"; E="$2"
 AQUI="$(cd "$(dirname "$0")" && pwd)"
-B="$(cd "$B" && pwd)"; E="$(cd "$E" && pwd)"
+[ -d "$B/pw/node_modules/playwright" ] || { echo "erro: $B não é uma bancada do preparar.sh (falta pw/node_modules/playwright)" >&2; exit 2; }
+[ -d "$E" ] || { echo "erro: a pasta do curso $E não existe" >&2; exit 2; }
+B="$(cd "$B" && pwd)" || exit 2
+E="$(cd "$E" && pwd)" || exit 2
 export NODE_PATH="$B/pw/node_modules"
 RUN="$B/execucoes/$(date +%Y%m%d-%H%M%S)-$$"
-mkdir -p "$RUN/capturas"
+mkdir -p "$RUN/capturas" || { echo "erro: não consegui criar $RUN" >&2; exit 2; }
 echo "execucao: $RUN"
 LESS=()
 for f in "$E"/lessons/*.html; do [ -e "$f" ] && LESS+=("$f"); done
@@ -34,6 +39,10 @@ falhas=0
     [ $rc -ne 0 ] && { falhas=1; /usr/bin/grep -v '^PASS' "$RUN/$n.out" | head -8; }
   done
 } | tee "$RUN/resumo.txt"
-# O pipe roda em subshell: o resultado vem do resumo, não da variável.
-/usr/bin/grep -Eq ' rc=[1-9]' "$RUN/resumo.txt" && exit 1
-exit 0
+# O pipe roda em subshell: o resultado vem do resumo, e a variável falhas fica lá dentro.
+[ -s "$RUN/resumo.txt" ] || { echo "erro: $RUN/resumo.txt ausente ou vazio" >&2; exit 2; }
+/usr/bin/grep -Eq ' rc=[1-9]' "$RUN/resumo.txt"; g=$?
+[ $g -eq 0 ] && exit 1
+[ $g -eq 1 ] && exit 0
+echo "erro: o grep saiu $g ao ler $RUN/resumo.txt" >&2
+exit 2
