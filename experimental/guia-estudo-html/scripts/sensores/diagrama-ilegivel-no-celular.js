@@ -24,7 +24,7 @@ const MINIMO = 11;
       let medidos = 0;
       svgs.forEach((svg, i) => {
         const vb = svg.viewBox && svg.viewBox.baseVal;
-        if (!vb || !vb.width) return;
+        if (!vb || !vb.width) { achados.push(`desenho ${i + 1}: svg sem viewBox, não se mede`); return; }
         medidos++;
         const rect = svg.getBoundingClientRect();
         const escala = rect.width / vb.width;

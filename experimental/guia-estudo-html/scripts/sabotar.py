@@ -67,8 +67,6 @@ def criar(curso, saida):
     pastas = {}
     for caso, (trocas, _) in CASOS.items():
         dest = saida / caso
-        if dest.exists():
-            shutil.rmtree(dest)
         shutil.copytree(curso, dest)
         for arq, velho, novo, n in trocas:
             p = dest / arq
@@ -101,6 +99,9 @@ def main():
     a = ap.parse_args()
     curso = pathlib.Path(a.curso).resolve()
     saida = pathlib.Path(a.saida).resolve()
+    if saida.exists() and any(saida.iterdir()):
+        print(f'erro: {saida} não está vazia; informe uma pasta nova ou vazia (nada foi apagado).', file=sys.stderr)
+        return 2
     saida.mkdir(parents=True, exist_ok=True)
     pastas = criar(curso, saida)
     if not a.bancada:
@@ -119,6 +120,9 @@ def main():
             vivos += 1
         elif marca and not any(marca in l for l in falhas):
             print('VIVO', caso, f'(falhou, mas não em {marca})')
+            vivos += 1
+        elif not falhas:
+            print('VIVO', caso, '(rc 1 sem linha FAIL: o sensor quebrou, não mediu)')
             vivos += 1
         elif so and any(marca not in l for l in falhas):
             print('VIVO', caso, f'(falhou também fora de {marca})')

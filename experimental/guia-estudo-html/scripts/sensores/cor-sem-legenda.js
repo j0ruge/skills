@@ -1,4 +1,5 @@
 // Regra: toda cor e todo tracejado de um diagrama Mermaid têm explicação na figcaption.
+// Uso de classe: "class X nome" e "A:::nome". Mermaid já desenhado (sem o código no texto) falha.
 // Lê o código do Mermaid sem rede (o diagrama fica como texto). Em cada figure.diagrama com pre.mermaid:
 //   - cada classDef usada (linha "class X nome") pede, na figcaption, o nome que GUIA_TEXTOS.cores dá ao seu fill;
 //   - stroke-dasharray numa classe usada, ou seta pontilhada (-.-> ou -.-), pede palavraTracejado na figcaption;
@@ -23,6 +24,7 @@ const { pathToFileURL } = require('url');
     const T = await p.evaluate(() => window.GUIA_TEXTOS || {});
     const figuras = await p.$$eval('figure.diagrama', fs => fs.filter(f => f.querySelector('pre.mermaid')).map(f => ({
       mermaid: f.querySelector('pre.mermaid').textContent,
+      desenhado: !!f.querySelector('pre.mermaid > svg'),
       legenda: ((f.querySelector('figcaption') || {}).textContent || '').toLowerCase()
     })));
     const cores = {};
@@ -31,11 +33,13 @@ const { pathToFileURL } = require('url');
     const BRANCO = ['#fff', '#ffffff'];
     const problemas = [];
     figuras.forEach((f, i) => {
+      if (f.desenhado) { problemas.push(`figura ${i + 1}: o Mermaid desenhou sem rede; o código não está mais no texto`); return; }
       const pede = new Set();
       const defs = {};
       for (const m of f.mermaid.matchAll(/classDef\s+(\w+)\s+([^\n]+)/g)) defs[m[1]] = m[2];
       const usadas = new Set();
       for (const m of f.mermaid.matchAll(/^\s*class\s+[\w,]+\s+(\w+)/gm)) usadas.add(m[1]);
+      for (const m of f.mermaid.matchAll(/:::(\w+)/g)) usadas.add(m[1]);
       let temTraco = /-\.->|-\.-/.test(f.mermaid);
       for (const c of usadas) {
         const d = defs[c] || '';

@@ -57,6 +57,7 @@ const MINIMO = 4.5;
       });
       return { svgs: svgs.length, textos, pior, qual, achados };
     }, MINIMO);
+    if (r.svgs && !r.textos) r.achados.push('nenhum texto medido nos SVG');
     const ok = r.achados.length === 0;
     if (!ok) falhas++;
     console.log(`${ok ? 'PASS' : 'FAIL'} ${path.basename(pagina)}: ${r.svgs ? `${r.svgs} gráficos, ${r.textos} textos, pior ${r.pior.toFixed(2)}:1 ("${r.qual}")` : 'sem gráfico em SVG feito à mão'}${ok ? '' : ' -> ' + r.achados.slice(0, 5).join('; ') + (r.achados.length > 5 ? ` (+${r.achados.length - 5})` : '')}`);

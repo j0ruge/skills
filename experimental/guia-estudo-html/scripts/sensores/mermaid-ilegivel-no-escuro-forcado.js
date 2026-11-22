@@ -50,6 +50,7 @@ const lum = (r, g, b) => { const f = c => { c /= 255; return c <= 0.03928 ? c / 
         if (cr < pior) { pior = cr; qual = c.t; }
       }
       if (!desenhou) achados.push('o Mermaid não desenhou em 20 s (sem rede?)');
+      if (desenhou && !rotulos) achados.push('nenhum rótulo medido (todos menores que 4 px ou sem texto)');
       if (pior < MINIMO) achados.push(`rótulo "${qual}" com contraste ${pior.toFixed(2)}:1`);
     }
     const ok = achados.length === 0;

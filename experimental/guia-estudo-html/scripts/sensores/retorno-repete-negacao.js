@@ -37,6 +37,7 @@ const limpa = s => s.toLowerCase().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, 
         if (primeira && negacoes.includes(primeira)) achados.push(`P${q + 1} opção ${i + 1}: repete a negação "${resto.slice(0, 22)}…"`);
       }
     }
+    if (erradas && !negacoes.length) achados.push('sem negacoes no GUIA_TEXTOS');
     const ok = achados.length === 0;
     if (!ok) falhas++;
     console.log(`${ok ? 'PASS' : 'FAIL'} ${path.basename(pagina)}: ${erradas ? erradas + ' opções erradas' : 'sem opção errada'}${ok ? '' : ', ' + achados.length + ' com defeito -> ' + achados.slice(0, 3).join('; ')}`);
