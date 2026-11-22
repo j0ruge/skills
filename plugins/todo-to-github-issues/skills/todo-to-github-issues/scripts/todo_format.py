@@ -7,7 +7,8 @@
 
 AUTO is only what is deterministic and loses nothing: the marker under an unambiguous findings
 heading, the decided section, `RESOLVIDO por` -> `RESOLVED by`, a bold title cut at the first
-separator, an overlong physical line wrapped at the kit's width, the untouched legacy seed replaced, and a ticked
+separator, an overlong physical line wrapped at the kit's width (never the kit's RECURRED line,
+which its sensor measures outside the width), the untouched legacy seed replaced, and a ticked
 item deleted ONLY when `git merge-base --is-ancestor` proves its commit reached the default
 branch. Everything that needs judgement — an item over the cap, a narrative `##`, which heading
 holds the findings, what is decided — is listed as MANUAL with the rule, the line and the action.
@@ -79,9 +80,12 @@ class Manual:
 class Fixer:
     """One pass over the lines of a file; every method is one AUTO rule."""
 
-    def __init__(self, lines, seed_lines, repo_root, ref, open_heading, width):
+    def __init__(self, lines, seed_lines, repo_root, ref, open_heading, width, recurred=None):
         self.lines = list(lines)
         self.width = width  # the kit's WIDTH_CAP, never a number of this skill's
+        # The kit's RECURRED_TOKEN (None: a kit before its rule 6). The line it opens is measured
+        # outside the width, so wrap_long_lines leaves it whole.
+        self.recurred_re = re.compile(r"^[ \t]*" + re.escape(recurred) + r" [0-9]+: ") if recurred else None
         self.seed = seed_lines
         self.root = repo_root
         self.ref = ref
@@ -319,6 +323,9 @@ class Fixer:
             j = i
             while j < stop:
                 line = self.lines[j]
+                if self.recurred_re and self.recurred_re.match(line):
+                    j += 1
+                    continue
                 if len(line) > self.width and line.strip():
                     indent = "  " if j == i else re.match(r"^[ \t]*", line).group(0) or "  "
                     parts = wrap_line(line, indent, self.width)
@@ -451,7 +458,8 @@ def fix_text(text, kit_root, repo_root, lang, open_heading):
         note = f"the untouched legacy seed was replaced by {os.path.basename(seed_path)} (it held no finding)"
         return seed_text, [note], [], seed_path
     lines = text.split("\n")
-    f = Fixer(lines, seed_text.split("\n"), repo_root, default_ref(repo_root), open_heading, width)
+    f = Fixer(lines, seed_text.split("\n"), repo_root, default_ref(repo_root), open_heading, width,
+              kit.recurred_token(kit_root))
     if os.path.isfile(legacy_path):
         with open(legacy_path, encoding="utf-8") as fh:
             f.legacy_preamble(fh.read().split("\n"))

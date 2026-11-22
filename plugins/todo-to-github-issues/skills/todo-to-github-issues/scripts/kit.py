@@ -61,6 +61,25 @@ def width_cap(root):
     return int(m.group(1)) if m else None
 
 
+# The kit's own spelling of the declaration it publishes for this mirror (tests/check-todo.sh, above
+# RECURRED_TOKEN): column 0, double quotes, alone on its line.
+RECURRED_TOKEN_RE = re.compile(r'^RECURRED_TOKEN="([A-Z]+)"[ \t]*$', re.MULTILINE)
+
+
+def recurred_token(root):
+    """The word that opens the line counting a finding's returns (its rule 6), or None when the
+    sensor declares none — a kit from before that rule. The kit measures that line outside the cap
+    and the width, so --fix must never wrap it: wrapped, the sensor refuses the item ("RECURRED is
+    the last line of the item"), and the kit's post-merge chores rejoined it by hand twice
+    (2026-11-21, 2026-11-22). Read from the sensor, like the width, never kept here."""
+    try:
+        with open(sensor_path(root), encoding="utf-8") as fh:
+            m = RECURRED_TOKEN_RE.search(fh.read())
+    except OSError:
+        return None
+    return m.group(1) if m else None
+
+
 def preflight(need_gh, need_kit):
     """Every requirement of the mode that is about to run, checked at once; all failures are
     reported together (fixing one to discover the next costs a round per missing tool), then

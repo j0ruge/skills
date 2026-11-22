@@ -163,6 +163,32 @@ check("a long line that fits the cap once wrapped passes the sensor", sensor_rc(
 tl = STANDARD.replace(GOOD, "- [ ] " + "y" * 120 + " — `a:1` — w. — descoberto por `x` (2026-09-24)\n")
 new3, _, _ = fix(tl)
 check("wrapping never leaves the box alone on its line", "- [ ]\n" not in new3 and "\n- [ ] **" + "y" * 20 in new3)
+# The RECURRED line is outside the kit's width (its rule 6): wrapped, the sensor refuses the item
+# ("RECURRED is the last line of the item"). Measured twice in the kit's own post-merge chores
+# (2026-11-21 and 2026-11-22), each time rejoined by hand after --fix --write. The token is the
+# kit's (`RECURRED_TOKEN` in its sensor), read like the width, never spelled here.
+TOK = kit.recurred_token(ROOT)
+check("recurred_token reads the token the kit's sensor declares", TOK == "RECURRED")
+write(kit.sensor_path(sensor_dir), "CAP=8\nWIDTH_CAP=77\nRECURRED_TOKEN=\"AGAIN\"\n")
+check("...the one the sensor declares, not a word of this skill's", kit.recurred_token(sensor_dir) == "AGAIN")
+write(kit.sensor_path(sensor_dir), "CAP=8\nWIDTH_CAP=77\n# RECURRED_TOKEN=\"AGAIN\"\n")
+check("...and answers None when the sensor declares none", kit.recurred_token(sensor_dir) is None)
+rec = (f"  {TOK} 2: outro-repo/20261117-uma-missao-de-nome-comprido (2026-11-17); "
+       "outro-repo/20261119-outra-missao-de-nome-mais-comprido-ainda (2026-11-19)")
+check("...the fixture RECURRED line is wider than the kit's width", len(rec) > W)
+recw = STANDARD.replace(GOOD, f"- [ ] **Volta** — `bin/x:1` (`um_simbolo`) {words} fim.\n"
+                              "  — descoberto por `x` (2026-09-24)\n" + rec + "\n")
+recw = recw.replace(" ".join(f"palavra{k}" for k in range(90)), " ".join(f"palavra{k}" for k in range(30)))
+new_r, auto_r, _ = fix(recw)
+check("a RECURRED line wider than the kit's width is left whole by --fix", rec + "\n" in new_r)
+check("...while the overlong line above it in the same item is still wrapped",
+      any("wrapped" in a for a in auto_r) and "- [ ] **Volta** — `bin/x:1` (`um_simbolo`) palavra0" in new_r
+      and new_r.count("\n") > recw.count("\n"))
+check("...and the kit's sensor accepts the result", sensor_rc(new_r) == 0)
+already = STANDARD.replace(GOOD, GOOD + rec + "\n")
+new_a, auto_a, _ = fix(already)
+check("an item already in the standard with a wide RECURRED line comes out byte for byte the same",
+      new_a == already and not any("wrapped" in a for a in auto_a))
 
 # ── ticked items, against a real git history ───────────────────────────────────────────────────
 repo = tempfile.mkdtemp(prefix="todo-format-")

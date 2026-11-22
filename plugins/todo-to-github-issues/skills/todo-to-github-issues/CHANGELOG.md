@@ -3,7 +3,21 @@
 Registro por sessão da skill; o changelog **versionado** é `plugins/todo-to-github-issues/CHANGELOG.md`.
 Cada entrada registra **o que mudou e por quê** — a lição que a motivou, não só o diff.
 
-## 2026-11-15 — o `TEST_CMD` verde não libera o plano
+## 2026-11-22 — o `--fix` partia a linha `RECURRED`, e o sensor recusava o item
+
+Publicado como **v2.9.9**. Saiu da retro de uma sessão do kit sdd, no chore de pós-merge do L4 da
+campanha `20261117-zerar-as-issues`.
+
+- **O sintoma.** O `--fix --write` apagou os 15 itens resolvidos e terminou com `the kit's sensor now
+  says (rc 1): 2 shape violation(s)`: `line 464: RECURRED is the last line of the item` e
+  `RECURRED entry 1 is not <where> (YYYY-MM-DD)`. A linha `RECURRED 2: …` (141 colunas) de um item
+  que ficava tinha saído em duas. O chore do L3, na véspera, já tinha reunido duas assim à mão.
+- **A causa.** O `wrap_long_lines` quebra toda linha acima do `WIDTH_CAP`. A regra 6 do sensor mede a
+  `RECURRED` fora da largura e só a lê numa linha. O kit publica o `RECURRED_TOKEN` dizendo que este
+  espelho o lê, e a skill não o lia em lugar nenhum (`grep -i recurred scripts/*.py` vazio).
+- **O conserto.** `kit.recurred_token` lê o token do sensor; o `Fixer` recebe o token e pula a linha que
+  ele abre. Testes vermelhos antes (3 FAIL: a linha intacta, o sensor que aceita, o arquivo no padrão
+  byte a byte), verdes depois; `test_todo_issues.py` segue com 104 ok.
 
 Publicado como **v2.9.8**. Saiu da retro de uma sessão de um projeto: depois de commitar a revisão
 (com o `TEST_CMD` verde), o plano do espelho recusou o `TODO.md`.

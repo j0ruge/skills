@@ -2,7 +2,7 @@
 name: todo-to-github-issues
 description: "Mirror an sdd-style TODO.md (`<!-- sdd:open -->` / `<!-- sdd:decided -->`) as GitHub issues, idempotently, re-syncing as the file changes; also audits and fixes an off-standard TODO.md and routes an `ACHADOS-*.md` report to the tracker. Triggers — TODO.md para issues, sincronizar issues do TODO, auditar TODO.md, relatório de achados, ACHADOS, gh issue create em lote."
 metadata:
-  version: 2.9.8
+  version: 2.9.9
   user_invocable: "true"
   argument_description: "plan (padrão) | apply | apply --close-orphans | audit | fix | fix --write"
 ---
@@ -118,7 +118,8 @@ que não casa, ou um traceback), como o rc 2, 3 ou 6.
   com recuo de 2 espaços, sem mudar uma palavra — o que costuma **revelar** um item acima do teto
   de linhas que passava por estar numa linha só. A largura é **lida do kit** a cada execução: uma
   cópia daqui (100) sobreviveu à regra do kit e fez o `--audit` inventar 6 itens acima do teto num
-  arquivo que o sensor chamava de limpo;
+  arquivo que o sensor chamava de limpo. Nunca a linha `RECURRED`, que o kit mede fora da largura:
+  quebrada, o sensor recusa o item;
 - `- [x]` apagado **só** quando todo commit que ele declara (`RESOLVED by`/`RESOLVIDO por|em`)
   já está na branch padrão, provado por `git merge-base --is-ancestor`; o mesmo vale para o item
   **aberto** (`- [ ] … RESOLVED by <hash>`), que o sensor aceita e o plano lê `SKIP` para sempre.

@@ -3,6 +3,22 @@
 Changelog **versionado** do plugin. O registro por sessão da skill fica em
 `skills/todo-to-github-issues/CHANGELOG.md`.
 
+## [2.9.9] — 2026-11-22
+
+### O `--fix` não quebra mais a linha `RECURRED`
+
+A regra 6 do sensor do kit mede a linha `RECURRED <n>: …` **fora** do teto e da largura, e exige que
+ela seja a última do item, numa linha só. O `wrap_long_lines` (`todo_format.py`) quebrava toda linha
+acima do `WIDTH_CAP`, essa inclusive: o `--fix --write` terminava com `the kit's sensor now says
+(rc 1): 2 shape violation(s)` (`RECURRED is the last line of the item`) e a linha era reunida à mão.
+Medido duas vezes nos chores de pós-merge do próprio kit (2026-11-21 e 2026-11-22). Agora o
+`kit.recurred_token` lê o `RECURRED_TOKEN` que o sensor publica para este espelho (coluna 0, entre
+aspas duplas), como o `kit.width_cap` já lia a largura, e a linha que ele abre fica inteira. O kit
+sem o token (anterior à regra 6) não ganha isenção. Oito asserções novas em `test_todo_format.py`
+(51 ok, eram 43), vermelhas antes do conserto; o `--fix --write` sobre o `TODO.md` do kit em
+`cef90b1` passou de 2 violações a `71 finding(s)`, rc 0. O smoke do Codex segue na 2.9.8, não refeito:
+a mudança é só do `--fix`, e o caminho de instalação e leitura que o smoke mede não mudou.
+
 ## [2.9.8] — 2026-11-15
 
 ### O `TEST_CMD` verde não libera o plano
