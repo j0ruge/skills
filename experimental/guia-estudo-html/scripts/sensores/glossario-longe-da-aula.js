@@ -2,7 +2,8 @@
 //   1. `p.atalhos` vem logo depois do h1, com a[data-atalho="indice"] e a[data-atalho="glossario"] que abre
 //      em outra aba (target="_blank");
 //   2. todo a.no-glossario abre em outra aba e aponta para um id que existe na página do href;
-//   3. clicar no primeiro a.no-glossario abre o verbete numa aba nova, e a aula fica no mesmo ponto.
+//   3. clicar no primeiro a.no-glossario abre o verbete numa aba nova, e a aula fica no mesmo ponto. Se o link
+//      mora numa caixa <details> fechada, o sensor abre a caixa antes, como a pessoa faria.
 // Página que não é aula (sem 000N- no nome) passa e diz isso.
 // Uso: NODE_PATH=<bancada>/pw/node_modules node glossario-longe-da-aula.js <aula.html>...
 const { chromium } = require('playwright');
@@ -57,10 +58,18 @@ const { pathToFileURL } = require('url');
     // A jornada: clicar e conferir que a aula não saiu do lugar.
     const primeiro = await p.$('a.no-glossario');
     if (primeiro) {
-      await primeiro.scrollIntoViewIfNeeded();
+      // Link dentro de caixa fechada não recebe clique: abre cada <details> em volta dele.
+      await primeiro.evaluate(a => { for (let d = a.closest('details'); d; d = d.parentElement && d.parentElement.closest('details')) d.open = true; });
+      // Link escondido de outro jeito não rola nem recebe clique: o sensor escreve a linha FAIL em 5 s.
+      await primeiro.scrollIntoViewIfNeeded({ timeout: 5000 }).catch(() => {});
       const y0 = await p.evaluate(() => window.scrollY);
-      const [aba] = await Promise.all([ctx.waitForEvent('page', { timeout: 5000 }).catch(() => null), primeiro.click()]);
-      if (!aba) problemas.push('o link não abriu aba nova');
+      let clicou = true;
+      const [aba] = await Promise.all([
+        ctx.waitForEvent('page', { timeout: 5000 }).catch(() => null),
+        primeiro.click({ timeout: 5000 }).catch(() => { clicou = false; })
+      ]);
+      if (!clicou) problemas.push('o primeiro link para o glossário não aceitou o clique em 5 s');
+      else if (!aba) problemas.push('o link não abriu aba nova');
       else {
         await aba.waitForLoadState('domcontentloaded');
         if (!/#/.test(aba.url())) problemas.push(`a aba nova abriu ${aba.url()}`);
