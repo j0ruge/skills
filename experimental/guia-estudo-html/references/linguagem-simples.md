@@ -28,7 +28,7 @@ Estas regras se conferem na página. Cada uma leva a medida que a originou: a co
 ## 6. Toda cor e todo tracejado têm legenda
 - **Defeito medido:** seis diagramas usavam cor ou linha tracejada sem explicar. O sensor achou mais oito, ao todo catorze figuras.
 - **Regra:** cada cor usada no código do diagrama aparece na legenda, com o que ela marca. Cada tracejado também. Com uma cor só, a palavra "destaque" basta.
-- **Medida:** o sensor lê o código do diagrama sem rede. Cada `classDef` usada pede o nome da cor na legenda, e o tracejado pede o termo "tracejad".
+- **Medida:** o sensor `cor-sem-legenda.js` lê o código do diagrama sem rede. O `fill` de cada `classDef` usada, da `classDef default` e de cada `style` pede o nome da cor na legenda. O tracejado pede o termo "tracejad", venha ele de uma classe, de um `style`, de um `linkStyle` ou da seta `-.->`.
 
 ## 7. Todo número tem fonte e localização
 - Todo número leva `span.n` e a fonte com a localização (`span.fonte`).

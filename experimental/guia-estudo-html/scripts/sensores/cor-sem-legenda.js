@@ -1,8 +1,14 @@
 // Regra: toda cor e todo tracejado de um diagrama Mermaid têm explicação na figcaption.
-// Uso de classe: "class X nome" e "A:::nome". Mermaid já desenhado (sem o código no texto) falha.
-// Lê o código do Mermaid sem rede (o diagrama fica como texto). Em cada figure.diagrama com pre.mermaid:
-//   - cada classDef usada (linha "class X nome") pede, na figcaption, o nome que GUIA_TEXTOS.cores dá ao seu fill;
-//   - stroke-dasharray numa classe usada, ou seta pontilhada (-.-> ou -.-), pede palavraTracejado na figcaption;
+// Mermaid já desenhado (sem o código no texto) falha.
+// Lê o código do Mermaid sem rede (o diagrama fica como texto). Um estilo entra no diagrama por quatro caminhos:
+//   - "classDef nome ..." usada por "class X nome" ou por "A:::nome" (uma classDef pode nomear várias: "a,b");
+//   - "classDef default ...", que vale para todo nó sem classe e por isso conta sempre como usada;
+//   - "style X ...", direto num nó;
+//   - "linkStyle N ...", direto numa seta (aqui só o tracejado importa).
+// Em cada figure.diagrama com pre.mermaid:
+//   - cada fill de uma classe usada ou de um style pede, na figcaption, o nome que GUIA_TEXTOS.cores dá a ele;
+//   - stroke-dasharray numa classe usada, num style ou num linkStyle, ou seta pontilhada (-.-> ou -.-), pede
+//     palavraTracejado na figcaption;
 //   - fill que não está em GUIA_TEXTOS.cores também falha (a cor ganha um nome lá);
 //   - fill branco (#fff, #ffffff) não pede nome.
 // O nome pode trazer alternativas separadas por "|". SVG feito à mão fica de fora: o rótulo está no desenho.
@@ -36,13 +42,17 @@ const { pathToFileURL } = require('url');
       if (f.desenhado) { problemas.push(`figura ${i + 1}: o Mermaid desenhou sem rede; o código não está mais no texto`); return; }
       const pede = new Set();
       const defs = {};
-      for (const m of f.mermaid.matchAll(/classDef\s+(\w+)\s+([^\n]+)/g)) defs[m[1]] = m[2];
+      for (const m of f.mermaid.matchAll(/^\s*classDef\s+([\w,]+)\s+([^\n]+)/gm)) m[1].split(',').forEach(n => { defs[n] = m[2]; });
       const usadas = new Set();
+      if ('default' in defs) usadas.add('default');
       for (const m of f.mermaid.matchAll(/^\s*class\s+[\w,]+\s+(\w+)/gm)) usadas.add(m[1]);
       for (const m of f.mermaid.matchAll(/:::(\w+)/g)) usadas.add(m[1]);
       let temTraco = /-\.->|-\.-/.test(f.mermaid);
-      for (const c of usadas) {
-        const d = defs[c] || '';
+      for (const m of f.mermaid.matchAll(/^\s*linkStyle\s+\S+\s+([^\n]+)/gm)) if (/stroke-dasharray/.test(m[1])) temTraco = true;
+      // Cada estilo que pinta um nó: o das classes usadas e o de cada linha "style X ...".
+      const estilos = Array.from(usadas, c => defs[c] || '');
+      for (const m of f.mermaid.matchAll(/^\s*style\s+\S+\s+([^\n]+)/gm)) estilos.push(m[1]);
+      for (const d of estilos) {
         const fill = (d.match(/fill:\s*(#[0-9a-fA-F]{3,6})/) || [])[1];
         if (fill) {
           const k = fill.toLowerCase();
