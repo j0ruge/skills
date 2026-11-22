@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.7.1"
+  version: "1.7.2"
 ---
 
 # HTML Presentation
@@ -87,7 +87,8 @@ Read `references/layout-and-type.md` when composing slides: component catalog, w
 python3 <skill>/scripts/build.py src/<name>.html --out dist --duration <minutes>
 ```
 
-Output: `dist/<name>.html` (fonts and images inlined, works offline) and `dist/roteiro-de-fala.md`. The
+Output: `dist/<name>.html` (fonts and images inlined, works offline) and `dist/roteiro-de-fala.md`. One `--out`
+folder per deck: the build refuses another deck's script. The
 build fails on an asset that was not inlined, any external `http(s)` resource, a slide without notes, or a
 time budget over the limit, and on a hover tip `data-g` without its glossary entry. It also warns, without failing, when a note read at 150 words per minute needs 5 s
 or more beyond its `data-t` (a number counts as two words, a date as three): the time budget alone let a 65 s

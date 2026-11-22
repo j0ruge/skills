@@ -2,6 +2,14 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-11-22 — the same TCC deck, version 2 rebuilt beside version 1 (v1.7.2)
+- The author asked for two text changes in version 2 (slide 2, and a hover entry for "recall"). The build of
+  `src/defesa-tcc-v2.html --out dist` overwrote `dist/roteiro-de-fala.md`, the tracked script of version 1, and left
+  `roteiro-de-fala-v2.md` as it was. Restored from git; the author then asked for one folder per version.
+- The reviewer packet had to list by hand the shots it could not open: slide 3 holds a private screen.
+- Lesson added: `build.py` names the source in the script and refuses another deck's script (exit 1); the step 5
+  line in `SKILL.md`; the forbidden shots in `references/review.md`.
+
 ## 2026-11-22 — a study guide on the same DESIGN.md, audited by QA (v1.7.1)
 - A static HTML study guide for the same TCC defense used the UVA `DESIGN.md`. Its QA found the brand magenta
   `#e60073` as text at 4.25:1 on `#f7f7f7` and 3.85:1 on the pink callout. It passes 4.5:1 only on white.

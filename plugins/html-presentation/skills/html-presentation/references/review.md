@@ -10,7 +10,11 @@ and reports; it never edits.
    doubles as reading material, language).
 2. Source HTML: `src/<name>.html` (notes are the `<aside class="notes" data-t>` blocks).
 3. Screenshots: every `shots/sNN.png`, plus `shots/laptop-1366.png` and `shots/laptop-1280.png`. The
-   reviewer has no browser, so a shot you don't pass is a check it can't run.
+   reviewer has no browser, so a shot you don't pass is a check it can't run. A slide whose image the agent may
+   not open (a real screen, client data) is the exception: name its shots as forbidden in the packet, its
+   `sNN.png`, the `grade-K.png` that holds it (slides 4K−3 to 4K) and the laptop view that lands on it
+   (`laptop-1366` is slide 2, `laptop-1280` slide 3, `shoot.sh`). In the TCC deck (22/11/2026) slide 3 held a
+   private screen, and both `grade-1.png` and `laptop-1280.png` showed it.
 4. The source material as Markdown (and the original PDF path for tables).
 5. The project's `DESIGN.md` (including its deck scale exception).
 

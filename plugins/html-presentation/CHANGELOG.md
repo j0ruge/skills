@@ -3,6 +3,21 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.7.2] — 2026-11-22
+
+### Uma pasta `--out` por deck: o build recusa o roteiro de outro deck; a lâmina privada fora do pacote de revisão
+
+- **Roteiro sobrescrito.** O `build.py` grava sempre `<out>/roteiro-de-fala.md`, qualquer que seja o `--name`. A
+  1.7.0 registrou isso como "Not fixed here". Na defesa de TCC, a versão 2 do deck foi construída no mesmo `dist/`
+  da versão 1 e sobrescreveu o roteiro rastreado dela (sha256 `c52105…` para `972bb8…`); o da versão 2 ficou como
+  estava. Agora o cabeçalho do roteiro diz de qual fonte ele veio, e o build sai 1, sem gravar nada, quando o roteiro
+  da pasta veio de outra fonte, ou não tem essa linha e a pasta tem outro deck construído. Seis casos no
+  interpretador, com o `rc` escrito antes, e o caso real numa cópia: rc 1, roteiro intacto.
+- **Lâmina com imagem que o agente não pode abrir.** A lâmina 3 do mesmo deck tem uma tela real tarjada. O pacote de
+  revisão manda passar todas as capturas, e a `grade-1.png` e a `laptop-1280.png` mostram essa lâmina. A
+  `references/review.md` diz agora como nomear no pacote as capturas proibidas. O `shoot.sh` não muda: o PDF
+  precisa de todas as lâminas.
+
 ## [1.7.1] — 2026-11-22
 
 ### O modo escuro automático do Chrome não recolore o deck; cor de texto medida em cada superfície

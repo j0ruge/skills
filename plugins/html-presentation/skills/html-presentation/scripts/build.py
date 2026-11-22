@@ -5,7 +5,10 @@ Usage:
   python3 build.py <src/deck.html> [--out dist] [--duration MIN] [--name deck]
 
 - Inlines every url(assets/...) and src="assets/..." as a data URI (deck works offline, one file).
-- Writes <out>/<name>.html and <out>/roteiro-de-fala.md (generated from <aside class="notes" data-t>).
+- Writes <out>/<name>.html and <out>/roteiro-de-fala.md (generated from <aside class="notes" data-t>). The script
+  names its source; one --out folder per deck. Exit 1, nothing written, when the folder's script came from another
+  source, or carries no source line while another built deck sits in the folder: a second deck built into the same
+  dist/ overwrote the first one's tracked script (TCC defense deck, v1 and v2, 22/11/2026).
 - Gates (exit 1): an asset left un-inlined, an external http(s) resource, a slide without notes/data-t,
   a hover tip data-g="key" without its glossary entry id="g-key" (the box would open empty), or a time budget
   above duration − 30 s (room for questions). An entry no data-g uses is only a warning.
@@ -64,7 +67,7 @@ unused = sorted(entries - keys)
 # Speaker script from the notes: the HTML is the single source of truth
 slides = re.findall(r'<section class="slide[^"]*"[^>]*data-title="([^"]+)"[^>]*>(.*?)</section>', src, re.S)
 lines = ["# Roteiro de fala", "",
-         "Gerado por `build.py` a partir das notas do HTML. Edite as notas na fonte, não este arquivo.", "",
+         f"Gerado por `build.py` a partir das notas de `{src_path.name}`. Edite as notas na fonte, não este arquivo.", "",
          "Teclas: ← → navegam · **N** notas · **P** janela do apresentador (notas + cronômetro) · **F** tela cheia · **R** zera o tempo.", ""]
 acc = 0
 for k, (title, body) in enumerate(slides, 1):
@@ -93,13 +96,25 @@ for w in warnings:
     print("aviso de ritmo:", w)
 if unused:
     print("aviso de glossário: verbete sem data-g que o use:", ", ".join("g-" + k for k in unused))
+
+# One --out folder per deck: the script's name is fixed, so a second deck in the same folder would overwrite the
+# first one's script. Its header names the source; a script from before that line counts as another deck's when
+# another built deck (an .html with slides) is in the folder.
+outdir = pathlib.Path(a.out)
+name = a.name or src_path.stem
+script = outdir / "roteiro-de-fala.md"
+if script.exists():
+    m = re.search(r"a partir das notas de `([^`]+)`", script.read_text(encoding="utf-8", errors="replace"))
+    others = sorted(p.name for p in outdir.glob("*.html") if p.name != f"{name}.html"
+                    and '<section class="slide' in p.read_text(encoding="utf-8", errors="replace"))
+    if (m and m.group(1) != src_path.name) or (not m and others):
+        errors.append(f"{script} é de outro deck ({m.group(1) if m else ', '.join(others)}): "
+                      "dê a cada deck a sua pasta --out")
 if errors:
     print("BUILD REPROVADO:", *errors, sep="\n  - ")
     sys.exit(1)
 
-outdir = pathlib.Path(a.out)
 outdir.mkdir(parents=True, exist_ok=True)
-name = a.name or src_path.stem
 (outdir / f"{name}.html").write_text(out, encoding="utf-8")
-(outdir / "roteiro-de-fala.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+script.write_text("\n".join(lines) + "\n", encoding="utf-8")
 print(f"ok: {outdir/name}.html ({len(out.encode())//1024} KB) · {len(slides)} lâminas · {acc//60:02d}:{acc%60:02d}")
