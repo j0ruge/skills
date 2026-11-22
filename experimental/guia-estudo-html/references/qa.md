@@ -5,9 +5,9 @@ O QA de um curso tem duas partes: os sensores, que medem a página, e a revisão
 ## 1. Um sensor por defeito
 
 1. Escreva o sensor depois de reproduzir o defeito. Ele lê só o contrato de `marcacao.md`.
-2. **Prove que ele falha.** Desfaça a correção numa cópia do curso-modelo e rode o sensor nela: tem de sair 1. O `scripts/sabotar.py` faz isso por caso, no `assets/curso-modelo` da skill. Sensor que nunca falhou não prova nada.
+2. **Prove que ele falha.** Desfaça a correção numa cópia do curso-modelo e rode o sensor nela: tem de sair 1. O `scripts/sabotar.py` faz isso por caso, no `assets/curso-modelo` da skill. Antes, ele roda cada sensor no curso-modelo intacto, e esse controle tem de sair 0. Na cópia, cada linha FAIL tem de trazer a causa do caso: sem rede, o sensor do Mermaid também sai 1, e esse 1 não prova o sensor. Sensor que nunca falhou não prova nada.
 3. Rode o sensor na página corrigida: tem de sair 0.
-4. Sensor novo entra em `scripts/sensores/` e, se mede só aulas, no `case` do `rodar-tudo.sh` e no `sabotar.py`.
+4. Sensor novo entra em `scripts/sensores/` e ganha um caso em `CASOS`, no `sabotar.py`: a troca que desfaz a correção no curso-modelo e a `causa`, a expressão que toda linha FAIL traz. Se mede só aulas, entra também no `case` do `rodar-tudo.sh` e em `AULAS`, no `sabotar.py`.
 
 ## 2. A prova que decide um status vai escrita no bug
 
