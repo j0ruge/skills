@@ -5,7 +5,10 @@ Esta tabela sustenta cada bloco do roteiro da aula. Um bloco sem fonte primária
 ## Como cada fonte foi conferida
 
 - Cada DOI existe no Crossref. O script `scripts/conferir-dois.py` confere isso. Ele prova que o registro existe. Ele não prova que a fonte sustenta a frase.
-- O resumo de cada fonte foi lido (campo `abstract` do Crossref, do OpenAlex ou do Europe PMC).
+- Seção 1: as linhas herdam do `METODO.md` a leitura em nível de resumo, feita em 2026-11-21. Esta tarefa não leu
+  esses resumos de novo. Ela só conferiu que cada DOI existe no Crossref.
+- Seção 5: cada linha diz, na coluna "Lido", o serviço cujo resumo foi lido de fato. O Crossref traz resumo vazio ou
+  cortado em várias fontes, então o OpenAlex ou o Europe PMC cobre essas linhas.
 - Só Rosenshine (2012) foi lido no texto completo. Fonte marcada "não conferido no texto" vem de uma citação dentro de outra fonte.
 - As colunas de aplicação são inferência de quem escreveu. Uma nota de evidência sem "D13" é juízo do pesquisador, pelo tipo de estudo.
 - D13 = Dunlosky et al. 2013, *Psychological Science in the Public Interest*, doi 10.1177/1529100612453266.
@@ -75,16 +78,16 @@ Esta tabela sustenta cada bloco do roteiro da aula. Um bloco sem fonte primária
 ## 5. Lacunas pesquisadas em 2026-11-22
 
 Quatro pontos do roteiro não tinham fonte. A busca usou o Crossref, o OpenAlex, o Europe PMC e a busca na web.
-Cada linha traz o que a fonte mostra e o limite. A coluna "Lido" diz o que foi lido: em todas, só o resumo.
+Cada linha traz o que a fonte mostra e o limite. A coluna "Lido" diz de qual serviço veio o resumo lido.
 Nenhum texto completo foi lido nesta seção.
 
 ### 5.1 Analogia: ENTRA, com limites
 
 | Técnica | Evidência e limite | Fonte (DOI) | Lido |
 |---|---|---|---|
-| **Analogia no lugar da definição literal** | Quatro experimentos. A forma literal deu mais acertos em perguntas de detalhe. A forma por analogia deu mais acertos em perguntas de inferência. O padrão foi mais forte em quem era novato no assunto. Limite: textos curtos de ciência, testes de múltipla escolha. | Donnelly & McDaniel 1993, 10.1037/0278-7393.19.4.975 | Resumo |
-| **Comparar dois casos** (codificação analógica) | Estudantes novatos que compararam dois casos transferiram melhor do que os que estudaram os dois casos separados. Limite: três estudos, tarefa de negociação. | Gentner, Loewenstein & Thompson 2003, 10.1037/0022-0663.95.2.393 | Resumo |
-| **Comparação de casos, em geral** | Metanálise de 57 experimentos (336 testes): d = 0,50, IC 95 % [0,44; 0,56]. Mais aprendizado quando o aluno procura semelhanças, quando o princípio vem depois da comparação, com conteúdo perceptual e com teste imediato. Limite: o efeito é de comparar casos, não de ouvir uma analogia pronta. | Alfieri, Nokes-Malach & Schunn 2013, 10.1080/00461520.2013.775712 | Resumo |
+| **Analogia no lugar da definição literal** | Quatro experimentos. A forma literal deu mais acertos em perguntas de detalhe. A forma por analogia deu mais acertos em perguntas de inferência. O padrão foi mais forte em quem era novato no assunto. Limite: textos curtos de ciência, testes de múltipla escolha. | Donnelly & McDaniel 1993, 10.1037/0278-7393.19.4.975 | OpenAlex |
+| **Comparar dois casos** (codificação analógica) | Estudantes novatos que compararam dois casos transferiram melhor do que os que estudaram os dois casos separados. Limite: três estudos, tarefa de negociação. | Gentner, Loewenstein & Thompson 2003, 10.1037/0022-0663.95.2.393 | OpenAlex |
+| **Comparação de casos, em geral** | Metanálise de 57 experimentos (336 testes): d = 0,50, IC 95 % [0,44; 0,56]. Mais aprendizado quando o aluno procura semelhanças, quando o princípio vem depois da comparação, com conteúdo perceptual e com teste imediato. Limite: o efeito é de comparar casos, não de ouvir uma analogia pronta. | Alfieri, Nokes-Malach & Schunn 2013, 10.1080/00461520.2013.775712 | OpenAlex |
 
 Regra que a evidência sustenta:
 
@@ -101,11 +104,11 @@ DOI com parênteses, que o regex do script não lê): nenhum resumo achado.
 
 | Técnica | Evidência e limite | Fonte (DOI) | Lido |
 |---|---|---|---|
-| **Pergunta de memória entre trechos** | Em dois experimentos com aula gravada, testes intercalados reduziram a divagação mental, aumentaram a anotação e melhoraram o aprendizado. Também reduziram a ansiedade com a prova final. Limite: aula em vídeo, laboratório. | Szpunar, Khan & Schacter 2013, 10.1073/pnas.1221764110 | Resumo |
-| **Troca breve de tarefa** | Lembrar de dígitos de vez em quando durante uma tarefa de vigilância evitou a queda de desempenho. Limite: tarefa de laboratório de vigilância, não de aprender conteúdo. | Ariga & Lleras 2011, 10.1016/j.cognition.2010.12.007 | Resumo |
-| **Repouso depois de aprender** | Dez minutos de repouso acordado depois de ler uma história melhoraram a lembrança após 7 dias, contra dez minutos de jogo. Limite: histórias curtas, laboratório. | Dewar et al. 2012, 10.1177/0956797612441220 | Resumo |
-| **Micro-pausas** | Metanálise (22 amostras, N = 2.335): efeito pequeno em vigor (d = 0,36) e em fadiga (d = 0,35). Efeito geral em desempenho não significativo (d = 0,16). Pausas mais longas ajudaram mais. Limite: poucos estudos (19 registros). | Albulescu et al. 2022, 10.1371/journal.pone.0272460 | Resumo |
-| **Atenção cai em 10–15 min?** | A revisão achou que a base dessa crença dá pouco apoio. O efeito varia entre pessoas. Limite: revisão da literatura, sem número. | Wilson & Korn 2007, 10.1080/00986280701291291 | Resumo |
+| **Pergunta de memória entre trechos** | Em dois experimentos com aula gravada, testes intercalados reduziram a divagação mental, aumentaram a anotação e melhoraram o aprendizado. Também reduziram a ansiedade com a prova final. Limite: aula em vídeo, laboratório. | Szpunar, Khan & Schacter 2013, 10.1073/pnas.1221764110 | Crossref e OpenAlex |
+| **Troca breve de tarefa** | Lembrar de dígitos de vez em quando durante uma tarefa de vigilância evitou a queda de desempenho. Limite: tarefa de laboratório de vigilância, não de aprender conteúdo. | Ariga & Lleras 2011, 10.1016/j.cognition.2010.12.007 | Europe PMC (Crossref e OpenAlex sem resumo) |
+| **Repouso depois de aprender** | Dez minutos de repouso acordado depois de ler uma história melhoraram a lembrança após 7 dias, contra dez minutos de jogo. Limite: histórias curtas, laboratório. | Dewar et al. 2012, 10.1177/0956797612441220 | Crossref e OpenAlex |
+| **Micro-pausas** | Metanálise (22 amostras, N = 2.335): efeito pequeno em vigor (d = 0,36) e em fadiga (d = 0,35). Efeito geral em desempenho não significativo (d = 0,16). Pausas mais longas ajudaram mais. Limite: poucos estudos (19 registros). | Albulescu et al. 2022, 10.1371/journal.pone.0272460 | OpenAlex (o resumo do Crossref vem cortado) |
+| **Atenção cai em 10–15 min?** | A revisão achou que a base dessa crença dá pouco apoio. O efeito varia entre pessoas. Limite: revisão da literatura, sem número. | Wilson & Korn 2007, 10.1080/00986280701291291 | Crossref e OpenAlex |
 
 Regra que a evidência sustenta:
 
@@ -120,9 +123,9 @@ Regra que a evidência sustenta:
 
 | Técnica | Evidência e limite | Fonte (DOI) | Lido |
 |---|---|---|---|
-| **Objetivo antes do texto** | Três experimentos de laboratório. Mostrar o objetivo antes de cada trecho melhorou o teste final contra não mostrar. O resultado foi maior quando o aluno respondia perguntas de pré-teste do que quando só lia o objetivo. Com retorno sobre o pré-teste, o resultado piorou, o que contraria a regra 2 e vem de um só estudo. Limite: textos curtos, laboratório. | Sana et al. 2020, 10.1187/cbe.19-11-0257 | Resumo |
-| **Revisão dos estudos de objetivos** | Mais de 25 estudos. O efeito de dar o objetivo antes depende do tipo de aprendizado e de quem aprende. A revisão não dá um número. | Duchastel & Merrill 1973, 10.3102/00346543043001053 | Resumo |
-| **Quadro de objetivos e perguntas auxiliares** | Revisão que explica resultados discrepantes pelo processo que o objetivo ativa. Não dá um tamanho de efeito. | Hamilton 1985, 10.3102/00346543055001047 | Resumo |
+| **Objetivo antes do texto** | Três experimentos de laboratório. Mostrar o objetivo antes de cada trecho melhorou o teste final contra não mostrar. O resultado foi maior quando o aluno respondia perguntas de pré-teste do que quando só lia o objetivo. Com retorno sobre o pré-teste, o resultado piorou, o que contraria a regra 2 e vem de um só estudo. Limite: textos curtos, laboratório. | Sana et al. 2020, 10.1187/cbe.19-11-0257 | Europe PMC (o resumo do Crossref vem cortado) |
+| **Revisão dos estudos de objetivos** | Mais de 25 estudos. O efeito de dar o objetivo antes depende do tipo de aprendizado e de quem aprende. A revisão não dá um número. | Duchastel & Merrill 1973, 10.3102/00346543043001053 | OpenAlex |
+| **Quadro de objetivos e perguntas auxiliares** | Revisão que explica resultados discrepantes pelo processo que o objetivo ativa. Não dá um tamanho de efeito. | Hamilton 1985, 10.3102/00346543055001047 | Crossref e OpenAlex |
 
 Regra que a evidência sustenta:
 
@@ -134,10 +137,10 @@ Regra que a evidência sustenta:
 
 | Técnica | Evidência e limite | Fonte (DOI) | Lido |
 |---|---|---|---|
-| **Aplicar o que se aprendeu a algo da própria vida** | Experimento de campo com alunos do ensino médio. Escrever como o conteúdo se liga à própria vida aumentou o interesse e as notas de quem esperava ir mal. Limite: ensino médio, uma matéria. O resumo só relata o ganho para quem esperava ir mal. | Hulleman & Harackiewicz 2009, 10.1126/science.1177067 | Resumo |
-| **Praticar com perguntas que pedem aplicação** | A recuperação com teste transfere (d = 0,40), e mais para perguntas de aplicação e inferência. Limite: a transferência cai com problemas de exemplo resolvido e com material não testado antes. | Pan & Rickard 2018, 10.1037/bul0000151 | Resumo |
-| **Transferir para perguntas novas** | Quatro experimentos. Testar repetido produziu mais transferência, também para perguntas novas e de outras áreas, do que reestudar. Limite: textos em prosa, laboratório. | Butler 2010, 10.1037/a0019902 | Resumo |
-| **Aprendizagem ativa** | Metanálise de 225 estudos em cursos de ciência, tecnologia, engenharia e matemática: +0,47 desvio-padrão nas provas. Chance de reprovar 1,95 vez maior com aula expositiva. Limite: ensino superior nessas áreas; "ativa" cobre muitas práticas. | Freeman et al. 2014, 10.1073/pnas.1319030111 | Resumo |
+| **Aplicar o que se aprendeu a algo da própria vida** | Experimento de campo com alunos do ensino médio. Escrever como o conteúdo se liga à própria vida aumentou o interesse e as notas de quem esperava ir mal. Limite: ensino médio, uma matéria. O resumo só relata o ganho para quem esperava ir mal. | Hulleman & Harackiewicz 2009, 10.1126/science.1177067 | OpenAlex (o Crossref traz só o resumo do editor) |
+| **Praticar com perguntas que pedem aplicação** | A recuperação com teste transfere (d = 0,40), e mais para perguntas de aplicação e inferência. Limite: a transferência cai com problemas de exemplo resolvido e com material não testado antes. | Pan & Rickard 2018, 10.1037/bul0000151 | OpenAlex |
+| **Transferir para perguntas novas** | Quatro experimentos. Testar repetido produziu mais transferência, também para perguntas novas e de outras áreas, do que reestudar. Limite: textos em prosa, laboratório. | Butler 2010, 10.1037/a0019902 | OpenAlex |
+| **Aprendizagem ativa** | Metanálise de 225 estudos em cursos de ciência, tecnologia, engenharia e matemática: +0,47 desvio-padrão nas provas. Chance de reprovar 1,95 vez maior com aula expositiva. Limite: ensino superior nessas áreas; "ativa" cobre muitas práticas. | Freeman et al. 2014, 10.1073/pnas.1319030111 | OpenAlex (o Crossref traz só o resumo de significância) |
 
 Regra que a evidência sustenta:
 
