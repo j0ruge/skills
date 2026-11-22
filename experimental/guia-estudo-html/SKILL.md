@@ -1,6 +1,6 @@
 ---
 name: guia-estudo-html
-description: "Monta e testa um curso de estudo em HTML estático, de qualquer assunto. Triggers — guia de estudo, curso HTML, aula HTML, roteiro de aula, quiz, testar guia, lição, teach"
+description: "Monta e testa um curso de estudo em HTML estático, de qualquer assunto. Roteiro de aula com fonte e linguagem simples; kit com quiz e diagramas; 17 sensores Playwright provados por sabotagem. Triggers — guia de estudo, curso HTML, aula HTML, roteiro de aula, quiz, testar guia, lição, teach"
 ---
 
 # guia-estudo-html
