@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula 2 · Quando a média engana</title>
+<link rel="stylesheet" href="../assets/estudo.css">
+</head>
+<body>
+<main class="pagina">
+
+<header class="topo">
+  <div class="trilha"><a href="../index.html">Média e mediana</a> · Aula 2 de 2</div>
+  <h1>Quando a média engana</h1>
+  <p class="atalhos"><a href="../index.html" data-atalho="indice">Índice do curso</a> <a href="../reference/glossario.html" data-atalho="glossario" target="_blank" rel="noopener">Glossário (abre em outra aba)</a></p>
+  <p class="meta">Cerca de <b><span data-minutos="15">15</span> minutos</b> · Fonte dos números: exemplos inventados desta aula</p>
+</header>
+
+<div class="caixa objetivo">
+  <span class="rotulo">A pergunta desta aula</span>
+  <p>Num grupo de valores, um deles é muito maior que os outros. Qual medida você usa para resumir o grupo, e como se acha a mediana quando a quantidade de valores é par?</p>
+</div>
+
+<details class="lembrar">
+  <summary>Antes de ler, tente responder: seis encomendas chegaram em 2, 3, 3, 4, 5 e 63 horas. A mediana é um valor da lista?</summary>
+  <p>Errar é esperado. A resposta fica na seção 2. Anote o seu palpite agora.</p>
+</details>
+
+<details class="lembrar">
+  <summary>Revisão da aula 1: qual medida soma os valores e qual conta a posição? Responda sem olhar e depois confira.</summary>
+  <p>A média soma os valores e divide pela quantidade. A mediana ordena e pega o do meio. Se errou, volte à <a href="0001-o-que-cada-uma-diz.html">aula 1</a>, seções 1 e 2.</p>
+</details>
+
+<h2>1. O valor atípico</h2>
+
+<p>Em alguns grupos, um valor foge muito dos demais. Esse valor muda a média, e quase não muda a mediana.</p>
+
+<div class="caixa termo">
+  <span class="rotulo">Termo novo · valor atípico</span>
+  <p><strong>Definição.</strong> Valor atípico é um valor muito distante dos outros valores do grupo.</p>
+  <p><strong>Exemplo do material.</strong> Em <span class="n">2, 3, 3, 4, 5, 63</span> horas, o <span class="n">63</span> é atípico. Os outros cinco ficam entre <span class="n">2</span> e <span class="n">5</span>. <span class="fonte">exemplo inventado, seção 1</span></p>
+  <p><strong>Contraexemplo.</strong> O <span class="n">5</span> é o maior dos cinco valores juntos, mas não é atípico. Ele fica perto do <span class="n">4</span>.</p>
+  <a class="no-glossario" href="../reference/glossario.html#valor-atipico" target="_blank" rel="noopener">ver no glossário: valor atípico</a>
+</div>
+
+<div class="caixa cuidado">
+  <span class="rotulo">Cuidado</span>
+  <p>Valor atípico não é erro de digitação. O <span class="n">63</span> pode ser real: uma encomenda se perdeu e chegou tarde. Antes de tirá-lo da conta, descubra por que ele existe.</p>
+</div>
+
+<div class="caixa exemplo-inventado">
+  <span class="rotulo">Exemplo inventado</span>
+  <p>Seis encomendas chegaram em <span class="n">2</span>, <span class="n">3</span>, <span class="n">3</span>, <span class="n">4</span>, <span class="n">5</span> e <span class="n">63</span> horas. Esses números são inventados para a aula. <span class="fonte">exemplo inventado, seção 1</span></p>
+</div>
+
+<div class="caixa exemplo-resolvido">
+  <span class="rotulo">Exemplo resolvido, passo a passo</span>
+  <p>Média: <span class="n">2 + 3 + 3 + 4 + 5 + 63 = 80</span>. Divida por <span class="n">6</span>: a média é cerca de <span class="n">13,3</span> horas. Cinco das seis encomendas chegaram em até <span class="n">5</span> horas. A média de <span class="n">13,3</span> não descreve nenhuma delas. <span class="fonte">exemplo inventado, seção 1</span></p>
+</div>
+
+<h2>2. A mediana com quantidade par</h2>
+
+<p>Com seis valores, não há um valor só no meio. Há dois. A mediana é a média desses dois valores centrais.</p>
+
+<div class="caixa termo">
+  <span class="rotulo">Termo novo · quantidade de valores</span>
+  <p><strong>Definição.</strong> A quantidade de valores é quantos números a lista tem. É ela que decide se a mediana é um valor da lista ou a média de dois.</p>
+  <p><strong>Exemplo do material.</strong> A lista <span class="n">2, 3, 3, 4, 5, 63</span> tem <span class="n">6</span> valores. Os dois do meio são <span class="n">3</span> e <span class="n">4</span>. A mediana é <span class="n">(3 + 4) ÷ 2 = 3,5</span>. <span class="fonte">exemplo inventado, seção 2</span></p>
+  <p><strong>Contraexemplo.</strong> A lista <span class="n">2, 3, 3</span> tem <span class="n">3</span> valores, uma quantidade ímpar. A mediana é o valor do meio, <span class="n">3</span>, sem nenhuma conta a mais.</p>
+  <a class="no-glossario" href="../reference/glossario.html#quantidade" target="_blank" rel="noopener">ver no glossário: quantidade de valores</a>
+</div>
+
+<p>O desenho mostra o procedimento inteiro, do começo ao resultado. Siga os passos da esquerda para a direita.</p>
+
+<figure class="diagrama">
+<pre class="mermaid">
+flowchart LR
+  A["Anote os valores<br/>da lista"] --> B["Ordene do menor<br/>ao maior"]
+  B --> C["Conte quantos<br/>valores são"]
+  C --> D{"A quantidade<br/>é ímpar?"}
+  D -- "sim" --> E["Pegue o valor<br/>do meio"]
+  D -- "não" --> F["Some os dois<br/>valores do meio"]
+  F --> G["Divida a<br/>soma por 2"]
+  E --> H["Resultado:<br/>a mediana"]
+  G --> H
+  H -.-> V["Compare com<br/>a média"]
+  classDef fim fill:#fdf3d3,stroke:#e0a800,color:#2b2b2b
+  classDef conf fill:#e4f2e8,stroke:#17663f,color:#2b2b2b
+  class H fim
+  class V conf
+</pre>
+<figcaption>O procedimento da mediana, em cinco passos. Em amarelo, o resultado. Em verde, a comparação com a média. A seta tracejada mostra que a comparação vem depois do resultado. <span class="fonte">exemplo inventado, seção 2</span></figcaption>
+</figure>
+
+<p>O texto diz o mesmo que o desenho. Primeiro, anote os valores. Segundo, ordene. Terceiro, conte. Se a quantidade é ímpar, pegue o valor do meio. Se é par, some os dois valores do meio e divida por <span class="n">2</span>. O resultado é a mediana. Depois, compare com a média.</p>
+
+<div class="caixa exemplo-resolvido">
+  <span class="rotulo">Exemplo resolvido, agora completo</span>
+  <p>Valores já em ordem: <span class="n">2, 3, 3, 4, 5, 63</span>. Quantidade: <span class="n">6</span>, par. Os dois do meio: <span class="n">3</span> e <span class="n">4</span>. Soma: <span class="n">7</span>. Dividida por <span class="n">2</span>: <span class="n">3,5</span>. A mediana é <span class="n">3,5</span> horas, e a média é cerca de <span class="n">13,3</span>. <span class="fonte">exemplo inventado, seção 2</span></p>
+</div>
+
+<div class="caixa ideia">
+  <span class="rotulo">Por quê?</span>
+  <p>Por que a mediana de seis valores é a média dos dois do meio? Porque nenhum valor sozinho deixa metade da lista de cada lado. A média dos dois centrais fica no ponto exato entre as duas metades.</p>
+  <p>E se fosse diferente? Se escolhêssemos só o terceiro valor, <span class="n">3</span>, três valores ficariam à direita e dois à esquerda. As metades não seriam iguais. <span class="fonte">exemplo inventado, seção 2</span></p>
+</div>
+
+<div class="caixa analogia">
+  <span class="rotulo">Analogia</span>
+  <p>Seis pessoas se sentam em fila, e a linha do meio passa entre a terceira e a quarta pessoa. A mediana é o ponto dessa linha. A definição literal vale para qualquer lista: é o valor que deixa metade dos valores de cada lado.</p>
+</div>
+
+<details class="lembrar">
+  <summary>Lembre sem olhar: diga em voz alta o que muda no procedimento quando a quantidade de valores é par.</summary>
+  <p>Você soma os dois valores do meio e divide por <span class="n">2</span>. Com quantidade ímpar, pega o valor do meio direto.</p>
+</details>
+
+<details class="lembrar">
+  <summary>Explique a um colega, sem notas: por que a mediana é melhor que a média quando há um valor atípico?</summary>
+  <p>Resposta curta: a mediana conta só a posição, e o valor atípico ocupa uma posição só. A média soma o tamanho dele inteiro e se afasta do grupo.</p>
+</details>
+
+<h2>Quiz</h2>
+<p class="placar" aria-live="polite"></p>
+
+<div class="quiz">
+
+<div class="pergunta" data-certa="3">
+  <p class="enunciado">1. Qual é a mediana de 1, 2, 4 e 9?</p>
+  <div class="opcoes">
+    <button class="opcao" data-explica="Não. O 2 é só o segundo valor, e sobra um valor à direita a mais.">Dois, o segundo valor</button>
+    <button class="opcao" data-explica="Não. O 4 é só o terceiro valor, e sobra um valor à esquerda a mais.">Quatro, o terceiro valor</button>
+    <button class="opcao" data-explica="Os dois do meio são 2 e 4. A soma é 6, e 6 ÷ 2 = 3 (seção 2, exemplo inventado).">Três, média dos centrais</button>
+  </div>
+  <p class="retorno" aria-live="polite"></p>
+</div>
+
+<div class="pergunta" data-certa="1">
+  <p class="enunciado">2. Num grupo com um valor atípico muito alto, o que acontece com a média?</p>
+  <div class="opcoes">
+    <button class="opcao" data-explica="A média soma o tamanho do valor atípico inteiro e sobe (seção 1, exemplo inventado).">Ela sobe, puxada pelo atípico</button>
+    <button class="opcao" data-explica="Não. A mediana é que quase não muda. A média muda bastante.">Ela fica igual à mediana</button>
+    <button class="opcao" data-explica="Não. Um valor muito alto só pode subir a soma, nunca baixá-la.">Ela desce, afastada do atípico</button>
+  </div>
+  <p class="retorno" aria-live="polite"></p>
+</div>
+
+<div class="pergunta" data-certa="2">
+  <p class="enunciado">3. Uma lista tem 7 valores. Como você acha a mediana?</p>
+  <div class="opcoes">
+    <button class="opcao" data-explica="Não. Somar os dois centrais é o caso da quantidade par, e 7 é ímpar.">Soma os dois valores centrais</button>
+    <button class="opcao" data-explica="Com 7 valores ordenados, o quarto fica no meio: três valores de cada lado (seção 2, exemplo inventado).">Pega o quarto valor ordenado</button>
+    <button class="opcao" data-explica="Não. Dividir a soma de todos pela quantidade dá a média, não a mediana.">Divide a soma por sete</button>
+  </div>
+  <p class="retorno" aria-live="polite"></p>
+</div>
+
+</div>
+
+<div class="caixa aplique">
+  <span class="rotulo">Aplique agora</span>
+  <p>Pense num grupo da sua vida em que um valor foge dos outros, como um gasto muito maior que o resto do mês. Calcule a média e a mediana do grupo. Diga qual das duas você contaria a um amigo e por quê. Depois responda uma pergunta nova: se você tirasse o valor atípico, qual das duas medidas mudaria mais?</p>
+</div>
+
+<div class="caixa na-fonte">
+  <span class="rotulo">Para ler na fonte</span>
+  <p>Leia em [fonte primária do assunto] a seção que trata de valores atípicos e de medidas resistentes a eles. Anote o critério que o texto usa para chamar um valor de atípico.</p>
+</div>
+
+<div class="caixa pergunte">
+  <span class="rotulo">Pergunte ao agente</span>
+  <p>Quer treinar? Peça: "Invente três listas, uma com quantidade par e duas com quantidade ímpar, e me peça a mediana de cada uma."</p>
+</div>
+
+<nav class="rodape">
+  <a href="0001-o-que-cada-uma-diz.html" data-rodape="anterior">← Aula 1 · O que a média e a mediana dizem</a>
+  <a href="../index.html" data-rodape="indice">Índice do curso</a>
+  <a href="../index.html" data-rodape="proxima">Fim do curso: voltar ao índice →</a>
+</nav>
+
+</main>
+<script src="../assets/textos.js"></script>
+<script src="../assets/diagramas.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

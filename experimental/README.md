@@ -25,6 +25,7 @@ Elas ficam versionadas aqui para não se perderem fora do git.
 |---|---|---|
 | `rust` | Toolchain, Cargo, lockfile e escolha da evidência | Uma aplicação desktop: Rust 1.97.0, Ubuntu 24.04 x86_64 |
 | `gpui` | API GPUI por versão, ambiente gráfico Linux e QA na janela nativa | A mesma aplicação: GPUI 0.2.2, gpui-component 0.5.1, X11 |
+| `guia-estudo-html` | Curso de estudo em HTML estático: roteiro de aula, kit com quiz e diagramas, sensores Playwright | Um guia de 9 aulas de outro projeto: Playwright 1.58.0, Chromium headless, WSL2 |
 
 O arquivo `agents/openai.yaml` de cada uma é a interface do Codex.
 
