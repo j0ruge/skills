@@ -35,7 +35,7 @@ Cada lição vem de um defeito medido num guia de estudo de 9 aulas de outro pro
 
 ## 5. A cor da marca usada como texto precisa de um token mais escuro
 
-- **Defeito:** uma cor boa para linha, ponto e barra (mínimo de 3:1 para forma) falha como texto (mínimo de 4,5:1). A cor de marca usada nos rótulos dos gráficos ficou em 4,25:1 sobre o cinza do quadro. O rótulo das falas, nas caixas coloridas, ficou entre 3,85:1 e 4,13:1.
+- **Defeito:** uma cor boa para linha, ponto e barra (mínimo de 3:1 para forma) falha como texto (mínimo de 4,5:1). A cor de marca usada nos rótulos dos gráficos ficou em 4,25:1 sobre o cinza do quadro. O rótulo das caixas coloridas ficou entre 3,85:1 e 4,13:1.
 - **Medida:** com um token de texto mais escuro, 5,39:1 sobre o quadro, e de 4,88:1 a 5,23:1 sobre as três caixas, 5,77:1 no branco. O foco amarelo da marca original chegava a 1,47:1 sobre o branco, e o mínimo do indicador é 3:1.
 - **Regra:** o `estudo.css` tem um token de texto para cada cor de marca (`--marca-texto`, `--destaque-texto`, `--acento-texto`), medido em 4,5:1 sobre cada superfície em que o texto aparece. A cor da marca fica para forma e borda. Texto de SVG feito à mão usa o `fill` escuro, e a forma mantém o dela.
 - **Sensores:** `texto-dos-graficos-sem-contraste.js` (contraste do `fill` contra a forma sob o texto) e `rotulo-das-caixas-sem-contraste.js` (estilo computado, tema claro; o escuro forçado se mede à parte, como na seção 4).

@@ -5,8 +5,8 @@ Esta tabela sustenta cada bloco do roteiro da aula. Um bloco sem fonte primária
 ## Como cada fonte foi conferida
 
 - Cada DOI existe no Crossref. O script `scripts/conferir-dois.py` confere isso. Ele prova que o registro existe. Ele não prova que a fonte sustenta a frase.
-- Seção 1: as linhas herdam do `METODO.md` a leitura em nível de resumo, feita em 2026-11-21. Esta tarefa não leu
-  esses resumos de novo. Ela só conferiu que cada DOI existe no Crossref.
+- Seção 1: as linhas herdam a leitura em nível de resumo de um método de estudo de outro projeto (2026-11-21).
+  Ninguém releu esses resumos aqui. Quem escreveu a skill conferiu só que cada DOI dessas linhas existe no Crossref.
 - Seção 5: cada linha diz, na coluna "Lido", o serviço cujo resumo foi lido de fato. O Crossref traz resumo vazio ou
   cortado em várias fontes, então o OpenAlex ou o Europe PMC cobre essas linhas.
 - Só Rosenshine (2012) foi lido no texto completo. Fonte marcada "não conferido no texto" vem de uma citação dentro de outra fonte.

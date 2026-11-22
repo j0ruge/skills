@@ -47,7 +47,7 @@ Estas regras se conferem na página. Cada uma leva a medida que a originou: a co
 - **Medida:** conte as opções certas. Todas têm a marca.
 
 ## 10. Simplificar tira qualificador: confira contra a fonte
-- **Defeito medido:** três frases de fala eram mais largas que a fonte. "Dois modelos" virou "a origem". "Oito das nove de classe" virou "as discordâncias". O exemplo de um estudo virou regra geral. A conferência comparava números e ordem, não o alcance.
+- **Defeito medido:** três frases eram mais largas que a fonte. Duas trocavam a parte pelo todo, como "dois dos três métodos" que vira "os métodos". A terceira fazia do exemplo de um estudo uma regra geral. A conferência comparava números e ordem, e o alcance ficou sem conferir.
 - **Regra:** depois de simplificar, compare o alcance da frase com a fonte citada: quantos casos, quais, em que condição. Frase que junta duas fontes se confere contra as duas.
 - **Procura:** depois de corrigir uma frase, procure a mesma frase nas outras páginas. Uma resposta escrita só a partir da introdução deixou de fora um limite que a fonte declara em outra seção.
 
