@@ -1,0 +1,4 @@
+interface:
+  display_name: "Guia de estudo HTML"
+  short_description: "Monta e testa um curso de estudo em HTML estático"
+  default_prompt: "Use $guia-estudo-html para montar o curso e rodar os sensores de QA."
