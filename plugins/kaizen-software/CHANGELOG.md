@@ -2,6 +2,18 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.4.25] — 2026-11-22 — o verde registrado também é rótulo da versão que mediu
+
+**O quê:** em `references/kaizen-conceitos.md`, *Rótulo ≠ artefato* ganha *O verde registrado também é rótulo da versão
+que mediu*, depois de *O verde também é rótulo das condições medidas*. Handoff, log ou relatório que dá o Check como
+"já rodado" descreve uma versão do artefato. Antes de repassar o verde, compare o horário da saída com o da última
+edição do artefato, ou grave o sha256 do que a sonda leu junto com a saída. O `SKILL.md` muda só a versão.
+
+**Por quê:** um handoff escrito por agente dava o Check de um guia de estudo em HTML como rodado. A saída tinha horário
+15:57:23, e duas páginas do guia foram editadas às 15:57:38. Só o `stat` mostrou que o Check mediu uma versão anterior.
+A nova rodada sobre os arquivos atuais deu o mesmo verde (26 de 26 e 17 sensores com rc 0). A lição fica na reference
+porque o `SKILL.md` está a 8 chars do aviso C1.
+
 ## [1.4.24] — 2026-11-21 — o verde também é rótulo das condições medidas
 
 **O quê:** em `references/kaizen-conceitos.md`, *Rótulo ≠ artefato* ganha *O verde também é rótulo das condições
