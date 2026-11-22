@@ -156,11 +156,11 @@ def check_antigravity_cli(ref_path: Path) -> list[str]:
     with tempfile.TemporaryDirectory() as tmpdir:
         proj_dir = Path(tmpdir) / "my-app"
         proj_dir.mkdir()
-        script_used = Path(tmpdir) / "statusline_used.py"
         script_rem = Path(tmpdir) / "statusline_rem.py"
-        script_used.write_text(template, encoding="utf-8")
-        script_rem.write_text(
-            template.replace('QUOTA_MODE = "used"', 'QUOTA_MODE = "remaining"', 1),
+        script_used = Path(tmpdir) / "statusline_used.py"
+        script_rem.write_text(template, encoding="utf-8")
+        script_used.write_text(
+            template.replace('QUOTA_MODE = "remaining"', 'QUOTA_MODE = "used"', 1),
             encoding="utf-8",
         )
 

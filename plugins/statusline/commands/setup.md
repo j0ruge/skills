@@ -1,7 +1,7 @@
 ---
 description: "Interactive wizard to configure Claude Code and Antigravity CLI status lines — model (+ effort), context bar, git branch/PR, cost, and 5h/weekly quotas. Cross-platform (Bash, PowerShell, Python). Triggers — statusline, status bar, footer, rate limit, usage window, antigravity statusline."
 metadata:
-  version: "1.6.0"
+  version: "1.6.1"
 ---
 
 ## Status Line Setup (`/statusline:setup`)

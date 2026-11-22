@@ -6,7 +6,7 @@ Complete setup procedure, composable Python 3 template, JSON `stdin` schema, act
 
 - [Step 1 — Prerequisites & Script Path](#step-1--prerequisites--script-path)
 - [Step 2 — Section Selection & JSON Schema](#step-2--section-selection--json-schema)
-- [Step 3 — Quota Display Mode (Used vs Remaining)](#step-3--quota-display-mode-used-vs-remaining)
+- [Step 3 — Quota Display Mode (Remaining vs Used)](#step-3--quota-display-mode-remaining-vs-used)
 - [Step 4 — Generate Python 3 Script](#step-4--generate-python-3-script)
 - [Step 5 — Activate in Antigravity CLI](#step-5--activate-in-antigravity-cli)
 - [Step 6 — Preview & Verification](#step-6--preview--verification)
@@ -51,18 +51,18 @@ Present the available sections and recommend the default set: **1, 2, 3, 4, 5, 6
 > - `model.display_name` may already end with `(Medium)` / `(High)` while `model.effort` carries `"medium"` — strip the trailing duplicate parenthetical before appending `[effort]`.
 > - `quota` exposes buckets by model family (e.g., `gemini-5h`, `gemini-weekly`, `claude-weekly`) with `remaining_fraction` (`0.0–1.0`). Prioritize buckets matching the active `model.id` family.
 
-## Step 3 — Quota Display Mode (Used vs Remaining)
+## Step 3 — Quota Display Mode (Remaining vs Used)
 
-Show this side-by-side comparison so the user can choose their preferred quota perspective (**default: `used`**, matching Claude Code):
+Show this side-by-side comparison so the user can choose their preferred quota perspective (**default: `remaining`**, counting down from `100%` to `0%`, matching Antigravity `/usage`):
 
-- **`used` (default — matches Claude Code):**
-  `⏳ 5h 18% | 📅 semana 51%` *(how much was consumed; green `< 50%`, yellow `50–79%`, red `>= 80%`)*
-- **`remaining` (matches Antigravity `/usage`):**
-  `⏱️ 5h 82% | 📅 semana 49%` *(how much is left; green `> 40%`, yellow `21–40%`, red `<= 20%`)*
+- **`remaining` (default — matches Antigravity `/usage`):**
+  `⏱️ 5h 82% | 📅 semana 49%` *(how much is left, `100% → 0%`; green `> 40%`, yellow `21–40%`, red `<= 20%`)*
+- **`used` (matches Claude Code):**
+  `⏳ 5h 18% | 📅 semana 51%` *(how much was consumed, `0% → 100%`; green `< 50%`, yellow `50–79%`, red `>= 80%`)*
 
 ## Step 4 — Generate Python 3 Script
 
-Write `~/.config/antigravity-cli/statusline.py`, customizing `QUOTA_MODE` (`"used"` or `"remaining"`), `BAR_WIDTH` (default `20`), `SEPARATOR` (default `" | "`), `PALETTE` (`"tokyo-night"`, `"ansi"`, or `"none"`), and `SECTIONS`:
+Write `~/.config/antigravity-cli/statusline.py`, customizing `QUOTA_MODE` (`"remaining"` or `"used"`), `BAR_WIDTH` (default `20`), `SEPARATOR` (default `" | "`), `PALETTE` (`"tokyo-night"`, `"ansi"`, or `"none"`), and `SECTIONS`:
 
 ```python
 #!/usr/bin/env python3
@@ -75,7 +75,7 @@ import subprocess
 import sys
 
 # --- Configuration (customized by /statusline wizard) ---
-QUOTA_MODE = "used"          # "used" (default, like Claude Code) or "remaining" (like /usage)
+QUOTA_MODE = "remaining"     # "remaining" (default, 100% -> 0% like /usage) or "used" (like Claude Code)
 BAR_WIDTH = 20
 SEPARATOR = " | "
 PALETTE = "tokyo-night"      # "tokyo-night", "ansi", or "none"

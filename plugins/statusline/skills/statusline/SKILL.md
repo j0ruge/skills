@@ -2,7 +2,7 @@
 name: statusline
 description: "Interactive wizard to configure Claude Code and Antigravity CLI status lines — model (+ effort), context bar, git branch/PR, cost, and 5h/weekly quotas. Cross-platform (Bash, PowerShell, Python). Triggers — statusline, status bar, footer, rate limit, usage window, antigravity statusline."
 metadata:
-  version: "1.6.0"
+  version: "1.6.1"
 ---
 
 # Status Line Setup
@@ -49,9 +49,9 @@ Ask the user once (if they accept defaults, proceed immediately):
    - **Antigravity CLI:** **Tokyo Night (24-bit truecolor)**, standard ANSI, or no colors.
 3. **Context bar width:** progress bar characters (default: `20`).
 4. **Section separator:** separator string (default: ` | `).
-5. **Quota display mode (Antigravity CLI only):** show the comparison below and let the user pick (**default: `used`**, matching Claude Code):
-   - **`used` (default):** `⏳ 5h 18% | 📅 semana 51%` — percentage consumed (green `< 50%`, yellow `50–79%`, red `>= 80%`).
-   - **`remaining`:** `⏱️ 5h 82% | 📅 semana 49%` — percentage left, matching `/usage` (green `> 40%`, yellow `21–40%`, red `<= 20%`).
+5. **Quota display mode (Antigravity CLI only):** show the comparison below and let the user pick (**default: `remaining`**, `100% → 0%`, matching `/usage`):
+   - **`remaining` (default):** `⏱️ 5h 82% | 📅 semana 49%` — percentage left, counting down from `100%` (green `> 40%`, yellow `21–40%`, red `<= 20%`).
+   - **`used`:** `⏳ 5h 18% | 📅 semana 51%` — percentage consumed, matching Claude Code (green `< 50%`, yellow `50–79%`, red `>= 80%`).
 
 ## Verification & Regression Sensor
 

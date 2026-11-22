@@ -2,6 +2,12 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.6.1] - 2026-11-22
+
+### Changed
+
+- **Antigravity CLI quota default switched to `remaining` (`100% → 0%`)**: matches Antigravity's native `/usage` countdown (green `> 40%`, yellow `21–40%`, red `<= 20%`). The `used` mode (`0% → 100%`, matching Claude Code) remains available side by side in Step 3 of the wizard and is still verified by `validate_statusline_sensor.py`.
+
 ## [1.6.0] - 2026-11-22
 
 ### Added
