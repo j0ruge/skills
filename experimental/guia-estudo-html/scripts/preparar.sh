@@ -7,5 +7,6 @@ set -euo pipefail
 DEST="${1:?informe a pasta de destino}"
 mkdir -p "$DEST/pw" "$DEST/capturas"
 npm i --prefix "$DEST/pw" playwright@1.58.0 --silent
-(cd "$DEST/pw" && npx --no-install playwright install chromium)
+# PLAYWRIGHT_SKIP_BROWSER_GC=1: sem isso, a instalação apaga do cache compartilhado os browsers que outros projetos usam.
+(cd "$DEST/pw" && PLAYWRIGHT_SKIP_BROWSER_GC=1 npx --no-install playwright install chromium)
 echo "pronto: $DEST"
