@@ -6,6 +6,23 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-11-22 — Descoberta global de skills do Claude Code no Antigravity CLI sem symlinks versionados
+
+- **Antes:** a integração local com o Antigravity CLI dependia de symlinks manuais em `~/.agents/skills/` (escopo restrito ao `$HOME`) apontando para `~/.claude/plugins/cache/<marketplace>/<plugin>/<versao>/skills/`. Ao atualizar `codereview` no Claude Code (`2.27.15` → `2.30.1`), o symlink quebrou silenciosamente.
+- **5 Porquês (causa raiz):**
+  1. Skills da loja não carregavam no Antigravity CLI → symlink quebrado + escopo local.
+  2. Por que quebrou? Apontava para o diretório versionado `plugins/cache/.../<versao>/`.
+  3. Por que não foi percebido na primeira tentativa com `~/.gemini/config/skills.json`? Porque `~/` não é expandido pelo binário `agy` em `skills.json` (carregou 0 skills sem erro).
+- **Depois:**
+  - **Registro global sem versão:** configurado `~/.gemini/config/skills.json` com **caminhos absolutos** apontando direto para fontes vivas sem versão (`<HOME>/.claude/skills`, `<HOME>/repos/skills/plugins/<plugin>/skills` e `<HOME>/.claude/plugins/marketplaces/typesafe-ai/skills`), incluindo `kaizen-software` e mais 17 skills auto-invocáveis (total 21 skills válidas, 3 com `disable-model-invocation: true`).
+  - **Limpeza (5S):** removidos symlinks obsoletos de `~/.agents/skills/` (`codereview` quebrado e `handoff` redundante).
+  - **Poka-yoke:** criado `~/.config/antigravity-cli/validate_skills_json.py`, calibrado contra casos sabotados (`~/` → `rc=1`, `/plugins/cache/` → `rc=1`) antes de aprovar o artefato real (`rc=0`).
+  - **Check pelo artefato real:** `cd /tmp && agy -p ...` confirmou descoberta global das 18 skills auto-invocáveis fora do `$HOME`.
+- **Padronizado em:** `~/.gemini/config/skills.json`, `~/.config/antigravity-cli/validate_skills_json.py` e este log (fechando a oportunidade registrada em `statusline 1.6.0`).
+- **Oportunidade (fora do escopo):** `superpowers` só existe no cache versionado do Claude Code; se quiser usá-lo no Antigravity CLI sem quebrar em updates, manter clone local sem versão ou script de sincronização.
+
+---
+
 ## 2026-11-22 — statusline 1.6.0: suporte ao Antigravity CLI com skill `agentskills.io` e sensor calibrado
 
 - **Antes:** `plugins/statusline` (v1.5.2) era *commands-only* (`commands/setup.md`) e cobria apenas o Claude Code, sem sensor executável para provar ausência de regressão nos templates.
