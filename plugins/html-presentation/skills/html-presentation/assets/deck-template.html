@@ -16,8 +16,12 @@
    Substitua pelos valores do DESIGN.md do projeto. Os nomes são papéis, não cores:
    --brand só em marca/progresso/ícone (não é fundo de texto);
    --brand-strong é a versão que aguenta texto branco por cima (≥ 4.5:1);
-   --brand-soft + --brand-deep formam o bloco de ação (meça o par). */
+   --brand-soft + --brand-deep formam o bloco de ação (meça o par).
+   Token usado como cor de texto (--brand-strong no gráfico e no ranking, ou a cor de destaque do DESIGN.md)
+   se mede ≥ 4.5:1 em cada superfície onde o texto fica (--bg, --muted, --brand-soft), não só contra o branco.
+   color-scheme "only light": o modo escuro automático do Chrome não recolore as lâminas. */
 :root{
+  color-scheme:only light;
   --brand:#2563eb; --brand-strong:#1d4ed8; --brand-soft:#dbeafe; --brand-deep:#172554;
   --bg:#fafaf9; --card:#ffffff; --surface-low:#f5f5f4; --muted:#efeeed; --subtle:#e7e5e4;
   --fg:#1c1917; --fg2:#44403c; --fg3:#6b6663; --border:#e2e0de;

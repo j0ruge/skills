@@ -2,6 +2,16 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-11-22 — a study guide on the same DESIGN.md, audited by QA (v1.7.1)
+- A static HTML study guide for the same TCC defense used the UVA `DESIGN.md`. Its QA found the brand magenta
+  `#e60073` as text at 4.25:1 on `#f7f7f7` and 3.85:1 on the pink callout. It passes 4.5:1 only on white.
+- Chrome's Auto Dark Mode repainted the guide's Mermaid labels to 1.06:1. On the deck template it dropped the mean
+  luminance of slides 1–4 from 236–244 to 35–43; `color-scheme:only light` kept them at the normal values.
+- The defense deck itself was not rendered (private image on slide 3). Read as text, it uses the magenta only as a
+  background and declares no `color-scheme`: the line was proposed to the author, not applied.
+- Lesson added: the template declares `color-scheme:only light` and asks to measure each text token on every surface;
+  `references/layout-and-type.md` (*Text color on every surface*) and `references/engine.md` (*Auto dark*).
+
 ## 2026-11-21 — the same TCC deck, version 2 with a real screen (v1.7.0)
 - The user asked for the photo on slide 3 to grow under the mouse. Written by hand in the deck: `transform:scale`
   from `left center`, a dimming `box-shadow`, `z-index` above the content.

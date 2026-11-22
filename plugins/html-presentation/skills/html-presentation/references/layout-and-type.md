@@ -15,6 +15,14 @@ Read while composing slides. The template (`assets/deck-template.html`) has one 
 
 The slide padding is 112 / 128 / 150. The bottom 150 px belong to the footer, so leave them empty.
 
+## Text color on every surface
+
+A color that passes 4.5:1 against white can fail on the surfaces the slides actually use. In a TCC study guide built
+on the same `DESIGN.md` as a deck (22/11/2026), the brand magenta `#e60073` measured 4.55:1 on white, 4.25:1 on
+`#f7f7f7` and 3.85:1 on the pink callout `#fde6f1`. Measure every text token on each surface it sits on (`--bg`,
+`--muted`, `--brand-soft`, a tinted callout), not only against white. If one fails, add a darker text token (there,
+`#c80064`: 4.88–5.77:1) and keep the brand color for shapes, bars and borders.
+
 ## Components
 
 - **Statement + items** (`.items`): 3–4 parallel things, separated by thin dividers, not by same-size

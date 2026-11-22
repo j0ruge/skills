@@ -3,6 +3,33 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.7.1] — 2026-11-22
+
+### O modo escuro automático do Chrome não recolore o deck; cor de texto medida em cada superfície
+
+As duas lições vieram do QA de um guia de estudo em HTML feito para a mesma defesa de TCC, com o mesmo `DESIGN.md`
+(UVA) do deck. Nenhuma das duas apareceu no deck da defesa. O template tinha as duas brechas.
+
+- **Modo escuro automático.** O "Auto Dark Mode for Web Contents" do Chrome repinta uma página que não declara
+  esquema de cor. No guia, ele deixou os rótulos Mermaid com 1,06:1. No template, medido com Playwright e
+  `--blink-settings=forceDarkModeEnabled=true`, a luminância média das lâminas 1 a 4 caiu de 236–244 para 35–43.
+  Com `color-scheme:only light` no `:root`, as quatro ficaram iguais ao modo normal. A janela do apresentador, escura
+  de propósito, mediu o mesmo nos dois modos, com e sem a linha.
+- **Cor de texto em cada superfície.** O comentário dos tokens mandava medir `--brand-strong` contra texto branco. O
+  template usa esse token também como cor de texto (destaque do gráfico e do ranking). No guia, o magenta da marca
+  `#e60073` deu 4,55:1 no branco, 4,25:1 no `#f7f7f7` e 3,85:1 na caixa rosa `#fde6f1`. A saída foi um token de
+  texto mais escuro (`#c80064`, de 4,88 a 5,77:1), e as formas ficaram com a cor da marca.
+
+Arquivos:
+- `assets/deck-template.html`: `color-scheme:only light` no `:root` e duas linhas no comentário dos tokens.
+- `references/layout-and-type.md`: seção *Text color on every surface*.
+- `references/engine.md`: linha *Auto dark* na tabela de comportamento. Um deck anterior à 1.7.1 precisa da linha
+  portada.
+- O `SKILL.md` só muda a versão: ele tem 19.843 caracteres, perto do teto de 20 mil.
+
+Dívida anotada, sem conserto aqui: o F1 da `skill-quality-audit` (as references citadas sem dizer quando ler) e as 28
+afirmações do D1 já estavam no baseline.
+
 ## [1.7.0] — 2026-11-21
 
 ### Componente novo: imagem que cresce com o mouse (`.zoom`)
