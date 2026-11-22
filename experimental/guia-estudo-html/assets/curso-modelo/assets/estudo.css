@@ -1,0 +1,328 @@
+/* Folha de estilo comum a todas as páginas do curso.
+   Regras que ela cumpre:
+   - Cada cor de marca tem um token de fundo e um token de TEXTO (--x-texto). Texto de marca usa só o
+     token de texto: ele passa de 4,5:1 sobre o branco, o cinza do quadro e todos os fundos de caixa.
+     O token da cor pura (--marca, --destaque, --acento) fica para borda, linha, ponto e barra.
+   - O anel de foco (--foco) passa de 3:1 sobre o branco e sobre o fundo escuro do escuro forçado.
+   - Todo alvo de toque tem 44 px de altura ou mais.
+   - O quadro do desenho fica claro mesmo no escuro forçado do navegador (color-scheme: only light).
+   - Fontes do sistema: nenhum servidor de fontes a mais. Para usar fonte da web, ponha no <head>:
+       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=NOME&display=swap"
+             media="print" onload="this.media='all'">
+     e acrescente o nome no começo de --sans. */
+
+:root {
+  --marca: #0f7480;
+  --marca-fundo: #e2f0f1;
+  --marca-texto: #0a5560;
+  --destaque: #e0a800;
+  --destaque-fundo: #fdf3d3;
+  --destaque-texto: #6e5200;
+  --acento: #e0006e;
+  --acento-fundo: #f8e6ef;
+  --acento-texto: #9a1f56;
+  --verde-fundo: #e4f2e8;
+  --texto: #2b2b2b;
+  --texto-2: #595959;
+  --borda: #d9d9d4;
+  --fundo: #ffffff;
+  --fundo-2: #f6f6f3;
+  --certo: #17663f;
+  --certo-fundo: #e4f2e8;
+  --errado: #a8231b;
+  --errado-fundo: #fbe9e7;
+  --foco: #e0006e;
+  --sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: 18px; }
+
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: var(--sans);
+  line-height: 1.55;
+}
+
+.pagina {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+}
+
+:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+
+/* Cabeçalho da página */
+.topo {
+  border-bottom: 4px solid var(--destaque);
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+.topo .trilha { font-size: .85rem; color: var(--texto-2); }
+h1 {
+  font-size: 2rem;
+  line-height: 1.15;
+  color: var(--marca-texto);
+  margin: .4rem 0 .6rem;
+}
+h1::after {
+  content: "";
+  display: block;
+  width: 110px;
+  height: 4px;
+  background: var(--acento);
+  margin-top: .6rem;
+}
+h2 { font-size: 1.35rem; color: var(--marca-texto); margin: 2.4rem 0 .6rem; }
+h3 { font-size: 1.1rem; color: var(--marca-texto); margin: 1.6rem 0 .4rem; }
+.meta { color: var(--texto-2); font-size: .9rem; }
+.meta b { color: var(--texto); }
+
+a { color: var(--marca-texto); }
+p, li { max-width: 40rem; }
+strong { color: #1a1a1a; }
+
+/* Número e fonte */
+.n { font-family: var(--mono); font-size: .92em; white-space: nowrap; }
+.fonte {
+  font-size: .78rem;
+  color: var(--texto-2);
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+.fonte::before { content: "→ "; }
+
+/* Caixas: cada modificador tem uma cor de borda e de fundo */
+.caixa {
+  border: 1px solid var(--marca);
+  background: var(--marca-fundo);
+  padding: .8rem 1rem;
+  margin: 1.2rem 0;
+  border-radius: 6px;
+}
+.caixa > :first-child { margin-top: 0; }
+.caixa > :last-child { margin-bottom: 0; }
+.caixa.ideia, .caixa.aplique { border-color: var(--destaque); background: var(--destaque-fundo); }
+.caixa.cuidado, .caixa.nao-confunda { border-color: var(--acento); background: var(--acento-fundo); }
+.caixa.exemplo-resolvido, .caixa.analogia { border-color: var(--certo); background: var(--verde-fundo); }
+.caixa.exemplo-inventado { border-style: dashed; border-color: var(--texto-2); background: var(--fundo-2); }
+.caixa .rotulo {
+  display: block;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--texto-2);
+  margin-bottom: .3rem;
+}
+
+/* Diagramas (Mermaid e SVG feito à mão) */
+.diagrama {
+  margin: 1.4rem 0;
+  padding: 1rem .5rem;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--fundo-2);
+  overflow-x: auto;
+  text-align: center;
+  color-scheme: only light;
+}
+.diagrama pre.mermaid,
+.diagrama .rolagem { overflow-x: auto; overscroll-behavior-x: contain; margin: 0; }
+.diagrama .dica-rolagem {
+  margin: 0 0 .4rem;
+  padding: 0 .5rem;
+  font-size: .8rem;
+  color: var(--texto-2);
+  text-align: left;
+}
+.diagrama figcaption {
+  font-size: .85rem;
+  color: var(--texto-2);
+  margin-top: .6rem;
+  text-align: left;
+  padding: 0 .5rem;
+}
+.diagrama svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+.diagrama .rolagem svg { max-width: none; }
+
+/* Tabelas */
+.tabela { overflow-x: auto; margin: 1rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+th, td { border-bottom: 1px solid var(--borda); padding: .45rem .6rem; text-align: left; vertical-align: top; }
+th { color: var(--marca-texto); font-weight: 600; border-bottom: 2px solid var(--marca); }
+td.num, th.num { text-align: right; font-family: var(--mono); }
+
+/* Recuperação: tente lembrar antes de abrir */
+details.lembrar {
+  border: 1px dashed var(--marca);
+  border-radius: 6px;
+  padding: 0 .9rem;
+  margin: 1rem 0;
+  background: var(--fundo);
+}
+details.lembrar summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--marca-texto);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: .4rem 0;
+}
+details.lembrar[open] summary { margin-bottom: .3rem; }
+details.lembrar[open] { padding-bottom: .6rem; }
+
+/* Quiz */
+.quiz { margin: 1.4rem 0; }
+.pergunta {
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+.pergunta .enunciado { font-weight: 600; margin: 0 0 .6rem; }
+.pergunta .opcoes { display: grid; gap: .45rem; }
+.pergunta button.opcao {
+  font: inherit;
+  text-align: left;
+  min-height: 44px;
+  padding: .55rem .8rem;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  background: var(--fundo-2);
+  color: var(--texto);
+  cursor: pointer;
+}
+.pergunta button.opcao:hover { border-color: var(--marca); }
+/* O retorno não depende só da cor: a certa tem borda contínua e dupla, a errada tem borda tracejada,
+   e o quiz.js escreve a marca de texto ao lado de cada uma. */
+.pergunta button.opcao.certa { border-color: var(--certo); background: var(--certo-fundo); box-shadow: inset 0 0 0 1px var(--certo); }
+.pergunta button.opcao.errada { border-color: var(--errado); border-style: dashed; background: var(--errado-fundo); }
+.pergunta button.opcao .marca {
+  display: inline-block;
+  margin-left: .5rem;
+  font-size: .8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pergunta button.opcao.certa .marca { color: var(--certo); }
+.pergunta button.opcao.errada .marca { color: var(--errado); }
+.pergunta .retorno { margin: .6rem 0 0; font-size: .95rem; min-height: 1.2em; }
+.pergunta .retorno.certo { color: var(--certo); }
+.pergunta .retorno.errado { color: var(--errado); }
+.placar { font-family: var(--mono); font-size: .9rem; color: var(--texto-2); }
+
+/* Rodapé da aula */
+.rodape {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--borda);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: .9rem;
+}
+.rodape a { display: inline-flex; align-items: center; min-height: 44px; padding: .2rem 0; }
+
+/* Atalhos logo depois do título: o índice e o glossário */
+.atalhos { margin: 0 0 .6rem; font-size: .85rem; color: var(--texto-2); }
+.atalhos a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 .8rem;
+  margin: .15rem .2rem .15rem 0;
+  border: 1px solid var(--marca);
+  border-radius: 999px;
+  font-size: .9rem;
+  font-weight: 500;
+  text-decoration: none;
+  background: var(--fundo);
+}
+.atalhos a:hover { background: var(--marca-fundo); }
+
+/* Link da caixa "termo" para o verbete do glossário, em outra aba */
+a.no-glossario {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: .2rem;
+  font-size: .9rem;
+  font-weight: 500;
+}
+a.no-glossario::after { content: "\00a0\2197"; }
+
+/* Índice */
+.trilha-lista { list-style: none; padding: 0; counter-reset: aula; }
+.trilha-lista li {
+  counter-increment: aula;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: .7rem 1rem .7rem 3.2rem;
+  margin: .6rem 0;
+  position: relative;
+}
+.trilha-lista li::before {
+  content: counter(aula);
+  position: absolute;
+  left: .9rem;
+  top: .7rem;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: var(--destaque);
+  color: #1a1a1a;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.7rem;
+}
+.trilha-lista .sub { display: block; font-size: .88rem; color: var(--texto-2); }
+.trilha-lista > li > a:first-child,
+.lista-consulta > li > a:first-child {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.trilha-lista > li > a:first-child { margin-top: -.5rem; }
+
+@media (max-width: 520px) {
+  html { font-size: 17px; }
+  .fonte { white-space: normal; }
+}
+
+/* Toda linha com três links ou mais, um ao lado do outro, vira botões de 44 x 44 px no toque. */
+@media (max-width: 520px), (pointer: coarse) {
+  p:has(> a[href^="#"] ~ a[href^="#"] ~ a[href^="#"]) > a[href^="#"],
+  li:has(> a ~ a ~ a) > a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 .6rem;
+    margin: .2rem 0;
+    border: 1px solid var(--borda);
+    border-radius: 6px;
+    background: var(--fundo-2);
+    text-decoration: none;
+  }
+}
+
+@media print {
+  html { font-size: 11pt; }
+  .pagina { max-width: none; padding: 0; }
+  details.lembrar { border-style: solid; }
+  details.lembrar > *:not(summary) { display: block !important; }
+  .pergunta button.opcao { background: #fff; }
+  .rodape, .atalhos { display: none; }
+  .diagrama { break-inside: avoid; }
+  .diagrama svg { min-width: 0 !important; }
+  .diagrama .dica-rolagem { display: none; }
+  h2 { break-after: avoid; }
+}

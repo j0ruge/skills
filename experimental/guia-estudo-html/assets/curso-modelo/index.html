@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Média e mediana · Índice do curso</title>
+<link rel="stylesheet" href="assets/estudo.css">
+</head>
+<body>
+<main class="pagina">
+
+<header class="topo">
+  <h1>Média e mediana</h1>
+  <p class="meta">Um curso-modelo de <b>duas aulas</b> · para quem nunca estudou estatística</p>
+</header>
+
+<div class="caixa ideia">
+  <span class="rotulo">O curso em três frases</span>
+  <p>A média e a mediana resumem uma lista de valores com um só número. A média soma e divide. A mediana ordena e pega o valor do meio. Quando um valor foge muito dos outros, as duas dizem coisas diferentes.</p>
+</div>
+
+<h2>O mapa do curso</h2>
+
+<figure class="diagrama">
+<pre class="mermaid">
+flowchart LR
+  A1["Aula 1<br/>O que cada uma diz"] --> A2["Aula 2<br/>Quando a média engana"]
+  A2 --> F["Você escolhe<br/>a medida certa"]
+  G["Glossário"] -.-> A1
+  G -.-> A2
+  classDef fim fill:#fdf3d3,stroke:#e0a800,color:#2b2b2b
+  classDef cons fill:#e4f2e8,stroke:#17663f,color:#2b2b2b
+  class F fim
+  class G cons
+</pre>
+<figcaption>As duas aulas, em ordem, e o resultado. Em amarelo, o que você ganha no fim. Em verde, o glossário. As setas tracejadas mostram que o glossário serve às duas aulas, mas não faz parte da sequência.</figcaption>
+</figure>
+
+<p>Primeiro vem a aula 1. Depois vem a aula 2. No fim, você escolhe a medida certa para cada lista. O glossário apoia as duas aulas.</p>
+
+<h2>As aulas</h2>
+<p>Siga a ordem. O tempo de cada aula vem de uma conta: leitura a 130 palavras por minuto, mais 1 minuto por "lembre sem olhar" e meio minuto por pergunta do quiz.</p>
+
+<ol class="trilha-lista">
+  <li data-aula="1"><a href="lessons/0001-o-que-cada-uma-diz.html">O que a média e a mediana dizem</a>
+    <span class="sub">Cerca de <span data-minutos="15">15</span> minutos · média, mediana, a diferença entre as duas</span></li>
+  <li data-aula="2"><a href="lessons/0002-quando-a-media-engana.html">Quando a média engana</a>
+    <span class="sub">Cerca de <span data-minutos="15">15</span> minutos · valor atípico, mediana com quantidade par</span></li>
+</ol>
+
+<h2>Para consultar</h2>
+<ul class="lista-consulta">
+  <li><a href="reference/glossario.html">Glossário</a>: cada termo em uma frase simples, com um exemplo.</li>
+</ul>
+
+<h2>Como estudar</h2>
+<ol>
+  <li><strong>Leia a aula uma vez</strong>, com calma, olhando o desenho junto com o texto.</li>
+  <li><strong>Feche a página e diga em voz alta</strong> o que aprendeu. Use as caixas "lembre sem olhar".</li>
+  <li><strong>Faça o quiz</strong> sem voltar ao texto. O placar conta só a primeira tentativa.</li>
+  <li><strong>No dia seguinte</strong>, antes da aula nova, refaça o quiz da anterior.</li>
+  <li><strong>Pergunte ao agente</strong> o que ficou confuso.</li>
+</ol>
+
+<h3>Plano sugerido</h3>
+<div class="tabela">
+<table>
+  <thead><tr><th>Dia</th><th>Estudo</th><th>Revisão</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Aula 1 e este "Como estudar"</td><td>nenhuma</td></tr>
+    <tr><td>2</td><td>Aula 2</td><td>quiz da aula 1</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Depois de cada aula, faça um intervalo sem tela. É uma sugestão: o apoio vem de estudos de laboratório e é fraco.</p>
+
+</main>
+<script src="assets/textos.js"></script>
+<script src="assets/diagramas.js"></script>
+</body>
+</html>
