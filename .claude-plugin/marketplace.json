@@ -374,8 +374,8 @@
     {
       "name": "statusline",
       "source": "./plugins/statusline",
-      "version": "1.5.2",
-      "description": "Interactive wizard to configure Claude Code status line — model (+ effort badge), context bar, git branch/PR, cost, and 5h/weekly usage limits. Cross-platform (Bash + PowerShell). Triggers — statusline, status bar, footer, rate limit, usage window, PR state.",
+      "version": "1.6.0",
+      "description": "Interactive wizard to configure Claude Code and Antigravity CLI status lines — model (+ effort), context bar, git branch/PR, cost, and 5h/weekly quotas. Cross-platform (Bash, PowerShell, Python). Triggers — statusline, status bar, footer, rate limit, usage window, antigravity statusline.",
       "category": "customization",
       "keywords": [
         "statusline",
@@ -383,6 +383,7 @@
         "footer",
         "customization",
         "ui",
+        "antigravity",
         "effort-level",
         "rate-limit",
         "pull-request"

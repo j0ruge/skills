@@ -6,6 +6,18 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-11-22 — statusline 1.6.0: suporte ao Antigravity CLI com skill `agentskills.io` e sensor calibrado
+
+- **Antes:** `plugins/statusline` (v1.5.2) era *commands-only* (`commands/setup.md`) e cobria apenas o Claude Code, sem sensor executável para provar ausência de regressão nos templates.
+- **Depois:**
+  - **Estrutura:** adicionado `skills/statusline/SKILL.md` (< 100 linhas, *progressive disclosure*) roteando para `references/claude-code.md` (12 seções preservadas integralmente) e `references/antigravity-cli.md` (template Python 3 em `~/.config/antigravity-cli/statusline.py`, modo `% usado` padrão com comparação lado a lado com `% restante`, paletas Tokyo Night / ANSI, ativação via `/statusline`).
+  - **Poka-yoke:** criado `skills/statusline/scripts/validate_statusline_sensor.py`, calibrado contra duas sabotagens deliberadas (`rc=1` ao remover `LC_NUMERIC=C` no Claude Code e `rc=1` ao aceitar booleano em `cost.estimated` no Antigravity CLI) antes de aceitar o `rc=0`.
+  - **Jidoka na prática:** `check-private-names.py` pegou um nome privado usado como pasta de exemplo no primeiro gate (`pn_rc=1`), corrigido imediatamente para placeholder genérico `my-app` antes do commit.
+- **Padronizado em:** `plugins/statusline/skills/statusline/SKILL.md`, `references/claude-code.md`, `references/antigravity-cli.md`, `scripts/validate_statusline_sensor.py`, `CHANGELOG.md`, `marketplace.json` e `README.md`.
+- **Oportunidade (fora do escopo):** avaliar e absorver outras skills compatíveis deste marketplace do Claude Code para descoberta local no Antigravity CLI.
+
+---
+
 ## 2026-11-05 — Nome privado deixa de depender de memória
 
 - **Antes:** limpezas sucessivas tiravam os nomes da loja, e o retrofit seguinte os trazia de volta: a lição

@@ -2,6 +2,19 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [1.6.0] - 2026-11-22
+
+### Added
+
+- **Antigravity CLI (`agy`) support** (`skills/statusline/references/antigravity-cli.md`): composable Python 3 status line script (`~/.config/antigravity-cli/statusline.py`) supporting model + `model.effort` (deduplicating trailing `(Effort)` suffixes), context bar, git branch (with detached HEAD fallback), project folder, session cost (filtering boolean `cost.estimated`), 5h + weekly quotas (family-aware matching, default `% usado` with side-by-side comparison against `% restante`), optional vim/sandbox/subagents badges, Tokyo Night / ANSI / plain palettes, and activation via `/statusline`.
+- **`agentskills.io`-compliant `SKILL.md`** (`skills/statusline/SKILL.md`): lean entry point (< 100 lines) with Step 0 harness detection/selection and progressive disclosure into `references/claude-code.md` and `references/antigravity-cli.md`.
+- **Deterministic regression sensor** (`skills/statusline/scripts/validate_statusline_sensor.py`): verifies all 12 Claude Code sections/invariants + live Bash execution (full and minimal JSON) and Antigravity CLI Python template (`used`/`remaining` modes, boolean `cost.estimated`, effort deduplication, empty/malformed stdin). Calibrated against sabotaged fixtures before accepting green.
+
+### Changed
+
+- Moved Claude Code v1.5.2 templates and troubleshooting verbatim into `skills/statusline/references/claude-code.md` (with Table of Contents); `commands/setup.md` now delegates to `skills/statusline/SKILL.md` so templates have a single source of truth.
+- Updated `plugin.json`, `marketplace.json`, and `README.md` with `"skills": "./skills"` and unified description across all three surfaces.
+
 ## [1.5.2] - 2026-06-27
 
 ### Changed
