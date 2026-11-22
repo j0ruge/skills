@@ -43,12 +43,12 @@ Copie `assets/curso-modelo/` para a pasta do curso. Ela traz `assets/curso-model
 ```bash
 bash scripts/preparar.sh <bancada nova>                      # Playwright 1.58.0 e Chromium; uma vez
 bash scripts/rodar-tudo.sh <bancada> <pasta do curso>        # conferir.js e os 17 sensores
-python3 scripts/sabotar.py <pasta do curso> <pasta nova> --bancada <bancada>
 ```
 
 - A bancada, as capturas e as cópias sabotadas ficam fora de qualquer repositório e fora do `/tmp`.
 - `rodar-tudo.sh` grava cada execução em `<bancada>/execucoes/<data-hora>-<pid>/`. Duas execuções ao mesmo tempo não se pisam. Sai 1 se algo falhar, e 2 se a bancada ou o curso não existem.
-- `sabotar.py` desfaz cada correção numa cópia. Todo sensor tem de falhar na sua cópia (MORTO). Sensor VIVO não prova nada.
+- O curso da pessoa passa só pelo `rodar-tudo.sh`.
+- Depois de mudar um sensor ou o kit, prove os sensores no curso-modelo da skill: `python3 scripts/sabotar.py assets/curso-modelo <pasta nova> --bancada <bancada>`. Ele desfaz cada correção numa cópia. Todo sensor tem de falhar na sua cópia (MORTO). Sensor VIVO não prova nada. Diante de outro curso, o `sabotar.py` sai 2.
 - Um sensor por defeito, sempre provado por sabotagem. O método de QA, o modelo de bug e a revisão de conteúdo por aula estão em `references/qa.md`.
 - Confira cada DOI de um arquivo de fontes com `python3 scripts/conferir-dois.py <arquivo.md>`.
 

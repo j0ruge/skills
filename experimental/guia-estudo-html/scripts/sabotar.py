@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Prova de que cada sensor falha com o defeito presente.
+"""Prova de que cada sensor falha com o defeito presente, no curso-modelo da skill.
+
+Rode no assets/curso-modelo da própria skill, depois de mudar um sensor ou o kit. Cada caso troca um texto
+exato do curso-modelo. Diante de outro curso, o script sai 2 e diz qual caso não achou o seu texto. O curso
+de quem estuda passa pelo rodar-tudo.sh.
 
 Cria uma cópia do curso por caso, com a correção desfeita (a troca de texto abaixo, nos assets ou nas
 páginas). O nome do caso é o do sensor; o sufixo "-escuro" marca a segunda passada do mesmo sensor.
@@ -8,7 +12,7 @@ Com --bancada, roda o sensor de cada caso na própria cópia e imprime MORTO (o 
 (saiu 0). Sai 0 só se todos morrerem. Os sensores de aula rodam só em lessons/*.html; os outros, em todas
 as páginas (a mesma divisão do rodar-tudo.sh).
 
-Uso: python3 sabotar.py <pasta do curso> <pasta nova, fora do repositório> [--bancada <bancada>]
+Uso: python3 sabotar.py assets/curso-modelo <pasta nova, fora do repositório> [--bancada <bancada>]
 """
 import argparse
 import glob
@@ -62,19 +66,33 @@ def sensor_de(caso):
     return caso[:-len('-escuro')] if caso.endswith('-escuro') else caso
 
 
+def conferir_modelo(curso):
+    """Confere, antes de copiar, que cada troca acha o seu texto. Devolve o primeiro problema, ou None."""
+    for caso, (trocas, _) in CASOS.items():
+        for arq, velho, _, n in trocas:
+            p = curso / arq
+            if not p.is_file():
+                return f'o caso {caso} não acha o arquivo {arq}'
+            try:
+                k = p.read_text(encoding='utf-8').count(velho)
+            except (OSError, UnicodeDecodeError) as e:
+                return f'o caso {caso} não consegue ler {arq} ({e})'
+            if k < 1 or (n is not None and k != n):
+                return f'o caso {caso} não acha o texto em {arq} (achou {k} vezes, esperava {n or "1 ou mais"}): {velho!r}'
+    return None
+
+
 def criar(curso, saida):
-    """Cria uma cópia por caso e devolve a lista de pastas."""
+    """Cria uma cópia por caso e devolve as pastas."""
     pastas = {}
     for caso, (trocas, _) in CASOS.items():
         dest = saida / caso
         shutil.copytree(curso, dest)
-        for arq, velho, novo, n in trocas:
+        for arq, velho, novo, _ in trocas:
             p = dest / arq
             t = p.read_text(encoding='utf-8')
-            c = t.count(velho)
-            assert c >= 1 and (n is None or c == n), (caso, arq, velho, c)
             p.write_text(t.replace(velho, novo), encoding='utf-8')
-            print(caso, arq, 'trocas:', c)
+            print(caso, arq, 'trocas:', t.count(velho))
         pastas[caso] = dest
     return pastas
 
@@ -99,6 +117,15 @@ def main():
     a = ap.parse_args()
     curso = pathlib.Path(a.curso).resolve()
     saida = pathlib.Path(a.saida).resolve()
+    if not curso.is_dir():
+        print(f'erro: a pasta do curso {curso} não existe.', file=sys.stderr)
+        return 2
+    problema = conferir_modelo(curso)
+    if problema:
+        print(f'erro: este curso não é o curso-modelo: {problema}.', file=sys.stderr)
+        print('O sabotar.py prova os sensores no assets/curso-modelo da skill. O curso de quem estuda passa '
+              'pelo rodar-tudo.sh. Nada foi criado.', file=sys.stderr)
+        return 2
     if saida.exists() and any(saida.iterdir()):
         print(f'erro: {saida} não está vazia; informe uma pasta nova ou vazia (nada foi apagado).', file=sys.stderr)
         return 2

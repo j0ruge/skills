@@ -5,7 +5,7 @@ O QA de um curso tem duas partes: os sensores, que medem a página, e a revisão
 ## 1. Um sensor por defeito
 
 1. Escreva o sensor depois de reproduzir o defeito. Ele lê só o contrato de `marcacao.md`.
-2. **Prove que ele falha.** Desfaça a correção numa cópia do curso e rode o sensor nela: tem de sair 1. O `scripts/sabotar.py` faz isso por caso. Sensor que nunca falhou não prova nada.
+2. **Prove que ele falha.** Desfaça a correção numa cópia do curso-modelo e rode o sensor nela: tem de sair 1. O `scripts/sabotar.py` faz isso por caso, no `assets/curso-modelo` da skill. Sensor que nunca falhou não prova nada.
 3. Rode o sensor na página corrigida: tem de sair 0.
 4. Sensor novo entra em `scripts/sensores/` e, se mede só aulas, no `case` do `rodar-tudo.sh` e no `sabotar.py`.
 
@@ -75,7 +75,9 @@ O resultado do primeiro curso de outro projeto vai para o `CHANGELOG.md` da skil
 ```
 bash scripts/preparar.sh <bancada nova>
 bash scripts/rodar-tudo.sh <bancada> <pasta do curso>
-python3 scripts/sabotar.py <pasta do curso> <pasta nova> --bancada <bancada>
+python3 scripts/sabotar.py assets/curso-modelo <pasta nova> --bancada <bancada>
 ```
+
+O `rodar-tudo.sh` mede o curso da pessoa. Rode o `sabotar.py` só no `assets/curso-modelo` da skill, depois de mudar um sensor ou o kit. Diante de outro curso, ele sai 2 e diz qual caso não achou o seu texto.
 
 A bancada e as capturas ficam fora de qualquer repositório e fora do `/tmp`, que o WSL apaga ao reiniciar. Cada execução do `rodar-tudo.sh` grava numa pasta própria, `<bancada>/execucoes/<data-hora>-<pid>/`, com `resumo.txt`.
