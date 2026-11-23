@@ -5,18 +5,23 @@
 lista do que pode sair, não a prova: cada item é reclassificado com os fatos de agora, e o que mudou
 é recusado. Uma recusa nunca é contornada com outro comando (-D, --force, --no-verify): vai para o
 relatório. O `--only` restringe aos itens que o usuário aprovou, pelo nome do relatório, e é o único
-jeito de tirar um worktree `on-request` (SAI SÓ A PEDIDO): sem ele, esses ficam.
+jeito de tirar um worktree `on-request` (SAI SÓ A PEDIDO): sem ele, esses ficam. Os ignorados sem
+outra cópia do worktree vão para `<pasta-mãe>/.housekeeping-lixeira/<data>/itens/<worktree>/` antes do
+`git worktree remove`, que os apagaria, cada um com o seu `desfazer:`.
 rc 0 tudo feito; 1 algum item recusado ou falhou; 2 plano ou uso inválido (`--only` fora do plano).
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
+import shlex
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import housekeeping as hk  # noqa: E402
+from scratch_apply import _lote  # noqa: E402
 
 # O que pode sair: o `delete` por padrão, e o `on-request` só quando o --only o nomeia.
 SAEM = ("delete", hk.A_PEDIDO)
@@ -60,21 +65,93 @@ def push_deletions(repo, remote: str, pairs: list) -> tuple:
     return result, " | ".join(proc.stderr.strip().splitlines()[-3:])
 
 
-def apply_local(facts: hk.Facts, items: list, run: Run) -> None:
-    """Worktrees (remove, depois prune), branches locais e refs remote-tracking, nesta ordem."""
+def sem_copia(item: hk.Item) -> list:
+    """Os ignorados do worktree que não se recriam nem têm cópia igual no principal."""
+    return [x for x in item.ignored if x not in item.regen and x not in item.copies]
+
+
+class Quarentena:
+    """Os ignorados sem outra cópia, movidos antes do `git worktree remove`, que os apagaria.
+
+    O lote é o das pastas de rascunho (`<pasta-mãe>/.housekeeping-lixeira/<data>/itens/`, com o
+    `lote.json`), e o `scratch_apply.py --purge` o reconhece. Em 2026-11-23 o `.superpowers/` de um
+    worktree (41 arquivos, só ali) foi copiado à mão para a quarentena antes do apply.
+    """
+
+    def __init__(self, plan_path: str):
+        self.plan_path, self.lotes, self.feitos = plan_path, {}, {}
+
+    def destino(self, wt: str, x: str) -> Path:
+        parent = os.path.dirname(os.path.normpath(wt))
+        if parent not in self.lotes:
+            self.lotes[parent] = _lote(parent)
+        return self.lotes[parent] / "itens" / os.path.basename(os.path.normpath(wt)) / x.rstrip("/")
+
+    def mover(self, item: hk.Item, run: Run) -> tuple:
+        """Move cada ignorado sem cópia; devolve ([(origem, destino)], erro). No erro, desfaz o que moveu."""
+        movidos = []
+        for x in sem_copia(item):
+            src, dest = Path(item.name) / x.rstrip("/"), self.destino(item.name, x)
+            if run.dry:
+                run.lines.append(f"faria: quarentena {src} → {dest}")
+                continue
+            try:
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                os.rename(src, dest)
+            except OSError as e:
+                self.devolver(movidos)
+                return [], f"a quarentena dos ignorados falhou em {x} ({e}); nada saiu do worktree"
+            movidos.append((src, dest))
+        return movidos, ""
+
+    @staticmethod
+    def devolver(movidos: list) -> None:
+        for src, dest in reversed(movidos):
+            os.rename(dest, src)
+
+    def registrar(self, item: hk.Item, movidos: list, run: Run) -> None:
+        for src, dest in movidos:
+            parent = os.path.dirname(os.path.normpath(item.name))
+            self.feitos.setdefault(parent, []).append(
+                {"name": f"{os.path.basename(item.name)}/{src.name}", "origem": str(src),
+                 "destino": str(dest), "motivo": f"ignorado sem outra cópia do worktree {item.name}"})
+            run.lines.append(f"quarentena: {src} → {dest}")
+            run.undo.append(f"mv -n -T {shlex.quote(str(dest))} {shlex.quote(str(src))}")
+
+    def gravar(self) -> None:
+        for parent, itens in self.feitos.items():
+            (self.lotes[parent] / "lote.json").write_text(
+                json.dumps({"plano": self.plan_path, "itens": itens}, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8")
+
+
+def apply_local(facts: hk.Facts, items: list, run: Run, plan_path: str = "") -> None:
+    """Worktrees (quarentena dos ignorados sem cópia, remove, depois prune), branches locais e refs
+    remote-tracking, nesta ordem."""
     repo, remote = facts.repo, facts.remote
     gone = set()
+    quarentena = Quarentena(plan_path)
     for i in (x for x in items if x.kind == "worktree" and x.action == "remove"):
+        movidos, erro = quarentena.mover(i, run)
+        if erro:
+            run.refuse(label(i, remote), erro)
+            continue
         if run.dry:
             gone.add(i.name)
             run.done(label(i, remote))
             continue
         proc = hk.run_git(repo, "worktree", "remove", i.name)
         if proc.returncode:
+            quarentena.devolver(movidos)
             run.refuse(label(i, remote), proc.stderr.strip())
             continue
         gone.add(i.name)
-        run.done(label(i, remote), f"git worktree add {i.name} {i.branch or i.sha}  (os ignorados não voltam)")
+        # O mv de volta só depois do worktree add: o undo sai do último ao primeiro.
+        quarentena.registrar(i, movidos, run)
+        nota = ("os ignorados sem outra cópia voltam pelo mv; os outros não" if movidos
+                else "os ignorados não voltam")
+        run.done(label(i, remote), f"git worktree add {i.name} {i.branch or i.sha}  ({nota})")
+    quarentena.gravar()
     prunes = [x for x in items if x.kind == "worktree" and x.action == "prune"]
     if prunes:
         planned = {i.name for i in prunes}
@@ -242,7 +319,10 @@ def main(argv=None) -> int:
         return 2
     run = Run(args.dry_run)
     items = recheck(plan, args.scope, now, run)
-    (apply_local if args.scope == "local" else apply_remote)(facts, items, run)
+    if args.scope == "local":
+        apply_local(facts, items, run, str(Path(args.plan).resolve()))
+    else:
+        apply_remote(facts, items, run)
     print("\n".join(run.lines) or "nada a apagar neste escopo")
     if left_out:
         print(f"fora do --only: {left_out} item(s) deste escopo ficam")

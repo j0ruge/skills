@@ -2,7 +2,7 @@
 name: git-housekeeping
 description: "Safely deletes merged git branches (local and remote) and their worktrees, and clears session scratch folders (old handoffs, temp dirs). A read-only scan proves each merge and each folder's other copy; only the approved plan runs, with sha leases, a quarantine and confirmations. Triggers — merged branches, branch cleanup, stale worktrees, git housekeeping, prune branches, old handoffs, scratch folders."
 metadata:
-  version: 0.9.0
+  version: 0.10.0
 ---
 
 # git-housekeeping
@@ -25,7 +25,7 @@ foram medidos no git 2.43.0 em 2026-10-20, num repo descartável.
   gravado é `local-branch`, não `branch`) dá `nada a apagar neste escopo` com rc 0, igual a um
   plano vazio (medido em 2026-10-24). O `--only` recusa o nome que não casa com rc 2.
 - `git worktree remove`, sem `--force`, apaga os arquivos ignorados (`.env.local`, `node_modules/`)
-  com rc 0, sem aviso.
+  com rc 0, sem aviso. O apply move antes os `sem outra cópia` para a quarentena (passo 7).
 - `git worktree add -b X <wt> origin/main` deixa `X` rastreando a `main`, e o fast-forward publicado
   (`push origin HEAD:main`) deixa a ponta num commit da `main`, como a de uma branch nunca usada.
   Quem os separa é o reflog local: com commits feitos nela, todos na default, a branch sai (evidência `reflog`). Medido em
@@ -58,7 +58,8 @@ foram medidos no git 2.43.0 em 2026-10-20, num repo descartável.
 Diga ao usuário antes de prometer disco: **apagar uma branch libera quase nada.** A ref tem bytes, e
 os objetos só saem com `gc` depois que o reflog expira. O espaço sai dos **worktrees** que vão
 embora, com tudo o que tinham dentro. O relatório mostra os dois números separados. A pasta de
-rascunho que sai vai para a quarentena, e o disco só libera no `--purge`.
+rascunho que sai vai para a quarentena, e o disco só libera no `--purge`. O mesmo vale para os
+ignorados `sem outra cópia` do worktree que sai.
 
 ## Os scripts
 
@@ -73,7 +74,7 @@ em `scratch.py`, da mesma forma.
 |---|---|---|
 | `analyze.py --repo <repo> --remote origin --plan <arquivo>` | `git fetch` (sem prune), consulta o remoto e o gh, grava o plano e imprime o relatório. Não apaga nada. | 0 ok; 2 remoto que não responde, repo inválido ou plano dentro do repo |
 | `analyze.py --scan <pasta>` | Uma linha por repo da pasta. Sem rede, sem plano, sem escrever nada. | 0 |
-| `apply_plan.py --plan <arquivo> --scope local\|remote [--only <nome>]... [--dry-run]` | Reclassifica cada item `delete` do escopo com os fatos de agora e apaga o que ainda passa. O `--only` restringe aos nomes aprovados, e só ele tira um worktree `SAI SÓ A PEDIDO`. | 0 tudo feito; 1 algo recusado; 2 plano inválido ou `--only` fora do plano |
+| `apply_plan.py --plan <arquivo> --scope local\|remote [--only <nome>]... [--dry-run]` | Reclassifica cada item `delete` do escopo com os fatos de agora e apaga o que ainda passa. Do worktree, move antes para a quarentena os ignorados `sem outra cópia`. O `--only` restringe aos nomes aprovados, e só ele tira um worktree `SAI SÓ A PEDIDO`. | 0 tudo feito; 1 algo recusado; 2 plano inválido ou `--only` fora do plano |
 | `scratch_scan.py --root <pasta> --repo <repo>... --plan <arquivo>` | Classifica cada entrada da pasta de rascunho, grava o plano e imprime o relatório. Não move nada. | 0 ok; 2 raiz inválida, plano dentro dela ou `--repo` que não é repo |
 | `scratch_apply.py --plan <arquivo> [--only <nome>]... [--dry-run]` | Reconfere e move para a quarentena o que sai; o handoff só com `--only`. | 0 tudo feito; 1 algo recusado; 2 plano inválido ou `--only` fora do que pode sair |
 | `scratch_apply.py --purge --root <pasta> --older-than <dias> [--dry-run]` | Apaga os lotes da quarentena mais velhos que isso. É o único passo sem volta. | 0 |
@@ -93,7 +94,8 @@ em `scratch.py`, da mesma forma.
    `SAI SÓ A PEDIDO`) e o disco. Não resuma o que fica: é ali que o usuário vê o que a skill não vai
    apagar, e por quê. Do worktree que sai, leia em voz alta os ignorados `sem outra cópia`,
    sobretudo os marcados com ⚠ (`.env*`): são o que se perde de fato. Os outros dois grupos basta
-   citar. Cite só o nome; nunca abra nem imprima o conteúdo. A pasta vem com os arquivos e o tamanho
+   citar. O apply move os `sem outra cópia` para a quarentena antes de remover o worktree (passo 7).
+   Cite só o nome; nunca abra nem imprima o conteúdo. A pasta vem com os arquivos e o tamanho
    (`.superpowers/ (44 arquivos, 816 KB)`): diga os dois, porque o nome não mostra o que ela guarda.
    Em 2026-11-15, uma limpeza foi autorizada pensando num rascunho, e a pasta levava 44.
 
@@ -121,6 +123,13 @@ em `scratch.py`, da mesma forma.
    as duas análises (um PR mergeado no meio). Ele não é recusa nem falha do apply: mostre-o e peça
    uma confirmação nova, porque a dos passos 3 e 5 não o cobre. Em 2026-11-03,
    outra sessão mergeou dois PRs no meio, e os dois ramos apareceram aí.
+
+   Mostre também cada linha `quarentena: <origem> → <destino>`. Os ignorados `sem outra cópia` do
+   worktree ficam em `<pasta-mãe>/.housekeeping-lixeira/<data>/itens/<worktree>/`, num lote que o
+   `scratch_apply.py --purge` reconhece. Quem citava um desses arquivos pelo caminho antigo (um
+   handoff, um log de outro repo) fica com a citação quebrada: o script não procura essas citações.
+   Diga ao usuário o caminho novo, e não edite o texto dele. Em 2026-11-23, o `.superpowers/` de um
+   worktree foi copiado à mão para a quarentena, e duas citações dele em outro repo quebraram.
 
 Confirmação negada no passo 3: pare tudo. Negada no passo 5: o local fica feito e o remoto não.
 
@@ -215,7 +224,8 @@ Cada item apagado deixa uma linha `desfazer:` (`git branch <b> <sha>`,
 `git push origin <sha>:refs/heads/<b>`, `git worktree add <path> <b>`), impressas do último item
 apagado ao primeiro. Rode-as nessa ordem: o worktree só volta depois da branch dele. Elas funcionam
 enquanto o `gc` não levar os objetos, e por isso esta skill nunca roda `gc` nem `reflog expire`. O
-worktree volta sem os ignorados: esses não têm cópia.
+worktree volta sem os ignorados regeneráveis. Os `sem outra cópia` voltam da quarentena pelas linhas
+`mv -n -T <destino> <origem>`, impressas depois do `git worktree add`.
 
 ## Manutenção
 
