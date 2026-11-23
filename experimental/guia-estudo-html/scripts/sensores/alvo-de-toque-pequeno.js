@@ -6,6 +6,9 @@
 // O sensor abre todo <details> antes de medir: um link dentro de caixa fechada mede 0 x 0 e acusaria um defeito
 // que a pessoa não vê. Cada summary também tem de manter o display de lista: com outro display o triângulo de
 // abrir some (flex, grid, block), e a caixa deixa de parecer que abre.
+// Exceção a "um sensor por defeito" (qa.md, seção 1): o sensor mede dois defeitos na mesma passada pelos summary.
+// Cada um tem o seu caso no sabotar.py. O marcador se mede só pelo display: um summary em list-item com
+// list-style: none ou ::marker vazio também perde o triângulo, e passa aqui.
 // Página sem nenhum desses alvos passa e diz isso.
 // Uso: NODE_PATH=<bancada>/pw/node_modules node alvo-de-toque-pequeno.js <página.html>...
 const { chromium } = require('playwright');
