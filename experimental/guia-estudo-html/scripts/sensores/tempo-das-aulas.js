@@ -57,11 +57,19 @@ const TOLERANCIA = 5;
     }
     const item = indices[indice].find(i => i.aula === n);
     const noIndice = item ? item.minutos : null;
-    const ok = r.cabecalho !== null && !Number.isNaN(r.cabecalho) && noIndice !== null && r.cabecalho === noIndice && Math.abs(r.cabecalho - est) <= TOLERANCIA;
+    const cab = r.cabecalho;
+    const motivos = [];
+    if (cab === null || Number.isNaN(cab)) motivos.push('o cabeçalho não tem número em .meta [data-minutos]');
+    if (noIndice === null || Number.isNaN(noIndice)) motivos.push(`o índice não tem número no li[data-aula="${n}"]`);
+    if (motivos.length === 0) {
+      if (cab !== noIndice) motivos.push(`o cabeçalho (${cab}) e o índice (${noIndice}) diferem`);
+      if (Math.abs(cab - est) > TOLERANCIA) motivos.push(`o cabeçalho diz ${cab} min e a conta dá ${est.toFixed(1)} (tolerância ${TOLERANCIA})`);
+    }
+    const ok = motivos.length === 0;
     if (!ok) falhas++;
-    console.log(`${ok ? 'PASS' : 'FAIL'} ${nome}: estimativa ${est.toFixed(1)} min (${r.palavras} palavras, ${r.lembrar} lembrar, ${r.perguntas} perguntas); cabeçalho ${r.cabecalho ?? 'sem número'}; índice ${noIndice ?? 'sem número'}`);
+    console.log(`${ok ? 'PASS' : 'FAIL'} ${nome}: estimativa ${est.toFixed(1)} min (${r.palavras} palavras, ${r.lembrar} lembrar, ${r.perguntas} perguntas); cabeçalho ${cab ?? 'sem número'}; índice ${noIndice ?? 'sem número'}${ok ? '' : ' -> ' + motivos.join('; ')}`);
     await p.close();
   }
   await b.close();
   process.exit(falhas ? 1 : 0);
-})();
+})().catch(e => { console.log('FAIL erro do sensor: ' + String((e && e.message) || e).split('\n')[0]); process.exit(1); });

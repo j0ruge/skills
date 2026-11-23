@@ -2,6 +2,10 @@
 // página A5 para o texto ficar grande na tela. No papel não há rolagem: o SVG volta a caber na largura
 // (min-width zerado) e a dica de rolagem some.
 // Uma linha por página: OK ou FAIL, com o número de caixas que ficaram fechadas. Sai 1 se alguma ficou.
+// "Fechada" é a caixa que, aberta, fica sem o conteúdo à vista na impressão. O PDF sai na mídia de impressão, e
+// a conta também: um display: none só no @media print entra no PDF vazio, mesmo com open = true. Uma regra só da
+// tela não conta, porque o PDF não a usa. Se o Mermaid não desenhar em 30 s, a página sai com FAIL e sem PDF,
+// e o script segue para a próxima.
 // Precisa de rede para o Mermaid. Uso: NODE_PATH=<bancada>/pw/node_modules node gerar-pdf.js <pasta de saída> <página.html>...
 const { chromium } = require('playwright');
 const fs = require('fs');
@@ -18,14 +22,29 @@ const { pathToFileURL } = require('url');
     const p = await b.newPage({ viewport: { width: 520, height: 900 } });
     await p.goto(pathToFileURL(path.resolve(pagina)).href, { waitUntil: 'load' });
     const total = await p.$$eval('pre.mermaid', l => l.length);
-    if (total) await p.waitForFunction(n => document.querySelectorAll('pre.mermaid > svg').length === n, total, { timeout: 30000 });
+    if (total) {
+      const desenhou = await p.waitForFunction(n => document.querySelectorAll('pre.mermaid > svg').length === n, total, { timeout: 30000 }).then(() => true, () => false);
+      if (!desenhou) {
+        console.log(`FAIL ${nome}: o Mermaid não desenhou em 30 s (sem rede?); sem PDF`);
+        falhas += 1;
+        await p.close();
+        continue;
+      }
+    }
     await p.evaluate(async () => {
       document.querySelectorAll('details').forEach(d => { d.open = true; });
       document.querySelectorAll('figure.diagrama svg').forEach(s => { s.style.minWidth = '0'; });
       document.querySelectorAll('.dica-rolagem').forEach(d => { d.style.display = 'none'; });
       await document.fonts.ready;
     });
-    const fechadas = await p.$$eval('details', l => l.filter(d => !d.open).length);
+    // A conta usa a mídia do PDF: com a de tela, uma regra só de impressão passaria, e uma só de tela falharia.
+    await p.emulateMedia({ media: 'print' });
+    // Aberta de fato: open, e o primeiro filho que não é o summary está à vista (checkVisibility segue os ancestrais).
+    const fechadas = await p.$$eval('details', l => l.filter(d => {
+      if (!d.open) return true;
+      const corpo = Array.from(d.children).find(c => c.tagName !== 'SUMMARY');
+      return !!corpo && !corpo.checkVisibility();
+    }).length);
     const arq = path.join(saida, nome + '.pdf');
     await p.pdf({ path: arq, format: 'A5', printBackground: true, margin: { top: '10mm', bottom: '10mm', left: '8mm', right: '8mm' } });
     console.log(`${fechadas ? 'FAIL' : 'OK'} ${arq}: diagramas ${total}, caixas fechadas ${fechadas}`);
@@ -34,4 +53,4 @@ const { pathToFileURL } = require('url');
   }
   await b.close();
   process.exit(falhas ? 1 : 0);
-})();
+})().catch(e => { console.log('FAIL erro do script: ' + String((e && e.message) || e).split('\n')[0]); process.exit(1); });

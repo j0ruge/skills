@@ -37,7 +37,8 @@ JS_QUIZ = 'assets/quiz.js'
 #   trocas: lista de (arquivo, texto velho, texto novo, vezes que o velho aparece; None = uma ou mais);
 #   causa:  expressão regular que TODA linha FAIL do sensor tem de trazer. Ela prova que o sensor falhou
 #           pelo defeito sabotado, e não por outro motivo (rede, sensor quebrado);
-#   exige:  expressão regular que pelo menos uma linha FAIL tem de trazer (opcional).
+#   exige:  expressão regular que pelo menos uma linha FAIL tem de trazer (opcional);
+#   sensor: nome do sensor, quando o caso tem nome diferente dele (opcional).
 CASOS = {
     'rede-pendurada': dict(
         trocas=[(A1, '<link rel="stylesheet" href="../assets/estudo.css">',
@@ -77,6 +78,11 @@ CASOS = {
     'alvo-de-toque-pequeno': dict(
         trocas=[(CSS, 'min-height: 44px;', 'min-height: 0;', None), (CSS, 'min-width: 44px;', 'min-width: 0;', None)],
         causa=r'menor altura \d+ px -> "'),
+    # O summary com display flex perde o triângulo de abrir: o sensor lê o display, não a altura.
+    'alvo-de-toque-sem-marcador': dict(
+        sensor='alvo-de-toque-pequeno',
+        trocas=[(CSS, 'details.lembrar summary {\n  font-weight: 600;', 'details.lembrar summary {\n  display: flex;\n  font-weight: 600;', 1)],
+        causa=r'summary sem marcador de abrir'),
     'links-vizinhos-pequenos': dict(
         trocas=[(CSS, 'min-height: 44px; padding: .2rem 0;', 'min-height: 0; padding: .2rem 0;', 1)],
         causa=r'vizinho: "'),
@@ -93,6 +99,15 @@ CASOS = {
     'cor-sem-legenda': dict(
         trocas=[(A2, ' Em amarelo, o resultado.', '', 1)],
         causa=r'a legenda não diz amarelo'),
+    # Cor por nome e cor de seta: dois caminhos que o sensor não lia (ver o cabeçalho do cor-sem-legenda.js).
+    'cor-sem-legenda-nome': dict(
+        sensor='cor-sem-legenda',
+        trocas=[(A2, '  class V conf\n', '  class V conf\n  style H fill:red\n', 1)],
+        causa=r'a legenda não diz cor desconhecida red'),
+    'cor-sem-legenda-seta': dict(
+        sensor='cor-sem-legenda',
+        trocas=[(A2, '  class V conf\n', '  class V conf\n  linkStyle 0 stroke:#e0006e\n', 1)],
+        causa=r'a legenda não diz cor desconhecida #e0006e'),
     'retorno-repete-negacao': dict(
         trocas=[(JS_QUIZ, 'if (!acertou) explica = tirarNegacao(explica);', '', 1)],
         causa=r'repete a negação'),
@@ -103,7 +118,19 @@ CASOS = {
 
 
 def sensor_de(caso):
+    if 'sensor' in CASOS[caso]:
+        return CASOS[caso]['sensor']
     return caso[:-len('-escuro')] if caso.endswith('-escuro') else caso
+
+
+def aulas_do_rodar_tudo(aqui):
+    """Lê, no rodar-tudo.sh, a lista dos sensores que rodam só em lessons/*.html. None se não achar."""
+    try:
+        texto = (aqui / 'rodar-tudo.sh').read_text(encoding='utf-8')
+    except (OSError, UnicodeDecodeError):
+        return None
+    m = re.search(r'^\s*([a-z0-9|-]+)\)\s*alvo=\("\$\{LESS\[@\]\}"\)', texto, re.M)
+    return set(m.group(1).split('|')) if m else None
 
 
 def conferir_modelo(curso):
@@ -171,6 +198,14 @@ def main():
         print(f'erro: este curso não é o curso-modelo: {problema}.', file=sys.stderr)
         print('O sabotar.py prova os sensores no assets/curso-modelo da skill. O curso de quem estuda passa '
               'pelo rodar-tudo.sh. Nada foi criado.', file=sys.stderr)
+        return 2
+    # A lista dos sensores de aula mora aqui e no case do rodar-tudo.sh. Se as duas divergem, o sabotar.py mediria
+    # um sensor em páginas que o rodar-tudo.sh não usa, e o MORTO não valeria para o curso real.
+    do_sh = aulas_do_rodar_tudo(pathlib.Path(__file__).resolve().parent)
+    if do_sh != AULAS:
+        print('erro: a lista de sensores de aula do sabotar.py (AULAS) difere da do case do rodar-tudo.sh: '
+              + ('o case não foi achado.' if do_sh is None else
+                 f'só em AULAS {sorted(AULAS - do_sh)}; só no rodar-tudo.sh {sorted(do_sh - AULAS)}.'), file=sys.stderr)
         return 2
     bancada = pathlib.Path(a.bancada).resolve() if a.bancada else None
     if bancada and not (bancada / 'pw' / 'node_modules' / 'playwright').is_dir():

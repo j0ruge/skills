@@ -60,4 +60,4 @@ const lum = (r, g, b) => { const f = c => { c /= 255; return c <= 0.03928 ? c / 
   }
   await b.close();
   process.exit(falhas ? 1 : 0);
-})();
+})().catch(e => { console.log('FAIL erro do sensor: ' + String((e && e.message) || e).split('\n')[0]); process.exit(1); });

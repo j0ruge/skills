@@ -17,7 +17,8 @@ const MINIMO = 4.5;
     await p.goto(pathToFileURL(path.resolve(pagina)).href, { waitUntil: 'load' });
     const r = await p.evaluate(() => {
       const rgb = s => (s.match(/[\d.]+/g) || []).map(Number);
-      const lum = c => { const v = c.slice(0, 3).map(x => { x /= 255; return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); });
+      // Mesma fórmula e mesmo limite (0.03928) dos outros três sensores de contraste.
+      const lum = c => { const v = c.slice(0, 3).map(x => { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); });
         return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
       const fundo = el => { for (let e = el; e; e = e.parentElement) { const c = rgb(getComputedStyle(e).backgroundColor);
         if (c.length === 3 || (c.length === 4 && c[3] > 0)) return c; } return [255, 255, 255]; };
@@ -52,4 +53,4 @@ const MINIMO = 4.5;
   }
   await b.close();
   process.exit(falhas ? 1 : 0);
-})();
+})().catch(e => { console.log('FAIL erro do sensor: ' + String((e && e.message) || e).split('\n')[0]); process.exit(1); });

@@ -21,6 +21,13 @@
     console.error('GUIA_TEXTOS ausente: carregue assets/textos.js antes do quiz.js.');
     return;
   }
+  // Com um textos.js parcial, o quiz escreveria "undefined" na tela. Sem as chaves, ele avisa e não liga.
+  var CHAVES = ['certo', 'aindaNao', 'marcaCerta', 'marcaSua', 'placar', 'aCerta'];
+  var faltam = CHAVES.filter(function (c) { return typeof T[c] !== 'string' || !T[c]; });
+  if (faltam.length && document.querySelector('.pergunta')) {
+    console.error('GUIA_TEXTOS sem as chaves ' + faltam.join(', ') + ': o quiz não liga.');
+    return;
+  }
 
   var CHAVE = 'guia:' + window.location.pathname;
   var VERSAO = 1;

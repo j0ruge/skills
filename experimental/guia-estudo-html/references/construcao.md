@@ -44,15 +44,16 @@ Cada lição vem de um defeito medido num guia de estudo de 9 aulas de outro pro
 
 - **Defeito 1, cor como único sinal:** a opção certa e a errada diferiam só em verde e vermelho. Sem enxergar cor, as duas ficavam iguais, e o retorno em texto não nomeava a certa. Leitor de tela também não sabia qual botão era o certo.
 - **Regra 1:** o `quiz.js` escreve a marca na opção certa e na escolha errada (`span.marca`, com `✓` e `✗` de `textos.js`), a certa leva borda dupla e a errada, borda tracejada. O retorno de um erro termina nomeando a certa. A `.pergunta` recebe `data-resultado`. Sensor: `quiz-certa-so-pela-cor.js`.
-- **Defeito 2, retorno repetido:** o retorno de um erro saía "Ainda não. Não. …" em 21 de 40 opções erradas, porque a explicação começava por "Não.". Regra: o `quiz.js` tira do começo da explicação a palavra de `negacoes`. O texto da aula não muda. Sensor: `retorno-repete-negacao.js`.
+- **Defeito 2, retorno repetido:** o retorno de um erro saía "Ainda não. Não. …" em 21 de 40 opções erradas das quatro primeiras aulas do guia de origem, porque a explicação começava por "Não.". Regra: o `quiz.js` tira do começo da explicação a palavra de `negacoes`. O texto da aula não muda. Sensor: `retorno-repete-negacao.js`.
 - **Defeito 3, alvo de toque:** atalhos de um algarismo tinham cerca de 10 por 24 px, a 15 px do vizinho. O rodapé tinha 24 px de altura, e links de lista tinham 19 px.
 - **Regra 3:** `min-height: 44px` e `inline-flex` no rodapé, nos atalhos e no link do glossário. No celular, todo parágrafo ou item de lista com três links ou mais vira uma linha de botões de 44 por 44 px (`li:has(> a ~ a ~ a) > a`). Uma correção por seletor com nome deixa de fora o link que não casa com o nome: o primeiro conserto não pegou a lista do índice nem o item com três links para outras páginas. Sensores: `alvo-de-toque-pequeno.js` e `links-vizinhos-pequenos.js`.
+- **Defeito 4, triângulo do `summary`:** o `details.lembrar summary` usava `display: flex` para centrar o texto. O `flex` tira o marcador de abrir. Medida no Chromium do Playwright 1.58.0: com `flex`, o texto começa a 0 px da borda do conteúdo. Com `display: list-item`, começa a 18 px. Regra: todo `summary` fica em `list-item`, e os 44 px vêm de `min-height` com `box-sizing: border-box`. Sensor: `alvo-de-toque-pequeno.js` lê o `display` de cada `summary`.
 
 ## 7. O PDF do celular
 
 - **Decisão:** no celular, a pessoa lê um PDF das páginas de consulta, com as caixas abertas e os diagramas desenhados. O PDF se gera de novo a cada mudança dessas páginas, pelo `gerar-pdf.js`. Ele fica fora do git.
 - **Regra:** página A5, para o texto ficar grande na tela. O `gerar-pdf.js` abre todos os `details` depois do carregamento, zera o `min-width` do SVG (no papel não há rolagem, e o desenho volta a caber) e esconde a dica de rolagem.
-- **Medida:** a saída traz `diagramas 0, caixas fechadas 0` por página e sai 1 se alguma caixa ficou fechada. Uma página de perguntas com 40 caixas deu 20 páginas A5. O script precisa de rede para o Mermaid.
+- **Medida:** a saída traz `diagramas 0, caixas fechadas 0` por página e sai 1 se alguma caixa ficou fechada. Caixa fechada é a que, aberta, fica sem o conteúdo à vista na impressão: o script conta na mídia do PDF. Uma página de perguntas com 40 caixas deu 20 páginas A5. O script precisa de rede para o Mermaid.
 
 ## 8. Rótulo do Mermaid que começa por "1. " vira lista
 
