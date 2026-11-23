@@ -63,8 +63,9 @@ deles guardas que façam o papel do olho do dono.
   medido). O fluxo autônomo chama os sensores ele mesmo.
 - **A skill usada dentro de um subagente não aparece no transcript principal** (`SKILL.md`, Gotchas).
   O `retrofit-skill` rodado pelo executor não cala a `retrofit-watch` sozinho.
-- **Outra sessão mexe hoje na fonte da `retrofit-watch`**, e nada dela está no `origin/main`. A
-  implementação parte do `origin/main` depois do merge dela, ou faz rebase sobre ele.
+- **A base é o `origin/main` em `f099db4`.** A outra sessão que se supunha mexer na fonte da
+  `retrofit-watch` confirmou em 2026-11-23 que não mexe: ela só triou a fila. Antes da primeira
+  tarefa, a execução confere de novo o `origin/main` e faz rebase se ele andou.
 - **Modelos por papel:** o revisor é Opus com esforço `xhigh`, o executor é Opus com esforço `medium`.
   O despacho passa `model` e `effort` explícitos.
 - **Medidas da loja em 2026-11-23:** 34 plugins, 8 com `tests/`, 19 com `scripts/`; 19 commits de
