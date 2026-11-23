@@ -213,7 +213,7 @@ def test_nome_da_colheita_na_mensagem_do_commit_e_achado(self):
   - `class Malformed(Exception)`.
   - `read_registry(ctx) -> list[dict]`, `append_registry(ctx, line: dict) -> dict` (acrescenta `ts`, sob `_lock` de `<dados>/autonomo.lock`).
   - `used(registry, session, plugin=None, skip=None) -> int`: pares `(id, plugin)` distintos das linhas de lote (item sem `#`) da sessão.
-  - `why_manual(ctx, payload, entry, registry) -> str | None`. `None` quer dizer que o modo autônomo vale. Motivos, na ordem: `modo`, `kit-ou-lean`, `lista-manual`, `permissao`, `sem-loja`, `teto`.
+  - `why_manual(ctx, payload, entry, registry) -> str | None`. `None` quer dizer que o modo autônomo vale. Motivos, na ordem: `modo`, `kit-ou-lean`, `lista-manual`, `permissao`, `entrypoint`, `sem-loja`, `teto`. O `entrypoint` vale quando o último `"entrypoint"` lido do transcript (`st["entrypoint"]`) não é `cli` (spec 5.10, "Entrypoint do transcript").
   - `open_request(ctx, payload, entries) -> dict`: grava `pedido.json` com `id`, `sessao`, `ts`, `transcript`, `modo` e `skills` (`key`, `plugin`, `label`).
   - `auto_text(ctx, pedido, entries) -> str`.
   - `flow_finished(ctx, pedido) -> bool`: `licoes.json` ausente, ou toda lição dele aparece em `licoes` de alguma linha do registro com aquele `id`.
@@ -252,6 +252,7 @@ class AutoStopTest(HookHarness, unittest.TestCase):
 | `test_default_mode_is_manual_and_text_is_unchanged` | sem config, `bypassPermissions` | texto com `/retrofit-skill:retrofit-skill codereview`; `<dados>/auto` não existe | padrão `auto` |
 | `test_invalid_mode_is_manual` | `mode: "sempre"` | como acima | aceitar qualquer valor |
 | `test_auto_needs_bypass_permissions` | `mode: auto`, modo `default` | texto manual; `systemMessage` com `bypassPermissions` | tirar o `permissao` |
+| `test_auto_needs_cli_entrypoint` | `mode: auto`, `bypassPermissions`, `CLAUDE_CODE_SESSION_ATTENDED=1` no ambiente, transcript com `"entrypoint":"sdk-cli"` | `<dados>/auto` não existe; o motivo é `entrypoint`; a saída é a de hoje para essa entrada | tirar o `entrypoint`, ou ler o ambiente em vez do transcript |
 | `test_auto_request_names_absolute_paths_and_writes_pedido` | acima | acima | — |
 | `test_manual_list_kit_and_lean_stay_manual` | uma skill da loja, uma lean e uma em `manual`, no mesmo Stop | um pedido só com a da loja; o texto manual das outras duas presente | tirar `kit-ou-lean` ou `lista-manual` |
 | `test_auto_dry_is_requested_like_auto` | `mode: auto-dry` | `pedido["modo"] == "auto-dry"` | — |

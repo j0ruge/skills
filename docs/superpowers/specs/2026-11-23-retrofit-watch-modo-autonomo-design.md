@@ -309,6 +309,14 @@ o `permission_mode` do payload (para o modo `plan`). O modo `auto` só vale com 
 outro modo, o hook manda o texto do modo manual, e a linha ao dono diz por quê. O plugin não grava
 regra `allow` nas configurações do dono.
 
+**Entrypoint do transcript.** O modo `auto` exige também `"entrypoint":"cli"` no transcript da sessão.
+Medido em 2026-11-23: as fases headless de um `sdd run` lançado de uma sessão interativa herdam
+`CLAUDE_CODE_SESSION_ATTENDED=1` e `CLAUDE_CODE_ENTRYPOINT=cli` dela, e o transcript delas diz
+`"entrypoint":"sdk-cli"`. O gate de hoje lê primeiro o ambiente e tomaria a fase por assistida. Nenhuma
+das 6 fases medidas recebeu pedido de retro, mas no modo `auto` o erro lançaria um retrofit autônomo
+dentro do run. Com outro `entrypoint`, a entrada segue o comportamento de hoje, e o motivo é
+`entrypoint`.
+
 ### 5.11 O retrofit segurado: liberar ou descartar
 
 Um verbo novo, ao lado do `pendentes` de hoje: `/retrofit-watch:retrofit-watch segurados`. Ele lista
