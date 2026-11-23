@@ -37,7 +37,8 @@ JS_QUIZ = 'assets/quiz.js'
 #   trocas: lista de (arquivo, texto velho, texto novo, vezes que o velho aparece; None = uma ou mais);
 #   causa:  expressão regular que TODA linha FAIL do sensor tem de trazer. Ela prova que o sensor falhou
 #           pelo defeito sabotado, e não por outro motivo (rede, sensor quebrado);
-#   exige:  expressão regular que pelo menos uma linha FAIL tem de trazer (opcional).
+#   exige:  expressão regular que pelo menos uma linha FAIL tem de trazer (opcional);
+#   sensor: nome do sensor, quando o caso tem nome diferente dele (opcional).
 CASOS = {
     'rede-pendurada': dict(
         trocas=[(A1, '<link rel="stylesheet" href="../assets/estudo.css">',
@@ -77,6 +78,11 @@ CASOS = {
     'alvo-de-toque-pequeno': dict(
         trocas=[(CSS, 'min-height: 44px;', 'min-height: 0;', None), (CSS, 'min-width: 44px;', 'min-width: 0;', None)],
         causa=r'menor altura \d+ px -> "'),
+    # O summary com display flex perde o triângulo de abrir: o sensor lê o display, não a altura.
+    'alvo-de-toque-sem-marcador': dict(
+        sensor='alvo-de-toque-pequeno',
+        trocas=[(CSS, 'details.lembrar summary {\n  font-weight: 600;', 'details.lembrar summary {\n  display: flex;\n  font-weight: 600;', 1)],
+        causa=r'summary sem marcador de abrir'),
     'links-vizinhos-pequenos': dict(
         trocas=[(CSS, 'min-height: 44px; padding: .2rem 0;', 'min-height: 0; padding: .2rem 0;', 1)],
         causa=r'vizinho: "'),
@@ -103,6 +109,8 @@ CASOS = {
 
 
 def sensor_de(caso):
+    if 'sensor' in CASOS[caso]:
+        return CASOS[caso]['sensor']
     return caso[:-len('-escuro')] if caso.endswith('-escuro') else caso
 
 

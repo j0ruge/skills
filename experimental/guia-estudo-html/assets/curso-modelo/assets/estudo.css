@@ -158,9 +158,11 @@ th { color: var(--marca-texto); font-weight: 600; border-bottom: 2px solid var(-
 td.num, th.num { text-align: right; font-family: var(--mono); }
 
 /* Toda caixa que abre e fecha, com ou sem classe: o summary é um alvo de toque de 44 px de altura.
-   Ele mantém o display de lista, e o triângulo de abrir continua à vista. */
+   Ele mantém o display de lista, e o triângulo de abrir continua à vista: com display flex, grid ou block o
+   triângulo some. Por isso a altura vem de min-height com box-sizing border-box, e não de um display. */
 details > summary {
   cursor: pointer;
+  box-sizing: border-box;
   min-height: 44px;
   padding: .4rem 0;
 }
@@ -176,8 +178,6 @@ details.lembrar {
 details.lembrar summary {
   font-weight: 600;
   color: var(--marca-texto);
-  display: flex;
-  align-items: center;
 }
 details.lembrar[open] summary { margin-bottom: .3rem; }
 details.lembrar[open] { padding-bottom: .6rem; }
