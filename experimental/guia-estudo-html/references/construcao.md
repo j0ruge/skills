@@ -53,7 +53,7 @@ Cada lição vem de um defeito medido num guia de estudo de 9 aulas de outro pro
 
 - **Decisão:** no celular, a pessoa lê um PDF das páginas de consulta, com as caixas abertas e os diagramas desenhados. O PDF se gera de novo a cada mudança dessas páginas, pelo `gerar-pdf.js`. Ele fica fora do git.
 - **Regra:** página A5, para o texto ficar grande na tela. O `gerar-pdf.js` abre todos os `details` depois do carregamento, zera o `min-width` do SVG (no papel não há rolagem, e o desenho volta a caber) e esconde a dica de rolagem.
-- **Medida:** a saída traz `diagramas 0, caixas fechadas 0` por página e sai 1 se alguma caixa ficou fechada. Uma página de perguntas com 40 caixas deu 20 páginas A5. O script precisa de rede para o Mermaid.
+- **Medida:** a saída traz `diagramas 0, caixas fechadas 0` por página e sai 1 se alguma caixa ficou fechada. Caixa fechada é a que, aberta, fica sem o conteúdo à vista na impressão: o script conta na mídia do PDF. Uma página de perguntas com 40 caixas deu 20 páginas A5. O script precisa de rede para o Mermaid.
 
 ## 8. Rótulo do Mermaid que começa por "1. " vira lista
 

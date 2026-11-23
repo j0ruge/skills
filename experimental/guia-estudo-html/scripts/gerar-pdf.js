@@ -2,9 +2,10 @@
 // página A5 para o texto ficar grande na tela. No papel não há rolagem: o SVG volta a caber na largura
 // (min-width zerado) e a dica de rolagem some.
 // Uma linha por página: OK ou FAIL, com o número de caixas que ficaram fechadas. Sai 1 se alguma ficou.
-// "Fechada" é a caixa sem o conteúdo à vista depois de aberta: um <details> escondido por CSS (display: none no
-// conteúdo, ou numa caixa em volta) entra no PDF vazio, mesmo com open = true. Se o Mermaid não desenhar em 30 s,
-// a página sai com FAIL e sem PDF, e o script segue para a próxima.
+// "Fechada" é a caixa que, aberta, fica sem o conteúdo à vista na impressão. O PDF sai na mídia de impressão, e
+// a conta também: um display: none só no @media print entra no PDF vazio, mesmo com open = true. Uma regra só da
+// tela não conta, porque o PDF não a usa. Se o Mermaid não desenhar em 30 s, a página sai com FAIL e sem PDF,
+// e o script segue para a próxima.
 // Precisa de rede para o Mermaid. Uso: NODE_PATH=<bancada>/pw/node_modules node gerar-pdf.js <pasta de saída> <página.html>...
 const { chromium } = require('playwright');
 const fs = require('fs');
@@ -36,6 +37,8 @@ const { pathToFileURL } = require('url');
       document.querySelectorAll('.dica-rolagem').forEach(d => { d.style.display = 'none'; });
       await document.fonts.ready;
     });
+    // A conta usa a mídia do PDF: com a de tela, uma regra só de impressão passaria, e uma só de tela falharia.
+    await p.emulateMedia({ media: 'print' });
     // Aberta de fato: open, e o primeiro filho que não é o summary está à vista (checkVisibility segue os ancestrais).
     const fechadas = await p.$$eval('details', l => l.filter(d => {
       if (!d.open) return true;
