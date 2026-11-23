@@ -1,4 +1,6 @@
 """A CLI apply_plan.py: só o plano, só o escopo pedido, e cada item provado de novo na hora."""
+import contextlib
+import io
 import json
 import os
 import shutil
@@ -342,6 +344,132 @@ class ApplyTest(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertFalse(wt.exists())
         self.assertTrue((venv / "bin" / "python").is_file())
+
+    def sem_copia(self):
+        """Worktree de branch mergeada com dois ignorados sem outra cópia e um cache regenerável."""
+        self.merged("feat/w")
+        wt = self.fx.worktree("wt-w", "feat/w")
+        with open(self.fx.clone / ".git" / "info" / "exclude", "a", encoding="utf-8") as f:
+            f.write(".superpowers/\n__pycache__/\n")
+        (wt / ".superpowers" / "sdd").mkdir(parents=True)
+        (wt / ".superpowers" / "sdd" / "progress.md").write_text("tarefa 3 feita\n", encoding="utf-8")
+        (wt / ".env.local").write_text("SEGREDO=1\n", encoding="utf-8")
+        (wt / "__pycache__").mkdir()
+        (wt / "__pycache__" / "x.pyc").write_bytes(b"\0")
+        return wt
+
+    def lixeira(self):
+        """Os lotes da quarentena na pasta-mãe dos worktrees."""
+        lix = self.fx.base / ".housekeeping-lixeira"
+        return sorted(lix.iterdir()) if lix.is_dir() else []
+
+    def test_ignorado_sem_outra_copia_vai_para_a_quarentena(self):
+        """O git worktree remove apagaria o .superpowers/: ele vai para a quarentena, e o cache não."""
+        wt = self.sem_copia()
+        plan = self.analyze()
+        r = self.apply("--plan", plan, "--scope", "local")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertFalse(wt.exists())
+        lotes = self.lixeira()
+        self.assertEqual(len(lotes), 1, lotes)
+        itens = lotes[0] / "itens" / "wt-w"
+        self.assertEqual((itens / ".superpowers" / "sdd" / "progress.md").read_text(encoding="utf-8"),
+                         "tarefa 3 feita\n")
+        self.assertTrue((itens / ".env.local").is_file())
+        self.assertFalse((itens / "__pycache__").exists())
+        lote = json.loads((lotes[0] / "lote.json").read_text(encoding="utf-8"))
+        self.assertEqual({i["origem"] for i in lote["itens"]},
+                         {str(wt / ".superpowers"), str(wt / ".env.local")})
+        self.assertIn(f"quarentena: {wt / '.superpowers'} → {itens / '.superpowers'}", r.stdout)
+
+    @unittest.skipUnless(sys.platform.startswith("linux"), "o desfazer usa o mv -T do GNU")
+    def test_desfazer_traz_a_branch_o_worktree_e_os_ignorados(self):
+        """As linhas de desfazer, na ordem impressa, devolvem a pasta com os ignorados da quarentena."""
+        wt = self.sem_copia()
+        plan = self.analyze()
+        r = self.apply("--plan", plan, "--scope", "local")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        undo = [line[len("desfazer: "):] for line in r.stdout.splitlines() if line.startswith("desfazer: ")]
+        self.assertTrue(undo[0].startswith("git branch feat/w "), undo)
+        self.assertTrue(undo[1].startswith("git worktree add "), undo)
+        self.assertTrue(all(u.startswith("mv -n -T ") for u in undo[2:]), undo)
+        self.assertEqual(len(undo), 4, undo)
+        for u in undo:
+            cmd = u.split("  (")[0]
+            p = subprocess.run(cmd, shell=True, cwd=self.fx.clone, env=self.fx.env(),
+                               capture_output=True, text=True)
+            self.assertEqual(p.returncode, 0, f"{cmd}: {p.stderr}")
+        self.assertEqual((wt / ".superpowers" / "sdd" / "progress.md").read_text(encoding="utf-8"),
+                         "tarefa 3 feita\n")
+        self.assertTrue((wt / ".env.local").is_file())
+
+    def test_dry_run_mostra_a_quarentena_e_nao_move(self):
+        """O --dry-run diz para onde cada ignorado iria, e nada sai do lugar."""
+        wt = self.sem_copia()
+        plan = self.analyze()
+        r = self.apply("--plan", plan, "--scope", "local", "--dry-run")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn(f"faria: quarentena {wt / '.superpowers'}", r.stdout)
+        self.assertTrue((wt / ".superpowers" / "sdd" / "progress.md").is_file())
+        self.assertEqual(self.lixeira(), [])
+
+    def test_mv_que_falha_devolve_o_que_moveu_e_o_worktree_fica(self):
+        """Se um ignorado não sai (outro disco, permissão), os já movidos voltam e o worktree fica."""
+        wt = self.sem_copia()
+        plan = self.analyze()
+        real, calls = os.rename, []
+
+        def rename(src, dst):
+            calls.append(src)
+            if len(calls) == 2:
+                raise OSError(18, "Invalid cross-device link")
+            return real(src, dst)
+
+        out = io.TextIOWrapper(io.BytesIO(), encoding="utf-8")   # o main chama reconfigure()
+        with mock.patch.dict(os.environ, self.fx.env()), mock.patch.object(apply_plan.os, "rename", rename), \
+                contextlib.redirect_stdout(out):
+            rc = apply_plan.main(["--plan", str(plan), "--scope", "local"])
+        out.flush()
+        text = out.buffer.getvalue().decode("utf-8")
+        self.assertEqual(rc, 1, text)
+        self.assertIn("a quarentena dos ignorados falhou", text)
+        self.assertTrue((wt / ".superpowers" / "sdd" / "progress.md").is_file())
+        self.assertTrue((wt / ".env.local").is_file())
+        self.assertIn("feat/w", self.fx.local_branches())
+
+    def test_worktree_remove_que_falha_devolve_os_ignorados(self):
+        """O git worktree remove recusou depois da quarentena: os ignorados voltam para o worktree."""
+        wt = self.sem_copia()
+        plan = self.analyze()
+        real = apply_plan.hk.run_git
+
+        def run_git(repo, *args, **kw):
+            if args[:2] == ("worktree", "remove"):
+                return subprocess.CompletedProcess(args, 128, "", "fatal: recusado no teste")
+            return real(repo, *args, **kw)
+
+        out = io.TextIOWrapper(io.BytesIO(), encoding="utf-8")
+        with mock.patch.dict(os.environ, self.fx.env()), mock.patch.object(apply_plan.hk, "run_git", run_git), \
+                contextlib.redirect_stdout(out):
+            rc = apply_plan.main(["--plan", str(plan), "--scope", "local"])
+        out.flush()
+        text = out.buffer.getvalue().decode("utf-8")
+        self.assertEqual(rc, 1, text)
+        self.assertIn("recusado no teste", text)
+        self.assertTrue((wt / ".superpowers" / "sdd" / "progress.md").is_file())
+        self.assertTrue((wt / ".env.local").is_file())
+        self.assertNotIn("quarentena:", text)
+
+    def test_purge_le_o_lote_dos_ignorados(self):
+        """O lote tem o formato da quarentena das pastas de rascunho: o --purge o reconhece."""
+        self.sem_copia()
+        plan = self.analyze()
+        self.assertEqual(self.apply("--plan", plan, "--scope", "local").returncode, 0)
+        r = subprocess.run([sys.executable, str(SCRIPTS / "scratch_apply.py"), "--purge", "--root",
+                            str(self.fx.base), "--older-than", "0", "--dry-run"],
+                           capture_output=True, text=True, encoding="utf-8")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn(f"faria: apagar lote {self.lixeira()[0].name}", r.stdout)
 
     @unittest.skipUnless(os.path.isdir("/proc/self"), "sem /proc: a varredura de processos não roda")
     def test_processo_que_entrou_depois_do_plano_segura_o_worktree(self):

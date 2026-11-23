@@ -1,5 +1,38 @@
 # Changelog — `git-housekeeping`
 
+## [0.10.0] — 2026-11-23
+
+### Os ignorados sem outra cópia do worktree vão para a quarentena
+
+Nasceu de uma limpeza em que um worktree mergeado guardava um `.superpowers/` ignorado (41 arquivos),
+que o relatório mostrava em `sem outra cópia`. O apply só tinha uma rota para ele: o
+`git worktree remove`, que apaga os ignorados com rc 0. A pasta foi copiada à mão para a quarentena,
+com o sha256 conferido, antes do apply. Depois, duas citações dela num handoff e num log de outro
+repo apontavam para o caminho que tinha saído.
+
+- **O quê:** antes do `git worktree remove`, o `apply_plan.py` move cada ignorado `sem outra cópia`
+  (nem regenerável nem igual no principal) para `<pasta-mãe>/.housekeeping-lixeira/<AAAAMMDD-HHMMSS>/itens/<worktree>/`,
+  com o `lote.json` das pastas de rascunho. Cada um imprime `quarentena: <origem> → <destino>` e um
+  `desfazer: mv -n -T <destino> <origem>`, depois do `git worktree add`. O `--dry-run` imprime
+  `faria: quarentena …`. O relatório do `analyze.py` diz `sem outra cópia (vão para a quarentena)`.
+- **Falha no meio:** se um `mv` falha (outro disco, permissão) ou o `git worktree remove` recusa, o
+  que já foi movido volta para o worktree, e o worktree fica, recusado com rc 1.
+- **Por quê assim:** a skill já trata a quarentena como a regra para o que não tem outra cópia, nas
+  pastas de rascunho. O lote no mesmo formato deixa o `scratch_apply.py --purge` liberar o disco.
+- **O que não entrou:** procurar quem cita o caminho do worktree. A regra das pastas de rascunho
+  (citada por algo vivo, fica) seguraria quase todo worktree, porque handoffs citam o worktree onde o
+  trabalho aconteceu. E as citações deste caso estavam num repo que a análise do worktree não conhece.
+  O passo 7 do `SKILL.md` manda mostrar as linhas `quarentena:` e dizer o caminho novo ao usuário.
+- **Mudança de comportamento:** o disco dos ignorados `sem outra cópia` só libera no `--purge`. O
+  formato do plano não muda (`PLAN_VERSION` 1).
+- **Testes:** 6 novos (129 → 135): a quarentena do `.superpowers/` e do `.env.local`, sem o cache; o
+  desfazer, rodado na ordem impressa, devolve a branch, o worktree e os ignorados; o `--dry-run` não
+  move nada; o `mv` que falha devolve o que já moveu; o `git worktree remove` que recusa devolve os
+  ignorados; o `--purge` reconhece o lote. Quatro mutantes das guardas novas, quatro mortos.
+- **Dívida pré-existente, fora deste retrofit:** o smoke do Codex em `docs/codex/smokes.json` é da
+  0.1.0.
+- **Como reverter:** `git revert` deste commit.
+
 ## [0.9.0] — 2026-11-18
 
 ### Só a pasta, a branch fica: o worktree que sai a pedido

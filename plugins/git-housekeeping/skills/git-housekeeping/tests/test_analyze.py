@@ -133,7 +133,7 @@ class AnalyzeCliTest(unittest.TestCase):
         r = run(self.fx, "--repo", self.fx.clone, "--plan", self.plan)
         self.assertEqual(r.returncode, 0, r.stderr)
         linha = next(x for x in r.stdout.splitlines() if "wt-g" in x)
-        self.assertIn("sem outra cópia: ⚠ .env.local, notas/", linha)
+        self.assertIn("sem outra cópia (vão para a quarentena): ⚠ .env.local, notas/", linha)
         self.assertIn("igual no principal: mock.png", linha)
         self.assertIn(f"regeneráveis: .venv → {venv} (link: só o link sai), __pycache__/", linha)
         self.assertLess(linha.index("sem outra cópia"), linha.index("igual no principal"))
@@ -154,7 +154,7 @@ class AnalyzeCliTest(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         linha = next(x for x in r.stdout.splitlines() if "wt-s" in x)
         # O arquivo solto fica só com o nome; a pasta leva arquivos e tamanho, no singular também.
-        self.assertRegex(linha, r"sem outra cópia: ⚠ \.env\.local, \.superpowers/ \(3 arquivos, \d+ KB\), "
+        self.assertRegex(linha, r"sem outra cópia \(vão para a quarentena\): ⚠ \.env\.local, \.superpowers/ \(3 arquivos, \d+ KB\), "
                                 r"notas/ \(1 arquivo, \d+ KB\)")
 
     def test_conteudo_passa_a_mb_a_partir_de_1_mb(self):

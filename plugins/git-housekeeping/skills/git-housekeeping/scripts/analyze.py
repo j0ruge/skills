@@ -37,7 +37,7 @@ def _label(plan: dict, item: dict) -> str:
 
 
 def _ignored(item: dict) -> str:
-    """Os ignorados do worktree em três grupos: sem outra cópia (o que se perde de fato, com ⚠ no
+    """Os ignorados do worktree em três grupos: sem outra cópia (o que o apply põe na quarentena, com ⚠ no
     .env*; a pasta com os arquivos e o tamanho), igual no worktree principal, e regeneráveis (o
     link conta aqui: só o link sai)."""
     if not item["ignored"]:
@@ -51,7 +51,9 @@ def _ignored(item: dict) -> str:
                 + (f" {_conteudo(*lost_dirs[x])}" if x in lost_dirs else ""))
 
     lost = [name(x) for x in item["ignored"] if x not in regen and x not in copies]
-    parts = [f"sem outra cópia: {', '.join(lost) or 'nenhum'}"]
+    # O apply move esses para a quarentena da pasta-mãe antes do `git worktree remove`.
+    parts = [f"sem outra cópia (vão para a quarentena): {', '.join(lost)}" if lost
+             else "sem outra cópia: nenhum"]
     if copies:
         parts.append(f"igual no principal: {', '.join(name(x) for x in copies)}")
     if regen:
