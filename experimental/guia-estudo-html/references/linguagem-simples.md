@@ -34,7 +34,7 @@ Estas regras se conferem na página. Cada uma leva a medida que a originou: a co
 
 ## 7. Todo número tem fonte e localização
 - Todo número no corpo da aula, numa caixa, numa legenda ou num diagrama leva `span.n` e a fonte com a localização (`span.fonte`). A analogia que usa número inventado também leva a marca "exemplo inventado" (regra 8).
-- Pré-teste e enunciado de quiz repetem números de um exemplo que já tem a fonte. Neles o `span.n` e a fonte não entram, e a opção certa leva a fonte no `data-explica` (regra 9).
+- O pré-teste repete números de um exemplo que já tem a fonte. O enunciado de quiz traz números de exercício, inventados para a pergunta. Nos dois, o `span.n` e a fonte não entram. A opção certa leva a fonte no `data-explica` (regra 9).
 - **Medida:** em cada caixa, `details`, figura ou parágrafo solto com `span.n`, procure um `span.fonte` no mesmo bloco. O pré-teste e os enunciados ficam de fora.
 - **Defeito medido:** uma frase de síntese juntava quatro números de uma frase da fonte que quebra de página. A marca citou a página vizinha. O valor estava certo.
 - **Regra:** para a frase que junta números, cite as duas páginas, ou a faixa.
@@ -57,7 +57,7 @@ Estas regras se conferem na página. Cada uma leva a medida que a originou: a co
 
 ## 11. Quiz: opções com o mesmo tamanho, e a certa fora do topo
 - **Defeito medido:** no curso-modelo, uma pergunta tinha opções de 4, 4 e 5 palavras, e a certa era a mais longa. Em outra, as três opções tinham 3 palavras, e a certa era a mais longa em caracteres.
-- **Regra:** as opções de uma pergunta têm o mesmo número de palavras. A diferença de uma palavra passa, se a certa não for a mais longa. A certa nunca é a única mais longa, nem em palavras nem em caracteres. Ela muda de posição de pergunta para pergunta.
+- **Regra:** as opções de uma pergunta têm o mesmo número de palavras, ou diferem em uma. A certa nunca é a única mais longa, nem em palavras nem em caracteres: no empate, passa. Ela muda de posição de pergunta para pergunta.
 - **Medida:** conte palavras e caracteres das opções de cada pergunta, na ordem em que a página as mostra. Uma opção mais longa denuncia a certa.
 
 ## 12. O tempo que a aula promete bate com o tamanho dela
