@@ -63,7 +63,7 @@ const quadros = p => p.evaluate(() => {
     const c2 = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     const p2 = await c2.newPage();
     await p2.goto(url, { waitUntil: 'networkidle' });
-    if (await p2.$('pre.mermaid')) await esperar(p2);
+    if (await p2.$('pre.mermaid') && !(await esperar(p2))) achados.push('390: o Mermaid não desenhou em 20 s (sem rede?)');
     await p2.waitForTimeout(500);
     const q2 = await quadros(p2);
     for (const q of q2) if (!q.dica.trim()) achados.push(`390, figura ${q.i + 1}: o quadro rola e não tem dica`);
@@ -75,4 +75,4 @@ const quadros = p => p.evaluate(() => {
   }
   await b.close();
   process.exit(falhas ? 1 : 0);
-})();
+})().catch(e => { console.log('FAIL erro do sensor: ' + String((e && e.message) || e).split('\n')[0]); process.exit(1); });

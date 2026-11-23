@@ -100,4 +100,4 @@ async function anel(p) {
     await b.close();
   }
   process.exit(falhas ? 1 : 0);
-})();
+})().catch(e => { console.log('FAIL erro do sensor: ' + String((e && e.message) || e).split('\n')[0]); process.exit(1); });

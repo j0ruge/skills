@@ -71,4 +71,4 @@ const abertas = p => p.$$eval('details', ds => ds.map(d => (d.open ? 1 : 0)).joi
   }
   await b.close();
   process.exit(falhas ? 1 : 0);
-})();
+})().catch(e => { console.log('FAIL erro do sensor: ' + String((e && e.message) || e).split('\n')[0]); process.exit(1); });
