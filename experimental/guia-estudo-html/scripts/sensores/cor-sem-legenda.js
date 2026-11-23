@@ -4,13 +4,16 @@
 //   - "classDef nome ..." usada por "class X nome" ou por "A:::nome" (uma classDef pode nomear várias: "a,b");
 //   - "classDef default ...", que vale para todo nó sem classe e por isso conta sempre como usada;
 //   - "style X ...", direto num nó;
-//   - "linkStyle N ...", direto numa seta (aqui só o tracejado importa).
+//   - "linkStyle N ...", direto numa seta (o tracejado e a cor do traço).
 // Em cada figure.diagrama com pre.mermaid:
 //   - cada fill de uma classe usada ou de um style pede, na figcaption, o nome que GUIA_TEXTOS.cores dá a ele;
+//   - a cor pode vir em hex (#e0006e) ou por nome (red); o nome entra em cores como chave, em minúsculas;
+//   - o stroke pede nome só quando é a única cor do estilo (sem fill) ou quando é a cor de uma seta (linkStyle).
+//     Num nó com fill, o stroke é a borda da mesma cor, e a legenda que nomeia o fill já a cobre;
 //   - stroke-dasharray numa classe usada, num style ou num linkStyle, ou seta pontilhada (-.-> ou -.-), pede
 //     palavraTracejado na figcaption;
-//   - fill que não está em GUIA_TEXTOS.cores também falha (a cor ganha um nome lá);
-//   - fill branco (#fff, #ffffff) não pede nome.
+//   - cor que não está em GUIA_TEXTOS.cores também falha (a cor ganha um nome lá);
+//   - branco (#fff, #ffffff, white) e none, transparent e currentcolor não pedem nome.
 // O nome pode trazer alternativas separadas por "|". SVG feito à mão fica de fora: o rótulo está no desenho.
 // Página sem Mermaid passa e diz isso.
 // Uso: NODE_PATH=<bancada>/pw/node_modules node cor-sem-legenda.js <página.html>...
@@ -36,7 +39,7 @@ const { pathToFileURL } = require('url');
     const cores = {};
     Object.keys(T.cores || {}).forEach(k => { cores[k.toLowerCase()] = String(T.cores[k]).toLowerCase(); });
     const tracejado = String(T.palavraTracejado || '').toLowerCase();
-    const BRANCO = ['#fff', '#ffffff'];
+    const SEM_NOME = ['#fff', '#ffffff', 'white', 'none', 'transparent', 'currentcolor', 'inherit'];
     const problemas = [];
     figuras.forEach((f, i) => {
       if (f.desenhado) { problemas.push(`figura ${i + 1}: o Mermaid desenhou sem rede; o código não está mais no texto`); return; }
@@ -49,18 +52,22 @@ const { pathToFileURL } = require('url');
       for (const m of f.mermaid.matchAll(/:::(\w+)/g)) usadas.add(m[1]);
       let temTraco = /-\.->|-\.-/.test(f.mermaid);
       for (const m of f.mermaid.matchAll(/^\s*linkStyle\s+\S+\s+([^\n]+)/gm)) if (/stroke-dasharray/.test(m[1])) temTraco = true;
+      // Valor de uma propriedade de cor numa lista "fill:#fdf3d3,stroke:#e0a800,...": hex ou nome, em minúsculas.
+      const cor = (d, prop) => { const m = d.match(new RegExp('(?:^|[\\s,;])' + prop + ':\\s*(#[0-9a-fA-F]{3,8}|[a-zA-Z]+)')); return m ? m[1].toLowerCase() : null; };
+      const pedirCor = k => {
+        if (!k || SEM_NOME.includes(k)) return;
+        if (k in cores) pede.add(cores[k]); else pede.add('cor desconhecida ' + k);
+      };
       // Cada estilo que pinta um nó: o das classes usadas e o de cada linha "style X ...".
       const estilos = Array.from(usadas, c => defs[c] || '');
       for (const m of f.mermaid.matchAll(/^\s*style\s+\S+\s+([^\n]+)/gm)) estilos.push(m[1]);
       for (const d of estilos) {
-        const fill = (d.match(/fill:\s*(#[0-9a-fA-F]{3,6})/) || [])[1];
-        if (fill) {
-          const k = fill.toLowerCase();
-          if (k in cores) pede.add(cores[k]);
-          else if (!BRANCO.includes(k)) pede.add('cor desconhecida ' + k);
-        }
+        const fill = cor(d, 'fill');
+        if (fill) pedirCor(fill); else pedirCor(cor(d, 'stroke'));
         if (/stroke-dasharray/.test(d)) temTraco = true;
       }
+      // A cor de uma seta é cor de verdade: pede nome.
+      for (const m of f.mermaid.matchAll(/^\s*linkStyle\s+\S+\s+([^\n]+)/gm)) pedirCor(cor(m[1], 'stroke'));
       if (temTraco) pede.add('\u0000tracejado');
       const faltam = [];
       for (const w of pede) {

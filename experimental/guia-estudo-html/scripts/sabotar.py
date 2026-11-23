@@ -99,6 +99,15 @@ CASOS = {
     'cor-sem-legenda': dict(
         trocas=[(A2, ' Em amarelo, o resultado.', '', 1)],
         causa=r'a legenda não diz amarelo'),
+    # Cor por nome e cor de seta: dois caminhos que o sensor não lia (ver o cabeçalho do cor-sem-legenda.js).
+    'cor-sem-legenda-nome': dict(
+        sensor='cor-sem-legenda',
+        trocas=[(A2, '  class V conf\n', '  class V conf\n  style H fill:red\n', 1)],
+        causa=r'a legenda não diz cor desconhecida red'),
+    'cor-sem-legenda-seta': dict(
+        sensor='cor-sem-legenda',
+        trocas=[(A2, '  class V conf\n', '  class V conf\n  linkStyle 0 stroke:#e0006e\n', 1)],
+        causa=r'a legenda não diz cor desconhecida #e0006e'),
     'retorno-repete-negacao': dict(
         trocas=[(JS_QUIZ, 'if (!acertou) explica = tirarNegacao(explica);', '', 1)],
         causa=r'repete a negação'),
