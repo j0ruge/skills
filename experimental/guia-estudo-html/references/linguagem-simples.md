@@ -34,7 +34,7 @@ Estas regras se conferem na página. Cada uma leva a medida que a originou: a co
 
 ## 7. Todo número tem fonte e localização
 - Todo número no corpo da aula, numa caixa, numa legenda ou num diagrama leva `span.n` e a fonte com a localização (`span.fonte`). A analogia que usa número inventado também leva a marca "exemplo inventado" (regra 8).
-- O pré-teste repete números de um exemplo que já tem a fonte. O enunciado de quiz traz números de exercício, inventados para a pergunta. Nos dois, o `span.n` e a fonte não entram. A opção certa leva a fonte no `data-explica` (regra 9).
+- O pré-teste repete números de um exemplo que já tem a fonte. O enunciado de quiz traz números de exercício: inventados para a pergunta, ou os de um exemplo da aula. Nos dois, o `span.n` e a fonte não entram. A opção certa leva a fonte no `data-explica` (regra 9).
 - **Medida:** em cada caixa, `details`, figura ou parágrafo solto com `span.n`, procure um `span.fonte` no mesmo bloco. O pré-teste e os enunciados ficam de fora.
 - **Defeito medido:** uma frase de síntese juntava quatro números de uma frase da fonte que quebra de página. A marca citou a página vizinha. O valor estava certo.
 - **Regra:** para a frase que junta números, cite as duas páginas, ou a faixa.
