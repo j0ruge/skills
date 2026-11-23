@@ -12,3 +12,9 @@ Cada entrada leva a data e o motivo.
 **Estado do método: estrutura conferida, aprendizado ainda não medido.** Os sensores e a revisão de conteúdo conferem os blocos, o termo antes do uso, o quiz que se resolve pela aula e o funcionamento da página. Ninguém mediu se uma pessoa aprendeu pelo curso. Esse fim ficou como verificação humana.
 
 **Regra de promoção para `plugins/`:** o primeiro curso feito com esta skill num projeto diferente do de origem registra aqui o que a pessoa aprendeu e o que falhou. A subida depende desse registro e da decisão do autor. Antes dela, siga "Promover para `plugins/`" no `README.md` da pasta `experimental/`.
+
+## 2026-11-23 — fecha os itens menores adiados
+
+**Motivo:** a execução da skill deixou itens menores para depois, e a revisão final cobriu só parte deles. Cada linha abaixo diz o defeito e o que mudou.
+
+- `scripts/conferir-dois.py`: 429 e 5xx do Crossref valem uma nova tentativa e, se persistem, rc 2 com a mensagem "indisponivel". Antes contavam como FALHA do DOI. A pontuação `:` e `-` no fim do DOI sai, e o comentário no regex diz que DOI com parênteses não tem suporte.
