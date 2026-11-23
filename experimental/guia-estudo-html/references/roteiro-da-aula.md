@@ -72,7 +72,7 @@ Uma frase ficou fora de propósito: "diga onde a analogia deixa de valer". Nenhu
 ### 6. Quiz
 - O retorno vem logo após o toque: o certo e o porquê.
 - O porquê da opção certa leva fonte e localização.
-- As opções têm o mesmo número de palavras. A certa muda de posição de pergunta para pergunta.
+- As opções têm o mesmo número de palavras (diferença de uma passa, se a certa não for a mais longa). A certa nunca é a única mais longa, em palavras ou em caracteres, e muda de posição de pergunta para pergunta (`linguagem-simples.md`, regra 11).
 - Nunca pergunte "ficou claro?". O quiz exige uma resposta.
 
 ### 7. Aplique agora
@@ -125,4 +125,4 @@ Estas regras valem quando o agente ensina pelo chat, com o curso aberto. Ficam f
 
 ## 7. Páginas de consulta
 
-O roteiro vale também para glossário, números e perguntas, no que couber: termo com definição e exemplo, e fonte em cada número.
+Esta seção não é um bloco e não tem fonte própria: ela só estende regras que já têm. O glossário e as páginas de números e de perguntas seguem o bloco 4a (termo com definição, exemplo e contraexemplo) e a regra 7 de `linguagem-simples.md` (fonte e localização em cada número), no que couber.
