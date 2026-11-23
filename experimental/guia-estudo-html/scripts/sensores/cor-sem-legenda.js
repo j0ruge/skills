@@ -8,8 +8,9 @@
 // Em cada figure.diagrama com pre.mermaid:
 //   - cada fill de uma classe usada ou de um style pede, na figcaption, o nome que GUIA_TEXTOS.cores dá a ele;
 //   - a cor pode vir em hex (#e0006e) ou por nome (red); o nome entra em cores como chave, em minúsculas;
-//   - o stroke pede nome só quando é a única cor do estilo (sem fill) ou quando é a cor de uma seta (linkStyle).
-//     Num nó com fill, o stroke é a borda da mesma cor, e a legenda que nomeia o fill já a cobre;
+//   - o stroke pede nome só quando é a única cor do estilo ou quando é a cor de uma seta (linkStyle). É a única
+//     cor quando falta o fill, ou quando o fill é branco ou none. Num nó com fill de cor, o stroke é a borda da
+//     mesma cor, e a legenda que nomeia o fill já a cobre;
 //   - stroke-dasharray numa classe usada, num style ou num linkStyle, ou seta pontilhada (-.-> ou -.-), pede
 //     palavraTracejado na figcaption;
 //   - cor que não está em GUIA_TEXTOS.cores também falha (a cor ganha um nome lá);
@@ -63,7 +64,8 @@ const { pathToFileURL } = require('url');
       for (const m of f.mermaid.matchAll(/^\s*style\s+\S+\s+([^\n]+)/gm)) estilos.push(m[1]);
       for (const d of estilos) {
         const fill = cor(d, 'fill');
-        if (fill) pedirCor(fill); else pedirCor(cor(d, 'stroke'));
+        // Fill branco ou none não pinta: o stroke passa a ser a única cor do estilo e pede nome.
+        if (fill && !SEM_NOME.includes(fill)) pedirCor(fill); else pedirCor(cor(d, 'stroke'));
         if (/stroke-dasharray/.test(d)) temTraco = true;
       }
       // A cor de uma seta é cor de verdade: pede nome.

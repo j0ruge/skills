@@ -29,7 +29,7 @@ Estas regras se conferem na página. Cada uma leva a medida que a originou: a co
 ## 6. Toda cor e todo tracejado têm legenda
 - **Defeito medido:** seis diagramas usavam cor ou linha tracejada sem explicar. O sensor achou mais oito, ao todo catorze figuras.
 - **Regra:** cada cor usada no código do diagrama, ou no estilo inline de uma figura em HTML, aparece na legenda, com o que ela marca. Cada tracejado também. Com uma cor só, a palavra "destaque" basta.
-- **Medida:** o sensor `cor-sem-legenda.js` lê o código do diagrama sem rede. O `fill` de cada `classDef` usada, da `classDef default` e de cada `style` pede o nome da cor na legenda, em hex ou por nome (`red`). O `stroke` pede nome quando é a cor de uma seta (`linkStyle`) ou a única cor do estilo. Num nó com `fill`, o `stroke` é a borda e a legenda do `fill` a cobre. O tracejado pede o termo "tracejad", venha ele de uma classe, de um `style`, de um `linkStyle` ou da seta `-.->`.
+- **Medida:** o sensor `cor-sem-legenda.js` lê o código do diagrama sem rede. O `fill` de cada `classDef` usada, da `classDef default` e de cada `style` pede o nome da cor na legenda, em hex ou por nome (`red`). O `stroke` pede nome quando é a cor de uma seta (`linkStyle`) ou a única cor do estilo: sem `fill`, ou com `fill` branco ou `none`. Num nó com `fill` de cor, o `stroke` é a borda e a legenda do `fill` a cobre. O tracejado pede o termo "tracejad", venha ele de uma classe, de um `style`, de um `linkStyle` ou da seta `-.->`.
 - **Fora do sensor:** figura em HTML ou SVG feito à mão, com cor inline (`style="fill:#e0006e"`), segue a mesma regra, mas nenhum sensor a lê. Quem confere é a revisão de conteúdo (`qa.md`, seção 6).
 
 ## 7. Todo número tem fonte e localização
