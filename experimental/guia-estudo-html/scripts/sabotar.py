@@ -114,6 +114,16 @@ def sensor_de(caso):
     return caso[:-len('-escuro')] if caso.endswith('-escuro') else caso
 
 
+def aulas_do_rodar_tudo(aqui):
+    """Lê, no rodar-tudo.sh, a lista dos sensores que rodam só em lessons/*.html. None se não achar."""
+    try:
+        texto = (aqui / 'rodar-tudo.sh').read_text(encoding='utf-8')
+    except (OSError, UnicodeDecodeError):
+        return None
+    m = re.search(r'^\s*([a-z0-9|-]+)\)\s*alvo=\("\$\{LESS\[@\]\}"\)', texto, re.M)
+    return set(m.group(1).split('|')) if m else None
+
+
 def conferir_modelo(curso):
     """Confere, antes de copiar, que cada troca acha o seu texto. Devolve o primeiro problema, ou None."""
     for caso, c in CASOS.items():
@@ -179,6 +189,14 @@ def main():
         print(f'erro: este curso não é o curso-modelo: {problema}.', file=sys.stderr)
         print('O sabotar.py prova os sensores no assets/curso-modelo da skill. O curso de quem estuda passa '
               'pelo rodar-tudo.sh. Nada foi criado.', file=sys.stderr)
+        return 2
+    # A lista dos sensores de aula mora aqui e no case do rodar-tudo.sh. Se as duas divergem, o sabotar.py mediria
+    # um sensor em páginas que o rodar-tudo.sh não usa, e o MORTO não valeria para o curso real.
+    do_sh = aulas_do_rodar_tudo(pathlib.Path(__file__).resolve().parent)
+    if do_sh != AULAS:
+        print('erro: a lista de sensores de aula do sabotar.py (AULAS) difere da do case do rodar-tudo.sh: '
+              + ('o case não foi achado.' if do_sh is None else
+                 f'só em AULAS {sorted(AULAS - do_sh)}; só no rodar-tudo.sh {sorted(do_sh - AULAS)}.'), file=sys.stderr)
         return 2
     bancada = pathlib.Path(a.bancada).resolve() if a.bancada else None
     if bancada and not (bancada / 'pw' / 'node_modules' / 'playwright').is_dir():
