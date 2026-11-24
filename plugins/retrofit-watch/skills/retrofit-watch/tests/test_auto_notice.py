@@ -556,7 +556,8 @@ class CriterionTest(NoticeHarness, unittest.TestCase):
             cache = json.loads((self.w.data / "criterio.json").read_text(encoding="utf-8"))
             self.assertEqual(cache, {"sha": head, "estouro": now})
             self.assertEqual(len(logs(spy)), 1)
-            # O mesmo sha, 60 s depois: None, sem `git log`.
+            # O mesmo sha, no mesmo instante e 60 s depois: None, sem `git log`.
+            self.assertIsNone(self.criterion(now))
             self.assertIsNone(self.criterion(now + 60))
             self.assertEqual(len(logs(spy)), 1, "o cache negativo não poupou o git log")
             # Pelo aviso de startup: a linha sai sem o segmento do critério, e o errors.log não cresce.
@@ -578,9 +579,11 @@ class CriterionTest(NoticeHarness, unittest.TestCase):
             got = self.criterion(later + 60)
             self.assertEqual(len(logs(spy)), 3)
             # A forma do estouro quebrada mede de novo, sem exceção: chama o git log e devolve o dicionário.
+            # Final-F7: o estouro gravado no futuro (o relógio que voltou) também, e não cala o critério.
             head = self.w.git(self.w.store, "rev-parse", "origin/main")
             for n, broken in enumerate(({"sha": head, "estouro": "x"}, {"sha": head, "estouro": None},
-                                        {"sha": head, "estouro": later, "mais": 1}), start=4):
+                                        {"sha": head, "estouro": later, "mais": 1},
+                                        {"sha": head, "estouro": later + 3600}), start=4):
                 with self.subTest(broken=broken):
                     (self.w.data / "criterio.json").write_text(json.dumps(broken), encoding="utf-8")
                     self.assertEqual(self.criterion(later + 60), got)

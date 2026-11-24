@@ -766,7 +766,9 @@ def _cached(ctx, head):
 
 
 def _timed_out(ctx, head, now):
-    """True quando <dados>/criterio.json é o estouro do `head`, {sha, estouro}, com menos de 24 h."""
+    """True quando <dados>/criterio.json é o estouro do `head`, {sha, estouro}, com menos de 24 h. O
+    instante no futuro (o relógio que voltou, a edição à mão) conta como expirado: sem o limite de
+    baixo, ele nunca venceria (Final-F7)."""
     try:
         data = json.loads((ctx.data_dir / CRITERION_FILE).read_bytes().decode("utf-8"))
     except (OSError, ValueError):
@@ -776,7 +778,7 @@ def _timed_out(ctx, head, now):
     when = data["estouro"]
     if not isinstance(when, (int, float)):
         return False
-    return now - when < CRITERION_RETRY
+    return 0 <= now - when < CRITERION_RETRY
 
 
 def criterion(ctx, now=None):
