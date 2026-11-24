@@ -4,7 +4,7 @@
 Registrado em hooks/hooks.json:
   Stop                         -> retrofit_watch.py stop
   SessionStart (resume|fork)   -> retrofit_watch.py baseline
-  SessionStart (startup)       -> retrofit_watch.py pending   (aviso de retro adiada)
+  SessionStart (startup)       -> retrofit_watch.py pending   (aviso de startup: retro adiada, modo autônomo)
 Linha de comando: retrofit_watch.py queue [--done ID...]   (a fila das sessões headless)
                   retrofit_watch.py triage|held|hold|approve|discard ...   (modo autônomo, rw_auto.py)
                   retrofit_watch.py harvest|prepare|seal ...   (a loja do modo autônomo, rw_store.py)
@@ -35,6 +35,7 @@ sem ela, ou com mais de uma, o `queue` sai 1 em vez de responder uma fila vazia.
 Nunca grava texto do assistente. Qualquer erro interno vai para <data>/errors.log e sai com 0.
 Só biblioteca padrão. Roda em Linux, macOS e Windows (lá o `python3` do PATH, sem fcntl).
 """
+import importlib
 import json
 import os
 import re
@@ -902,17 +903,38 @@ def cmd_stop(payload, ctx):
         return output
 
 
-def cmd_pending(payload, ctx):
-    """SessionStart `startup`: uma linha para o humano quando há retro adiada. Nunca vai ao contexto."""
-    if session_mode(ctx) != "attended":
-        return None
+def queue_notice(ctx):
+    """O segmento da fila das sessões headless, ou None."""
     items = read_queue(ctx)
     if not items:
         return None
     labels = sorted({s.get("label") for item in items for s in item.get("skills", []) if s.get("label")})
     noun = "retro pendente" if len(items) == 1 else "retros pendentes"
-    return {"systemMessage": f"retrofit-watch: {len(items)} {noun} de sessões headless ({', '.join(labels)}) "
-                             "— /retrofit-watch:retrofit-watch pendentes"}
+    return f"{len(items)} {noun} de sessões headless ({', '.join(labels)}) — /retrofit-watch:retrofit-watch pendentes"
+
+
+# Os segmentos do aviso de startup, na ordem da linha: (módulo, função). None é a fila de hoje, daqui.
+NOTICES = ((None, "queue_notice"), ("rw_auto", "held_notice"), ("rw_auto", "orphan_notice"),
+           ("rw_auto", "behind_notice"), ("rw_store", "criterion_notice"))
+
+
+def cmd_pending(payload, ctx):
+    """SessionStart `startup`: uma linha para o humano, nunca para o contexto. Junta com ` · ` a fila de
+    hoje, os retrofits segurados, os órfãos, os publicados com a cópia instalada atrás e o critério da
+    v2. Cada segmento roda no seu `try` (M11): a exceção vai ao errors.log, e os outros saem."""
+    if session_mode(ctx) != "attended":
+        return None
+    parts = []
+    for module, name in NOTICES:
+        try:
+            source = sys.modules[__name__] if module is None else importlib.import_module(module)
+            text = getattr(source, name)(ctx)
+        except Exception as exc:  # noqa: BLE001 — um segmento não apaga o aviso dos outros
+            log_error(ctx, exc)
+            continue
+        if text:
+            parts.append(text)
+    return {"systemMessage": "retrofit-watch: " + " · ".join(parts)} if parts else None
 
 
 def data_dir_problem(ctx):

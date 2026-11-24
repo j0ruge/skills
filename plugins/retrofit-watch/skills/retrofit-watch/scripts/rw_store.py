@@ -1,7 +1,8 @@
 """retrofit-watch, modo autônomo: a colheita dos nomes privados, o worktree do lote e o selo do executor.
 
 Roda fora do hook, pelos verbos `harvest`, `prepare` e `seal` de retrofit_watch.py. Chama o git e o
-portão de anonimização da loja (`scripts/anonymity-gate.py`); nunca faz push.
+portão de anonimização da loja (`scripts/anonymity-gate.py`); nunca faz push. A exceção é o `criterion`,
+que o aviso de startup (`cmd_pending`) chama dentro do hook: só lê, sem rede.
 
   colheita   os nomes locais que não podem ir à loja pública, fora de qualquer repo e com permissão
              0o600: o verbo `harvest` grava <dados>/colheita.txt; a camada 1 grava a de cada chamada
@@ -9,18 +10,25 @@ portão de anonimização da loja (`scripts/anonymity-gate.py`); nunca faz push.
   prepare    `git fetch origin` no clone da loja e um worktree ligado novo do `origin/main`, num ramo
              que sai do id e do lote; grava <dados>/auto/<id>/<lote>/retrofit.json
   seal       o selo do executor: completa o retrofit.json, grava termos-novos.json e roda a camada 1
+  criterion  o critério da v2 para o aviso de startup, lido do `origin/main` local, sem `fetch` e com o
+             teto de 3 s por chamada ao git; o cache fica em <dados>/criterio.json
 
 Todo git daqui roda sem as variáveis de localização herdadas (um hook do git exporta GIT_DIR) e com o
 HOME do Context: o `~` resolve pelo ctx.home, nunca pelo HOME real. Os erros são StoreError; a saída do
 portão fora do formato também, nunca uma lista vazia (falha fechada).
 """
 import hashlib
+import importlib.util
+import io
 import json
 import os
 import re
 import socket
 import subprocess
 import sys
+import tarfile
+import tempfile
+import time
 from pathlib import Path
 
 import rw_auto
@@ -496,6 +504,153 @@ def seal(ctx, rid, lote, licoes, fases):
                                     and last.get("motivo") == "executor-recusou"):
             rw_auto.hold_item(ctx, rid, item, "executor-recusou", f"fora do selo de {rid}/{lote}")
     return {"commit": commit, "versao": versao, "patch": patch, "termos": termos, "camada1": camada1}
+
+
+# --- o critério da v2 ---------------------------------------------------------------------------
+# Spec 5.9 e D15: a conta sai dos commits do `origin/main` LOCAL, nunca do registro, e sem `fetch` (o
+# startup tem 10 s). O `origin/main` local anda quando a porta busca.
+
+V2_MIN_PUBLISHED = 10
+V2_MIN_DAYS = 14
+DAY = 86400
+STARTUP_TIMEOUT = 3
+CRITERION_FILE = "criterio.json"
+MARKER = "Retrofit-Mode"
+AUTONOMOUS = "autonomous"
+REVERTS = re.compile(r"This reverts commit ([0-9a-f]{7,40})")
+NAME_CHECK = "scripts/check-private-names.py"
+PRIVATE_LIST = LIST_FILES[1]
+# Um registro por commit (0x1e), os campos separados por 0x1f, os valores do trailer por 0x1d.
+LOG_FORMAT = f"%H%x1f%ct%x1f%cs%x1f%(trailers:key={MARKER},valueonly,separator=%x1d)%x1f%B%x1e"
+
+
+def _startup_git(store, args, what):
+    """A saída em bytes do git da loja, com o teto do startup, sem config nenhuma; StoreError com rc != 0."""
+    rc, out = run_bytes(["git", "--literal-pathspecs", "-C", str(store), *args], timeout=STARTUP_TIMEOUT,
+                        env=git_env(neutral=True))
+    if rc != 0:
+        raise StoreError(f"{what}: git {' '.join(args[:2])} saiu {rc}: {_decode(out).strip()[:500]}")
+    return out
+
+
+def _autonomous(store, head):
+    """([[sha, ts, data], ...] dos commits com o trailer exatamente `autonomous`, revertidos): os commits
+    do `head` que trazem `This reverts commit <sha>` de um deles."""
+    out = _decode(_startup_git(store, ["log", f"--format={LOG_FORMAT}", head], "criterio"))
+    records = []
+    for record in out.split("\x1e"):
+        fields = record.lstrip("\n").split("\x1f", 4)
+        if len(fields) == 5:
+            records.append(fields)
+    commits = []
+    for sha, ts, date, trailers, _ in records:
+        if [v.strip() for v in trailers.split("\x1d") if v.strip()] == [AUTONOMOUS]:
+            commits.append([sha, int(ts), date])
+    shas = [c[0] for c in commits]
+    reverted = sum(1 for *_, body in records
+                   if any(s.startswith(m) for m in REVERTS.findall(body) for s in shas))
+    return commits, reverted
+
+
+def _load_name_check(folder):
+    spec = importlib.util.spec_from_file_location("rw_check_private_names", Path(folder) / Path(NAME_CHECK).name)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _leaks(store, head, shas):
+    """Os achados do sensor de nomes (o `varrer` do check-private-names.py, com a lista de hashes, os dois
+    do `head`) nos arquivos que os commits `shas` tocaram, como estão no `head`. Os arquivos saem do
+    `git archive` para uma pasta temporária, que o `varrer` lê sem o git (ela não tem `.git`)."""
+    names = _decode(_startup_git(store, ["-c", "core.quotePath=false", "show", "--name-only", "--no-renames",
+                                         "--format=", "-z", *shas], "criterio"))
+    touched = sorted({n.lstrip("\n") for n in names.split("\0")} - {""})
+    present = []
+    if touched:
+        listed = _decode(_startup_git(store, ["ls-tree", "-r", "-z", "--name-only", head, "--", *touched],
+                                      "criterio"))
+        present = [n for n in listed.split("\0") if n]
+    raw = _startup_git(store, ["archive", "--format=tar", head, "--", NAME_CHECK, PRIVATE_LIST, *present],
+                       "criterio")
+    wanted = set(present)
+    with tempfile.TemporaryDirectory(prefix="rw-criterio-") as tmp:
+        tree, tool = Path(tmp) / "arvore", Path(tmp) / "sensor"
+        tree.mkdir()
+        tool.mkdir()
+        with tarfile.open(fileobj=io.BytesIO(raw)) as tar:
+            for member in tar:
+                if member.name in wanted:
+                    target = tree / member.name
+                elif member.name == NAME_CHECK:
+                    target = tool / Path(NAME_CHECK).name
+                elif member.name == PRIVATE_LIST:
+                    target = tool / Path(PRIVATE_LIST).name
+                else:
+                    continue
+                target.parent.mkdir(parents=True, exist_ok=True)
+                # O blob de um link simbólico é o caminho do alvo: o sensor lê esse texto, como o `git show`.
+                target.write_bytes(member.linkname.encode("utf-8", "surrogateescape") if member.issym()
+                                   else tar.extractfile(member).read())
+        check = _load_name_check(tool)
+        return len(check.varrer(tree, check.carregar(tool / Path(PRIVATE_LIST).name)))
+
+
+def _cached(ctx, head):
+    """O cache do `head`, ou None (ausente, ilegível, de outro sha ou fora do formato)."""
+    try:
+        data = json.loads((ctx.data_dir / CRITERION_FILE).read_bytes().decode("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict) or set(data) != {"sha", "commits", "revertidos", "vazados"} or data["sha"] != head:
+        return None
+    commits, reverted, leaks = data["commits"], data["revertidos"], data["vazados"]
+    if not (isinstance(commits, list) and all(
+            isinstance(c, list) and len(c) == 3 and isinstance(c[0], str) and rw_auto._int(c[1])
+            and isinstance(c[2], str) for c in commits)):
+        return None
+    if not rw_auto._int(reverted) or not (leaks is None or rw_auto._int(leaks)):
+        return None
+    return data
+
+
+def criterion(ctx, now=None):
+    """O critério da v2 (spec 5.9): {publicados, dias, revertidos, vazados, desde, cumprido}, ou None sem
+    loja. `vazados` é None até os dois pisos passarem. O cache, em <dados>/criterio.json por sha do
+    `origin/main`, guarda os commits e o que sai deles; `dias` e `cumprido` se refazem a cada chamada,
+    contra `now` (M1)."""
+    store = ctx.store
+    if store is None:
+        return None
+    now = time.time() if now is None else now
+    head = _decode(_startup_git(store, ["rev-parse", "--verify", f"{BASE_REF}^{{commit}}"], "criterio")).strip()
+    data = _cached(ctx, head)
+    changed = data is None
+    if changed:
+        commits, reverted = _autonomous(store, head)
+        data = {"sha": head, "commits": commits, "revertidos": reverted, "vazados": None}
+    commits = data["commits"]
+    first = min(commits, key=lambda c: c[1]) if commits else None
+    days = max(0, int((now - first[1]) // DAY)) if first else 0
+    floors = len(commits) >= V2_MIN_PUBLISHED and days >= V2_MIN_DAYS
+    if floors and data["vazados"] is None:
+        data["vazados"] = _leaks(store, head, [c[0] for c in commits])
+        changed = True
+    if changed:
+        ctx.data_dir.mkdir(parents=True, exist_ok=True)
+        rw_auto._write_json(ctx.data_dir / CRITERION_FILE, data)
+    return {"publicados": len(commits), "dias": days, "revertidos": data["revertidos"], "vazados": data["vazados"],
+            "desde": first[2] if first else None,
+            "cumprido": floors and data["revertidos"] == 0 and data["vazados"] == 0}
+
+
+def criterion_notice(ctx, now=None):
+    """A frase do critério cumprido (spec 5.9), com os números medidos; None quando não se cumpre."""
+    got = criterion(ctx, now)
+    if not got or not got["cumprido"]:
+        return None
+    return (f"{got['publicados']} retrofits autônomos, {got['revertidos']} revertidos, {got['vazados']} nomes "
+            f"vazados desde {got['desde']} — o kit pode entrar (ver a spec do modo autônomo)")
 
 
 # --- linha de comando --------------------------------------------------------------------------

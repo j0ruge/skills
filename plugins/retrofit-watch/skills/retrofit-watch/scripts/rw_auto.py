@@ -1,7 +1,8 @@
 """retrofit-watch, modo autônomo: o pedido do Stop hook e o registro das retros autônomas.
 
-Só o `cmd_stop` de retrofit_watch.py importa este módulo, e só com `mode` diferente de `manual`
-na config. Ele roda dentro do hook (10 s): nenhuma chamada de rede, nenhum git, nenhum subagente.
+O `cmd_stop` de retrofit_watch.py importa este módulo só com `mode` diferente de `manual` na config;
+o `cmd_pending` (o aviso de startup) o importa sempre. Ele roda dentro do hook (10 s): nenhuma chamada
+de rede, nenhum git, nenhum subagente.
 
 Arquivos, todos em <dados> (o CLAUDE_PLUGIN_DATA), fora de qualquer repo:
   auto/<id>/pedido.json   o hook grava ao pedir a retro autônoma
@@ -659,6 +660,94 @@ def held(ctx):
     """Os itens em aberto: a última linha é `segurado` ou `erro`."""
     return [entry for entry in last_lines(read_registry(ctx)).values()
             if entry.get("resultado") in ("segurado", "erro")]
+
+
+# --- o aviso de startup ------------------------------------------------------------------------
+# Os segmentos que o `cmd_pending` de retrofit_watch.py junta numa linha só ao dono. Cada um devolve o
+# texto, ou None quando não há o que dizer; o `cmd_pending` roda cada um no seu `try` (M11).
+
+ORPHAN_AGE = 3600
+# A última linha `publicado` de um lote com a cópia instalada ainda atrás do commit (D22, C10).
+BEHIND = ("pendente", "update", "cache-difere")
+
+
+def _started(folder):
+    """O instante do pedido da retro: o `ts` do pedido.json; ilegível, a hora da pasta."""
+    try:
+        return load_pedido(folder / "pedido.json")["ts"]
+    except Malformed:
+        return folder.stat().st_mtime
+
+
+def _ramo(path):
+    try:
+        return load_retrofit(path)["ramo"]
+    except Malformed:
+        return None
+
+
+def orphans(ctx, now=None):
+    """Os fluxos autônomos sem registro de fim, com o pedido de ORPHAN_AGE s ou mais (D14). Um lote com
+    retrofit.json e sem linha própria (`item == <id>/<lote>`; a linha de uma lição que leva o `lote` não
+    conta), ou, numa retro sem lote órfão, licoes.json com lição sem linha (o `flow_finished`, que conta
+    o licoes.json ilegível como aberto). Cada item: {tipo, id, lote, ramo}."""
+    now = time.time() if now is None else now
+    try:
+        folders = sorted(p for p in (ctx.data_dir / AUTO_DIR).iterdir() if p.is_dir() and SAFE_NAME.fullmatch(p.name))
+    except OSError:
+        return []
+    last = last_lines(read_registry(ctx))
+    out = []
+    for folder in folders:
+        rid = folder.name
+        if now - _started(folder) < ORPHAN_AGE:
+            continue
+        lotes = [{"tipo": "lote", "id": rid, "lote": sub.name, "ramo": _ramo(sub / "retrofit.json")}
+                 for sub in sorted(folder.iterdir())
+                 if sub.is_dir() and SAFE_NAME.fullmatch(sub.name) and (sub / "retrofit.json").exists()
+                 and f"{rid}/{sub.name}" not in last]
+        if lotes:
+            out += lotes
+        elif (folder / "licoes.json").exists() and not flow_finished(ctx, {"id": rid}):
+            out.append({"tipo": "licoes", "id": rid, "lote": None, "ramo": None})
+    return out
+
+
+def install_behind(ctx):
+    """Os itens cuja última linha é `publicado` com `instalacao` em BEHIND. A linha de uma lição trazida
+    de volta (T9) não tem `instalacao` e fica fora."""
+    return [entry for entry in last_lines(read_registry(ctx)).values()
+            if entry.get("resultado") == "publicado" and entry.get("instalacao") in BEHIND]
+
+
+def _amount(n, one, many):
+    return f"{n} {one if n == 1 else many}"
+
+
+def held_notice(ctx):
+    items = held(ctx)
+    if not items:
+        return None
+    names = ", ".join(f"{e.get('plugin')}: {e.get('ramo') or e.get('item')}" for e in items)
+    return (f"{_amount(len(items), 'retrofit segurado', 'retrofits segurados')} ({names}) — "
+            "/retrofit-watch:retrofit-watch segurados")
+
+
+def orphan_notice(ctx):
+    items = orphans(ctx)
+    if not items:
+        return None
+    names = ", ".join(o["ramo"] or o["id"] for o in items)
+    return (f"{_amount(len(items), 'retrofit autônomo', 'retrofits autônomos')} sem registro de fim "
+            f"({names})")
+
+
+def behind_notice(ctx):
+    items = install_behind(ctx)
+    if not items:
+        return None
+    names = ", ".join(str(e.get("plugin")) for e in items)
+    return f"{_amount(len(items), 'publicado', 'publicados')} com a cópia instalada atrás ({names})"
 
 
 # O que vem depois de `<id>/` num item: `<lote>`, ou `<plugin>#<n>` na lição sem ramo.
