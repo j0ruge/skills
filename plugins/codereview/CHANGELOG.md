@@ -2,6 +2,30 @@
 
 Formato: [Semantic Versioning](https://semver.org/)
 
+## [2.30.2] — 2026-11-24
+
+### O mutante morto numa máquina só prova o sensor nessa máquina
+
+Patch: uma lição de uma série de re-revisões da `retrofit-watch` (codereview 2.30.1, 24/11), sem
+mudar comportamento nem gatilho.
+
+- **6.12, forma nova: *a defect the installed tool must print*** (`references/detection-passes.md`).
+  O teste do fix plantava o defeito pelo que o git imprime: com `core.fsyncObjectFiles=true`, o
+  `rev-parse --show-toplevel` do git 2.43 sai 0 com um aviso no stderr. Medido em 24/11: o Git for
+  Windows 2.56.0, na segunda plataforma onde a suíte roda, sai 0 sem aviso nenhum, com a chave na
+  config do repo. Lá, o caso passa com a guarda e sem ela. A forma pede o defeito por um falso na
+  costura que a guarda controla (um `run` que responde pelo argumento `stderr=`), com o caso da
+  ferramenta real ao lado. O falso matou o mutante do stderr junto numa cópia sem o aviso.
+- **Re-review rounds, *The tests a fix adds get no agent*** (`references/configuration.md`). A regra
+  apoia a nota de Test Coverage nos mutantes do fix. Os mutantes tinham morrido no git 2.43, e o
+  teste só chegou a um agente porque a sessão o agrupou com o módulo. Agora o item diz que o mutante
+  prova a guarda só onde rodou: quando o defeito vem do que uma ferramenta instalada imprime,
+  confira essa saída em cada plataforma da suíte, ou mande o teste a um agente com o código que ele
+  guarda.
+
+Dívida pré-existente, fora deste patch: o C1 (`SKILL.md` com 21.427 chars) e o C2 (a cadeia
+`configuration.md` → `verification-round.md`/`verify-agent.md`) do baseline.
+
 ## [2.30.1] — 2026-11-18
 
 ### O corpo do CodeRabbit em 2026-11: limpo antes de ler, Minor só no corpo, severidade pela palavra

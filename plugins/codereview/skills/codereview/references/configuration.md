@@ -764,7 +764,13 @@ and when the user asks for rounds until a grade. These decide whether the rounds
   between rounds*; 6.12, *One case for two guards*), and give the mutant count in the Test Coverage
   row. Measured 2026-10-17: round 2 diffed 14 new test files (788 lines) and launched no agent for
   them; the 24 mutants run after round 1's fixes and the 12 after round 2's, all killed, were what
-  the two A grades stood on.
+  the two A grades stood on. A mutant killed on one machine proves the guard there only. When the
+  test builds the defect from what an installed tool prints, confirm the tool prints it on each
+  platform the suite runs on, or send the test to an agent with the code it guards
+  (detection-passes.md 6.12, *A defect the installed tool must print*). Measured 2026-11-24 (round 2
+  over a fix to a `rev-parse` read): the fix's mutant died on git 2.43; Git for Windows 2.56.0 gave
+  rc 0 and no warning, so the same mutant would survive there, and the test reached an agent only
+  because the session grouped it with the module.
 - **A CSS fix has no guard to mutate: measure it.** A style fix (a color, a selector, a size) adds
   no branch for a mutant to kill, and a unit test of its value is a change detector. Back its grade
   with two readings in a headless browser, over builds of the head the last round reviewed and of

@@ -669,6 +669,13 @@ review (2026-10-03, a Python repo; each confirmed by a mutant that survived):
   between filesystems. Name the entries so the listing runs against the expected order, and keep the
   mutant that drops the sort. 2026-10-19: on ext4 the glob listed `nova` before `antiga`; the test
   expects `antiga`, so the mutant without `sorted()` goes red.
+- **A defect the installed tool must print** — the test plants the defect through what a tool does
+  (a config key git warns about, a path form the OS keeps), not through the seam the guard controls.
+  Where the tool behaves otherwise, the case passes with the guard and without it. Feed the defect
+  through a fake at that seam (a `run` that answers by its `stderr=` argument), and keep the
+  real-tool case beside it. 2026-11-24: with `core.fsyncObjectFiles=true`, git 2.43 warns on stderr
+  and Git for Windows 2.56.0 prints nothing; the fake killed the merged-stderr mutant in a copy whose
+  fixture had no warning.
 - **An assertion message that names a defect the assertion does not check** — `"manifest.csv
   diverges from the build"` on a comparison that only proved the CSV survives a re-write; a stale
   value passed. A message a fix adds is a claim: sabotage the defect it names and watch it go red
