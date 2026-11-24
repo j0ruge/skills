@@ -27,6 +27,7 @@ Uso (da raiz ou de qualquer pasta):
 """
 import argparse
 import importlib.util
+import os
 import re
 import shutil
 import subprocess
@@ -50,14 +51,18 @@ CAMINHOS = [
     re.compile(r'(?<![\w.])/home/' + _SEGMENTO),
     re.compile(r'(?<![\w.])/Users/' + _SEGMENTO),
     re.compile(r'(?<![A-Za-z])[A-Za-z]:\\+[Uu][Ss][Ee][Rr][Ss]\\+' + _SEGMENTO),
+    re.compile(r'(?<![A-Za-z])[A-Za-z]:/+[Uu][Ss][Ee][Rr][Ss]/+' + _SEGMENTO),
     re.compile(r'(?<![\w.])/mnt/[^/\s]+/' + _SEGMENTO),
 ]
 PLACEHOLDER = ('<', '$', '%', '{')
 _FRONTEIRA = r'(?<![A-Za-z0-9_-])'
 PREFIXOS = re.compile(_FRONTEIRA + r'(?:sk-|ghp_|xox[bpars]-|AKIA)[A-Za-z0-9_-]{8,}')
 CABECALHO_HTTP = re.compile(_FRONTEIRA + r'(?:Bearer|Basic) (\S{16,})')
-CONEXAO = re.compile(r'(?<![A-Za-z0-9+.-])(?:postgres|postgresql|mysql|mongodb|mongodb\+srv|redis|rediss|amqp|amqps|https?)'
-                     r'://[^\s/:@]+:[^\s/@]+@')
+# O esquema pode vir depois de um + (git+https) e ter sufixo de driver (postgresql+psycopg2, mongodb+srv).
+# O usuário pode ser vazio, só a senha entre os dois-pontos e o @ (a forma usual do redis).
+# Grupo 1: usuário; grupo 2: senha.
+CONEXAO = re.compile(r'(?<![A-Za-z0-9.-])(?:postgres(?:ql)?|mysql|mongodb|rediss?|amqps?|https?)(?:\+[A-Za-z0-9_-]+)?'
+                     r'://([^\s/:@]*):([^\s/@]+)@')
 LONGA = re.compile(r'(?<![A-Za-z0-9])[A-Za-z0-9]{32,}(?![A-Za-z0-9])')
 SHA_DE_COMMIT = re.compile(r'[0-9a-fA-F]{40}')
 
@@ -71,11 +76,19 @@ def carregar_publicos(lista=PUBLICOS):
     return {cpn.chave(l.strip()) for l in linhas if l.strip() and not l.strip().startswith('#')}
 
 
+# Variáveis que mudam o que o git lê: GIT_DIFF_OPTS passa por cima do -U0, e as de repositório (que um hook
+# do git herda) passam por cima do -C repo.
+AMBIENTE_FORA = frozenset({'GIT_DIFF_OPTS', 'GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY',
+                           'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR'})
+
+
 def _git(repo, *args):
     git = shutil.which('git')
     if git is None:
         raise FileNotFoundError('git nao encontrado no PATH')
-    return subprocess.run([git, '-C', str(repo), *args], capture_output=True, check=True).stdout.decode('utf-8', 'replace')
+    env = {k: v for k, v in os.environ.items() if k not in AMBIENTE_FORA}
+    return subprocess.run([git, '-C', str(repo), *args], capture_output=True, check=True,
+                          env=env).stdout.decode('utf-8', 'replace')
 
 
 def _dizer(texto):
@@ -129,9 +142,11 @@ def linhas_novas(repo, base):
     onde, numero, em_cabecalho = None, 0, False
     # quotePath=false de propósito, como defesa em profundidade: o _destino já desfaz o nome citado.
     # As outras flags tiram do alcance do ramo e do ambiente o que muda a saída: atributo (-diff, binary,
-    # textconv), diff externo, prefixo, cor e diff.relative.
+    # textconv), diff externo, prefixo, cor, diff.relative e diff.interHunkContext (linha de contexto entre
+    # hunks não conta no número da linha).
     diff = _git(repo, '-c', 'core.quotePath=false', 'diff', '-U0', '--no-renames', '--text', '--no-ext-diff',
                 '--no-textconv', '--src-prefix=a/', '--dst-prefix=b/', '--no-color', '--no-relative',
+                '--inter-hunk-context=0',
                 f'{base}...HEAD')
     for linha in diff.split('\n'):
         if linha.startswith('diff --git '):
@@ -151,10 +166,18 @@ def linhas_novas(repo, base):
     return novas
 
 
+def _conexoes(texto):
+    """[(span, isenta)] de cada connection string com credencial. É isenta a de modelo: senha que começa com <, $, % ou {.
+
+    Só a senha decide: um usuário de modelo com a senha literal (<usuario>:hunter2@) continua achado.
+    """
+    return [(m.span(), m.group(2).startswith(PLACEHOLDER)) for m in CONEXAO.finditer(texto)]
+
+
 def _segredos(texto):
     """Os trechos com forma de segredo. Uma sequência longa dentro de um prefixo já achado não conta de novo."""
     achados = [m.span() for m in PREFIXOS.finditer(texto)]
-    achados += [m.span() for m in CONEXAO.finditer(texto)]
+    achados += [span for span, isenta in _conexoes(texto) if not isenta]
     for m in CABECALHO_HTTP.finditer(texto):
         if re.search(r'[0-9]', m.group(1)):
             achados.append(m.span())
@@ -179,14 +202,21 @@ def _achados_da_linha(onde, texto, hashes, extras, publicos):
             achados.append(('lista', trecho))
         elif forma in extras:
             achados.append(('colheita', trecho))
+    modelos = [span for span, isenta in _conexoes(texto) if isenta]
     for m in EMAIL.finditer(texto):
+        if any(a <= m.start() < b for a, b in modelos):
+            continue  # o '<senha>@host.com' de um modelo de conexão não é endereço
         if cpn.chave(m.group()) not in publicos:
             achados.append(('email', m.group()))
+    vistos = []
     for padrao in CAMINHOS:
         for m in padrao.finditer(texto):
             segmento = m.group(1)
             if segmento.startswith(PLACEHOLDER) or cpn.chave(segmento) in publicos:
                 continue
+            if any(a < m.end() and m.start() < b for a, b in vistos):
+                continue  # C:/Users/<u> casa com duas formas: um achado só
+            vistos.append(m.span())
             achados.append(('caminho', m.group()))
     if onde != ISENTO_DE_SEGREDO:
         achados += [('segredo', s) for s in _segredos(texto)]

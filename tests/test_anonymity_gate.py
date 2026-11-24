@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 
 RAIZ = Path(__file__).resolve().parents[1]
 SCRIPT = RAIZ / 'scripts/anonymity-gate.py'
@@ -142,7 +143,8 @@ class Padroes(Base):
         for forma in (f'/home/{usuario}/x', f'/Users/{usuario}/x',
                       f'C:{BARRA}Users{BARRA}{usuario}{BARRA}x', f'/mnt/d/{usuario}/x',
                       f'C:{BARRA * 2}Users{BARRA * 2}{usuario}{BARRA * 2}x',
-                      f'c:{BARRA}users{BARRA}{usuario}{BARRA}x'):
+                      f'c:{BARRA}users{BARRA}{usuario}{BARRA}x',
+                      f'c:/users/{usuario}/x', f'C:/Users/{usuario}/x'):
             with self.subTest(forma=forma):
                 self.setUp()
                 self.assertEqual(self.linha(f'em {forma} rodou'), [('doc.md', 'caminho')])
@@ -166,7 +168,12 @@ class Padroes(Base):
                  'AK' + 'IA' + corpo.upper(), 'Bear' + 'er ' + corpo + 'ghij', 'Bas' + 'ic ' + corpo + 'ghij',
                  hashlib.sha256(b'x').hexdigest(), letras_digitos]
         casos += [f'{esquema}://' + 'usu' + ':' + 'senha9' + '@' + 'localhost:5432/db'
-                  for esquema in ('postgres', 'mysql', 'mongodb', 'redis', 'amqp', 'https')]
+                  for esquema in ('postgres', 'mysql', 'mongodb', 'redis', 'amqp', 'https', 'postgresql',
+                                  'git' + '+https', 'postgresql' + '+psycopg2', 'mysql' + '+pymysql',
+                                  'mongodb' + '+srv')]
+        casos += ['redis' + '://' + ':' + 'senha9' + '@' + 'localhost:6379',
+                  'postgres' + '://' + '<usuario>' + ':' + 'senha9' + '@' + 'host/db',
+                  'https' + '://' + 'user' + ':' + 'pass' + '@' + 'host']
         self.assertEqual(len(letras_digitos), 33)
         self.assertEqual(len(corpo + 'ghij'), 16)
         for caso in casos:
@@ -183,7 +190,10 @@ class Padroes(Base):
                  'Bas' + 'ic authentication', 'task' + '-planning', 'xxx-' + 'sk' + '-' + 'abcd1234efgh',
                  'ma' + 'sk' + '-' + 'abcd1234efgh',
                  'Bear' + 'er ' + 'a1b2c3d4e5f6g7h', '1' * 33, 'x' + 'Bear' + 'er ' + 'a1b2c3d4e5f6g7h8',
-                 'postgres' + '://localhost/db', 'https' + '://example.com/x']
+                 'postgres' + '://localhost/db', 'https' + '://example.com/x',
+                 'postgres' + '://' + '<user>' + ':' + '<password>' + '@' + 'host/db',
+                 'redis' + '://' + ':' + '${REDIS_PASSWORD}' + '@' + 'host',
+                 'redis' + '://' + ':' + '$REDIS_PASSWORD' + '@' + 'db.exemplo.org:6379']
         self.assertEqual(len('a1b2c3d4e5f6g7h'), 15)
         for caso in casos:
             with self.subTest(caso=caso):
@@ -253,6 +263,32 @@ class DiffBlindado(Base):
         self.base({'doc.md': 'um\n'})
         self.commit({'doc.md': f'um\nfale com {EMAIL}\n'})
         self.assertEqual([a[:3] for a in self.camada1()], [('doc.md', 2, 'email')])
+
+    def _duas_mudancas_longe(self):
+        self.base({'doc.md': 'a\nb\nc\nd\ne\n'})
+        self.commit({'doc.md': f'x\nb\nc\nd\nfale com {EMAIL}\n'})
+
+    def test_inter_hunk_context_da_config_nao_muda_a_linha(self):
+        self.config(('diff.interHunkContext', '5'))
+        self._duas_mudancas_longe()
+        self.assertEqual([a[:3] for a in self.camada1()], [('doc.md', 5, 'email')])
+
+    def test_git_diff_opts_do_ambiente_nao_muda_a_linha(self):
+        self._duas_mudancas_longe()
+        with unittest.mock.patch.dict(os.environ, {'GIT_DIFF_OPTS': '-u5'}):
+            self.assertEqual([a[:3] for a in self.camada1()], [('doc.md', 5, 'email')])
+
+    def test_repositorio_do_ambiente_nao_desvia_o_repo(self):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\nfale com {EMAIL}\n'})
+        limpo = self.dir / 'limpo'
+        limpo.mkdir()
+        subprocess.run(['git', '-C', str(limpo), 'init', '-q'], check=True, env=self.env)
+        subprocess.run(['git', '-C', str(limpo), 'commit', '-q', '--allow-empty', '-m', 'base'], check=True, env=self.env)
+        subprocess.run(['git', '-C', str(limpo), 'branch', 'base'], check=True, env=self.env)
+        desvio = {'GIT_DIR': str(limpo / '.git'), 'GIT_WORK_TREE': str(limpo)}
+        with unittest.mock.patch.dict(os.environ, desvio):
+            self.assertEqual([a[:3] for a in self.camada1()], [('doc.md', 2, 'email')])
 
     def test_diff_relative_da_config_nao_cega(self):
         self.config(('diff.relative', 'true'))
