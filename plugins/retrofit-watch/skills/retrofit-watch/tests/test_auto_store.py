@@ -211,6 +211,28 @@ class HarvestTest(unittest.TestCase):
         # Um cwd que não é repo, ou que não existe, não derruba a colheita.
         self.assertIn(self.home.name, rw_store.harvest(self.ctx(), cwd=self.tmp / "nao-existe"))
 
+    def test_harvest_refuses_a_session_project_that_does_not_read(self):
+        # Final-F1 (C8): o projeto da sessão tem `.git`, mas o `rev-parse` falha (um `gitfile` que aponta
+        # para uma pasta que sumiu): StoreError com o caminho, nunca uma colheita sem o nome do projeto.
+        proj = invented("gfq")
+        root = self.tmp / "fora" / proj
+        (root / "src").mkdir(parents=True)
+        (root / ".git").write_text("gitdir: " + str(self.tmp / "sumiu" / "mais") + "\n", encoding="utf-8")
+        self.config()
+        for cwd in (root, root / "src"):
+            with self.subTest(cwd=cwd.name):
+                with self.assertRaises(rw_store.StoreError) as caught:
+                    rw_store.harvest(self.ctx(), cwd=cwd)
+                self.assertIn(str(root), str(caught.exception))
+        # A pasta sem `.git` em lugar nenhum acima dela continua sem erro.
+        plain = self.tmp / "sem-repo" / "sub"
+        plain.mkdir(parents=True)
+        self.assertIn(self.home.name, rw_store.harvest(self.ctx(), cwd=plain))
+        # O cwd que sumiu, dentro de um repo que lê, também: o `rev-parse` sai fora do rc 0 só porque a
+        # pasta não existe.
+        good = make_repo(self.env, self.tmp / "bom" / invented("gfb"))
+        self.assertIn(self.home.name, rw_store.harvest(self.ctx(), cwd=good / "sumiu"))
+
     def test_harvest_respects_depth_and_survives_bad_roots(self):
         deep, two = invented("deep"), invented("two")
         make_repo(self.env, self.roots / "a" / "b" / deep)

@@ -271,6 +271,29 @@ def _source_lines(path):
     return [line.strip() for line in text.splitlines() if line.strip() and not line.strip().startswith("#")]
 
 
+def _session_project(cwd, env):
+    """O nome e o `origin` do repo do projeto da sessão (spec 5.6). O `cwd` que sumiu, ou que não fica em
+    repo nenhum, é nada. Com o `rev-parse` fora do rc 0 e um `.git` no `cwd` ou num pai (o `_gone`, o
+    critério da Tarefa 5, sem ler a mensagem do git, que pode vir traduzida), é StoreError com o caminho
+    (C8): um `gitfile` quebrado, um `safe.directory` só na config de sistema ou uma config ilegível nunca
+    tiram o projeto da colheita em silêncio (Final-F1)."""
+    rc, top = run(["git", "-C", str(cwd), "rev-parse", "--show-toplevel"], env=env)
+    if rc == 0 and top.strip():
+        root = Path(top.strip())
+        return [root.name] + _origin_of(root, env)
+    # Um caminho com NUL não existe em sistema nenhum (o `os.stat` levantaria ValueError).
+    if "\0" in str(cwd):
+        return []
+    start = Path(os.path.abspath(cwd))
+    if _gone(start):
+        return []
+    for folder in [start, *start.parents]:
+        if not _gone(folder / ".git"):
+            raise StoreError(f"colheita: o projeto da sessao em {folder} nao le: git saiu {rc}: "
+                             f"{top.strip()[:500]}")
+    return []
+
+
 def harvest(ctx, cwd=None):
     """Os nomes locais, já passados pelo `expand` (spec 5.6 e O5)."""
     env = git_env(home=ctx.home, nosystem=True)
@@ -287,10 +310,7 @@ def harvest(ctx, cwd=None):
     for source in ctx.private_sources:
         raw += _source_lines(source)
     if cwd is not None:
-        rc, top = run(["git", "-C", str(cwd), "rev-parse", "--show-toplevel"], env=env)
-        if rc == 0 and top.strip():
-            root = Path(top.strip())
-            raw += [root.name] + _origin_of(root, env)
+        raw += _session_project(cwd, env)
     terms = set()
     for item in raw:
         for line in str(item).splitlines():
