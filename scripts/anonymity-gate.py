@@ -58,11 +58,13 @@ PLACEHOLDER = ('<', '$', '%', '{')
 _FRONTEIRA = r'(?<![A-Za-z0-9_-])'
 PREFIXOS = re.compile(_FRONTEIRA + r'(?:sk-|ghp_|xox[bpars]-|AKIA)[A-Za-z0-9_-]{8,}')
 CABECALHO_HTTP = re.compile(_FRONTEIRA + r'(?:Bearer|Basic) (\S{16,})')
-# O esquema pode vir depois de um + (git+https) e ter sufixo de driver (postgresql+psycopg2, mongodb+srv).
-# O usuário pode ser vazio, só a senha entre os dois-pontos e o @ (a forma usual do redis).
-# Grupo 1: usuário; grupo 2: senha.
-CONEXAO = re.compile(r'(?<![A-Za-z0-9.-])(?:postgres(?:ql)?|mysql|mongodb|rediss?|amqps?|https?)(?:\+[A-Za-z0-9_-]+)?'
-                     r'://([^\s/:@]*):([^\s/@]+)@')
+# Qualquer esquema, sem lista e sem caixa (HTTPS, ftp, git+ssh, o postgresql de jdbc:postgresql, sufixo de
+# driver), seguido de usuário e senha antes do @. O usuário pode ser vazio, só a senha entre os dois-pontos
+# e o @ (a forma usual do redis). Grupo 1: usuário; grupo 2: senha.
+CONEXAO = re.compile(r'(?<![A-Za-z0-9+.-])[A-Za-z][A-Za-z0-9+.-]*://([^\s/:@]*):([^\s/@]+)@')
+# Senha de modelo, nas formas estreitas: <...>, ${...}, {...}, $NOME em maiúsculas e %NOME%. Uma senha que só
+# começa com $ ou % (%21abc, $x7Kp) é literal.
+SENHA_MODELO = re.compile(r'<[^>]*>|\$\{[^}]*\}|\{[^}]*\}|\$[A-Z_][A-Z0-9_]*|%[A-Za-z_][A-Za-z0-9_]*%')
 LONGA = re.compile(r'(?<![A-Za-z0-9])[A-Za-z0-9]{32,}(?![A-Za-z0-9])')
 SHA_DE_COMMIT = re.compile(r'[0-9a-fA-F]{40}')
 
@@ -167,11 +169,11 @@ def linhas_novas(repo, base):
 
 
 def _conexoes(texto):
-    """[(span, isenta)] de cada connection string com credencial. É isenta a de modelo: senha que começa com <, $, % ou {.
+    """[(span, isenta)] de cada connection string com credencial. É isenta a de modelo (SENHA_MODELO).
 
     Só a senha decide: um usuário de modelo com a senha literal (<usuario>:hunter2@) continua achado.
     """
-    return [(m.span(), m.group(2).startswith(PLACEHOLDER)) for m in CONEXAO.finditer(texto)]
+    return [(m.span(), bool(SENHA_MODELO.fullmatch(m.group(2)))) for m in CONEXAO.finditer(texto)]
 
 
 def _segredos(texto):
@@ -202,10 +204,13 @@ def _achados_da_linha(onde, texto, hashes, extras, publicos):
             achados.append(('lista', trecho))
         elif forma in extras:
             achados.append(('colheita', trecho))
-    modelos = [span for span, isenta in _conexoes(texto) if isenta]
-    for m in EMAIL.finditer(texto):
-        if any(a <= m.start() < b for a, b in modelos):
-            continue  # o '<senha>@host.com' de um modelo de conexão não é endereço
+    # O '$SENHA@host.com' de um modelo de conexão não é endereço: o modelo vira espaço antes de buscar o e-mail,
+    # e um endereço real logo depois dele continua inteiro.
+    sem_modelos = texto
+    for (a, b), isenta in _conexoes(texto):
+        if isenta:
+            sem_modelos = sem_modelos[:a] + ' ' * (b - a) + sem_modelos[b:]
+    for m in EMAIL.finditer(sem_modelos):
         if cpn.chave(m.group()) not in publicos:
             achados.append(('email', m.group()))
     vistos = []
