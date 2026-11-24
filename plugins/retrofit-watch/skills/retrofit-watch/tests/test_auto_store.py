@@ -220,9 +220,22 @@ class HarvestTest(unittest.TestCase):
         self.config()
         got = rw_store.harvest(self.ctx(), cwd=root)
         self.assertEqual({proj, owner, name} - got, set())
+        real_run = rw_store.run
+        # CR-r2 #1: nem todo git avisa (o Git for Windows 2.56 não avisa). O `run` falso põe o aviso na saída
+        # sempre que a chamada não tira o stderr, como o git 2.43: o caso não depende do git da máquina.
+        with self.subTest("aviso no stderr, com o run falso"):
+            def warns(cmd, *args, **kwargs):
+                if "--show-toplevel" in cmd:
+                    if kwargs.get("stderr") is subprocess.DEVNULL:
+                        return 0, str(root) + "\n"
+                    return 0, "warning: " + invented("aviso") + "\n" + str(root) + "\n"
+                return real_run(cmd, *args, **kwargs)
+
+            with mock.patch.object(rw_store, "run", warns):
+                got = rw_store.harvest(self.ctx(), cwd=root)
+            self.assertEqual({proj, owner, name} - got, set())
         # Um stdout de rc 0 que não é uma pasta absoluta é StoreError, nunca um nome a menos: o caminho
         # relativo (o `.` é pasta para quem roda) e a pasta que não existe.
-        real_run = rw_store.run
         for label, out in (("relativo", "."), ("ausente", str(self.tmp / "nao-existe" / proj))):
             with self.subTest(label):
                 def fake(cmd, *args, out=out, **kwargs):
