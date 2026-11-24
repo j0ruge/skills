@@ -9,7 +9,8 @@ que o aviso de startup (`cmd_pending`) chama dentro do hook: só lê, sem rede.
              num arquivo só dela, passado por `--extra` e removido depois
   prepare    `git fetch origin` no clone da loja e um worktree ligado novo do `origin/main`, num ramo
              que sai do id e do lote; grava <dados>/auto/<id>/<lote>/retrofit.json
-  seal       o selo do executor: completa o retrofit.json, grava termos-novos.json e roda a camada 1
+  seal       o selo do executor: completa o retrofit.json, grava termos-novos.json e roda a camada 1,
+             com o portão de uma cópia do commit selado (`clean_tree`), nunca o do disco do worktree
   criterion  o critério da v2 para o aviso de startup, lido do `origin/main` local, sem `fetch` e com o
              teto de 3 s por chamada ao git; o cache fica em <dados>/criterio.json
 
@@ -17,12 +18,14 @@ Todo git daqui roda sem as variáveis de localização herdadas (um hook do git 
 HOME do Context: o `~` resolve pelo ctx.home, nunca pelo HOME real. Os erros são StoreError; a saída do
 portão fora do formato também, nunca uma lista vazia (falha fechada).
 """
+import contextlib
 import hashlib
 import importlib.util
 import io
 import json
 import os
 import re
+import shutil
 import socket
 import subprocess
 import sys
@@ -450,10 +453,44 @@ def patch_id(worktree, base=BASE_REF, message=None):
     return digest.hexdigest()
 
 
-def _gate(worktree, *args):
-    gate = Path(worktree) / GATE
+def _gate(tools, worktree, *args):
+    """O portão de `tools` (a cópia do commit, `clean_tree`) sobre o git de `worktree`, sem gravar bytecode
+    na cópia. O portão do disco do worktree nunca roda: um `.pyc` ou um `.py` ignorado ali trocaria um
+    módulo dele (item 1)."""
+    gate = Path(tools) / GATE
     return run([sys.executable, gate, *args, "--base", BASE_REF, "--repo", worktree], cwd=worktree,
-               env=git_env(neutral=True))
+               env=dict(git_env(neutral=True), PYTHONDONTWRITEBYTECODE="1"))
+
+
+def untar(raw, dest):
+    """Extrai o tar `raw` (bytes) em `dest`. O filtro `data` recusa link, caminho absoluto e `..`; o
+    Python sem ele levanta TypeError, que sobe (D25)."""
+    with tarfile.open(fileobj=io.BytesIO(raw)) as tar:
+        tar.extractall(dest, filter="data")
+    return Path(dest)
+
+
+TREE_PREFIX = ".porta-"
+
+
+@contextlib.contextmanager
+def clean_tree(ctx, worktree, ref):
+    """A árvore de `ref`, tirada com `git archive` (ambiente neutro) numa pasta temporária nova sob
+    <dados>, que sai no fim (item 1, C1). Ela não tem arquivo ignorado, bytecode nem `.git`: o que a
+    porta e o selo rodam da loja sai daqui. Falha do git ou da extração é StoreError."""
+    data = Path(ctx.data_dir)
+    data.mkdir(parents=True, exist_ok=True)
+    tmp = Path(tempfile.mkdtemp(dir=data, prefix=TREE_PREFIX))
+    try:
+        raw = _git_bytes(["archive", "--format=tar", ref], worktree, git_env(neutral=True), "arvore limpa")
+        tree = tmp / "arvore"
+        try:
+            untar(raw, tree)
+        except (tarfile.TarError, OSError) as exc:
+            raise StoreError(f"arvore limpa: a extracao de {ref} falhou: {exc}") from None
+        yield tree
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 def _private_harvest(ctx, cwd):
@@ -480,14 +517,14 @@ def _unlink(path):
         pass
 
 
-def layer1(ctx, rid, worktree):
-    """Os achados da camada 1 no que o ramo acrescenta, com a colheita feita agora (com o `cwd` do
-    pedido.json), num arquivo só desta chamada. Saída do portão fora do formato é StoreError, nunca
-    "nada achado" (C1)."""
+def layer1(ctx, rid, worktree, tools):
+    """Os achados da camada 1 no que o ramo de `worktree` acrescenta, pelo portão de `tools` (a cópia do
+    commit), com a colheita feita agora (com o `cwd` do pedido.json), num arquivo só desta chamada. Saída
+    do portão fora do formato é StoreError, nunca "nada achado" (C1)."""
     pedido = rw_auto.retro_pedido(ctx, rid)
     extra = _private_harvest(ctx, pedido["cwd"])
     try:
-        rc, out = _gate(worktree, "--camada1", "--extra", extra)
+        rc, out = _gate(tools, worktree, "--camada1", "--extra", extra)
     finally:
         _unlink(extra)
     lines = [line for line in out.splitlines() if line.strip()]
@@ -499,10 +536,10 @@ def layer1(ctx, rid, worktree):
     raise StoreError(f"camada 1 inutilizavel: o portao saiu {rc} com: {out.strip()[:500]}")
 
 
-def new_terms(worktree):
-    """Os termos novos do ramo para a camada 2: [{termo, onde, contexto}]. Portão fora de rc 0 ou JSON
-    fora do formato é StoreError (C1)."""
-    rc, out = _gate(worktree, "--termos")
+def new_terms(worktree, tools):
+    """Os termos novos do ramo para a camada 2: [{termo, onde, contexto}], pelo portão de `tools` (a cópia
+    do commit). Portão fora de rc 0 ou JSON fora do formato é StoreError (C1)."""
+    rc, out = _gate(tools, worktree, "--termos")
     if rc != 0:
         raise StoreError(f"termos novos: o portao saiu {rc} com: {out.strip()[:500]}")
     try:
@@ -565,8 +602,9 @@ def seal(ctx, rid, lote, licoes, fases):
     commit = _git(["rev-parse", "HEAD"], worktree, env, "selo").strip()
     versao = _version(worktree, retrofit["plugin"])
     patch = patch_id(worktree)
-    termos = new_terms(worktree)
-    camada1 = layer1(ctx, rid, worktree)
+    with clean_tree(ctx, worktree, commit) as tools:
+        termos = new_terms(worktree, tools)
+        camada1 = layer1(ctx, rid, worktree, tools)
     rw_auto._write_json(folder / "termos-novos.json", {"patch": patch, "termos": termos})
     retrofit.update(licoes=chosen, fases=phases, commit=commit, versao=versao, patch=patch)
     rw_auto._write_json(folder / "retrofit.json", retrofit)

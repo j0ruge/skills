@@ -258,6 +258,29 @@ class StoreWorld(World):
         self.git(wt, "commit", "-q", "-m", message or f"fix({plugin}): v{version}", *extra)
         return self.git(wt, "rev-parse", "HEAD")
 
+    def ignore(self, wt, pattern):
+        """Ignora `pattern` pela linha nova no `info/exclude` do repo de `wt` (o comum aos worktrees)."""
+        path = Path(self.git(wt, "rev-parse", "--path-format=absolute", "--git-path", "info/exclude"))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(pattern + "\n")
+
+    def plant_blind_name_check(self, wt):
+        """Um `.pyc` do `check-private-names.py` de `wt` com o `candidatos` vazio, no caminho do
+        `cache_from_source`, que o import do portão lê sem conferir a fonte (UNCHECKED_HASH). O
+        `__pycache__/` é ignorado pelo `.gitignore` da loja. Devolve o caminho do `.pyc`."""
+        import py_compile
+        import tempfile
+        source = Path(wt) / "scripts" / "check-private-names.py"
+        target = Path(importlib.util.cache_from_source(str(source)))
+        blind = source.read_text(encoding="utf-8") + "\n\ndef candidatos(linha):\n    return iter(())\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / source.name
+            src.write_text(blind, encoding="utf-8")
+            py_compile.compile(str(src), cfile=str(target), dfile=str(source), doraise=True,
+                               invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH)
+        return target
+
     def advance_origin(self, files, message, date=None):
         """Um commit no `origin` vindo de outro clone (o `other`). `date` (ISO) fixa a data."""
         self.git(self.other, "fetch", "-q", "origin")

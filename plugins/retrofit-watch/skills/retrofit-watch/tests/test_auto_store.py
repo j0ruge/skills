@@ -693,6 +693,11 @@ class StoreTest(unittest.TestCase):
 
     # --- camada 1 e termos ---------------------------------------------------------------------
 
+    def layer1(self, rid, wt, ctx=None):
+        """A camada 1 do commit de `wt`, com o portão da cópia dele (item 1), como o selo a roda."""
+        with rw_store.clean_tree(self.ctx(), wt, "HEAD") as tools:
+            return rw_store.layer1(ctx or self.ctx(), rid, wt, tools)
+
     def test_layer1_harvests_again_on_every_call(self):
         rid, got = self.prepared()
         wt = Path(got["worktree"])
@@ -701,7 +706,7 @@ class StoreTest(unittest.TestCase):
         name = self.w.proj.name
         rel = "plugins/demo/skills/demo/references/nota.md"
         self.w.retrofit(wt, files={rel: f"Veja o {name} antes.\n"})
-        found = rw_store.layer1(self.ctx(), rid, wt)
+        found = self.layer1(rid, wt)
         self.assertTrue([f for f in found if f.startswith(f"{rel}:1: colheita")], found)
         # Ruling T7-race: a colheita da chamada é um arquivo só dela, removido depois; o partilhado fica.
         self.assertEqual(stale.read_text(encoding="utf-8"), "")
@@ -721,14 +726,14 @@ class StoreTest(unittest.TestCase):
         real_gate = rw_store._gate
         seen = []
 
-        def racing_gate(worktree, *args):
+        def racing_gate(tools, worktree, *args):
             shared.write_text("", encoding="utf-8")  # a outra retro, sem o projeto desta sessão
             extra = Path(args[args.index("--extra") + 1])
             seen.append((extra, extra.exists(), extra.stat().st_mode & 0o777 if os.name != "nt" else 0o600))
-            return real_gate(worktree, *args)
+            return real_gate(tools, worktree, *args)
 
         with mock.patch.object(rw_store, "_gate", side_effect=racing_gate):
-            found = rw_store.layer1(self.ctx(), rid, wt)
+            found = self.layer1(rid, wt)
         self.assertTrue([f for f in found if f.startswith(f"{rel}:1: colheita")], found)
         (extra, existed, mode), = seen
         self.assertNotEqual(extra, shared)
@@ -742,24 +747,35 @@ class StoreTest(unittest.TestCase):
         # Uma falha no meio da colheita não deixa arquivo com nomes para trás.
         with mock.patch.object(rw_store, "harvest", side_effect=OSError("disco cheio")):
             with self.assertRaises(OSError):
-                rw_store.layer1(self.ctx(), rid, wt)
+                self.layer1(rid, wt)
         self.assertEqual([p.name for p in self.w.data.iterdir() if p.name.startswith(".colheita")], [])
         # A pasta de dados dentro de um repo: a colheita não grava nome em repo.
         inside = make_repo(self.w.env, self.w.tmp / "um-repo") / "dados"
         inside.mkdir()
         (inside / rw_auto.AUTO_DIR).symlink_to(self.w.data / rw_auto.AUTO_DIR)
         with self.assertRaises(rw_store.StoreError) as caught:
-            rw_store.layer1(rw.Context(home=self.w.home, data_dir=inside), rid, wt)
+            self.layer1(rid, wt, rw.Context(home=self.w.home, data_dir=inside))
         self.assertIn("dentro de um repo", str(caught.exception))
         self.assertEqual(sorted(p.name for p in inside.iterdir()), [rw_auto.AUTO_DIR])
 
-    def gate_stub(self, wt, camada1, termos):
-        (wt / "scripts/stub.json").write_text(json.dumps({"camada1": camada1, "termos": termos}), encoding="utf-8")
-        (wt / rw_store.GATE).write_text(
+    def gate_stub(self, camada1, termos, root=None):
+        """Um portão falso, que responde `camada1` e `termos`, em `root` (padrão: uma pasta do teste, fora
+        do worktree). Devolve `root`, que se passa como `tools`."""
+        root = Path(root or self.w.tmp / "portao-falso")
+        (root / "scripts").mkdir(parents=True, exist_ok=True)
+        (root / "scripts/stub.json").write_text(json.dumps({"camada1": camada1, "termos": termos}), encoding="utf-8")
+        (root / rw_store.GATE).write_text(
             "import json, sys\nfrom pathlib import Path\n"
             "spec = json.loads((Path(__file__).parent / 'stub.json').read_text())\n"
             "rc, out = spec['termos' if '--termos' in sys.argv else 'camada1']\n"
             "sys.stdout.write(out)\nsys.exit(rc)\n", encoding="utf-8")
+        return root
+
+    def commit_gate_stub(self, wt, camada1, termos):
+        """O portão falso no commit do ramo: o selo roda o portão da cópia do commit (item 1)."""
+        self.gate_stub(camada1, termos, root=wt)
+        self.w.git(wt, "add", "-A")
+        self.w.git(wt, "commit", "-q", "--amend", "--no-edit")
 
     def test_layer1_and_new_terms_fail_closed_on_bad_gate_output(self):
         # Ruling C1: rc fora de {0, 1}, rc 0 com achado, rc 1 sem achado e JSON fora do formato são
@@ -770,11 +786,11 @@ class StoreTest(unittest.TestCase):
         ctx = self.ctx()
         finding = 'a.md:3: colheita "x"'
         good_terms = [0, json.dumps([{"termo": "x", "onde": "a.md:1", "contexto": "c"}])]
-        self.gate_stub(wt, [0, "ok: camada 1 limpa\n"], good_terms)
-        self.assertEqual(rw_store.layer1(ctx, rid, wt), [])
-        self.assertEqual(rw_store.new_terms(wt), json.loads(good_terms[1]))
-        self.gate_stub(wt, [1, f"{finding}\n\n1 achado(s) na camada 1\n"], good_terms)
-        self.assertEqual(rw_store.layer1(ctx, rid, wt), [finding])
+        tools = self.gate_stub([0, "ok: camada 1 limpa\n"], good_terms)
+        self.assertEqual(rw_store.layer1(ctx, rid, wt, tools), [])
+        self.assertEqual(rw_store.new_terms(wt, tools), json.loads(good_terms[1]))
+        self.gate_stub([1, f"{finding}\n\n1 achado(s) na camada 1\n"], good_terms)
+        self.assertEqual(rw_store.layer1(ctx, rid, wt, tools), [finding])
         bad_layer1 = {
             "rc 2": [2, "git falhou\n"],
             "rc 124": [124, ""],
@@ -786,9 +802,9 @@ class StoreTest(unittest.TestCase):
         }
         for what, spec in bad_layer1.items():
             with self.subTest(camada1=what):
-                self.gate_stub(wt, spec, good_terms)
+                self.gate_stub(spec, good_terms)
                 with self.assertRaises(rw_store.StoreError) as caught:
-                    rw_store.layer1(ctx, rid, wt)
+                    rw_store.layer1(ctx, rid, wt, tools)
                 self.assertIn("camada 1 inutilizavel", str(caught.exception))
         bad_terms = {
             "rc 2": [2, "[]"],
@@ -803,17 +819,52 @@ class StoreTest(unittest.TestCase):
         }
         for what, spec in bad_terms.items():
             with self.subTest(termos=what):
-                self.gate_stub(wt, [0, "ok: camada 1 limpa\n"], spec)
+                self.gate_stub([0, "ok: camada 1 limpa\n"], spec)
                 with self.assertRaises(rw_store.StoreError) as caught:
-                    rw_store.new_terms(wt)
+                    rw_store.new_terms(wt, tools)
                 self.assertIn("termos novos", str(caught.exception))
         # Pela CLI, o portão quebrado é rc 2 (erro), não rc 1 (recusa), e o selo não grava nada.
-        self.gate_stub(wt, [2, "git falhou\n"], good_terms)
+        self.commit_gate_stub(wt, [2, "git falhou\n"], good_terms)
         self.assert_rc2(self.cli("seal", rid, "demo", "--licoes", "1"), "camada 1 inutilizavel")
-        self.gate_stub(wt, [0, "ok: camada 1 limpa\n"], [2, ""])
+        self.commit_gate_stub(wt, [0, "ok: camada 1 limpa\n"], [2, ""])
         self.assert_rc2(self.cli("seal", rid, "demo", "--licoes", "1"), "termos novos")
         self.assertIsNone(self.retrofit_json(rid)["commit"])
         self.assertFalse((rw_auto.lote_dir(ctx, rid, "demo") / "termos-novos.json").exists())
+
+    # --- a cópia do commit (item 1) -----------------------------------------------------------
+
+    def test_clean_tree_is_the_commit_and_leaves_nothing(self):
+        rid, got = self.prepared()
+        wt = Path(got["worktree"])
+        sha = self.w.retrofit(wt)
+        (wt / "solto.txt").write_text("fora do commit\n", encoding="utf-8")
+        data = self.w.tmp / ("dados com espa" + chr(0xE7) + "o")
+        ctx = rw.Context(home=self.w.home, data_dir=data)
+        listed = sorted(self.w.git(wt, "ls-tree", "-r", "--name-only", sha).splitlines())
+        with rw_store.clean_tree(ctx, wt, sha) as tree:
+            self.assertTrue(Path(tree).is_relative_to(data))
+            self.assertEqual(sorted(p.relative_to(tree).as_posix() for p in Path(tree).rglob("*") if p.is_file()),
+                             listed)
+            self.assertFalse((Path(tree) / "solto.txt").exists())
+            self.assertEqual((Path(tree) / fs.PLUGINS["demo"]).read_bytes(), (wt / fs.PLUGINS["demo"]).read_bytes())
+        self.assertFalse(Path(tree).exists())
+        self.assertEqual(list(data.iterdir()), [])
+        with self.assertRaises(rw_store.StoreError) as caught:
+            with rw_store.clean_tree(ctx, wt, "0" * 40):
+                pass
+        self.assertIn("arvore limpa", str(caught.exception))
+        self.assertEqual(list(data.iterdir()), [])
+
+    def test_seal_runs_the_gate_from_the_commit(self):
+        rid, got = self.prepared()
+        wt = Path(got["worktree"])
+        name = self.w.proj.name
+        rel = "plugins/demo/skills/demo/references/nota.md"
+        self.w.retrofit(wt, files={rel: f"Veja o {name} antes.\n"})
+        self.w.plant_blind_name_check(wt)
+        self.assertEqual(self.w.git(wt, "status", "--porcelain", "--untracked-files=all"), "")
+        out = rw_store.seal(self.ctx(), rid, "demo", ["1"], [])
+        self.assertTrue([f for f in out["camada1"] if f.startswith(f"{rel}:1: colheita")], out["camada1"])
 
     # --- seal ----------------------------------------------------------------------------------
 

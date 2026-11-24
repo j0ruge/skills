@@ -918,6 +918,78 @@ class GateTest(GateHarness, unittest.TestCase):
         self.assertGreater(len((wt / DOC).read_text(encoding="utf-8").splitlines()), rg.SKILL_MAX_LINES)
         self.assertIsNone(self.refuse(rid))
 
+    # --- item 1: a porta roda a loja de uma cópia do commit -------------------------------------
+    # Cada caso planta um arquivo ignorado no worktree, que o `git status` não mostra; nenhum chega às guardas.
+
+    def assertQuiet(self, wt):
+        self.assertEqual(self.w.git(wt, "status", "--porcelain", "--untracked-files=all"), "")
+
+    def test_planted_bytecode_does_not_blind_layer1(self):
+        self.config(harvest_roots=[str(self.w.tmp / "vazio")])
+        name = self.w.proj.name
+        rid, wt = self.clean_retrofit(edit=lambda wt: append(wt / DOC, f"- Como no {name}.\n"))
+        pyc = self.w.plant_blind_name_check(wt)
+        self.assertTrue(pyc.is_file())
+        self.assertQuiet(wt)
+        got = self.assertRefuses(rid, "nome-privado")
+        self.assertIn(name, got[1])
+
+    def test_planted_module_does_not_pass_the_versions_guard(self):
+        def back_to_old(wt):
+            path = wt / ".claude-plugin/marketplace.json"
+            data = json.loads(path.read_text(encoding="utf-8"))
+            for entry in data["plugins"]:
+                if entry["name"] == "demo":
+                    entry["version"] = fs.VERSION
+            path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            self.amend(wt)
+        rid, wt = self.clean_retrofit(after=back_to_old)
+        self.w.ignore(wt, "/scripts/json.py")
+        (wt / "scripts/json.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
+        self.assertQuiet(wt)
+        self.assertRefuses(rid, "validate-versions")
+
+    def test_planted_module_does_not_pass_the_audit(self):
+        rid, wt = self.clean_retrofit(edit=self.extra_field)
+        planted = (wt / fs.AUDITOR).parent / "json.py"
+        self.w.ignore(wt, "/" + planted.relative_to(wt).as_posix())
+        planted.write_text("print('{\"skills\": [{\"findings\": [], \"claims\": []}]}')\nraise SystemExit(0)\n",
+                           encoding="utf-8")
+        self.assertQuiet(wt)
+        got = self.assertRefuses(rid, "auditoria")
+        self.assertIn("NOVO", got[1])
+
+    def test_tests_come_from_the_commit(self):
+        rid, wt = self.clean_retrofit()
+        planted = wt / "plugins/demo/skills/demo/tests/test_ignorado.py"
+        self.w.ignore(wt, "/" + planted.relative_to(wt).as_posix())
+        planted.write_text(failing_test("Ignorado"), encoding="utf-8")
+        self.assertQuiet(wt)
+        self.assertIsNone(self.refuse(rid))
+
+    def test_gate_passes_with_the_executor_bytecode(self):
+        rid, wt = self.clean_retrofit()
+        env = {k: v for k, v in self.w.env.items() if k not in ("PYTHONDONTWRITEBYTECODE", "PYTHONPYCACHEPREFIX")}
+        proc = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", "plugins/demo/skills/demo/tests",
+                               "-p", "test_*.py"], cwd=str(wt), capture_output=True, env=env, encoding="utf-8",
+                              errors="replace")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue(list(wt.glob("plugins/**/__pycache__")))
+        self.assertQuiet(wt)
+        # A porta fica viva depois do `refuse`: sem isso, o coletor do CPython fecharia o gerador da cópia e
+        # a pasta sairia sem o `finally` do `_check`.
+        kept = []
+
+        class Kept(rg._Porta):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                kept.append(self)
+
+        with mock.patch.object(rg, "_Porta", Kept):
+            self.assertIsNone(self.refuse(rid))
+            self.assertEqual(len(kept), 1)
+            self.assertEqual([x.name for x in self.w.data.iterdir() if x.name.startswith(".porta-")], [])
+
     # --- guardas 20 e 21: teto e auto-dry ------------------------------------------------------
 
     def test_caps_refuse(self):

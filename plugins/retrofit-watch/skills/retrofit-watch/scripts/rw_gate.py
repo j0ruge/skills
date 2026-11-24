@@ -11,12 +11,12 @@ O worktree e o ramo saem do `<id>`, do `<lote>` e da `tentativa` (D9), nunca dos
 da pasta do lote. Todo git roda pelo `rw_store.git_env` (C5): sem as variáveis de localização herdadas
 e com o HOME do Context.
 """
+import contextlib
 import json
 import os
 import re
 import shutil
 import sys
-import tarfile
 import tempfile
 import time
 from pathlib import Path
@@ -120,6 +120,8 @@ class _Porta:
         self.skipped = set(self.approval or ()) & set(OVERRIDABLE)
         # O sha que as guardas conferem: a guarda do rebase o grava; antes dela, None (item 10).
         self.head = None
+        self._stack = contextlib.ExitStack()
+        self._tree = None
 
     def git(self, *args, what="porta"):
         return rw_store._git(list(args), self.worktree, self.env, what)
@@ -140,6 +142,20 @@ class _Porta:
 
     def pedido(self):
         return rw_auto.retro_pedido(self.ctx, self.rid)
+
+    def tree(self):
+        """A cópia de `head` (item 1): o que a porta roda da loja (o portão, os testes, o
+        `validate-versions.py` e a auditoria) sai dela, nunca do disco do worktree, onde um arquivo
+        ignorado trocaria um módulo. Criada na primeira chamada e reusada; o `_check` a fecha."""
+        if self._tree is None:
+            if self.head is None:
+                raise rw_store.StoreError("arvore limpa: sem o sha da guarda do rebase")
+            self._tree = self._stack.enter_context(rw_store.clean_tree(self.ctx, self.worktree, self.head))
+        return self._tree
+
+    def close(self):
+        self._stack.close()
+        self._tree = None
 
 
 def _added_lines(diff):
@@ -454,13 +470,13 @@ def _g_description(p):
     return None
 
 
-# A ordem importa (T7-I3): a camada 1 e os termos rodam o anonymity-gate.py do worktree do lote. Só
+# A ordem importa (T7-I3): a camada 1 e os termos rodam o anonymity-gate.py do commit do lote. Só
 # depois da guarda 5, que recusa commit no portão e nas listas sem a aprovação do dono, a porta pode
 # confiar no que ele diz. Uma guarda de nome antes da 5 leria um portão que o próprio ramo afrouxou.
 
 def _g_layer1(p):
     """11. A camada 1, rodada de novo sobre o diff final e a mensagem, com a colheita de agora."""
-    found = rw_store.layer1(p.ctx, p.rid, p.worktree)
+    found = rw_store.layer1(p.ctx, p.rid, p.worktree, p.tree())
     return ("nome-privado", _short("; ".join(found))) if found else None
 
 
@@ -488,7 +504,7 @@ def _g_patch(p):
 def _g_terms(p):
     """14. Cada termo novo, recalculado agora (nunca o termos-novos.json), é `publico` na revisão."""
     verdicts = {t["termo"]: t["veredito"] for t in _anonimato(p)["termos"]}
-    bad = [t["termo"] for t in rw_store.new_terms(p.worktree) if verdicts.get(t["termo"]) != "publico"]
+    bad = [t["termo"] for t in rw_store.new_terms(p.worktree, p.tree()) if verdicts.get(t["termo"]) != "publico"]
     if bad:
         return "termo-nao-publico", _short("; ".join(f'"{t}": {verdicts.get(t, "sem veredito")}' for t in bad))
     return None
@@ -524,28 +540,29 @@ def _test_dirs(p):
 
 
 def _g_tests(p):
-    """17. Os testes do plugin e a suíte da raiz (D11), sem gravar bytecode no worktree (M7). Uma pasta de
-    teste do `origin/main` que o ramo tira é `testes` (I2); a nota só vale para plugin que nunca teve teste."""
+    """17. Os testes do plugin e a suíte da raiz (D11), da cópia do commit (item 1) e sem gravar bytecode
+    (M7). Uma pasta de teste do `origin/main` que o ramo tira é `testes` (I2); a nota só vale para plugin que
+    nunca teve teste."""
     env = dict(p.env, PYTHONDONTWRITEBYTECODE="1")
     here, base = _test_dirs(p)
     gone = [d for d in base if d not in here]
     if gone:
         return "testes", "o ramo tira pasta de testes do origin/main: " + ", ".join(gone)
-    dirs = [p.worktree / d for d in here]
-    if not dirs:
+    if not here:
         p.notes.append(f"testes: plugin {p.plugin} sem pasta de testes")
-    for folder in dirs + [p.worktree / "tests"]:
-        rel = folder.relative_to(p.worktree).as_posix()
+    tree = p.tree()
+    for rel in here + ["tests"]:
         rc, out = rw_store.run([sys.executable, "-m", "unittest", "discover", "-s", rel, "-p", "test_*.py"],
-                               cwd=p.worktree, env=env)
+                               cwd=tree, env=env)
         if rc != 0:
             return "testes", _short(f"{rel} saiu {rc}: {out[-1000:]}")
     return None
 
 
 def _g_versions(p):
-    """18. `validate-versions.py` rc 0."""
-    rc, out = rw_store.run([sys.executable, p.worktree / "scripts" / "validate-versions.py"], cwd=p.worktree,
+    """18. `validate-versions.py` rc 0, o da cópia do commit (item 1)."""
+    tree = p.tree()
+    rc, out = rw_store.run([sys.executable, tree / "scripts" / "validate-versions.py"], cwd=tree,
                            env=dict(p.env, PYTHONDONTWRITEBYTECODE="1"))
     return ("validate-versions", _short(f"saiu {rc}: {out[-1000:]}")) if rc != 0 else None
 
@@ -580,8 +597,10 @@ def _crosses(before, after):
 
 
 def _audit_json(p, skill):
-    """A saída JSON do auditor para `skill`, ou (motivo, detalhe) quando ele não deu resultado."""
-    rc, out = rw_store.run([sys.executable, p.worktree / AUDITOR, skill, *AUDIT_FLAGS], cwd=p.worktree,
+    """A saída JSON do auditor da cópia do commit para `skill`, ou (motivo, detalhe) quando ele não deu
+    resultado."""
+    tree = p.tree()
+    rc, out = rw_store.run([sys.executable, tree / AUDITOR, skill, *AUDIT_FLAGS], cwd=tree,
                            env=dict(p.env, PYTHONDONTWRITEBYTECODE="1"))
     if rc not in (0, 1):
         return None, ("auditoria", _short(f"o auditor saiu {rc} em {skill}: {out[-500:]}"))
@@ -596,24 +615,22 @@ def _audit_json(p, skill):
 def _extract_base(p, dest):
     raw = rw_store._git_bytes(["archive", "--format=tar", rw_store.BASE_REF, f"plugins/{p.plugin}"], p.worktree,
                               p.neutral, "auditoria")
-    tar_path = dest / "base.tar"
-    tar_path.write_bytes(raw)
     # O filtro `data` recusa link, caminho absoluto e `..`; o Python sem ele levanta TypeError (D25).
-    with tarfile.open(tar_path) as tar:
-        tar.extractall(dest / "base", filter="data")
-    return dest / "base"
+    return rw_store.untar(raw, dest / "base")
 
 
 def _g_audit(p):
     """19. O gate da auditoria do /retrofit-skill, rodado pela porta (D10), e as fases que a mudança
-    exige no selo (D21)."""
-    skills = sorted(md.parent for md in (p.worktree / "plugins" / p.plugin).glob("skills/*/SKILL.md"))
+    exige no selo (D21). Os scripts, a lista de SKILL.md e o texto de cada um saem da cópia do commit
+    (item 1); o diff e os nomes do ramo, do git do worktree."""
+    tree = p.tree()
+    skills = sorted(md.parent for md in (tree / "plugins" / p.plugin).glob("skills/*/SKILL.md"))
     if not skills:
         p.notes.append("auditoria: plugin sem SKILL.md")
         return None
-    missing = [str(x) for x in (AUDITOR, AUDIT_GATE) if not (p.worktree / x).is_file()]
+    missing = [str(x) for x in (AUDITOR, AUDIT_GATE) if not (tree / x).is_file()]
     if missing:
-        return "auditoria", "ausente no worktree: " + ", ".join(missing)
+        return "auditoria", "ausente no commit: " + ", ".join(missing)
     touched, added = set(p.names()), p.names("--diff-filter=A")
     claims, grows = [], []
     p.ctx.data_dir.mkdir(parents=True, exist_ok=True)
@@ -621,7 +638,7 @@ def _g_audit(p):
         tmp = Path(tmp)
         base = _extract_base(p, tmp)
         for i, skill in enumerate(skills):
-            rel = skill.relative_to(p.worktree).as_posix()
+            rel = skill.relative_to(tree).as_posix()
             box = tmp / f"skill-{i}"
             box.mkdir()
             before_md = base / rel / "SKILL.md"
@@ -637,7 +654,7 @@ def _g_audit(p):
             (box / "antes.json").write_text(json.dumps(antes), encoding="utf-8")
             (box / "depois.json").write_text(json.dumps(depois), encoding="utf-8")
             (box / "diff.txt").write_text(p.diff(rel), encoding="utf-8")
-            rc, out = rw_store.run([sys.executable, p.worktree / AUDIT_GATE, box], cwd=p.worktree,
+            rc, out = rw_store.run([sys.executable, tree / AUDIT_GATE, box], cwd=tree,
                                    env=dict(p.env, PYTHONDONTWRITEBYTECODE="1"))
             if rc != 0:
                 return "auditoria", _short(f"o audit_gate.py saiu {rc} em {rel}: {out[-500:]}")
@@ -748,6 +765,8 @@ def _check(ctx, rid, lote, notes):
                 return found, p.head
     except rw_store.StoreError as exc:
         return ("interno", _short(exc)), p.head
+    finally:
+        p.close()  # a cópia do commit (item 1) sai com ou sem recusa
     return None, p.head
 
 
