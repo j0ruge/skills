@@ -79,7 +79,7 @@ separada do motor upstream. Os prompts de retro recebidos nesta sessão comprova
 o disparo; a leitura da configuração confirma qual implementação os produziu.
 
 Já `plugins/retrofit-watch/hooks/hooks.json` usa `${CLAUDE_PLUGIN_ROOT}` e o
-motor `retrofit_watch.py`; o plugin 0.3.3 declara apenas `claude-code`. A camada
+motor `retrofit_watch.py`; o plugin 0.4.0 declara apenas `claude-code`. A camada
 `codex_retrofit_watch.py` e seu template `assets/hooks.json` existem na instalação
 local, sem fazer parte desse pacote. O catálogo Codex tem 27 plugins desde a entrada do `env-docs-sync` 0.1.0 (2026-10-27), e o watcher continua fora:
 publicar o watcher nele exige integrar essa camada e provar instalação/confiança

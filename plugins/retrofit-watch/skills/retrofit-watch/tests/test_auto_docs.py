@@ -312,6 +312,9 @@ NAME = PLUGIN_DIR.name
 MODE_VERSION = "0.4.0"
 # Os modos e o verbo dos segurados que a seção do README nomeia (brief da Tarefa 13, Step 4).
 README_WORDS = ("`manual`", "`auto`", "`auto-dry`", "segurados")
+# Os dois casos do `auto-dry` (rodada de correção 1 da Tarefa 13, I1).
+AUTO_DRY_CASES = ("with the reason `auto-dry` when every other guard passed",
+                  "otherwise with the reason of the guard that failed")
 # A forma do `--auto`: o alvo e o diretório, como o comando do retrofit-skill a define.
 AUTO_FORM = re.compile(r"(<[^>]+>) --auto (<[^>]+>)")
 
@@ -361,14 +364,22 @@ class ReleaseTest(unittest.TestCase):
         for verb in sorted(known_verbs()):
             self.assertRegex(usage, rf"retrofit_watch\.py (\S+\|)*{re.escape(verb)}\b",
                              f"`{verb}` ausente do bloco Uso do --help")
+        # Cada chave abre a sua linha na docstring: o `"manual"` da linha do `mode` não conta pela chave `manual`.
         for key in ("mode", "manual", "private_sources", "harvest_roots", "auto_limits", "store"):
-            self.assertRegex(out, rf"\b{key}\b", f"a chave `{key}` ausente do --help")
+            self.assertRegex(out, rf"(?m)^\s+{key}\s", f"a chave `{key}` sem linha própria no --help")
 
     def test_readme_names_the_modes_and_the_held_verb(self):
         text = readme_section(read(README), NAME)
         for word in README_WORDS:
             self.assertIn(word, text)
         self.assertIn("pendentes", text)
+        # O `auto-dry` só segura com o próprio motivo quando o resto passou: ele é a última guarda.
+        self.assertEqual(rw_gate.GUARDS[-1][0], "auto-dry")
+        for case in AUTO_DRY_CASES:
+            self.assertIn(case, flat(text))
+        # Os motivos que gravam `erro`, não `segurado`, estão no README, cada um.
+        for code in rw_gate.ERRORS:
+            self.assertIn(f"`{code}`", text, f"o README não diz que `{code}` grava `erro`")
 
     def test_executor_prompt_uses_the_auto_form_of_the_command(self):
         prompt = section(read(REFERENCE), "4.")

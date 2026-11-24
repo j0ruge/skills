@@ -6,17 +6,19 @@
 
 - **Modo autônomo.**
   - **O quê:** com `"mode": "auto"` e a chave `store` na config, o hook pede a retro sem a pergunta ao
-    dono. A sessão grava as lições. O revisor `retrofit-watch:retrofit-reviewer` as confere sem o
+    dono, só para skill da loja (modo full), fora da lista `manual`, com `bypassPermissions`, numa sessão
+    interativa e abaixo do teto de `auto_limits`. Kit e skill lean ficam sempre no modo manual. A sessão grava as lições. O revisor `retrofit-watch:retrofit-reviewer` as confere sem o
     contexto da sessão. A triagem separa os lotes. Um executor por lote roda
     `/retrofit-skill <plugin> --auto <dir do lote>` num worktree próprio e termina no `seal`. O revisor
     confere o diff. A porta (`publish`) publica o commit ou o segura. Com `"mode": "auto-dry"`, o fluxo
-    inteiro roda e a porta segura tudo antes do push, com o motivo `auto-dry`. O padrão continua `manual`:
+    inteiro roda e a porta segura tudo antes do push: com o motivo `auto-dry` quando as outras guardas
+    passaram, senão com o motivo da guarda que reprovou. O padrão continua `manual`:
     nele, um "sim" do dono e o `/retrofit-skill` assume, como antes.
   - **Por quê:** no modo manual, a melhoria de uma skill ainda dependia de o dono estar na conversa e
     dizer "sim". O modo autônomo tira esse passo e põe no lugar dele um revisor independente e uma porta
     determinística. Ninguém dá push fora da porta.
   - **As guardas da porta**, nesta ordem: o worktree e o ramo do lote (`escopo`); a árvore limpa
-    (`arvore-suja`); o rebase sobre o `origin/main` (`rebase`); um commit só e os arquivos no escopo do
+    (`arvore-suja`); o `git fetch origin` (`fetch`); o rebase sobre o `origin/main` (`rebase`); um commit só e os arquivos no escopo do
     lote (`escopo`); sem `Co-Authored-By` (`coautoria`); o trailer `Retrofit-Mode: autonomous`
     (`sem-marca`); o veredito do revisor (`sem-veredito`); a lição dentro do pedido (`fora-do-pedido`);
     cada lição do commit publicável (`nao-publicavel`); a mudança da `description` (`muda-description`);
@@ -27,6 +29,8 @@
     `skill-quality-audit` e as fases que a mudança exige (`auditoria`, `fase-de-auditoria`); os tetos de
     `auto_limits` (`teto`); e o `auto-dry`. O `approve` do dono substitui só os motivos substituíveis
     (`rw_gate.OVERRIDABLE`). Um motivo de nome só sai com a palavra do dono: "privado" ou "público".
+    A guarda que reprova grava uma linha `segurado`. O `fetch`, o `push`, a trava (`trava`) e um erro
+    interno (`interno`) gravam uma linha `erro` (`rw_gate.ERRORS`). O `segurados` lista as duas.
   - **Chaves novas da config:** `mode` (`manual`, `auto` ou `auto-dry`), `manual` (plugins ou skills
     sempre no modo manual), `store` (o clone de trabalho da loja), `auto_limits` (padrão
     `{"per_skill": 2, "per_session": 3}`), `harvest_roots` (padrão `["~/repos"]`) e `private_sources`
