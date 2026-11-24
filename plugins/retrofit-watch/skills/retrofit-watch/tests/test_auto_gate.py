@@ -1823,6 +1823,51 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
         self.assertEqual(self.head(wt), reviewed[0])
         self.assertEqual(fx.calls, [])
 
+    def test_approval_refuses_a_tree_no_guard_read(self):
+        # Item 10, rodada 1: depois do `_check`, uma emenda põe um arquivo novo e mantém o pai. A árvore de
+        # referência é a do revisado, não a do HEAD de antes da emenda do trailer: `interno`, nada sobe.
+        rid, wt, lote = self.description_lote()
+        reviewed = []
+
+        def then(head):
+            reviewed.append(head)
+            (wt / "nota-nova.md").write_text("Uma arvore que nenhuma guarda leu.\n", encoding="utf-8")
+            self.amend(wt)
+        fx = self.effects()
+        with self.after_check(then):
+            line, rc = self.publish(rid, fx, lote)
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (3, "erro", "interno"), line)
+        self.assertIn("arvore", line["detalhe"])
+        self.assertEqual(self.w.origin_main(), self.base)
+        self.assertEqual(fx.calls, [])
+
+    def test_approval_returns_the_sha_it_checked(self):
+        # Item 10, rodada 1: um commit entra no worktree logo depois da primeira leitura do git que segue a
+        # emenda do trailer. As conferências e o retorno usam o sha dessa leitura: sobe a emenda, e o
+        # commit novo, que nenhuma conferência viu, fica de fora.
+        rid, wt, lote = self.description_lote()
+        tree = self.w.git(wt, "rev-parse", "HEAD^{tree}")
+        original = rw_store._git
+        state = {"amended": False, "done": False}
+
+        def spy(args, cwd, env, what):
+            out = original(args, cwd, env, what)
+            if what == "aprovacao" and state["amended"] and not state["done"]:
+                state["done"] = True
+                (wt / "nota-nova.md").write_text("Entre as leituras da emenda.\n", encoding="utf-8")
+                self.w.git(wt, "add", "-A")
+                self.w.git(wt, "commit", "-q", "-m", "chore: entre as leituras")
+            if what == "aprovacao" and "--amend" in args:
+                state["amended"] = True
+            return out
+        with mock.patch.object(rw_store, "_git", side_effect=spy):
+            line, rc = self.publish(rid, self.effects(), lote)
+        self.assertTrue(state["done"])
+        self.assertEqual(rc, 0, line)
+        self.assertEqual(line["commit"], self.w.origin_main())
+        self.assertEqual(self.w.git(self.w.origin, "rev-parse", "main^{tree}"), tree)
+        self.assertEqual(self.marker(), rg.APPROVED)
+
     def test_push_never_follows_tags(self):
         # Final-F9: com `push.followTags` na config do dono, o push da porta não leva uma tag ao `origin`.
         rid, wt = self.clean_retrofit()

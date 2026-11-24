@@ -927,15 +927,18 @@ def _mark_approved(ctx, worktree, env, reviewed):
         git("commit", "-q", "--amend", "-F", tmp)
     finally:
         os.unlink(tmp)
-    if git("rev-parse", "HEAD^{tree}").strip() != tree:
+    # O HEAD se lê uma vez: as três conferências e o retorno são do mesmo sha. Um commit no worktree
+    # entre duas leituras não sobe sem conferência (item 10, rodada 1).
+    new = git("rev-parse", "HEAD").strip()
+    if git("rev-parse", f"{new}^{{tree}}").strip() != tree:
         raise rw_store.StoreError("aprovacao: a emenda do trailer mudou a arvore do commit")
-    if git("rev-parse", "HEAD^").strip() != parent:
+    if git("rev-parse", f"{new}^").strip() != parent:
         raise rw_store.StoreError("aprovacao: o commit emendado nao tem o pai do commit revisado")
-    values = [v.strip() for v in git("log", "-1", f"--format=%(trailers:key={MARKER},valueonly)").splitlines()
+    values = [v.strip() for v in git("log", "-1", f"--format=%(trailers:key={MARKER},valueonly)", new).splitlines()
               if v.strip()]
     if values != [APPROVED]:
         raise rw_store.StoreError(f"aprovacao: {MARKER} depois da emenda: {values}")
-    return git("rev-parse", "HEAD").strip()
+    return new
 
 
 def _plan(ctx, rid, lote, retrofit, worktree, aprovado, detalhe, commit):
