@@ -20,7 +20,9 @@
     determinística. Ninguém dá push fora da porta.
   - **As guardas da porta**, nesta ordem: o worktree e o ramo do lote (`escopo`); a árvore limpa
     (`arvore-suja`); o `git fetch origin` (`fetch`); o rebase sobre o `origin/main` (`rebase`); um commit só e os arquivos no escopo do
-    lote (`escopo`); sem `Co-Authored-By` (`coautoria`); o trailer `Retrofit-Mode: autonomous`
+    lote (`escopo`); o arquivo que as camadas não leem (fora do UTF-8, com byte NUL, link simbólico ou
+    submódulo) e qualquer mudança num `.gitattributes` (`escopo`); sem `Co-Authored-By` e sem a linha
+    `Generated with` do Claude Code (`coautoria`); o trailer `Retrofit-Mode: autonomous`
     (`sem-marca`); a versão do `plugin.json` maior que a do `origin/main`, comparada por número
     (`sem-bump`, que a aprovação do dono não substitui); o veredito do revisor (`sem-veredito`); a lição dentro do pedido (`fora-do-pedido`);
     cada lição do commit publicável (`nao-publicavel`); a mudança da `description` (`muda-description`:
@@ -29,9 +31,10 @@
     a camada 1 de nomes, e-mails, caminhos com usuário e segredos (`nome-privado`); o `anonimato.json`
     da segunda passada (`sem-anonimato`, `revisao-desatualizada`); cada termo novo `publico`
     (`termo-nao-publico`); as duas perguntas do diff (`regra-repetida`, `diff-alem-das-licoes`); os
-    testes do plugin e da raiz (`testes`); o `validate-versions.py` (`validate-versions`); o gate da
+    testes do plugin e da raiz, com falha quando nenhum teste roda numa suíte (`testes`); o
+    `validate-versions.py` (`validate-versions`); o gate da
     `skill-quality-audit` e as fases que a mudança exige (`auditoria`, `fase-de-auditoria`); os tetos de
-    `auto_limits` (`teto`); e o `auto-dry`. O `approve` do dono substitui só os motivos substituíveis
+    `auto_limits` (`teto`); o HEAD que mudou durante as guardas (`arvore-suja`); e o `auto-dry`. O `approve` do dono substitui só os motivos substituíveis
     (`rw_gate.OVERRIDABLE`). Um motivo de nome só sai com a palavra do dono: "privado" ou "público".
     A guarda que reprova grava uma linha `segurado`. O `fetch`, o `push`, a trava (`trava`) e um erro
     interno (`interno`) gravam uma linha `erro` (`rw_gate.ERRORS`). O `segurados` lista as duas.
@@ -50,7 +53,24 @@
     com o filtro `data` do `tarfile` (PEP 706). Medido nesta máquina: Python 3.12.3,
     `hasattr(tarfile, 'data_filter')` é `True`. A documentação do `tarfile` diz só que o filtro pode ter
     *backport* em versões anteriores, sem listar quais: por isso a entrada não cita números de *backport*.
-  - **Testes:** a suíte do plugin tem 333 testes (54 da 0.3.7, todos lá e passando), a do
+  - **O que a porta lê e de onde:**
+    - A porta e o `seal` rodam o portão, os testes, o `validate-versions.py` e a auditoria de uma cópia
+      do commit, tirada com `git archive`, e assim um arquivo ignorado no worktree do lote não troca um
+      módulo do portão nem um teste.
+    - O `discard <id> --retro`, só com a palavra do dono, fecha a retro sem conserto: grava uma linha
+      `descartado` para cada lote e cada lição sem linha, ou uma linha da retro inteira quando o
+      `licoes.json` não se lê.
+    - O registro ilegível e a fonte da colheita que existe e não se lê falham fechado: o registro
+      ilegível é erro, nunca registro vazio, e a fonte ilegível faz a colheita falhar (na porta,
+      `interno`). A fonte ausente continua sem erro.
+    - O `fetch` e o `push` da porta leem a config de sistema do git, onde o Git for Windows guarda o
+      `credential.helper` padrão, e as outras guardas continuam sem ela.
+    - Os testes do git de rede também leem a config de sistema de quem os roda: numa máquina com
+      `core.sshCommand` na config de sistema, os testes que esperam `ssh -o BatchMode=yes` falham.
+    - O termo que o dono põe na lista de públicos (`--publico-add`) conta como citado pela forma, sem
+      diferença de maiúscula e com o acento que a recusa escreveu como escape do `ascii()`, e nunca por
+      um pedaço do nome citado.
+  - **Testes:** a suíte do plugin tem 390 testes (54 da 0.3.7, todos lá e passando), a do
     `retrofit-skill` (`tests/test_modo_autonomo.py`) tem 9, e a da raiz tem 154 (80 da linha de base,
     3 pulados). Os testes novos desta entrada, em `tests/test_auto_docs.py`, prendem os quatro lugares da
     versão (`0.4.0` ou maior, porque a guarda `testes` roda esta suíte em todo retrofit), os verbos no
