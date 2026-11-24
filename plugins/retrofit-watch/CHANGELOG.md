@@ -50,7 +50,7 @@
     com o filtro `data` do `tarfile` (PEP 706). Medido nesta máquina: Python 3.12.3,
     `hasattr(tarfile, 'data_filter')` é `True`. A documentação do `tarfile` diz só que o filtro pode ter
     *backport* em versões anteriores, sem listar quais: por isso a entrada não cita números de *backport*.
-  - **Testes:** a suíte do plugin tem 319 testes (54 da 0.3.7, todos lá e passando), a do
+  - **Testes:** a suíte do plugin tem 333 testes (54 da 0.3.7, todos lá e passando), a do
     `retrofit-skill` (`tests/test_modo_autonomo.py`) tem 9, e a da raiz tem 154 (80 da linha de base,
     3 pulados). Os testes novos desta entrada, em `tests/test_auto_docs.py`, prendem os quatro lugares da
     versão (`0.4.0` ou maior, porque a guarda `testes` roda esta suíte em todo retrofit), os verbos no
