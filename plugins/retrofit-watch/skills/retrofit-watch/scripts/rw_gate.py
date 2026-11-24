@@ -44,6 +44,8 @@ SCOPE = ("plugins/<plugin>/", ".claude-plugin/marketplace.json", "README.md", ".
 # As duas listas do portão: mudam só com a aprovação do dono por nome (C2).
 OWNER_ONLY = ("scripts/private-names.sha256", "scripts/public-names.txt")
 PUBLIC_LIST, PRIVATE_LIST = "scripts/public-names.txt", "scripts/private-names.sha256"
+# Os modos do `ls-tree` de um arquivo regular; link simbólico (120000) e submódulo (160000) ficam fora.
+REGULAR_MODES = ("100644", "100755")
 
 SKILL_MAX_LINES = 400
 SKILL_MAX_CHARS = 16000
@@ -254,6 +256,38 @@ def _g_scope(p):
         return "escopo", _short("termos novos na lista de publicos que a recusa nao citou: " + ", ".join(uncited))
     if _entries(_removed_lines(p.diff(PRIVATE_LIST))):
         return "escopo", "o commit tira hash da lista de privados: so o dono faz isso, a mao"
+    return None
+
+
+def _g_opaque(p):
+    """5b. Nada que as camadas não leem (item 12, C4 e C5). As camadas 1 e 2 leem o diff como UTF-8 com
+    `replace`: um blob com NUL ou fora do UTF-8, um caminho que não é arquivo regular (link simbólico,
+    submódulo) ou um `.gitattributes` (`filter=`, `export-ignore`, `export-subst`) as cegam. Segura com
+    `escopo`, sem aprovação que o substitua: a saída é o /retrofit-skill manual. O `.gitattributes` conta
+    em qualquer pasta, também quando o ramo o tira; os outros testes leem o blob do `p.head`, em bytes e no
+    ambiente neutro, e pulam o caminho que o ramo só tira."""
+    paths = p.names()
+    found = [f"{x} (.gitattributes)" for x in paths if x.rsplit("/", 1)[-1] == ".gitattributes"]
+    wanted = set(paths)
+    listing = rw_store._git(["ls-tree", "-r", "-z", "--full-tree", p.head], p.worktree, p.neutral, "porta")
+    for entry in listing.split("\0"):
+        meta, tab, path = entry.partition("\t")
+        if not tab or path not in wanted:
+            continue
+        mode, _, sha = meta.split(" ")
+        if mode not in REGULAR_MODES:
+            found.append(f"{path} (modo {mode})")
+            continue
+        blob = rw_store._git_bytes(["cat-file", "blob", sha], p.worktree, p.neutral, "porta")
+        if b"\0" in blob:
+            found.append(f"{path} (byte NUL)")
+            continue
+        try:
+            blob.decode("utf-8")
+        except UnicodeDecodeError:
+            found.append(f"{path} (fora do UTF-8)")
+    if found:
+        return "escopo", _short("arquivo que as camadas do portao nao leem: " + ", ".join(found))
     return None
 
 
@@ -667,6 +701,7 @@ GUARDS = (
     ("fetch", _g_fetch),
     ("rebase", _g_rebase),
     ("escopo", _g_scope),
+    ("escopo", _g_opaque),
     ("coautoria", _g_coauthor),
     ("sem-marca", _g_marker),
     ("sem-bump", _g_bump),

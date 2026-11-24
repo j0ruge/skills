@@ -328,6 +328,63 @@ class GateTest(GateHarness, unittest.TestCase):
                 got = self.assertRefuses(rid, "escopo")
                 self.assertIn(rel, got[1])
 
+    # --- guarda 5b: o que as camadas não leem (item 12) ----------------------------------------
+
+    def test_content_the_layers_cannot_read_is_held(self):
+        # C4 e C5: as camadas leem o diff como UTF-8 com `replace`. Um blob com NUL, fora do UTF-8, um link
+        # ou um `.gitattributes` as cegam, e o nome colhido passaria: a porta segura com `escopo`.
+        name = invented("colh")
+        harvested = self.w.tmp / "repos" / name
+        harvested.mkdir(parents=True)
+        self.w.git(harvested, "init", "-q")
+        folder = Path(DOC).parent.as_posix()
+        cases = {
+            "NUL": (folder + "/nota.md", ("- Linha um.\n" + chr(0) + "- Linha dois.\n").encode("utf-8")),
+            "UTF-16": (folder + "/nota.md", ("- Veja o " + name + " antes.\n").encode("utf-16")),
+            "Latin-1": (folder + "/nota.md", ("- Configura" + chr(0xE7) + chr(0xE3) + "o.\n").encode("latin-1")),
+            "atributo": ("plugins/demo/.gitattributes", ("*.md filter=" + "x\n").encode("utf-8")),
+            "link": (folder + "/atalho.md", None),
+        }
+        for label, (rel, body) in cases.items():
+            with self.subTest(label=label):
+                def edit(wt, rel=rel, body=body):
+                    if body is None:
+                        os.symlink("SKILL.md", wt / rel)
+                    else:
+                        (wt / rel).write_bytes(body)
+                if body is None:
+                    probe = self.w.tmp / "probe-link"
+                    try:
+                        os.symlink("alvo", probe)
+                    except (OSError, NotImplementedError):
+                        self.skipTest("sem permissao de link simbolico")
+                    probe.unlink()
+                rid, wt = self.clean_retrofit(edit=edit)
+                got = self.assertRefuses(rid, "escopo")
+                self.assertIn(rel, got[1])
+
+    def test_plain_text_passes_the_content_guard(self):
+        # Um arquivo novo com acento no nome e no conteúdo, em UTF-8, e um arquivo do plugin que o lote tira:
+        # o apagado não tem blob, e a guarda o pula.
+        old = "plugins/demo/notas-velhas.md"
+
+        def seed(root):
+            (root / old).write_text("- Uma nota velha.\n", encoding="utf-8")
+        self.push_origin(seed, "docs(demo): uma nota velha")
+        rel = Path(DOC).parent.as_posix() + "/nota-t" + chr(0xE9) + "cnica.md"
+
+        def edit(wt):
+            (wt / rel).write_text("- Configura" + chr(0xE7) + chr(0xE3) + "o medida.\n", encoding="utf-8")
+            (wt / old).unlink()
+        rid, wt = self.clean_retrofit(edit=edit)
+        p = rg._Porta(self.ctx(), rid, "demo", [])
+        self.assertIsNone(rg._g_rebase(p))
+        self.assertIn(rel, p.names())
+        self.assertIn(old, p.names())
+        self.assertIsNone(rg._g_opaque(p))
+        got = self.refuse(rid)
+        self.assertTrue(got is None or got[0] != "escopo", got)
+
     def test_list_files_need_owner_approval(self):
         term = invented("pub")
         rid, wt = self.clean_retrofit(edit=lambda wt: append(wt / "scripts/public-names.txt", term + "\n"))
@@ -791,10 +848,17 @@ class GateTest(GateHarness, unittest.TestCase):
                                    ("refactoring", None, lambda wt: self.size_doc(wt, chars=rg.SKILL_MAX_CHARS + 1))):
             with self.subTest(phase=phase, edit=edit, after=after):
                 rid, wt = self.clean_retrofit(edit=edit, after=after)
-                got = self.assertRefuses(rid, "fase-de-auditoria")
-                self.assertTrue(got[1].startswith(phase + ":"), got[1])
-                self.seal(rid, fases=[phase])
-                self.assertIsNone(self.refuse(rid))
+                guards = contextlib.nullcontext()
+                if edit is hidden_claim:
+                    # Item 12 (C5): o `.gitattributes` já segura com `escopo` antes. Sem a guarda 5b, o
+                    # `--text` da guarda da auditoria continua a defesa de trás.
+                    self.assertRefuses(rid, "escopo")
+                    guards = mock.patch.object(rg, "GUARDS", tuple(g for g in rg.GUARDS if g[1] is not rg._g_opaque))
+                with guards:
+                    got = self.assertRefuses(rid, "fase-de-auditoria")
+                    self.assertTrue(got[1].startswith(phase + ":"), got[1])
+                    self.seal(rid, fases=[phase])
+                    self.assertIsNone(self.refuse(rid))
 
     def test_diff_keeps_accented_names_for_the_audit_gate(self):
         # N1: no ambiente neutro, o git põe entre aspas um caminho fora do ASCII, e o `linhas_do_diff` só lê
