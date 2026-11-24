@@ -1,0 +1,173 @@
+# TODO
+
+Achados que não cabem no trabalho em curso: registrados, nunca perdidos. Formato e ciclo de vida: o
+`templates/todo.pt-BR.md` do kit sdd. A forma se mede com o `tests/check-todo.sh --check TODO.md` do kit. Um
+item consertado ganha `RESOLVED by <hash>` e sai depois do merge; um item decidido vira registro na segunda
+seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
+
+## Aberto
+<!-- sdd:open -->
+
+### Rulings do merge da retrofit-watch 0.4.0
+
+- [ ] **O commit autônomo sem guarda de autor** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:1015` (`_mark_approved`) — nenhuma guarda
+  lê o autor nem o committer, e o `--amend` mantém autor e data do HEAD, não os do `reviewed`. Um `includeIf`
+  com outro e-mail passa. Anterior ao plano: a spec 5.6 só nomeia o diff e a mensagem (Ruling FR-1).
+  Direção: uma guarda que confere autor e committer, ou o `commit-tree` com o autor explícito.
+  Fonte: `docs/retrofit-watch/2026-11-24-pendencias-0.4.0.md` (T8-1) — descoberto por `revisor final` (2026-11-24)
+- [ ] **Os hooks globais no amend da aprovação** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:1033` (`--amend`) — o `commit --amend` do
+  `_mark_approved` roda os hooks do `core.hooksPath` global. Um `commit-msg` global mudaria a mensagem depois
+  da camada 1. Nesta máquina nenhuma config global ou de sistema tem a chave (Ruling FR-2).
+  Direção: `-c core.hooksPath=<devnull>` no amend, ou o `commit-tree`, com o par.
+  Fonte: Ruling FR-2 da revisão final — descoberto por `revisor final` (2026-11-24)
+- [ ] **Mensagem de commit fora do UTF-8 lida com replace** — `scripts/anonymity-gate.py:101` (`'replace'`) —
+  as camadas leem a mensagem do commit com `replace`, e um nome em bytes inválidos na mensagem passa. A guarda
+  5b (item 12 do plano) só cobre arquivos (Ruling FR-3).
+  Direção: segurar com `escopo` a mensagem fora do UTF-8, como o blob, com o par.
+  Fonte: Ruling FR-3 da revisão final — descoberto por `revisor final` (2026-11-24)
+- [ ] **NFD contra NFC na camada 1** — `scripts/check-private-names.py:38` (`chave`) — a camada 1 não
+  normaliza Unicode: um diretório colhido em NFD tem uma forma, a menção em NFC tem outra, e o nome privado
+  passa. Anterior ao plano (Ruling FR-4).
+  Direção: normalizar em NFC na `chave` e no `candidatos`, com o par; abrir antes de usar o `auto` num macOS.
+  Fonte: `docs/retrofit-watch/2026-11-24-pendencias-0.4.0.md` (T12-4) — descoberto por `revisor final` (2026-11-24)
+- [ ] **A busca do .git do projeto da sessão ignora o teto do git** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:275` (`_session_project`) — ignora o
+  `GIT_CEILING_DIRECTORIES` e o `GIT_DISCOVERY_ACROSS_FILESYSTEM`. Falha fechada: um `~/.git` de dotfiles com
+  o teto no `$HOME` seguraria as sessões fora de repo (R3, codereview r1 #14).
+  Direção: respeitar as duas variáveis na subida pelos pais.
+  Fonte: resíduo R3 da revisão final — descoberto por `revisor final` (2026-11-24)
+- [ ] **O expected_ssh da fixture não segue o include.path** —
+  `plugins/retrofit-watch/skills/retrofit-watch/tests/fixture_store.py:85` (`expected_ssh`) — lê só a
+  config `--system`, e o código lê a config inteira. Caso teórico, só do teste (R4, codereview r1 #23).
+  Direção: ler sem `--system`, como o código.
+  Fonte: resíduo R4 da revisão final — descoberto por `revisor final` (2026-11-24)
+- [ ] **O nome curto com hash do .gitattributes no NTFS** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:310` (`_attributes_name`) — o nome
+  `gi7d29~N` não é reconhecido. Exige o 8.3 ligado e os `~1` a `~4` ocupados (R5, codereview r1 #6).
+  Direção: reconhecer o prefixo do `is_ntfs_dotgitattributes` do git, com o par.
+  Fonte: resíduo R5 da revisão final — descoberto por `revisor final` (2026-11-24)
+
+### Passos do dono antes de ligar o modo auto
+
+- [ ] **Classificar os nomes da colheita** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:336` (`write_harvest`) — o passo 1 do
+  dono: o verbo `harvest` e depois `scripts/anonymity-gate.py --arvore --extra <arquivo>`. Cada nome vai a
+  `--add` (privado) ou a `--publico-add` (público), até o segundo comando sair 0. O `harvest` com rc 2 e o
+  nome de uma pasta: ela existe sob `harvest_roots` e não lê.
+  Fonte: `docs/superpowers/plans/2026-11-23-retrofit-watch-modo-autonomo.md` — descoberto por `plano` (2026-11-24)
+- [ ] **O ensaio auto-dry e ligar o auto** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:96` (`AUTO_MODES`) — os passos 2
+  e 3: `"mode": "auto-dry"` e `"store"` na config, uma sessão com `bypassPermissions` e uma skill da loja
+  com atrito. Esperado: o ramo pronto e a linha `segurado — auto-dry`. Depois, `"mode": "auto"`.
+  Fonte: `docs/superpowers/plans/2026-11-23-retrofit-watch-modo-autonomo.md` — descoberto por `plano` (2026-11-24)
+- [ ] **A suíte do plugin no Windows** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:39` (`RUN_TIMEOUT`) — o passo 4: rodar a
+  suíte com o `python3` do PATH antes de ligar o `auto` lá. O Git Credential Manager pode abrir uma janela, e
+  o `RUN_TIMEOUT` de 900 s dá `erro` (falha fechada). Aceito: 15 min por lote numa máquina assim (FR-5).
+  Fonte: Ruling FR-5 da revisão final — descoberto por `revisor final` (2026-11-24)
+- [ ] **O MAX_PATH da cópia do commit no Windows** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:504` (`TREE_PREFIX`) — a cópia
+  `.porta-*` sob a pasta de dados tem cerca de 60 caracteres de margem no `MAX_PATH`, não medida. Passar dá
+  `interno` (falha fechada) (Ruling FR-6). Direção: o passo 4 do dono mede a margem.
+  Fonte: Ruling FR-6 da revisão final — descoberto por `revisor final` (2026-11-24)
+
+### LOW da codereview da retrofit-watch 0.4.0
+
+- [ ] **A guarda 5b: o fluxo NTFS e a listagem inteira** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:318` (`_g_opaque`) — o `_attributes_name`
+  não reconhece `.gitattributes::$DATA` (falta reproduzir no NTFS; r1 #5). O `ls-tree` lista a árvore
+  inteira para conferir poucos caminhos (r1 #9).
+  Direção: cortar o sufixo `:` antes de comparar; `ls-tree -z -- <paths>`.
+  Fonte: codereview r1 #5 e #9 — descoberto por `codereview r1` (2026-11-24)
+- [ ] **O _extract_base deixa passar TarError e OSError** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:667` (`_extract_base`) — o `clean_tree`
+  embrulha os dois em StoreError, e o `_extract_base` não. O `publish` os pega (D25) (r1 #7).
+  Direção: embrulhar dentro do `untar`.
+  Fonte: codereview r1 #7 — descoberto por `codereview r1` (2026-11-24)
+- [ ] **O alias network_env só serve a um teste** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:225` (`network_env`) — o alias não tem uso
+  no `rw_gate.py`, só no `test_network_env_keeps_the_owner_ssh` (r1 #8; também o minor T7-2).
+  Direção: o teste chama o `rw_store.network_env`, e o alias sai; ou o comentário diz para quê.
+  Fonte: codereview r1 #8 — descoberto por `codereview r1` (2026-11-24)
+- [ ] **O seal roda o portão do próprio ramo** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:623` (`seal`) — o portão do `seal` sai
+  do commit do ramo. Rebaixado de MEDIUM: a porta segura com `escopo` todo caminho fora de
+  `plugins/<plugin>/` antes da camada 1 (r1 #10). Direção, opcional: o portão do `seal` do `origin/main`.
+  Fonte: codereview r1 #10 — descoberto por `codereview r1` (2026-11-24)
+- [ ] **O estouro do critério apaga o cache dos commits** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:686` (`_startup_git`) — o `criterion`
+  grava `{sha, estouro}` por cima dos commits: por 24 h, "desconhecido" parece "não cumprido" (r1 #11).
+  Depois do `-c`, a mensagem do `_startup_git` (`args[:2]`) não nomeia o `archive` (r1 #12).
+  Direção: o estouro numa chave à parte; o rótulo pula o par `-c k=v`.
+  Fonte: codereview r1 #11 e #12 — descoberto por `codereview r1` (2026-11-24)
+- [ ] **As pastas .porta- que sobram** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:534` (`ignore_errors=True`) — um SIGKILL
+  deixa `.porta-*` na pasta de dados (r1 #13), e o `rmtree` falha em silêncio: no Windows sobram cerca de
+  7,6 MB por porta (minor T10-4). Direção: limpar as pastas velhas no início, ou avisar.
+  Fonte: codereview r1 #13 — descoberto por `codereview r1` (2026-11-24)
+- [ ] **As mensagens de erro do projeto da sessão** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:300` (`run(command, env=env)`) — o rc da
+  1ª chamada sai com a saída da 2ª (r2 #3). Um `PermissionError` no `isdir` dá "nao deu uma pasta" (r2 #4).
+  Nenhum teste confere que o texto da 2ª chamada chega à mensagem (r3).
+  Direção: o rc da chamada que deu o texto; o `os.stat` no lugar do `isdir`; o subteste do texto.
+  Fonte: codereview r2 #3, #4 e r3 — descoberto por `codereview r2` (2026-11-24)
+- [ ] **As docstrings do _session_project e do run_bytes** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:77` (`run_bytes`) — a do `run_bytes`
+  não cita o `stderr=`, e a do `_session_project` não cita o caminho físico nem o caminho só do stdout.
+  Direção: uma frase em cada uma.
+  Fonte: codereview r2, forma — descoberto por `codereview r2` (2026-11-24)
+- [ ] **A saída do escopo ambígua na referência** —
+  `plugins/retrofit-watch/skills/retrofit-watch/references/modo-autonomo.md:241` (`escopo`) — a "Saída" junta
+  a do executor e a do dono numa célula, e a frase "também o que o ramo tira" não diz de quem é a saída.
+  Direção: duas frases, uma por saída, com o sensor do `test_auto_docs.py` verde.
+  Fonte: codereview r2, forma — descoberto por `codereview r2` (2026-11-24)
+- [ ] **O discard_retro conta no teto da sessão** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_auto.py:942` (`discard_retro`) — as linhas
+  `descartado` dele contam no `used` e no teto da sessão (r1 #15). A função é longa, o `_own` não tem
+  docstring e o acento é desigual nas mensagens (r1 #17).
+  Direção: dizer na docstring, ou marcar as linhas; extrair dois helpers.
+  Fonte: codereview r1 #15 e #17 — descoberto por `codereview r1` (2026-11-24)
+- [ ] **A regra da palavra do dono não cita o discard** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_auto.py:30` (`OWNER_WORD_RULE`) — o agente pode
+  fechar uma retro inteira sem a palavra do dono (r1 #16).
+  Direção: pôr o `discard` na regra.
+  Fonte: codereview r1 #16 — descoberto por `codereview r1` (2026-11-24)
+- [ ] **A linha corrompida do registro some em silêncio** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_auto.py:80` (`read_registry`) — a linha ilegível é
+  pulada sem aviso e pode reabrir um fluxo fechado. Anterior ao plano (r1 #18).
+  Direção: contar as linhas puladas e avisar.
+  Fonte: codereview r1 #18 — descoberto por `codereview r1` (2026-11-24)
+- [ ] **Os sensores do CHANGELOG no test_auto_docs** —
+  `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py:440` (`flat(read(CHANGELOG))`) — a
+  asserção lê o CHANGELOG inteiro, não a entrada `[0.4.0]` (r1 #19). O `assertNotIn` da frase antiga só barra
+  o texto exato (r1 #20). Direção: ler só a primeira entrada; manter ou tirar o `assertNotIn`.
+  Fonte: codereview r1 #19 e #20 — descoberto por `codereview r1` (2026-11-24)
+- [ ] **Os sensores da referência no test_auto_docs** —
+  `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py:421` (`REASON_CAUSES`) — as
+  subcadeias são curtas (r1 #22), e o `--retro` da referência não está ligado ao `CLI_USAGE` (r1 #21).
+  Direção: `rows.get` com mensagem; `assertIn("--retro", rw.CLI_USAGE["discard"][0])`.
+  Fonte: codereview r1 #21 e #22 — descoberto por `codereview r1` (2026-11-24)
+- [ ] **O CHANGELOG 0.4.0 cita só o fetch e o push** —
+  `plugins/retrofit-watch/CHANGELOG.md:66` (`push`) — o ponto da config de sistema cita só o `fetch` e o
+  `push` da porta, e o `prepare` também usa o `remote_env` (r1 #24).
+  Direção: "todo git que fala com o `origin`".
+  Fonte: codereview r1 #24 — descoberto por `codereview r1` (2026-11-24)
+- [ ] **Três frases do plano de correções** —
+  `docs/superpowers/plans/2026-11-24-retrofit-watch-auto-correcoes.md:49` (`info/attributes`) — a C2 deixa o
+  `info/attributes` fora (decisão do plano; r1 #25). "Final-F1" não tem definição (r1 #26). "Em qualquer
+  versão do Python" não foi medido no 3.11 (r1 #27). Direção: comparar a lista da cópia com o `ls-tree`
+  (opcional); nomear o commit; "medido no 3.12".
+  Fonte: codereview r1 #25 a #27 — descoberto por `codereview r1` (2026-11-24)
+
+### Minors adiados (triagem)
+
+- [ ] **Os minors adiados da retrofit-watch 0.4.0** —
+  `docs/retrofit-watch/2026-11-24-pendencias-0.4.0.md:1` (`Abertos`) — 50 minors das revisões por tarefa
+  ainda valem no `main`, uma linha cada, com o arquivo e o símbolo. A revisão final os julgou "podem esperar".
+  Direção: tratar por arquivo, junto com o item vizinho deste TODO; tirar da lista o que for corrigido.
+  Fonte: `docs/retrofit-watch/2026-11-24-pendencias-0.4.0.md` — descoberto por `revisor final` (2026-11-24)
+
+## Decidido — não reabrir
+<!-- sdd:decided -->
