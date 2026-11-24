@@ -499,6 +499,21 @@ class GateTest(GateHarness, unittest.TestCase):
         self.assertIsNone(rg._g_bump(porta))
         self.assertEqual(real(porta, rw_store.BASE_REF), fs.VERSION)
 
+    def test_new_plugin_passes_the_bump_guard_through_show(self):
+        # Item 16b, rodada 1: sem mock; o `origin/main` não tem o plugin.json do demo, e o `_show` real dá None.
+        rid, wt = self.clean_retrofit()
+        manifest = "plugins/demo/.claude-plugin/plugin.json"
+        self.push_origin(lambda root: (Path(root) / manifest).unlink(), "chore: demo sem plugin.json")
+        self.w.git(wt, "fetch", "-q", "origin")
+        porta = rg._Porta(self.ctx(), rid, "demo", [])
+        try:
+            self.assertIsNone(rg._show(porta, rw_store.BASE_REF, manifest))
+            self.assertIs(rg._manifest_version(porta, rw_store.BASE_REF), rg.ABSENT)
+            self.assertIsNone(rg._g_bump(porta))
+            self.assertIsNotNone(rg._show(porta, "HEAD", manifest))
+        finally:
+            porta.close()
+
     def test_git_failure_is_not_a_new_plugin(self):
         # Item 16b: um git que falha ao ler o plugin.json do origin/main não é "plugin novo": é `interno`.
         rid, wt = self.clean_retrofit()
@@ -768,6 +783,17 @@ class GateTest(GateHarness, unittest.TestCase):
                     got = self.assertRefuses(rid, "testes")
                 self.assertIn("nenhum teste rodou", got[1])
                 self.assertIn(skill_tests, got[1])
+
+    def test_printed_ran_line_does_not_count(self):
+        # Item 4, rodada 1: o `print` de um teste com a forma do resumo não decide a contagem; vale o do unittest.
+        rel = "plugins/demo/skills/demo/tests/test_printed.py"
+        fake = "Ran 0 " + "tests in 0.000s"
+        source = (f"import unittest\n\nprint({fake!r})\n\n\n"
+                  "class PrintedTest(unittest.TestCase):\n"
+                  "    def test_ok(self):\n"
+                  "        self.assertTrue(True)\n")
+        rid, wt = self.clean_retrofit(edit=lambda wt: (wt / rel).write_text(source, encoding="utf-8"))
+        self.assertIsNone(self.refuse(rid))
 
     def test_emptied_test_file_refuses(self):
         # Item 4: o commit que esvazia o arquivo de teste reprova em qualquer versão (3.12: rc 5; 3.11: zero).

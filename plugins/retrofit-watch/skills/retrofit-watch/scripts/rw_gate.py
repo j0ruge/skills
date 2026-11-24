@@ -554,7 +554,9 @@ def _g_tests(p):
     """17. Os testes do plugin e a suíte da raiz (D11), da cópia do commit (item 1) e sem gravar bytecode
     (M7). Uma pasta de teste do `origin/main` que o ramo tira é `testes` (I2); a nota só vale para plugin que
     nunca teve teste."""
-    env = dict(p.env, PYTHONDONTWRITEBYTECODE="1")
+    # PYTHONUNBUFFERED: num pipe, o `print` de um teste sairia no fim, depois do resumo do `unittest` (stderr),
+    # e a última linha `Ran N tests in` seria a dele.
+    env = dict(p.env, PYTHONDONTWRITEBYTECODE="1", PYTHONUNBUFFERED="1")
     here, base = _test_dirs(p)
     gone = [d for d in base if d not in here]
     if gone:
