@@ -375,8 +375,15 @@ class GateTest(GateHarness, unittest.TestCase):
             with self.subTest(label=label):
                 rid, wt = self.clean_retrofit(edit=lambda wt, rel=rel: (wt / rel).write_text("*.md text\n",
                                                                                           encoding="utf-8"))
+                # CR-r1 #3: o caminho que o git gravou, não o que o teste escreveu. O Win32 tira o ponto do
+                # fim do nome, e no Windows o caso `ponto` grava `.gitattributes`. Onde o disco guarda o nome
+                # como foi escrito (aqui), o git grava esse nome, e a comparação exata não o reconhece.
+                [recorded] = self.w.git(wt, "diff", "--name-only", "--diff-filter=A", rw_store.BASE_REF,
+                                        "HEAD").splitlines()
+                if rel.rsplit("/", 1)[-1] in os.listdir((wt / rel).parent):
+                    self.assertEqual(recorded, rel)
                 got = self.assertRefuses(rid, "escopo")
-                self.assertIn(rel + " (.gitattributes)", got[1])
+                self.assertIn(recorded + " (.gitattributes)", got[1])
 
     def test_attributes_removed_by_the_branch_are_held(self):
         # Final-F3 (C5): o `.gitattributes` conta também quando o ramo o tira. Ele não está no `p.head`, e
