@@ -1,13 +1,17 @@
 """Testes de contrato do modo autônomo (Tarefa 11): a documentação que a sessão do dono lê presa ao código.
 
 Rodar: python3 plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py
-Só leitura de arquivos do próprio repositório: nenhum teste toca a rede, o git ou o `claude`.
+Só leitura de arquivos do próprio repositório: nenhum teste toca a rede, o git ou o `claude`. O único
+subprocesso é o `retrofit_watch.py --help`, pelo `sys.executable`.
 Lidos aqui: a `SKILL.md`, a `references/modo-autonomo.md` (o `rw_auto.REFERENCE`, que o texto do hook
-cita), a `references/criteria.md`, o agente `agents/retrofit-reviewer.md` e, quando existe, a
-`plugins/retrofit-skill/references/modo-autonomo.md` (Tarefa 12).
+cita), a `references/criteria.md`, o agente `agents/retrofit-reviewer.md` e, quando existem, a
+`plugins/retrofit-skill/references/modo-autonomo.md` e o `plugins/retrofit-skill/commands/retrofit-skill.md`
+(Tarefa 12). A Tarefa 13 lê também o `plugin.json`, o `CHANGELOG.md`, o `marketplace.json` e o `README.md`.
 """
 import json
+import os
 import re
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -294,6 +298,87 @@ class SkillTest(unittest.TestCase):
         for route in routes:
             self.assertTrue("pedido autônomo" in route and "segurados" in route,
                             f"a citação da referência não diz quando ler: {route!r}")
+
+
+PLUGIN_JSON = PLUGIN_DIR / ".claude-plugin" / "plugin.json"
+CHANGELOG = PLUGIN_DIR / "CHANGELOG.md"
+MARKETPLACE = STORE_ROOT / ".claude-plugin" / "marketplace.json"
+README = STORE_ROOT / "README.md"
+SCRIPT = SKILL_DIR / "scripts" / "retrofit_watch.py"
+EXECUTOR_COMMAND = STORE_ROOT / "plugins" / "retrofit-skill" / "commands" / "retrofit-skill.md"
+NAME = PLUGIN_DIR.name
+# A versão do modo autônomo (Tarefa 13). O teste aceita versão maior: a guarda `testes` da porta roda
+# esta suíte em todo retrofit da retrofit-watch, e um valor fixo seguraria o próximo.
+MODE_VERSION = "0.4.0"
+# Os modos e o verbo dos segurados que a seção do README nomeia (brief da Tarefa 13, Step 4).
+README_WORDS = ("`manual`", "`auto`", "`auto-dry`", "segurados")
+# A forma do `--auto`: o alvo e o diretório, como o comando do retrofit-skill a define.
+AUTO_FORM = re.compile(r"(<[^>]+>) --auto (<[^>]+>)")
+
+
+def as_tuple(version):
+    return tuple(int(part) for part in version.split("."))
+
+
+def skill_version(text):
+    m = re.search(r'^\s+version:\s*"?([0-9.]+)"?\s*$', re.match(r"---\n(.*?)\n---\n", text, re.S).group(1), re.M)
+    if not m:
+        raise AssertionError("SKILL.md sem metadata.version")
+    return m.group(1)
+
+
+def readme_section(text, name):
+    """O bloco <details> do plugin no README, do <summary> até o </details>."""
+    m = re.search(rf"<summary><strong>{re.escape(name)}</strong>.*?</details>", text, re.S)
+    if not m:
+        raise AssertionError(f"README sem a seção de {name}")
+    return m.group(0)
+
+
+class ReleaseTest(unittest.TestCase):
+
+    def test_the_four_places_agree_at_0_4_0_or_later(self):
+        version = json.loads(read(PLUGIN_JSON))["version"]
+        self.assertGreaterEqual(as_tuple(version), as_tuple(MODE_VERSION))
+        self.assertEqual(skill_version(read(SKILL_MD)), version, "metadata.version da SKILL.md")
+        block = [p for p in json.loads(read(MARKETPLACE))["plugins"] if p["name"] == NAME]
+        self.assertEqual(len(block), 1, "o bloco do plugin no marketplace.json não é único")
+        self.assertEqual(block[0]["version"], version, "a versão do bloco no marketplace.json")
+        rows = [row for row in table_rows(read(README)) if row and row[0] == f"**{NAME}**"]
+        cells = [row[1] for row in rows if row[1] not in ("✓", "—")]
+        self.assertEqual(cells, [version], "a versão da linha do README")
+        entries = re.findall(r"^## \[(\d+\.\d+\.\d+)\]", read(CHANGELOG), re.M)
+        self.assertTrue(entries and entries[0] == version, "a primeira entrada do CHANGELOG não é a versão")
+        self.assertIn(MODE_VERSION, entries, f"o CHANGELOG não tem a entrada {MODE_VERSION}")
+
+    def test_help_lists_every_subcommand(self):
+        out = subprocess.run([sys.executable, str(SCRIPT), "--help"], capture_output=True, encoding="utf-8",
+                             env={**os.environ, "PYTHONIOENCODING": "utf-8"}, stdin=subprocess.DEVNULL,
+                             timeout=60, check=True).stdout
+        # O bloco `Uso:` é o que o main gera do CLI_USAGE; a docstring acima dele não conta para os verbos.
+        self.assertIn("\nUso: ", out)
+        usage = out.split("\nUso: ", 1)[1]
+        for verb in sorted(known_verbs()):
+            self.assertRegex(usage, rf"retrofit_watch\.py (\S+\|)*{re.escape(verb)}\b",
+                             f"`{verb}` ausente do bloco Uso do --help")
+        for key in ("mode", "manual", "private_sources", "harvest_roots", "auto_limits", "store"):
+            self.assertRegex(out, rf"\b{key}\b", f"a chave `{key}` ausente do --help")
+
+    def test_readme_names_the_modes_and_the_held_verb(self):
+        text = readme_section(read(README), NAME)
+        for word in README_WORDS:
+            self.assertIn(word, text)
+        self.assertIn("pendentes", text)
+
+    def test_executor_prompt_uses_the_auto_form_of_the_command(self):
+        prompt = section(read(REFERENCE), "4.")
+        mine = AUTO_FORM.findall(prompt)
+        self.assertTrue(mine, "o prompt do executor não cita o --auto")
+        if not EXECUTOR_COMMAND.exists():
+            self.skipTest("o retrofit-skill não está neste repositório")
+        theirs = re.findall(r"/retrofit-skill (<[^>]+>) --auto (<[^>]+>)", read(EXECUTOR_COMMAND))
+        self.assertTrue(theirs, "o comando do retrofit-skill não define o --auto")
+        self.assertEqual(set(mine), set(theirs[:1]), "a forma do --auto difere entre o prompt e o comando")
 
 
 if __name__ == "__main__":

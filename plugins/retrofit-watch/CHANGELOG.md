@@ -1,5 +1,51 @@
 # Changelog — retrofit-watch
 
+## [0.4.0] — 2026-11-24
+
+### Added
+
+- **Modo autônomo.**
+  - **O quê:** com `"mode": "auto"` e a chave `store` na config, o hook pede a retro sem a pergunta ao
+    dono. A sessão grava as lições. O revisor `retrofit-watch:retrofit-reviewer` as confere sem o
+    contexto da sessão. A triagem separa os lotes. Um executor por lote roda
+    `/retrofit-skill <plugin> --auto <dir do lote>` num worktree próprio e termina no `seal`. O revisor
+    confere o diff. A porta (`publish`) publica o commit ou o segura. Com `"mode": "auto-dry"`, o fluxo
+    inteiro roda e a porta segura tudo antes do push, com o motivo `auto-dry`. O padrão continua `manual`:
+    nele, um "sim" do dono e o `/retrofit-skill` assume, como antes.
+  - **Por quê:** no modo manual, a melhoria de uma skill ainda dependia de o dono estar na conversa e
+    dizer "sim". O modo autônomo tira esse passo e põe no lugar dele um revisor independente e uma porta
+    determinística. Ninguém dá push fora da porta.
+  - **As guardas da porta**, nesta ordem: o worktree e o ramo do lote (`escopo`); a árvore limpa
+    (`arvore-suja`); o rebase sobre o `origin/main` (`rebase`); um commit só e os arquivos no escopo do
+    lote (`escopo`); sem `Co-Authored-By` (`coautoria`); o trailer `Retrofit-Mode: autonomous`
+    (`sem-marca`); o veredito do revisor (`sem-veredito`); a lição dentro do pedido (`fora-do-pedido`);
+    cada lição do commit publicável (`nao-publicavel`); a mudança da `description` (`muda-description`);
+    a camada 1 de nomes, e-mails, caminhos com usuário e segredos (`nome-privado`); o `anonimato.json`
+    da segunda passada (`sem-anonimato`, `revisao-desatualizada`); cada termo novo `publico`
+    (`termo-nao-publico`); as duas perguntas do diff (`regra-repetida`, `diff-alem-das-licoes`); os
+    testes do plugin e da raiz (`testes`); o `validate-versions.py` (`validate-versions`); o gate da
+    `skill-quality-audit` e as fases que a mudança exige (`auditoria`, `fase-de-auditoria`); os tetos de
+    `auto_limits` (`teto`); e o `auto-dry`. O `approve` do dono substitui só os motivos substituíveis
+    (`rw_gate.OVERRIDABLE`). Um motivo de nome só sai com a palavra do dono: "privado" ou "público".
+  - **Chaves novas da config:** `mode` (`manual`, `auto` ou `auto-dry`), `manual` (plugins ou skills
+    sempre no modo manual), `store` (o clone de trabalho da loja), `auto_limits` (padrão
+    `{"per_skill": 2, "per_session": 3}`), `harvest_roots` (padrão `["~/repos"]`) e `private_sources`
+    (denylists locais da colheita, nunca copiadas para repo).
+  - **Verbos novos do script:** `triage`, `held`, `hold`, `approve`, `discard` (`rw_auto.py`),
+    `harvest`, `prepare`, `seal` (`rw_store.py`) e `publish` (`rw_gate.py`). O verbo
+    `/retrofit-watch:retrofit-watch segurados` lista os itens à espera do dono. O aviso de startup diz
+    quantos estão segurados, sem fim registrado, ou com a cópia instalada atrás. Nada é apagado: o ramo e
+    o worktree ficam até a `git-housekeeping`.
+  - **Python:** a porta extrai um tar com `filter="data"`. Ela precisa do Python 3.12, ou de uma versão
+    com o filtro `data` do `tarfile` (PEP 706). Medido nesta máquina: Python 3.12.3,
+    `hasattr(tarfile, 'data_filter')` é `True`. A documentação do `tarfile` diz só que o filtro pode ter
+    *backport* em versões anteriores, sem listar quais: por isso a entrada não cita números de *backport*.
+  - **Testes:** a suíte do plugin tem 319 testes (54 da 0.3.7, todos lá e passando), a do
+    `retrofit-skill` (`tests/test_modo_autonomo.py`) tem 9, e a da raiz tem 154 (80 da linha de base,
+    3 pulados). Os testes novos desta entrada, em `tests/test_auto_docs.py`, prendem os quatro lugares da
+    versão (`0.4.0` ou maior, porque a guarda `testes` roda esta suíte em todo retrofit), os verbos no
+    `--help`, os modos e o `segurados` no README e a forma do `--auto` igual nos dois plugins.
+
 ## [0.3.7] — 2026-11-05
 
 ### Apelidos de projeto saem do texto

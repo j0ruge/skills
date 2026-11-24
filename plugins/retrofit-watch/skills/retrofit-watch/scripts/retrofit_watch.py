@@ -23,8 +23,15 @@ Controle por ambiente:
   RETROFIT_WATCH=off     desliga
   RETROFIT_WATCH=force   pede a retro mesmo em sessão desassistida (testes com claude -p)
 Config opcional em ~/.claude/retrofit-watch.json: owners, include, exclude, deny_roots, kits,
-unattended ("queue", o padrão, ou "off"). O modo autônomo (rw_auto.py) lê mode ("manual", o
-padrão, "auto" ou "auto-dry"), manual, auto_limits, harvest_roots, private_sources e store.
+unattended ("queue", o padrão, ou "off"). O modo autônomo (rw_auto.py) lê estas chaves:
+  mode              "manual" (o padrão), "auto" ou "auto-dry" (faz tudo e para na porta, sem push)
+  manual            plugins ou skills que ficam sempre no modo manual
+  store             o clone de trabalho da loja; sem ela, o "auto" não vale (motivo sem-loja)
+  auto_limits       os tetos, padrão {"per_skill": 2, "per_session": 3}
+  harvest_roots     onde a colheita procura repos git, padrão ["~/repos"], profundidade 2
+  private_sources   denylists locais da colheita, lidas e nunca copiadas para repo
+O fluxo do modo autônomo está em references/modo-autonomo.md. A porta extrai um tar com o filtro
+"data" do tarfile: ela precisa do Python 3.12, ou de uma versão com esse filtro (PEP 706).
 
 Sessão desassistida (claude -p, fase do sdd run): nada volta para a sessão; com atrito, grava uma
 linha em <data>/queue.jsonl (fora de qualquer repo) para a retro numa sessão com o humano. O
@@ -1053,8 +1060,10 @@ def main(argv):
         print(__doc__)
         print("Uso: retrofit_watch.py stop|baseline|pending  (lê o JSON do hook no stdin)")
         print("     retrofit_watch.py queue [--done ID...]  (fila das sessões headless)")
-        for usage, _ in CLI_USAGE.values():
-            print(f"     retrofit_watch.py {usage}  (modo autônomo)")
+        for verb, (usage, arity) in CLI_USAGE.items():
+            where = ("a porta, rw_gate.py" if verb == "publish"
+                     else "a loja, rw_store.py" if arity is None else "rw_auto.py")
+            print(f"     retrofit_watch.py {usage}  (modo autônomo: {where})")
         return 0
     if argv and argv[0] == "queue":
         return cmd_queue(argv[1:], Context())
