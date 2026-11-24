@@ -10,10 +10,11 @@ Tipos de achado:
   colheita  forma candidata igual a um termo de --extra (um por linha, # comenta); quem quebra o termo
             em pedaços é a colheita, não este script
   email     endereço com @ e domínio com ponto
-  caminho   /home/<u>, /Users/<u>, <letra>:\\Users\\<u>, /mnt/<x>/<pasta>; isento o segmento que começa
-            com <, $, % ou {
-  segredo   os prefixos de credencial do criteria.md, e sequência alfanumérica de 32 ou mais com letra e
-            dígito (hexadecimal de 40 passa: é sha de commit)
+  caminho   /home/<u>, /Users/<u>, <letra>:\\Users\\<u> (sem caixa, com a barra escapada ou não),
+            /mnt/<x>/<pasta>; isento o segmento que começa com <, $, % ou {
+  segredo   os prefixos de credencial do criteria.md, connection string com usuário e senha antes do @,
+            e sequência alfanumérica de 32 ou mais com letra e dígito (hexadecimal de 40 passa: é sha
+            de commit)
 
 A lista de públicos (scripts/public-names.txt) isenta lista, colheita, email e o segmento de caminho.
 Nunca isenta segredo. O arquivo private-names.sha256 é isento só de segredo, porque é feito de hashes.
@@ -27,6 +28,7 @@ Uso (da raiz ou de qualquer pasta):
 import argparse
 import importlib.util
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -47,13 +49,15 @@ _SEGMENTO = r'([^/\\\s"\'`)\]]+)'
 CAMINHOS = [
     re.compile(r'(?<![\w.])/home/' + _SEGMENTO),
     re.compile(r'(?<![\w.])/Users/' + _SEGMENTO),
-    re.compile(r'(?<![A-Za-z])[A-Za-z]:\\Users\\' + _SEGMENTO),
+    re.compile(r'(?<![A-Za-z])[A-Za-z]:\\+[Uu][Ss][Ee][Rr][Ss]\\+' + _SEGMENTO),
     re.compile(r'(?<![\w.])/mnt/[^/\s]+/' + _SEGMENTO),
 ]
 PLACEHOLDER = ('<', '$', '%', '{')
 _FRONTEIRA = r'(?<![A-Za-z0-9_-])'
 PREFIXOS = re.compile(_FRONTEIRA + r'(?:sk-|ghp_|xox[bpars]-|AKIA)[A-Za-z0-9_-]{8,}')
 CABECALHO_HTTP = re.compile(_FRONTEIRA + r'(?:Bearer|Basic) (\S{16,})')
+CONEXAO = re.compile(r'(?<![A-Za-z0-9+.-])(?:postgres|postgresql|mysql|mongodb|mongodb\+srv|redis|rediss|amqp|amqps|https?)'
+                     r'://[^\s/:@]+:[^\s/@]+@')
 LONGA = re.compile(r'(?<![A-Za-z0-9])[A-Za-z0-9]{32,}(?![A-Za-z0-9])')
 SHA_DE_COMMIT = re.compile(r'[0-9a-fA-F]{40}')
 
@@ -68,7 +72,15 @@ def carregar_publicos(lista=PUBLICOS):
 
 
 def _git(repo, *args):
-    return subprocess.run(['git', '-C', str(repo), *args], capture_output=True, check=True).stdout.decode('utf-8', 'replace')
+    git = shutil.which('git')
+    if git is None:
+        raise FileNotFoundError('git nao encontrado no PATH')
+    return subprocess.run([git, '-C', str(repo), *args], capture_output=True, check=True).stdout.decode('utf-8', 'replace')
+
+
+def _dizer(texto):
+    """Imprime em ASCII: o stdout do Windows é cp1252, e uma mensagem de erro com acento não pode derrubar o portão."""
+    print(texto.encode('ascii', 'backslashreplace').decode('ascii'))
 
 
 _ESCAPES = {'a': 7, 'b': 8, 't': 9, 'n': 10, 'v': 11, 'f': 12, 'r': 13, '"': 34, '\\': 92}
@@ -110,18 +122,24 @@ def _destino(alvo):
 def linhas_novas(repo, base):
     """[(onde, linha, texto)]: as linhas acrescentadas desde a base, o caminho de cada arquivo novo e as mensagens."""
     novas = []
-    for rel in _git(repo, '-c', 'core.quotePath=false', 'diff', '--no-renames', '--name-only',
+    for rel in _git(repo, '-c', 'core.quotePath=false', 'diff', '--no-renames', '--no-relative', '--name-only',
                     '--diff-filter=A', '-z', f'{base}...HEAD').split('\0'):
         if rel:
             novas.append((rel, 0, rel))
-    onde, numero = None, 0
-    diff = _git(repo, '-c', 'core.quotePath=false', 'diff', '-U0', '--no-renames', '--no-color', f'{base}...HEAD')
+    onde, numero, em_cabecalho = None, 0, False
+    # quotePath=false de propósito, como defesa em profundidade: o _destino já desfaz o nome citado.
+    # As outras flags tiram do alcance do ramo e do ambiente o que muda a saída: atributo (-diff, binary,
+    # textconv), diff externo, prefixo, cor e diff.relative.
+    diff = _git(repo, '-c', 'core.quotePath=false', 'diff', '-U0', '--no-renames', '--text', '--no-ext-diff',
+                '--no-textconv', '--src-prefix=a/', '--dst-prefix=b/', '--no-color', '--no-relative',
+                f'{base}...HEAD')
     for linha in diff.split('\n'):
         if linha.startswith('diff --git '):
-            onde = None
-        elif linha.startswith('+++ '):
+            onde, em_cabecalho = None, True
+        elif em_cabecalho and linha.startswith('+++ '):
             onde = _destino(linha[4:])
         elif linha.startswith('@@'):
+            em_cabecalho = False
             m = re.match(r'@@ -\S+ \+(\d+)', linha)
             numero = int(m.group(1)) if m else 0
         elif linha.startswith('+') and onde is not None:
@@ -136,6 +154,7 @@ def linhas_novas(repo, base):
 def _segredos(texto):
     """Os trechos com forma de segredo. Uma sequência longa dentro de um prefixo já achado não conta de novo."""
     achados = [m.span() for m in PREFIXOS.finditer(texto)]
+    achados += [m.span() for m in CONEXAO.finditer(texto)]
     for m in CABECALHO_HTTP.finditer(texto):
         if re.search(r'[0-9]', m.group(1)):
             achados.append(m.span())
@@ -235,14 +254,18 @@ def main(argv=None):
             print('--camada1 exige --base REF')
             return 2
         hashes = cpn.carregar()
+        publicos = carregar_publicos()
         extras = set().union(*(_ler_extra(a) for a in args.extra)) if args.extra else set()
     except (OSError, ValueError) as exc:
-        print(f'lista inutilizavel: {exc}')
+        _dizer(f'lista inutilizavel: {exc}')
         return 2
     try:
-        achados = camada1(args.repo, args.base, extras=extras, hashes=hashes)
+        achados = camada1(args.repo, args.base, extras=extras, hashes=hashes, publicos=publicos)
     except subprocess.CalledProcessError as exc:
-        print(f'git falhou: {exc.stderr.decode("utf-8", "replace").strip()}')
+        _dizer(f'git falhou: {exc.stderr.decode("utf-8", "replace").strip()}')
+        return 2
+    except OSError as exc:
+        _dizer(f'git inutilizavel: {exc}')
         return 2
     for onde, numero, tipo, trecho in achados:
         print(f'{ascii(onde)[1:-1]}:{numero}: {tipo} "{ascii(trecho)[1:-1]}"')

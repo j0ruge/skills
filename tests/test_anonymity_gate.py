@@ -140,7 +140,9 @@ class Padroes(Base):
     def test_caminho_com_usuario_e_achado(self):
         usuario = 'ful' + 'ano'
         for forma in (f'/home/{usuario}/x', f'/Users/{usuario}/x',
-                      f'C:{BARRA}Users{BARRA}{usuario}{BARRA}x', f'/mnt/d/{usuario}/x'):
+                      f'C:{BARRA}Users{BARRA}{usuario}{BARRA}x', f'/mnt/d/{usuario}/x',
+                      f'C:{BARRA * 2}Users{BARRA * 2}{usuario}{BARRA * 2}x',
+                      f'c:{BARRA}users{BARRA}{usuario}{BARRA}x'):
             with self.subTest(forma=forma):
                 self.setUp()
                 self.assertEqual(self.linha(f'em {forma} rodou'), [('doc.md', 'caminho')])
@@ -163,7 +165,10 @@ class Padroes(Base):
         casos = ['sk' + '-' + corpo, 'gh' + 'p_' + corpo, 'xox' + 'b-' + corpo, 'xox' + 's-' + corpo,
                  'AK' + 'IA' + corpo.upper(), 'Bear' + 'er ' + corpo + 'ghij', 'Bas' + 'ic ' + corpo + 'ghij',
                  hashlib.sha256(b'x').hexdigest(), letras_digitos]
+        casos += [f'{esquema}://' + 'usu' + ':' + 'senha9' + '@' + 'localhost:5432/db'
+                  for esquema in ('postgres', 'mysql', 'mongodb', 'redis', 'amqp', 'https')]
         self.assertEqual(len(letras_digitos), 33)
+        self.assertEqual(len(corpo + 'ghij'), 16)
         for caso in casos:
             with self.subTest(caso=caso):
                 self.setUp()
@@ -176,7 +181,10 @@ class Padroes(Base):
         casos = [sha40[:7], sha40, 'abcdef' * 6, 'Bear' + 'er ' + 'abcdef' * 6,
                  'docs/superpowers/plans/2026-11-23-' + 'retrofit-watch-modo-autonomo.md',
                  'Bas' + 'ic authentication', 'task' + '-planning', 'xxx-' + 'sk' + '-' + 'abcd1234efgh',
-                 'ma' + 'sk' + '-' + 'abcd1234efgh']
+                 'ma' + 'sk' + '-' + 'abcd1234efgh',
+                 'Bear' + 'er ' + 'a1b2c3d4e5f6g7h', '1' * 33, 'x' + 'Bear' + 'er ' + 'a1b2c3d4e5f6g7h8',
+                 'postgres' + '://localhost/db', 'https' + '://example.com/x']
+        self.assertEqual(len('a1b2c3d4e5f6g7h'), 15)
         for caso in casos:
             with self.subTest(caso=caso):
                 self.setUp()
@@ -187,6 +195,72 @@ class Padroes(Base):
         self.base({lista: '# cabecalho\n'})
         self.commit({lista: f'# cabecalho\n{hashlib.sha256(b"y").hexdigest()}\n{EMAIL}\n'})
         self.assertEqual(self.tipos(), [(lista, 'email')])
+
+
+class DiffBlindado(Base):
+    """Nem uma linha de conteúdo, nem o ramo (atributo), nem o ambiente ou a config mudam o que a camada 1 lê."""
+
+    def config(self, *pares):
+        for chave, valor in pares:
+            self.git('config', chave, valor)
+
+    def test_linha_de_conteudo_com_mais_mais_nao_vira_cabecalho(self):
+        token = 'a1' * 21
+        for primeira, segunda, esperado in (
+                ('++ ' + '/dev/null', f'fale com {EMAIL}', [('doc.md', 3, 'email')]),
+                ('++ ' + 'b/scripts/private-names.sha256', f'valor {token}', [('doc.md', 3, 'segredo')]),
+                ('++ ' + EMAIL, 'limpo', [('doc.md', 2, 'email')])):
+            with self.subTest(primeira=primeira):
+                self.setUp()
+                self.base({'doc.md': 'um\n'})
+                self.commit({'doc.md': f'um\n{primeira}\n{segunda}\n'})
+                self.assertEqual([a[:3] for a in self.camada1()], esperado)
+
+    def test_atributo_do_ramo_nao_cega(self):
+        for atributo in ('*.md -diff', '*.md binary'):
+            with self.subTest(atributo=atributo):
+                self.setUp()
+                self.base({'doc.md': 'um\n'})
+                self.commit({'.gitattributes': atributo + '\n', 'doc.md': f'um\nfale com {EMAIL}\n'})
+                self.assertEqual([a[:3] for a in self.camada1()], [('doc.md', 2, 'email')])
+
+    def test_textconv_nao_cega(self):
+        self.config(('diff.conv.textconv', 'true'))
+        self.base({'doc.md': 'um\n'})
+        self.commit({'.gitattributes': '*.md diff=conv\n', 'doc.md': f'um\nfale com {EMAIL}\n'})
+        self.assertEqual([a[:3] for a in self.camada1()], [('doc.md', 2, 'email')])
+
+    def test_diff_externo_nao_cega(self):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\nfale com {EMAIL}\n'})
+        self.config(('diff.external', 'true'))
+        self.assertEqual([a[:3] for a in self.camada1()], [('doc.md', 2, 'email')])
+        self.git('config', '--unset', 'diff.external')
+        self.env['GIT_EXTERNAL_DIFF'] = 'true'
+        r = subprocess.run([sys.executable, str(SCRIPT), '--camada1', '--base', 'base', '--repo', str(self.repo)],
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', env=self.env)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn('doc.md:2: email "', r.stdout)
+
+    def test_prefixo_da_config_nao_muda_o_caminho(self):
+        self.config(('diff.noprefix', 'true'))
+        self.base({'outro.md': 'um\n'})
+        self.commit({'b/doc.md': f'fale com {EMAIL}\n'})
+        self.assertEqual([a[:3] for a in self.camada1()], [('b/doc.md', 1, 'email')])
+
+    def test_cor_da_config_nao_cega(self):
+        self.config(('color.diff', 'always'), ('color.ui', 'always'))
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\nfale com {EMAIL}\n'})
+        self.assertEqual([a[:3] for a in self.camada1()], [('doc.md', 2, 'email')])
+
+    def test_diff_relative_da_config_nao_cega(self):
+        self.config(('diff.relative', 'true'))
+        rel = f'notas/{NOME}.md'
+        self.base({'sub/um.md': 'um\n'})
+        self.commit({rel: f'fale com {EMAIL}\n'})
+        achados = ag.camada1(self.repo / 'sub', 'base', hashes=self.hashes, publicos=set())
+        self.assertEqual([a[:3] for a in achados], [(rel, 0, 'lista'), (rel, 1, 'email')])
 
 
 class ListasReais(unittest.TestCase):
@@ -207,8 +281,8 @@ class LinhaDeComando(Base):
         return subprocess.run([sys.executable, str(script), *args], capture_output=True, text=True,
                               encoding='utf-8', errors='replace', env=self.env)
 
-    def copia(self, com_lista):
-        pasta = self.dir / 'copia/scripts'
+    def copia(self, com_lista, nome='copia'):
+        pasta = self.dir / nome / 'scripts'
         pasta.mkdir(parents=True)
         for nome in ('anonymity-gate.py', 'check-private-names.py'):
             shutil.copy(RAIZ / 'scripts' / nome, pasta)
@@ -228,6 +302,34 @@ class LinhaDeComando(Base):
         pasta = self.copia(com_lista=False)
         r = self.rodar('--camada1', '--base', 'base', '--repo', str(self.repo), script=pasta / 'anonymity-gate.py')
         self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('lista inutilizavel', r.stdout)
+
+    def test_sem_git_sai_2_com_mensagem(self):
+        self.commit({'doc.md': 'limpo\n'})
+        vazio = self.dir / 'sem-git'
+        vazio.mkdir()
+        self.env['PATH'] = str(vazio)
+        r = self.rodar('--camada1', '--base', 'base', '--repo', str(self.repo))
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('git nao encontrado', r.stdout)
+        self.assertNotIn('Traceback', r.stderr)
+
+    def test_publicos_fora_de_utf8_sai_2_com_mensagem(self):
+        self.commit({'doc.md': 'limpo\n'})
+        pasta = self.copia(com_lista=True)
+        (pasta / 'public-names.txt').write_bytes(b'nome \xe7\xe3o\n')
+        r = self.rodar('--camada1', '--base', 'base', '--repo', str(self.repo), script=pasta / 'anonymity-gate.py')
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('lista inutilizavel', r.stdout)
+        self.assertNotIn('Traceback', r.stderr)
+
+    def test_mensagem_de_erro_e_ascii(self):
+        self.commit({'doc.md': 'limpo\n'})
+        pasta = self.copia(com_lista=False, nome='cópia')
+        r = self.rodar('--camada1', '--base', 'base', '--repo', str(self.repo), script=pasta / 'anonymity-gate.py')
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('lista inutilizavel', r.stdout)
+        self.assertTrue(r.stdout.isascii(), r.stdout)
 
     def test_extra_da_linha_de_comando(self):
         nome = 'cafe' + '_tutor'
