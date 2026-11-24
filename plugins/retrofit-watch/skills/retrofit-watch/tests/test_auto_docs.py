@@ -246,7 +246,9 @@ class FixRoundTest(unittest.TestCase):
 
     def test_behind_notice_says_where_the_lote_is(self):
         text = flat(section(read(REFERENCE), "O aviso de startup"))
-        self.assertIn("última linha `publicado` de cada plugin em `<dados>/autonomo.jsonl`", text)
+        self.assertIn("linha `publicado` do lote mais recente de cada plugin em `<dados>/autonomo.jsonl`", text)
+        # Final-F3: o aviso conta só a última publicação de cada plugin, como o `install_behind`.
+        self.assertIn("o aviso conta só a última publicação de cada plugin", text)
 
 
 class ReviewerTest(unittest.TestCase):
