@@ -107,6 +107,9 @@ Rode o comando indicado e deixe o `/retrofit-skill` conduzir. Ele escolhe o modo
 de auditoria, mostra a proposta e pede confirmação antes de editar, commitar e dar push. O
 `retrofit-watch` não pede outra retro daquela skill nesta sessão.
 
+No modo autônomo não há "sim": o fluxo não pergunta nada ao dono e termina na porta, que publica ou segura.
+Siga a referência do modo autônomo, que a seção *Modo autônomo* da `SKILL.md` aponta, em vez desta e da 5.
+
 ## 7. Quando quem trabalhou foi um kit (`sdd`)
 
 O kit não é skill: a lição vira **achado no `TODO.md` do repo do kit**, para o laço do próprio kit

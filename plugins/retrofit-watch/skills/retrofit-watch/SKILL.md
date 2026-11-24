@@ -13,11 +13,13 @@ metadata:
 Sem este plugin, a melhoria de uma skill depende de alguém lembrar, no fim da sessão, de
 pedir a análise e o `/retrofit-skill`. Com ele, um **Stop hook** percebe que uma skill nossa
 trabalhou e pede ao Claude a retro dela ali mesmo, enquanto a evidência ainda está no contexto.
-Se houver lição, o Claude pergunta se roda o `/retrofit-skill:retrofit-skill <alvo>`, e basta um
-"sim".
+Há dois modos. No modo manual, o padrão, o Claude pergunta se roda o
+`/retrofit-skill:retrofit-skill <alvo>` quando há lição, e basta um "sim". No modo autônomo, um
+revisor independente confere a lição, um executor faz o retrofit num worktree, e uma porta
+determinística publica ou segura o resultado (seção *Modo autônomo*).
 
-O hook não edita nada, não commita e não roda o retrofit. Ele só pede a retro. O retrofit
-continua exigindo a sua confirmação.
+O hook não edita nada, não commita e não roda o retrofit. Ele só pede a retro. No modo manual, o
+retrofit continua exigindo a sua confirmação.
 
 ## Como o hook decide
 
@@ -96,6 +98,30 @@ onde procurar a evidência no transcript e quando tirar a entrada da fila (`queu
 Rodado à mão, o `queue` acha sozinho a pasta `~/.claude/plugins/data/retrofit-watch-<loja>`; sem
 ela, com duas, ou com um id que não está na fila, sai 1 e diz por quê. Até a 0.3.3 respondia `[]`.
 
+## Modo autônomo
+
+Com `"mode": "auto"` e a chave `store` na config, o hook pede a retro no modo autônomo. O pedido
+começa com `[modo autônomo: …]` e dá os caminhos absolutos do `licoes.json` e do script.
+
+Leia `references/modo-autonomo.md` inteira ao receber um pedido autônomo do hook ou o verbo
+`/retrofit-watch:retrofit-watch segurados`, antes do primeiro passo. Ela traz os formatos, os
+despachos do revisor e do executor, os verbos do script, a tabela de motivos e o que nunca fazer.
+
+Em resumo: você grava as lições; o revisor (`retrofit-watch:retrofit-reviewer`) as confere sem o
+contexto da sessão; a triagem separa os lotes; um executor por lote roda o `/retrofit-skill` no modo
+`--auto`, num worktree próprio; o revisor confere o diff; e a porta (`publish`) publica ou segura.
+Ninguém dá push fora da porta.
+
+Nunca rode `approve`, `--publico-add` nem `--add` sem a palavra do dono nesta conversa.
+
+**Segurados:** `/retrofit-watch:retrofit-watch segurados` lista os retrofits à espera do dono, com o
+motivo e o ramo. Para cada um, o dono libera ou descarta (passo 6 da referência). Nada é apagado: o
+ramo e o worktree ficam até a `git-housekeeping`, com o "sim" do dono.
+
+O registro fica em `${CLAUDE_PLUGIN_DATA}/autonomo.jsonl`, uma linha por lote ou por lição sem ramo.
+O aviso de startup diz quantos itens estão segurados, sem registro de fim ou com a cópia instalada
+atrás.
+
 ## Controle
 
 | Quer | Como |
@@ -105,6 +131,12 @@ ela, com duas, ou com um id que não está na fila, sai 1 e diz por quê. Até a
 | sessão desassistida calada, sem fila | `"unattended": "off"` no `~/.claude/retrofit-watch.json` |
 | mudar donos (`owners` substitui a lista padrão: repita `j0ruge` e `chewiesoft`), incluir ou excluir skills | `~/.claude/retrofit-watch.json`: `{"owners": [...], "include": ["skill"], "exclude": ["plugin-ou-skill"], "deny_roots": ["~/x"]}` |
 | mudar os kits vigiados | `"kits": ["sdd"]` no mesmo arquivo (`[]` desliga) |
+| escolher o modo | `"mode"`: `manual` (o padrão), `auto`, ou `auto-dry` (faz tudo e para na porta, sem push) |
+| deixar plugins ou skills sempre no modo manual | `"manual": ["plugin-ou-skill"]` |
+| dar à colheita denylists locais | `"private_sources": ["~/x/nomes.txt"]`, lidas e nunca copiadas para repo |
+| mudar onde a colheita procura repos git | `"harvest_roots"`, padrão `["~/repos"]`, profundidade 2 |
+| mudar os tetos do modo autônomo | `"auto_limits": {"per_skill": 2, "per_session": 3}` (o padrão) |
+| apontar o clone de trabalho da loja | `"store": "~/repos/<loja>"`; sem ela, o `auto` não vale (motivo `sem-loja`) |
 | ver o que aconteceu | `${CLAUDE_PLUGIN_DATA}/metrics.jsonl` (resultado de cada retro: `none`/`lessons`) e `errors.log` |
 
 O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado depois de
@@ -140,11 +172,25 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
 - **Skill local fora do git** (por exemplo `~/.claude/skills/<x>` sem repo) é ignorada, porque
   o retrofit lean commita no repo da skill. Versione a skill, ou ponha no `include`, sabendo
   que o retrofit não terá onde commitar.
+- **O modo autônomo só vale com o modo de permissão `bypassPermissions` e com `"entrypoint":"cli"`
+  no transcript.** Fora do bypass, o fluxo pediria permissão para gravar fora do projeto, criar o
+  worktree e fazer o push, e um subagente pode não conseguir pedir. Em outro modo, ou com outro
+  `entrypoint` (as fases headless do `sdd run` dizem `sdk-cli`), o hook manda o texto do modo manual.
+- **A retro sob demanda continua manual.** `/retrofit-watch:retrofit-watch <skill>` nunca abre um
+  pedido autônomo: só o Stop hook abre.
+- **O critério da v2 só conta um revert quando o commit tem a linha `This reverts commit <sha>`.** Um
+  revert feito à mão, sem essa linha, não aparece na conta.
 
 ## Arquivos
 
 | Arquivo | Para quê |
 |---|---|
 | `references/criteria.md` | ao fazer a retro: critérios, triagem, formato e exemplos |
-| `scripts/retrofit_watch.py` | o hook (`stop`, `baseline`, `pending`) e a fila (`queue [--done ID...]`). O plugin o registra no `hooks/hooks.json` da raiz, que o formato de plugin exige |
+| `scripts/retrofit_watch.py` | o hook (`stop`, `baseline`, `pending`) e a fila (`queue [--done ID...]`), e a entrada dos verbos do modo autônomo. O plugin o registra no `hooks/hooks.json` da raiz, que o formato de plugin exige |
+| `references/modo-autonomo.md` | no pedido autônomo e no verbo `segurados`: o fluxo, os formatos e os motivos |
+| `scripts/rw_auto.py` | o modo autônomo: o pedido do hook, a triagem, o registro, os verbos e o aviso de startup |
+| `scripts/rw_store.py` | a colheita (`harvest`), o worktree do lote (`prepare`), o selo (`seal`) e o critério da v2 |
+| `scripts/rw_gate.py` | a porta de publicação (`publish`): as guardas, o push e a instalação |
+| `agents/retrofit-reviewer.md`, na raiz do plugin | o revisor independente, nas duas passadas |
 | `tests/test_retrofit_watch.py` | os testes: classificação, gatilho, kit e fila (`python3 tests/test_retrofit_watch.py`) |
+| `tests/test_auto_*.py`, `tests/fixture_store.py` | os testes do modo autônomo; a loja fixture tem um `origin` `--bare` e um clone, num diretório temporário |
