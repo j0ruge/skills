@@ -1,4 +1,4 @@
-"""Testes da porta de publicação (rw_gate.py): as 21 guardas de `refuse`, o `hold` e o `publish`.
+"""Testes da porta de publicação (rw_gate.py): as 22 guardas de `refuse`, o `hold` e o `publish`.
 
 Rodar: python3 plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_gate.py
 Cada teste parte de `clean_retrofit`: um retrofit limpo do `demo`, com veredito, selo e anonimato.json,
@@ -385,6 +385,47 @@ class GateTest(GateHarness, unittest.TestCase):
         self.assertEqual(self.w.git(wt3, "log", "-1", "--format=%(trailers:key=Retrofit-Mode,valueonly)").split(),
                          ["autonomous", "autonomous"])
         self.assertRefuses(rid3, "sem-marca")
+
+    # --- guarda 7b: a versão sobe --------------------------------------------------------------
+
+    def bump_origin(self, version):
+        """O `demo` do `origin` vai a `version` nos quatro lugares, sem lição nova."""
+        def edit(root):
+            self.w.retrofit(root, files={}, version=version, trailer=None)
+        other = self.w.other
+        self.w.git(other, "fetch", "-q", "origin")
+        self.w.git(other, "reset", "-q", "--hard", "origin/main")
+        edit(other)
+        self.w.git(other, "push", "-q", "origin", "HEAD:main")
+        self.base = self.w.origin_main()
+
+    def test_same_or_lower_version_refuses(self):
+        # Final-F5: com a versão de antes, o `claude plugin update` não traz nada, e o lote fica atrás.
+        for version in (fs.VERSION, "0.9.0"):
+            with self.subTest(version=version):
+                rid, wt = self.clean_retrofit(version=version)
+                got = self.assertRefuses(rid, "sem-bump")
+                self.assertIn(fs.VERSION, got[1])
+                # A aprovação do dono não substitui o `sem-bump`.
+                self.approve(rid, "demo", "sem-bump", "teto")
+                self.assertRefuses(rid, "sem-bump")
+
+    def test_version_compares_by_number(self):
+        # Final-F5: `1.10.0` sobe sobre `1.9.0`; comparados como texto, não subiria.
+        self.bump_origin("1.9.0")
+        rid, wt = self.clean_retrofit(version="1.10.0")
+        self.assertIsNone(self.refuse(rid))
+
+    def test_new_plugin_passes_the_bump_guard(self):
+        # Final-F5: um plugin sem plugin.json no `origin/main` é novo, e não tem versão de antes.
+        rid, wt = self.clean_retrofit()
+        porta = rg._Porta(self.ctx(), rid, "demo", [])
+        real = rg._manifest_version
+        with mock.patch.object(rg, "_manifest_version",
+                               side_effect=lambda p, ref: rg.ABSENT if ref == rw_store.BASE_REF else real(p, ref)):
+            self.assertIsNone(rg._g_bump(porta))
+        self.assertIsNone(rg._g_bump(porta))
+        self.assertEqual(real(porta, rw_store.BASE_REF), fs.VERSION)
 
     # --- guardas 8 a 10: veredito e lições -----------------------------------------------------
 

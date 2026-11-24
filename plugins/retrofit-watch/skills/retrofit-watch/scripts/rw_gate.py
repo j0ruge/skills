@@ -30,8 +30,8 @@ OVERRIDABLE = ("sem-veredito", "nao-publicavel", "muda-description", "regra-repe
                "teto", "auto-dry")
 # Os que viram linha `erro`, não `segurado`: a porta não chegou a decidir.
 ERRORS = ("fetch", "push", "trava", "interno")
-GATE_REASONS = ("escopo", "arvore-suja", "rebase", "coautoria", "sem-marca", "sem-veredito", "fora-do-pedido",
-                "nao-publicavel", "muda-description", "nome-privado", "sem-anonimato", "revisao-desatualizada",
+GATE_REASONS = ("escopo", "arvore-suja", "rebase", "coautoria", "sem-marca", "sem-bump", "sem-veredito",
+                "fora-do-pedido", "nao-publicavel", "muda-description", "nome-privado", "sem-anonimato", "revisao-desatualizada",
                 "termo-nao-publico", "regra-repetida", "diff-alem-das-licoes", "testes", "validate-versions",
                 "auditoria", "fase-de-auditoria", "teto", "auto-dry") + ERRORS
 # Os motivos de nome: só o dono os resolve, ensinando o portão (O7). A aprovação com um deles libera a
@@ -53,6 +53,7 @@ AUDIT_FLAGS = ("--format", "json", "--claims", "--desc-budget", "0", "--external
 MARKER = "Retrofit-Mode"
 CO_AUTHOR = re.compile(r"(?im)^[ \t]*co-authored-by[ \t]*:")
 FRONTMATTER_VERSION = re.compile(r"\s*version\s*:.*")
+VERSION_FORM = re.compile(r"([0-9]+)\.([0-9]+)\.([0-9]+)")
 DESCRIPTION_SUFFIX = "__description"
 DETAIL_MAX = 1500
 
@@ -267,6 +268,50 @@ def _g_marker(p):
     allowed = {"autonomous"} | ({"autonomous-approved"} if p.approval is not None else set())
     if len(values) != 1 or values[0] not in allowed:
         return "sem-marca", f"{MARKER} esperado {sorted(allowed)}, achado {values}"
+    return None
+
+
+def _show(p, ref, path):
+    """O texto de `path` na árvore de `ref`, ou None quando ele não está lá."""
+    rc, out = rw_store.run(["git", "-C", p.worktree, "show", f"{ref}:{path}"], env=p.neutral)
+    return out if rc == 0 else None
+
+
+ABSENT = object()
+
+
+def _manifest_version(p, ref):
+    """A `version` do plugin.json do plugin em `ref`: ABSENT sem o arquivo, None com ele ilegível."""
+    text = _show(p, ref, f"plugins/{p.plugin}/.claude-plugin/plugin.json")
+    if text is None:
+        return ABSENT
+    try:
+        data = json.loads(text)
+    except ValueError:
+        return None
+    version = data.get("version") if isinstance(data, dict) else None
+    return version if isinstance(version, str) else None
+
+
+def _version_parts(version):
+    m = VERSION_FORM.fullmatch(version) if isinstance(version, str) else None
+    return tuple(int(x) for x in m.groups()) if m else None
+
+
+def _g_bump(p):
+    """7b. A versão do plugin.json no HEAD é maior que a do `origin/main`, por número (Final-F5). Sem ela,
+    o `claude plugin update` não traz nada, e o lote fica atrás. Um plugin novo, sem plugin.json no
+    `origin/main`, passa."""
+    base = _manifest_version(p, rw_store.BASE_REF)
+    if base is ABSENT:
+        return None
+    head = _manifest_version(p, "HEAD")
+    shown = "ausente" if head is ABSENT else head
+    bt, ht = _version_parts(base), _version_parts(head)
+    if bt is None or ht is None:
+        return "sem-bump", f"versao fora de X.Y.Z: {base!r} no {rw_store.BASE_REF}, {shown!r} no HEAD"
+    if ht <= bt:
+        return "sem-bump", f"a versao do plugin.json nao sobe: {base} no {rw_store.BASE_REF}, {head} no HEAD"
     return None
 
 
@@ -567,6 +612,7 @@ GUARDS = (
     ("escopo", _g_scope),
     ("coautoria", _g_coauthor),
     ("sem-marca", _g_marker),
+    ("sem-bump", _g_bump),
     ("sem-veredito", _g_verdict),
     ("fora-do-pedido", _g_request),
     ("nao-publicavel", _g_publishable),

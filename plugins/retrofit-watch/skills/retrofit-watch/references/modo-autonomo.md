@@ -238,6 +238,7 @@ despacho do executor fora do passo 4, descrito no fim dele.
 | `rebase` | o rebase sobre o `origin/main` deu conflito | não | `prepare --redo` e o passo 4 |
 | `coautoria` | o commit tem `Co-Authored-By` | não | o executor emenda a mensagem sem o trailer e sela de novo; o revisor refaz a segunda passada; `publish` |
 | `sem-marca` | falta o trailer `Retrofit-Mode: autonomous` | não | o executor emenda a mensagem com o trailer e sela de novo; o revisor refaz a segunda passada; `publish` |
+| `sem-bump` | a versão do `plugin.json` no commit não é maior que a do `origin/main` (comparada por número, `X.Y.Z`) | não | o executor sobe a versão nos quatro lugares, emenda e sela de novo; o revisor refaz a segunda passada; `publish` |
 | `nao-publicavel` | uma lição do commit não sai como publicável no veredito | sim | `approve` e `publish` |
 | `muda-description` | o lote muda a `description`: o ramo está pronto | sim | `approve` e `publish` |
 | `nome-privado` | a camada 1 achou um nome, um e-mail, um caminho com usuário ou um segredo | não | o dono diz "privado" ou "público" (passo 6); um segredo sai do commit |
