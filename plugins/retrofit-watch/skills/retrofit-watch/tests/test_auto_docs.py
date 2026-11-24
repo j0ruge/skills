@@ -167,6 +167,18 @@ class FormatTest(unittest.TestCase):
             self.assertTrue(row[1] and row[3], f"`{code}` sem o que quer dizer ou sem a saída")
             self.assertEqual(row[2], "sim" if code in rw_gate.OVERRIDABLE else "não", code)
 
+    def test_scope_exit_for_unreadable_content_is_manual(self):
+        # CR-r1 #1: a guarda 5b segura com `escopo` sem saída pelo executor (a docstring do `_g_opaque`). A
+        # linha do `escopo` diz que, para o `.gitattributes` e o arquivo que as camadas não leem, a saída é do
+        # dono: o `/retrofit-skill` manual e o `discard` com `resolvido-manual`.
+        [row] = [row for row in table_rows(section(read(REFERENCE), "8.")) if row[0] == "`escopo`"]
+        self.assertIn("a saída é o /retrofit-skill manual", " ".join(rw_gate._g_opaque.__doc__.split()))
+        exit_text = row[3]
+        for needle in ("`.gitattributes`", "o que o ramo tira", "as camadas não leem", "a saída é do dono",
+                       "`/retrofit-skill` manual", "`discard` com `resolvido-manual`"):
+            with self.subTest(needle=needle):
+                self.assertIn(needle, exit_text)
+
 
 class RuleTest(unittest.TestCase):
 
