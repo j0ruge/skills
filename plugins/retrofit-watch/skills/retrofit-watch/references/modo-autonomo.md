@@ -240,7 +240,7 @@ despacho do executor fora do passo 4, descrito no fim dele.
 | `sem-marca` | falta o trailer `Retrofit-Mode: autonomous` | não | o executor emenda a mensagem com o trailer e sela de novo; o revisor refaz a segunda passada; `publish` |
 | `sem-bump` | a versão do `plugin.json` no commit não é maior que a do `origin/main` (comparada por número, `X.Y.Z`) | não | o executor sobe a versão nos quatro lugares, emenda e sela de novo; o revisor refaz a segunda passada; `publish` |
 | `nao-publicavel` | uma lição do commit não sai como publicável no veredito | sim | `approve` e `publish` |
-| `muda-description` | o lote muda a `description`: o ramo está pronto | sim | `approve` e `publish` |
+| `muda-description` | o lote `description` tem o ramo pronto, ou um lote `auto` muda a `description` (no `plugin.json`, no bloco do `marketplace.json` ou num `SKILL.md` do plugin, contra o `origin/main`, com ou sem a flag `muda_description`) | sim | `approve` e `publish` |
 | `nome-privado` | a camada 1 achou um nome, um e-mail, um caminho com usuário ou um segredo | não | o dono diz "privado" ou "público" (passo 6); um segredo sai do commit |
 | `sem-anonimato` | falta o `anonimato.json`, ou ele é inválido | não | o revisor refaz a segunda passada; `publish` |
 | `revisao-desatualizada` | o `patch` do `anonimato.json` não é o do commit | não | selar de novo, a segunda passada e `publish` |

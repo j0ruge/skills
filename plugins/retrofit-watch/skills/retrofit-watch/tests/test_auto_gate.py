@@ -500,6 +500,33 @@ class GateTest(GateHarness, unittest.TestCase):
                          (rw_store.branch_name(rid, lote), str(wt), self.w.git(wt, "rev-parse", "HEAD")))
         self.assertEqual(rw_auto.read_registry(self.ctx())[-1], line)
 
+    def test_auto_lote_that_changes_a_description_refuses(self):
+        # Final-F6: a guarda 10b compara a `description` do origin/main e do HEAD nos lugares que o
+        # check_release_sync.py confere, com ou sem a flag `muda_description` das lições.
+        old = fs._description("demo")
+        new = old.replace("Demo skill", "Demo skill, agora outra,")
+        places = {"plugins/demo/skills/demo/SKILL.md": "SKILL.md",
+                  "plugins/demo/.claude-plugin/plugin.json": "plugin.json",
+                  ".claude-plugin/marketplace.json": "marketplace.json"}
+        # Cada lugar sozinho, e os três juntos: assim o validate-versions.py passa, e só esta guarda segura.
+        cases = [[rel] for rel in places] + [list(places)]
+        for rels in cases:
+            with self.subTest(rels=rels):
+                def edit(wt, rels=rels):
+                    for rel in rels:
+                        path = wt / rel
+                        text = path.read_text(encoding="utf-8")
+                        self.assertEqual(text.count(old), 1, rel)
+                        path.write_text(text.replace(old, new), encoding="utf-8")
+                rid, wt = self.clean_retrofit(edit=edit)
+                got = self.assertRefuses(rid, "muda-description")
+                for rel in rels:
+                    self.assertIn(places[rel], got[1])
+                # O motivo continua substituível: com a aprovação, a porta passa desta guarda.
+                self.approve(rid, "demo", "muda-description")
+                again = self.refuse(rid)
+                self.assertTrue(again is None or again[0] != "muda-description", again)
+
     # --- guarda 11: a camada 1 -----------------------------------------------------------------
 
     def test_private_name_in_diff_refuses(self):

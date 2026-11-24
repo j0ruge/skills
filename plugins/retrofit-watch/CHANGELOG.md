@@ -22,7 +22,9 @@
     lote (`escopo`); sem `Co-Authored-By` (`coautoria`); o trailer `Retrofit-Mode: autonomous`
     (`sem-marca`); a versão do `plugin.json` maior que a do `origin/main`, comparada por número
     (`sem-bump`, que a aprovação do dono não substitui); o veredito do revisor (`sem-veredito`); a lição dentro do pedido (`fora-do-pedido`);
-    cada lição do commit publicável (`nao-publicavel`); a mudança da `description` (`muda-description`);
+    cada lição do commit publicável (`nao-publicavel`); a mudança da `description` (`muda-description`:
+    o lote `description`, e o lote `auto` que muda a `description` do `plugin.json`, do bloco do
+    `marketplace.json` ou de um `SKILL.md` contra o `origin/main`, com ou sem a flag);
     a camada 1 de nomes, e-mails, caminhos com usuário e segredos (`nome-privado`); o `anonimato.json`
     da segunda passada (`sem-anonimato`, `revisao-desatualizada`); cada termo novo `publico`
     (`termo-nao-publico`); as duas perguntas do diff (`regra-repetida`, `diff-alem-das-licoes`); os

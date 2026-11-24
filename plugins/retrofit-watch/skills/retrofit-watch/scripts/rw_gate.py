@@ -54,6 +54,8 @@ MARKER = "Retrofit-Mode"
 CO_AUTHOR = re.compile(r"(?im)^[ \t]*co-authored-by[ \t]*:")
 FRONTMATTER_VERSION = re.compile(r"\s*version\s*:.*")
 VERSION_FORM = re.compile(r"([0-9]+)\.([0-9]+)\.([0-9]+)")
+# A `description` do frontmatter de um SKILL.md, como o check_release_sync.py do retrofit-skill a lê.
+SKILL_DESCRIPTION = re.compile(r"^description:\s*(.*?)(?=\n[A-Za-z0-9_-]+:|\n---)", re.S | re.M)
 DESCRIPTION_SUFFIX = "__description"
 DETAIL_MAX = 1500
 
@@ -365,10 +367,53 @@ def _g_publishable(p):
     return None
 
 
+def _json_at(p, ref, path):
+    text = _show(p, ref, path)
+    if text is None:
+        return None
+    try:
+        return json.loads(text)
+    except ValueError:
+        return ILLEGIBLE
+
+
+ILLEGIBLE = "<ilegivel>"
+
+
+def _descriptions(p, ref):
+    """{lugar: description} do plugin em `ref`, nos lugares que o check_release_sync.py confere: o
+    plugin.json, o bloco do marketplace.json e o frontmatter de cada SKILL.md do plugin. Arquivo ausente
+    não entra; ilegível entra como ILLEGIBLE."""
+    out = {}
+    manifest = _json_at(p, ref, f"plugins/{p.plugin}/.claude-plugin/plugin.json")
+    if manifest is not None:
+        out["plugin.json"] = manifest.get("description") if isinstance(manifest, dict) else ILLEGIBLE
+    catalog = _json_at(p, ref, ".claude-plugin/marketplace.json")
+    if isinstance(catalog, dict) and isinstance(catalog.get("plugins"), list):
+        blocks = [e for e in catalog["plugins"] if isinstance(e, dict) and e.get("name") == p.plugin]
+        if blocks:
+            out["marketplace.json"] = [e.get("description") for e in blocks]
+    elif catalog is not None:
+        out["marketplace.json"] = ILLEGIBLE
+    listing = rw_store._git(["ls-tree", "-r", "-z", "--name-only", ref, "--", f"plugins/{p.plugin}/skills"],
+                            p.worktree, p.neutral, "description")
+    skill_md = re.compile(rf"plugins/{re.escape(p.plugin)}/skills/[^/]+/SKILL\.md")
+    for path in sorted(x for x in listing.split("\0") if skill_md.fullmatch(x)):
+        m = SKILL_DESCRIPTION.search(_show(p, ref, path) or "")
+        out[path] = m.group(1).strip().strip('"') if m else ILLEGIBLE
+    return out
+
+
 def _g_description(p):
-    """10b. O lote `description` não sai sozinho (D12): fica o ramo pronto."""
+    """10b. O lote `description` não sai sozinho (D12): fica o ramo pronto. Num lote `auto`, a
+    `description` do HEAD é a do `origin/main` em cada lugar, com ou sem a flag `muda_description` das
+    lições (Final-F6)."""
     if p.tipo == "description":
         return "muda-description", f"ramo pronto: {p.branch}"
+    before, after = _descriptions(p, rw_store.BASE_REF), _descriptions(p, "HEAD")
+    changed = sorted(k for k in set(before) | set(after) if before.get(k) != after.get(k))
+    if changed:
+        return "muda-description", _short("o lote auto muda a description em: " + ", ".join(changed))
     return None
 
 
