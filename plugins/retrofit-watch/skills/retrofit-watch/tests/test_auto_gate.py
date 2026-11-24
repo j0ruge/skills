@@ -879,8 +879,9 @@ class FixtureEffects(rg.Effects):
         dest.mkdir(parents=True, exist_ok=True)
         with tarfile.open(fileobj=io.BytesIO(raw)) as tar:
             tar.extractall(dest, filter="data")
+        # Como o cache real (medido, T9-r1-inuse): uma pasta `.in_use` com um arquivo por PID.
         (dest / ".in_use").mkdir(exist_ok=True)
-        (dest / ".in_use" / "sessao").write_text("1\n", encoding="utf-8")
+        (dest / ".in_use" / "1243").write_text("", encoding="utf-8")
         if self.after_copy:
             self.after_copy(dest)
         return True, "copiado"
@@ -939,7 +940,7 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
     def install_demo(self, scope="user"):
         """Põe o `demo` da loja no installed_plugins.json do HOME fixture, no escopo `scope`."""
         path = self.w.home / ".claude/plugins/installed_plugins.json"
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {"version": 2, "plugins": {}}
         data["plugins"][f"demo@{rw.MARKETPLACE}"] = [{"scope": scope, "installPath": str(self.w.tmp / "inst")}]
         path.write_text(json.dumps(data), encoding="utf-8")
 
@@ -1137,6 +1138,54 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
         self.assertNotIn("push", fx.calls)
         self.assertEqual([x["instalacao"] for x in self.lines(rid)], ["pendente", "ok"])
         self.assertIn("full:demo", self.state()["done"])
+        self.assertIs(line["aprovado"], False)
+
+    def test_approved_commit_pushed_without_a_line_is_recorded_as_approved(self):
+        # I1 (c): na recuperação, o `aprovado` sai do trailer do commit publicado.
+        rid, wt, lote = self.description_lote()
+        rg._mark_approved(self.ctx(), wt, rw_store.git_env(home=self.w.home, nosystem=True))
+        self.w.git(self.w.other, "fetch", "-q", str(wt), "HEAD")
+        self.w.git(self.w.other, "push", "-q", "origin", "FETCH_HEAD:main")
+        fx = self.effects()
+        line, rc = self.publish(rid, fx, lote)
+        self.assertEqual((rc, line["commit"]), (0, self.head(wt)), line)
+        self.assertNotIn("push", fx.calls)
+        self.assertIs(line["aprovado"], True)
+        self.assertEqual([x["aprovado"] for x in self.lines(rid, lote) if x["resultado"] == "publicado"], [True, True])
+
+    def test_publish_without_anonimato_is_held_by_its_guard(self):
+        # I1 (a): sem o anonimato.json não há patch selado; a porta passa pelo `refuse`, que segura.
+        rid, wt = self.clean_retrofit()
+        (self.folder(rid) / "anonimato.json").unlink()
+        fx = self.effects()
+        line, rc = self.publish(rid, fx)
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (1, "segurado", "sem-anonimato"), line)
+        self.assertEqual(fx.calls, [])
+        self.assertEqual(self.w.origin_main(), self.base)
+
+    def test_rerun_finishes_the_close_that_a_crash_cut(self):
+        # I2: o fecho (as lições trazidas de volta e o `mark_done`) cai depois da primeira linha `publicado`;
+        # a nova chamada acha essa linha e roda o fecho de novo.
+        rid = self.w.retro([{}, {}], [{}, {}])
+        ctx = self.ctx()
+        wt = Path(rw_store.prepare(ctx, rid, "demo")["worktree"])
+        self.w.retrofit(wt)
+        rw_store.seal(ctx, rid, "demo", ["1"], [])
+        rw_store.seal(ctx, rid, "demo", ["1", "2"], [])
+        self.review(rid)
+        real = rg._finish
+        with mock.patch.object(rg, "_finish", side_effect=RuntimeError("a trava do estado desistiu")):
+            line, rc = self.publish(rid, self.effects())
+        self.assertEqual((rc, line["resultado"], line["instalacao"]), (4, "publicado", "update"), line)
+        self.assertEqual([x["item"] for x in rw_auto.held(ctx)], [f"{rid}/demo#2"])
+        self.assertFalse((self.w.data / "sessions/s1.json").exists())
+        self.assertIs(rg._finish, real)
+        fx = self.effects()
+        line, rc = self.publish(rid, fx)
+        self.assertEqual((rc, line["instalacao"]), (0, "ok"), line)
+        self.assertNotIn("push", fx.calls)
+        self.assertEqual(rw_auto.held(ctx), [])
+        self.assertIn("full:demo", self.state()["done"])
 
     def test_fresh_worktree_is_not_taken_as_published(self):
         # A base tem pai e o `sealed` é o patch dela: só a comparação com a `base` separa o worktree
@@ -1308,9 +1357,9 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
 
     # --- a aprovação do dono -------------------------------------------------------------------
 
-    def description_lote(self):
+    def description_lote(self, **commit):
         lote = "demo__description"
-        rid, wt = self.clean_retrofit(licoes=({"muda_description": True},), lote=lote)
+        rid, wt = self.clean_retrofit(licoes=({"muda_description": True},), lote=lote, **commit)
         held, rc = self.publish(rid, self.effects(), lote)
         self.assertEqual((rc, held["motivo"]), (1, "muda-description"))
         rw_auto.approve(self.ctx(), rid, lote)
@@ -1330,6 +1379,21 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
         again, rc = self.publish(rid, fx, lote)
         self.assertEqual((rc, again["resultado"], again["commit"]), (0, "publicado", line["commit"]), again)
         self.assertNotIn("push", fx.calls)
+
+    def test_amend_keeps_the_marker_before_another_trailer(self):
+        # I3: com outro trailer depois do `Retrofit-Mode`, a emenda o troca no lugar; no fim, a nova chamada
+        # do lote publicado não reconheceria o patch selado e cairia no `refuse`.
+        other = "Refs: " + "pedido-1"
+        rid, wt, lote = self.description_lote(trailer=None,
+                                              message=f"fix(demo): v1.0.1\n\n{rg.MARKER}: autonomous\n{other}")
+        line, rc = self.publish(rid, self.effects(), lote)
+        self.assertEqual(rc, 0, line)
+        body = self.w.git(self.w.origin, "log", "-1", "--format=%B", "main").splitlines()
+        self.assertEqual(body[-2:], [f"{rg.MARKER}: {rg.APPROVED}", other])
+        with mock.patch.object(rg, "refuse", wraps=rg.refuse) as spy:
+            again, rc = self.publish(rid, self.effects(), lote)
+        self.assertEqual((rc, again["commit"]), (0, line["commit"]), again)
+        spy.assert_not_called()
 
     def test_rejected_push_of_an_approved_lote_can_be_rerun(self):
         # O push recusado devolve o ramo ao commit revisado: a emenda do trailer muda o patch (D20), e sem
@@ -1469,6 +1533,12 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
         effects = rg.Effects(self.ctx())
         path = {"PATH": f"{bindir}{os.pathsep}{os.environ.get('PATH', '')}"}
         with mock.patch.dict(os.environ, path):
+            # I1 (b): sem o installed_plugins.json no HOME, nada está instalado (rc 0, não 4).
+            installed = self.w.home / ".claude/plugins/installed_plugins.json"
+            original = installed.read_text(encoding="utf-8")
+            installed.unlink()
+            self.assertEqual(effects.refresh_install("demo"), (True, "nao-instalado"))
+            installed.write_text(original, encoding="utf-8")  # o arquivo sem o `demo`
             self.assertEqual(effects.refresh_install("demo"), (True, "nao-instalado"))
             self.install_demo(scope="project")
             self.assertEqual(effects.refresh_install("demo"), (True, "nao-instalado"))

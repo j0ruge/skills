@@ -798,7 +798,10 @@ def _mark_approved(ctx, worktree, env):
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
             fh.write(message)
-        git("interpret-trailers", "--in-place", "--if-exists", "replace", "--trailer", f"{MARKER}: {APPROVED}", tmp)
+        # `--where after`: o trailer fica no lugar; no fim, a troca de volta de `_published_patches` não
+        # daria a mensagem que o revisor selou (I3).
+        git("interpret-trailers", "--in-place", "--where", "after", "--if-exists", "replace", "--trailer",
+            f"{MARKER}: {APPROVED}", tmp)
         git("commit", "-q", "--amend", "-F", tmp)
     finally:
         os.unlink(tmp)
@@ -823,10 +826,9 @@ def _plan(ctx, rid, lote, retrofit, worktree, aprovado, detalhe):
     return line, [e["key"] for e in pedido["skills"] if e["plugin"] == plugin]
 
 
-def _record_published(ctx, line, keys, done):
-    """Grava a primeira linha `publicado`; fecha cada lição do lote que um selo segurou por
-    `executor-recusou` e outro trouxe de volta (T9-seal); marca a retro feita na sessão (D6)."""
-    done["line"] = written = rw_auto.append_registry(ctx, line)
+def _close(ctx, line):
+    """Depois da linha `publicado` do lote: fecha cada lição dele que um selo segurou por
+    `executor-recusou` e outro trouxe de volta (T9-seal). Rodar de novo não repete linha."""
     last = rw_auto.last_lines(rw_auto.read_registry(ctx))
     for n in line["licoes"]:
         item = f"{line['id']}/{line['plugin']}#{n}"
@@ -836,9 +838,14 @@ def _record_published(ctx, line, keys, done):
                                     f"publicada no lote {line['id']}/{line['lote']}", lote=line["lote"])
             closing.update(commit=line["commit"])
             rw_auto.append_registry(ctx, closing)
+
+
+def _finish(ctx, line, keys):
+    """O fecho do lote publicado: as lições trazidas de volta (`_close`) e a retro feita na sessão (D6).
+    Os dois são idempotentes; a porta os roda em toda chamada sobre um lote publicado (T9-r1-up)."""
+    _close(ctx, line)
     for key in keys:
         mark_done(ctx, line["sessao"], key)
-    return written
 
 
 def _previous(ctx, rid, lote, commit):
@@ -865,14 +872,14 @@ def _publish(ctx, rid, lote, effects, done):
         rw_store.run(["git", "-C", worktree, "fetch", "origin"], env=network_env(env, worktree))
     if already_published(worktree, retrofit, _sealed_patch(ctx, rid, lote)):
         # Refaz só a instalação (D22). Sem linha `publicado` deste commit (a porta caiu entre o push e a
-        # linha), grava a que faltou, e com ela o fecho da sessão.
-        commit = _head(worktree)
-        line = _previous(ctx, rid, lote, commit)
+        # linha), grava a que faltou. O fecho roda sempre: a chamada de antes pode ter caído no meio dele.
+        planned, keys = _plan(ctx, rid, lote, retrofit, worktree, _approved_marker(worktree, env),
+                              "o commit ja estava no origin/main")
+        line = _previous(ctx, rid, lote, planned["commit"])
         if line is None:
-            line, keys = _plan(ctx, rid, lote, retrofit, worktree, _approved_marker(worktree, env),
-                               "o commit ja estava no origin/main")
-            line = _record_published(ctx, line, keys, done)
+            line = rw_auto.append_registry(ctx, planned)
         done["line"] = line
+        _finish(ctx, line, keys)
     else:
         notes = []
         found = refuse(ctx, rid, lote, notes)
@@ -892,7 +899,8 @@ def _publish(ctx, rid, lote, effects, done):
                 rw_store._git(["reset", "-q", "--soft", reviewed], worktree, env, "porta")
         if not pushed:
             return hold(ctx, rid, lote, "push", detail)
-        _record_published(ctx, line, keys, done)
+        done["line"] = rw_auto.append_registry(ctx, line)
+        _finish(ctx, done["line"], keys)
     line = done["line"]
     ok, detail = effects.refresh_install(plugin)
     if not ok:
