@@ -7,6 +7,7 @@ Registrado em hooks/hooks.json:
   SessionStart (startup)       -> retrofit_watch.py pending   (aviso de retro adiada)
 Linha de comando: retrofit_watch.py queue [--done ID...]   (a fila das sessões headless)
                   retrofit_watch.py triage|held|hold|approve|discard ...   (modo autônomo, rw_auto.py)
+                  retrofit_watch.py harvest|prepare|seal ...   (a loja do modo autônomo, rw_store.py)
 
 "Nossa" = skill do marketplace chewiesoft-marketplace (j0ruge/skills; retrofit modo full, o
 argumento é o nome do PLUGIN) ou skill versionada em git num repo de dono conhecido (modo lean).
@@ -940,6 +941,10 @@ CLI_USAGE = {
     "hold": ("hold <id> <item> <motivo>", 3),
     "approve": ("approve <id> <lote>", 2),
     "discard": ("discard <id> <item> [--motivo M]", 2),
+    # Os verbos da loja (rw_store.py) conferem as próprias opções: aridade None.
+    "prepare": ("prepare <id> <lote> [--redo]", None),
+    "seal": ("seal <id> <lote> --licoes L1,L2 [--fases a,b]", None),
+    "harvest": ("harvest", None),
 }
 
 
@@ -947,13 +952,17 @@ def cli(argv, ctx):
     """Os verbos do modo autônomo. Imprimem JSON em ASCII (o stdout do Windows é cp1252).
 
     rc 0 certo, 1 recusado, 2 uso, pasta de dados ausente ou ambígua, ou arquivo do fluxo fora do
-    formato (rw_auto.Malformed). Os erros vão ao stderr, sem traceback."""
+    formato (rw_auto.Malformed). Os erros vão ao stderr, sem traceback. Os verbos da loja (`harvest`,
+    `prepare`, `seal`) vão ao rw_store.cli, que também dá 2 em StoreError e OSError."""
     problem = data_dir_problem(ctx)
     if problem:
         sys.stderr.write(problem)
         return 2
-    import rw_auto as auto
     verb, args, kwargs = argv[0], list(argv[1:]), {}
+    if CLI_USAGE[verb][1] is None:
+        import rw_store
+        return rw_store.cli(verb, args, ctx)
+    import rw_auto as auto
     if verb == "discard" and len(args) == 4 and args[2] == "--motivo":
         kwargs["motivo"] = args.pop()
         args.pop()

@@ -671,15 +671,22 @@ def _item(rid, item):
 
 
 def hold_item(ctx, rid, item, motivo, detalhe=""):
-    """Linha `segurado` para um lote da triagem que o executor não levou até o fim."""
+    """Linha `segurado` para um lote da triagem que o executor não levou até o fim, ou para uma
+    lição de um lote (`<id>/<plugin>#<n>`) que o executor deixou fora do selo (rw_store.seal)."""
     _item(rid, item)
     if motivo not in AGENT_REASONS:
         raise Malformed(f"motivo fora de {', '.join(AGENT_REASONS)}: {motivo!r}")
     pedido, lotes, _, _ = _plan(ctx, rid)
-    lote = next((x for x in lotes if f"{rid}/{x['lote']}" == item), None)
+    plugin, _, n = item.partition("/")[2].partition("#")
+    if n:
+        lote = next((x for x in lotes if x["plugin"] == plugin and int(n) in x["licoes"]), None)
+        licoes = [int(n)]
+    else:
+        lote = next((x for x in lotes if f"{rid}/{x['lote']}" == item), None)
+        licoes = lote["licoes"] if lote else None
     if lote is None:
-        raise Malformed(f"{item} não é um lote da triagem da retro {rid}")
-    return append_registry(ctx, _line(pedido["sessao"], rid, item, lote["plugin"], lote["licoes"], "segurado",
+        raise Malformed(f"{item} não é um lote, nem uma lição de um lote, da triagem da retro {rid}")
+    return append_registry(ctx, _line(pedido["sessao"], rid, item, lote["plugin"], licoes, "segurado",
                                       motivo, detalhe, lote=lote["lote"]))
 
 

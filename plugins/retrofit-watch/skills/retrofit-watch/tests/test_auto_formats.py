@@ -527,6 +527,21 @@ class VerbTest(Base):
         self.assertEqual(json.loads(proc.stdout)["licoes"], [2])
         self.assertEqual([x["item"] for x in rw_auto.held(self.ctx())], ["r1/alfa", "r1/alfa__description"])
 
+    def test_hold_item_takes_a_lesson_of_a_lote(self):
+        # O selo (rw_store.seal) segura assim a lição do lote que o executor deixou fora (ruling C9).
+        self.retro("r1", [lesson(1), lesson(2, muda_description=True), lesson(3)], [parecer(n) for n in (1, 2, 3)])
+        got = rw_auto.hold_item(self.ctx(), "r1", "r1/alfa#3", "executor-recusou", "fora do selo")
+        self.assertEqual((got["item"], got["licoes"], got["lote"], got["plugin"], got["motivo"]),
+                         ("r1/alfa#3", [3], "alfa", "alfa", "executor-recusou"))
+        self.assertEqual(rw_auto.hold_item(self.ctx(), "r1", "r1/alfa#2", "executor-recusou")["lote"],
+                         "alfa__description")
+        for item in ("r1/alfa#9", "r1/beta#1"):
+            with self.subTest(item):
+                with self.assertRaises(rw_auto.Malformed) as caught:
+                    rw_auto.hold_item(self.ctx(), "r1", item, "executor-recusou")
+                self.assertIn(item, str(caught.exception))
+        self.assertEqual(len(self.registry_lines()), 2)
+
     def test_hold_refuses_an_unknown_reason_or_lote(self):
         self.retro("r1", [lesson(1)], [parecer(1)])
         with self.assertRaises(rw_auto.Malformed) as caught:

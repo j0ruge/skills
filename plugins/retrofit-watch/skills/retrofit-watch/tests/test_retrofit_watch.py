@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -25,12 +26,25 @@ UNATTENDED = {"CLAUDE_CODE_SESSION_ATTENDED": "0", "CLAUDE_CODE_ENTRYPOINT": "sd
 WINDOWS_STDIO = {"PYTHONIOENCODING": "cp1252:surrogateescape"}
 # No Windows, o `shutil.which` só acha binário com extensão do PATHEXT.
 EXE = ".cmd" if os.name == "nt" else ""
-GIT_ENV = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t",
-               GIT_COMMITTER_EMAIL="t@t", GIT_CONFIG_NOSYSTEM="1")
+# As variáveis que apontam outro repo: um hook do git as exporta, e com elas `git -C <dir>` age no repo delas.
+GIT_LOCATION = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
+                "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR")
+
+
+def git_env():
+    """O ambiente do git da fixture, lido do ambiente de agora: sem as variáveis de localização, sem a
+    config global (o `~/.gitconfig` real e a do XDG) e sem a de sistema."""
+    env = {k: v for k, v in os.environ.items() if k not in GIT_LOCATION and not k.startswith("GIT_CONFIG")}
+    env.update(GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t",
+               GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull)
+    return env
+
+
+GIT_ENV = git_env()
 
 
 def git(cwd, *args):
-    subprocess.run(["git", "-C", str(cwd), *args], check=True, capture_output=True, env=GIT_ENV)
+    subprocess.run(["git", "-C", str(cwd), *args], check=True, capture_output=True, env=git_env())
 
 
 def make_skill(parent, name):
@@ -676,6 +690,39 @@ class StopTest(HookHarness, unittest.TestCase):
         state = json.loads((self.w.data / "sessions/s1.json").read_text())
         self.assertEqual(state["skills"], {})
         self.assertEqual(state["offset"], self.w.transcript.stat().st_size)
+
+
+class FixtureGitEnvTest(unittest.TestCase):
+    """O git do `World` não obedece a um GIT_DIR herdado (dentro de um hook do git ele agiria no repo
+    real) nem lê a config global ou de sistema de quem roda os testes."""
+
+    def test_world_ignores_an_inherited_git_dir_and_the_real_config(self):
+        trap = Path(os.path.realpath(tempfile.mkdtemp(prefix="rw-trap-")))
+        self.addCleanup(shutil.rmtree, trap, True)
+        subprocess.run(["git", "init", "-q", str(trap / "repo")], check=True, capture_output=True,
+                       env=dict(git_env(), HOME=str(trap)))
+        marker = trap / "hook-rodou"
+        hooks = trap / "hooks"
+        hooks.mkdir()
+        (hooks / "pre-commit").write_text(f"#!/bin/sh\ntouch '{marker}'\nexit 1\n")
+        (hooks / "pre-commit").chmod(0o755)
+        config = f"[core]\n\thooksPath = {hooks}\n"
+        (trap / ".gitconfig").write_text(config)
+        (trap / "global").write_text(config)
+        traps = {"GIT_DIR": str(trap / "repo/.git"), "GIT_WORK_TREE": str(trap / "repo"),
+                 "GIT_INDEX_FILE": str(trap / "index"), "HOME": str(trap), "GIT_CONFIG_GLOBAL": str(trap / "global"),
+                 "GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "core.hooksPath", "GIT_CONFIG_VALUE_0": str(hooks)}
+        with mock.patch.dict(os.environ, traps):
+            world = World()
+        self.addCleanup(world.cleanup)
+        self.assertFalse(marker.exists(), "o git da fixture leu a config global herdada")
+        log = subprocess.run(["git", "-C", str(world.proj), "log", "--format=%an"], capture_output=True,
+                             text=True, env=git_env())
+        self.assertEqual(log.stdout.split(), ["t"])
+        heads = subprocess.run(["git", "--git-dir", str(trap / "repo/.git"), "rev-list", "--all"],
+                               capture_output=True, text=True, env=git_env())
+        self.assertEqual(heads.stdout, "", "um commit da fixture foi parar no repo do GIT_DIR herdado")
+        self.assertFalse((trap / "index").exists())
 
 
 if __name__ == "__main__":
