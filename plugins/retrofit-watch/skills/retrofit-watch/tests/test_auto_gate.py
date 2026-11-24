@@ -417,6 +417,16 @@ class GateTest(GateHarness, unittest.TestCase):
         self.assertIn(half, got[1])
         self.assertIn("nao citou", got[1])
 
+    def test_an_entry_without_letters_is_not_cited(self):
+        # Item 13: um termo sem letra tem a forma vazia, e a forma vazia nunca conta como citada. A recusa cita
+        # `"..."` e a lista ganha `...`: a guarda 5 segura, embora a letra seja igual.
+        rid, wt = self.clean_retrofit(edit=lambda wt: append(wt / "scripts/public-names.txt", "...\n"))
+        rg.hold(self.ctx(), rid, "demo", "nome-privado", 'nota.md:1: colheita "..."')
+        self.approve(rid, "demo", "nome-privado")
+        got = self.assertRefuses(rid, "escopo")
+        self.assertIn("nao citou", got[1])
+        self.assertIn("...", got[1])
+
     def test_private_list_needs_a_name_hold_and_only_grows(self):
         def add_a_hash(wt):
             proc = self.w.run_script(wt, "scripts/check-private-names.py", "--add", invented("novo"))
