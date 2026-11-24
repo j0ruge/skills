@@ -54,6 +54,10 @@ AUDIT_GATE = Path("plugins/retrofit-skill/scripts/audit_gate.py")
 AUDIT_FLAGS = ("--format", "json", "--claims", "--desc-budget", "0", "--external", "off")
 MARKER = "Retrofit-Mode"
 CO_AUTHOR = re.compile(r"(?im)^[ \t]*co-authored-by[ \t]*:")
+# A linha de rodapé do Claude Code, que o CLAUDE.md da loja recusa (item 2).
+GENERATED = re.compile(r"(?i)generated with[^\n]*claude")
+# O total do `unittest`; no Python 3.11, o `discover` sem teste sai 0 (item 4).
+RAN = re.compile(r"(?m)^Ran (\d+) tests? in ")
 FRONTMATTER_VERSION = re.compile(r"\s*version\s*:.*")
 VERSION_FORM = re.compile(r"([0-9]+)\.([0-9]+)\.([0-9]+)")
 # A `description` do frontmatter de um SKILL.md, como o check_release_sync.py do retrofit-skill a lê.
@@ -312,8 +316,13 @@ def _message(p):
 
 
 def _g_coauthor(p):
-    """6. Sem `Co-authored-by` na mensagem."""
-    return ("coautoria", "o commit tem Co-authored-by") if CO_AUTHOR.search(_message(p)) else None
+    """6. Sem `Co-authored-by` e sem a linha de rodapé do Claude Code na mensagem (item 2)."""
+    message = _message(p)
+    if CO_AUTHOR.search(message):
+        return "coautoria", "o commit tem Co-authored-by"
+    if GENERATED.search(message):
+        return "coautoria", "o commit tem a linha Generated with"
+    return None
 
 
 def _g_marker(p):
@@ -327,9 +336,11 @@ def _g_marker(p):
 
 
 def _show(p, ref, path):
-    """O texto de `path` na árvore de `ref`, ou None quando ele não está lá."""
-    rc, out = rw_store.run(["git", "-C", p.worktree, "show", f"{ref}:{path}"], env=p.neutral)
-    return out if rc == 0 else None
+    """O texto de `path` na árvore de `ref`, ou None quando ele não está lá. Uma falha do git é StoreError,
+    nunca None: lida como ausência, ela passaria a guarda do bump como plugin novo (item 16b)."""
+    if not rw_store._git(["ls-tree", "-z", "--name-only", ref, "--", path], p.worktree, p.neutral, "show"):
+        return None
+    return rw_store._git(["show", f"{ref}:{path}"], p.worktree, p.neutral, "show")
 
 
 ABSENT = object()
@@ -556,6 +567,9 @@ def _g_tests(p):
                                cwd=tree, env=env)
         if rc != 0:
             return "testes", _short(f"{rel} saiu {rc}: {out[-1000:]}")
+        ran = RAN.findall(out)
+        if not ran or int(ran[-1]) == 0:  # C6: só zero; o número não se compara com o do origin/main
+            return "testes", f"{rel}: nenhum teste rodou"
     return None
 
 

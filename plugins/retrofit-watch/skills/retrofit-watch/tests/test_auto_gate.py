@@ -433,6 +433,17 @@ class GateTest(GateHarness, unittest.TestCase):
         self.assertEqual(rg.refuse(self.ctx(), rid, "demo", [])[0], "coautoria")
         self.assertEqual(self.w.origin_main(), self.base)
 
+    def test_generated_with_line_refuses(self):
+        # Item 2: o CLAUDE.md da loja recusa a linha de rodapé do Claude Code; montada aqui, nunca literal.
+        footer = "Gene" + "rated with [Claude " + "Code](https://claude.com/claude-code)"
+        for line in (footer, footer.lower()):
+            with self.subTest(line=line):
+                rid, wt = self.clean_retrofit(message="fix(demo): v1.0.1\n\n" + line)
+                got = self.assertRefuses(rid, "coautoria")
+                self.assertIn("Gene" + "rated with", got[1])
+        rid, wt = self.clean_retrofit(message="fix(demo): v1.0.1\n\nA lição foi " + "gene" + "rated with care.")
+        self.assertIsNone(self.refuse(rid))
+
     def test_commit_without_marker_refuses(self):
         rid, wt = self.clean_retrofit(trailer=None)
         self.assertRefuses(rid, "sem-marca")
@@ -487,6 +498,23 @@ class GateTest(GateHarness, unittest.TestCase):
             self.assertIsNone(rg._g_bump(porta))
         self.assertIsNone(rg._g_bump(porta))
         self.assertEqual(real(porta, rw_store.BASE_REF), fs.VERSION)
+
+    def test_git_failure_is_not_a_new_plugin(self):
+        # Item 16b: um git que falha ao ler o plugin.json do origin/main não é "plugin novo": é `interno`.
+        rid, wt = self.clean_retrofit()
+        manifest = "plugins/demo/.claude-plugin/plugin.json"
+        real = rw_store.run
+
+        def broken(cmd, *args, **kwargs):
+            words = [str(c) for c in cmd]
+            if (("ls-tree" in words or "show" in words) and any(manifest in w for w in words)
+                    and any(rw_store.BASE_REF in w for w in words)):
+                return 128, "fatal: falha de proposito"
+            return real(cmd, *args, **kwargs)
+
+        with mock.patch.object(rw_store, "run", side_effect=broken):
+            got = self.assertRefuses(rid, "interno")
+        self.assertIn("128", got[1])
 
     # --- guardas 8 a 10: veredito e lições -----------------------------------------------------
 
@@ -720,6 +748,31 @@ class GateTest(GateHarness, unittest.TestCase):
     def test_failing_plugin_test_refuses(self):
         rel = "plugins/demo/skills/demo/tests/test_demo.py"
         rid, wt = self.clean_retrofit(edit=lambda wt: (wt / rel).write_text(failing_test(), encoding="utf-8"))
+        got = self.assertRefuses(rid, "testes")
+        self.assertIn("plugins/demo/skills/demo/tests", got[1])
+
+    def test_zero_tests_refuse(self):
+        # Item 4 (C6): no Python 3.11, o `discover` que não acha teste sai 0; zero testes é `testes`.
+        skill_tests = "plugins/demo/skills/demo/tests"
+        rid, wt = self.clean_retrofit()
+        real = rw_store.run
+        for fake in ("Ran 0 tests in 0.000s\n\nOK\n", ""):
+            with self.subTest(fake=fake):
+                def empty(cmd, *args, **kwargs):
+                    words = [str(c) for c in cmd]
+                    if "discover" in words and skill_tests in words:
+                        return 0, fake
+                    return real(cmd, *args, **kwargs)
+
+                with mock.patch.object(rw_store, "run", side_effect=empty):
+                    got = self.assertRefuses(rid, "testes")
+                self.assertIn("nenhum teste rodou", got[1])
+                self.assertIn(skill_tests, got[1])
+
+    def test_emptied_test_file_refuses(self):
+        # Item 4: o commit que esvazia o arquivo de teste reprova em qualquer versão (3.12: rc 5; 3.11: zero).
+        rel = "plugins/demo/skills/demo/tests/test_demo.py"
+        rid, wt = self.clean_retrofit(edit=lambda wt: (wt / rel).write_text("import unittest\n", encoding="utf-8"))
         got = self.assertRefuses(rid, "testes")
         self.assertIn("plugins/demo/skills/demo/tests", got[1])
 
