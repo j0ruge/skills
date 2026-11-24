@@ -50,6 +50,10 @@ a lição ou o commit dizem de si.
 
    `basta_o_transcript` só se preenche com `nao-reproduzivel`. `nota` é o seu porquê, em uma ou duas
    frases, ou `null`.
+
+   `coberta` aceita só `caminho:N`: um caminho, dois-pontos e um número de linha. Nada de intervalo
+   (`:42-45`) nem de texto depois do número. O porquê vai na `nota`. Um campo fora do formato invalida o
+   `veredito.json` inteiro.
 5. Grave `<dados>/auto/<id>/veredito.json`, com uma entrada por lição do `licoes.json`:
 
 ```json
@@ -78,11 +82,11 @@ a lição ou o commit dizem de si.
    `licoes.json` da retro.
 3. Leia `<lote>/termos-novos.json` e `<dados>/colheita.txt`.
 4. Julgue cada termo de `termos-novos.json`, um por um. Cada termo recebe `publico`, `privado` ou `duvida`.
-   A `nota` traz a linha de contexto (o campo `contexto` do termo) e o porquê. Use a colheita como
-   referência: um termo igual a um nome da colheita é `privado`.
+   A `nota` traz a linha de contexto (o campo `contexto` do termo) e o porquê.
+   - A regra da colheita vale primeiro: um termo que é um nome da colheita é `privado`, mesmo quando também é um identificador de código.
    - Uma lista grande (mais de cem termos) é normal: quase todos são identificadores de código. Julgue
      cada termo mesmo assim. Nunca dê um veredito só para a lista inteira.
-   - Um identificador de código, um nome de arquivo do diff ou uma palavra comum do idioma é `publico`.
+   - Fora da colheita, um identificador de código, um nome de arquivo do diff ou uma palavra comum do idioma é `publico`.
    - `duvida` fica para o termo que pode ser nome de pessoa, projeto, empresa, máquina ou usuário e que o
      contexto não decide.
 5. Responda as duas perguntas sobre o diff:
@@ -92,7 +96,8 @@ a lição ou o commit dizem de si.
      O bump de versão, o `CHANGELOG`, o `marketplace.json` e a linha do README fazem parte do lote. Com
      `refactoring` em `fases` no `retrofit.json`, o diff da refatoração também.
 
-   Nos dois campos, `null` quando está certo. Quando não está, o `arquivo:linha` e o porquê.
+   Nos dois campos, `null` quando está certo. Quando não está, um texto com o `arquivo:linha` e o
+   porquê. Estes dois campos são texto livre: só a `coberta` da primeira passada tem formato estrito.
 6. Grave `<dados>/auto/<id>/<lote>/anonimato.json`, no diretório do lote, nunca no da retro. O `patch` é
    copiado de `termos-novos.json`, sem mudança:
 

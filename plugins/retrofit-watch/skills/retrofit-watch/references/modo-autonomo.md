@@ -75,7 +75,11 @@ O prompt leva só três coisas: o diretório da retro (`<dados>/auto/<id>/`), o 
 passada". Não ponha no prompt o contexto da sessão, um resumo das lições ou a sua opinião. O valor do
 revisor está em não saber o que você sabe.
 
-Espere a resposta. Confira que `<dados>/auto/<id>/veredito.json` existe.
+Espere a resposta. Confira que `<dados>/auto/<id>/veredito.json` existe. Sem ele, ou com o `triage` do
+passo 3 saindo 2 por causa dele (ausente ou inválido), despache o revisor de novo, uma vez, com o mesmo
+prompt. Se o arquivo ainda faltar ou ainda for inválido, pare: não rode a triagem e deixe o pedido aberto.
+Diga ao dono, em uma linha, que o revisor não gravou um `veredito.json` válido. Nunca grave nem conserte
+o arquivo você mesmo (passo 9).
 
 ## 3. A triagem
 
@@ -89,7 +93,7 @@ Rode `retrofit_watch.py triage <id>`. A saída é um JSON com três listas:
 - `descartar`: a triagem já gravou a linha `descartado`. Não faça nada: elas ficam fora do aviso de
   startup.
 
-Rodar a triagem de novo não repete linha.
+Rodar a triagem de novo não repete linha. Com rc 2 e a mensagem sobre o `veredito.json`, volte ao passo 2.
 
 ## 4. Por lote
 
@@ -116,7 +120,14 @@ Para cada lote, nesta ordem:
    `commit` do `retrofit.json` continua `null`), vá ao passo 7.
 4. Despache o revisor na segunda passada, com os mesmos `subagent_type`, `model` e `effort` do passo 2.
    O prompt leva o diretório da retro, o caminho da loja, "segunda passada", o diretório do lote e o
-   worktree. Confira que `<dados>/auto/<id>/<lote>/anonimato.json` existe.
+   worktree. Confira que `<dados>/auto/<id>/<lote>/anonimato.json` existe. Sem ele, despache o revisor
+   de novo, uma vez, com o mesmo prompt. Se ele ainda faltar, pare este lote e deixe o pedido aberto.
+
+   Uma lista grande de termos novos é normal: mais de cem, quase todos identificadores de código. O
+   revisor julga cada termo, um por um. Nunca aceite um veredito só para a lista inteira. Um nome da
+   colheita é `privado`, mesmo quando também é um identificador. Fora dela, um identificador, um nome de
+   arquivo do diff ou uma palavra comum é `publico`. `duvida` fica para o termo que pode ser nome de
+   pessoa, projeto, empresa, máquina ou usuário e que o contexto não decide.
 5. Rode `retrofit_watch.py publish <id> <lote>` com `run_in_background: true`. A porta espera a trava por
    até 900 s, e o Bash em primeiro plano corta em 600 s. Espere a notificação. Leia o rc e a última
    linha do stdout, e siga a seção 5 desta página.
@@ -127,6 +138,12 @@ ordem que a triagem dá.
 
 Na loja real, dois lotes de plugins diferentes que tocam linhas vizinhas do README dão conflito no
 rebase. O segundo sai segurado com `rebase`. A saída é a do passo 6 (`prepare --redo`).
+
+**O executor fora deste passo.** As saídas do passo 6 e da tabela do passo 8 que dizem "o executor
+corrige…" usam o mesmo despacho do item 3: o mesmo `subagent_type`, `model` e `effort`, com a tarefa da correção no lugar do `--auto`.
+O prompt leva o worktree, o ramo, o motivo e o `detalhe` da linha do registro, e a correção pedida.
+O executor emenda o commit (`git -C <worktree> commit --amend`), mantém o trailer `Retrofit-Mode` e
+termina com o `seal` de novo. Depois, o revisor refaz a segunda passada (item 4), e a porta roda (item 5).
 
 ## 5. A linha ao dono
 
@@ -169,12 +186,16 @@ Os casos que pedem mais do que isso:
 
 - **Segurado por nome** (`nome-privado`, `termo-nao-publico`, `sem-anonimato`): a aprovação não substitui
   a recusa. Só a resposta do dono sobre o termo, que ensina o portão.
-  - "privado": rode `python3 "<worktree>"/scripts/check-private-names.py --add <termo>`. O executor troca
-    o termo por um genérico (`um projeto`, `<repo>`), emenda o commit e sela de novo. O revisor refaz a
+  - "privado": rode `python3 "<worktree>"/scripts/check-private-names.py --add <termo>`. Depois, o
+    executor (o despacho do passo 4) troca o termo por um genérico (`um projeto`, `<repo>`), no diff e
+    na mensagem. Ele emenda o commit com a mudança da lista dentro dele e sela de novo. O revisor refaz a
     segunda passada.
-  - "público": rode `python3 "<worktree>"/scripts/anonymity-gate.py --publico-add <termo>` e emende o
-    commit.
-  - Os dois scripts gravam a lista ao lado deles: a do worktree, nunca a do checkout compartilhado.
+  - "público": rode `python3 "<worktree>"/scripts/anonymity-gate.py --publico-add <termo>`. Depois,
+    `git -C "<worktree>" commit -a --amend --no-edit`. A mudança da lista entra no commit emendado, e a
+    mensagem fica a mesma. O `patch` não conta as listas e conta a mensagem: assim ele não muda, e a
+    segunda passada continua valendo.
+  - Os dois scripts gravam a lista ao lado deles: a do worktree, nunca a do checkout compartilhado. Uma
+    lista mudada fora do commit segura o lote com `arvore-suja`.
   - Nos dois: `approve`, depois `publish`.
   - Com `sem-anonimato`, o revisor refaz antes a segunda passada. Se um termo continuar não público, vale
     o par acima.
@@ -194,7 +215,8 @@ entra no verbo `segurados`. A lição que o selo deixou de fora já tem a linha 
 
 ## 8. A tabela de motivos
 
-"Substituível" diz se a aprovação do dono (`approve`) substitui a recusa.
+"Substituível" diz se a aprovação do dono (`approve`) substitui a recusa. "O executor corrige" é o
+despacho do executor fora do passo 4, descrito no fim dele.
 
 | Motivo | O que quer dizer | Substituível | Saída |
 |---|---|---|---|
@@ -241,6 +263,8 @@ entra no verbo `segurados`. A lição que o selo deixou de fora já tem a linha 
 - Nunca escreva no checkout compartilhado da loja. Edição, commit e selo acontecem no worktree do lote.
 - Nunca apague um ramo ou um worktree, nem de um lote descartado. A limpeza é da `git-housekeeping`, com
   o "sim" do dono.
+- Nunca grave nem corrija `veredito.json` ou `anonimato.json`: só o revisor os grava. A porta não sabe quem
+  gravou esses arquivos, e um arquivo gravado pela sessão passaria por cima do revisor independente.
 
 ## O aviso de startup
 
@@ -250,6 +274,8 @@ O aviso de startup junta numa linha ao dono um segmento por assunto:
 - `N retrofits autônomos sem registro de fim (…)`: uma sessão fechou no meio do fluxo. Num lote com
   `retrofit.json` e sem linha, confira o selo e o `anonimato.json` e rode `publish`; sem selo, rode
   `hold` com o motivo do executor (passo 7). Numa retro com lição sem linha, rode `triage <id>` de novo
-  e leve cada lote dela ao passo 4.
-- `N publicados com a cópia instalada atrás (…)`: rode `publish <id> <lote>` de novo.
+  e leve cada lote dela ao passo 4. Se o `triage` sair 2 por causa do `veredito.json`, volte ao passo 2.
+- `N publicados com a cópia instalada atrás (…)`: o aviso só nomeia os plugins. O `<id>` e o `<lote>`
+  estão na última linha `publicado` de cada plugin em `<dados>/autonomo.jsonl` (chaves `id` e `lote`).
+  Rode `publish <id> <lote>` de novo.
 - `… — o kit pode entrar (…)`: o critério da v2 se cumpriu. Só informa.

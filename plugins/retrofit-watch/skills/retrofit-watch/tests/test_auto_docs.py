@@ -36,6 +36,10 @@ DIFF_QUESTIONS = (
     "a mudança acrescenta uma regra que repete ou contradiz uma já escrita, em vez de corrigir a frase que errou?",
     "o diff faz só o que as lições dizem?",
 )
+# A proibição do passo 9 (I1) e a precedência da colheita no agente (I4), na rodada de correção 1.
+REVIEWER_FILES_RULE = "Nunca grave nem corrija `veredito.json` ou `anonimato.json`: só o revisor os grava."
+HARVEST_RULE = ("A regra da colheita vale primeiro: um termo que é um nome da colheita é `privado`, mesmo quando "
+                "também é um identificador de código.")
 CITED = re.compile(r"retrofit_watch\.py\s+([a-z][a-z-]*)")
 # O `queue` é a linha de comando da fila das sessões headless; o `main` o trata antes do CLI_USAGE.
 QUEUE = "queue"
@@ -186,6 +190,59 @@ class RuleTest(unittest.TestCase):
         self.assertIn(f"até {wait}", section(text, "4."))
         trava = next(row for row in table_rows(section(text, "8.")) if row[0] == "`trava`")
         self.assertIn(wait, trava[1])
+
+
+def flat(text):
+    """O texto com cada sequência de espaços, quebras e recuos trocada por um espaço: a quebra de linha
+    da prosa não decide o teste."""
+    return " ".join(text.split())
+
+
+class FixRoundTest(unittest.TestCase):
+    """As frases da rodada de correção 1 da Tarefa 11 (I1 a I6)."""
+
+    def test_session_never_writes_the_reviewer_files(self):
+        self.assertIn(REVIEWER_FILES_RULE, flat(section(read(REFERENCE), "9.")))
+
+    def test_missing_reviewer_file_retries_once_then_stops(self):
+        text = read(REFERENCE)
+        for title in ("2.", "4."):
+            step = flat(section(text, title))
+            self.assertIn("despache o revisor de novo, uma vez", step, title)
+            self.assertIn("deixe o pedido aberto", step, title)
+        self.assertIn("volte ao passo 2", flat(section(text, "3.")))
+        self.assertIn("volte ao passo 2", flat(section(text, "O aviso de startup")))
+
+    def test_large_term_list_rule_is_in_both(self):
+        self.assertIn("Nunca aceite um veredito só para a lista inteira.", flat(section(read(REFERENCE), "4.")))
+        self.assertIn("Nunca dê um veredito só para a lista inteira.", flat(section(read(AGENT), "Segunda passada")))
+
+    def test_harvest_rule_wins_in_the_agent(self):
+        text = flat(section(read(AGENT), "Segunda passada"))
+        self.assertIn(HARVEST_RULE, text)
+        self.assertLess(text.index(HARVEST_RULE), text.index("um identificador de código, um nome de arquivo"))
+        self.assertIn("Um nome da colheita é `privado`, mesmo quando também é um identificador.",
+                      flat(section(read(REFERENCE), "4.")))
+
+    def test_cover_location_format_matches_code(self):
+        self.assertIn("`coberta` aceita só `caminho:N`", flat(section(read(AGENT), "Primeira passada")))
+        self.assertIsNotNone(rw_auto.LOCATION.fullmatch("plugins/x/SKILL.md:42"))
+        for wrong in ("plugins/x/SKILL.md:42-45", "plugins/x/SKILL.md:42 porque"):
+            self.assertIsNone(rw_auto.LOCATION.fullmatch(wrong), wrong)
+
+    def test_name_fix_keeps_list_and_message(self):
+        step = flat(section(read(REFERENCE), "6."))
+        self.assertIn("commit -a --amend --no-edit", step)
+        self.assertIn("com a mudança da lista dentro dele", step)
+        self.assertIn("o executor (o despacho do passo 4)", step)
+
+    def test_executor_redispatch_is_defined(self):
+        self.assertIn("com a tarefa da correção no lugar do `--auto`", flat(section(read(REFERENCE), "4.")))
+        self.assertIn("despacho do executor fora do passo 4", flat(section(read(REFERENCE), "8.")))
+
+    def test_behind_notice_says_where_the_lote_is(self):
+        text = flat(section(read(REFERENCE), "O aviso de startup"))
+        self.assertIn("última linha `publicado` de cada plugin em `<dados>/autonomo.jsonl`", text)
 
 
 class ReviewerTest(unittest.TestCase):
