@@ -1,7 +1,7 @@
 ---
 description: Apply non-obvious session lessons to a target skill in two modes — full (marketplace skill: bumps version, updates CHANGELOG/marketplace.json/README, commits and pushes) or lean (local skill in another repo: edits files + CHANGELOG and commits there, no bump or marketplace changes). Triggers — retrofit, skill-maintenance, session-lessons, lean-retrofit, local-skill.
 metadata:
-  version: 0.10.3
+  version: 0.11.0
 ---
 
 A régua deste retrofit é a família `skill-quality-audit`: um baseline antes de
@@ -15,6 +15,8 @@ Analise as lições aprendidas nesta sessão e aplique as relevantes à skill
 O argumento é **o nome da skill, e só ele**. Ele entra em cada caminho, na busca do bloco no
 `marketplace.json` e no escopo do commit. Se ele trouxer mais que um nome (as lições, uma frase),
 use a primeira palavra como o nome e trate o resto como notas da sessão (*Armadilhas*, §11).
+A exceção é `--auto <dir do lote>` logo depois do nome: ele escolhe o modo autônomo (seção
+*Modo autônomo*), e o diretório não é nota.
 
 ## Princípio: nada ou melhor, nunca pior
 
@@ -81,6 +83,19 @@ stat -c '%i' <local>/SKILL.md <marketplace>/SKILL.md   # mesmo inode = mesmo arq
 Se for symlink: **não existe cópia para sincronizar**, e editar a fonte já
 atualiza a instalação. Pule qualquer passo de "ressincronizar" — ele só pode
 causar dano.
+
+## Modo autônomo
+
+`/retrofit-skill <plugin> --auto <dir do lote>` é o modo do executor que a `retrofit-watch` despacha.
+O dono não está na conversa.
+
+- Só vale no modo completo, no worktree do lote.
+- Exige o `<dir do lote>/retrofit.json` e o `veredito.json` da retro, na pasta-mãe. Sem um deles,
+  pare antes de editar.
+- O `veredito.json` faz o papel da confirmação do passo 3.
+- O fluxo para antes do push. O push e a atualização da loja são da porta da `retrofit-watch`.
+- Leia `$RS/references/modo-autonomo.md` antes de editar. Ela diz o escopo, as fases da auditoria,
+  o commit, o `seal` e o relatório.
 
 ## Localizar o auditor e os scripts deste comando
 
@@ -188,7 +203,8 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
 
 3. Antes de editar, mostre: **o modo escolhido (enxuto/completo)** + arquivos
    a mudar + resumo do diff + tipo de bump (patch/minor/major — só no modo
-   completo) + justificativa. Espere minha confirmação.
+   completo) + justificativa. Espere minha confirmação. No modo autônomo, o `veredito.json` faz
+   esse papel, e não há espera.
 
    A proposta também traz o **baseline resumido**: linhas e chars do
    `SKILL.md`, os ERRO/AVISO que já existiam e o `SQA` usado (ou o SKIP e o
@@ -280,7 +296,9 @@ real do marketplace já chega com avisos antigos (3 C2 no `codereview`), e um ga
 
    - Commit: `feat|fix($ARGUMENTS): vX.Y.Z — <resumo>`. **Sem trailer
      `Co-Authored-By`** — ver *Autoria dos commits* abaixo. Push pra origin/main.
-   - **Depois do push, a loja e a sessão.** O push atualiza o GitHub, não a cópia
+     No modo autônomo, o push é da porta.
+   - **Depois do push, a loja e a sessão.** No modo autônomo, este item também é da porta.
+     O push atualiza o GitHub, não a cópia
      instalada nem a sessão aberta, e a próxima execução roda a versão velha
      (*Armadilhas*, §8). Puxe a loja e o plugin em cada escopo onde ele está:
 

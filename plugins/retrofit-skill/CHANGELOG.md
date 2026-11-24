@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.11.0] — 2026-11-24
+
+- **Modo autônomo** (`/retrofit-skill <plugin> --auto <dir do lote>`). O quê: o comando ganha um modo
+  para o executor que a `retrofit-watch` despacha. A regra do argumento aceita o `--auto`, uma seção nova
+  resume o modo, o passo 3 troca a espera da confirmação pelo `veredito.json`, e o push e a atualização
+  da loja passam à porta. A reference nova `references/modo-autonomo.md` diz o resto: só as lições do
+  lote, o worktree do `retrofit.json`, a frase que errou corrigida em vez de regra nova, o teste antes
+  da correção, as fases da auditoria por gatilho, um commit com o trailer `Retrofit-Mode: autonomous`,
+  o `seal` como último passo e o relatório de 5 linhas.
+- Por quê: a `retrofit-watch` faz o retrofit sem o dono na conversa, e a referência do fluxo dela manda
+  o executor rodar `--auto`. Sem este modo, o comando esperaria uma confirmação que ninguém dá e faria o
+  push que só a porta pode fazer.
+- A tabela das fases (`claim-check`, `self-containment`, `refactoring`) descreve os gatilhos que a
+  porta confere. O teste novo `tests/test_modo_autonomo.py` prende os nomes ao `rw_store.PHASES` e os
+  tetos (~400 linhas, ~16 mil caracteres) ao `rw_gate`, lidos do fonte quando a `retrofit-watch` está no
+  repositório. Ele também prende os quatro lugares da versão e o texto que proíbe push e `claude plugin`.
+- Auditoria: plugin só de comandos, a fase 1 é SKIP (`A1 SKILL.md ausente`, no baseline e depois). O
+  gate é o `validate-versions.py`.
+
 ## [0.10.3] — 2026-11-19
 
 - **O argumento é só o nome da skill** (topo do comando, *Armadilhas* §11). Sintoma que teria
