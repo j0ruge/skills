@@ -990,7 +990,7 @@ CLI_USAGE = {
     "held": ("held", 0),
     "hold": ("hold <id> <item> <motivo>", 3),
     "approve": ("approve <id> <lote>", 2),
-    "discard": ("discard <id> <item> [--motivo M]", 2),
+    "discard": ("discard <id> <item>|--retro [--motivo M]", 2),
     # Os verbos da loja (rw_store.py) conferem as próprias opções: aridade None.
     "prepare": ("prepare <id> <lote> [--redo]", None),
     "seal": ("seal <id> <lote> --licoes L1,L2 [--fases a,b]", None),
@@ -1022,6 +1022,8 @@ def cli(argv, ctx):
     if verb == "discard" and len(args) == 4 and args[2] == "--motivo":
         kwargs["motivo"] = args.pop()
         args.pop()
+    # `discard <id> --retro` fecha a retro inteira (item 14): o `--retro` ocupa o lugar do item.
+    retro = verb == "discard" and len(args) == 2 and args[1] == "--retro"
     usage, arity = CLI_USAGE[verb]
     if len(args) != arity:
         sys.stderr.write(f"retrofit-watch: uso: retrofit_watch.py {usage}\n")
@@ -1035,6 +1037,8 @@ def cli(argv, ctx):
             result = auto.hold_item(ctx, *args)
         elif verb == "approve":
             result = json.loads(auto.approve(ctx, *args).read_text(encoding="utf-8"))
+        elif retro:
+            result = auto.discard_retro(ctx, args[0], **kwargs)
         else:
             result = auto.discard(ctx, *args, **kwargs)
     except auto.Malformed as exc:

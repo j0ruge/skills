@@ -281,6 +281,10 @@ O aviso de startup junta numa linha ao dono um segmento por assunto:
   `retrofit.json` e sem linha, confira o selo e o `anonimato.json` e rode `publish`; sem selo, rode
   `hold` com o motivo do executor (passo 7). Numa retro com lição sem linha, rode `triage <id>` de novo
   e leve cada lote dela ao passo 4. Se o `triage` sair 2 por causa do `veredito.json`, volte ao passo 2.
+  Quando o fluxo não tem conserto, por exemplo o revisor falha de novo, o fecho é
+  `retrofit_watch.py discard <id> --retro`, só com a palavra do dono. Ele grava uma linha `descartado` para
+  cada lote e cada lição sem linha, ou uma linha da retro inteira quando o `licoes.json` não se lê. O item
+  em aberto continua a sair pelo `discard <id> <item>`. O ramo e o worktree ficam.
 - `N plugins com a cópia instalada atrás da última publicação (…)`: o aviso conta só a última publicação
   de cada plugin, o lote com o push mais recente. Uma publicação mais nova do mesmo plugin substitui a
   anterior: um lote antigo que ficou atrás sai do aviso, e não precisa de `publish` de novo. O aviso só

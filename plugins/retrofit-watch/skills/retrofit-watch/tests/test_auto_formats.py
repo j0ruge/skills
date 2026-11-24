@@ -251,6 +251,14 @@ class TriageTest(Base):
                 self.assert_refused(self.cli("triage", "r1"), "outra retro")
                 self.assertEqual(self.registry_lines(), [])
 
+    def test_flow_finished_refuses_lessons_of_another_retro(self):
+        """T3-c1: o licoes.json de outra retro não fecha o fluxo, nem com linha para cada número dele."""
+        folder = self.retro("r1", [lesson(1)], [parecer(1)])
+        self.add_lines(line("r1", "r1/alfa#1", "descartado", "coberta"))
+        self.assertTrue(rw_auto.flow_finished(self.ctx(), {"id": "r1"}))
+        (folder / "licoes.json").write_text(json.dumps({"id": "r2", "licoes": [lesson(1)]}))
+        self.assertFalse(rw_auto.flow_finished(self.ctx(), {"id": "r1"}))
+
     def test_triage_flow_closes_the_request(self):
         self.retro("r1", [lesson(1, resolveu=None)], [parecer(1)])
         rw_auto.triage(self.ctx(), "r1")
@@ -528,6 +536,20 @@ class VerbTest(Base):
                          ("descartado", "descartado-pelo-dono", "beta", "beta"))
         self.assertEqual(rw_auto.held(self.ctx()), [])
 
+    def test_cli_discard_retro(self):
+        folder = self.retro("r1", [lesson(1), lesson(2)], [parecer(1), parecer(2)])
+        (folder / "veredito.json").unlink()
+        self.add_lines(line("r1", "r1/alfa#1", "descartado", "coberta"))
+        proc = self.cli("discard", "r1", "--retro", "--motivo", "resolvido-manual", env=WINDOWS_STDIO)
+        self.assertEqual(proc.returncode, 0, proc.stderr.decode("utf-8", "replace"))
+        self.assertTrue(proc.stdout.isascii())
+        [got] = json.loads(proc.stdout)
+        self.assertEqual((got["item"], got["licoes"], got["resultado"], got["motivo"]),
+                         ("r1/alfa#2", [2], "descartado", "resolvido-manual"))
+        self.assertEqual(self.registry_lines()[-1], got)
+        self.assert_refused(self.cli("discard", "r1", "--retro"), "r1")
+        self.assertEqual(len(self.registry_lines()), 2)
+
     def test_discard_needs_an_open_item(self):
         self.add_lines(line("r1", "r1/alfa", "publicado", None))
         for item in ("r1/alfa", "r1/beta#1"):
@@ -591,7 +613,9 @@ class VerbTest(Base):
 
     def test_cli_usage_errors_exit_2(self):
         for args in (("triage",), ("held", "a"), ("hold", "r1", "r1/alfa"), ("approve", "r1"),
-                     ("discard", "r1", "r1/alfa#1", "--motivo"), ("discard", "r1", "r1/alfa#1", "--outro", "x")):
+                     ("discard", "r1", "r1/alfa#1", "--motivo"), ("discard", "r1", "r1/alfa#1", "--outro", "x"),
+                     ("discard", "r1", "--retro", "--motivo"), ("discard", "r1", "--retro", "--outro", "x"),
+                     ("discard", "r1", "--retro", "r1/alfa#1")):
             with self.subTest(args):
                 self.assert_refused(self.cli(*args), "uso")
 

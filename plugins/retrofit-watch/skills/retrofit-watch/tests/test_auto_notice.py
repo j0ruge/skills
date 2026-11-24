@@ -23,6 +23,7 @@ from test_retrofit_watch import UNATTENDED, HookHarness, World, skill_via_tool, 
 import retrofit_watch as rw  # noqa: E402
 import rw_auto  # noqa: E402  (o test_retrofit_watch põe scripts/ no path)
 import rw_store  # noqa: E402
+from test_auto_formats import lesson  # noqa: E402
 
 # O aviso de hoje, gravado antes da Tarefa 10 com uma retro adiada do `codereview` na fila.
 TODAY = ("retrofit-watch: 1 retro pendente de sessões headless (codereview) — "
@@ -266,10 +267,75 @@ class OrphanTest(NoticeHarness, unittest.TestCase):
         self.assertEqual([o["id"] for o in rw_auto.orphans(self.ctx(), now=ts + 2 * 3600)], [rid])
         (folder / "pedido.json").write_bytes(pedido)
         # Com a linha da segunda lição, o fluxo fechou: nada é órfão.
-        rw_auto._write_json(folder / "licoes.json", {"id": rid, "licoes": [{"n": 1}, {"n": 2}]})
+        rw_auto._write_json(folder / "licoes.json", {"id": rid, "licoes": [lesson(1, "demo"), lesson(2, "demo")]})
         self.line(rid, f"{rid}/demo#2", "descartado", motivo="coberta", licoes=[2])
         self.assertEqual(rw_auto.orphans(self.ctx(), now=ts + 2 * 3600), [])
 
+
+    def test_discard_retro_closes_lessons_without_a_verdict(self):
+        """Item 14: o revisor falhou (sem veredito.json) e a retro ficaria órfã para sempre."""
+        rid = self.w.retro([{}, {}], None)
+        ts = rw_auto.retro_pedido(self.ctx(), rid)["ts"]
+        self.line(rid, f"{rid}/demo#1", "descartado", motivo="coberta")
+        self.assertEqual([o["id"] for o in rw_auto.orphans(self.ctx(), now=ts + 2 * 3600)], [rid])
+        before = len(rw_auto.read_registry(self.ctx()))
+        got = rw_auto.discard_retro(self.ctx(), rid)
+        self.assertEqual([(e["item"], e["licoes"], e["resultado"], e["motivo"], e["sessao"], e["plugin"]) for e in got],
+                         [(f"{rid}/demo#2", [2], "descartado", "descartado-pelo-dono", "s1", "demo")])
+        self.assertEqual(rw_auto.read_registry(self.ctx())[before:], got)
+        self.assertEqual(rw_auto.orphans(self.ctx(), now=ts + 2 * 3600), [])
+        self.assertEqual(rw_auto.held(self.ctx()), [])
+
+    def test_discard_retro_closes_an_unreadable_lessons_file(self):
+        rid = self.w.retro([{}, {}], None)
+        folder = rw_auto.retro_dir(self.ctx(), rid)
+        ts = rw_auto.retro_pedido(self.ctx(), rid)["ts"]
+        (folder / "licoes.json").write_text("{", encoding="utf-8")
+        self.line("x1", "x1/demo", "publicado", lote="demo")
+        used = rw_auto.used(rw_auto.read_registry(self.ctx()), "s1")
+        self.assertEqual([o["id"] for o in rw_auto.orphans(self.ctx(), now=ts + 2 * 3600)], [rid])
+        got = rw_auto.discard_retro(self.ctx(), rid, "resolvido-manual")
+        self.assertEqual([(e["item"], e["resultado"], e["motivo"], e["sessao"]) for e in got],
+                         [(f"{rid}#retro", "descartado", "resolvido-manual", "s1")])
+        self.assertEqual(rw_auto.RETRO_ITEM.format(rid=rid), f"{rid}#retro")
+        self.assertEqual(rw_auto.orphans(self.ctx(), now=ts + 2 * 3600), [])
+        self.assertEqual(rw_auto.used(rw_auto.read_registry(self.ctx()), "s1"), used,
+                         "a linha da retro não é um retrofit da sessão")
+        # pedido.json ilegível: a linha sai com `sessao` null.
+        rid2 = self.w.retro([{}], None)
+        folder2 = rw_auto.retro_dir(self.ctx(), rid2)
+        (folder2 / "licoes.json").write_text("{", encoding="utf-8")
+        (folder2 / "pedido.json").write_text("{", encoding="utf-8")
+        [got] = rw_auto.discard_retro(self.ctx(), rid2)
+        self.assertEqual((got["item"], got["sessao"]), (f"{rid2}#retro", None))
+
+    def test_discard_retro_closes_a_lote_without_a_line(self):
+        rid = self.w.retro([{}], [{}])
+        retrofit = rw_store.prepare(self.ctx(), rid, "demo")
+        ts = rw_auto.retro_pedido(self.ctx(), rid)["ts"]
+        [orphan] = rw_auto.orphans(self.ctx(), now=ts + 2 * 3600)
+        self.assertEqual(orphan["tipo"], "lote")
+        got = rw_auto.discard_retro(self.ctx(), rid)
+        self.assertEqual([(e["item"], e["lote"], e["plugin"], e["licoes"], e["resultado"]) for e in got],
+                         [(f"{rid}/demo", "demo", "demo", retrofit["licoes"], "descartado")])
+        self.assertEqual(rw_auto.orphans(self.ctx(), now=ts + 2 * 3600), [])
+
+    def test_discard_retro_refuses_when_nothing_is_open(self):
+        rid = self.w.retro([{}, {}], None)
+        self.line(rid, f"{rid}/demo#1", "descartado", motivo="coberta")
+        self.line(rid, f"{rid}/demo#2", "segurado", motivo="sem-veredito", licoes=[2])
+        before = rw_auto.read_registry(self.ctx())
+        cases = {"nada sem registro de fim": (rid, "descartado-pelo-dono"),
+                 "não tem pasta": ("20261101-000000-ausente", "descartado-pelo-dono"),
+                 "'teto'": (self.w.retro([{}], None), "teto")}
+        for needle, (who, motivo) in cases.items():
+            with self.subTest(needle):
+                with self.assertRaises(rw_auto.Malformed) as caught:
+                    rw_auto.discard_retro(self.ctx(), who, motivo)
+                self.assertIn(needle, str(caught.exception))
+                self.assertEqual(rw_auto.read_registry(self.ctx()), before)
+        # A lição segurada continua em aberto: sai pelo `discard <id> <item>`.
+        self.assertEqual([e["item"] for e in rw_auto.held(self.ctx())], [f"{rid}/demo#2"])
 
     def test_orphans_read_the_registry_once(self):
         """I1: nada é apagado, e toda retro fechada continua com o seu licoes.json. O registro se lê uma
@@ -279,7 +345,7 @@ class OrphanTest(NoticeHarness, unittest.TestCase):
         for i in range(50):
             rid = f"20261101-000000-r{i:03d}"
             (root / rid).mkdir(parents=True)
-            rw_auto._write_json(root / rid / "licoes.json", {"id": rid, "licoes": [{"n": 1}, {"n": 2}]})
+            rw_auto._write_json(root / rid / "licoes.json", {"id": rid, "licoes": [lesson(1, "demo"), lesson(2, "demo")]})
             os.utime(root / rid, (old, old))
             self.line(rid, f"{rid}/demo#1", "descartado", motivo="coberta")
             if i % 2:

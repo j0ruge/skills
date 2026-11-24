@@ -24,6 +24,8 @@ AUTO_DIR = "auto"
 REGISTRY = "autonomo.jsonl"
 REGISTRY_LOCK = "autonomo.lock"
 AUTO_OPEN_TTL = 6 * 3600
+# O item da linha que fecha a retro inteira (`discard <id> --retro`). O `#` a tira das linhas de lote (_is_batch).
+RETRO_ITEM = "{rid}#retro"
 # A regra contra a autoaprovação (decisão O9), igual no texto do hook e na referência do fluxo.
 OWNER_WORD_RULE = "Nunca rode `approve`, `--publico-add` nem `--add` sem a palavra do dono nesta conversa."
 
@@ -285,35 +287,38 @@ def flow_open(st):
     return False
 
 
-def _lesson_numbers(path):
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict) or not isinstance(data.get("licoes"), list):
-        raise Malformed("licoes.json sem a lista `licoes`")
-    numbers = set()
-    for lesson in data["licoes"]:
-        if not isinstance(lesson, dict) or "n" not in lesson:
-            raise Malformed("lição sem `n`")
-        numbers.add(lesson["n"])
-    return numbers
+def _seen_lessons(lines, rid):
+    """Os números de lição (como texto) das linhas do registro com o id `rid`."""
+    seen = set()
+    for line in lines:
+        if line.get("id") == rid and isinstance(line.get("licoes"), list):
+            seen.update(str(n) for n in line["licoes"] if isinstance(n, (int, str)))
+    return seen
 
 
 def flow_finished(ctx, pedido, registry=None):
-    """O fluxo acabou quando licoes.json falta (a retro respondeu "sem lições novas"), ou quando
-    toda lição dele tem linha no registro com o id do pedido. licoes.json ilegível ou fora do
-    formato deixa o fluxo aberto, até o TTL: devolve False, sem exceção. `registry` são as linhas já
-    lidas: o `orphans` confere centenas de retros com uma leitura só do registro (T10-r1, I1)."""
+    """O fluxo acabou quando licoes.json falta (a retro respondeu "sem lições novas"), quando o
+    registro tem a linha da retro inteira (RETRO_ITEM, o `discard <id> --retro` do dono), ou quando
+    toda lição do licoes.json tem linha no registro com o id do pedido. licoes.json ilegível, fora do
+    formato ou de outra retro deixa o fluxo aberto, até o TTL: devolve False. O registro ilegível é
+    Malformed (read_registry), e quem chama trata: o hook o grava no errors.log e deixa o fluxo aberto.
+    `registry` são as linhas já lidas: o `orphans` confere centenas de retros com uma leitura só do
+    registro (T10-r1, I1)."""
     try:
-        path = retro_dir(ctx, pedido["id"]) / "licoes.json"
-        if not path.exists():
+        rid = pedido["id"]
+        if not (retro_dir(ctx, rid) / "licoes.json").exists():
             return True
-        numbers = _lesson_numbers(path)
+    except (OSError, KeyError, TypeError, Malformed):
+        return False
+    lines = read_registry(ctx) if registry is None else registry
+    closing = RETRO_ITEM.format(rid=rid)
+    if any(line.get("id") == rid and line.get("item") == closing for line in lines):
+        return True
+    try:
+        numbers = set(retro_licoes(ctx, rid))
     except (OSError, ValueError, KeyError, TypeError, Malformed):
         return False
-    seen = set()
-    for line in read_registry(ctx) if registry is None else registry:
-        if line.get("id") == pedido["id"] and isinstance(line.get("licoes"), list):
-            seen.update(n for n in line["licoes"] if isinstance(n, (int, str)))
-    return numbers <= seen
+    return numbers <= _seen_lessons(lines, rid)
 
 
 # --- formatos ----------------------------------------------------------------------------------
@@ -919,3 +924,69 @@ def discard(ctx, rid, item, motivo="descartado-pelo-dono"):
         raise Malformed(f"o item {item} não está em aberto (segurado ou erro) no registro")
     return append_registry(ctx, _line(last.get("sessao"), rid, item, last.get("plugin"), last.get("licoes"),
                                       "descartado", motivo, lote=last.get("lote")))
+
+
+def _lote_licoes(path):
+    try:
+        return list(load_retrofit(path)["licoes"])
+    except Malformed:
+        return []
+
+
+def discard_retro(ctx, rid, motivo="descartado-pelo-dono"):
+    """Fecha a retro inteira pela palavra do dono (`discard <id> --retro`, item 14): o fluxo sem conserto,
+    por exemplo o revisor que falha de novo e nunca deixa um veredito.json válido. Grava uma linha
+    `descartado` para cada coisa da retro sem registro de fim, e só para elas: cada lote com retrofit.json
+    e sem linha própria; com o licoes.json válido, cada lição sem linha; com o licoes.json presente e
+    inválido, uma linha só, com o item RETRO_ITEM. O item em aberto (`segurado` ou `erro`) tem linha e
+    fica: sai pelo `discard <id> <item>`. O ramo e o worktree ficam. Devolve as linhas gravadas.
+    Malformed sem a pasta da retro, com o motivo fora de OWNER_REASONS e quando não há nada a fechar."""
+    folder = retro_dir(ctx, rid)
+    if motivo not in OWNER_REASONS:
+        raise Malformed(f"motivo fora de {', '.join(OWNER_REASONS)}: {motivo!r}")
+    if not folder.is_dir():
+        raise Malformed(f"a retro {rid} não tem pasta em {folder.parent}")
+    try:
+        session = retro_pedido(ctx, rid)["sessao"]
+    except Malformed:
+        session = None
+    try:
+        lotes = sorted(sub.name for sub in folder.iterdir()
+                       if sub.is_dir() and SAFE_NAME.fullmatch(sub.name) and (sub / "retrofit.json").exists())
+    except OSError as exc:
+        raise Malformed(f"{folder}: ilegível ({exc.strerror or exc})") from None
+    licoes = None
+    if (folder / "licoes.json").exists():
+        try:
+            licoes = retro_licoes(ctx, rid)
+        except Malformed:
+            licoes = False  # presente e inválido
+    written = []
+
+    def closing(registry):
+        now = int(time.time())
+        items = set(last_lines(registry))
+        lines = []
+        for lote in lotes:
+            item = f"{rid}/{lote}"
+            if item not in items:
+                lines.append(_line(session, rid, item, lote.partition("__")[0],
+                                   _lote_licoes(lote_dir(ctx, rid, lote) / "retrofit.json"),
+                                   "descartado", motivo, lote=lote))
+        if licoes is False:
+            item = RETRO_ITEM.format(rid=rid)
+            if not any(e.get("id") == rid and e.get("item") == item for e in registry):
+                lines.append(_line(session, rid, item, None, [], "descartado", motivo))
+        elif licoes:
+            seen = _seen_lessons(list(registry) + lines, rid)
+            for key, licao in licoes.items():
+                if key not in seen:
+                    lines.append(_line(session, rid, f"{rid}/{licao['plugin']}#{licao['n']}", licao["plugin"],
+                                       [licao["n"]], "descartado", motivo))
+        if not lines:
+            raise Malformed(f"a retro {rid} não tem nada sem registro de fim")
+        written.extend(dict(entry, ts=now) for entry in lines)
+        return written
+
+    _append(ctx, closing)
+    return written

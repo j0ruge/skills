@@ -68,8 +68,7 @@ class AutoStopTest(HookHarness, unittest.TestCase):
         path.write_text(raw if isinstance(raw, str) else json.dumps(raw))
 
     def two_lessons(self, rid):
-        self.lessons(rid, {"id": rid, "licoes": [{"n": 1, "plugin": "codereview"},
-                                                 {"n": 2, "plugin": "codereview"}]})
+        self.lessons(rid, {"id": rid, "licoes": [lesson(1, plugin="codereview"), lesson(2, plugin="codereview")]})
 
     def registry(self, *lines):
         with open(self.w.data / rw_auto.REGISTRY, "a", encoding="utf-8") as fh:
@@ -332,6 +331,19 @@ class AutoStopTest(HookHarness, unittest.TestCase):
         self.assertIn("modo autônomo", out["systemMessage"])
         self.assertEqual(len(self.pedidos()), 2)
 
+    def test_discard_retro_reopens_the_hook_count(self):
+        """Item 14: o `discard <id> --retro` fecha o fluxo, e o Stop seguinte volta a contar."""
+        _, rid = self.open_auto_request()
+        self.lessons(rid, "{quebrado")
+        self.write(tool(error=True))
+        self.assertIsNone(self.run_hook(mode=BYPASS))
+        self.assertIn("auto_open", self.state())
+        rw_auto.discard_retro(self.w.ctx(), rid)
+        self.assertTrue(rw_auto.flow_finished(self.w.ctx(), self.state()["auto_open"]))
+        self.write(tool(error=True))
+        self.assertIsNone(self.run_hook(mode=BYPASS))
+        self.assertNotIn("auto_open", self.state())
+
     def test_stale_open_flow_expires(self):
         _, rid = self.open_auto_request()
         self.two_lessons(rid)
@@ -468,7 +480,7 @@ class AutoUnitTest(unittest.TestCase):
         self.assertEqual(rw_auto.read_registry(ctx), [first, last])
         path = self.w.data / "auto/r1/licoes.json"
         path.parent.mkdir(parents=True)
-        path.write_text(json.dumps({"id": "r1", "licoes": [{"n": 1}, {"n": 2}]}))
+        path.write_text(json.dumps({"id": "r1", "licoes": [lesson(1), lesson(2)]}))
         self.assertTrue(rw_auto.flow_finished(ctx, {"id": "r1"}))
 
     def test_unreadable_registry_is_malformed_not_empty(self):
@@ -540,7 +552,7 @@ class AutoUnitTest(unittest.TestCase):
         ctx = self.w.ctx()
         path = self.w.data / "auto/r1/licoes.json"
         path.parent.mkdir(parents=True)
-        path.write_text(json.dumps({"id": "r1", "licoes": [{"n": 1}]}))
+        path.write_text(json.dumps({"id": "r1", "licoes": [lesson(1)]}))
         rw_auto.append_registry(ctx, {"id": "r1", "item": "r1/codereview", "licoes": [[1], {"n": 1}, 1]})
         self.assertTrue(rw_auto.flow_finished(ctx, {"id": "r1"}))
 
@@ -585,7 +597,7 @@ class AutoUnitTest(unittest.TestCase):
         self.assertTrue(rw_auto.flow_finished(ctx, pedido), "sem licoes.json o fluxo acabou")
         path = self.w.data / "auto/r1/licoes.json"
         path.parent.mkdir(parents=True)
-        path.write_text(json.dumps({"id": "r1", "licoes": [{"n": 1}, {"n": 2}]}))
+        path.write_text(json.dumps({"id": "r1", "licoes": [lesson(1), lesson(2)]}))
         self.assertFalse(rw_auto.flow_finished(ctx, pedido))
         rw_auto.append_registry(ctx, {"id": "r1", "item": "r1/codereview#1", "licoes": [1]})
         rw_auto.append_registry(ctx, {"id": "r9", "item": "r9/codereview", "licoes": [2]})

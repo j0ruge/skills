@@ -217,6 +217,13 @@ class FixRoundTest(unittest.TestCase):
         self.assertIn("volte ao passo 2", flat(section(text, "3.")))
         self.assertIn("volte ao passo 2", flat(section(text, "O aviso de startup")))
 
+    def test_reference_names_the_retro_discard(self):
+        """Item 14: a retro sem conserto (o revisor falha de novo) se fecha pelo `discard --retro`."""
+        notice = flat(section(read(REFERENCE), "O aviso de startup"))
+        self.assertIn("`retrofit_watch.py discard <id> --retro`", notice)
+        self.assertIn("só com a palavra do dono", notice)
+        self.assertIn("O ramo e o worktree ficam", notice)
+
     def test_large_term_list_rule_is_in_both(self):
         self.assertIn("Nunca aceite um veredito só para a lista inteira.", flat(section(read(REFERENCE), "4.")))
         self.assertIn("Nunca dê um veredito só para a lista inteira.", flat(section(read(AGENT), "Segunda passada")))
