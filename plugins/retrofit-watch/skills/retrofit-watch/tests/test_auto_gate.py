@@ -405,6 +405,18 @@ class GateTest(GateHarness, unittest.TestCase):
         rg.hold(ctx, rid, "demo", "termo-nao-publico", f'"{term}": duvida')
         self.assertIsNone(self.refuse(rid))
 
+    def test_a_piece_of_a_cited_name_is_not_cited(self):
+        # Item 13: a forma do termo novo é igual à de um trecho citado, nunca um pedaço dela. A recusa cita o
+        # nome inteiro; a lista de públicos ganha só a primeira metade, e a guarda 5 segura.
+        name = invented("metade")
+        half = name[:len(name) // 2]
+        rid, wt = self.clean_retrofit(edit=lambda wt: append(wt / "scripts/public-names.txt", half + "\n"))
+        rg.hold(self.ctx(), rid, "demo", "nome-privado", f'nota.md:1: colheita "{name}"')
+        self.approve(rid, "demo", "nome-privado")
+        got = self.assertRefuses(rid, "escopo")
+        self.assertIn(half, got[1])
+        self.assertIn("nao citou", got[1])
+
     def test_private_list_needs_a_name_hold_and_only_grows(self):
         def add_a_hash(wt):
             proc = self.w.run_script(wt, "scripts/check-private-names.py", "--add", invented("novo"))
@@ -1863,6 +1875,22 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
 
     def test_teaching_the_gate_after_a_missing_review_publishes(self):
         self.teaching("passada", publish_before_approve=True, without_review=True)
+
+    def test_teaching_a_harvested_name_with_capital_and_accent_publishes(self):
+        # Item 13: a camada 1 cita o trecho com os escapes do `ascii()` (`\xe9`), e o dono escreve o nome
+        # como ele é, com maiúscula e acento. A guarda 5 compara a forma, não a letra: o ensino publica.
+        name = "Zq" + chr(0xE9) + "lvorn"
+        harvested = self.w.tmp / "repos" / name
+        harvested.mkdir(parents=True)
+        self.w.git(harvested, "init", "-q")
+        rid, wt = self.clean_retrofit(edit=lambda wt: append(wt / DOC, f"- Como no {name}.\n"))
+        self.held_as(rid, "nome-privado")
+        self.teach_public(wt, name)
+        rw_auto.approve(self.ctx(), rid, "demo")
+        line, rc = self.publish(rid, self.effects())
+        self.assertEqual((rc, line["resultado"], line["aprovado"]), (0, "publicado", True), line)
+        published = self.w.git(self.w.origin, "show", "main:scripts/public-names.txt").splitlines()
+        self.assertIn(name, published)
 
     def test_amend_keeps_the_marker_before_another_trailer(self):
         # I3: com outro trailer depois do `Retrofit-Mode`, a emenda o troca no lugar; no fim, a nova chamada

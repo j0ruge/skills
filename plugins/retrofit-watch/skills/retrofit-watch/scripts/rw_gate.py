@@ -255,6 +255,31 @@ def _last_name_hold(p):
     return None if last is None else str(last.get("detalhe") or "")
 
 
+WORD = re.compile(r"[^\W_]+")
+QUOTED = re.compile(r'"([^"]*)"')
+ASCII_ESCAPE = re.compile(r"\\(?:x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8})")
+
+
+def _form(text):
+    """As palavras de `text` em minúsculas, unidas sem separador: `Foo-Bar` e `foo bar` têm a mesma forma."""
+    return "".join(WORD.findall(text.lower()))
+
+
+def _cited(detail):
+    """A `_form` de cada trecho entre aspas duplas do `detalhe`, como está e com os escapes `\\x`, `\\u` e
+    `\\U` do `ascii()` desfeitos: a camada 1 cita `"Zq\\xe9l"`, e o dono escreve o nome com o acento (item
+    13). Um trecho que não se desfaz conta só como está. A forma vazia nunca conta como citada."""
+    out = set()
+    for piece in QUOTED.findall(detail):
+        out.add(_form(piece))
+        try:
+            out.add(_form(ASCII_ESCAPE.sub(lambda m: chr(int(m.group()[2:], 16)), piece)))
+        except (ValueError, OverflowError):
+            pass
+    out.discard("")
+    return out
+
+
 def _g_scope(p):
     """5. Um commit só, cada caminho no SCOPE; as listas do portão só com a aprovação do dono por nome (C2)."""
     count = p.git("rev-list", "--count", f"{rw_store.BASE_REF}..HEAD").strip()
@@ -271,7 +296,9 @@ def _g_scope(p):
     detail = _last_name_hold(p)
     if detail is None:
         return "escopo", f"as listas do portao mudaram sem linha `segurado` por nome de {p.rid}/{p.lote}"
-    uncited = [t for t in _entries(_added_lines(p.diff(PUBLIC_LIST))) if f'"{t}"' not in detail]
+    # A forma inteira do termo, igual à de um trecho citado; nunca um pedaço dele (item 13).
+    cited = _cited(detail)
+    uncited = [t for t in _entries(_added_lines(p.diff(PUBLIC_LIST))) if _form(t) not in cited]
     if uncited:
         return "escopo", _short("termos novos na lista de publicos que a recusa nao citou: " + ", ".join(uncited))
     if _entries(_removed_lines(p.diff(PRIVATE_LIST))):
