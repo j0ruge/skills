@@ -668,7 +668,7 @@ def _timed_out(ctx, head, now):
     if not isinstance(data, dict) or set(data) != {"sha", "estouro"} or data["sha"] != head:
         return False
     when = data["estouro"]
-    if isinstance(when, bool) or not isinstance(when, (int, float)):
+    if not isinstance(when, (int, float)):
         return False
     return now - when < CRITERION_RETRY
 

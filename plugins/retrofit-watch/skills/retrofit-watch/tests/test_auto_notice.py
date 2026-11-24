@@ -479,6 +479,14 @@ class CriterionTest(NoticeHarness, unittest.TestCase):
             self.fetch()
             got = self.criterion(later + 60)
             self.assertEqual(len(logs(spy)), 3)
+            # A forma do estouro quebrada mede de novo, sem exceção: chama o git log e devolve o dicionário.
+            head = self.w.git(self.w.store, "rev-parse", "origin/main")
+            for n, broken in enumerate(({"sha": head, "estouro": "x"}, {"sha": head, "estouro": None},
+                                        {"sha": head, "estouro": later, "mais": 1}), start=4):
+                with self.subTest(broken=broken):
+                    (self.w.data / "criterio.json").write_text(json.dumps(broken), encoding="utf-8")
+                    self.assertEqual(self.criterion(later + 60), got)
+                    self.assertEqual(len(logs(spy)), n)
         self.assertEqual((got["publicados"], got["cumprido"]), (11, True), "o sha novo não mediu de novo")
 
 
