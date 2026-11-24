@@ -5,6 +5,16 @@
 > Sprint, story points, `fixVersion` e a releitura dos campos ficam em
 > `campos.md` (o SKILL.md roteia).
 
+## Sumário
+
+- [Sequência de Transições](#sequência-de-transições)
+- [Branch base (`$BASE_BRANCH`)](#branch-base-base_branch)
+- [Projeto novo](#projeto-novo) · [Clonar um projeto company-managed](#clonar-um-projeto-company-managed)
+- [Tipos de Issue (em PT-BR)](#tipos-de-issue-em-pt-br)
+- [Gotchas do `acli`](#gotchas-do-acli)
+- [Sub-issues](#sub-issues)
+- [Vínculos entre issues (issue links)](#vínculos-entre-issues-issue-links)
+
 ## Sequência de Transições
 
 > ⚠️ **As transições são específicas de cada projeto/board — não existe sequência
@@ -117,8 +127,12 @@ BASE_BRANCH=develop
 ## Projeto novo
 
 Quando o `GET /rest/api/3/project/<KEY>` responde "Nenhum projeto poderia ser encontrado", a key
-ainda não existe. Criar projeto é ato de projeto: **confirme com o dev** a key, o nome e o modelo
-(Scrum ou Kanban) antes do POST. Medido ao criar o ABC em 2026-10-01:
+ainda não existe. **Key livre não prova que o produto não tem projeto:** liste os projetos
+(`GET $J/project/search?maxResults=100`) e confira os de nome parecido. Em 2026-11-24, um projeto
+antigo com nome quase igual ao do produto tratava de outro assunto. Criar projeto é ato de
+projeto: **confirme com o dev** a key, o nome, o caminho (o template abaixo ou o
+[clone](#clonar-um-projeto-company-managed), quando os irmãos do repo são company-managed) e o
+modelo (Scrum ou Kanban) antes do POST. Medido ao criar o ABC em 2026-10-01:
 
 ```bash
 set -a; . ~/.hermes/.env; set +a; J=$JIRA_BASE_URL/rest/api/3
@@ -139,6 +153,40 @@ curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
   ativa**. Ver `campos.md §Quando não aparece sprint ativa`, item 3.
 - Versão e issue seguem os caminhos de sempre (`campos.md §fixVersion`). Depois, grave o
   `.jira-project` com os ids descobertos no comentário de cabeçalho.
+
+### Clonar um projeto company-managed
+
+Quando os projetos irmãos do repo são company-managed (`style classic`), o clone dá ao projeto novo
+o mesmo fluxo e os mesmos tipos, que esta skill já conhece:
+`acli jira project create --from-project <ORIGEM> --key <KEY> --name "<nome>"`. Só projeto
+company-managed serve de origem (`acli jira project create --help`), e o líder, sem
+`--lead-email`, é o da origem. O `acli` sai 0 mesmo quando falha: releia com `GET $J/project/<KEY>`.
+Medido em 2026-11-24, clonando um projeto company-managed: `style classic`, com o esquema de tipos
+da origem e os mesmos ids de tipo de um clone anterior da mesma origem.
+
+O clone **não traz filtro nem board**, e o board criado depois nasce **sem sprint nenhuma**, nem
+`future` (`total 0` no `GET .../board/<id>/sprint`). Os dois saem pela API:
+
+```bash
+curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -X POST -H 'Content-Type: application/json' \
+  -d '{"name":"Filtrar por <nome>","jql":"project = <KEY> ORDER BY Rank ASC",
+       "sharePermissions":[{"type":"project","project":{"id":"<id do projeto>"}}]}' \
+  "$J/filter"                                                          # → id do filtro
+curl -s -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -X POST -H 'Content-Type: application/json' \
+  -d '{"name":"<nome>","type":"scrum","filterId":<id do filtro>,
+       "location":{"type":"project","projectKeyOrId":"<KEY>"}}' \
+  "$JIRA_BASE_URL/rest/agile/1.0/board"                                # → $BOARD
+```
+
+- Releia com `GET $JIRA_BASE_URL/rest/agile/1.0/board?projectKeyOrId=<KEY>`.
+- **Não copie o filtro do board de um irmão:** ele pode ter recorte próprio (o do clone anterior
+  também filtrava por Team, `cf[10001]`). Basta o `project = <KEY>`.
+- Sem sprint, a primeira issue cai em `campos.md §Quando não aparece sprint ativa`, item 3:
+  criar a sprint é decisão do dev.
+- **Num repo com o kit `sdd`,** ligar o Jira é `JIRA_ENABLED=true` no `.sdd/config.sh` **e** a pasta
+  desta skill no `READ_EXTRA`; sem ela, as fases que carregam a skill não leem estas references. O
+  sensor é o `sdd preflight`: `ok JIRA enabled, .jira-project present`, sem o aviso
+  `READ_EXTRA does not declare it`.
 
 ## Tipos de Issue (em PT-BR)
 

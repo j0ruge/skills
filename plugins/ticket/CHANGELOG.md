@@ -1,5 +1,21 @@
 # Changelog — ticket
 
+## [1.15.0] — 2026-11-24
+
+### Projeto novo também por clone, com filtro e board pela API
+
+A `references/workflow.md §Projeto novo` só ensinava o `POST /project` com o template team-managed. Num repo cujos
+projetos irmãos são company-managed, o caminho é clonar um deles: `acli jira project create --from-project <ORIGEM>`,
+que só aceita origem company-managed (`acli jira project create --help`) e dá ao projeto novo o fluxo e os ids de tipo
+da origem. Medido em 2026-11-24: o clone saiu `style classic`, sem filtro e sem board. O filtro
+(`POST /rest/api/3/filter`, compartilhado com o projeto) e o board scrum (`POST /rest/agile/1.0/board`) foram criados
+pela API e relidos, e o board nasceu com `total 0` sprints, sem a `future` que o template cria. A seção também passa a
+mandar listar os projetos antes de criar, porque key livre não prova que o produto não tem projeto (um projeto antigo de
+nome quase igual tratava de outro assunto). E diz que, num repo com o kit `sdd`, ligar o Jira também põe a pasta da
+skill no `READ_EXTRA`, com o `sdd preflight` como sensor: o aviso `READ_EXTRA does not declare it` sumiu depois da
+correção. O `workflow.md` passou de 300 linhas e ganhou um sumário no topo. O `SKILL.md` não mudou de tamanho
+(19.988 chars). Dívida anterior, fora deste retrofit: o `argument-hint` no topo do `SKILL.md` (A4 e G2 da auditoria).
+
 ## [1.14.6] — 2026-11-10
 
 ### Issue existente: sprint, score e fixVersion também pelo `PUT` REST
