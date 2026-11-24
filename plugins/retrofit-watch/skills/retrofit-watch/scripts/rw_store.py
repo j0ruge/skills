@@ -55,16 +55,24 @@ class StoreError(Exception):
 
 def run(cmd, cwd=None, timeout=RUN_TIMEOUT, env=None):
     """(rc, saída) do comando, com stdout e stderr juntos e decodificados sem erro. Nunca levanta:
-    o tempo esgotado dá rc 124 e o binário ausente (ou outro OSError ao lançar) dá rc 127."""
+    o tempo esgotado dá rc 124; o comando que não chegou a rodar (binário ausente, outro OSError ao
+    lançar, um NUL num argumento ou no cwd) dá rc 127."""
+    rc, raw = run_bytes(cmd, cwd=cwd, timeout=timeout, env=env)
+    return rc, _decode(raw)
+
+
+def run_bytes(cmd, cwd=None, timeout=RUN_TIMEOUT, env=None):
+    """O `run` com a saída em bytes, sem decodificar: o patch (D20) se calcula sobre os bytes, porque
+    dois bytes diferentes fora do UTF-8 viram o mesmo U+FFFD na decodificação."""
     try:
         proc = subprocess.run([str(c) for c in cmd], cwd=None if cwd is None else str(cwd), env=env,
                               stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               timeout=timeout)
     except subprocess.TimeoutExpired as exc:
-        return 124, _decode(exc.output)
-    except OSError as exc:
-        return 127, str(exc)
-    return proc.returncode, _decode(proc.stdout)
+        return 124, exc.output or b""
+    except (OSError, ValueError) as exc:  # ValueError: o subprocess recusa um NUL no argumento ou no cwd
+        return 127, str(exc).encode("utf-8", "replace")
+    return proc.returncode, proc.stdout or b""
 
 
 def _decode(raw):
@@ -215,12 +223,30 @@ def write_harvest(ctx, cwd=None):
     if _inside_repo(data):
         raise StoreError(f"a pasta de dados esta dentro de um repo git: {data}. A colheita fica fora de repo.")
     path = data / HARVEST_FILE
-    body = "".join(t + "\n" for t in sorted(harvest(ctx, cwd)))
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as fh:
-        fh.write(body)
-    os.chmod(path, 0o600)  # o arquivo antigo pode ter outra permissão: o os.open só a dá ao criar
+    _atomic_write(path, "".join(t + "\n" for t in sorted(harvest(ctx, cwd))).encode("utf-8"))
     return path
+
+
+def _atomic_write(path, body):
+    """Grava `body` num temporário novo (O_EXCL, 0o600) da mesma pasta e o põe no lugar de `path` com
+    os.replace. Quem lê o arquivo antigo (o portão de outro lote, por `--extra`) nunca o vê truncado
+    ou pela metade, e o arquivo antigo com outra permissão nunca recebe os nomes novos. O temporário
+    de uma falha sai no `finally`: não fica arquivo com nomes colhidos para trás."""
+    path = Path(path)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.{os.urandom(6).hex()}.tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    done = False
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(body)
+        os.replace(tmp, path)
+        done = True
+    finally:
+        if not done:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
 
 
 # --- o worktree do lote ------------------------------------------------------------------------
@@ -275,6 +301,8 @@ def prepare(ctx, rid, lote, redo=False):
         if current["commit"] is None:
             return current
         tentativa = current["tentativa"] + 1
+        # Nada é apagado (D23): o retrofit.json da tentativa anterior fica como retrofit-r<n>.json.
+        _atomic_write(path.with_name(f"retrofit-r{current['tentativa']}.json"), path.read_bytes())
     elif path.exists():
         return rw_auto.load_retrofit(path)
     worktree = worktree_path(ctx, rid, lote, tentativa)
@@ -295,21 +323,35 @@ def prepare(ctx, rid, lote, redo=False):
 
 # --- o selo ------------------------------------------------------------------------------------
 
+# As linhas do diff que o patch conta além das `+` e `-`: o cabeçalho que nomeia o arquivo e o modo.
+# Um arquivo vazio novo ou apagado e uma troca só de modo não têm linha `+`/`-`: só estas os nomeiam.
+# O rebase não as muda. Ficam fora os `@@` (números de linha) e o `index ` (os shas dos blobs).
+PATCH_HEADERS = (b"diff --git ", b"new file mode ", b"deleted file mode ", b"old mode ", b"new mode ")
+
+
+def _git_bytes(args, cwd, env, what):
+    rc, out = run_bytes(["git", "-C", str(cwd), *args], env=env)
+    if rc != 0:
+        raise StoreError(f"{what}: git {' '.join(args)} saiu {rc}: {_decode(out).strip()[:500]}")
+    return out
+
+
 def patch_id(worktree):
-    """O sha256 do que o ramo muda (D20 e M13): as linhas `+` e `-` de `git diff -U0 --no-renames
-    origin/main...HEAD` (os nomes de arquivo vêm nas `+++` e `---`), sem os `@@` e sem os dois
-    arquivos de lista, e a mensagem de cada commit. O rebase não o muda; mudar conteúdo ou mensagem muda."""
+    """O sha256 do que o ramo muda (D20 e M13), sobre os bytes de `git diff -U0 --no-renames
+    origin/main...HEAD` sem os dois arquivos de lista: as linhas `+` e `-` (os nomes de arquivo vêm nas
+    `+++` e `---`), as de PATCH_HEADERS, e a mensagem de cada commit. O rebase não o muda; mudar
+    conteúdo, nome, modo ou mensagem muda."""
     env = git_env(neutral=True)
     exclude = [f":(exclude){f}" for f in LIST_FILES]
-    diff = _git(["-c", "core.quotePath=false", "diff", "-U0", "--no-renames", "--text", "--no-ext-diff",
-                 "--no-textconv", "--src-prefix=a/", "--dst-prefix=b/", "--no-color", "--no-relative",
-                 f"{BASE_REF}...HEAD", "--", ".", *exclude], worktree, env, "patch")
-    message = _git(["log", "--format=%B", f"{BASE_REF}..HEAD"], worktree, env, "patch")
+    diff = _git_bytes(["-c", "core.quotePath=false", "diff", "-U0", "--no-renames", "--text", "--no-ext-diff",
+                       "--no-textconv", "--src-prefix=a/", "--dst-prefix=b/", "--no-color", "--no-relative",
+                       f"{BASE_REF}...HEAD", "--", ".", *exclude], worktree, env, "patch")
+    message = _git_bytes(["log", "--format=%B", f"{BASE_REF}..HEAD"], worktree, env, "patch")
     digest = hashlib.sha256()
-    for line in diff.split("\n"):
-        if line.startswith(("+", "-")):
-            digest.update(line.encode("utf-8", "surrogateescape") + b"\n")
-    digest.update(b"\0" + message.encode("utf-8", "surrogateescape"))
+    for line in diff.split(b"\n"):
+        if line.startswith((b"+", b"-")) or line.startswith(PATCH_HEADERS):
+            digest.update(line + b"\n")
+    digest.update(b"\0" + message)
     return digest.hexdigest()
 
 

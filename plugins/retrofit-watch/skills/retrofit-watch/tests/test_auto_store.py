@@ -65,6 +65,18 @@ class RunAndNamesTest(unittest.TestCase):
         rc, out = rw_store.run([sys.executable, "-c", "import sys; print('x'); sys.stderr.write('y'); sys.exit(3)"])
         self.assertEqual((rc, out.split()), (3, ["x", "y"]))
 
+    def test_run_never_raises_on_a_nul(self):
+        # Ruling T7-r1a: o subprocess recusa um NUL com ValueError; o `run` o lê como "não rodou", rc 127.
+        nul = chr(0)
+        for kwargs in ({"cmd": [sys.executable, "-c", "pass", "a" + nul + "b"]},
+                       {"cmd": [sys.executable, "-c", "pass"], "cwd": "x" + nul + "y"}):
+            with self.subTest(kwargs=kwargs):
+                rc, out = rw_store.run(**kwargs)
+                self.assertEqual(rc, 127)
+                self.assertTrue(out)
+        ctx = rw.Context(home=tempfile.gettempdir(), data_dir=tempfile.gettempdir())
+        self.assertIsInstance(rw_store.harvest(ctx, cwd="proj" + nul), set)
+
     def test_expand_breaks_a_long_name(self):
         a, b = invented("alfa"), invented("beta")
         term = f"{a} de {b}"
@@ -247,6 +259,26 @@ class HarvestTest(unittest.TestCase):
         self.assertIn("dentro de um repo", str(caught.exception))
         self.assertFalse((inside / rw_store.HARVEST_FILE).exists())
 
+    def test_write_harvest_replaces_the_file_and_leaves_no_temp(self):
+        # Achado I2: quem já abriu o arquivo antigo (o portão de outro lote) lê o antigo inteiro, nunca
+        # um arquivo truncado; uma falha no meio não deixa temporário com nomes.
+        name = invented("atom")
+        make_repo(self.env, self.roots / name)
+        self.config()
+        path = self.data / rw_store.HARVEST_FILE
+        old = "".join(invented(f"old{i}") + "\n" for i in range(50))
+        path.write_text(old, encoding="utf-8")
+        with open(path, encoding="utf-8") as reader:
+            rw_store.write_harvest(self.ctx())
+            self.assertEqual(reader.read(), old)
+        self.assertIn(name, path.read_text(encoding="utf-8").splitlines())
+        before = path.read_text(encoding="utf-8")
+        with mock.patch.object(rw_store.os, "replace", side_effect=OSError("disco cheio")):
+            with self.assertRaises(OSError):
+                rw_store.write_harvest(self.ctx())
+        self.assertEqual(path.read_text(encoding="utf-8"), before)
+        self.assertEqual(sorted(p.name for p in self.data.iterdir()), [rw_store.HARVEST_FILE])
+
     def test_harvest_cli_prints_no_name(self):
         names = [invented("cli1"), invented("cli2")]
         for name in names:
@@ -378,7 +410,7 @@ class StoreTest(unittest.TestCase):
         self.assert_rc2(self.cli("prepare", rid, "demo", "--redo"), "rebase")
         wt1 = Path(first["worktree"])
         self.w.retrofit(wt1)
-        rw_store.seal(ctx, rid, "demo", ["1"], [])
+        sealed = rw_store.seal(ctx, rid, "demo", ["1"], [])
 
         def hold(motivo):
             rw_auto.append_registry(ctx, rw_auto._line("s1", rid, f"{rid}/demo", "demo", [1], "segurado", motivo,
@@ -394,6 +426,13 @@ class StoreTest(unittest.TestCase):
                           None))
         self.assertTrue(second["worktree"].endswith("-r2") and second["ramo"].endswith("-r2"))
         self.assertTrue(wt1.is_dir())
+        # Ruling T7-r1c: o retrofit.json da tentativa 1, já selado, fica como retrofit-r1.json.
+        folder = rw_auto.lote_dir(ctx, rid, "demo")
+        kept = rw_auto.load_retrofit(folder / "retrofit-r1.json")
+        self.assertEqual((kept["tentativa"], kept["ramo"], kept["commit"]), (1, first["ramo"], sealed["commit"]))
+        self.assertEqual((kept["patch"], kept["versao"], kept["licoes"], kept["fases"]),
+                         (sealed["patch"], sealed["versao"], [1], []))
+        self.assertEqual(self.retrofit_json(rid), second)
         self.w.git(self.w.store, "rev-parse", "--verify", "-q", first["ramo"])
         self.w.git(self.w.store, "rev-parse", "--verify", "-q", second["ramo"])
         # Sem selo na tentativa 2, um segundo --redo devolve a mesma, e o prepare sem --redo também.
@@ -454,6 +493,38 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(rw_store.patch_id(wt), amended, "os arquivos de lista entraram no patch")
         self.w.git(wt, "commit", "-q", "--amend", "-m", "fix(demo): outra mensagem")
         self.assertNotEqual(rw_store.patch_id(wt), amended, "a mensagem do commit ficou fora do patch")
+
+    def test_patch_id_binds_names_modes_and_raw_bytes(self):
+        # Achados I1 e M2: um arquivo vazio novo e uma troca só de modo não têm linha `+`/`-`; dois bytes
+        # diferentes fora do UTF-8 viram o mesmo U+FFFD se o diff for decodificado antes do hash.
+        rid, got = self.prepared()
+        wt = Path(got["worktree"])
+        self.w.retrofit(wt)
+
+        def amend():
+            self.w.git(wt, "add", "-A")
+            self.w.git(wt, "commit", "-q", "--amend", "--no-edit")
+            return rw_store.patch_id(wt)
+
+        base = rw_store.patch_id(wt)
+        empty = wt / "plugins/demo/skills/demo/references" / (invented("vazio") + ".md")
+        empty.parent.mkdir(parents=True)
+        empty.write_bytes(b"")
+        with_empty = amend()
+        self.assertNotEqual(with_empty, base, "um arquivo vazio novo não mudou o patch")
+        if os.name != "nt":
+            (wt / fs.PLUGINS["demo"]).chmod(0o755)
+            with_mode = amend()
+            self.assertNotEqual(with_mode, with_empty, "uma troca só de modo não mudou o patch")
+            for rel in rw_store.LIST_FILES:
+                (wt / rel).chmod(0o755)
+            self.assertEqual(amend(), with_mode, "o modo de um arquivo de lista entrou no patch")
+        raw = wt / "plugins/demo/skills/demo/references/bytes.txt"
+        patches = []
+        for byte in (0xFE, 0xFF):
+            raw.write_bytes(b"antes " + bytes([byte]) + b" depois\n")
+            patches.append(amend())
+        self.assertNotEqual(patches[0], patches[1], "dois bytes fora do UTF-8 deram o mesmo patch")
 
     # --- camada 1 e termos ---------------------------------------------------------------------
 
