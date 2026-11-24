@@ -140,6 +140,21 @@ class RegistryNoticeTest(NoticeHarness, unittest.TestCase):
         self.line("z2", "z2/demo#2", "segurado", motivo="sem-correcao")
         self.assertIn("2 retrofits segurados (demo: retrofit-auto/demo-x1, demo: z2/demo#2)", self.pending())
 
+    def test_held_lote_without_branch_in_its_line_reads_the_retrofit_json(self):
+        """I2: a linha do `hold_item` por `executor-falhou` sai sem ramo; o ramo vem do retrofit.json."""
+        rid = self.w.retro([{}], [{}])
+        retrofit = rw_store.prepare(self.ctx(), rid, "demo")
+        line = rw_auto.hold_item(self.ctx(), rid, f"{rid}/demo", "executor-falhou")
+        self.assertIsNone(line["ramo"])
+        self.assertEqual(self.pending(), f"retrofit-watch: 1 retrofit segurado (demo: {retrofit['ramo']}) — "
+                                         "/retrofit-watch:retrofit-watch segurados")
+        # Sem retrofit.json (o lote não chegou ao prepare), o aviso nomeia o item.
+        (rw_auto.lote_dir(self.ctx(), rid, "demo") / "retrofit.json").unlink()
+        self.assertIn(f"(demo: {rid}/demo)", self.pending())
+        # Uma linha com o id fora do formato seguro não aponta pasta nenhuma: o aviso nomeia o item.
+        self.line("..", "../demo", "segurado", motivo="testes", lote="demo")
+        self.assertIn("demo: ../demo)", self.pending())
+
     def test_install_behind_is_announced(self):
         self.line("a1", "a1/demo", "publicado", lote="demo", instalacao="update")
         self.line("b1", "b1/demo2", "publicado", plugin="demo2", lote="demo2", instalacao="ok")
@@ -226,6 +241,25 @@ class OrphanTest(NoticeHarness, unittest.TestCase):
         self.assertEqual(rw_auto.orphans(self.ctx(), now=ts + 2 * 3600), [])
 
 
+    def test_orphans_read_the_registry_once(self):
+        """I1: nada é apagado, e toda retro fechada continua com o seu licoes.json. O registro se lê uma
+        vez só por chamada, não uma vez por retro antiga (o startup tem 10 s)."""
+        old = int(time.time()) - 2 * DAY
+        root = self.w.data / rw_auto.AUTO_DIR
+        for i in range(50):
+            rid = f"20261101-000000-r{i:03d}"
+            (root / rid).mkdir(parents=True)
+            rw_auto._write_json(root / rid / "licoes.json", {"id": rid, "licoes": [{"n": 1}, {"n": 2}]})
+            os.utime(root / rid, (old, old))
+            self.line(rid, f"{rid}/demo#1", "descartado", motivo="coberta")
+            if i % 2:
+                self.line(rid, f"{rid}/demo#2", "descartado", motivo="coberta", licoes=[2])
+        with mock.patch.object(rw_auto, "read_registry", wraps=rw_auto.read_registry) as spy:
+            got = rw_auto.orphans(self.ctx())
+        self.assertEqual(spy.call_count, 1)
+        self.assertEqual([o["id"] for o in got], [f"20261101-000000-r{i:03d}" for i in range(0, 50, 2)])
+
+
 @fs.requires_store
 class CriterionTest(NoticeHarness, unittest.TestCase):
     def test_criterion_needs_ten_and_fourteen_days(self):
@@ -250,13 +284,16 @@ class CriterionTest(NoticeHarness, unittest.TestCase):
         self.assertIsNone(rw_store.criterion_notice(self.ctx(), now=self.t0 + 13 * DAY + 30))
 
     def test_criterion_counts_commits_not_registry_lines(self):
-        for i in range(10):
-            self.line(f"r{i}", f"r{i}/demo", "publicado", lote="demo", instalacao="ok", commit="0" * 40)
-        self.fetch()
-        self.assertEqual(self.criterion(self.t0 + 15 * DAY)["publicados"], 0)
+        base = self.w.git(self.w.store, "rev-parse", "origin/main")
         self.autos(10)
         self.fetch()
-        self.assertEqual(self.criterion(self.t0 + 15 * DAY)["publicados"], 10)
+        self.assertEqual(rw_auto.read_registry(self.ctx()), [])
+        self.assertEqual(self.criterion(self.t0 + 15 * DAY)["publicados"], 10, "o registro vazio não zera a conta")
+        # Um origin/main local sem os commits e 10 linhas `publicado` no registro: a conta é zero.
+        self.w.git(self.w.store, "update-ref", "refs/remotes/origin/main", base)
+        for i in range(10):
+            self.line(f"r{i}", f"r{i}/demo", "publicado", lote="demo", instalacao="ok", commit="0" * 40)
+        self.assertEqual(self.criterion(self.t0 + 15 * DAY)["publicados"], 0)
 
     def test_approved_commits_do_not_count(self):
         self.autos(9)

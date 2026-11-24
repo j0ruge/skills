@@ -270,10 +270,11 @@ def _lesson_numbers(path):
     return numbers
 
 
-def flow_finished(ctx, pedido):
+def flow_finished(ctx, pedido, registry=None):
     """O fluxo acabou quando licoes.json falta (a retro respondeu "sem lições novas"), ou quando
     toda lição dele tem linha no registro com o id do pedido. licoes.json ilegível ou fora do
-    formato deixa o fluxo aberto, até o TTL: devolve False, sem exceção."""
+    formato deixa o fluxo aberto, até o TTL: devolve False, sem exceção. `registry` são as linhas já
+    lidas: o `orphans` confere centenas de retros com uma leitura só do registro (T10-r1, I1)."""
     try:
         path = retro_dir(ctx, pedido["id"]) / "licoes.json"
         if not path.exists():
@@ -282,7 +283,7 @@ def flow_finished(ctx, pedido):
     except (OSError, ValueError, KeyError, TypeError, Malformed):
         return False
     seen = set()
-    for line in read_registry(ctx):
+    for line in read_registry(ctx) if registry is None else registry:
         if line.get("id") == pedido["id"] and isinstance(line.get("licoes"), list):
             seen.update(n for n in line["licoes"] if isinstance(n, (int, str)))
     return numbers <= seen
@@ -696,7 +697,13 @@ def orphans(ctx, now=None):
         folders = sorted(p for p in (ctx.data_dir / AUTO_DIR).iterdir() if p.is_dir() and SAFE_NAME.fullmatch(p.name))
     except OSError:
         return []
-    last = last_lines(read_registry(ctx))
+    # Uma leitura só do registro, agrupada por id: o startup tem 10 s, e nada é apagado, então toda
+    # retro fechada continua aqui com o seu licoes.json (T10-r1, I1).
+    registry = read_registry(ctx)
+    last = last_lines(registry)
+    by_id = {}
+    for line in registry:
+        by_id.setdefault(line.get("id"), []).append(line)
     out = []
     for folder in folders:
         rid = folder.name
@@ -708,7 +715,7 @@ def orphans(ctx, now=None):
                  and f"{rid}/{sub.name}" not in last]
         if lotes:
             out += lotes
-        elif (folder / "licoes.json").exists() and not flow_finished(ctx, {"id": rid}):
+        elif (folder / "licoes.json").exists() and not flow_finished(ctx, {"id": rid}, by_id.get(rid, [])):
             out.append({"tipo": "licoes", "id": rid, "lote": None, "ramo": None})
     return out
 
@@ -724,11 +731,24 @@ def _amount(n, one, many):
     return f"{n} {one if n == 1 else many}"
 
 
+def _held_branch(ctx, line):
+    """O ramo de um item segurado: o da linha; sem ele, num lote (a linha do `hold_item` por
+    `executor-falhou` sai sem ramo), o do retrofit.json do lote, se o `prepare` já o criou (T10-r1, I2)."""
+    if line.get("ramo"):
+        return line["ramo"]
+    if not _is_batch(line):
+        return None
+    try:
+        return _ramo(lote_dir(ctx, line.get("id"), line["item"].partition("/")[2]) / "retrofit.json")
+    except Malformed:
+        return None
+
+
 def held_notice(ctx):
     items = held(ctx)
     if not items:
         return None
-    names = ", ".join(f"{e.get('plugin')}: {e.get('ramo') or e.get('item')}" for e in items)
+    names = ", ".join(f"{e.get('plugin')}: {_held_branch(ctx, e) or e.get('item')}" for e in items)
     return (f"{_amount(len(items), 'retrofit segurado', 'retrofits segurados')} ({names}) — "
             "/retrofit-watch:retrofit-watch segurados")
 
