@@ -193,13 +193,25 @@ def origin_terms(url):
     return [t for t in owners + [name] if t]
 
 
+def _gone(path):
+    """True só quando `path` não existe mais (ou um pedaço dele não é pasta). Outro OSError, como o
+    EACCES, é StoreError com o caminho (C8): a pasta que existe e não lê nunca passa por ausente."""
+    try:
+        os.stat(path)
+    except (FileNotFoundError, NotADirectoryError):
+        return True
+    except OSError as exc:
+        raise StoreError(f"colheita: a pasta {path} nao le: {exc}") from exc
+    return False
+
+
 def _origin_of(repo, env):
-    """Os termos do `origin` de `repo`. Sem remoto `origin` (rc 2) é nada; outro rc é StoreError (C8):
-    a colheita nunca encolhe em silêncio."""
+    """Os termos do `origin` de `repo`. Sem remoto `origin` (rc 2) é nada, e o clone que sumiu depois de
+    achado também (T5-r1); outro rc é StoreError (C8): a colheita nunca encolhe em silêncio."""
     rc, out = run(["git", "-C", str(repo), "remote", "get-url", "origin"], env=env)
     if rc == 0:
         return origin_terms(out)
-    if rc == 2:
+    if rc == 2 or _gone(repo):
         return []
     raise StoreError(f"colheita: o origin de {repo} nao le: git saiu {rc}: {out.strip()[:500]}")
 
@@ -218,7 +230,8 @@ def _repos(root, depth=HARVEST_DEPTH):
             except OSError as exc:
                 raise StoreError(f"colheita: a pasta {folder} nao le: {exc}") from exc
             for child in children:
-                if (child / ".git").exists():
+                # Não o `exists()`: no 3.12 ele relança o EACCES cru, e no 3.13 pode dar False (T5-r1).
+                if not _gone(child / ".git"):
                     found.append(child)
                 nxt.append(child)
         level = nxt

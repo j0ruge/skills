@@ -279,6 +279,49 @@ class HarvestTest(unittest.TestCase):
             got = rw_store.harvest(self.ctx())
         self.assertEqual({bare, ra, own, rem, nm, self.home.name} - got, set())
 
+    def test_harvest_skips_a_clone_deleted_mid_scan(self):
+        # T5-r1-focus: o clone que some entre o `_repos` (ou o `rev-parse` do projeto) e o `_origin_of`
+        # é ausência, não leitura que falhou. O git sai 128 nele; a colheita segue com os outros nomes.
+        keep, kown, krem = invented("kp"), invented("kown"), invented("krem")
+        make_repo(self.env, self.roots / keep, remote(kown, krem))
+        nm = invented("dnm")
+        self.gitconfig(self.home, nm)
+        self.config()
+        real_run = rw_store.run
+        for where in ("raiz", "projeto"):
+            with self.subTest(where=where):
+                base = self.roots if where == "raiz" else self.tmp / "fora"
+                doomed = make_repo(self.env, base / invented("dd" + where), remote(invented("down"), invented("drem")))
+                cwd = doomed if where == "projeto" else None
+
+                def fake(cmd, *args, doomed=doomed, **kwargs):
+                    if "get-url" in cmd and str(doomed) in cmd:
+                        shutil.rmtree(doomed)
+                    return real_run(cmd, *args, **kwargs)
+
+                with mock.patch.object(rw_store, "run", fake):
+                    got = rw_store.harvest(self.ctx(), cwd=cwd)
+                self.assertFalse(doomed.exists())
+                self.assertEqual({keep, kown, krem, nm, self.home.name} - got, set())
+
+    @unittest.skipIf(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0),
+                     "chmod 000 não barra o root nem vale no Windows")
+    def test_harvest_refuses_a_folder_without_permission(self):
+        # T5-r1: a pasta `chmod 000` sob a raiz. No Python 3.12 o `exists()` do `.git` relança o EACCES
+        # cru; no 3.13 pode dar False e o repo sumiria. Os dois casos têm de ser StoreError com a pasta.
+        make_repo(self.env, self.roots / invented("ok"))
+        # Na última profundidade: ali ninguém faz `iterdir` da pasta, e só a conferência do `.git` a vê.
+        locked = self.roots / "grupo" / invented("tranc")
+        locked.mkdir(parents=True)
+        self.config()
+        os.chmod(locked, 0)
+        try:
+            with self.assertRaises(rw_store.StoreError) as caught:
+                rw_store.harvest(self.ctx())
+        finally:
+            os.chmod(locked, 0o700)
+        self.assertIn(str(locked), str(caught.exception))
+
     def test_harvest_origin_without_host_gives_no_owner(self):
         parent, name, other = invented("parent"), invented("lrem"), invented("lrem2")
         make_repo(self.env, self.roots / invented("ca"), str(self.tmp / parent / (name + ".git")))
