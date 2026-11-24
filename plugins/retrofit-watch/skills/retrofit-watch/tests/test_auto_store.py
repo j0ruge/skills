@@ -211,6 +211,36 @@ class HarvestTest(unittest.TestCase):
         # Um cwd que não é repo, ou que não existe, não derruba a colheita.
         self.assertIn(self.home.name, rw_store.harvest(self.ctx(), cwd=self.tmp / "nao-existe"))
 
+    def test_harvest_reads_a_symlinked_cwd_by_its_physical_path(self):
+        # CR-r1 #2: o git sobe pelo caminho físico do `cwd` (o `-C` faz `chdir`). A busca do `.git` também:
+        # um link fora de repo para um projeto que não lê é StoreError, e um link dentro de um repo bom para
+        # uma pasta fora de repo não é erro.
+        probe = self.tmp / "probe-link"
+        try:
+            os.symlink(str(self.tmp), probe)
+        except (OSError, NotImplementedError):
+            self.skipTest("sem permissao de link simbolico")
+        probe.unlink()
+        broken = self.tmp / "fora" / invented("lkq")
+        (broken / "src").mkdir(parents=True)
+        (broken / ".git").write_text("gitdir: " + str(self.tmp / "sumiu" / "mais") + "\n", encoding="utf-8")
+        loose = self.tmp / "soltos"
+        loose.mkdir()
+        good = make_repo(self.env, self.tmp / "bom" / invented("lkb"))
+        plain = self.tmp / "sem-repo" / "alvo"
+        plain.mkdir(parents=True)
+        self.config()
+        with self.subTest("link fora de repo para o projeto que nao le"):
+            link = loose / "para-o-projeto"
+            os.symlink(str(broken / "src"), link)
+            with self.assertRaises(rw_store.StoreError) as caught:
+                rw_store.harvest(self.ctx(), cwd=link)
+            self.assertIn(str(broken), str(caught.exception))
+        with self.subTest("link dentro do repo bom para uma pasta fora de repo"):
+            link = good / "para-fora"
+            os.symlink(str(plain), link)
+            self.assertIn(self.home.name, rw_store.harvest(self.ctx(), cwd=link))
+
     def test_harvest_refuses_a_session_project_that_does_not_read(self):
         # Final-F1 (C8): o projeto da sessão tem `.git`, mas o `rev-parse` falha (um `gitfile` que aponta
         # para uma pasta que sumiu): StoreError com o caminho, nunca uma colheita sem o nome do projeto.

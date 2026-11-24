@@ -284,7 +284,9 @@ def _session_project(cwd, env):
     # Um caminho com NUL não existe em sistema nenhum (o `os.stat` levantaria ValueError).
     if "\0" in str(cwd):
         return []
-    start = Path(os.path.abspath(cwd))
+    # O caminho físico, como o git o vê: o `-C` faz `chdir`, e o git sobe pelo `getcwd` (CR-r1 #2). O
+    # `abspath` é só texto: um `cwd` por link simbólico subiria por outros pais.
+    start = Path(os.path.realpath(cwd))
     if _gone(start):
         return []
     for folder in [start, *start.parents]:
