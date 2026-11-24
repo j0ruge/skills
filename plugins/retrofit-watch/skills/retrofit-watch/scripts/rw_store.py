@@ -473,7 +473,8 @@ def untar(raw, dest):
 TREE_PREFIX = ".porta-"
 # O `git archive` lê os atributos de fora da árvore (o arquivo global do dono, `~/.config/git/attributes`,
 # e o de sistema) mesmo sem config nenhuma: um `export-ignore` ali tiraria um teste da cópia, e um
-# `export-subst` mudaria o conteúdo. Os dois saem; vale o `.gitattributes` da árvore (C5).
+# `export-subst` mudaria o conteúdo. Os dois saem; vale o `.gitattributes` da árvore (C5), e também o
+# `info/attributes` do `.git` comum: quem escreve dentro do `.git/` já controla o git da porta (C2).
 ARCHIVE = ("-c", f"core.attributesFile={os.devnull}", "archive", "--format=tar")
 
 

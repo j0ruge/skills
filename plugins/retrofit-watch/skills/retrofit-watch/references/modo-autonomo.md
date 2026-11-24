@@ -202,8 +202,8 @@ Os casos que pedem mais do que isso:
     O `approve` grava o motivo da última recusa por nome do lote, e é ele que deixa a porta aceitar a lista
     mudada. Um `publish` antes do `approve` segura o lote com `escopo`; o `approve` seguinte ainda grava
     o motivo de nome, e o `publish` depois dele passa.
-  - Com `sem-anonimato`, o revisor refaz antes a segunda passada. Se um termo continuar não público, vale
-    o par acima.
+  - Com `sem-anonimato`, o revisor refaz a segunda passada e a porta roda (`publish`); se ela segurar por
+    `termo-nao-publico`, vale o par acima.
 - **Segurado por `rebase`:** `retrofit_watch.py prepare <id> <lote> --redo`. Ele abre um worktree e um ramo
   novos, e o lote recomeça no passo 4. O worktree anterior fica.
 - **Segurado por `revisao-desatualizada`:** sele de novo com
@@ -238,10 +238,10 @@ despacho do executor fora do passo 4, descrito no fim dele.
 | `resolvido-manual` | o dono resolveu o item pelo `/retrofit-skill` manual | não | nenhuma |
 | `executor-falhou` | o executor falhou ou não chegou ao selo | não | o dono decide: o `/retrofit-skill` manual e o `discard` com `resolvido-manual`, ou só o `discard` |
 | `executor-recusou` | o executor deixou a lição ou o lote fora do commit | não | o dono decide, como no `executor-falhou` |
-| `escopo` | o worktree ou o ramo não são os do lote, o ramo tem mais de um commit, um arquivo está fora do escopo, ou uma lista do portão mudou sem a aprovação por nome | não | o executor corrige o ramo e sela de novo; o revisor refaz a segunda passada; `publish` |
-| `arvore-suja` | o worktree tem mudança fora do commit | não | o executor põe a mudança do lote no commit e sela de novo; outra mudança vai ao dono |
+| `escopo` | o worktree ou o ramo não são os do lote, o ramo tem mais de um commit, um arquivo está fora do escopo, uma lista do portão mudou sem a aprovação por nome, ou o ramo muda um `.gitattributes` ou um arquivo que as camadas não leem (fora do UTF-8, com byte NUL, link simbólico ou submódulo) | não | o executor corrige o ramo e sela de novo; o revisor refaz a segunda passada; `publish` |
+| `arvore-suja` | o worktree tem mudança fora do commit, ou o HEAD mudou durante as guardas | não | o executor põe a mudança do lote no commit e sela de novo; outra mudança vai ao dono |
 | `rebase` | o rebase sobre o `origin/main` deu conflito | não | `prepare --redo` e o passo 4 |
-| `coautoria` | o commit tem `Co-Authored-By` | não | o executor emenda a mensagem sem o trailer e sela de novo; o revisor refaz a segunda passada; `publish` |
+| `coautoria` | o commit tem `Co-Authored-By` ou a linha `Generated with` do Claude Code | não | o executor emenda a mensagem sem o trailer e sela de novo; o revisor refaz a segunda passada; `publish` |
 | `sem-marca` | falta o trailer `Retrofit-Mode: autonomous` | não | o executor emenda a mensagem com o trailer e sela de novo; o revisor refaz a segunda passada; `publish` |
 | `sem-bump` | a versão do `plugin.json` no commit não é maior que a do `origin/main` (comparada por número, `X.Y.Z`) | não | o executor sobe a versão nos quatro lugares, emenda e sela de novo; o revisor refaz a segunda passada; `publish` |
 | `nao-publicavel` | uma lição do commit não sai como publicável no veredito | sim | `approve` e `publish` |
@@ -252,7 +252,7 @@ despacho do executor fora do passo 4, descrito no fim dele.
 | `termo-nao-publico` | um termo novo não é `publico` na segunda passada | não | o dono diz "privado" ou "público" (passo 6) |
 | `regra-repetida` | o revisor diz que a mudança repete ou contradiz uma regra já escrita | sim | `approve` e `publish`, ou o executor corrige a frase que errou e o lote volta à segunda passada |
 | `diff-alem-das-licoes` | o revisor diz que o diff faz mais do que as lições | sim | `approve` e `publish`, ou o executor tira o excesso e o lote volta à segunda passada |
-| `testes` | um teste do plugin ou da raiz falhou, ou o ramo tira uma pasta de testes | não | o executor corrige, emenda e sela de novo; o revisor refaz a segunda passada; `publish` |
+| `testes` | um teste do plugin ou da raiz falhou, nenhum teste rodou numa suíte, ou o ramo tira uma pasta de testes | não | o executor corrige, emenda e sela de novo; o revisor refaz a segunda passada; `publish` |
 | `validate-versions` | o `validate-versions.py` saiu diferente de 0 | não | o executor corrige as versões, emenda e sela de novo; o revisor refaz a segunda passada; `publish` |
 | `auditoria` | o gate da auditoria achou uma linha `NOVO`, ou o auditor falta no worktree | não | o executor corrige, emenda e sela de novo; o revisor refaz a segunda passada; `publish` |
 | `fase-de-auditoria` | falta no selo uma fase da auditoria que a mudança exige | não | o executor roda a fase e sela de novo com ela no `--fases`; o revisor refaz a segunda passada; `publish` |

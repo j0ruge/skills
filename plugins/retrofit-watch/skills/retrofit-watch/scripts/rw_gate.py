@@ -1,9 +1,10 @@
 """retrofit-watch, modo autônomo: a porta de publicação (spec 5.7).
 
-A porta (`publish <id> <lote>`) chama `refuse` antes de publicar e `hold` quando uma guarda reprova.
-As guardas não fazem push: só leem o worktree do lote, o rebaseiam sobre o `origin/main` e rodam as
-portas da loja (testes, `validate-versions.py`, auditoria, camada 1 do portão de anonimização). O push
-e a instalação moram no `Effects`, que só o `publish` chama, depois de `refuse` passar (D22, D25).
+A porta (`publish <id> <lote>`) chama `_check` antes de publicar e `hold` quando uma guarda reprova.
+As guardas não fazem push: leem o git do worktree do lote, o rebaseiam sobre o `origin/main` e rodam as
+portas da loja (testes, `validate-versions.py`, auditoria, camada 1 do portão de anonimização) de uma
+cópia do commit conferido (`_Porta.tree`, `git archive`), nunca do disco do worktree (item 1, C1). O push
+e a instalação moram no `Effects`, que só o `publish` chama, depois de `_check` passar (D22, D25).
 
 O worktree e o ramo saem do `<id>`, do `<lote>` e da `tentativa` (D9), nunca dos campos `worktree` e
 `ramo` do retrofit.json. Os arquivos do fluxo se leem das pastas do Context (C4): `pedido.json`,

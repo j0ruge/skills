@@ -44,6 +44,10 @@ DIFF_QUESTIONS = (
 REVIEWER_FILES_RULE = "Nunca grave nem corrija `veredito.json` ou `anonimato.json`: só o revisor os grava."
 HARVEST_RULE = ("A regra da colheita vale primeiro: um termo que é um nome da colheita é `privado`, mesmo quando "
                 "também é um identificador de código.")
+# Item 3 (Tarefa 13 do plano de correções): com `sem-anonimato`, a porta roda antes do par do dono.
+MISSING_REVIEW_RULE = ("Com `sem-anonimato`, o revisor refaz a segunda passada e a porta roda (`publish`); se ela "
+                       "segurar por `termo-nao-publico`, vale o par acima.")
+OLD_MISSING_REVIEW_RULE = "o revisor refaz antes a segunda passada"
 CITED = re.compile(r"retrofit_watch\.py\s+([a-z][a-z-]*)")
 # O `queue` é a linha de comando da fila das sessões headless; o `main` o trata antes do CLI_USAGE.
 QUEUE = "queue"
@@ -399,6 +403,37 @@ class ReleaseTest(unittest.TestCase):
         theirs = re.findall(r"/retrofit-skill (<[^>]+>) --auto (<[^>]+>)", read(EXECUTOR_COMMAND))
         self.assertTrue(theirs, "o comando do retrofit-skill não define o --auto")
         self.assertEqual(set(mine), set(theirs[:1]), "a forma do --auto difere entre o prompt e o comando")
+
+
+# Item 16a: a causa nova de cada motivo que as Tarefas 8, 9 e 11 deram a uma guarda que já existia.
+REASON_CAUSES = {
+    "escopo": ("`.gitattributes`", "UTF-8"),
+    "arvore-suja": ("o HEAD mudou durante as guardas",),
+    "coautoria": ("Generated with",),
+    "testes": ("nenhum teste",),
+}
+
+
+class CorrectionTextTest(unittest.TestCase):
+    """Os textos do plano de correções (itens 3 e 16a): o que a sessão lê diz o que as guardas fazem."""
+
+    def test_missing_review_runs_the_gate_before_the_owner_pair(self):
+        step = flat(section(read(REFERENCE), "6."))
+        self.assertIn(MISSING_REVIEW_RULE, step)
+        self.assertNotIn(OLD_MISSING_REVIEW_RULE, step)
+
+    def test_approving_a_dry_batch_is_said_to_publish(self):
+        self.assertIn("the owner's `approve` on a batch held by `auto-dry` publishes it for real",
+                      flat(readme_section(read(README), NAME)))
+        self.assertIn("aprovar um lote segurado por `auto-dry` o publica de verdade", flat(read(CHANGELOG)))
+        self.assertIn("auto-dry", rw_gate.OVERRIDABLE)
+
+    def test_reason_rows_name_the_new_causes(self):
+        rows = {row[0].strip("`"): row for row in table_rows(section(read(REFERENCE), "8."))
+                if row[0].startswith("`")}
+        for code, causes in REASON_CAUSES.items():
+            for cause in causes:
+                self.assertIn(cause, rows[code][1], f"a linha `{code}` não cita {cause!r}")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""Testes da porta de publicação (rw_gate.py): as 22 guardas de `refuse`, o `hold` e o `publish`.
+"""Testes da porta de publicação (rw_gate.py): as 25 guardas de `rg.GUARDS`, o `hold` e o `publish`.
 
 Rodar: python3 plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_gate.py
 Cada teste parte de `clean_retrofit`: um retrofit limpo do `demo`, com veredito, selo e anonimato.json,
@@ -1855,19 +1855,26 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
         line, rc = self.publish(rid, self.effects())
         self.assertEqual((rc, line["resultado"], line["motivo"]), (1, "segurado", motivo), line)
 
-    def teaching(self, tag, publish_before_approve=False, without_review=False):
+    def teaching(self, tag, publish_before_approve=False, without_review=False, missing_review=False):
         """Um termo em dúvida que o dono chama de público, com o `approve` e o `publish` de verdade."""
         word = camel(tag)
         rid, wt = self.clean_retrofit(edit=lambda wt: append(wt / DOC, f"- Veja o {word}.\n"),
                                       review={"doubt": word})
         ctx = self.ctx()
         if without_review:
-            # O `sem-anonimato`, aprovado como o passo 6 deixa, e depois a segunda passada.
+            # O `sem-anonimato` aprovado antes da segunda passada: um `approve` a mais não estraga o par.
             (self.folder(rid) / "anonimato.json").unlink()
             self.held_as(rid, "sem-anonimato")
             rw_auto.approve(ctx, rid, "demo")
             self.review(rid, doubt=word)
+        if missing_review:
+            # O caminho do passo 6 (item 3): a segunda passada e a porta, sem `approve` até o par do dono.
+            (self.folder(rid) / "anonimato.json").unlink()
+            self.held_as(rid, "sem-anonimato")
+            self.review(rid, doubt=word)
         self.held_as(rid, "termo-nao-publico")
+        if missing_review:
+            self.assertFalse((self.folder(rid) / "aprovado.json").exists(), "um `approve` veio antes do par")
         self.teach_public(wt, word)
         if publish_before_approve:
             self.held_as(rid, "escopo")
@@ -1885,6 +1892,9 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
 
     def test_teaching_the_gate_after_a_missing_review_publishes(self):
         self.teaching("passada", publish_before_approve=True, without_review=True)
+
+    def test_missing_review_path_publishes_without_an_early_approve(self):
+        self.teaching("falta", missing_review=True)
 
     def test_teaching_a_harvested_name_with_capital_and_accent_publishes(self):
         # Item 13: a camada 1 cita o trecho com os escapes do `ascii()` (`\xe9`), e o dono escreve o nome
