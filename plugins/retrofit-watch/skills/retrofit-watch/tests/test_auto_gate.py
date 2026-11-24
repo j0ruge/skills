@@ -280,9 +280,13 @@ class GateTest(GateHarness, unittest.TestCase):
             self.assertEqual(call.kwargs["env"]["GIT_TERMINAL_PROMPT"], "0")
         for call in calls:
             env = call.kwargs["env"]
+            args = [str(a) for a in call.args[0]]
+            # Item 11: o git que fala com o `origin` (e a sonda do `core.sshCommand`, no mesmo ambiente) lê a
+            # config de sistema; todos os outros, não.
+            remote = "fetch" in args or "push" in args or "core.sshCommand" in args
             with self.subTest(cmd=call.args[0]):
                 self.assertNotIn("GIT_DIR", env)
-                self.assertEqual(env["GIT_CONFIG_NOSYSTEM"], "1")
+                self.assertEqual(env.get("GIT_CONFIG_NOSYSTEM"), None if remote else "1")
                 self.assertTrue(env.get("HOME") == str(self.w.home) or env.get("GIT_CONFIG_GLOBAL") == os.devnull)
         self.assertEqual(self.w.git(trap, "rev-list", "--all"), "")
 
@@ -1654,6 +1658,28 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
                     env = call.kwargs["env"]
                     self.assertEqual(env["GIT_TERMINAL_PROMPT"], "0")
                     self.assertEqual(env["GIT_SSH_COMMAND"], inherited or "ssh -o BatchMode=yes")
+
+    def test_network_git_reads_the_system_config(self):
+        # Item 11: no Git for Windows o `credential.helper` padrão mora na config de sistema. O fetch e o
+        # push a leem (rw_store.remote_env); as outras guardas continuam sem ela.
+        rid, wt = self.clean_retrofit()
+        with mock.patch.object(rw_store, "run", wraps=rw_store.run) as spy:
+            line, rc = self.publish(rid, self.effects())
+        self.assertEqual(rc, 0, line)
+        calls = [c for c in spy.call_args_list if {"fetch", "push"} & {str(a) for a in c.args[0]}]
+        verbs = [next(str(a) for a in c.args[0] if str(a) in ("fetch", "push")) for c in calls]
+        self.assertEqual(verbs.count("push"), 1, verbs)
+        self.assertGreaterEqual(verbs.count("fetch"), 2, verbs)
+        for call in calls:
+            env = call.kwargs["env"]
+            # Sem o assertNotIn: a mensagem dele imprimiria o ambiente inteiro de quem roda.
+            self.assertFalse("GIT_CONFIG_NOSYSTEM" in env, call.args[0])
+            self.assertEqual(env["GIT_TERMINAL_PROMPT"], "0")
+            self.assertEqual(env["HOME"], str(self.ctx().home))
+        rebases = [c for c in spy.call_args_list if "rebase" in [str(a) for a in c.args[0]]]
+        self.assertTrue(rebases)
+        for call in rebases:
+            self.assertEqual(call.kwargs["env"]["GIT_CONFIG_NOSYSTEM"], "1")
 
     def test_network_env_keeps_the_owner_ssh(self):
         # T9-ssh2: GIT_SSH_COMMAND, GIT_SSH ou `core.sshCommand` do dono: nenhum BatchMode por cima.

@@ -195,13 +195,14 @@ def _g_clean(p):
     return None
 
 
-# O ambiente de rede mora no rw_store: o fetch do `prepare` usa o mesmo (Final-F8).
+# O ambiente de rede mora no rw_store: o fetch do `prepare`, a guarda 3, o fetch do `_publish` e o push usam
+# o mesmo, o `remote_env` (Final-F8, item 11).
 network_env = rw_store.network_env
 
 
 def _g_fetch(p):
     """3. `git fetch origin`, sem nunca esperar credencial no terminal. Falha é `fetch`, nunca "em dia"."""
-    rc, out = rw_store.run(["git", "-C", p.worktree, "fetch", "origin"], env=network_env(p.env, p.worktree))
+    rc, out = rw_store.run(["git", "-C", p.worktree, "fetch", "origin"], env=rw_store.remote_env(p.ctx, p.worktree))
     return ("fetch", _short(f"git fetch origin saiu {rc}: {out}")) if rc != 0 else None
 
 
@@ -746,7 +747,7 @@ class Effects:
         """`git push --no-follow-tags origin <sha>:refs/heads/main`, sem força, sem esperar senha no
         terminal: (True, saída) ou (False, por quê). Sobe o `sha` que a porta conferiu, nunca o HEAD do
         worktree na hora do push (Final-F7); um `push.followTags` do dono não leva tag (Final-F9)."""
-        env = network_env(rw_store.git_env(home=self.ctx.home, nosystem=True), worktree)
+        env = rw_store.remote_env(self.ctx, worktree)
         ref = f"{sha}:refs/heads/main"
         rc, out = rw_store.run(["git", "-C", worktree, "push", "--no-follow-tags", "origin", ref], env=env)
         if rc != 0:
@@ -968,7 +969,7 @@ def _publish(ctx, rid, lote, effects, done):
     env = rw_store.git_env(home=ctx.home, nosystem=True)
     if worktree.is_dir():
         # 2. Uma falha deste fetch não se registra aqui: a guarda 3 busca de novo e a grava como `fetch`.
-        rw_store.run(["git", "-C", worktree, "fetch", "origin"], env=network_env(env, worktree))
+        rw_store.run(["git", "-C", worktree, "fetch", "origin"], env=rw_store.remote_env(ctx, worktree))
     if already_published(worktree, retrofit, _sealed_patch(ctx, rid, lote)):
         # Refaz só a instalação (D22). Sem linha `publicado` deste commit (a porta caiu entre o push e a
         # linha), grava a que faltou. O fecho roda sempre: a chamada de antes pode ter caído no meio dele.

@@ -123,6 +123,14 @@ def network_env(env, worktree):
     return env
 
 
+def remote_env(ctx, worktree):
+    """O único ambiente de um git que fala com o `origin`: o fetch do `prepare`, a guarda do fetch, o
+    fetch do `_publish` e o push. Lê a config de sistema (item 11): no Git for Windows o `credential.helper`
+    padrão mora nela, e sem ela um `origin` HTTPS daria `fetch` em todo lote. As outras guardas seguem
+    com `nosystem=True`."""
+    return network_env(git_env(home=ctx.home), worktree)
+
+
 def _git(args, cwd, env, what):
     """A saída do git em `cwd`, ou StoreError com o comando e a saída."""
     rc, out = run(["git", "-C", str(cwd), *args], env=env)
@@ -393,7 +401,7 @@ def prepare(ctx, rid, lote, redo=False):
     worktree = worktree_path(ctx, rid, lote, tentativa)
     branch = branch_name(rid, lote, tentativa)
     env = git_env(home=ctx.home)
-    _git(["fetch", "origin"], store, network_env(env, store), "fetch")
+    _git(["fetch", "origin"], store, remote_env(ctx, store), "fetch")
     worktree.parent.mkdir(parents=True, exist_ok=True)
     _git(["worktree", "add", "-q", "-b", branch, str(worktree), BASE_REF], store, env, "worktree")
     base = _git(["rev-parse", "HEAD"], worktree, env, "base").strip()

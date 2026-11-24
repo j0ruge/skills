@@ -586,6 +586,19 @@ class StoreTest(unittest.TestCase):
                 self.assertEqual(env["GIT_TERMINAL_PROMPT"], "0")
                 self.assertEqual(env["GIT_SSH_COMMAND"], inherited or "ssh -o BatchMode=yes")
 
+    def test_prepare_and_gate_share_the_remote_env(self):
+        # Item 11: o fetch do `prepare` e o da porta usam um só ambiente, o rw_store.remote_env.
+        rid = self.w.retro([{}], [{}])
+        ctx = self.ctx()
+        with mock.patch.object(rw_store, "run", wraps=rw_store.run) as spy:
+            rw_store.prepare(ctx, rid, "demo")
+        fetches = [c for c in spy.call_args_list if "fetch" in [str(a) for a in c.args[0]]]
+        self.assertEqual(len(fetches), 1, fetches)
+        store = rw_store.store_clone(ctx)
+        # assertTrue, não assertEqual: a mensagem do assertEqual imprimiria o ambiente de quem roda.
+        self.assertTrue(fetches[0].kwargs["env"] == rw_store.remote_env(ctx, store))
+        self.assertFalse("GIT_CONFIG_NOSYSTEM" in fetches[0].kwargs["env"])
+
     def test_inherited_git_location_and_config_do_not_redirect_prepare_or_seal(self):
         # Um hook do git exporta GIT_DIR; o HOME real tem a config de quem roda. Nenhum dos dois conta.
         trap_repo = self.w.tmp / "trap-repo"
