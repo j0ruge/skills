@@ -28,6 +28,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from test_retrofit_watch import GIT_ENV, World  # noqa: E402
 import rw_auto  # noqa: E402  (o test_retrofit_watch põe scripts/ no path)
+import rw_store  # noqa: E402
 
 AUDITOR = "plugins/skill-quality-audit/skills/skill-quality-audit/scripts/audit_skill_quality.py"
 AUDIT_GATE = "plugins/retrofit-skill/scripts/audit_gate.py"
@@ -79,6 +80,18 @@ def _clean_env(home):
     env.update({k: GIT_ENV[k] for k in GIT_IDENTITY})
     env.update(HOME=str(home), XDG_CONFIG_HOME=str(Path(home) / ".config"), PYTHONDONTWRITEBYTECODE="1")
     return env
+
+
+def expected_ssh(home, inherited):
+    """O GIT_SSH_COMMAND que o `network_env` deixa no git de rede, com a config de sistema de quem roda
+    (Final-F4). O Git for Windows grava `core.sshCommand` nela quando a instalação escolhe "Use external
+    OpenSSH", e o `network_env` lê essa config (resposta 3 do dono): com o valor lá, ele não põe o
+    BatchMode e a variável fica ausente. O teste lê a config com o mesmo ambiente do código."""
+    if inherited:
+        return inherited
+    rc, out = rw_store.run(["git", "config", "--system", "--get", "core.sshCommand"],
+                           env=rw_store.git_env(home=home))
+    return None if rc == 0 and out.strip() else rw_store.BATCH_SSH
 
 
 def _description(plugin):

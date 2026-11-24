@@ -65,12 +65,13 @@
       `interno`). A fonte ausente continua sem erro.
     - O `fetch` e o `push` da porta leem a config de sistema do git, onde o Git for Windows guarda o
       `credential.helper` padrão, e as outras guardas continuam sem ela.
-    - Os testes do git de rede também leem a config de sistema de quem os roda: numa máquina com
-      `core.sshCommand` na config de sistema, os testes que esperam `ssh -o BatchMode=yes` falham.
+    - Os testes do git de rede também leem a config de sistema de quem os roda, e esperam o que o
+      `network_env` faz com ela: numa máquina com `core.sshCommand` na config de sistema (o Git for
+      Windows com "Use external OpenSSH"), o git de rede fica sem o `ssh -o BatchMode=yes`.
     - O termo que o dono põe na lista de públicos (`--publico-add`) conta como citado pela forma, sem
       diferença de maiúscula e com o acento que a recusa escreveu como escape do `ascii()`, e nunca por
       um pedaço do nome citado.
-  - **Testes:** a suíte do plugin tem 390 testes (54 da 0.3.7, todos lá e passando), a do
+  - **Testes:** a suíte do plugin tem 395 testes (54 da 0.3.7, todos lá e passando), a do
     `retrofit-skill` (`tests/test_modo_autonomo.py`) tem 9, e a da raiz tem 154 (80 da linha de base,
     3 pulados). Os testes novos desta entrada, em `tests/test_auto_docs.py`, prendem os quatro lugares da
     versão (`0.4.0` ou maior, porque a guarda `testes` roda esta suíte em todo retrofit), os verbos no

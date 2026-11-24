@@ -2038,7 +2038,7 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
                 for call in calls:
                     env = call.kwargs["env"]
                     self.assertEqual(env["GIT_TERMINAL_PROMPT"], "0")
-                    self.assertEqual(env["GIT_SSH_COMMAND"], inherited or "ssh -o BatchMode=yes")
+                    self.assertEqual(env.get("GIT_SSH_COMMAND"), fs.expected_ssh(self.ctx().home, inherited))
 
     def test_network_git_reads_the_system_config(self):
         # Item 11: no Git for Windows o `credential.helper` padrão mora na config de sistema. O fetch e o

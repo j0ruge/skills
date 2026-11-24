@@ -606,7 +606,7 @@ class StoreTest(unittest.TestCase):
                 self.assertEqual(len(fetches), 1, fetches)
                 env = fetches[0].kwargs["env"]
                 self.assertEqual(env["GIT_TERMINAL_PROMPT"], "0")
-                self.assertEqual(env["GIT_SSH_COMMAND"], inherited or "ssh -o BatchMode=yes")
+                self.assertEqual(env.get("GIT_SSH_COMMAND"), fs.expected_ssh(self.ctx().home, inherited))
 
     def test_prepare_and_gate_share_the_remote_env(self):
         # Item 11: o fetch do `prepare` e o da porta usam um só ambiente, o rw_store.remote_env.
