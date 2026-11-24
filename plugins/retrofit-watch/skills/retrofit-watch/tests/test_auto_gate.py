@@ -241,6 +241,19 @@ class GateTest(GateHarness, unittest.TestCase):
         (wt / "solto.txt").write_text("sem commit\n", encoding="utf-8")
         self.assertRefuses(rid, "arvore-suja")
 
+    def test_hidden_index_flags_refuse(self):
+        # Final-F2: um arquivo com `--assume-unchanged` ou `--skip-worktree` some do `status --porcelain`, e
+        # a porta rodaria o portão e as listas do disco. A guarda 2 lê o `ls-files -v` e nomeia o caminho.
+        rel = "scripts/public-names.txt"
+        for flag in ("--assume-unchanged", "--skip-worktree"):
+            with self.subTest(flag=flag):
+                rid, wt = self.clean_retrofit()
+                self.w.git(wt, "update-index", flag, rel)
+                append(wt / rel, invented("oculto") + "\n")
+                self.assertEqual(self.w.git(wt, "status", "--porcelain", "--untracked-files=all"), "")
+                got = self.assertRefuses(rid, "arvore-suja")
+                self.assertIn(rel, got[1])
+
     def test_unreachable_origin_is_an_error_not_a_pass(self):
         rid, wt = self.clean_retrofit()
         self.w.git(wt, "remote", "set-url", "origin", str(self.w.tmp / "nao-existe.git"))

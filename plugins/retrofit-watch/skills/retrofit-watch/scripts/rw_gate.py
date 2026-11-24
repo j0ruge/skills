@@ -169,10 +169,28 @@ def _g_place(p):
     return None
 
 
+def _hidden(p):
+    """Os caminhos do índice com `assume-unchanged` (letra minúscula no `ls-files -v`) ou `skip-worktree`
+    (`S`): o `status --porcelain` não mostra a mudança deles, e a porta roda o portão e as listas do disco
+    (Final-F2)."""
+    out = p.git("-c", "core.quotePath=false", "ls-files", "-v", "-z")
+    found = []
+    for entry in out.split("\0"):
+        tag, _, path = entry.partition(" ")
+        if path and (tag.islower() or tag == "S"):
+            found.append(path)
+    return found
+
+
 def _g_clean(p):
-    """2. A árvore do worktree está limpa."""
+    """2. A árvore do worktree está limpa, e nenhum arquivo do índice esconde a mudança dele do status."""
     out = p.git("status", "--porcelain", "--untracked-files=all")
-    return ("arvore-suja", _short(out)) if out.strip() else None
+    if out.strip():
+        return "arvore-suja", _short(out)
+    hidden = _hidden(p)
+    if hidden:
+        return "arvore-suja", _short("assume-unchanged ou skip-worktree no indice: " + ", ".join(hidden))
+    return None
 
 
 def network_env(env, worktree):
