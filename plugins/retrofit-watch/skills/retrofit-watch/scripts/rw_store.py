@@ -104,6 +104,25 @@ def git_env(home=None, nosystem=False, neutral=False):
     return env
 
 
+BATCH_SSH = "ssh -o BatchMode=yes"
+
+
+def network_env(env, worktree):
+    """O ambiente de um git que fala com o `origin` a partir de `worktree`: nunca espera credencial no
+    terminal, nem a senha da chave SSH (T9-ssh). O `ssh -o BatchMode=yes` só entra quando o dono não
+    escolheu o ssh: sem GIT_SSH_COMMAND, sem GIT_SSH e sem `core.sshCommand` na config que este mesmo
+    ambiente lê no worktree (T9-ssh2). A variável venceria as duas outras escolhas. A porta e o fetch do
+    `prepare` usam este mesmo ambiente (Final-F8)."""
+    env = dict(env, GIT_TERMINAL_PROMPT="0")
+    if "GIT_SSH_COMMAND" in env or "GIT_SSH" in env:
+        return env
+    rc, out = run(["git", "-C", str(worktree), "config", "--get", "core.sshCommand"], env=env)
+    if rc == 0 and out.strip():
+        return env
+    env["GIT_SSH_COMMAND"] = BATCH_SSH
+    return env
+
+
 def _git(args, cwd, env, what):
     """A saída do git em `cwd`, ou StoreError com o comando e a saída."""
     rc, out = run(["git", "-C", str(cwd), *args], env=env)
@@ -327,7 +346,7 @@ def prepare(ctx, rid, lote, redo=False):
     worktree = worktree_path(ctx, rid, lote, tentativa)
     branch = branch_name(rid, lote, tentativa)
     env = git_env(home=ctx.home)
-    _git(["fetch", "origin"], store, env, "fetch")
+    _git(["fetch", "origin"], store, network_env(env, store), "fetch")
     worktree.parent.mkdir(parents=True, exist_ok=True)
     _git(["worktree", "add", "-q", "-b", branch, str(worktree), BASE_REF], store, env, "worktree")
     base = _git(["rev-parse", "HEAD"], worktree, env, "base").strip()

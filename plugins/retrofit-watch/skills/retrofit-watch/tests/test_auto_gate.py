@@ -868,7 +868,7 @@ class FixtureEffects(rg.Effects):
         self.push_result, self.install_result, self.raises = push, install, raises
         self.after_copy, self.during_push = after_copy, during_push
 
-    def push(self, worktree):
+    def push(self, worktree, sha):
         self.calls.append("push")
         if self.during_push:
             self.during_push(worktree)
@@ -877,7 +877,7 @@ class FixtureEffects(rg.Effects):
         if self.push_result is not None:
             return self.push_result
         self.w.assert_fixture_origin(worktree)
-        return super().push(worktree)
+        return super().push(worktree, sha)
 
     def refresh_install(self, plugin):
         self.calls.append("refresh_install")
@@ -1515,12 +1515,40 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
                 encoding="utf-8")
             self.assertNotIn("GIT_SSH_COMMAND", rg.network_env(base, wt))
 
+    def test_push_sends_the_checked_sha_not_the_head(self):
+        # Final-F7: um commit novo no worktree depois do `refuse` não sobe; sobe o sha que a porta conferiu.
+        rid, wt = self.clean_retrofit()
+        checked = []
+
+        def during(worktree):
+            checked.append(self.head(worktree))
+            # Fora da pasta do plugin: a cópia instalada continua igual, e o rc diz só o push.
+            (Path(worktree) / "nota-nova.md").write_text("Uma linha que ninguem conferiu.\n", encoding="utf-8")
+            self.amend(worktree)
+        line, rc = self.publish(rid, self.effects(during_push=during))
+        self.assertEqual(rc, 0, line)
+        self.assertNotEqual(self.head(wt), checked[0])
+        self.assertEqual((self.w.origin_main(), line["commit"]), (checked[0], checked[0]))
+
+    def test_push_never_follows_tags(self):
+        # Final-F9: com `push.followTags` na config do dono, o push da porta não leva uma tag ao `origin`.
+        rid, wt = self.clean_retrofit()
+        self.w.git(wt, "config", "push.followTags", "true")
+        self.w.git(wt, "tag", "-a", "-m", "uma tag local", "v-local")
+        with mock.patch.object(rw_store, "run", wraps=rw_store.run) as spy:
+            line, rc = self.publish(rid, self.effects())
+        self.assertEqual(rc, 0, line)
+        pushes = [[str(a) for a in c.args[0]] for c in spy.call_args_list if "push" in [str(a) for a in c.args[0]]]
+        self.assertEqual(len(pushes), 1, pushes)
+        self.assertIn("--no-follow-tags", pushes[0])
+        self.assertEqual(self.w.git(self.w.origin, "tag", "--list"), "")
+
     def test_fixture_push_refuses_a_real_remote(self):
         rid, wt = self.clean_retrofit()
         self.w.git(wt, "remote", "set-url", "--push", "origin", a_real_remote())
         with mock.patch.object(rw_store, "run", wraps=rw_store.run) as spy:
             with self.assertRaises(AssertionError):
-                self.effects().push(wt)
+                self.effects().push(wt, self.head(wt))
             line, rc = self.publish(rid, self.effects())
         self.assertEqual([c for c in spy.call_args_list if "push" in [str(a) for a in c.args[0]]], [])
         self.assertEqual((rc, line["resultado"], line["motivo"]), (3, "erro", "interno"))

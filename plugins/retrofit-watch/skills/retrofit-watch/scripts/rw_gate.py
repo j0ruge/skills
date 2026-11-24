@@ -60,7 +60,7 @@ DETAIL_MAX = 1500
 PUBLISH_LOCK = "publish.lock"
 PUBLISH_LOCK_WAIT = 900
 APPROVED = "autonomous-approved"
-BATCH_SSH = "ssh -o BatchMode=yes"
+BATCH_SSH = rw_store.BATCH_SSH
 # O `instalacao` da linha `publicado` que dá rc 0; os outros (`update`, `cache-difere`) dão rc 4.
 INSTALLED = ("ok", "nao-instalado")
 # O que a cópia instalada e o worktree têm e não conta na comparação (M7): a marca de uso do Claude
@@ -193,19 +193,8 @@ def _g_clean(p):
     return None
 
 
-def network_env(env, worktree):
-    """O ambiente de um git que fala com o `origin` a partir de `worktree`: nunca espera credencial no
-    terminal, nem a senha da chave SSH (T9-ssh). O `ssh -o BatchMode=yes` só entra quando o dono não
-    escolheu o ssh: sem GIT_SSH_COMMAND, sem GIT_SSH e sem `core.sshCommand` na config que este mesmo
-    ambiente lê no worktree (T9-ssh2). A variável venceria as duas outras escolhas."""
-    env = dict(env, GIT_TERMINAL_PROMPT="0")
-    if "GIT_SSH_COMMAND" in env or "GIT_SSH" in env:
-        return env
-    rc, out = rw_store.run(["git", "-C", worktree, "config", "--get", "core.sshCommand"], env=env)
-    if rc == 0 and out.strip():
-        return env
-    env["GIT_SSH_COMMAND"] = BATCH_SSH
-    return env
+# O ambiente de rede mora no rw_store: o fetch do `prepare` usa o mesmo (Final-F8).
+network_env = rw_store.network_env
 
 
 def _g_fetch(p):
@@ -663,13 +652,15 @@ class Effects:
     def __init__(self, ctx):
         self.ctx = ctx
 
-    def push(self, worktree):
-        """`git push origin HEAD:main`, sem força, sem esperar senha no terminal: (True, saída) ou
-        (False, por quê)."""
+    def push(self, worktree, sha):
+        """`git push --no-follow-tags origin <sha>:refs/heads/main`, sem força, sem esperar senha no
+        terminal: (True, saída) ou (False, por quê). Sobe o `sha` que a porta conferiu, nunca o HEAD do
+        worktree na hora do push (Final-F7); um `push.followTags` do dono não leva tag (Final-F9)."""
         env = network_env(rw_store.git_env(home=self.ctx.home, nosystem=True), worktree)
-        rc, out = rw_store.run(["git", "-C", worktree, "push", "origin", "HEAD:main"], env=env)
+        ref = f"{sha}:refs/heads/main"
+        rc, out = rw_store.run(["git", "-C", worktree, "push", "--no-follow-tags", "origin", ref], env=env)
         if rc != 0:
-            return False, _short(f"git push origin HEAD:main saiu {rc}: {out}")
+            return False, _short(f"git push origin {ref} saiu {rc}: {out}")
         return True, _short(out)
 
     def _user_install(self, plugin):
@@ -910,7 +901,9 @@ def _publish(ctx, rid, lote, effects, done):
             if approved:
                 _mark_approved(ctx, worktree, env)
                 line["commit"] = _head(worktree)
-            pushed, detail = effects.push(worktree)
+            # O sha conferido: o HEAD lido logo depois do `refuse` (e da emenda do trailer, que só troca a
+            # mensagem). Um commit novo no worktree depois disso não sobe (Final-F7).
+            pushed, detail = effects.push(worktree, line["commit"])
         finally:
             # A emenda muda o patch (D20): um push que não saiu devolve o ramo ao commit revisado.
             if approved and not pushed:

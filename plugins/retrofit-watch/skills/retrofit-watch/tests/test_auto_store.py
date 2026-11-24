@@ -443,6 +443,27 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(rw_store.prepare(ctx, rid, "demo"), second)
         self.assertFalse(rw_store.worktree_path(ctx, rid, "demo", 3).exists())
 
+    def test_prepare_fetch_runs_in_batch_mode(self):
+        # Final-F8: o fetch do `prepare` usa o ambiente de rede da porta (T9-ssh e T9-ssh2): nunca espera
+        # credencial nem a senha da chave no terminal, e o GIT_SSH_COMMAND do dono fica.
+        own = "ssh -o " + "IdentitiesOnly=yes"
+        for inherited in (None, own):
+            with self.subTest(inherited=inherited):
+                rid = self.w.retro([{}], [{}])
+                with mock.patch.dict(os.environ):
+                    os.environ.pop("GIT_SSH_COMMAND", None)
+                    os.environ.pop("GIT_SSH", None)
+                    os.environ["GIT_TERMINAL_PROMPT"] = "1"
+                    if inherited:
+                        os.environ["GIT_SSH_COMMAND"] = inherited
+                    with mock.patch.object(rw_store, "run", wraps=rw_store.run) as spy:
+                        rw_store.prepare(self.ctx(), rid, "demo")
+                fetches = [c for c in spy.call_args_list if "fetch" in [str(a) for a in c.args[0]]]
+                self.assertEqual(len(fetches), 1, fetches)
+                env = fetches[0].kwargs["env"]
+                self.assertEqual(env["GIT_TERMINAL_PROMPT"], "0")
+                self.assertEqual(env["GIT_SSH_COMMAND"], inherited or "ssh -o BatchMode=yes")
+
     def test_inherited_git_location_and_config_do_not_redirect_prepare_or_seal(self):
         # Um hook do git exporta GIT_DIR; o HOME real tem a config de quem roda. Nenhum dos dois conta.
         trap_repo = self.w.tmp / "trap-repo"
