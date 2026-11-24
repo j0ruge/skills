@@ -423,7 +423,7 @@ class AutoUnitTest(unittest.TestCase):
         self.assertEqual(rw_auto.retro_dir(ctx, "r1"), self.w.data / "auto/r1")
         self.assertEqual(rw_auto.lote_dir(ctx, "r1", "codereview__description"),
                          self.w.data / "auto/r1/codereview__description")
-        for bad in ("", "..", "../x", "a/b", ".oculto", "-x", "a b", "a\\b"):
+        for bad in ("", "..", "../x", "a/b", ".oculto", "-x", "a b", "a\\b", "r1\n"):
             with self.subTest(bad):
                 with self.assertRaises(rw_auto.Malformed):
                     rw_auto.retro_dir(ctx, bad)
@@ -439,6 +439,47 @@ class AutoUnitTest(unittest.TestCase):
             fh.write("{quebrado\n[1, 2]\n")
         second = rw_auto.append_registry(ctx, {"id": "r2"})
         self.assertEqual(rw_auto.read_registry(ctx), [written, second])
+
+    def test_registry_skips_a_torn_multibyte_line(self):
+        """Uma linha cortada no 1º byte de um caractere de dois bytes é pulada; as vizinhas ficam."""
+        ctx = self.w.ctx()
+        first = rw_auto.append_registry(ctx, {"id": "r1", "item": "r1/codereview", "licoes": [1]})
+        torn = '{"id": "r1", "detalhe": "a'.encode("utf-8") + "ç".encode("utf-8")[:1] + b'"}\n'
+        with open(self.w.data / rw_auto.REGISTRY, "ab") as fh:
+            fh.write(torn)
+        last = rw_auto.append_registry(ctx, {"id": "r1", "item": "r1/codereview", "licoes": [2],
+                                             "motivo": "ação"})
+        self.assertEqual(rw_auto.read_registry(ctx), [first, last])
+        path = self.w.data / "auto/r1/licoes.json"
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({"id": "r1", "licoes": [{"n": 1}, {"n": 2}]}))
+        self.assertTrue(rw_auto.flow_finished(ctx, {"id": "r1"}))
+
+    def test_config_rejects_bool_limits_and_non_list_paths(self):
+        self.config(auto_limits={"per_skill": True, "per_session": False},
+                    harvest_roots="~/src", private_sources={"~/lista.txt": 1})
+        ctx = self.w.ctx()
+        self.assertEqual(ctx.auto_limits, {"per_skill": 2, "per_session": 3})
+        self.assertEqual(ctx.harvest_roots, [self.w.home / "repos"])
+        self.assertEqual(ctx.private_sources, [])
+
+    def test_flow_open_drops_a_malformed_auto_open(self):
+        for bad in ("x", ["id", 1], {"id": "r1"}, {"id": "r1", "ts": "agora"}):
+            with self.subTest(bad):
+                st = {"auto_open": bad}
+                self.assertFalse(rw_auto.flow_open(st))
+                self.assertNotIn("auto_open", st)
+        st = {"auto_open": {"id": "r1", "ts": time.time()}}
+        self.assertTrue(rw_auto.flow_open(st))
+        self.assertIn("auto_open", st)
+
+    def test_flow_finished_skips_unhashable_lesson_numbers_in_the_registry(self):
+        ctx = self.w.ctx()
+        path = self.w.data / "auto/r1/licoes.json"
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({"id": "r1", "licoes": [{"n": 1}]}))
+        rw_auto.append_registry(ctx, {"id": "r1", "item": "r1/codereview", "licoes": [[1], {"n": 1}, 1]})
+        self.assertTrue(rw_auto.flow_finished(ctx, {"id": "r1"}))
 
     def test_used_counts_distinct_batch_pairs_of_the_session(self):
         registry = [

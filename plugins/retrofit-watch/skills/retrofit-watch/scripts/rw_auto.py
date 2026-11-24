@@ -55,7 +55,8 @@ def new_id(session_id, now=None):
 
 
 def _safe(name, what):
-    if not isinstance(name, str) or not SAFE_NAME.match(name):
+    # fullmatch, não match: o `$` do Python também casa antes de uma quebra de linha final.
+    if not isinstance(name, str) or not SAFE_NAME.fullmatch(name):
         raise Malformed(f"{what} fora do formato seguro: {name!r}")
     return name
 
@@ -71,16 +72,21 @@ def lote_dir(ctx, rid, lote):
 # --- registro ----------------------------------------------------------------------------------
 
 def read_registry(ctx):
-    """As linhas de autonomo.jsonl. Linha ilegível, ou que não é objeto, é pulada."""
+    """As linhas de autonomo.jsonl. Linha ilegível, ou que não é objeto, é pulada.
+
+    Cada linha se decodifica sozinha: o registro só cresce, e uma linha com um caractere de vários
+    bytes cortado no meio (gravação interrompida) derrubaria a leitura do arquivo inteiro."""
     try:
-        lines = (ctx.data_dir / REGISTRY).read_text(encoding="utf-8").splitlines()
+        lines = (ctx.data_dir / REGISTRY).read_bytes().split(b"\n")
     except OSError:
         return []
     out = []
     for line in lines:
+        if not line.strip():
+            continue
         try:
-            item = json.loads(line)
-        except ValueError:
+            item = json.loads(line.decode("utf-8"))
+        except ValueError:  # inclui o UnicodeDecodeError
             continue
         if isinstance(item, dict):
             out.append(item)
