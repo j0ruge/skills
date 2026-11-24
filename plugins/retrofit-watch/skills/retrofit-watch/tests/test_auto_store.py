@@ -6,6 +6,7 @@ A loja é a fixture da Tarefa 6 (um `origin` `--bare` e um clone, sob o diretór
 teste toca a rede, o `claude` real ou um `origin` real. Todo nome inventado se monta em tempo de
 execução: um literal faria a camada 1 reprovar o próprio ramo.
 """
+import contextlib
 import json
 import os
 import shutil
@@ -220,6 +221,63 @@ class HarvestTest(unittest.TestCase):
         got = rw_store.harvest(self.ctx())
         self.assertIn(two, got)
         self.assertNotIn(deep, got)
+
+    def test_harvest_fails_closed_on_an_unreadable_source(self):
+        # Item 8 (C8): uma fonte que existe e não lê é StoreError com a fonte; nunca uma colheita menor.
+        make_repo(self.env, self.roots / invented("fa"), remote(invented("fown"), invented("frem")))
+        locked = self.roots / "grupo"
+        make_repo(self.env, locked / invented("fb"))
+        self.gitconfig(self.home, invented("fnm"))
+        real_iterdir, real_run = Path.iterdir, rw_store.run
+
+        def iterdir(path):
+            if path == locked:
+                raise PermissionError(13, "Permission denied", str(path))
+            return real_iterdir(path)
+
+        def failing(*words):
+            def fake(cmd, *args, **kwargs):
+                if all(w in cmd for w in words):
+                    return 128, "fatal: " + invented("quebrado")
+                return real_run(cmd, *args, **kwargs)
+            return fake
+
+        folder = self.tmp / "fonte-pasta"
+        folder.mkdir()
+        cases = {
+            "private_sources": ({"private_sources": [str(folder)]}, None, str(folder)),
+            "iterdir": ({}, mock.patch.object(Path, "iterdir", iterdir), str(locked)),
+            "origin": ({}, mock.patch.object(rw_store, "run", failing("remote", "get-url")), "origin"),
+            "config": ({}, mock.patch.object(rw_store, "run", failing("config", "user.name")), "user.name"),
+        }
+        for source, (keys, patch, named) in cases.items():
+            with self.subTest(source=source):
+                self.config(**keys)
+                with patch or contextlib.nullcontext():
+                    with self.assertRaises(rw_store.StoreError) as caught:
+                        rw_store.harvest(self.ctx())
+                self.assertIn(named, str(caught.exception))
+
+    def test_harvest_skips_what_is_absent(self):
+        # Item 8 (C8): o que não existe continua sem erro: o repo sem `origin` (rc 2), a chave ausente da
+        # config (rc 1), a fonte privada ausente e a pasta que sumiu no meio da varredura.
+        bare, ra, own, rem, nm = (invented(k) for k in ("sem", "ab", "aown", "arem", "anm"))
+        make_repo(self.env, self.roots / bare)
+        make_repo(self.env, self.roots / ra, remote(own, rem))
+        gone = self.roots / "sumiu"
+        gone.mkdir(parents=True)
+        self.gitconfig(self.home, nm)  # sem user.email
+        self.config(private_sources=[str(self.tmp / "nao-existe.txt")])
+        real_iterdir = Path.iterdir
+
+        def iterdir(path):
+            if path == gone:
+                raise FileNotFoundError(2, "No such file or directory", str(path))
+            return real_iterdir(path)
+
+        with mock.patch.object(Path, "iterdir", iterdir):
+            got = rw_store.harvest(self.ctx())
+        self.assertEqual({bare, ra, own, rem, nm, self.home.name} - got, set())
 
     def test_harvest_origin_without_host_gives_no_owner(self):
         parent, name, other = invented("parent"), invented("lrem"), invented("lrem2")

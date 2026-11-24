@@ -194,20 +194,29 @@ def origin_terms(url):
 
 
 def _origin_of(repo, env):
+    """Os termos do `origin` de `repo`. Sem remoto `origin` (rc 2) é nada; outro rc é StoreError (C8):
+    a colheita nunca encolhe em silêncio."""
     rc, out = run(["git", "-C", str(repo), "remote", "get-url", "origin"], env=env)
-    return origin_terms(out) if rc == 0 else []
+    if rc == 0:
+        return origin_terms(out)
+    if rc == 2:
+        return []
+    raise StoreError(f"colheita: o origin de {repo} nao le: git saiu {rc}: {out.strip()[:500]}")
 
 
 def _repos(root, depth=HARVEST_DEPTH):
-    """Cada pasta com `.git` sob `root`, da profundidade 1 até `depth`. Raiz ausente não é erro."""
+    """Cada pasta com `.git` sob `root`, da profundidade 1 até `depth`. Raiz ausente, raiz que é arquivo
+    e pasta que sumiu no meio não são erro; a pasta que existe e não lê é StoreError (C8)."""
     found, level = [], [Path(root)]
     for _ in range(depth):
         nxt = []
         for folder in level:
             try:
                 children = sorted(p for p in folder.iterdir() if p.name != ".git" and p.is_dir())
-            except OSError:
+            except (FileNotFoundError, NotADirectoryError):
                 continue
+            except OSError as exc:
+                raise StoreError(f"colheita: a pasta {folder} nao le: {exc}") from exc
             for child in children:
                 if (child / ".git").exists():
                     found.append(child)
@@ -218,15 +227,23 @@ def _repos(root, depth=HARVEST_DEPTH):
 
 def _git_config(key, env, cwd):
     # Sem --global: com o ~/.gitconfig presente, o --global não lê o ~/.config/git/config.
+    # Chave ausente (rc 1) é vazio; outro rc (config ilegível) é StoreError (C8).
     rc, out = run(["git", "-C", str(cwd), "config", "--get", key], env=env)
-    return out.strip() if rc == 0 else ""
+    if rc == 0:
+        return out.strip()
+    if rc == 1:
+        return ""
+    raise StoreError(f"colheita: git config {key} nao le: git saiu {rc}: {out.strip()[:500]}")
 
 
 def _source_lines(path):
+    """As linhas da fonte privada. Fonte ausente é nada; a que existe e não lê é StoreError (C8)."""
     try:
         text = Path(path).read_bytes().decode("utf-8", "replace")
-    except OSError:
+    except FileNotFoundError:
         return []
+    except OSError as exc:
+        raise StoreError(f"colheita: a fonte privada {path} nao le: {exc}") from exc
     return [line.strip() for line in text.splitlines() if line.strip() and not line.strip().startswith("#")]
 
 

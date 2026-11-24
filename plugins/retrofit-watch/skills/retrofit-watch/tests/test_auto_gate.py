@@ -595,6 +595,16 @@ class GateTest(GateHarness, unittest.TestCase):
                 rg.refuse(self.ctx(), rid, "demo", [])
         self.assertEqual(self.w.origin_main(), self.base)
 
+    def test_gate_reports_a_shrunk_harvest_as_internal(self):
+        # Item 8 (C8): uma fonte da colheita que existe e não lê segura o lote com `interno`, nunca uma
+        # camada 1 "limpa" com menos nomes.
+        rid, wt = self.clean_retrofit()
+        folder = self.w.tmp / "fonte-pasta"
+        folder.mkdir()
+        self.config(private_sources=[str(folder)])
+        got = self.assertRefuses(rid, "interno")
+        self.assertIn(str(folder), got[1])
+
     # --- guardas 12 a 16: a segunda passada do revisor -----------------------------------------
 
     def test_missing_anonimato_refuses(self):
