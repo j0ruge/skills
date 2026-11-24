@@ -285,3 +285,429 @@ def flow_finished(ctx, pedido):
         if line.get("id") == pedido["id"] and isinstance(line.get("licoes"), list):
             seen.update(n for n in line["licoes"] if isinstance(n, (int, str)))
     return numbers <= seen
+
+
+# --- formatos ----------------------------------------------------------------------------------
+# Um validador por campo. A chave a mais, a chave faltando e o valor fora do domínio são Malformed,
+# com o arquivo e o campo na mensagem: o arquivo vem de um agente, e um campo errado lido como
+# "vazio" publicaria a lição errada.
+
+def _any(value):
+    return True
+
+
+def _int(value):
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def _count(value):
+    return _int(value) and value >= 1
+
+
+def _text(value):
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _opt_text(value):
+    return value is None or _text(value)
+
+
+def _opt_str(value):
+    return value is None or isinstance(value, str)
+
+
+def _flag(value):
+    return isinstance(value, bool)
+
+
+def _safe_text(value):
+    return isinstance(value, str) and SAFE_NAME.fullmatch(value) is not None
+
+
+def _one_of(*values):
+    return lambda value: value in values
+
+
+def _list(value):
+    return isinstance(value, list)
+
+
+def _text_list(value):
+    return isinstance(value, list) and all(_text(v) for v in value)
+
+
+def _opt_text_list(value):
+    return value is None or _text_list(value)
+
+
+def _counts(value):
+    return isinstance(value, list) and bool(value) and all(_count(v) for v in value)
+
+
+LOCATION = re.compile(r".+:[1-9][0-9]*")
+
+
+def _opt_location(value):
+    """`coberta`: null, ou `arquivo:linha`."""
+    return value is None or (isinstance(value, str) and LOCATION.fullmatch(value) is not None)
+
+
+PROCEDE = ("procede", "nao-procede", "nao-reproduzivel")
+# Um dict como valor é o validador de um objeto aninhado; uma lista de objetos se confere no load_*.
+PEDIDO_SPEC = {
+    "id": _safe_text,
+    "sessao": _text,
+    "ts": _int,
+    "transcript": _opt_text,
+    "cwd": _text,
+    "modo": _one_of("auto", "auto-dry"),
+    "skills": _list,
+}
+PEDIDO_SKILL_SPEC = {
+    "key": _text,
+    "plugin": _safe_text,
+    "label": _text,
+    "skills": _text_list,
+}
+LICOES_SPEC = {
+    "id": _safe_text,
+    "licoes": _list,
+}
+EVIDENCIA_SPEC = {
+    "texto": _text,
+    "transcript": _text,
+    "entrada": _text,
+}
+LICAO_SPEC = {
+    "n": _count,
+    "plugin": _safe_text,
+    "skill": _safe_text,
+    "tipo": _one_of("pitfall", "melhoria"),
+    "evidencia": EVIDENCIA_SPEC,
+    "padrao": _text,
+    "resolveu": _opt_text,
+    "muda_description": _flag,
+}
+VEREDITO_SPEC = {
+    "id": _safe_text,
+    "base": _text,
+    "licoes": _list,
+}
+PARECER_SPEC = {
+    "n": _count,
+    "evidencia_confere": _flag,
+    "coberta": _opt_location,
+    "generica": _flag,
+    "procede": _one_of(*PROCEDE),
+    "basta_o_transcript": _opt_text,
+    "nao_capturar": _opt_text,
+    "nota": _opt_str,
+}
+# `fases`, `commit`, `versao` e `patch` ficam null do `prepare` ao `seal` (Tarefa 7).
+RETROFIT_SPEC = {
+    "id": _safe_text,
+    "lote": _safe_text,
+    "plugin": _safe_text,
+    "tipo": _one_of("auto", "description"),
+    "tentativa": _count,
+    "worktree": _text,
+    "ramo": _text,
+    "base": _text,
+    "licoes": _counts,
+    "fases": _opt_text_list,
+    "commit": _opt_text,
+    "versao": _opt_text,
+    "patch": _opt_text,
+}
+ANONIMATO_SPEC = {
+    "patch": _text,
+    "termos": _list,
+    "regra_repetida": _opt_text,
+    "fora_das_licoes": _opt_text,
+}
+TERMO_SPEC = {
+    "termo": _text,
+    "veredito": _one_of("publico", "privado", "duvida"),
+    "nota": _opt_str,
+}
+APROVADO_SPEC = {
+    "id": _safe_text,
+    "lote": _safe_text,
+    "ts": _int,
+    "motivos": _text_list,
+}
+
+LICAO_KEYS = frozenset(LICAO_SPEC)
+EVIDENCIA_KEYS = frozenset(EVIDENCIA_SPEC)
+PARECER_KEYS = frozenset(PARECER_SPEC)
+TERMO_KEYS = frozenset(TERMO_SPEC)
+ANONIMATO_KEYS = frozenset(ANONIMATO_SPEC)
+RETROFIT_KEYS = frozenset(RETROFIT_SPEC)
+
+# Os motivos da triagem: os que descartam e os que seguram (seção Formatos e motivos do plano).
+DISCARD_REASONS = ("coberta", "do-projeto", "nao-procede", "sem-evidencia", "nao-capturar")
+HOLD_REASONS = ("sem-veredito", "fora-do-pedido", "nao-reproduzivel", "sem-correcao")
+LESSON_REASONS = DISCARD_REASONS + HOLD_REASONS
+OWNER_REASONS = ("descartado-pelo-dono", "resolvido-manual")
+AGENT_REASONS = ("executor-falhou", "executor-recusou")
+
+
+def _fields(obj, spec, where):
+    if not isinstance(obj, dict):
+        raise Malformed(f"{where}: não é um objeto")
+    for key in obj:
+        if key not in spec:
+            raise Malformed(f"{where}: chave a mais `{key}`")
+    for key in spec:
+        if key not in obj:
+            raise Malformed(f"{where}: falta a chave `{key}`")
+    for key, check in spec.items():
+        if isinstance(check, dict):
+            _fields(obj[key], check, f"{where}, `{key}`")
+        elif not check(obj[key]):
+            raise Malformed(f"{where}: `{key}` fora do domínio: {obj[key]!r}")
+    return obj
+
+
+def _items(obj, key, spec, where):
+    """Confere cada objeto da lista `obj[key]` contra `spec`."""
+    for i, item in enumerate(obj[key]):
+        _fields(item, spec, f"{where}, `{key}`[{i}]")
+    return obj[key]
+
+
+def _read_json(path):
+    """O JSON de `path`, em UTF-8 sem BOM. Ilegível, com BOM, com cerca de código ou fora do UTF-8
+    é Malformed, nunca um traceback."""
+    path = Path(path)
+    try:
+        raw = path.read_bytes()
+    except OSError as exc:
+        raise Malformed(f"{path}: ilegível ({exc.strerror or exc})") from None
+    try:
+        return json.loads(raw.decode("utf-8"))
+    except ValueError as exc:  # inclui o UnicodeDecodeError e o BOM
+        raise Malformed(f"{path}: não é JSON em UTF-8 sem BOM ({exc})") from None
+
+
+def _by_number(entries, where):
+    out = {}
+    for entry in entries:
+        key = str(entry["n"])
+        if key in out:
+            raise Malformed(f"{where}: `n` repetido: {entry['n']}")
+        out[key] = entry
+    return out
+
+
+def load_pedido(path):
+    data = _fields(_read_json(path), PEDIDO_SPEC, str(path))
+    _items(data, "skills", PEDIDO_SKILL_SPEC, str(path))
+    return data
+
+
+def load_licoes(path):
+    """As lições de licoes.json, por número (`"1"`, `"2"`...), na ordem do arquivo."""
+    data = _fields(_read_json(path), LICOES_SPEC, str(path))
+    return _by_number(_items(data, "licoes", LICAO_SPEC, str(path)), str(path))
+
+
+def load_veredito(path):
+    """Os pareceres de veredito.json, por número da lição."""
+    data = _fields(_read_json(path), VEREDITO_SPEC, str(path))
+    return _by_number(_items(data, "licoes", PARECER_SPEC, str(path)), str(path))
+
+
+def load_retrofit(path):
+    return _fields(_read_json(path), RETROFIT_SPEC, str(path))
+
+
+def load_anonimato(path):
+    data = _fields(_read_json(path), ANONIMATO_SPEC, str(path))
+    _items(data, "termos", TERMO_SPEC, str(path))
+    return data
+
+
+# --- triagem -----------------------------------------------------------------------------------
+
+def in_request(ctx, pedido, licao):
+    """A lição cabe no pedido? O plugin tem de estar nele, e a skill na lista da entrada quando a
+    entrada lista skills (spec 5.2). Plugin ou skill no `exclude` ou na lista `manual` da config
+    de agora ficam fora, mesmo que a config tenha mudado depois do pedido."""
+    plugin, skill = licao["plugin"], licao["skill"]
+    entries = [e for e in pedido["skills"] if e["plugin"] == plugin]
+    if not entries:
+        return False
+    excluded, manual = ctx.excluded, ctx.manual
+    if plugin in excluded or skill in excluded or plugin in manual or skill in manual:
+        return False
+    listed = [s for e in entries for s in e["skills"]]
+    return not listed or skill in listed
+
+
+def classify(licao, parecer):
+    """O destino da lição e o motivo: `publicar`, `ramo-pronto`, `segurar` ou `descartar`. Vale a
+    primeira condição que casar; o descarte vem antes do que seguraria (decisão O3)."""
+    if parecer is None:
+        return "segurar", "sem-veredito"
+    if parecer["coberta"] is not None:
+        return "descartar", "coberta"
+    if not parecer["generica"]:
+        return "descartar", "do-projeto"
+    if parecer["procede"] == "nao-procede":
+        return "descartar", "nao-procede"
+    if not parecer["evidencia_confere"]:
+        return "descartar", "sem-evidencia"
+    if parecer["nao_capturar"] is not None:
+        return "descartar", "nao-capturar"
+    if parecer["procede"] == "nao-reproduzivel" and parecer["basta_o_transcript"] is None:
+        return "segurar", "nao-reproduzivel"
+    if licao["resolveu"] is None:
+        return "segurar", "sem-correcao"
+    if licao["muda_description"]:
+        return "ramo-pronto", "muda-description"
+    return "publicar", None
+
+
+def _detail(motivo, parecer):
+    """O texto do parecer que explica o motivo: o `arquivo:linha` da coberta, o item da lista do
+    que não capturar; senão a nota do revisor."""
+    if parecer is None:
+        return ""
+    if motivo == "coberta":
+        return parecer["coberta"]
+    if motivo == "nao-capturar":
+        return parecer["nao_capturar"]
+    return parecer["nota"] or ""
+
+
+def _line(session, rid, item, plugin, licoes, resultado, motivo, detalhe="", lote=None):
+    """Uma linha do registro sem o `ts`, com todas as chaves; as da porta ficam null."""
+    return {"sessao": session, "id": rid, "lote": lote, "plugin": plugin, "item": item, "licoes": licoes,
+            "resultado": resultado, "motivo": motivo, "detalhe": detalhe, "commit": None, "ramo": None,
+            "worktree": None, "versao": None, "aprovado": None, "instalacao": None}
+
+
+def _plan(ctx, rid):
+    """A triagem sem gravar nada: (pedido, lotes, segurar, descartar)."""
+    folder = retro_dir(ctx, rid)
+    pedido = load_pedido(folder / "pedido.json")
+    licoes = load_licoes(folder / "licoes.json")
+    veredito = load_veredito(folder / "veredito.json")
+    lotes, hold, drop = {}, [], []
+    for key, licao in licoes.items():
+        plugin, n = licao["plugin"], licao["n"]
+        if not in_request(ctx, pedido, licao):
+            destino, motivo, parecer = "segurar", "fora-do-pedido", None
+        else:
+            parecer = veredito.get(key)
+            destino, motivo = classify(licao, parecer)
+        if destino in ("publicar", "ramo-pronto"):
+            tipo = "auto" if destino == "publicar" else "description"
+            name = plugin if tipo == "auto" else f"{plugin}__description"
+            lotes.setdefault(name, {"lote": name, "plugin": plugin, "tipo": tipo, "licoes": []})["licoes"].append(n)
+            continue
+        entry = {"item": f"{rid}/{plugin}#{n}", "plugin": plugin, "licoes": [n], "motivo": motivo,
+                 "detalhe": _detail(motivo, parecer)}
+        (hold if destino == "segurar" else drop).append(entry)
+    ordered = sorted(lotes.values(), key=lambda lote: (lote["tipo"] != "auto", lote["plugin"]))
+    return pedido, ordered, hold, drop
+
+
+def _append_new(ctx, lines):
+    """Acrescenta, sob uma trava só, as linhas cujo `item` ainda não tem linha no registro."""
+    ctx.data_dir.mkdir(parents=True, exist_ok=True)
+    lock = rw._lock(ctx.data_dir / REGISTRY_LOCK)
+    try:
+        seen = {entry.get("item") for entry in read_registry(ctx)}
+        now = int(time.time())
+        with open(ctx.data_dir / REGISTRY, "a", encoding="utf-8") as fh:
+            for entry in lines:
+                if entry["item"] not in seen:
+                    fh.write(json.dumps(dict(entry, ts=now), ensure_ascii=False) + "\n")
+    finally:
+        rw._unlock(lock)
+
+
+def triage(ctx, rid):
+    """Os lotes da retro (os `auto` antes dos `description`) e as lições sem ramo. Grava uma linha
+    `segurado` ou `descartado` por lição sem ramo; rodar de novo não repete linha."""
+    pedido, lotes, hold, drop = _plan(ctx, rid)
+    lines = [_line(pedido["sessao"], rid, e["item"], e["plugin"], e["licoes"], result, e["motivo"], e["detalhe"])
+             for result, entries in (("segurado", hold), ("descartado", drop)) for e in entries]
+    _append_new(ctx, lines)
+    return {"lotes": lotes, "segurar": hold, "descartar": drop}
+
+
+# --- verbos do registro ------------------------------------------------------------------------
+
+def last_lines(registry):
+    """A última linha de cada `item`."""
+    out = {}
+    for entry in registry:
+        item = entry.get("item")
+        if isinstance(item, str):
+            out[item] = entry
+    return out
+
+
+def held(ctx):
+    """Os itens em aberto: a última linha é `segurado` ou `erro`."""
+    return [entry for entry in last_lines(read_registry(ctx)).values()
+            if entry.get("resultado") in ("segurado", "erro")]
+
+
+# O que vem depois de `<id>/` num item: `<lote>`, ou `<plugin>#<n>` na lição sem ramo.
+ITEM_REST = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*(#[1-9][0-9]*)?")
+
+
+def _item(rid, item):
+    """Confere `item` contra o id: `<id>/<lote>` ou `<id>/<plugin>#<n>`."""
+    _safe(rid, "id")
+    prefix, _, rest = item.partition("/") if isinstance(item, str) else ("", "", "")
+    if prefix != rid or ITEM_REST.fullmatch(rest) is None:
+        raise Malformed(f"item fora do formato `{rid}/<lote>` ou `{rid}/<plugin>#<n>`: {item!r}")
+    return item
+
+
+def hold_item(ctx, rid, item, motivo, detalhe=""):
+    """Linha `segurado` para um lote da triagem que o executor não levou até o fim."""
+    _item(rid, item)
+    if motivo not in AGENT_REASONS:
+        raise Malformed(f"motivo fora de {', '.join(AGENT_REASONS)}: {motivo!r}")
+    pedido, lotes, _, _ = _plan(ctx, rid)
+    lote = next((x for x in lotes if f"{rid}/{x['lote']}" == item), None)
+    if lote is None:
+        raise Malformed(f"{item} não é um lote da triagem da retro {rid}")
+    return append_registry(ctx, _line(pedido["sessao"], rid, item, lote["plugin"], lote["licoes"], "segurado",
+                                      motivo, detalhe, lote=lote["lote"]))
+
+
+def approve(ctx, rid, lote):
+    """Acrescenta a aprovado.json o motivo da última linha `segurado` do lote, sem repetir."""
+    folder = lote_dir(ctx, rid, lote)
+    item = f"{rid}/{lote}"
+    reasons = [e.get("motivo") for e in read_registry(ctx) if e.get("item") == item and e.get("resultado") == "segurado"]
+    if not reasons:
+        raise Malformed(f"o lote {item} não tem linha `segurado` no registro")
+    path = folder / "aprovado.json"
+    motivos = []
+    if path.exists():
+        motivos = list(_fields(_read_json(path), APROVADO_SPEC, str(path))["motivos"])
+    if reasons[-1] not in motivos:
+        motivos.append(reasons[-1])
+    folder.mkdir(parents=True, exist_ok=True)
+    _write_json(path, {"id": rid, "lote": lote, "ts": int(time.time()), "motivos": motivos})
+    return path
+
+
+def discard(ctx, rid, item, motivo="descartado-pelo-dono"):
+    """Linha `descartado` para um item em aberto, pela palavra do dono."""
+    _item(rid, item)
+    if motivo not in OWNER_REASONS:
+        raise Malformed(f"motivo fora de {', '.join(OWNER_REASONS)}: {motivo!r}")
+    last = next((e for e in held(ctx) if e.get("item") == item), None)
+    if last is None:
+        raise Malformed(f"o item {item} não está em aberto (segurado ou erro) no registro")
+    return append_registry(ctx, _line(last.get("sessao"), rid, item, last.get("plugin"), last.get("licoes"),
+                                      "descartado", motivo, lote=last.get("lote")))

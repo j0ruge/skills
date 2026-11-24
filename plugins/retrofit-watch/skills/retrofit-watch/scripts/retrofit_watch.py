@@ -6,6 +6,7 @@ Registrado em hooks/hooks.json:
   SessionStart (resume|fork)   -> retrofit_watch.py baseline
   SessionStart (startup)       -> retrofit_watch.py pending   (aviso de retro adiada)
 Linha de comando: retrofit_watch.py queue [--done ID...]   (a fila das sessões headless)
+                  retrofit_watch.py triage|held|hold|approve|discard ...   (modo autônomo, rw_auto.py)
 
 "Nossa" = skill do marketplace chewiesoft-marketplace (j0ruge/skills; retrofit modo full, o
 argumento é o nome do PLUGIN) ou skill versionada em git num repo de dono conhecido (modo lean).
@@ -892,21 +893,29 @@ def cmd_pending(payload, ctx):
                              "— /retrofit-watch:retrofit-watch pendentes"}
 
 
+def data_dir_problem(ctx):
+    """A recusa quando a pasta de dados não existe ou é ambígua, ou None. Responder `[]` ou
+    "gravei" nesses casos esconde os dados de verdade."""
+    if len(ctx.data_candidates) > 1:
+        return ("retrofit-watch: mais de uma pasta de dados: "
+                + ", ".join(str(p) for p in ctx.data_candidates)
+                + ". Defina CLAUDE_PLUGIN_DATA com a certa.\n")
+    if not ctx.data_dir.is_dir():
+        return (f"retrofit-watch: a pasta de dados não existe: {ctx.data_dir}. Sem ela não há "
+                "fila para ler; defina CLAUDE_PLUGIN_DATA com a pasta do plugin em "
+                "~/.claude/plugins/data/.\n")
+    return None
+
+
 def cmd_queue(argv, ctx):
     """`queue` lista a fila em JSON; `queue --done ID...` tira as entradas já retradas.
 
     Sai 1, sem tocar em nada, quando a pasta de dados não existe ou é ambígua, e quando um id do
     `--done` não está na fila: responder `[]` ou "tirei" nesses casos esconde a fila de verdade.
     """
-    if len(ctx.data_candidates) > 1:
-        sys.stderr.write("retrofit-watch: mais de uma pasta de dados: "
-                         + ", ".join(str(p) for p in ctx.data_candidates)
-                         + ". Defina CLAUDE_PLUGIN_DATA com a certa.\n")
-        return 1
-    if not ctx.data_dir.is_dir():
-        sys.stderr.write(f"retrofit-watch: a pasta de dados não existe: {ctx.data_dir}. Sem ela não há "
-                         "fila para ler; defina CLAUDE_PLUGIN_DATA com a pasta do plugin em "
-                         "~/.claude/plugins/data/.\n")
+    problem = data_dir_problem(ctx)
+    if problem:
+        sys.stderr.write(problem)
         return 1
     if argv[:1] == ["--done"]:
         ids = set(argv[1:])
@@ -921,6 +930,52 @@ def cmd_queue(argv, ctx):
     for item in items:
         item["transcript_exists"] = bool(item.get("transcript")) and os.path.isfile(item["transcript"])
     print(json.dumps(items, ensure_ascii=False, indent=2))
+    return 0
+
+
+# Os verbos do registro do modo autônomo (rw_auto.py) e quantos argumentos posicionais cada um leva.
+CLI_USAGE = {
+    "triage": ("triage <id>", 1),
+    "held": ("held", 0),
+    "hold": ("hold <id> <item> <motivo>", 3),
+    "approve": ("approve <id> <lote>", 2),
+    "discard": ("discard <id> <item> [--motivo M]", 2),
+}
+
+
+def cli(argv, ctx):
+    """Os verbos do modo autônomo. Imprimem JSON em ASCII (o stdout do Windows é cp1252).
+
+    rc 0 certo, 1 recusado, 2 uso, pasta de dados ausente ou ambígua, ou arquivo do fluxo fora do
+    formato (rw_auto.Malformed). Os erros vão ao stderr, sem traceback."""
+    problem = data_dir_problem(ctx)
+    if problem:
+        sys.stderr.write(problem)
+        return 2
+    import rw_auto as auto
+    verb, args, kwargs = argv[0], list(argv[1:]), {}
+    if verb == "discard" and len(args) == 4 and args[2] == "--motivo":
+        kwargs["motivo"] = args.pop()
+        args.pop()
+    usage, arity = CLI_USAGE[verb]
+    if len(args) != arity:
+        sys.stderr.write(f"retrofit-watch: uso: retrofit_watch.py {usage}\n")
+        return 2
+    try:
+        if verb == "triage":
+            result = auto.triage(ctx, *args)
+        elif verb == "held":
+            result = auto.held(ctx)
+        elif verb == "hold":
+            result = auto.hold_item(ctx, *args)
+        elif verb == "approve":
+            result = json.loads(auto.approve(ctx, *args).read_text(encoding="utf-8"))
+        else:
+            result = auto.discard(ctx, *args, **kwargs)
+    except auto.Malformed as exc:
+        sys.stderr.write(f"retrofit-watch: {exc}\n")
+        return 2
+    sys.stdout.write(json.dumps(result, indent=2) + "\n")
     return 0
 
 
@@ -940,9 +995,13 @@ def main(argv):
         print(__doc__)
         print("Uso: retrofit_watch.py stop|baseline|pending  (lê o JSON do hook no stdin)")
         print("     retrofit_watch.py queue [--done ID...]  (fila das sessões headless)")
+        for usage, _ in CLI_USAGE.values():
+            print(f"     retrofit_watch.py {usage}  (modo autônomo)")
         return 0
     if argv and argv[0] == "queue":
         return cmd_queue(argv[1:], Context())
+    if argv and argv[0] in CLI_USAGE:
+        return cli(argv, Context())
     ctx = None
     try:
         ctx = Context()
