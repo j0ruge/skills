@@ -268,12 +268,9 @@ class ClassifyTest(unittest.TestCase):
         self.assertIsNone(rw.classify_plugin("retrofit-skill", self.ctx))
 
 
-class StopTest(unittest.TestCase):
-    def setUp(self):
-        self.w = World()
-
-    def tearDown(self):
-        self.w.cleanup()
+class HookHarness:
+    """Escreve o transcript, roda o hook num subprocesso e lê o contexto devolvido. Quem herda
+    cria `self.w` (um World) no próprio setUp."""
 
     def write(self, *groups):
         with open(self.w.transcript, "a", encoding="utf-8") as fh:
@@ -281,7 +278,8 @@ class StopTest(unittest.TestCase):
                 for entry in group:
                     fh.write(json.dumps(entry) + "\n")
 
-    def run_hook(self, sub="stop", last="Feito.", active=False, env=None, raw=None, mode="default"):
+    def run_hook(self, sub="stop", last="Feito.", active=False, env=None, raw=None, mode="default",
+                 script=SCRIPT):
         payload = raw if raw is not None else json.dumps({
             "session_id": "s1", "transcript_path": str(self.w.transcript), "cwd": str(self.w.proj),
             "hook_event_name": "Stop" if sub == "stop" else "SessionStart", "permission_mode": mode,
@@ -294,7 +292,7 @@ class StopTest(unittest.TestCase):
         full_env.update(env or {})
         # O Claude Code manda o JSON em UTF-8 cru (JSON.stringify não escapa acento) em qualquer SO;
         # `text=True` usaria a página de código local.
-        proc = subprocess.run([sys.executable, str(SCRIPT), sub], input=payload.encode("utf-8"),
+        proc = subprocess.run([sys.executable, str(script), sub], input=payload.encode("utf-8"),
                               capture_output=True, env=full_env, timeout=20)
         self.assertEqual(proc.returncode, 0, proc.stderr.decode("utf-8", "replace"))
         out = proc.stdout.decode("utf-8").strip()
@@ -303,6 +301,14 @@ class StopTest(unittest.TestCase):
     def context_of(self, out):
         self.assertIsNotNone(out, "esperava um pedido de retro")
         return out["hookSpecificOutput"]["additionalContext"]
+
+
+class StopTest(HookHarness, unittest.TestCase):
+    def setUp(self):
+        self.w = World()
+
+    def tearDown(self):
+        self.w.cleanup()
 
     def test_real_work_fires_once_with_retrofit_command(self):
         self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), *[tool()] * 6)

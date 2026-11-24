@@ -20,7 +20,8 @@ Controle por ambiente:
   RETROFIT_WATCH=off     desliga
   RETROFIT_WATCH=force   pede a retro mesmo em sessão desassistida (testes com claude -p)
 Config opcional em ~/.claude/retrofit-watch.json: owners, include, exclude, deny_roots, kits,
-unattended ("queue", o padrão, ou "off").
+unattended ("queue", o padrão, ou "off"). O modo autônomo (rw_auto.py) lê mode ("manual", o
+padrão, "auto" ou "auto-dry"), manual, auto_limits, harvest_roots, private_sources e store.
 
 Sessão desassistida (claude -p, fase do sdd run): nada volta para a sessão; com atrito, grava uma
 linha em <data>/queue.jsonl (fora de qualquer repo) para a retro numa sessão com o humano. O
@@ -78,6 +79,11 @@ DEVIATION_RE = re.compile(
     r"doesn['’]t exist|does not exist|not in the expected|not where|no such file|instead of"
     r"|n[aã]o existe|n[aã]o encontrei|em vez de|ao inv[eé]s de|no lugar de|n[aã]o est[aá] onde", re.I)
 NO_LESSONS_RE = re.compile(r"sem li[cç][oõ]es novas|no new lessons", re.I)
+# Modo autônomo (rw_auto.py; spec 5.2 e 5.10). O padrão é `manual`: quem instala a loja pública
+# não recebe o modo autônomo.
+AUTO_MODES = ("manual", "auto", "auto-dry")
+DEFAULT_AUTO_LIMITS = {"per_skill": 2, "per_session": 3}
+DEFAULT_HARVEST_ROOTS = ("~/repos",)
 
 
 class Context:
@@ -120,6 +126,70 @@ class Context:
         roots = [self.home / ".agents", self.home / ".hermes"]
         roots += [Path(os.path.expanduser(r)) for r in self.config.get("deny_roots", [])]
         return [_slashed(os.path.realpath(r)) for r in roots]
+
+    # --- modo autônomo (rw_auto.py) ------------------------------------------------------------
+    # Todo `~` destas chaves resolve pelo `self.home`, nunca pelo HOME real: os testes montam um
+    # HOME fixture, e o código do modo autônomo não pode ler o diretório de verdade.
+
+    def _home_path(self, raw):
+        raw = str(raw)
+        if raw == "~":
+            return self.home
+        if raw.startswith("~/") or raw.startswith("~" + os.sep):
+            return self.home / raw[2:]
+        return Path(raw)
+
+    def _paths(self, key, default):
+        value = self.config.get(key, default)
+        if not isinstance(value, list):
+            value = default
+        return [self._home_path(p) for p in value if isinstance(p, str) and p]
+
+    @property
+    def mode(self):
+        """`manual` (o padrão), `auto` ou `auto-dry`. Qualquer outro valor é `manual`."""
+        mode = self.config.get("mode", "manual")
+        return mode if mode in AUTO_MODES else "manual"
+
+    @property
+    def manual(self):
+        """Plugins ou skills que ficam sempre no modo manual."""
+        value = self.config.get("manual", [])
+        return {m for m in value if isinstance(m, str)} if isinstance(value, list) else set()
+
+    @property
+    def auto_limits(self):
+        limits = dict(DEFAULT_AUTO_LIMITS)
+        cfg = self.config.get("auto_limits")
+        if isinstance(cfg, dict):
+            for key in limits:
+                if isinstance(cfg.get(key), int) and not isinstance(cfg.get(key), bool):
+                    limits[key] = cfg[key]
+        return limits
+
+    @property
+    def harvest_roots(self):
+        return self._paths("harvest_roots", list(DEFAULT_HARVEST_ROOTS))
+
+    @property
+    def private_sources(self):
+        return self._paths("private_sources", [])
+
+    @property
+    def store(self):
+        """O clone de trabalho da loja: um diretório com `.git` cujo marketplace.json tem o nome da
+        loja. Senão, None. Lê arquivo e não chama o git: o hook tem 10 s."""
+        raw = self.config.get("store")
+        if not isinstance(raw, str) or not raw:
+            return None
+        path = self._home_path(raw)
+        try:
+            if not (path / ".git").exists():
+                return None
+            manifest = json.loads((path / ".claude-plugin/marketplace.json").read_text(encoding="utf-8"))
+            return path if isinstance(manifest, dict) and manifest.get("name") == MARKETPLACE else None
+        except (OSError, ValueError):
+            return None
 
     def installed_marketplaces(self, plugin):
         if self._installed is None:
@@ -177,7 +247,10 @@ def _full(plugin, skill, ctx):
     if plugin in ctx.excluded or skill in ctx.excluded:
         return None
     label = plugin if skill in (plugin, None) else f"{plugin} ({skill})"
-    return {"key": f"full:{plugin}", "mode": "full", "arg": plugin, "label": label, "repo": None}
+    # `skills`: as skills do plugin que a sessão carregou (vazia no plugin só de comandos); a lista
+    # `manual` da config vale por plugin ou por skill (rw_auto.why_manual).
+    return {"key": f"full:{plugin}", "mode": "full", "arg": plugin, "label": label, "repo": None,
+            "skills": [skill] if skill else []}
 
 
 def _lean(name, repo):
@@ -368,6 +441,9 @@ class Scanner:
         self.st = state
         self.ctx = ctx
         self.last_tool = None
+        # Verdadeiro enquanto um pedido autônomo está aberto: o próprio fluxo não conta como
+        # trabalho nem atrito de skill nenhuma (spec 5.10, D13). Quem decide é o cmd_stop.
+        self.silent = False
 
     def _watch(self, info):
         if info is None:
@@ -375,11 +451,17 @@ class Scanner:
             return
         key = info["key"]
         entry = self.st["skills"].setdefault(key, dict(info, reviews=0, work=0, friction=0))
+        if "skills" in info:
+            # Lista nova, nunca a do cache de classificação. Estado antigo não tem a chave.
+            have = list(entry.get("skills") or [])
+            entry["skills"] = have + [s for s in info["skills"] if s not in have]
         if key in self.st["done"]:
             entry["reviews"] = MAX_REVIEWS
         self.st["current"] = key
 
     def _bump(self, field):
+        if self.silent:
+            return
         entry = self.st["skills"].get(self.st.get("current") or "")
         if entry is not None:
             entry[field] += 1
@@ -558,7 +640,15 @@ def describe(entry):
     return f"a skill `{entry['label']}` ({where}; {entry['work']} chamadas, {entry['friction']} sinais de atrito) → {cmd}"
 
 
-def build_output(entries):
+def build_output(entries, auto_text=None, reasons=None):
+    """O pedido de retro. `entries` são as entradas do texto manual (a lista pode ficar vazia
+    quando todas foram ao modo autônomo). `auto_text` é o bloco do pedido autônomo
+    (rw_auto.auto_text); com as duas partes, cada bloco leva o rótulo e a lista das suas skills.
+    `reasons` são os motivos por extenso de uma entrada que o modo autônomo mandou ao manual.
+    Sem os dois argumentos novos, a saída é a de antes do modo autônomo, byte a byte. A linha ao
+    dono do pedido autônomo fica com o cmd_stop, que conhece o id do pedido."""
+    if not entries:
+        return {"hookSpecificOutput": {"hookEventName": "Stop", "additionalContext": auto_text or ""}}
     skills = "; ".join(describe(e) for e in entries)
     label = entries[0]["label"] if len(entries) == 1 else "<skill>"
     text = (
@@ -573,8 +663,13 @@ def build_output(entries):
         "de segredo."
     )
     names = ", ".join(e["label"] for e in entries)
+    message = f"retrofit-watch: retro de {names} pedida ao Claude (RETROFIT_WATCH=off desliga)"
+    if reasons:
+        message += " — modo manual: " + "; ".join(reasons)
+    if auto_text:
+        text = f"[modo manual: {names}] {text}\n\n{auto_text}"
     return {
-        "systemMessage": f"retrofit-watch: retro de {names} pedida ao Claude (RETROFIT_WATCH=off desliga)",
+        "systemMessage": message,
         "hookSpecificOutput": {"hookEventName": "Stop", "additionalContext": text},
     }
 
@@ -674,6 +769,27 @@ def record_metric(ctx, payload, pending):
         fh.write(json.dumps(line) + "\n")
 
 
+def log_error(ctx, exc):
+    try:
+        log_dir = ctx.data_dir if ctx else Path.home() / ".claude/plugins/data/retrofit-watch"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        with open(log_dir / "errors.log", "a", encoding="utf-8") as fh:
+            fh.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {type(exc).__name__}: {exc}\n")
+    except OSError:
+        pass
+
+
+def _close_flow(auto, ctx, st):
+    """Fecha o pedido autônomo aberto quando o fluxo acabou. Devolve True quando fechou."""
+    try:
+        if auto.flow_finished(ctx, st["auto_open"]):
+            st.pop("auto_open", None)
+            return True
+    except Exception as exc:  # noqa: BLE001
+        log_error(ctx, exc)
+    return False
+
+
 def cmd_stop(payload, ctx):
     mode = session_mode(ctx)
     if mode == "off" and os.environ.get("RETROFIT_WATCH", "").lower() == "off":
@@ -695,10 +811,23 @@ def cmd_stop(payload, ctx):
         if mode == "off":
             state.save()
             return None
+        # O modo autônomo só existe na sessão assistida e só se carrega fora do `manual`. Qualquer
+        # falha nele vai ao errors.log e o hook segue com o texto manual (auto = None).
+        auto = None
+        silent = False
+        if mode == "attended" and ctx.mode != "manual":
+            try:
+                import rw_auto as auto
+                silent = auto.flow_open(st)
+            except Exception as exc:  # noqa: BLE001
+                log_error(ctx, exc)
+                auto, silent = None, False
         if payload.get("stop_hook_active"):
             if st["pending"]:
                 record_metric(ctx, payload, st["pending"])
                 st["pending"] = []
+            if silent:
+                _close_flow(auto, ctx, st)
             state.save()
             return None
         markers = MARKERS + tuple(kit.encode() for kit in ctx.kits)
@@ -706,7 +835,12 @@ def cmd_stop(payload, ctx):
             state.save()
             return None
         scanner = Scanner(st, ctx)
+        scanner.silent = silent
         scanner.scan(chunk)
+        # O fechamento se confere depois da varredura: o trecho escrito pelo fluxo não conta.
+        if silent and not _close_flow(auto, ctx, st):
+            state.save()
+            return None
         if mode == "attended" and waiting_for_user(payload, scanner.last_tool):
             state.save()
             return None
@@ -720,7 +854,23 @@ def cmd_stop(payload, ctx):
             enqueue(ctx, payload, ready, st.get("entrypoint"))
             output = None
         else:
-            output = build_output(ready)
+            output = None
+            if auto is not None:
+                try:
+                    auto_entries, manual, reasons = auto.split(ctx, payload, ready, st.get("entrypoint"))
+                    if auto_entries:
+                        pedido = auto.open_request(ctx, payload, auto_entries)
+                        output = build_output(manual, auto.auto_text(ctx, pedido, auto_entries), reasons)
+                        output["systemMessage"] = "\n".join(
+                            m for m in (auto.auto_message(pedido, auto_entries), output.get("systemMessage")) if m)
+                        st["auto_open"] = {"id": pedido["id"], "ts": pedido["ts"]}
+                    else:
+                        output = build_output(manual, reasons=reasons)
+                except Exception as exc:  # noqa: BLE001
+                    log_error(ctx, exc)
+                    output = None
+            if output is None:
+                output = build_output(ready)
             st["pending"] = [e["label"] for e in ready]
         for entry in ready:
             entry["reviews"] += 1
@@ -809,15 +959,13 @@ def main(argv):
             # ASCII com \uXXXX: o `→` não existe em cp1252, o stdout do Python no Windows.
             sys.stdout.write(json.dumps(output))
     except Exception as exc:  # noqa: BLE001 — hook de conveniência nunca derruba a sessão
-        try:
-            log_dir = ctx.data_dir if ctx else Path.home() / ".claude/plugins/data/retrofit-watch"
-            log_dir.mkdir(parents=True, exist_ok=True)
-            with open(log_dir / "errors.log", "a", encoding="utf-8") as fh:
-                fh.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {type(exc).__name__}: {exc}\n")
-        except OSError:
-            pass
+        log_error(ctx, exc)
     return 0
 
+
+# Rodado como script, este módulo é o `__main__`: sem isto, o `import retrofit_watch` dos módulos
+# novos (rw_*.py) carregaria uma segunda cópia, com outro estado.
+sys.modules.setdefault("retrofit_watch", sys.modules[__name__])
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
