@@ -54,9 +54,9 @@
     `hasattr(tarfile, 'data_filter')` é `True`. A documentação do `tarfile` diz só que o filtro pode ter
     *backport* em versões anteriores, sem listar quais: por isso a entrada não cita números de *backport*.
   - **O que a porta lê e de onde:**
-    - A porta e o `seal` rodam o portão, os testes, o `validate-versions.py` e a auditoria de uma cópia
-      do commit, tirada com `git archive`, e assim um arquivo ignorado no worktree do lote não troca um
-      módulo do portão nem um teste.
+    - A porta roda o portão, os testes, o `validate-versions.py` e a auditoria de uma cópia do commit,
+      tirada com `git archive`, e o `seal` roda o portão de uma cópia do commit que sela: um arquivo
+      ignorado no worktree do lote não troca um módulo do portão nem um teste.
     - O `discard <id> --retro`, só com a palavra do dono, fecha a retro sem conserto: grava uma linha
       `descartado` para cada lote e cada lição sem linha, ou uma linha da retro inteira quando o
       `licoes.json` não se lê.
