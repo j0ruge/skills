@@ -1,0 +1,713 @@
+"""A camada 1 do portão de anonimização: acha nome, e-mail, caminho com usuário e segredo nas linhas novas.
+
+Este arquivo é varrido como qualquer outro, e a camada 1 roda sobre o próprio ramo: todo texto de
+sabotagem (nome inventado, e-mail, caminho com usuário, forma de segredo) é montado em tempo de execução.
+"""
+import contextlib
+import hashlib
+import importlib.util
+import io
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+import unittest.mock
+
+RAIZ = Path(__file__).resolve().parents[1]
+SCRIPT = RAIZ / 'scripts/anonymity-gate.py'
+_spec = importlib.util.spec_from_file_location('anonymity_gate', SCRIPT)
+ag = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(ag)
+cpn = ag.cpn
+
+NOME = 'xq' + '7zeta'
+BARRA = '\\'
+EMAIL = 'fulano' + '@' + 'exemplo' + '.org'
+
+
+def _ambiente():
+    env = dict(os.environ)
+    env.update({'GIT_CONFIG_GLOBAL': os.devnull, 'GIT_CONFIG_NOSYSTEM': '1',
+                'GIT_AUTHOR_NAME': 't', 'GIT_AUTHOR_EMAIL': 't',
+                'GIT_COMMITTER_NAME': 't', 'GIT_COMMITTER_EMAIL': 't'})
+    return env
+
+
+class Base(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.dir = Path(self._tmp.name)
+        self.repo = self.dir / 'repo'
+        self.repo.mkdir()
+        self.env = _ambiente()
+        self.git('init', '-q')
+        self.hashes = {cpn.resumo(NOME)}
+        self._base = False
+
+    def git(self, *args):
+        return subprocess.run(['git', '-C', str(self.repo), *args], check=True, capture_output=True, env=self.env)
+
+    def _gravar(self, arquivos):
+        for nome, texto in arquivos.items():
+            caminho = self.repo / nome
+            caminho.parent.mkdir(parents=True, exist_ok=True)
+            caminho.write_text(texto, encoding='utf-8')
+        self.git('add', '-A')
+
+    def base(self, arquivos=None):
+        self._gravar(arquivos or {})
+        self.git('commit', '-q', '--allow-empty', '-m', 'base')
+        self.git('branch', 'base')
+        self._base = True
+
+    def commit(self, arquivos, mensagem='novo'):
+        if not self._base:
+            self.base()
+        self._gravar(arquivos)
+        self.git('commit', '-q', '--allow-empty', '-m', mensagem)
+
+    def camada1(self, **kw):
+        kw.setdefault('hashes', self.hashes)
+        kw.setdefault('publicos', set())
+        return ag.camada1(self.repo, 'base', **kw)
+
+    def tipos(self, **kw):
+        return [(a[0], a[2]) for a in self.camada1(**kw)]
+
+
+class Nomes(Base):
+    def test_nome_da_lista_em_linha_nova_e_achado(self):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\ndois\nmedido no {NOME}\n'})
+        self.assertEqual(self.camada1(), [('doc.md', 3, 'lista', NOME)])
+
+    def test_nome_da_colheita_na_mensagem_do_commit_e_achado(self):
+        nome = 'cafe' + '_tutor'
+        self.commit({'doc.md': 'limpo\n'}, mensagem=f'fix: medido no {nome}')
+        achados = ag.camada1(self.repo, 'base', extras={nome}, hashes=self.hashes, publicos=set())
+        self.assertEqual([(a[0], a[2]) for a in achados], [('<mensagem>', 'colheita')])
+
+    def test_par_com_espaco_da_colheita_e_achado(self):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': 'um\no Aaa Bbb abriu\n'})
+        self.assertEqual(self.tipos(extras={'aaa bbb'}), [('doc.md', 'colheita')])
+
+    def test_linha_antiga_nao_e_achado(self):
+        self.base({'doc.md': f'no {NOME}\num\n'})
+        self.commit({'doc.md': f'no {NOME}\ndois\n'})
+        self.assertEqual(self.camada1(), [])
+
+    def test_caminho_de_arquivo_novo_e_varrido(self):
+        rel = f'notas/{NOME}.md'
+        self.commit({rel: 'limpo\n'})
+        self.assertEqual(self.camada1(), [(rel, 0, 'lista', NOME)])
+
+    def test_arquivo_de_nome_com_acento_e_varrido(self):
+        rel = 'notas/doc-a' + 'ção' + '.md'
+        self.base({'doc.md': 'um\n'})
+        self.commit({rel: f'um\nfale com {EMAIL}\n'})
+        self.assertEqual([a[:3] for a in self.camada1()], [(rel, 2, 'email')])
+
+    @unittest.skipIf(os.name == 'nt', 'o Windows nao aceita tab nem aspas em nome de arquivo')
+    def test_arquivo_de_nome_citado_pelo_git_e_varrido(self):
+        for rel in ('doc' + '\t' + 'x.md', 'doc' + '"' + 'x.md', 'doc' + ' ' + 'x.md'):
+            with self.subTest(rel=rel):
+                self.setUp()
+                self.base({'outro.md': 'um\n'})
+                self.commit({rel: f'um\nfale com {EMAIL}\n'})
+                self.assertEqual([a[:3] for a in self.camada1()], [(rel, 2, 'email')])
+
+    def test_publico_isenta_nome_e_nunca_segredo(self):
+        segredo = 'gh' + 'p_' + 'a1b2c3d4e5f6'
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\nno {NOME}, cafe' + '_tutor\n'})
+        publicos = {cpn.chave(NOME), cpn.chave('cafe' + '_tutor')}
+        self.assertEqual(self.camada1(extras={'cafe' + '_tutor'}, publicos=publicos), [])
+        self.commit({'doc.md': f'um\nchave {segredo}\n'})
+        self.assertEqual(self.tipos(publicos={cpn.chave(segredo), cpn.chave(segredo[4:])}), [('doc.md', 'segredo')])
+
+
+class Padroes(Base):
+    def linha(self, texto):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\n{texto}\n'})
+        return self.tipos()
+
+    def test_email_e_achado(self):
+        self.assertEqual(self.linha(f'fale com {EMAIL} amanha'), [('doc.md', 'email')])
+
+    def test_email_logo_depois_de_modelo_de_conexao_e_achado(self):
+        real = 'fulano.silva' + '@' + 'gmail' + '.com'
+        self.assertEqual(self.linha('redis' + '://' + ':' + '$P' + '@' + real), [('doc.md', 'email')])
+
+    def test_email_colado_antes_do_esquema_de_modelo_e_achado(self):
+        real = 'fulano.silva' + '@' + 'gmail' + '.com'
+        for cola in ('://', '+redis' + '://'):
+            with self.subTest(cola=cola):
+                self.setUp()
+                self.assertEqual(self.linha(real + cola + ':' + '$P' + '@' + 'host'), [('doc.md', 'email')])
+
+    def test_caminho_com_usuario_e_achado(self):
+        usuario = 'ful' + 'ano'
+        for forma in (f'/home/{usuario}/x', f'/Users/{usuario}/x',
+                      f'C:{BARRA}Users{BARRA}{usuario}{BARRA}x', f'/mnt/d/{usuario}/x',
+                      f'C:{BARRA * 2}Users{BARRA * 2}{usuario}{BARRA * 2}x',
+                      f'c:{BARRA}users{BARRA}{usuario}{BARRA}x',
+                      f'c:/users/{usuario}/x', f'C:/Users/{usuario}/x'):
+            with self.subTest(forma=forma):
+                self.setUp()
+                self.assertEqual(self.linha(f'em {forma} rodou'), [('doc.md', 'caminho')])
+
+    def test_placeholder_de_caminho_passa(self):
+        for forma in ('/home/<u>/x', '/home/$USER/x', f'C:{BARRA}Users{BARRA}%USERNAME%', '/mnt/<x>/{pasta}'):
+            with self.subTest(forma=forma):
+                self.setUp()
+                self.assertEqual(self.linha(f'em {forma} rodou'), [])
+
+    def test_publico_isenta_o_segmento_do_caminho(self):
+        usuario = 'ful' + 'ano'
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\nem /home/{usuario}/x\n'})
+        self.assertEqual(self.camada1(publicos={usuario}), [])
+
+    def test_forma_de_segredo_e_achado(self):
+        corpo = 'a1b2c3d4e5f6'
+        letras_digitos = 'a1' * 16 + 'b'
+        casos = ['sk' + '-' + corpo, 'gh' + 'p_' + corpo, 'xox' + 'b-' + corpo, 'xox' + 's-' + corpo,
+                 'AK' + 'IA' + corpo.upper(), 'Bear' + 'er ' + corpo + 'ghij', 'Bas' + 'ic ' + corpo + 'ghij',
+                 hashlib.sha256(b'x').hexdigest(), letras_digitos]
+        casos += [f'{esquema}://' + 'usu' + ':' + 'senha9' + '@' + 'localhost:5432/db'
+                  for esquema in ('postgres', 'mysql', 'mongodb', 'redis', 'amqp', 'https', 'postgresql',
+                                  'git' + '+https', 'postgresql' + '+psycopg2', 'mysql' + '+pymysql',
+                                  'mongodb' + '+srv', 'HTTPS', 'ftp', 'git' + '+ssh', 'jdbc:' + 'postgresql')]
+        casos += ['postgres' + '://' + 'app' + ':' + '%21Real9pass' + '@' + 'localhost/db',
+                  'postgres' + '://' + 'app' + ':' + '$x7Kp9qLm' + '@' + 'localhost/db',
+                  'postgres' + '://' + 'app' + ':' + 'Real9' + '${X}' + '@' + 'localhost/db']
+        casos += ['redis' + '://' + ':' + 'senha9' + '@' + 'localhost:6379',
+                  'postgres' + '://' + '<usuario>' + ':' + 'senha9' + '@' + 'host/db',
+                  'https' + '://' + 'user' + ':' + 'pass' + '@' + 'host']
+        casos += [colado + 'postgres' + '://' + 'app' + ':' + 'Real9pass' + '@' + 'localhost/db'
+                  for colado in ('+', '-', '.', '1')]
+        casos += ['postgres' + '://' + 'app' + ':' + senha + '@' + 'localhost/db'
+                  for senha in ('%Real9pass%', '{{a}}' + 'Real9' + '{{b}}')]
+        self.assertEqual(len(letras_digitos), 33)
+        self.assertEqual(len(corpo + 'ghij'), 16)
+        for caso in casos:
+            with self.subTest(caso=caso):
+                self.setUp()
+                self.assertEqual(self.linha(f'valor {caso} fim'), [('doc.md', 'segredo')])
+
+    def test_o_que_nao_e_segredo_passa(self):
+        sha40 = hashlib.sha1(b'commit').hexdigest()
+        self.assertRegex(sha40, r'[a-f]')
+        self.assertRegex(sha40, r'[0-9]')
+        casos = [sha40[:7], sha40, 'abcdef' * 6, 'Bear' + 'er ' + 'abcdef' * 6,
+                 'docs/superpowers/plans/2026-11-23-' + 'retrofit-watch-modo-autonomo.md',
+                 'Bas' + 'ic authentication', 'task' + '-planning', 'xxx-' + 'sk' + '-' + 'abcd1234efgh',
+                 'ma' + 'sk' + '-' + 'abcd1234efgh',
+                 'Bear' + 'er ' + 'a1b2c3d4e5f6g7h', '1' * 33, 'x' + 'Bear' + 'er ' + 'a1b2c3d4e5f6g7h8',
+                 'postgres' + '://localhost/db', 'https' + '://example.com/x',
+                 'postgres' + '://' + '<user>' + ':' + '<password>' + '@' + 'host/db',
+                 'redis' + '://' + ':' + '${REDIS_PASSWORD}' + '@' + 'host',
+                 'redis' + '://' + ':' + '$REDIS_PASSWORD' + '@' + 'db.exemplo.org:6379',
+                 'postgres' + '://' + 'app' + ':' + '%DB_PASS%' + '@' + 'host/db',
+                 'postgres' + '://' + 'app' + ':' + '{senha}' + '@' + 'host/db',
+                 'postgres' + '://' + 'app' + ':' + '{{.Password}}' + '@' + 'host/db',
+                 'postgres' + '://' + '<user>' + ':' + '<password>' + '@' + 'host.exemplo.org/db',
+                 'postgres' + '://' + 'app' + ':' + '%DB_PASS%' + '@' + 'db.exemplo.org/db']
+        self.assertEqual(len('a1b2c3d4e5f6g7h'), 15)
+        for caso in casos:
+            with self.subTest(caso=caso):
+                self.setUp()
+                self.assertEqual(self.linha(f'valor {caso} fim'), [])
+
+    def test_a_lista_de_hashes_e_isenta_so_de_segredo(self):
+        lista = 'scripts/private-names.sha256'
+        self.base({lista: '# cabecalho\n'})
+        self.commit({lista: f'# cabecalho\n{hashlib.sha256(b"y").hexdigest()}\n{EMAIL}\n'})
+        self.assertEqual(self.tipos(), [(lista, 'email')])
+
+
+class DiffBlindado(Base):
+    """Nem uma linha de conteúdo, nem o ramo (atributo), nem o ambiente ou a config mudam o que a camada 1 lê."""
+
+    def config(self, *pares):
+        for chave, valor in pares:
+            self.git('config', chave, valor)
+
+    def test_linha_de_conteudo_com_mais_mais_nao_vira_cabecalho(self):
+        token = 'a1' * 21
+        for primeira, segunda, esperado in (
+                ('++ ' + '/dev/null', f'fale com {EMAIL}', [('doc.md', 3, 'email')]),
+                ('++ ' + 'b/scripts/private-names.sha256', f'valor {token}', [('doc.md', 3, 'segredo')]),
+                ('++ ' + EMAIL, 'limpo', [('doc.md', 2, 'email')])):
+            with self.subTest(primeira=primeira):
+                self.setUp()
+                self.base({'doc.md': 'um\n'})
+                self.commit({'doc.md': f'um\n{primeira}\n{segunda}\n'})
+                self.assertEqual([a[:3] for a in self.camada1()], esperado)
+
+    def test_atributo_do_ramo_nao_cega(self):
+        for atributo in ('*.md -diff', '*.md binary'):
+            with self.subTest(atributo=atributo):
+                self.setUp()
+                self.base({'doc.md': 'um\n'})
+                self.commit({'.gitattributes': atributo + '\n', 'doc.md': f'um\nfale com {EMAIL}\n'})
+                self.assertEqual([a[:3] for a in self.camada1()], [('doc.md', 2, 'email')])
+
+    def test_textconv_nao_cega(self):
+        self.config(('diff.conv.textconv', 'true'))
+        self.base({'doc.md': 'um\n'})
+        self.commit({'.gitattributes': '*.md diff=conv\n', 'doc.md': f'um\nfale com {EMAIL}\n'})
+        self.assertEqual([a[:3] for a in self.camada1()], [('doc.md', 2, 'email')])
+
+    def test_diff_externo_nao_cega(self):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\nfale com {EMAIL}\n'})
+        self.config(('diff.external', 'true'))
+        self.assertEqual([a[:3] for a in self.camada1()], [('doc.md', 2, 'email')])
+        self.git('config', '--unset', 'diff.external')
+        self.env['GIT_EXTERNAL_DIFF'] = 'true'
+        r = subprocess.run([sys.executable, str(SCRIPT), '--camada1', '--base', 'base', '--repo', str(self.repo)],
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', env=self.env)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn('doc.md:2: email "', r.stdout)
+
+    def test_prefixo_da_config_nao_muda_o_caminho(self):
+        self.config(('diff.noprefix', 'true'))
+        self.base({'outro.md': 'um\n'})
+        self.commit({'b/doc.md': f'fale com {EMAIL}\n'})
+        self.assertEqual([a[:3] for a in self.camada1()], [('b/doc.md', 1, 'email')])
+
+    def test_cor_da_config_nao_cega(self):
+        self.config(('color.diff', 'always'), ('color.ui', 'always'))
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\nfale com {EMAIL}\n'})
+        self.assertEqual([a[:3] for a in self.camada1()], [('doc.md', 2, 'email')])
+
+    def _duas_mudancas_longe(self):
+        self.base({'doc.md': 'a\nb\nc\nd\ne\n'})
+        self.commit({'doc.md': f'x\nb\nc\nd\nfale com {EMAIL}\n'})
+
+    def test_inter_hunk_context_da_config_nao_muda_a_linha(self):
+        self.config(('diff.interHunkContext', '5'))
+        self._duas_mudancas_longe()
+        self.assertEqual([a[:3] for a in self.camada1()], [('doc.md', 5, 'email')])
+
+    def test_git_diff_opts_do_ambiente_nao_muda_a_linha(self):
+        self._duas_mudancas_longe()
+        with unittest.mock.patch.dict(os.environ, {'GIT_DIFF_OPTS': '-u5'}):
+            self.assertEqual([a[:3] for a in self.camada1()], [('doc.md', 5, 'email')])
+
+    def test_repositorio_do_ambiente_nao_desvia_o_repo(self):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\nfale com {EMAIL}\n'})
+        limpo = self.dir / 'limpo'
+        limpo.mkdir()
+        subprocess.run(['git', '-C', str(limpo), 'init', '-q'], check=True, env=self.env)
+        subprocess.run(['git', '-C', str(limpo), 'commit', '-q', '--allow-empty', '-m', 'base'], check=True, env=self.env)
+        subprocess.run(['git', '-C', str(limpo), 'branch', 'base'], check=True, env=self.env)
+        desvio = {'GIT_DIR': str(limpo / '.git'), 'GIT_WORK_TREE': str(limpo)}
+        with unittest.mock.patch.dict(os.environ, desvio):
+            self.assertEqual([a[:3] for a in self.camada1()], [('doc.md', 2, 'email')])
+
+    def test_diff_relative_da_config_nao_cega(self):
+        self.config(('diff.relative', 'true'))
+        rel = f'notas/{NOME}.md'
+        self.base({'sub/um.md': 'um\n'})
+        self.commit({rel: f'fale com {EMAIL}\n'})
+        achados = ag.camada1(self.repo / 'sub', 'base', hashes=self.hashes, publicos=set())
+        self.assertEqual([a[:3] for a in achados], [(rel, 0, 'lista'), (rel, 1, 'email')])
+
+
+class ListasReais(unittest.TestCase):
+    def test_as_listas_reais_nao_se_cruzam(self):
+        publicos = ag.carregar_publicos()
+        hashes = cpn.carregar()
+        self.assertGreaterEqual(len(publicos), 5)
+        self.assertIn('j0ruge', publicos)
+        self.assertEqual({p for p in publicos if cpn._resumo(p) in hashes}, set())
+
+    def test_lista_de_publicos_ausente_e_vazia(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(ag.carregar_publicos(Path(tmp) / 'nada.txt'), set())
+
+
+class LinhaDeComando(Base):
+    def rodar(self, *args, script=SCRIPT):
+        return subprocess.run([sys.executable, str(script), *args], capture_output=True, text=True,
+                              encoding='utf-8', errors='replace', env=self.env)
+
+    def copia(self, com_lista, nome='copia'):
+        pasta = self.dir / nome / 'scripts'
+        pasta.mkdir(parents=True)
+        for nome in ('anonymity-gate.py', 'check-private-names.py'):
+            shutil.copy(RAIZ / 'scripts' / nome, pasta)
+        if com_lista:
+            (pasta / 'private-names.sha256').write_text(cpn.CABECALHO + cpn.resumo(NOME) + '\n', encoding='utf-8')
+        return pasta
+
+    def test_linha_de_comando(self):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': 'um\nlimpo\n'})
+        r = self.rodar('--camada1', '--base', 'base', '--repo', str(self.repo))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.commit({'doc.md': f'um\nlimpo\n{EMAIL}\n'})
+        r = self.rodar('--camada1', '--base', 'base', '--repo', str(self.repo))
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn('doc.md:3: email "', r.stdout)
+        pasta = self.copia(com_lista=False)
+        r = self.rodar('--camada1', '--base', 'base', '--repo', str(self.repo), script=pasta / 'anonymity-gate.py')
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('lista inutilizavel', r.stdout)
+
+    def test_sem_git_sai_2_com_mensagem(self):
+        self.commit({'doc.md': 'limpo\n'})
+        vazio = self.dir / 'sem-git'
+        vazio.mkdir()
+        self.env['PATH'] = str(vazio)
+        r = self.rodar('--camada1', '--base', 'base', '--repo', str(self.repo))
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('git nao encontrado', r.stdout)
+        self.assertNotIn('Traceback', r.stderr)
+
+    def test_publicos_fora_de_utf8_sai_2_com_mensagem(self):
+        self.commit({'doc.md': 'limpo\n'})
+        pasta = self.copia(com_lista=True)
+        (pasta / 'public-names.txt').write_bytes(b'nome \xe7\xe3o\n')
+        r = self.rodar('--camada1', '--base', 'base', '--repo', str(self.repo), script=pasta / 'anonymity-gate.py')
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('lista inutilizavel', r.stdout)
+        self.assertNotIn('Traceback', r.stderr)
+
+    def test_mensagem_de_erro_e_ascii(self):
+        self.commit({'doc.md': 'limpo\n'})
+        pasta = self.copia(com_lista=False, nome='cópia')
+        r = self.rodar('--camada1', '--base', 'base', '--repo', str(self.repo), script=pasta / 'anonymity-gate.py')
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('lista inutilizavel', r.stdout)
+        self.assertTrue(r.stdout.isascii(), r.stdout)
+
+    def test_extra_da_linha_de_comando(self):
+        nome = 'cafe' + '_tutor'
+        extra = self.dir / 'extra.txt'
+        extra.write_text(f'# colheita\n\n{nome}\n', encoding='utf-8')
+        self.commit({'doc.md': f'no {nome}\n'})
+        r = self.rodar('--camada1', '--base', 'base', '--repo', str(self.repo), '--extra', str(extra))
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn(f'doc.md:1: colheita "{nome}"', r.stdout)
+
+    def test_publico_add_recusa_nome_privado(self):
+        pasta = self.copia(com_lista=True)
+        publicos = pasta / 'public-names.txt'
+        publicos.write_text(ag.CABECALHO_PUBLICOS + 'j0ruge\n', encoding='utf-8')
+        antes = publicos.read_bytes()
+        r = self.rodar('--publico-add', NOME.upper(), script=pasta / 'anonymity-gate.py')
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertEqual(publicos.read_bytes(), antes)
+        r = self.rodar('--publico-add', 'outro' + '-nome', script=pasta / 'anonymity-gate.py')
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn('outro' + '-nome', publicos.read_text(encoding='utf-8').splitlines())
+        r = self.rodar('--publico-remove', 'Outro' + '_Nome', script=pasta / 'anonymity-gate.py')
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(publicos.read_bytes(), antes)
+
+
+PROPRIO = 'Zor' + 'vanel'
+HIFEN = 'acme' + '-portal'
+
+
+class TermosNovos(Base):
+    """A camada 2 recebe os termos novos: candidato que a loja na base não tem e que não é público."""
+
+    def termos(self, linha=None, mensagem='novo', publicos=None):
+        if linha is not None:
+            if not self._base:
+                self.base({'doc.md': 'um\n'})
+            self.commit({'doc.md': f'um\n{linha}\n'}, mensagem=mensagem)
+        return ag.termos_novos(self.repo, 'base', publicos=set() if publicos is None else publicos)
+
+    def nomes(self, **kw):
+        return [t['termo'] for t in self.termos(**kw)]
+
+    def test_nome_proprio_novo_e_termo(self):
+        linha = f'o relatorio do {PROPRIO} saiu ontem'
+        self.assertEqual(self.termos(linha), [{'termo': PROPRIO, 'onde': 'doc.md:2', 'contexto': linha}])
+
+    def test_identificador_novo_e_termo(self):
+        cinco = ['fooBar' + 'Baz', 'com' + '_sublinhado', 'abc9' + 'xyz', 'xq/' + 'campo/dados',
+                 'https://' + 'exemplo.invalid/' + 'painel']
+        self.assertEqual(self.nomes(linha='veja ' + ' e '.join(cinco) + ' aqui'), cinco)
+
+    def test_nome_minusculo_com_hifen_e_termo(self):
+        self.assertEqual(self.nomes(linha=f'o {HIFEN} caiu'), [HIFEN])
+
+    def test_flag_e_arquivo_com_extensao_nao_saem(self):
+        self.assertEqual(self.nomes(linha='rode com --dry' + '-run e -x, depois abra notas-de' + '-campo.md'), [])
+
+    def test_dominio_novo_e_termo(self):
+        # o de país, o de duas letras da lista e um de três letras, que só a lista de TLDs pega; depois, os
+        # nomes de máquina com sufixo de rede privada (o home.arpa cai pelo arpa)
+        dominios = ['zor' + 'vanel.com' + '.br', 'qux' + 'lab' + '.io', 'qux' + 'lab' + '.dev']
+        # o prefixo só tem letras: um dígito faria a regra do dígito pegar o host, com ou sem a lista
+        hosts = [f'zor{letra}.{sufixo}' for letra, sufixo in zip(
+            'abcdefg', ['local', 'lan', 'internal', 'corp', 'intranet', 'localdomain', 'home.arpa'])]
+        self.assertEqual(self.nomes(linha='veja ' + ', '.join(dominios + hosts) + ', depois volte'), dominios + hosts)
+        self.assertEqual(ag.TLDS & ag.EXTENSOES, set())
+
+    def test_arquivo_e_atributo_de_codigo_nao_saem(self):
+        self.assertEqual(self.nomes(linha='abra notas-de' + '-campo.md, rode script' + '.py e leia self' + '.repo'
+                                          ' e ctx' + '.home'),
+                         [])
+
+    def test_nome_colado_a_pontuacao_e_termo(self):
+        casos = [(f'o relatorio do “{PROPRIO}” saiu', PROPRIO),
+                 (f'o nome ‘{PROPRIO}’ saiu', PROPRIO),
+                 (f'o nome «{PROPRIO}» saiu', PROPRIO),
+                 (f'a loja—{PROPRIO} disse', PROPRIO),
+                 (f'a loja–{PROPRIO} disse', PROPRIO),
+                 (f'veja @{PROPRIO} aqui', '@' + PROPRIO),
+                 (f'rode --author={PROPRIO} agora', PROPRIO),
+                 (f'o owner:{PROPRIO} ok', 'owner:' + PROPRIO)]
+        for linha, termo in casos:
+            with self.subTest(linha=linha):
+                self.assertEqual(ag._termos_da_linha(linha)[0], [termo])
+
+    def test_titulo_abreviado_nao_fecha_frase_nem_e_termo(self):
+        outro = 'Qux' + 'mira'
+        self.assertEqual(ag._termos_da_linha(f'falei com o Dr. {PROPRIO} e com a Sra. {outro} ontem')[0],
+                         [PROPRIO, outro])
+
+    def linhas(self, *linhas, mensagem='novo'):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': 'um\n' + ''.join(l + '\n' for l in linhas)}, mensagem=mensagem)
+        return self.nomes()
+
+    def test_frase_quebrada_na_mensagem_e_termo(self):
+        self.commit({'doc.md': 'limpo\n'}, mensagem=f'fix: medido na maquina do\n{PROPRIO} ontem, com o teste')
+        self.assertEqual([(t['termo'], t['onde']) for t in self.termos()], [(PROPRIO, '<mensagem>')])
+
+    def test_frase_quebrada_no_arquivo_e_termo(self):
+        self.assertEqual(self.linhas('veja o relatorio do', f'{PROPRIO} ontem'), [PROPRIO])
+
+    def test_linha_depois_de_fim_de_frase_abre_frase(self):
+        self.assertEqual(self.linhas('veja o teste.', 'Depois rode o outro'), [])
+
+    def test_linha_depois_de_linha_em_branco_abre_frase(self):
+        self.assertEqual(self.linhas('veja o teste', '', 'Depois rode o outro'), [])
+
+    def test_linha_com_marcador_markdown_abre_frase(self):
+        self.assertEqual(self.linhas('veja o teste', '- Depois rode', '  * Agora rode', '+ Feito isso',
+                                     '1. Rode mais', '## Titulo aqui', '| Coluna um |', '> Citado aqui'), [])
+
+    def test_linhas_que_nao_se_seguem_abrem_frase(self):
+        # dois trechos do mesmo arquivo, com uma linha antiga entre eles
+        self.base({'doc.md': 'um\ndois\ntres\n'})
+        self.commit({'doc.md': 'um\nveja o teste\ndois\nDepois rode\ntres\n'})
+        self.assertEqual(self.nomes(), [])
+
+    def test_linha_de_outro_arquivo_abre_frase(self):
+        # a.md:2 e b.md:3 têm números seguidos, mas são de arquivos diferentes
+        self.base({'a.md': 'x\ny\n', 'b.md': 'x\ny\nz\n'})
+        self.commit({'a.md': 'x\nveja o teste\ny\n', 'b.md': 'x\ny\nDepois rode\nz\n'})
+        self.assertEqual(self.nomes(), [])
+
+    def test_caminho_do_arquivo_novo_nao_continua_a_frase(self):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'notas.md': 'Depois rode o teste\n'})
+        self.assertEqual(self.nomes(), [])
+
+    def test_termo_que_a_loja_ja_tem_nao_sai(self):
+        self.base({'velho.md': f'fala do {PROPRIO.lower()} e do {HIFEN}\n'})
+        self.assertEqual(self.nomes(linha=f'o {PROPRIO.upper()} e o {HIFEN} de novo'), [])
+
+    def test_pedaco_de_palavra_da_loja_ainda_e_novo(self):
+        self.base({'velho.md': 'a ' + 'Acme' + 'corp abriu\n'})
+        self.assertEqual(self.nomes(linha='a ' + 'Acme' + ' abriu'), ['Acme'])
+
+    def test_publico_nao_sai(self):
+        self.assertEqual(self.nomes(linha=f'o {PROPRIO} saiu', publicos={cpn.chave(PROPRIO)}), [])
+
+    def test_numero_data_versao_e_sha_nao_saem(self):
+        self.assertEqual(self.nomes(linha='a 0.4.0 de 2026-11-23, a v1.2.3 e o a1b2' + 'c3d'), [])
+
+    def test_termo_da_mensagem_sai(self):
+        self.commit({'doc.md': 'limpo\n'}, mensagem=f'fix: medido no {PROPRIO}')
+        self.assertEqual([(t['termo'], t['onde']) for t in self.termos()], [(PROPRIO, '<mensagem>')])
+
+    def test_inicio_de_frase_nao_e_termo(self):
+        self.assertEqual(self.nomes(linha='Depois rode o teste. Agora rode o outro! Feito'), [])
+
+    def test_termo_repetido_sai_uma_vez(self):
+        self.assertEqual(self.termos(linha=f'o {PROPRIO} e o {PROPRIO.upper()}, de novo o {PROPRIO}'),
+                         [{'termo': PROPRIO, 'onde': 'doc.md:2',
+                           'contexto': f'o {PROPRIO} e o {PROPRIO.upper()}, de novo o {PROPRIO}'}])
+
+    def test_termo_com_hifen_na_frente_nao_vira_opcao_do_grep(self):
+        termo = '-zq' + '/campo'
+        self.assertEqual(self.nomes(linha=f'use {termo} aqui'), [termo])
+        self.setUp()
+        self.base({'velho.md': f'use {termo} ali\n'})
+        self.assertEqual(self.nomes(linha=f'use {termo} aqui'), [])
+
+    def test_falha_do_grep_nao_vira_termo_nem_loja(self):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\no {PROPRIO} saiu\n'})
+        real = ag._git
+
+        def falso(repo, *args):
+            if args and args[0] == 'grep':
+                raise subprocess.CalledProcessError(128, ['git', *args], stderr=b'fatal: quebrado')
+            return real(repo, *args)
+
+        with unittest.mock.patch.object(ag, '_git', falso):
+            with self.assertRaises(subprocess.CalledProcessError) as ctx:
+                ag.termos_novos(self.repo, 'base', publicos=set())
+        self.assertEqual(ctx.exception.returncode, 128)
+
+
+class Arvore(Base):
+    def test_a_arvore_com_a_colheita(self):
+        self.base({'doc.md': f'um\no {PROPRIO} saiu\n'})
+        self.assertEqual(ag.varrer_arvore(self.repo, {PROPRIO.lower()}, hashes=self.hashes, publicos=set()),
+                         [('doc.md', 2, 'colheita', PROPRIO.lower())])
+        self.assertEqual(ag.varrer_arvore(self.repo, {PROPRIO}, hashes=self.hashes,
+                                          publicos={cpn.chave(PROPRIO)}), [])
+
+    def test_a_arvore_com_a_lista(self):
+        self.base({f'notas/{NOME}.md': 'limpo\n'})
+        self.assertEqual(ag.varrer_arvore(self.repo, set(), hashes=self.hashes, publicos=set()),
+                         [(f'notas/{NOME}.md', 0, 'lista', NOME)])
+
+    def test_a_arvore_nao_aplica_os_padroes(self):
+        caminho = '/home/' + 'fulano' + '/x'
+        self.base({'doc.md': f'um\nem {caminho}, fale com {EMAIL}\n'})
+        self.assertEqual(ag.varrer_arvore(self.repo, set(), hashes=self.hashes, publicos=set()), [])
+
+    def ilegivel(self, nome=None):
+        """Read_bytes que falha com PermissionError (o chmod 000 não vale no Windows nem para o root).
+
+        A mensagem tem acento: a saída de erro dos portões tem de sair em ASCII mesmo assim."""
+        real = Path.read_bytes
+
+        def falso(caminho):
+            if nome is None or caminho.name == nome:
+                raise PermissionError(13, 'sem permissão', str(caminho))
+            return real(caminho)
+
+        return unittest.mock.patch.object(Path, 'read_bytes', falso)
+
+    def test_arquivo_ilegivel_na_arvore_e_erro_nos_dois_portoes(self):
+        self.base({'doc.md': f'o {PROPRIO} saiu\n', 'outro.md': 'limpo\n'})
+        with self.ilegivel('doc.md'):
+            with self.assertRaises(PermissionError):
+                ag.varrer_arvore(self.repo, {PROPRIO}, hashes=self.hashes, publicos=set())
+            with self.assertRaises(PermissionError):
+                cpn.varrer(self.repo, {cpn.resumo(PROPRIO)})
+
+    def test_arquivo_que_saiu_do_disco_e_pulado(self):
+        self.base({'doc.md': 'limpo\n', 'outro.md': f'o {PROPRIO} saiu\n'})
+        (self.repo / 'doc.md').unlink()
+        self.assertEqual(ag.varrer_arvore(self.repo, {PROPRIO}, hashes=self.hashes, publicos=set()),
+                         [('outro.md', 1, 'colheita', PROPRIO.lower())])
+
+    def test_pasta_rastreada_e_pulada(self):
+        # um gitlink (submódulo): o git lista a pasta, que não tem conteúdo a ler
+        self.base({'outro.md': f'o {PROPRIO} saiu\n'})
+        sha = self.git('rev-parse', 'HEAD').stdout.decode().strip()
+        self.git('update-index', '--add', '--cacheinfo', f'160000,{sha},sub')
+        (self.repo / 'sub').mkdir()
+        self.assertEqual(ag.varrer_arvore(self.repo, {PROPRIO}, hashes=self.hashes, publicos=set()),
+                         [('outro.md', 1, 'colheita', PROPRIO.lower())])
+
+
+class LinhaDeComandoNova(Base):
+    rodar = LinhaDeComando.rodar
+    copia = LinhaDeComando.copia
+
+    def test_termos_imprime_json_ascii(self):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\no {PROPRIO} viu a ' + 'a' + 'ção\n'})
+        r = self.rodar('--termos', '--base', 'base', '--repo', str(self.repo))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertTrue(r.stdout.isascii(), r.stdout)
+        self.assertEqual([t['termo'] for t in json.loads(r.stdout)], [PROPRIO])
+        self.commit({'doc.md': 'um\nlimpo\n'})
+        r = self.rodar('--termos', '--base', 'base', '--repo', str(self.repo))
+        self.assertEqual((r.returncode, json.loads(r.stdout)), (0, []), r.stdout + r.stderr)
+
+    def test_termos_com_base_ruim_sai_2_sem_lista(self):
+        self.commit({'doc.md': 'limpo\n'})
+        r = self.rodar('--termos', '--base', 'nao-existe', '--repo', str(self.repo))
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('git falhou', r.stdout)
+        self.assertNotIn('[]', r.stdout)
+        self.assertNotIn('Traceback', r.stderr)
+
+    def test_termos_sem_base_sai_2(self):
+        r = self.rodar('--termos', '--repo', str(self.repo))
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('--termos exige --base REF', r.stdout)
+
+    def test_termos_com_publicos_ilegiveis_sai_2(self):
+        self.commit({'doc.md': 'limpo\n'})
+        pasta = self.copia(com_lista=True)
+        (pasta / 'public-names.txt').write_bytes(b'nome \xe7\xe3o\n')
+        r = self.rodar('--termos', '--base', 'base', '--repo', str(self.repo), script=pasta / 'anonymity-gate.py')
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('lista inutilizavel', r.stdout)
+        self.assertNotIn('Traceback', r.stderr)
+
+    def test_arvore_da_linha_de_comando(self):
+        extra = self.dir / 'extra.txt'
+        extra.write_text(f'# colheita\n{PROPRIO}\n', encoding='utf-8')
+        self.base({'doc.md': 'limpo\n'})
+        r = self.rodar('--arvore', '--repo', str(self.repo), '--extra', str(extra))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.commit({'doc.md': f'limpo\no {PROPRIO} saiu\n'})
+        r = self.rodar('--arvore', '--repo', str(self.repo), '--extra', str(extra))
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn(f'doc.md:2: colheita "{PROPRIO.lower()}"', r.stdout)
+
+    def test_arvore_com_git_quebrado_sai_2(self):
+        quebrado = self.dir / 'quebrado'
+        quebrado.mkdir()
+        (quebrado / '.git').write_text('isto nao e um repositorio\n', encoding='utf-8')
+        r = self.rodar('--arvore', '--repo', str(quebrado))
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('git falhou', r.stdout)
+        self.assertNotIn('Traceback', r.stderr)
+
+    def test_termos_com_grep_quebrado_sai_2_sem_lista(self):
+        # um valor ruim de grep.threads derruba só o git grep (rc 128): o diff e o log seguem
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\no {PROPRIO} saiu\n'})
+        self.git('config', 'grep.threads', 'nao')
+        r = self.rodar('--termos', '--base', 'base', '--repo', str(self.repo))
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('git falhou', r.stdout)
+        self.assertIn('grep.threads', r.stdout)
+        self.assertNotIn('[', r.stdout)
+        self.assertNotIn('Traceback', r.stderr)
+
+    def test_arquivo_ilegivel_sai_2_nos_dois_portoes(self):
+        # o main em processo, porque o caso sabotado é um read_bytes trocado
+        self.base({'doc.md': f'o {PROPRIO} saiu\n'})
+        for nome, chamar in (('anonymity-gate', lambda: ag.main(['--arvore', '--repo', str(self.repo)])),
+                             ('check-private-names', lambda: cpn.main([]))):
+            with self.subTest(portao=nome):
+                saida = io.StringIO()
+                with Arvore.ilegivel(self), contextlib.redirect_stdout(saida):
+                    rc = chamar()
+                self.assertEqual(rc, 2, saida.getvalue())
+                self.assertIn('leitura da arvore falhou', saida.getvalue())
+                self.assertTrue(saida.getvalue().isascii(), saida.getvalue())
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -25,12 +26,25 @@ UNATTENDED = {"CLAUDE_CODE_SESSION_ATTENDED": "0", "CLAUDE_CODE_ENTRYPOINT": "sd
 WINDOWS_STDIO = {"PYTHONIOENCODING": "cp1252:surrogateescape"}
 # No Windows, o `shutil.which` só acha binário com extensão do PATHEXT.
 EXE = ".cmd" if os.name == "nt" else ""
-GIT_ENV = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t",
-               GIT_COMMITTER_EMAIL="t@t", GIT_CONFIG_NOSYSTEM="1")
+# As variáveis que apontam outro repo: um hook do git as exporta, e com elas `git -C <dir>` age no repo delas.
+GIT_LOCATION = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
+                "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR")
+
+
+def git_env():
+    """O ambiente do git da fixture, lido do ambiente de agora: sem as variáveis de localização, sem a
+    config global (o `~/.gitconfig` real e a do XDG) e sem a de sistema."""
+    env = {k: v for k, v in os.environ.items() if k not in GIT_LOCATION and not k.startswith("GIT_CONFIG")}
+    env.update(GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t",
+               GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull)
+    return env
+
+
+GIT_ENV = git_env()
 
 
 def git(cwd, *args):
-    subprocess.run(["git", "-C", str(cwd), *args], check=True, capture_output=True, env=GIT_ENV)
+    subprocess.run(["git", "-C", str(cwd), *args], check=True, capture_output=True, env=git_env())
 
 
 def make_skill(parent, name):
@@ -268,12 +282,9 @@ class ClassifyTest(unittest.TestCase):
         self.assertIsNone(rw.classify_plugin("retrofit-skill", self.ctx))
 
 
-class StopTest(unittest.TestCase):
-    def setUp(self):
-        self.w = World()
-
-    def tearDown(self):
-        self.w.cleanup()
+class HookHarness:
+    """Escreve o transcript, roda o hook num subprocesso e lê o contexto devolvido. Quem herda
+    cria `self.w` (um World) no próprio setUp."""
 
     def write(self, *groups):
         with open(self.w.transcript, "a", encoding="utf-8") as fh:
@@ -281,7 +292,8 @@ class StopTest(unittest.TestCase):
                 for entry in group:
                     fh.write(json.dumps(entry) + "\n")
 
-    def run_hook(self, sub="stop", last="Feito.", active=False, env=None, raw=None, mode="default"):
+    def run_hook(self, sub="stop", last="Feito.", active=False, env=None, raw=None, mode="default",
+                 script=SCRIPT):
         payload = raw if raw is not None else json.dumps({
             "session_id": "s1", "transcript_path": str(self.w.transcript), "cwd": str(self.w.proj),
             "hook_event_name": "Stop" if sub == "stop" else "SessionStart", "permission_mode": mode,
@@ -294,7 +306,7 @@ class StopTest(unittest.TestCase):
         full_env.update(env or {})
         # O Claude Code manda o JSON em UTF-8 cru (JSON.stringify não escapa acento) em qualquer SO;
         # `text=True` usaria a página de código local.
-        proc = subprocess.run([sys.executable, str(SCRIPT), sub], input=payload.encode("utf-8"),
+        proc = subprocess.run([sys.executable, str(script), sub], input=payload.encode("utf-8"),
                               capture_output=True, env=full_env, timeout=20)
         self.assertEqual(proc.returncode, 0, proc.stderr.decode("utf-8", "replace"))
         out = proc.stdout.decode("utf-8").strip()
@@ -303,6 +315,14 @@ class StopTest(unittest.TestCase):
     def context_of(self, out):
         self.assertIsNotNone(out, "esperava um pedido de retro")
         return out["hookSpecificOutput"]["additionalContext"]
+
+
+class StopTest(HookHarness, unittest.TestCase):
+    def setUp(self):
+        self.w = World()
+
+    def tearDown(self):
+        self.w.cleanup()
 
     def test_real_work_fires_once_with_retrofit_command(self):
         self.write(skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill), *[tool()] * 6)
@@ -670,6 +690,39 @@ class StopTest(unittest.TestCase):
         state = json.loads((self.w.data / "sessions/s1.json").read_text())
         self.assertEqual(state["skills"], {})
         self.assertEqual(state["offset"], self.w.transcript.stat().st_size)
+
+
+class FixtureGitEnvTest(unittest.TestCase):
+    """O git do `World` não obedece a um GIT_DIR herdado (dentro de um hook do git ele agiria no repo
+    real) nem lê a config global ou de sistema de quem roda os testes."""
+
+    def test_world_ignores_an_inherited_git_dir_and_the_real_config(self):
+        trap = Path(os.path.realpath(tempfile.mkdtemp(prefix="rw-trap-")))
+        self.addCleanup(shutil.rmtree, trap, True)
+        subprocess.run(["git", "init", "-q", str(trap / "repo")], check=True, capture_output=True,
+                       env=dict(git_env(), HOME=str(trap)))
+        marker = trap / "hook-rodou"
+        hooks = trap / "hooks"
+        hooks.mkdir()
+        (hooks / "pre-commit").write_text(f"#!/bin/sh\ntouch '{marker}'\nexit 1\n")
+        (hooks / "pre-commit").chmod(0o755)
+        config = f"[core]\n\thooksPath = {hooks}\n"
+        (trap / ".gitconfig").write_text(config)
+        (trap / "global").write_text(config)
+        traps = {"GIT_DIR": str(trap / "repo/.git"), "GIT_WORK_TREE": str(trap / "repo"),
+                 "GIT_INDEX_FILE": str(trap / "index"), "HOME": str(trap), "GIT_CONFIG_GLOBAL": str(trap / "global"),
+                 "GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "core.hooksPath", "GIT_CONFIG_VALUE_0": str(hooks)}
+        with mock.patch.dict(os.environ, traps):
+            world = World()
+        self.addCleanup(world.cleanup)
+        self.assertFalse(marker.exists(), "o git da fixture leu a config global herdada")
+        log = subprocess.run(["git", "-C", str(world.proj), "log", "--format=%an"], capture_output=True,
+                             text=True, env=git_env())
+        self.assertEqual(log.stdout.split(), ["t"])
+        heads = subprocess.run(["git", "--git-dir", str(trap / "repo/.git"), "rev-list", "--all"],
+                               capture_output=True, text=True, env=git_env())
+        self.assertEqual(heads.stdout, "", "um commit da fixture foi parar no repo do GIT_DIR herdado")
+        self.assertFalse((trap / "index").exists())
 
 
 if __name__ == "__main__":

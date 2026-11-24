@@ -30,8 +30,8 @@ Versão mínima ainda não estabelecida. Veja [verification.md](verification.md)
 | pdf-generation | `supported` | `skills/pdf-generation/SKILL.md` | 3 arquivos de scripts/referências/templates/assets | Biblioteca PDF escolhida por stack; navegador quando necessário. Comparação de bibliotecas é recurso empacotado; geração/exportação integral não testada. |
 | prompt-cache-audit | `unsupported` | `skills/prompt-cache-audit/SKILL.md` | 2 arquivos de scripts/referências/templates/assets | Python 3. O script lê os transcritos locais do Claude Code (`~/.claude/projects`), que o Codex não grava. |
 | release | `supported` | `skills/release/SKILL.md` | 0 arquivos de scripts/referências/templates/assets | Git e gh autenticado; versão informada explicitamente. Somente $release:release; agents/openai.yaml impede ativação implícita no Codex. |
-| retrofit-skill | `partial` | `commands/retrofit-skill.md` | 3 arquivos de scripts/referências/templates/assets | Clone deste marketplace, Python, Git e auditor irmão. O comando depende de <REPO>/plugins/ e caminhos de instalação do Claude; autocontenção no cache e integração com outros plugins não comprovadas. |
-| retrofit-watch | `partial` | `skills/retrofit-watch/SKILL.md` | 2 arquivos de scripts/referências/templates/assets | Adaptação local Codex em funcionamento nesta sessão. O plugin da loja ainda contém hooks/transcript Claude e não empacota a camada Codex; instalação nativa dessa camada pelo catálogo não comprovada. |
+| retrofit-skill | `partial` | `commands/retrofit-skill.md` | 4 arquivos de scripts/referências/templates/assets | Clone deste marketplace, Python, Git e auditor irmão. O comando depende de <REPO>/plugins/ e caminhos de instalação do Claude; autocontenção no cache e integração com outros plugins não comprovadas. |
+| retrofit-watch | `partial` | `skills/retrofit-watch/SKILL.md` | 6 arquivos de scripts/referências/templates/assets | Adaptação local Codex em funcionamento nesta sessão. O plugin da loja ainda contém hooks/transcript Claude e não empacota a camada Codex; instalação nativa dessa camada pelo catálogo não comprovada. |
 | skill-quality-audit | `supported` | `skills/skill-claim-check/SKILL.md`<br>`skills/skill-quality-audit/SKILL.md`<br>`skills/skill-refactoring/SKILL.md`<br>`skills/skill-self-containment/SKILL.md` | 15 arquivos de scripts/referências/templates/assets | Python 3; validadores externos opcionais. Quatro skills mantidas juntas; resolução por diretórios irmãos, sem instalar outro plugin. |
 | statusline | `unsupported` | `commands/setup.md` | 0 arquivos de scripts/referências/templates/assets | Runtime e status-line API do Claude Code. Comando setup escreve configurações e script exclusivos do Claude. |
 | ticket | `supported` | `skills/ticket/SKILL.md` | 7 arquivos de scripts/referências/templates/assets | acli, Git, Jira; JIRA_BASE_URL/JIRA_EMAIL/JIRA_API_TOKEN para REST; MCP opcional. Sem credenciais no pacote. argument-hint permanece para Claude e é ignorado no Codex; configure as variáveis no seu ambiente. |
@@ -79,7 +79,7 @@ separada do motor upstream. Os prompts de retro recebidos nesta sessão comprova
 o disparo; a leitura da configuração confirma qual implementação os produziu.
 
 Já `plugins/retrofit-watch/hooks/hooks.json` usa `${CLAUDE_PLUGIN_ROOT}` e o
-motor `retrofit_watch.py`; o plugin 0.3.3 declara apenas `claude-code`. A camada
+motor `retrofit_watch.py`; o plugin 0.4.0 declara apenas `claude-code`. A camada
 `codex_retrofit_watch.py` e seu template `assets/hooks.json` existem na instalação
 local, sem fazer parte desse pacote. O catálogo Codex tem 27 plugins desde a entrada do `env-docs-sync` 0.1.0 (2026-10-27), e o watcher continua fora:
 publicar o watcher nele exige integrar essa camada e provar instalação/confiança
