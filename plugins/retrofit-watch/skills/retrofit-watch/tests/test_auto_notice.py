@@ -301,6 +301,12 @@ class OrphanTest(NoticeHarness, unittest.TestCase):
         self.assertEqual(rw_auto.orphans(self.ctx(), now=ts + 2 * 3600), [])
         self.assertEqual(rw_auto.used(rw_auto.read_registry(self.ctx()), "s1"), used,
                          "a linha da retro não é um retrofit da sessão")
+        # De novo: a retro já está fechada, e nada é gravado.
+        before = rw_auto.read_registry(self.ctx())
+        with self.assertRaises(rw_auto.Malformed) as caught:
+            rw_auto.discard_retro(self.ctx(), rid)
+        self.assertIn("nada sem registro de fim", str(caught.exception))
+        self.assertEqual(rw_auto.read_registry(self.ctx()), before)
         # pedido.json ilegível: a linha sai com `sessao` null.
         rid2 = self.w.retro([{}], None)
         folder2 = rw_auto.retro_dir(self.ctx(), rid2)
@@ -315,9 +321,16 @@ class OrphanTest(NoticeHarness, unittest.TestCase):
         ts = rw_auto.retro_pedido(self.ctx(), rid)["ts"]
         [orphan] = rw_auto.orphans(self.ctx(), now=ts + 2 * 3600)
         self.assertEqual(orphan["tipo"], "lote")
+        # Um segundo lote, já segurado: tem linha, e o `discard --retro` não o toca.
+        other = rw_auto.lote_dir(self.ctx(), rid, "demo__description")
+        other.mkdir()
+        (other / "retrofit.json").write_bytes((rw_auto.lote_dir(self.ctx(), rid, "demo") / "retrofit.json").read_bytes())
+        self.line(rid, f"{rid}/demo__description", "segurado", motivo="testes", lote="demo__description")
+        held = rw_auto.held(self.ctx())
         got = rw_auto.discard_retro(self.ctx(), rid)
         self.assertEqual([(e["item"], e["lote"], e["plugin"], e["licoes"], e["resultado"]) for e in got],
                          [(f"{rid}/demo", "demo", "demo", retrofit["licoes"], "descartado")])
+        self.assertEqual(rw_auto.held(self.ctx()), held, "o lote segurado continua em aberto")
         self.assertEqual(rw_auto.orphans(self.ctx(), now=ts + 2 * 3600), [])
 
     def test_discard_retro_refuses_when_nothing_is_open(self):
