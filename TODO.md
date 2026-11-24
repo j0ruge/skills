@@ -43,11 +43,12 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   config `--system`, e o código lê a config inteira. Caso teórico, só do teste (R4, codereview r1 #23).
   Direção: ler sem `--system`, como o código.
   Fonte: resíduo R4 da revisão final — descoberto por `revisor final` (2026-11-24)
-- [ ] **O nome curto com hash do .gitattributes no NTFS** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:310` (`_attributes_name`) — o nome
-  `gi7d29~N` não é reconhecido. Exige o 8.3 ligado e os `~1` a `~4` ocupados (R5, codereview r1 #6).
-  Direção: reconhecer o prefixo do `is_ntfs_dotgitattributes` do git, com o par.
-  Fonte: resíduo R5 da revisão final — descoberto por `revisor final` (2026-11-24)
+- [ ] **Os nomes NTFS do .gitattributes** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:310` (`_attributes_name`) — o nome curto
+  `gi7d29~N` não é reconhecido. Exige o 8.3 ligado e os `~1` a `~4` ocupados (R5, codereview r1 #6). O
+  fluxo `.gitattributes::$DATA` também não é (falta reproduzir no NTFS; r1 #5).
+  Direção: reconhecer o prefixo do `is_ntfs_dotgitattributes` do git e cortar o sufixo `:`, com o par.
+  Fonte: resíduo R5 da revisão final e codereview r1 #5 — descoberto por `revisor final` (2026-11-24)
 
 ### Passos do dono antes de ligar o modo auto
 
@@ -75,12 +76,11 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 
 ### LOW da codereview da retrofit-watch 0.4.0
 
-- [ ] **A guarda 5b: o fluxo NTFS e a listagem inteira** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:318` (`_g_opaque`) — o `_attributes_name`
-  não reconhece `.gitattributes::$DATA` (falta reproduzir no NTFS; r1 #5). O `ls-tree` lista a árvore
-  inteira para conferir poucos caminhos (r1 #9).
-  Direção: cortar o sufixo `:` antes de comparar; `ls-tree -z -- <paths>`.
-  Fonte: codereview r1 #5 e #9 — descoberto por `codereview r1` (2026-11-24)
+- [ ] **A guarda 5b lista a árvore inteira** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:318` (`_g_opaque`) — o `ls-tree` lista a
+  árvore inteira para conferir poucos caminhos (r1 #9).
+  Direção: `ls-tree -z -- <paths>`.
+  Fonte: codereview r1 #9 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **O _extract_base deixa passar TarError e OSError** —
   `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:667` (`_extract_base`) — o `clean_tree`
   embrulha os dois em StoreError, e o `_extract_base` não. O `publish` os pega (D25) (r1 #7).
@@ -154,12 +154,11 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   `push` da porta, e o `prepare` também usa o `remote_env` (r1 #24).
   Direção: "todo git que fala com o `origin`".
   Fonte: codereview r1 #24 — descoberto por `codereview r1` (2026-11-24)
-- [ ] **Três frases do plano de correções** —
-  `docs/superpowers/plans/2026-11-24-retrofit-watch-auto-correcoes.md:49` (`info/attributes`) — a C2 deixa o
-  `info/attributes` fora (decisão do plano; r1 #25). "Final-F1" não tem definição (r1 #26). "Em qualquer
-  versão do Python" não foi medido no 3.11 (r1 #27). Direção: comparar a lista da cópia com o `ls-tree`
-  (opcional); nomear o commit; "medido no 3.12".
-  Fonte: codereview r1 #25 a #27 — descoberto por `codereview r1` (2026-11-24)
+- [ ] **A cópia da porta não confere o info/attributes** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:508` (`info/attributes`) — a C2 do plano
+  deixa fora o `info/attributes` do `.git` comum, e um `export-ignore` ali tiraria um arquivo da cópia
+  (r1 #25). Direção, opcional: comparar a lista da cópia com o `ls-tree` do commit.
+  Fonte: codereview r1 #25 — descoberto por `codereview r1` (2026-11-24)
 
 ### Minors adiados (triagem)
 
@@ -171,3 +170,5 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 
 ## Decidido — não reabrir
 <!-- sdd:decided -->
+
+- **As frases do plano de correções (r1 #26 e #27)** — o plano já rodou, e plano executado não se edita: o "Final-F1" sem definição (r1 #26) e o "em qualquer versão do Python" não medido no 3.11 (r1 #27) ficam como estão; decisão do dono na triagem do TODO.md — `docs/superpowers/plans/2026-11-24-retrofit-watch-auto-correcoes.md` (2026-11-24)
