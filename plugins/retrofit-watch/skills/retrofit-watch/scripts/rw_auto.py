@@ -686,8 +686,16 @@ def hold_item(ctx, rid, item, motivo, detalhe=""):
         licoes = lote["licoes"] if lote else None
     if lote is None:
         raise Malformed(f"{item} não é um lote, nem uma lição de um lote, da triagem da retro {rid}")
-    return append_registry(ctx, _line(pedido["sessao"], rid, item, lote["plugin"], licoes, "segurado",
-                                      motivo, detalhe, lote=lote["lote"]))
+    return _hold(ctx, pedido["sessao"], rid, item, lote["plugin"], licoes, "segurado", motivo, detalhe, lote["lote"])
+
+
+def _hold(ctx, session, rid, item, plugin, licoes, resultado, motivo, detalhe, lote, commit=None, ramo=None,
+          worktree=None):
+    """Grava e devolve a linha `segurado` (ou `erro`) de um item. Comum ao hold_item e ao hold da
+    porta (rw_gate.hold), que preenche `commit`, `ramo` e `worktree`."""
+    line = _line(session, rid, item, plugin, licoes, resultado, motivo, detalhe, lote=lote)
+    line.update(commit=commit, ramo=ramo, worktree=worktree)
+    return append_registry(ctx, line)
 
 
 def approve(ctx, rid, lote):

@@ -268,9 +268,12 @@ class HarvestTest(unittest.TestCase):
         path = self.data / rw_store.HARVEST_FILE
         old = "".join(invented(f"old{i}") + "\n" for i in range(50))
         path.write_text(old, encoding="utf-8")
-        with open(path, encoding="utf-8") as reader:
+        if os.name != "nt":  # no Windows, o os.replace sobre um arquivo aberto dá PermissionError
+            with open(path, encoding="utf-8") as reader:
+                rw_store.write_harvest(self.ctx())
+                self.assertEqual(reader.read(), old)
+        else:
             rw_store.write_harvest(self.ctx())
-            self.assertEqual(reader.read(), old)
         self.assertIn(name, path.read_text(encoding="utf-8").splitlines())
         before = path.read_text(encoding="utf-8")
         with mock.patch.object(rw_store.os, "replace", side_effect=OSError("disco cheio")):
@@ -512,6 +515,12 @@ class StoreTest(unittest.TestCase):
         empty.write_bytes(b"")
         with_empty = amend()
         self.assertNotEqual(with_empty, base, "um arquivo vazio novo não mudou o patch")
+        # Só o cabeçalho `diff --git` nomeia o arquivo vazio: renomeá-lo tem de mudar o patch.
+        self.w.git(wt, "mv", str(empty), str(empty.with_name(invented("outro") + ".md")))
+        renamed = amend()
+        self.assertNotEqual(renamed, with_empty, "renomear um arquivo vazio não mudou o patch")
+        self.w.git(wt, "mv", str(empty.with_name(invented("outro") + ".md")), str(empty))
+        self.assertEqual(amend(), with_empty)
         if os.name != "nt":
             (wt / fs.PLUGINS["demo"]).chmod(0o755)
             with_mode = amend()
@@ -538,7 +547,55 @@ class StoreTest(unittest.TestCase):
         self.w.retrofit(wt, files={rel: f"Veja o {name} antes.\n"})
         found = rw_store.layer1(self.ctx(), rid, wt)
         self.assertTrue([f for f in found if f.startswith(f"{rel}:1: colheita")], found)
-        self.assertIn(name, stale.read_text(encoding="utf-8").splitlines())
+        # Ruling T7-race: a colheita da chamada é um arquivo só dela, removido depois; o partilhado fica.
+        self.assertEqual(stale.read_text(encoding="utf-8"), "")
+        self.assertEqual(sorted(p.name for p in self.w.data.iterdir() if "colheita" in p.name),
+                         [rw_store.HARVEST_FILE])
+
+    def test_layer1_reads_only_its_own_harvest(self):
+        # Ruling T7-race: outra retro, com outro `cwd`, grava a colheita partilhada entre a colheita
+        # desta chamada e o portão; o portão desta chamada lê a colheita dela, com o projeto da sessão.
+        rid, got = self.prepared()
+        wt = Path(got["worktree"])
+        self.config(harvest_roots=[str(self.w.tmp / "vazio")])
+        name = self.w.proj.name
+        rel = "plugins/demo/skills/demo/references/nota.md"
+        self.w.retrofit(wt, files={rel: f"Veja o {name} antes.\n"})
+        shared = self.w.data / rw_store.HARVEST_FILE
+        real_gate = rw_store._gate
+        seen = []
+
+        def racing_gate(worktree, *args):
+            shared.write_text("", encoding="utf-8")  # a outra retro, sem o projeto desta sessão
+            extra = Path(args[args.index("--extra") + 1])
+            seen.append((extra, extra.exists(), extra.stat().st_mode & 0o777 if os.name != "nt" else 0o600))
+            return real_gate(worktree, *args)
+
+        with mock.patch.object(rw_store, "_gate", side_effect=racing_gate):
+            found = rw_store.layer1(self.ctx(), rid, wt)
+        self.assertTrue([f for f in found if f.startswith(f"{rel}:1: colheita")], found)
+        (extra, existed, mode), = seen
+        self.assertNotEqual(extra, shared)
+        self.assertEqual((existed, mode, extra.parent), (True, 0o600, Path(os.path.realpath(self.w.data))))
+        self.assertFalse(extra.exists(), "a colheita da chamada ficou para trás")
+
+    def test_layer1_harvest_stays_outside_repos_and_leaves_nothing(self):
+        rid, got = self.prepared()
+        wt = Path(got["worktree"])
+        self.w.retrofit(wt)
+        # Uma falha no meio da colheita não deixa arquivo com nomes para trás.
+        with mock.patch.object(rw_store, "harvest", side_effect=OSError("disco cheio")):
+            with self.assertRaises(OSError):
+                rw_store.layer1(self.ctx(), rid, wt)
+        self.assertEqual([p.name for p in self.w.data.iterdir() if p.name.startswith(".colheita")], [])
+        # A pasta de dados dentro de um repo: a colheita não grava nome em repo.
+        inside = make_repo(self.w.env, self.w.tmp / "um-repo") / "dados"
+        inside.mkdir()
+        (inside / rw_auto.AUTO_DIR).symlink_to(self.w.data / rw_auto.AUTO_DIR)
+        with self.assertRaises(rw_store.StoreError) as caught:
+            rw_store.layer1(rw.Context(home=self.w.home, data_dir=inside), rid, wt)
+        self.assertIn("dentro de um repo", str(caught.exception))
+        self.assertEqual(sorted(p.name for p in inside.iterdir()), [rw_auto.AUTO_DIR])
 
     def gate_stub(self, wt, camada1, termos):
         (wt / "scripts/stub.json").write_text(json.dumps({"camada1": camada1, "termos": termos}), encoding="utf-8")

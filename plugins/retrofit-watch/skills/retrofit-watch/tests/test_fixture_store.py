@@ -56,6 +56,15 @@ class StoreWorldTest(unittest.TestCase):
         findings = json.loads(audit.stdout)["skills"][0]["findings"]
         self.assertEqual([f for f in findings if f["level"] == "ERRO"], [])
         self.assertTrue((store / fs.AUDIT_GATE).is_file())
+        # O comparador do gate da auditoria roda na fixture: a mesma auditoria dos dois lados não dá NOVO.
+        box = self.w.tmp / "gate"
+        box.mkdir()
+        for name in ("antes", "depois"):
+            (box / f"{name}.json").write_text(audit.stdout, encoding="utf-8")
+        (box / "diff.txt").write_text("", encoding="utf-8")
+        gate = self.w.run_script(store, fs.AUDIT_GATE, str(box))
+        self.assertRc(gate, 0)
+        self.assertFalse([line for line in gate.stdout.splitlines() if line.startswith("NOVO")], gate.stdout)
         # Ruling C7: sem install.py (as verificações 5 e 8 se pulam) e com o catálogo Codex vazio.
         self.assertFalse((store / "install.py").exists())
         catalog = json.loads((store / ".agents/plugins/marketplace.json").read_text(encoding="utf-8"))
@@ -248,6 +257,13 @@ class StoreWorldTest(unittest.TestCase):
                                             capture_output=True, env=other.env).returncode, 1)
         finally:
             other.cleanup()
+
+    def test_clean_env_drops_an_inherited_plugin_data_dir(self):
+        # O script lê o CLAUDE_PLUGIN_DATA: herdado, ele apontaria a pasta de dados real do plugin.
+        with mock.patch.dict(os.environ, {"CLAUDE_PLUGIN_DATA": str(self.w.tmp / "dados-reais")}):
+            env = fs._clean_env(self.w.home)
+        self.assertNotIn("CLAUDE_PLUGIN_DATA", env)
+        self.assertEqual(env["HOME"], str(self.w.home))
 
     def test_git_reads_the_fixture_home_config(self):
         (self.w.home / ".gitconfig").write_text("[user]\n\tname = fixture-only\n")

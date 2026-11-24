@@ -3,8 +3,9 @@
 Roda fora do hook, pelos verbos `harvest`, `prepare` e `seal` de retrofit_watch.py. Chama o git e o
 portão de anonimização da loja (`scripts/anonymity-gate.py`); nunca faz push.
 
-  colheita   os nomes locais que não podem ir à loja pública, gravados em <dados>/colheita.txt
-             (fora de qualquer repo, permissão 0o600) e passados à camada 1 por `--extra`
+  colheita   os nomes locais que não podem ir à loja pública, fora de qualquer repo e com permissão
+             0o600: o verbo `harvest` grava <dados>/colheita.txt; a camada 1 grava a de cada chamada
+             num arquivo só dela, passado por `--extra` e removido depois
   prepare    `git fetch origin` no clone da loja e um worktree ligado novo do `origin/main`, num ramo
              que sai do id e do lote; grava <dados>/auto/<id>/<lote>/retrofit.json
   seal       o selo do executor: completa o retrofit.json, grava termos-novos.json e roda a camada 1
@@ -229,7 +230,7 @@ def write_harvest(ctx, cwd=None):
 
 def _atomic_write(path, body):
     """Grava `body` num temporário novo (O_EXCL, 0o600) da mesma pasta e o põe no lugar de `path` com
-    os.replace. Quem lê o arquivo antigo (o portão de outro lote, por `--extra`) nunca o vê truncado
+    os.replace. Quem lê o arquivo antigo (um portão rodado à mão com `--extra`) nunca o vê truncado
     ou pela metade, e o arquivo antigo com outra permissão nunca recebe os nomes novos. O temporário
     de uma falha sai no `finally`: não fica arquivo com nomes colhidos para trás."""
     path = Path(path)
@@ -361,12 +362,42 @@ def _gate(worktree, *args):
                env=git_env(neutral=True))
 
 
+def _private_harvest(ctx, cwd):
+    """A colheita de uma chamada só, num arquivo novo dela (O_EXCL, 0o600) na pasta de dados. Duas
+    retros ao mesmo tempo, com `cwd` diferentes, nunca leem a colheita uma da outra (T7-race): o
+    colheita.txt partilhado fica para o verbo `harvest`. Quem chama remove o arquivo."""
+    data = Path(os.path.realpath(ctx.data_dir))
+    if _inside_repo(data):
+        raise StoreError(f"a pasta de dados esta dentro de um repo git: {data}. A colheita fica fora de repo.")
+    data.mkdir(parents=True, exist_ok=True)
+    path = data / f".colheita-{os.getpid()}-{os.urandom(6).hex()}.txt"
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write("".join(t + "\n" for t in sorted(harvest(ctx, cwd))).encode("utf-8"))
+    except BaseException:
+        _unlink(path)
+        raise
+    return path
+
+
+def _unlink(path):
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
+
+
 def layer1(ctx, rid, worktree):
     """Os achados da camada 1 no que o ramo acrescenta, com a colheita feita agora (com o `cwd` do
-    pedido.json). Saída do portão fora do formato é StoreError, nunca "nada achado" (C1)."""
+    pedido.json), num arquivo só desta chamada. Saída do portão fora do formato é StoreError, nunca
+    "nada achado" (C1)."""
     pedido = rw_auto.load_pedido(rw_auto.retro_dir(ctx, rid) / "pedido.json")
-    extra = write_harvest(ctx, cwd=pedido["cwd"])
-    rc, out = _gate(worktree, "--camada1", "--extra", extra)
+    extra = _private_harvest(ctx, pedido["cwd"])
+    try:
+        rc, out = _gate(worktree, "--camada1", "--extra", extra)
+    finally:
+        _unlink(extra)
     lines = [line for line in out.splitlines() if line.strip()]
     findings = [line for line in lines if GATE_FINDING.fullmatch(line)]
     if rc == 0 and lines == [GATE_CLEAN]:

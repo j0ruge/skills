@@ -73,8 +73,9 @@ def requires_store(test):
 
 def _clean_env(home):
     """O ambiente do git e dos scripts da fixture: sem GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE nem
-    outra variável do git herdada (um hook de pré-commit as exporta), e com o HOME fixture."""
-    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    outra variável do git herdada (um hook de pré-commit as exporta), sem o CLAUDE_PLUGIN_DATA herdado
+    (o script o lê, e ele apontaria a pasta de dados real) e com o HOME fixture."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_") and k != "CLAUDE_PLUGIN_DATA"}
     env.update({k: GIT_ENV[k] for k in GIT_IDENTITY})
     env.update(HOME=str(home), XDG_CONFIG_HOME=str(Path(home) / ".config"), PYTHONDONTWRITEBYTECODE="1")
     return env
