@@ -71,6 +71,42 @@ def _git(repo, *args):
     return subprocess.run(['git', '-C', str(repo), *args], capture_output=True, check=True).stdout.decode('utf-8', 'replace')
 
 
+_ESCAPES = {'a': 7, 'b': 8, 't': 9, 'n': 10, 'v': 11, 'f': 12, 'r': 13, '"': 34, '\\': 92}
+
+
+def _descitar(citado):
+    """O nome que o git escreveu entre aspas, no estilo C (\\t, \\", \\303...), de volta ao texto."""
+    corpo, saida, i = citado[1:-1], bytearray(), 0
+    while i < len(corpo):
+        c = corpo[i]
+        if c != '\\':
+            saida += c.encode('utf-8')
+            i += 1
+        elif corpo[i + 1:i + 2] in _ESCAPES:
+            saida.append(_ESCAPES[corpo[i + 1]])
+            i += 2
+        elif re.fullmatch(r'[0-7]{3}', corpo[i + 1:i + 4]):
+            saida.append(int(corpo[i + 1:i + 4], 8))
+            i += 4
+        else:
+            raise ValueError(citado)
+    return saida.decode('utf-8', 'replace')
+
+
+def _destino(alvo):
+    """O caminho de um cabeçalho '+++'. Nome citado ou estranho nunca faz a linha ser pulada: só /dev/null é pulado."""
+    if alvo == '/dev/null':
+        return None
+    if alvo.startswith('"') and alvo.endswith('"') and len(alvo) > 1:
+        try:
+            alvo = _descitar(alvo)
+        except (ValueError, IndexError):
+            return alvo
+    else:
+        alvo = alvo.rstrip('\t')  # o git põe um tab depois de nome com espaço
+    return alvo[2:] if alvo.startswith('b/') else alvo
+
+
 def linhas_novas(repo, base):
     """[(onde, linha, texto)]: as linhas acrescentadas desde a base, o caminho de cada arquivo novo e as mensagens."""
     novas = []
@@ -84,8 +120,7 @@ def linhas_novas(repo, base):
         if linha.startswith('diff --git '):
             onde = None
         elif linha.startswith('+++ '):
-            alvo = linha[4:]
-            onde = alvo[2:] if alvo.startswith('b/') else None
+            onde = _destino(linha[4:])
         elif linha.startswith('@@'):
             m = re.match(r'@@ -\S+ \+(\d+)', linha)
             numero = int(m.group(1)) if m else 0

@@ -103,6 +103,21 @@ class Nomes(Base):
         self.commit({rel: 'limpo\n'})
         self.assertEqual(self.camada1(), [(rel, 0, 'lista', NOME)])
 
+    def test_arquivo_de_nome_com_acento_e_varrido(self):
+        rel = 'notas/doc-a' + 'ção' + '.md'
+        self.base({'doc.md': 'um\n'})
+        self.commit({rel: f'um\nfale com {EMAIL}\n'})
+        self.assertEqual([a[:3] for a in self.camada1()], [(rel, 2, 'email')])
+
+    @unittest.skipIf(os.name == 'nt', 'o Windows nao aceita tab nem aspas em nome de arquivo')
+    def test_arquivo_de_nome_citado_pelo_git_e_varrido(self):
+        for rel in ('doc' + '\t' + 'x.md', 'doc' + '"' + 'x.md', 'doc' + ' ' + 'x.md'):
+            with self.subTest(rel=rel):
+                self.setUp()
+                self.base({'outro.md': 'um\n'})
+                self.commit({rel: f'um\nfale com {EMAIL}\n'})
+                self.assertEqual([a[:3] for a in self.camada1()], [(rel, 2, 'email')])
+
     def test_publico_isenta_nome_e_nunca_segredo(self):
         segredo = 'gh' + 'p_' + 'a1b2c3d4e5f6'
         self.base({'doc.md': 'um\n'})
