@@ -36,7 +36,7 @@ GATE_REASONS = ("escopo", "arvore-suja", "rebase", "coautoria", "sem-marca", "se
                 "auditoria", "fase-de-auditoria", "teto", "auto-dry") + ERRORS
 # Os motivos de nome: só o dono os resolve, ensinando o portão (O7). A aprovação com um deles libera a
 # mudança das listas na guarda 5 (C2), nunca a recusa por nome.
-NAME_REASONS = ("nome-privado", "termo-nao-publico")
+NAME_REASONS = rw_auto.NAME_REASONS
 
 # O que um retrofit pode tocar: a pasta do plugin do lote e os arquivos da loja que listam a versão.
 SCOPE = ("plugins/<plugin>/", ".claude-plugin/marketplace.json", "README.md", ".agents/plugins/marketplace.json",

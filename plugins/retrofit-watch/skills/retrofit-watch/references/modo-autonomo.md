@@ -144,6 +144,8 @@ corrige…" usam o mesmo despacho do item 3: o mesmo `subagent_type`, `model` e 
 O prompt leva o worktree, o ramo, o motivo e o `detalhe` da linha do registro, e a correção pedida.
 O executor emenda o commit (`git -C <worktree> commit --amend`), mantém o trailer `Retrofit-Mode` e
 termina com o `seal` de novo. Depois, o revisor refaz a segunda passada (item 4), e a porta roda (item 5).
+No lote segurado por nome que o dono ensinou (passo 6), o `approve` vem antes dessa porta, logo depois da
+palavra do dono.
 
 ## 5. A linha ao dono
 
@@ -196,7 +198,10 @@ Os casos que pedem mais do que isso:
     segunda passada continua valendo.
   - Os dois scripts gravam a lista ao lado deles: a do worktree, nunca a do checkout compartilhado. Uma
     lista mudada fora do commit segura o lote com `arvore-suja`.
-  - Nos dois: `approve`, depois `publish`.
+  - Nos dois: `approve` logo depois da palavra do dono, antes de qualquer `publish`; depois, `publish`.
+    O `approve` grava o motivo da última recusa por nome do lote, e é ele que deixa a porta aceitar a lista
+    mudada. Um `publish` antes do `approve` segura o lote com `escopo`; o `approve` seguinte ainda grava
+    o motivo de nome, e o `publish` depois dele passa.
   - Com `sem-anonimato`, o revisor refaz antes a segunda passada. Se um termo continuar não público, vale
     o par acima.
 - **Segurado por `rebase`:** `retrofit_watch.py prepare <id> <lote> --redo`. Ele abre um worktree e um ramo

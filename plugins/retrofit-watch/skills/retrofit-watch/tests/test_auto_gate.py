@@ -1461,6 +1461,49 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
         self.assertEqual((rc, again["resultado"], again["commit"]), (0, "publicado", line["commit"]), again)
         self.assertNotIn("push", fx.calls)
 
+    # --- o ensino do portão com os verbos reais (Final-F1) ----------------------------------------
+
+    def teach_public(self, wt, word):
+        """A palavra "público" do dono: `--publico-add` no worktree e a emenda com a lista (passo 6)."""
+        proc = self.w.run_script(wt, "scripts/anonymity-gate.py", "--publico-add", word)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.w.git(wt, "commit", "-q", "-a", "--amend", "--no-edit")
+
+    def held_as(self, rid, motivo):
+        line, rc = self.publish(rid, self.effects())
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (1, "segurado", motivo), line)
+
+    def teaching(self, tag, publish_before_approve=False, without_review=False):
+        """Um termo em dúvida que o dono chama de público, com o `approve` e o `publish` de verdade."""
+        word = camel(tag)
+        rid, wt = self.clean_retrofit(edit=lambda wt: append(wt / DOC, f"- Veja o {word}.\n"),
+                                      review={"doubt": word})
+        ctx = self.ctx()
+        if without_review:
+            # O `sem-anonimato`, aprovado como o passo 6 deixa, e depois a segunda passada.
+            (self.folder(rid) / "anonimato.json").unlink()
+            self.held_as(rid, "sem-anonimato")
+            rw_auto.approve(ctx, rid, "demo")
+            self.review(rid, doubt=word)
+        self.held_as(rid, "termo-nao-publico")
+        self.teach_public(wt, word)
+        if publish_before_approve:
+            self.held_as(rid, "escopo")
+        rw_auto.approve(ctx, rid, "demo")
+        line, rc = self.publish(rid, self.effects())
+        self.assertEqual((rc, line["resultado"], line["aprovado"]), (0, "publicado", True), line)
+        published = self.w.git(self.w.origin, "show", "main:scripts/public-names.txt").splitlines()
+        self.assertIn(word, published)
+
+    def test_teaching_the_gate_in_the_right_order_publishes(self):
+        self.teaching("ordem")
+
+    def test_teaching_the_gate_with_a_publish_before_the_approve_publishes(self):
+        self.teaching("antes", publish_before_approve=True)
+
+    def test_teaching_the_gate_after_a_missing_review_publishes(self):
+        self.teaching("passada", publish_before_approve=True, without_review=True)
+
     def test_amend_keeps_the_marker_before_another_trailer(self):
         # I3: com outro trailer depois do `Retrofit-Mode`, a emenda o troca no lugar; no fim, a nova chamada
         # do lote publicado não reconheceria o patch selado e cairia no `refuse`.

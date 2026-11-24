@@ -42,6 +42,9 @@ REASON_TEXT = {
     "sem-loja": "falta na config a chave store com o clone de trabalho da loja",
     "teto": "o teto de retrofits autônomos da sessão (auto_limits) foi atingido",
 }
+# Os motivos de nome da porta (rw_gate): só o dono os resolve, ensinando o portão (O7). Moram aqui porque
+# o `approve` também os lê (Final-F1).
+NAME_REASONS = ("nome-privado", "termo-nao-publico")
 
 
 class Malformed(Exception):
@@ -812,7 +815,10 @@ def _hold(ctx, session, rid, item, plugin, licoes, resultado, motivo, detalhe, l
 
 
 def approve(ctx, rid, lote):
-    """Acrescenta a aprovado.json o motivo da última linha `segurado` do lote, sem repetir."""
+    """Acrescenta a aprovado.json o motivo da última linha `segurado` do lote e, quando há uma, o da última
+    recusa por nome (NAME_REASONS), sem repetir. Um `publish` entre a palavra do dono e o `approve` segura
+    o lote com `escopo`: sem o motivo de nome, a guarda 5 nunca aceitaria a mudança das listas (Final-F1).
+    O `detalhe` dessa recusa a porta lê da mesma linha do registro."""
     folder = lote_dir(ctx, rid, lote)
     item = f"{rid}/{lote}"
     reasons = [e.get("motivo") for e in read_registry(ctx) if e.get("item") == item and e.get("resultado") == "segurado"]
@@ -822,8 +828,10 @@ def approve(ctx, rid, lote):
     motivos = []
     if path.exists():
         motivos = list(load_aprovado(path)["motivos"])
-    if reasons[-1] not in motivos:
-        motivos.append(reasons[-1])
+    names = [r for r in reasons if r in NAME_REASONS]
+    for reason in [reasons[-1]] + names[-1:]:
+        if reason not in motivos:
+            motivos.append(reason)
     folder.mkdir(parents=True, exist_ok=True)
     _write_json(path, {"id": rid, "lote": lote, "ts": int(time.time()), "motivos": motivos})
     return path
