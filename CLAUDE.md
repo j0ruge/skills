@@ -301,9 +301,11 @@ Available speckit commands: `specify`, `clarify`, `plan`, `analyze`, `tasks`, `i
   (`Measured 2026-10-19 (PR #8):`); if the sentence depends on it, use a generic term (`um projeto`,
   `another repo`, `<repo>`). Dates, PR numbers and hashes stay, because they are the evidence.
   `scripts/check-private-names.py` enforces this for files, from `validate-versions.py` and
-  `tests/test_private_names.py`; nothing scans the commit message, so read it. The list holds hashes,
-  because a plain list would publish what it protects: `--add NAME` adds a name, and `--remove NAME`
-  takes out a real coincidence with a common word.
+  `tests/test_private_names.py`; no manual commit gate scans the commit message, so read it. The list
+  holds hashes, because a plain list would publish what it protects: `--add NAME` adds a name, and
+  `--remove NAME` takes out a real coincidence with a common word. `scripts/anonymity-gate.py` scans the
+  new lines of a branch and its commit messages when it is called. Its list of public names changes
+  through `--publico-add NAME` and `--publico-remove NAME`.
 
 ## Distribuição Codex
 

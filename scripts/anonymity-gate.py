@@ -22,11 +22,17 @@ Nunca isenta segredo. O arquivo private-names.sha256 é isento só de segredo, p
 Uso (da raiz ou de qualquer pasta):
   python3 scripts/anonymity-gate.py --camada1 --base REF [--repo DIR] [--extra ARQUIVO]
       rc 0 limpa, 1 com achados, 2 uso ou lista inutilizável
+  python3 scripts/anonymity-gate.py --termos --base REF [--repo DIR]
+      para a camada 2: imprime em JSON os termos novos ({termo, onde, contexto}); rc 0 só quando correu até o
+      fim, 2 em falha do git ou lista inutilizável (nunca uma lista vazia no lugar do erro)
+  python3 scripts/anonymity-gate.py --arvore [--repo DIR] [--extra ARQUIVO]
+      lista e colheita na árvore inteira (a da loja, sem --repo); rc 0 limpa, 1 com achados, 2 erro
   python3 scripts/anonymity-gate.py --publico-add NOME     rc 1 se o nome está na lista de hashes
   python3 scripts/anonymity-gate.py --publico-remove NOME  rc 1 se o nome não está nos públicos
 """
 import argparse
 import importlib.util
+import json
 import os
 import re
 import shutil
@@ -197,7 +203,8 @@ def _segredos(texto):
     return [texto[a:b] for a, b in sorted(achados)]
 
 
-def _achados_da_linha(onde, texto, hashes, extras, publicos):
+def _nomes_da_linha(texto, hashes, extras, publicos):
+    """[(tipo, trecho)] dos tipos lista e colheita: o que a camada 1 e a varredura da árvore têm em comum."""
     achados = []
     for trecho, forma in cpn.candidatos(texto):
         if forma in publicos:
@@ -206,6 +213,11 @@ def _achados_da_linha(onde, texto, hashes, extras, publicos):
             achados.append(('lista', trecho))
         elif forma in extras:
             achados.append(('colheita', trecho))
+    return achados
+
+
+def _achados_da_linha(onde, texto, hashes, extras, publicos):
+    achados = _nomes_da_linha(texto, hashes, extras, publicos)
     # A senha de modelo seguida do @ e do host de um modelo de conexão não é endereço: a senha e o @ viram
     # espaço antes de buscar o e-mail. Só eles: o esquema fica, porque a classe dele engole o domínio de um
     # endereço real colado antes, e o endereço real logo depois do @ continua inteiro.
@@ -235,11 +247,108 @@ def camada1(repo, base, extras=frozenset(), hashes=None, publicos=None):
     """[(onde, linha, tipo, trecho)] de cada achado nas linhas novas desde a base."""
     hashes = cpn.carregar() if hashes is None else hashes
     publicos = carregar_publicos() if publicos is None else publicos
-    extras = {cpn.chave(e) for e in extras if cpn.chave(e)}
+    extras = _normalizar_extras(extras)
     achados = []
     for onde, numero, texto in linhas_novas(repo, base):
         for tipo, trecho in _achados_da_linha(onde, texto, hashes, extras, publicos):
             achados.append((onde, numero, tipo, trecho))
+    return achados
+
+
+def _normalizar_extras(extras):
+    return {cpn.chave(e) for e in extras if cpn.chave(e)}
+
+
+# Candidato a termo da camada 2. A palavra é o trecho entre espaços e entre os sinais que cercam palavra
+# (vírgula, parênteses, aspas, crase, barra vertical); pontuação de fim de frase e ênfase saem das pontas.
+# O hífen da ponta esquerda fica: é o que separa a flag do resto.
+_PALAVRA_TERMO = re.compile(r'[^\s,;()\[\]{}<>"\'`|]+')
+_FIM_DE_FRASE = ('.', '!', '?')
+_FLAG = re.compile(r'--?[A-Za-z0-9][\w-]*')
+_VERSAO = re.compile(r'v?\d+(?:\.\d+)+(?:[-+][\w.]+)?|v\d+')
+_SHA = re.compile(r'[0-9a-f]{7,40}')
+_ARQUIVO = re.compile(r'[^/\\]+\.[A-Za-z][A-Za-z0-9]{0,5}')
+_LETRA = re.compile(r'[^\W\d_]')
+_HIFEN_ENTRE = re.compile(r'[^\W_]-[^\W_]')
+
+
+def _termos_da_linha(texto):
+    """Os candidatos a termo de uma linha, na ordem: caminho ou URL, CamelCase, maiúscula fora do início da
+    frase, palavra com dígito ou sublinhado, e palavra em minúsculas com hífen. Fora: flag, número, data,
+    versão, sha e nome de arquivo com extensão. Uma URL tem barra: cai na regra do caminho."""
+    termos, inicio = [], True
+    for m in _PALAVRA_TERMO.finditer(texto):
+        bruto = m.group()
+        palavra = bruto.lstrip('*').rstrip('.:!?*')
+        if not re.search(r'[^\W_]', palavra):
+            continue  # marcador de lista, de título ou de citação: não muda o início da frase
+        no_inicio, inicio = inicio, bruto.rstrip('*').endswith(_FIM_DE_FRASE)
+        if not _LETRA.search(palavra):
+            continue  # número, data e hora (2026-11-23, 0.4.0, 12:30) e caminho sem letra (0/1)
+        if '/' in palavra or '\\' in palavra:
+            termos.append(palavra)
+            continue
+        if any(f.fullmatch(palavra) for f in (_FLAG, _VERSAO, _SHA, _ARQUIVO)):
+            continue
+        if (any(a.islower() and b.isupper() for a, b in zip(palavra, palavra[1:]))
+                or (palavra[0].isupper() and not no_inicio)
+                or re.search(r'[\d_]', palavra)
+                or (palavra == palavra.lower() and _HIFEN_ENTRE.search(palavra))):
+            termos.append(palavra)
+    return termos
+
+
+def _na_loja(repo, base, termo):
+    """O termo existe na loja em base, como palavra inteira e sem caixa. O -e e o -- impedem que um termo com
+    hífen na frente ou uma base estranha virem opção. Saída do grep fora de 0 e 1 é erro, nunca resposta."""
+    try:
+        _git(repo, 'grep', '-F', '-i', '-w', '-q', '-e', termo, base, '--')
+    except subprocess.CalledProcessError as exc:
+        if exc.returncode == 1:
+            return False
+        raise
+    return True
+
+
+def termos_novos(repo, base, publicos=None):
+    """[{termo, onde, contexto}] dos candidatos das linhas novas que a loja em base não tem e que não são públicos.
+
+    Sem repetição de termo (sem caixa), na ordem de aparição. onde é arquivo:linha, ou <mensagem>.
+    """
+    publicos = carregar_publicos() if publicos is None else publicos
+    itens, vistos = [], set()
+    for onde, numero, texto in linhas_novas(repo, base):
+        for termo in _termos_da_linha(texto):
+            if termo.lower() in vistos:
+                continue
+            vistos.add(termo.lower())
+            if cpn.chave(termo) in publicos or _na_loja(repo, base, termo):
+                continue
+            itens.append({'termo': termo, 'onde': onde if onde == MENSAGEM else f'{onde}:{numero}',
+                          'contexto': texto.strip()[:200]})
+    return itens
+
+
+def varrer_arvore(raiz, extras, hashes=None, publicos=None):
+    """[(caminho, linha, tipo, trecho)] dos tipos lista e colheita na árvore inteira; a linha 0 é o caminho.
+
+    Sem os padrões da camada 1: a árvore antiga tem caminho e endereço de exemplo que já foram aceitos.
+    """
+    hashes = cpn.carregar() if hashes is None else hashes
+    publicos = carregar_publicos() if publicos is None else publicos
+    extras = _normalizar_extras(extras)
+    achados = []
+    for rel in cpn.arquivos(raiz):
+        try:
+            dados = (Path(raiz) / rel).read_bytes()
+        except OSError:
+            continue
+        linhas = [(0, rel)]
+        if b'\0' not in dados:
+            linhas += list(enumerate(dados.decode('utf-8', 'replace').splitlines(), start=1))
+        for numero, texto in linhas:
+            for tipo, trecho in _nomes_da_linha(texto, hashes, extras, publicos):
+                achados.append((rel, numero, tipo, trecho))
     return achados
 
 
@@ -276,10 +385,12 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     modo = parser.add_mutually_exclusive_group(required=True)
     modo.add_argument('--camada1', action='store_true')
+    modo.add_argument('--termos', action='store_true')
+    modo.add_argument('--arvore', action='store_true')
     modo.add_argument('--publico-add', metavar='NOME')
     modo.add_argument('--publico-remove', metavar='NOME')
     parser.add_argument('--base')
-    parser.add_argument('--repo', default='.')
+    parser.add_argument('--repo')
     parser.add_argument('--extra', action='append', default=[], metavar='ARQUIVO')
     args = parser.parse_args(argv)
     try:
@@ -287,30 +398,39 @@ def main(argv=None):
             return publico_mudar('--publico-add', args.publico_add)
         if args.publico_remove is not None:
             return publico_mudar('--publico-remove', args.publico_remove)
-        if not args.base:
+        if not args.arvore and not args.base:
             parser.print_usage()
-            print('--camada1 exige --base REF')
+            print(f'{"--termos" if args.termos else "--camada1"} exige --base REF')
             return 2
-        hashes = cpn.carregar()
+        hashes = None if args.termos else cpn.carregar()
         publicos = carregar_publicos()
         extras = set().union(*(_ler_extra(a) for a in args.extra)) if args.extra else set()
     except (OSError, ValueError) as exc:
         _dizer(f'lista inutilizavel: {exc}')
         return 2
     try:
-        achados = camada1(args.repo, args.base, extras=extras, hashes=hashes, publicos=publicos)
+        if args.termos:
+            itens = termos_novos(args.repo or '.', args.base, publicos=publicos)
+        elif args.arvore:
+            achados = varrer_arvore(args.repo or cpn.RAIZ, extras, hashes=hashes, publicos=publicos)
+        else:
+            achados = camada1(args.repo or '.', args.base, extras=extras, hashes=hashes, publicos=publicos)
     except subprocess.CalledProcessError as exc:
-        _dizer(f'git falhou: {exc.stderr.decode("utf-8", "replace").strip()}')
+        _dizer(f'git falhou: {(exc.stderr or b"").decode("utf-8", "replace").strip()}')
         return 2
     except OSError as exc:
         _dizer(f'git inutilizavel: {exc}')
         return 2
+    if args.termos:
+        print(json.dumps(itens))
+        return 0
     for onde, numero, tipo, trecho in achados:
         print(f'{ascii(onde)[1:-1]}:{numero}: {tipo} "{ascii(trecho)[1:-1]}"')
+    nome = 'na arvore' if args.arvore else 'na camada 1'
     if achados:
-        print(f'\n{len(achados)} achado(s) na camada 1')
+        print(f'\n{len(achados)} achado(s) {nome}')
         return 1
-    print('ok: camada 1 limpa')
+    print(f'ok: nada {nome}' if args.arvore else 'ok: camada 1 limpa')
     return 0
 
 

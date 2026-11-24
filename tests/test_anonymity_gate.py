@@ -5,6 +5,7 @@ sabotagem (nome inventado, e-mail, caminho com usuário, forma de segredo) é mo
 """
 import hashlib
 import importlib.util
+import json
 import os
 from pathlib import Path
 import shutil
@@ -413,6 +414,164 @@ class LinhaDeComando(Base):
         r = self.rodar('--publico-remove', 'Outro' + '_Nome', script=pasta / 'anonymity-gate.py')
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertEqual(publicos.read_bytes(), antes)
+
+
+PROPRIO = 'Zor' + 'vanel'
+HIFEN = 'acme' + '-portal'
+
+
+class TermosNovos(Base):
+    """A camada 2 recebe os termos novos: candidato que a loja na base não tem e que não é público."""
+
+    def termos(self, linha=None, mensagem='novo', publicos=None):
+        if linha is not None:
+            if not self._base:
+                self.base({'doc.md': 'um\n'})
+            self.commit({'doc.md': f'um\n{linha}\n'}, mensagem=mensagem)
+        return ag.termos_novos(self.repo, 'base', publicos=set() if publicos is None else publicos)
+
+    def nomes(self, **kw):
+        return [t['termo'] for t in self.termos(**kw)]
+
+    def test_nome_proprio_novo_e_termo(self):
+        linha = f'o relatorio do {PROPRIO} saiu ontem'
+        self.assertEqual(self.termos(linha), [{'termo': PROPRIO, 'onde': 'doc.md:2', 'contexto': linha}])
+
+    def test_identificador_novo_e_termo(self):
+        cinco = ['fooBar' + 'Baz', 'com' + '_sublinhado', 'abc9' + 'xyz', 'xq/' + 'campo/dados',
+                 'https://' + 'exemplo.invalid/' + 'painel']
+        self.assertEqual(self.nomes(linha='veja ' + ' e '.join(cinco) + ' aqui'), cinco)
+
+    def test_nome_minusculo_com_hifen_e_termo(self):
+        self.assertEqual(self.nomes(linha=f'o {HIFEN} caiu'), [HIFEN])
+
+    def test_flag_e_arquivo_com_extensao_nao_saem(self):
+        self.assertEqual(self.nomes(linha='rode com --dry' + '-run e -x, depois abra notas-de' + '-campo.md'), [])
+
+    def test_termo_que_a_loja_ja_tem_nao_sai(self):
+        self.base({'velho.md': f'fala do {PROPRIO.lower()} e do {HIFEN}\n'})
+        self.assertEqual(self.nomes(linha=f'o {PROPRIO.upper()} e o {HIFEN} de novo'), [])
+
+    def test_pedaco_de_palavra_da_loja_ainda_e_novo(self):
+        self.base({'velho.md': 'a ' + 'Acme' + 'corp abriu\n'})
+        self.assertEqual(self.nomes(linha='a ' + 'Acme' + ' abriu'), ['Acme'])
+
+    def test_publico_nao_sai(self):
+        self.assertEqual(self.nomes(linha=f'o {PROPRIO} saiu', publicos={cpn.chave(PROPRIO)}), [])
+
+    def test_numero_data_versao_e_sha_nao_saem(self):
+        self.assertEqual(self.nomes(linha='a 0.4.0 de 2026-11-23, a v1.2.3 e o a1b2' + 'c3d'), [])
+
+    def test_termo_da_mensagem_sai(self):
+        self.commit({'doc.md': 'limpo\n'}, mensagem=f'fix: medido no {PROPRIO}')
+        self.assertEqual([(t['termo'], t['onde']) for t in self.termos()], [(PROPRIO, '<mensagem>')])
+
+    def test_inicio_de_frase_nao_e_termo(self):
+        self.assertEqual(self.nomes(linha='Depois rode o teste. Agora rode o outro! Feito'), [])
+
+    def test_termo_repetido_sai_uma_vez(self):
+        self.assertEqual(self.termos(linha=f'o {PROPRIO} e o {PROPRIO.upper()}, de novo o {PROPRIO}'),
+                         [{'termo': PROPRIO, 'onde': 'doc.md:2',
+                           'contexto': f'o {PROPRIO} e o {PROPRIO.upper()}, de novo o {PROPRIO}'}])
+
+    def test_termo_com_hifen_na_frente_nao_vira_opcao_do_grep(self):
+        termo = '-zq' + '/campo'
+        self.assertEqual(self.nomes(linha=f'use {termo} aqui'), [termo])
+        self.setUp()
+        self.base({'velho.md': f'use {termo} ali\n'})
+        self.assertEqual(self.nomes(linha=f'use {termo} aqui'), [])
+
+    def test_falha_do_grep_nao_vira_termo_nem_loja(self):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\no {PROPRIO} saiu\n'})
+        real = ag._git
+
+        def falso(repo, *args):
+            if args and args[0] == 'grep':
+                raise subprocess.CalledProcessError(128, ['git', *args], stderr=b'fatal: quebrado')
+            return real(repo, *args)
+
+        with unittest.mock.patch.object(ag, '_git', falso):
+            with self.assertRaises(subprocess.CalledProcessError) as ctx:
+                ag.termos_novos(self.repo, 'base', publicos=set())
+        self.assertEqual(ctx.exception.returncode, 128)
+
+
+class Arvore(Base):
+    def test_a_arvore_com_a_colheita(self):
+        self.base({'doc.md': f'um\no {PROPRIO} saiu\n'})
+        self.assertEqual(ag.varrer_arvore(self.repo, {PROPRIO.lower()}, hashes=self.hashes, publicos=set()),
+                         [('doc.md', 2, 'colheita', PROPRIO.lower())])
+        self.assertEqual(ag.varrer_arvore(self.repo, {PROPRIO}, hashes=self.hashes,
+                                          publicos={cpn.chave(PROPRIO)}), [])
+
+    def test_a_arvore_com_a_lista(self):
+        self.base({f'notas/{NOME}.md': 'limpo\n'})
+        self.assertEqual(ag.varrer_arvore(self.repo, set(), hashes=self.hashes, publicos=set()),
+                         [(f'notas/{NOME}.md', 0, 'lista', NOME)])
+
+    def test_a_arvore_nao_aplica_os_padroes(self):
+        caminho = '/home/' + 'fulano' + '/x'
+        self.base({'doc.md': f'um\nem {caminho}, fale com {EMAIL}\n'})
+        self.assertEqual(ag.varrer_arvore(self.repo, set(), hashes=self.hashes, publicos=set()), [])
+
+
+class LinhaDeComandoNova(Base):
+    rodar = LinhaDeComando.rodar
+    copia = LinhaDeComando.copia
+
+    def test_termos_imprime_json_ascii(self):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\no {PROPRIO} viu a ' + 'a' + 'ção\n'})
+        r = self.rodar('--termos', '--base', 'base', '--repo', str(self.repo))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertTrue(r.stdout.isascii(), r.stdout)
+        self.assertEqual([t['termo'] for t in json.loads(r.stdout)], [PROPRIO])
+        self.commit({'doc.md': 'um\nlimpo\n'})
+        r = self.rodar('--termos', '--base', 'base', '--repo', str(self.repo))
+        self.assertEqual((r.returncode, json.loads(r.stdout)), (0, []), r.stdout + r.stderr)
+
+    def test_termos_com_base_ruim_sai_2_sem_lista(self):
+        self.commit({'doc.md': 'limpo\n'})
+        r = self.rodar('--termos', '--base', 'nao-existe', '--repo', str(self.repo))
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('git falhou', r.stdout)
+        self.assertNotIn('[]', r.stdout)
+        self.assertNotIn('Traceback', r.stderr)
+
+    def test_termos_sem_base_sai_2(self):
+        r = self.rodar('--termos', '--repo', str(self.repo))
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('--termos exige --base REF', r.stdout)
+
+    def test_termos_com_publicos_ilegiveis_sai_2(self):
+        self.commit({'doc.md': 'limpo\n'})
+        pasta = self.copia(com_lista=True)
+        (pasta / 'public-names.txt').write_bytes(b'nome \xe7\xe3o\n')
+        r = self.rodar('--termos', '--base', 'base', '--repo', str(self.repo), script=pasta / 'anonymity-gate.py')
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('lista inutilizavel', r.stdout)
+        self.assertNotIn('Traceback', r.stderr)
+
+    def test_arvore_da_linha_de_comando(self):
+        extra = self.dir / 'extra.txt'
+        extra.write_text(f'# colheita\n{PROPRIO}\n', encoding='utf-8')
+        self.base({'doc.md': 'limpo\n'})
+        r = self.rodar('--arvore', '--repo', str(self.repo), '--extra', str(extra))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.commit({'doc.md': f'limpo\no {PROPRIO} saiu\n'})
+        r = self.rodar('--arvore', '--repo', str(self.repo), '--extra', str(extra))
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn(f'doc.md:2: colheita "{PROPRIO.lower()}"', r.stdout)
+
+    def test_arvore_com_git_quebrado_sai_2(self):
+        quebrado = self.dir / 'quebrado'
+        quebrado.mkdir()
+        (quebrado / '.git').write_text('isto nao e um repositorio\n', encoding='utf-8')
+        r = self.rodar('--arvore', '--repo', str(quebrado))
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('git falhou', r.stdout)
+        self.assertNotIn('Traceback', r.stderr)
 
 
 if __name__ == '__main__':
