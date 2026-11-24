@@ -105,7 +105,6 @@ class _Porta:
         self.ctx, self.rid, self.lote, self.notes = ctx, rid, lote, notes
         self.plugin, self.tipo = _lote_kind(lote)
         self.folder = rw_auto.lote_dir(ctx, rid, lote)
-        self.retro = rw_auto.retro_dir(ctx, rid)
         self.retrofit = _retrofit(ctx, rid, lote)
         tentativa = self.retrofit["tentativa"]
         self.worktree = rw_store.worktree_path(ctx, rid, lote, tentativa)
@@ -136,7 +135,7 @@ class _Porta:
                              self.worktree, self.neutral, "porta")
 
     def pedido(self):
-        return rw_auto.load_pedido(self.retro / "pedido.json")
+        return rw_auto.retro_pedido(self.ctx, self.rid)
 
 
 def _added_lines(diff):
@@ -318,7 +317,7 @@ def _g_bump(p):
 
 
 def _veredito(p):
-    return rw_auto.load_veredito(p.retro / "veredito.json")
+    return rw_auto.retro_veredito(p.ctx, p.rid)
 
 
 def _g_verdict(p):
@@ -332,7 +331,7 @@ def _g_verdict(p):
 
 def _lessons(p):
     """As lições do retrofit.json, de licoes.json: [(n, lição ou None)]."""
-    licoes = rw_auto.load_licoes(p.retro / "licoes.json")
+    licoes = rw_auto.retro_licoes(p.ctx, p.rid)
     return [(n, licoes.get(str(n))) for n in p.retrofit["licoes"]]
 
 
@@ -713,7 +712,7 @@ def hold(ctx, rid, lote, motivo, detalhe):
     retrofit = _retrofit(ctx, rid, lote)
     worktree = rw_store.worktree_path(ctx, rid, lote, retrofit["tentativa"])
     branch = rw_store.branch_name(rid, lote, retrofit["tentativa"])
-    session = rw_auto.load_pedido(rw_auto.retro_dir(ctx, rid) / "pedido.json")["sessao"]
+    session = rw_auto.retro_pedido(ctx, rid)["sessao"]
     resultado = "erro" if motivo in ERRORS else "segurado"
     return rw_auto._hold(ctx, session, rid, f"{rid}/{lote}", plugin, list(retrofit["licoes"]), resultado, motivo,
                          detalhe, lote, commit=_head(worktree) or retrofit["commit"], ramo=branch,
@@ -879,7 +878,7 @@ def _error(ctx, rid, lote, motivo, detalhe):
         detalhe = _short(f"{detalhe}; a linha completa falhou: {type(exc).__name__}: {exc}")
     session = None
     try:
-        session = rw_auto.load_pedido(rw_auto.retro_dir(ctx, rid) / "pedido.json")["sessao"]
+        session = rw_auto.retro_pedido(ctx, rid)["sessao"]
     except Exception:  # noqa: BLE001
         pass
     lote_text = str(lote)
@@ -917,7 +916,7 @@ def _plan(ctx, rid, lote, retrofit, worktree, aprovado, detalhe):
     """A linha `publicado` (`instalacao: "pendente"`) e as chaves da sessão a marcar feitas, montadas antes
     do push: depois dele só se grava. O `commit` se acerta depois da emenda do trailer."""
     plugin, _ = _lote_kind(lote)
-    pedido = rw_auto.load_pedido(rw_auto.retro_dir(ctx, rid) / "pedido.json")
+    pedido = rw_auto.retro_pedido(ctx, rid)
     line = rw_auto._line(pedido["sessao"], rid, f"{rid}/{lote}", plugin, list(retrofit["licoes"]), "publicado",
                          None, _short(detalhe), lote=lote)
     line.update(commit=_head(worktree), ramo=rw_store.branch_name(rid, lote, retrofit["tentativa"]),

@@ -446,7 +446,7 @@ def layer1(ctx, rid, worktree):
     """Os achados da camada 1 no que o ramo acrescenta, com a colheita feita agora (com o `cwd` do
     pedido.json), num arquivo só desta chamada. Saída do portão fora do formato é StoreError, nunca
     "nada achado" (C1)."""
-    pedido = rw_auto.load_pedido(rw_auto.retro_dir(ctx, rid) / "pedido.json")
+    pedido = rw_auto.retro_pedido(ctx, rid)
     extra = _private_harvest(ctx, pedido["cwd"])
     try:
         rc, out = _gate(worktree, "--camada1", "--extra", extra)

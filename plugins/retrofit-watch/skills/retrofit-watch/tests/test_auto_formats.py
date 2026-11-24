@@ -231,6 +231,26 @@ class TriageTest(Base):
         self.assertEqual([(d["item"], d["motivo"]) for d in got["segurar"]], [("r1/alfa#2", "sem-veredito")])
         self.assertEqual(got["lotes"], [{"lote": "alfa", "plugin": "alfa", "tipo": "auto", "licoes": [1]}])
 
+    def test_triage_refuses_a_file_of_another_retro(self):
+        # Item 7: cada arquivo da pasta da retro leva o `id` dela. O `id` de outra retro válida num só
+        # arquivo é Malformed, antes de gravar linha; senão um veredito alheio casaria lições pelo número.
+        self.retro("r2", [lesson(1), lesson(2, resolveu=None)], [parecer(1), parecer(2)])
+        for name in ("pedido.json", "licoes.json", "veredito.json"):
+            with self.subTest(arquivo=name):
+                # Cada subteste parte do registro vazio: o mutante de um leitor não reprova os outros.
+                (self.data / rw_auto.REGISTRY).unlink(missing_ok=True)
+                folder = self.retro("r1", [lesson(1), lesson(2, resolveu=None)], [parecer(1), parecer(2)])
+                data = json.loads((folder / name).read_text(encoding="utf-8"))
+                data["id"] = "r2"
+                (folder / name).write_text(json.dumps(data), encoding="utf-8")
+                with self.assertRaises(rw_auto.Malformed) as caught:
+                    rw_auto.triage(self.ctx(), "r1")
+                self.assertIn("outra retro", str(caught.exception))
+                self.assertIn(name, str(caught.exception))
+                self.assertEqual(self.registry_lines(), [])
+                self.assert_refused(self.cli("triage", "r1"), "outra retro")
+                self.assertEqual(self.registry_lines(), [])
+
     def test_triage_flow_closes_the_request(self):
         self.retro("r1", [lesson(1, resolveu=None)], [parecer(1)])
         rw_auto.triage(self.ctx(), "r1")

@@ -535,16 +535,53 @@ def load_pedido(path):
     return data
 
 
+def _numbered(path, spec, item_spec):
+    """(`id`, os itens de `licoes` por número) de um arquivo, numa leitura só."""
+    data = _fields(_read_json(path), spec, str(path))
+    return data["id"], _by_number(_items(data, "licoes", item_spec, str(path)), str(path))
+
+
 def load_licoes(path):
     """As lições de licoes.json, por número (`"1"`, `"2"`...), na ordem do arquivo."""
-    data = _fields(_read_json(path), LICOES_SPEC, str(path))
-    return _by_number(_items(data, "licoes", LICAO_SPEC, str(path)), str(path))
+    return _numbered(path, LICOES_SPEC, LICAO_SPEC)[1]
 
 
 def load_veredito(path):
     """Os pareceres de veredito.json, por número da lição."""
-    data = _fields(_read_json(path), VEREDITO_SPEC, str(path))
-    return _by_number(_items(data, "licoes", PARECER_SPEC, str(path)), str(path))
+    return _numbered(path, VEREDITO_SPEC, PARECER_SPEC)[1]
+
+
+# Os leitores da pasta da retro (item 7, C10): o `load_*` de cima e o `id` do arquivo igual ao da pasta.
+# Um veredito.json de outra retro casaria lições pelo número. Quem lê da pasta da retro usa estes; os
+# `load_*` ficam para o `_started` e os testes.
+
+def _own(path, got, rid):
+    if got != rid:
+        raise Malformed(f"{path}: e de outra retro (`id` {got!r}, nao {rid!r})")
+
+
+def retro_pedido(ctx, rid):
+    """O pedido.json da retro `rid`; com outro `id`, Malformed."""
+    path = retro_dir(ctx, rid) / "pedido.json"
+    data = load_pedido(path)
+    _own(path, data["id"], rid)
+    return data
+
+
+def retro_licoes(ctx, rid):
+    """As lições do licoes.json da retro `rid`, por número; com outro `id`, Malformed."""
+    path = retro_dir(ctx, rid) / "licoes.json"
+    got, licoes = _numbered(path, LICOES_SPEC, LICAO_SPEC)
+    _own(path, got, rid)
+    return licoes
+
+
+def retro_veredito(ctx, rid):
+    """Os pareceres do veredito.json da retro `rid`, por número; com outro `id`, Malformed."""
+    path = retro_dir(ctx, rid) / "veredito.json"
+    got, veredito = _numbered(path, VEREDITO_SPEC, PARECER_SPEC)
+    _own(path, got, rid)
+    return veredito
 
 
 def load_retrofit(path):
@@ -623,10 +660,9 @@ def _line(session, rid, item, plugin, licoes, resultado, motivo, detalhe="", lot
 
 def _plan(ctx, rid):
     """A triagem sem gravar nada: (pedido, lotes, segurar, descartar)."""
-    folder = retro_dir(ctx, rid)
-    pedido = load_pedido(folder / "pedido.json")
-    licoes = load_licoes(folder / "licoes.json")
-    veredito = load_veredito(folder / "veredito.json")
+    pedido = retro_pedido(ctx, rid)
+    licoes = retro_licoes(ctx, rid)
+    veredito = retro_veredito(ctx, rid)
     lotes, hold, drop = {}, [], []
     for key, licao in licoes.items():
         plugin, n = licao["plugin"], licao["n"]

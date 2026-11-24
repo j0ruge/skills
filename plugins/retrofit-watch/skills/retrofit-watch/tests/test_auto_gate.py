@@ -437,6 +437,18 @@ class GateTest(GateHarness, unittest.TestCase):
         path.write_text("{}", encoding="utf-8")
         self.assertRefuses(rid, "sem-veredito")
 
+    def test_gate_refuses_a_verdict_of_another_retro(self):
+        # Item 7: o veredito.json de outra retro, com todo parecer `procede`, casaria as lições pelo
+        # número. O `id` dele não é o da retro: a guarda 8 segura com `sem-veredito`.
+        rid, wt = self.clean_retrofit()
+        other = self.w.retro([{}], [{}])
+        source = rw_auto.retro_dir(self.ctx(), other) / "veredito.json"
+        self.assertEqual([p["procede"] for p in json.loads(source.read_text(encoding="utf-8"))["licoes"]],
+                         ["procede"])
+        shutil.copyfile(source, rw_auto.retro_dir(self.ctx(), rid) / "veredito.json")
+        got = self.assertRefuses(rid, "sem-veredito")
+        self.assertIn("outra retro", got[1])
+
     def test_approved_missing_verdict_holds_as_not_publishable(self):
         # I1: com `sem-veredito` aprovado e o veredito ainda ilegível, a porta segura com `nao-publicavel`
         # (que o dono pode aprovar), nunca levanta.
@@ -1208,6 +1220,21 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
         self.assertIn("Malformed", line["detalhe"])
         self.assertEqual(rw_auto.read_registry(self.ctx())[-1], line)
         self.assertEqual(fx.calls, [])
+
+    def test_gate_stops_on_lessons_of_another_retro(self):
+        # Item 7: o licoes.json com o `id` de outra retro válida para a porta antes do push, com `interno`.
+        rid, wt = self.clean_retrofit()
+        other = self.w.retro([{}], [{}])
+        path = rw_auto.retro_dir(self.ctx(), rid) / "licoes.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data["id"] = other
+        path.write_text(json.dumps(data), encoding="utf-8")
+        fx = self.effects()
+        line, rc = self.publish(rid, fx)
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (3, "erro", "interno"), line)
+        self.assertIn("outra retro", line["detalhe"])
+        self.assertEqual(fx.calls, [])
+        self.assertEqual(self.w.origin_main(), self.base)
 
     def test_unwritable_registry_never_raises(self):
         rid, wt = self.clean_retrofit()
