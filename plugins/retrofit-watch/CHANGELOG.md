@@ -12,7 +12,8 @@
     `/retrofit-skill <plugin> --auto <dir do lote>` num worktree próprio e termina no `seal`. O revisor
     confere o diff. A porta (`publish`) publica o commit ou o segura. Com `"mode": "auto-dry"`, o fluxo
     inteiro roda e a porta segura tudo antes do push: com o motivo `auto-dry` quando as outras guardas
-    passaram, senão com o motivo da guarda que reprovou. O padrão continua `manual`:
+    passaram, senão com o motivo da guarda que reprovou. O `auto-dry` é um motivo substituível: aprovar
+    um lote segurado por `auto-dry` o publica de verdade. O padrão continua `manual`:
     nele, um "sim" do dono e o `/retrofit-skill` assume, como antes.
   - **Por quê:** no modo manual, a melhoria de uma skill ainda dependia de o dono estar na conversa e
     dizer "sim". O modo autônomo tira esse passo e põe no lugar dele um revisor independente e uma porta
