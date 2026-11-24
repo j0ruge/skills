@@ -4,12 +4,15 @@ Leia esta página inteira antes de editar, quando o comando vier como
 `/retrofit-skill <plugin> --auto <dir do lote>`. Quem a lê é o executor que a `retrofit-watch` despacha.
 O dono não está nesta conversa. Ninguém responde pergunta: o que o veredito não decide fica fora do commit.
 
-Três nomes valem em toda a página:
+Estes nomes valem em toda a página e no comando:
 
 - `<dir do lote>` é o diretório do argumento. Lá está o `retrofit.json`. O `licoes.json` e o
   `veredito.json` estão na pasta-mãe.
 - `<worktree>` é a chave `worktree` do `retrofit.json`.
+- `<REPO>` do comando é o `<worktree>`. O PASSO 0 não procura o repo nem pergunta.
 - `$Q` é `<worktree>/plugins/skill-quality-audit/skills`, a família da auditoria no worktree.
+- `SQA=$Q/skill-quality-audit/scripts/audit_skill_quality.py`, o auditor que a porta roda.
+- `RS=<worktree>/plugins/retrofit-skill`, a pasta deste comando no worktree.
 
 O modo autônomo é o modo completo do comando, com as diferenças desta página. O modo enxuto não tem
 modo autônomo.

@@ -5,7 +5,8 @@ Só leitura de arquivos do próprio repositório: nenhum teste toca a rede, o gi
 Lidos aqui: o comando `commands/retrofit-skill.md`, a `references/modo-autonomo.md` (o que o executor
 do retrofit-watch lê), o `CHANGELOG.md`, o `plugin.json`, o `marketplace.json` e o `README.md` da loja.
 Quando a `retrofit-watch` está no mesmo repositório, os nomes das fases e os tetos saem do fonte dela
-(`rw_store.PHASES`, `rw_gate.SKILL_MAX_LINES`, `rw_gate.SKILL_MAX_CHARS`), sem importar os módulos.
+(`rw_store.PHASES`, `rw_gate.SKILL_MAX_LINES`, `rw_gate.SKILL_MAX_CHARS`), e o `SQA` da referência se
+compara com o `rw_gate.AUDITOR`, sem importar os módulos.
 """
 import ast
 import json
@@ -41,7 +42,18 @@ ANCHORS = (
     "no máximo 2 ciclos",
 )
 PROHIBITION = re.compile(r"\b(nunca|não|nenhum|nenhuma|sem)\b", re.I)
-PUBLISH = re.compile(r"git push|claude plugin")
+# Publicar é qualquer push (`git push`, `git -C <worktree> push`, "o push" em prosa) e qualquer `claude plugin`.
+PUBLISH = re.compile(r"\bpush\b|claude plugin", re.I)
+# Na frase de publicação, a negação vem antes do push; "sem" não conta ("push sem esperar a porta").
+NEGATION = re.compile(r"\b(nunca|não|nenhum|nenhuma)\b", re.I)
+# A outra forma aceita diz de quem é a publicação: "o push ... são da porta".
+GATE_OWNS = re.compile(r"\b(é|são) da porta\b")
+NAMES = (
+    "`<REPO>` do comando é o `<worktree>`. O PASSO 0 não procura o repo nem pergunta.",
+    "`RS=<worktree>/plugins/retrofit-skill`",
+)
+SQA_LINE = re.compile(r"`SQA=\$Q/([^`]+)`")
+Q_PREFIX = "plugins/skill-quality-audit/skills/"
 
 
 def read(path):
@@ -57,6 +69,17 @@ def sentences(text):
     """As frases do texto, com as quebras de linha e os marcadores de lista trocados por espaço."""
     flat = re.sub(r"\s*\n\s*(?:- )?", " ", text)
     return [s for s in re.split(r"(?<=[.:])\s+", flat) if s.strip()]
+
+
+def publish_offenders(text):
+    """As frases que falam de push ou de `claude plugin` sem proibir: nenhuma negação antes da primeira
+    menção, e a frase não diz que a coisa é da porta."""
+    out = []
+    for s in sentences(text):
+        hit = PUBLISH.search(s)
+        if hit and not NEGATION.search(s[:hit.start()]) and not GATE_OWNS.search(s):
+            out.append(s)
+    return out
 
 
 def list_items(text):
@@ -119,8 +142,8 @@ class CommandTest(unittest.TestCase):
     def test_command_routes_to_the_reference(self):
         text = read(COMMAND)
         self.assertTrue("--auto <dir do lote>" in text, "o comando não diz a sintaxe `--auto <dir do lote>`")
-        routes = [s for s in sentences(text) if "references/modo-autonomo.md" in s]
-        self.assertTrue(routes, "o comando não cita `references/modo-autonomo.md`")
+        routes = [s for s in sentences(text) if "`<worktree>/plugins/retrofit-skill/references/modo-autonomo.md`" in s]
+        self.assertTrue(routes, "o comando não cita a referência pelo caminho no worktree")
         self.assertTrue(any("antes de editar" in s.lower() for s in routes),
                         "a frase que cita a referência não diz quando ler (antes de editar)")
         body = section(text, "Modo autônomo")
@@ -130,7 +153,9 @@ class CommandTest(unittest.TestCase):
         for anchors, what in ((("Só vale no modo completo",), "só vale no modo completo"),
                               (("Exige", "retrofit.json", "veredito.json"), "exige os dois arquivos"),
                               (("veredito.json", "confirmação do passo 3"), "o veredito confirma"),
-                              (("para antes do push",), "o fluxo para antes do push")):
+                              (("para antes do push",), "o fluxo para antes do push"),
+                              (("`<REPO>` é o `worktree` do `retrofit.json`",), "`<REPO>` é o worktree"),
+                              (("o PASSO 0 não procura o repo nem pergunta",), "o PASSO 0 não procura")):
             self.assertTrue(any(all(a in s for a in anchors) for s in said),
                             f"a seção *Modo autônomo* não diz que {what}")
 
@@ -187,9 +212,40 @@ class ReferenceTest(unittest.TestCase):
                          source_constant(WATCH_SCRIPTS / "rw_gate.py", "SKILL_MAX_CHARS"))
 
     def test_reference_never_says_publish(self):
-        for line in read(REFERENCE).splitlines():
-            if PUBLISH.search(line):
-                self.assertRegex(line, PROHIBITION, f"publicação fora de uma proibição: {line!r}")
+        self.assertEqual(publish_offenders(read(REFERENCE)), [], "publicação fora de uma proibição")
+
+    def test_publish_check_catches_the_sabotaged_lines(self):
+        target = "origin HEAD:" + "main"
+        sabotaged = (
+            f"Depois, rode `git -C <worktree> push {target}`.",
+            f"Rode `git push {target}` sem esperar a porta.",
+            "Faça o push para o origin/main.",
+            f"Rode `git push {target}`, não espere.",
+            f"Sem esperar a porta, rode `git push {target}`.",
+            "Rode `claude plugin update` no fim.",
+        )
+        for line in sabotaged:
+            self.assertEqual(publish_offenders(line), [line], f"o cheque deixou passar: {line!r}")
+        allowed = (
+            "Não faça nenhum push e não rode nenhum comando `claude plugin`.",
+            "O push e a atualização da loja são da porta.",
+        )
+        for line in allowed:
+            self.assertEqual(publish_offenders(line), [], f"o cheque recusou uma proibição: {line!r}")
+
+    def test_reference_names_repo_sqa_and_rs(self):
+        text = read(REFERENCE)
+        for name in NAMES:
+            self.assertIn(name, text, f"a lista de nomes não tem {name!r}")
+        sqa = SQA_LINE.search(text)
+        self.assertTrue(sqa, "a lista de nomes não tem o `SQA`")
+        path = Q_PREFIX + sqa.group(1)
+        self.assertTrue((STORE_ROOT / path).is_file(), f"o `SQA` não existe no repositório: {path}")
+        if not WATCH_SCRIPTS.is_dir():
+            self.skipTest("retrofit-watch fora deste repositório")
+        gate = re.search(r'^AUDITOR = Path\("([^"]+)"\)', read(WATCH_SCRIPTS / "rw_gate.py"), re.M)
+        self.assertTrue(gate, "AUDITOR ausente de rw_gate.py")
+        self.assertEqual(path, gate.group(1), "o `SQA` da referência não é o auditor que a porta roda")
 
 
 class VersionTest(unittest.TestCase):

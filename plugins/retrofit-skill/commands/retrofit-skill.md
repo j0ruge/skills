@@ -94,8 +94,9 @@ O dono não está na conversa.
   pare antes de editar.
 - O `veredito.json` faz o papel da confirmação do passo 3.
 - O fluxo para antes do push. O push e a atualização da loja são da porta da `retrofit-watch`.
-- Leia `$RS/references/modo-autonomo.md` antes de editar. Ela diz o escopo, as fases da auditoria,
-  o commit, o `seal` e o relatório.
+- `<REPO>` é o `worktree` do `retrofit.json`: o PASSO 0 não procura o repo nem pergunta.
+- Leia `<worktree>/plugins/retrofit-skill/references/modo-autonomo.md` antes de editar. Ela diz o
+  escopo, os nomes `SQA` e `RS`, as fases da auditoria, o commit, o `seal` e o relatório.
 
 ## Localizar o auditor e os scripts deste comando
 
