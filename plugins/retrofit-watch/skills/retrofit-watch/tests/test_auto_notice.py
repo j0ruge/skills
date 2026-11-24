@@ -462,6 +462,24 @@ class CriterionTest(NoticeHarness, unittest.TestCase):
         # O worktree do clone da loja não mudou: o nome só está no origin/main.
         self.assertFalse((self.w.store / NOTE.format(1)).exists())
 
+    def test_owner_attributes_do_not_hide_a_leak(self):
+        """Final-F5: o arquivo global de atributos do dono (`~/.config/git/attributes`) com `export-ignore`
+        sobre a nota do vazamento. O archive do `_leaks` é o do `clean_tree`, e a nota continua na conta."""
+        self.autos(10)
+        name = invented("vexp")
+        listed = (self.w.other / "scripts/private-names.sha256").read_text(encoding="utf-8")
+        self.commit("chore: um nome na lista", self.t0 + 3600,
+                    {"scripts/private-names.sha256": listed + _cpn().resumo(name) + "\n"})
+        self.commit("docs(demo): nota", self.t0 + 7200, {NOTE.format(1): f"nota de {name}\n"})
+        self.fetch()
+        owner = self.w.tmp / "dono"
+        (owner / ".config/git").mkdir(parents=True)
+        (owner / ".config/git/attributes").write_text(Path(NOTE.format(1)).name + " export-ignore\n",
+                                                      encoding="utf-8")
+        with mock.patch.dict(os.environ, HOME=str(owner), XDG_CONFIG_HOME=str(owner / ".config")):
+            got = self.criterion(self.t0 + 15 * DAY)
+        self.assertEqual((got["vazados"], got["cumprido"]), (1, False))
+
     def test_a_leaked_name_in_a_touched_symlink_counts(self):
         """O blob de um link simbólico é o caminho do alvo, e o sensor o lê."""
         self.autos(10)

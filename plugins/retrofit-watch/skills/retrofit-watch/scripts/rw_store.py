@@ -672,11 +672,11 @@ class StartupTimeout(StoreError):
     """O git do critério estourou o teto do startup (rc 124)."""
 
 
-def _startup_git(store, args, what):
-    """A saída em bytes do git da loja, com o teto do startup, sem config nenhuma; StartupTimeout com rc 124,
-    StoreError com outro rc != 0."""
+def _startup_git(store, args, what, env=None):
+    """A saída em bytes do git da loja, com o teto do startup, sem config nenhuma (ou com `env`, um ambiente
+    também neutro); StartupTimeout com rc 124, StoreError com outro rc != 0."""
     rc, out = run_bytes(["git", "--literal-pathspecs", "-C", str(store), *args], timeout=STARTUP_TIMEOUT,
-                        env=git_env(neutral=True))
+                        env=git_env(neutral=True) if env is None else env)
     if rc == 124:
         raise StartupTimeout(f"{what}: git {' '.join(args[:2])} passou de {STARTUP_TIMEOUT} s")
     if rc != 0:
@@ -713,7 +713,9 @@ def _load_name_check(folder):
 def _leaks(store, head, shas):
     """Os achados do sensor de nomes (o `varrer` do check-private-names.py, com a lista de hashes, os dois
     do `head`) nos arquivos que os commits `shas` tocaram, como estão no `head`. Os arquivos saem do
-    `git archive` para uma pasta temporária, que o `varrer` lê sem o git (ela não tem `.git`)."""
+    `git archive` para uma pasta temporária, que o `varrer` lê sem o git (ela não tem `.git`). O archive é
+    o do `clean_tree` (ARCHIVE e `archive_env()`): um `export-ignore` nos atributos global ou de sistema
+    tiraria o arquivo do vazamento da contagem (Final-F5)."""
     names = _decode(_startup_git(store, ["-c", "core.quotePath=false", "show", "--name-only", "--no-renames",
                                          "--format=", "-z", *shas], "criterio"))
     touched = sorted({n.lstrip("\n") for n in names.split("\0")} - {""})
@@ -722,8 +724,8 @@ def _leaks(store, head, shas):
         listed = _decode(_startup_git(store, ["ls-tree", "-r", "-z", "--name-only", head, "--", *touched],
                                       "criterio"))
         present = [n for n in listed.split("\0") if n]
-    raw = _startup_git(store, ["archive", "--format=tar", head, "--", NAME_CHECK, PRIVATE_LIST, *present],
-                       "criterio")
+    raw = _startup_git(store, [*ARCHIVE, head, "--", NAME_CHECK, PRIVATE_LIST, *present], "criterio",
+                       env=archive_env())
     wanted = set(present)
     with tempfile.TemporaryDirectory(prefix="rw-criterio-") as tmp:
         tree, tool = Path(tmp) / "arvore", Path(tmp) / "sensor"
