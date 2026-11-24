@@ -307,6 +307,14 @@ def _g_scope(p):
     return None
 
 
+def _attributes_name(path):
+    """True quando o último componente de `path` abre como `.gitattributes` num clone da loja (Final-F6):
+    no NTFS e no APFS a caixa não conta, o Windows tira o ponto e o espaço do fim, e o nome curto 8.3
+    (`GITATT~1`) aponta para o mesmo arquivo."""
+    name = path.rsplit("/", 1)[-1].casefold().rstrip(". ")
+    return name == ".gitattributes" or name.startswith("gitatt~")
+
+
 def _g_opaque(p):
     """5b. Nada que as camadas não leem (item 12, C4 e C5). As camadas 1 e 2 leem o diff como UTF-8 com
     `replace`: um blob com NUL ou fora do UTF-8, um caminho que não é arquivo regular (link simbólico,
@@ -315,7 +323,7 @@ def _g_opaque(p):
     em qualquer pasta, também quando o ramo o tira; os outros testes leem o blob do `p.head`, em bytes e no
     ambiente neutro, e pulam o caminho que o ramo só tira."""
     paths = p.names()
-    found = [f"{x} (.gitattributes)" for x in paths if x.rsplit("/", 1)[-1] == ".gitattributes"]
+    found = [f"{x} (.gitattributes)" for x in paths if _attributes_name(x)]
     wanted = set(paths)
     listing = rw_store._git(["ls-tree", "-r", "-z", "--full-tree", p.head], p.worktree, p.neutral, "porta")
     for entry in listing.split("\0"):

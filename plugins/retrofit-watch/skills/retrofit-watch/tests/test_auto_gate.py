@@ -363,6 +363,37 @@ class GateTest(GateHarness, unittest.TestCase):
                 got = self.assertRefuses(rid, "escopo")
                 self.assertIn(rel, got[1])
 
+    def test_attributes_under_another_spelling_are_held(self):
+        # Final-F6 (C5): no NTFS e no APFS estes nomes abrem como `.gitattributes`, e chegam assim aos
+        # clones da loja: a caixa, o ponto do fim e o nome curto 8.3. Qualquer um segura com `escopo`.
+        cases = {
+            "caixa": "plugins/demo/.Git" + "Attributes",
+            "ponto": "plugins/demo/.gitattributes" + ".",
+            "curto": "plugins/demo/GIT" + "ATT~1",
+        }
+        for label, rel in cases.items():
+            with self.subTest(label=label):
+                rid, wt = self.clean_retrofit(edit=lambda wt, rel=rel: (wt / rel).write_text("*.md text\n",
+                                                                                          encoding="utf-8"))
+                got = self.assertRefuses(rid, "escopo")
+                self.assertIn(rel + " (.gitattributes)", got[1])
+
+    def test_attributes_removed_by_the_branch_are_held(self):
+        # Final-F3 (C5): o `.gitattributes` conta também quando o ramo o tira. Ele não está no `p.head`, e
+        # a guarda não pode depender do `ls-tree` dele.
+        rel = "plugins/demo/.gitattributes"
+
+        def seed(root):
+            (root / rel).write_text("*.md text\n", encoding="utf-8")
+        self.push_origin(seed, "chore(demo): atributos")
+        rid, wt = self.clean_retrofit(edit=lambda wt: (wt / rel).unlink())
+        p = rg._Porta(self.ctx(), rid, "demo", [])
+        self.assertIsNone(rg._g_rebase(p))
+        self.assertIn(rel, p.names())
+        self.assertNotIn(rel, self.w.git(wt, "ls-tree", "-r", "--name-only", "HEAD").splitlines())
+        got = self.assertRefuses(rid, "escopo")
+        self.assertIn(rel + " (.gitattributes)", got[1])
+
     def test_plain_text_passes_the_content_guard(self):
         # Um arquivo novo com acento no nome e no conteúdo, em UTF-8, e um arquivo do plugin que o lote tira:
         # o apagado não tem blob, e a guarda o pula.
