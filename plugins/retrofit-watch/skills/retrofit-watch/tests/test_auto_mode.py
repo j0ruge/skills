@@ -10,12 +10,14 @@ import sys
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from test_retrofit_watch import (  # noqa: E402
     SCRIPT, WINDOWS_STDIO, HookHarness, World, commit_all, init_repo, make_skill, skill_typed,
     skill_via_tool, tool, with_entrypoint)
+from test_auto_formats import lesson, parecer, pedido  # noqa: E402
 
 sys.path.insert(0, str(SCRIPT.parent))
 import retrofit_watch as rw  # noqa: E402
@@ -358,6 +360,20 @@ class AutoStopTest(HookHarness, unittest.TestCase):
         self.assertEqual(len(log), 1)
         self.assertIn("rw_auto quebrado", log[0])
 
+    def test_unreadable_registry_keeps_the_hook_manual(self):
+        # O registro ilegível não vale como vazio: zeraria o teto da sessão e abriria um pedido autônomo.
+        self.auto_on()
+        self.work()
+        (self.w.data / rw_auto.REGISTRY).mkdir(parents=True)
+        out = self.run_hook(mode=BYPASS)
+        self.assertNotIn("[modo autônomo", self.context_of(out))
+        self.assertEqual(out, self.today())
+        self.assertEqual(self.pedidos(), [])
+        log = (self.w.data / "errors.log").read_text().splitlines()
+        self.assertEqual(len(log), 1)
+        self.assertIn("Malformed", log[0])
+        self.assertIn("registro ilegivel", log[0])
+
     def test_auto_text_stays_ascii_on_cp1252_stdout(self):
         self.auto_on()
         self.work()
@@ -454,6 +470,53 @@ class AutoUnitTest(unittest.TestCase):
         path.parent.mkdir(parents=True)
         path.write_text(json.dumps({"id": "r1", "licoes": [{"n": 1}, {"n": 2}]}))
         self.assertTrue(rw_auto.flow_finished(ctx, {"id": "r1"}))
+
+    def test_unreadable_registry_is_malformed_not_empty(self):
+        ctx = self.w.ctx()
+        path = self.w.data / rw_auto.REGISTRY
+        self.assertEqual(rw_auto.read_registry(ctx), [], "sem o arquivo, o registro é vazio")
+        with self.subTest("pasta"):
+            path.mkdir(parents=True)
+            try:
+                with self.assertRaises(rw_auto.Malformed) as caught:
+                    rw_auto.read_registry(ctx)
+                self.assertIn("registro ilegivel", str(caught.exception))
+                self.assertIn(str(path), str(caught.exception))
+            finally:
+                path.rmdir()
+        with self.subTest("sem permissão"):
+            rw_auto.append_registry(ctx, {"id": "r1", "item": "r1/codereview"})
+            real = Path.read_bytes
+
+            def denied(self_path):
+                if self_path == path:
+                    raise PermissionError(13, "Permission denied", str(self_path))
+                return real(self_path)
+
+            with mock.patch.object(Path, "read_bytes", denied):
+                with self.assertRaises(rw_auto.Malformed) as caught:
+                    rw_auto.read_registry(ctx)
+            self.assertIn("registro ilegivel", str(caught.exception))
+            self.assertIn(str(path), str(caught.exception))
+
+    def test_line_after_a_torn_line_is_kept(self):
+        # A gravação anterior caiu no meio da linha: a próxima não pode colar nela.
+        ctx = self.w.ctx()
+        self.w.data.mkdir(parents=True, exist_ok=True)
+        (self.w.data / rw_auto.REGISTRY).write_bytes(b'{"item": "x", "resul')
+        first = rw_auto.append_registry(ctx, {"id": "r0", "item": "r0/codereview"})
+        folder = self.w.data / "auto/r1"
+        folder.mkdir(parents=True)
+        (folder / "pedido.json").write_text(json.dumps(pedido("r1", "alfa")))
+        (folder / "licoes.json").write_text(json.dumps({"id": "r1", "licoes": [lesson(1, resolveu=None)]}))
+        (folder / "veredito.json").write_text(json.dumps({"id": "r1", "base": "abc", "licoes": [parecer(1)]}))
+        with open(self.w.data / rw_auto.REGISTRY, "ab") as fh:
+            fh.write(b'{"item": "y", "resul')
+        got = rw_auto.triage(ctx, "r1")
+        self.assertEqual([x["item"] for x in got["segurar"]], ["r1/alfa#1"])
+        lines = rw_auto.read_registry(ctx)
+        self.assertEqual([x.get("item") for x in lines], ["r0/codereview", "r1/alfa#1"])
+        self.assertEqual(lines[0], first)
 
     def test_config_rejects_bool_limits_and_non_list_paths(self):
         self.config(auto_limits={"per_skill": True, "per_session": False},

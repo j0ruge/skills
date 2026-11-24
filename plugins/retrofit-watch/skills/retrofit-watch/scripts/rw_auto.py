@@ -79,11 +79,16 @@ def read_registry(ctx):
     """As linhas de autonomo.jsonl. Linha ilegível, ou que não é objeto, é pulada.
 
     Cada linha se decodifica sozinha: o registro só cresce, e uma linha com um caractere de vários
-    bytes cortado no meio (gravação interrompida) derrubaria a leitura do arquivo inteiro."""
+    bytes cortado no meio (gravação interrompida) derrubaria a leitura do arquivo inteiro.
+    Só o arquivo ausente é registro vazio. Qualquer outra falha de leitura é Malformed: lido como vazio,
+    ele zeraria o teto da sessão, a deduplicação da triagem, os avisos e o fechamento do fluxo."""
+    path = ctx.data_dir / REGISTRY
     try:
-        lines = (ctx.data_dir / REGISTRY).read_bytes().split(b"\n")
-    except OSError:
+        lines = path.read_bytes().split(b"\n")
+    except FileNotFoundError:
         return []
+    except OSError as exc:
+        raise Malformed(f"{path}: registro ilegivel ({exc.strerror or exc})") from None
     out = []
     for line in lines:
         if not line.strip():
@@ -97,16 +102,35 @@ def read_registry(ctx):
     return out
 
 
-def append_registry(ctx, line):
-    """Acrescenta uma linha ao registro, com `ts`, sob a trava. Devolve a linha gravada."""
+def _append(ctx, entries):
+    """A única função que escreve no registro. Sob a trava, acrescenta as linhas de `entries`: uma lista
+    de objetos, ou uma função que recebe o registro lido sob a mesma trava e devolve a lista.
+
+    Uma gravação interrompida deixa a última linha sem `\\n`. A linha nova colaria nela, e as duas se
+    perderiam juntas na leitura. Por isso, com o arquivo não vazio e sem `\\n` no fim, grava `\\n` antes."""
     ctx.data_dir.mkdir(parents=True, exist_ok=True)
-    written = dict(line, ts=int(time.time()))
     lock = rw._lock(ctx.data_dir / REGISTRY_LOCK)
     try:
-        with open(ctx.data_dir / REGISTRY, "a", encoding="utf-8") as fh:
-            fh.write(json.dumps(written, ensure_ascii=False) + "\n")
+        if callable(entries):
+            entries = entries(read_registry(ctx))
+        if not entries:
+            return
+        data = b"".join(json.dumps(entry, ensure_ascii=False).encode("utf-8") + b"\n" for entry in entries)
+        with open(ctx.data_dir / REGISTRY, "a+b") as fh:
+            fh.seek(0, os.SEEK_END)
+            if fh.tell() > 0:
+                fh.seek(-1, os.SEEK_END)
+                if fh.read(1) != b"\n":
+                    data = b"\n" + data
+            fh.write(data)
     finally:
         rw._unlock(lock)
+
+
+def append_registry(ctx, line):
+    """Acrescenta uma linha ao registro, com `ts`, sob a trava. Devolve a linha gravada."""
+    written = dict(line, ts=int(time.time()))
+    _append(ctx, [written])
     return written
 
 
@@ -625,17 +649,13 @@ def _plan(ctx, rid):
 
 def _append_new(ctx, lines):
     """Acrescenta, sob uma trava só, as linhas cujo `item` ainda não tem linha no registro."""
-    ctx.data_dir.mkdir(parents=True, exist_ok=True)
-    lock = rw._lock(ctx.data_dir / REGISTRY_LOCK)
-    try:
-        seen = {entry.get("item") for entry in read_registry(ctx)}
-        now = int(time.time())
-        with open(ctx.data_dir / REGISTRY, "a", encoding="utf-8") as fh:
-            for entry in lines:
-                if entry["item"] not in seen:
-                    fh.write(json.dumps(dict(entry, ts=now), ensure_ascii=False) + "\n")
-    finally:
-        rw._unlock(lock)
+    now = int(time.time())
+
+    def fresh(registry):
+        seen = {entry.get("item") for entry in registry}
+        return [dict(entry, ts=now) for entry in lines if entry["item"] not in seen]
+
+    _append(ctx, fresh)
 
 
 def triage(ctx, rid):
