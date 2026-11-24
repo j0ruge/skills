@@ -434,6 +434,53 @@ class CriterionTest(NoticeHarness, unittest.TestCase):
                 (self.w.data / "criterio.json").write_text(broken, encoding="utf-8")
                 self.assertEqual(self.criterion(self.t0 + 14 * DAY + 30), third)
 
+    def test_criterion_timeout_is_cached_by_sha(self):
+        """C9: o `git log` que estoura os 3 s grava {sha, estouro}; o mesmo sha não paga o teto de novo
+        por 24 h, e o `origin/main` que anda mede de novo."""
+        self.autos(10)
+        self.fetch()
+        real = rw_store.run_bytes
+        state = {"slow": True}
+
+        def slow_log(cmd, *args, **kwargs):
+            if state["slow"] and "log" in map(str, cmd):
+                return 124, b""
+            return real(cmd, *args, **kwargs)
+
+        def logs(spy):
+            return [c for c in spy.call_args_list if "log" in map(str, c.args[0])]
+
+        now = self.t0 + 15 * DAY
+        head = self.w.git(self.w.store, "rev-parse", "origin/main")
+        with mock.patch.object(rw_store, "run_bytes", side_effect=slow_log) as spy:
+            with self.assertRaises(rw_store.StartupTimeout):
+                self.criterion(now)
+            cache = json.loads((self.w.data / "criterio.json").read_text(encoding="utf-8"))
+            self.assertEqual(cache, {"sha": head, "estouro": now})
+            self.assertEqual(len(logs(spy)), 1)
+            # O mesmo sha, 60 s depois: None, sem `git log`.
+            self.assertIsNone(self.criterion(now + 60))
+            self.assertEqual(len(logs(spy)), 1, "o cache negativo não poupou o git log")
+            # Pelo aviso de startup: a linha sai sem o segmento do critério, e o errors.log não cresce.
+            self.queue_one()
+            before = self.errors()
+            self.assertEqual(self.pending(now=now + 120), TODAY)
+            self.assertEqual(self.errors(), before)
+            self.assertEqual(len(logs(spy)), 1)
+            # 24 h e 1 s depois do estouro: o critério mede de novo.
+            later = now + rw_store.CRITERION_RETRY + 1
+            self.assertEqual(rw_store.CRITERION_RETRY, 86400)
+            with self.assertRaises(rw_store.StartupTimeout):
+                self.criterion(later)
+            self.assertEqual(len(logs(spy)), 2, "o prazo de 24 h não reabriu a medida")
+            # O origin/main anda, sem estouro: o dicionário do critério.
+            state["slow"] = False
+            self.autos(1, start=self.t0 + 3600)
+            self.fetch()
+            got = self.criterion(later + 60)
+            self.assertEqual(len(logs(spy)), 3)
+        self.assertEqual((got["publicados"], got["cumprido"]), (11, True), "o sha novo não mediu de novo")
+
 
 if __name__ == "__main__":
     unittest.main()

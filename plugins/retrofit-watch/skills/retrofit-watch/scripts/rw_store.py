@@ -551,6 +551,8 @@ V2_MIN_DAYS = 14
 DAY = 86400
 STARTUP_TIMEOUT = 3
 CRITERION_FILE = "criterio.json"
+# C9: o estouro do teto fica em cache por sha do `origin/main`, por 24 h; depois o critério mede de novo.
+CRITERION_RETRY = 86400
 MARKER = "Retrofit-Mode"
 AUTONOMOUS = "autonomous"
 REVERTS = re.compile(r"This reverts commit ([0-9a-f]{7,40})")
@@ -560,10 +562,17 @@ PRIVATE_LIST = LIST_FILES[1]
 LOG_FORMAT = f"%H%x1f%ct%x1f%cs%x1f%(trailers:key={MARKER},valueonly,separator=%x1d)%x1f%B%x1e"
 
 
+class StartupTimeout(StoreError):
+    """O git do critério estourou o teto do startup (rc 124)."""
+
+
 def _startup_git(store, args, what):
-    """A saída em bytes do git da loja, com o teto do startup, sem config nenhuma; StoreError com rc != 0."""
+    """A saída em bytes do git da loja, com o teto do startup, sem config nenhuma; StartupTimeout com rc 124,
+    StoreError com outro rc != 0."""
     rc, out = run_bytes(["git", "--literal-pathspecs", "-C", str(store), *args], timeout=STARTUP_TIMEOUT,
                         env=git_env(neutral=True))
+    if rc == 124:
+        raise StartupTimeout(f"{what}: git {' '.join(args[:2])} passou de {STARTUP_TIMEOUT} s")
     if rc != 0:
         raise StoreError(f"{what}: git {' '.join(args[:2])} saiu {rc}: {_decode(out).strip()[:500]}")
     return out
@@ -650,28 +659,51 @@ def _cached(ctx, head):
     return data
 
 
+def _timed_out(ctx, head, now):
+    """True quando <dados>/criterio.json é o estouro do `head`, {sha, estouro}, com menos de 24 h."""
+    try:
+        data = json.loads((ctx.data_dir / CRITERION_FILE).read_bytes().decode("utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not isinstance(data, dict) or set(data) != {"sha", "estouro"} or data["sha"] != head:
+        return False
+    when = data["estouro"]
+    if isinstance(when, bool) or not isinstance(when, (int, float)):
+        return False
+    return now - when < CRITERION_RETRY
+
+
 def criterion(ctx, now=None):
     """O critério da v2 (spec 5.9): {publicados, dias, revertidos, vazados, desde, cumprido}, ou None sem
     loja. `vazados` é None até os dois pisos passarem. O cache, em <dados>/criterio.json por sha do
     `origin/main`, guarda os commits e o que sai deles; `dias` e `cumprido` se refazem a cada chamada,
-    contra `now` (M1)."""
+    contra `now` (M1). O `git log` ou o `_leaks` que estoura o teto grava {sha, estouro} e deixa o
+    StartupTimeout subir; com essa forma do mesmo sha e menos de 24 h, devolve None sem chamar o git log
+    (C9). O estouro do `rev-parse` não grava nada: ainda não há sha."""
     store = ctx.store
     if store is None:
         return None
     now = time.time() if now is None else now
     head = _decode(_startup_git(store, ["rev-parse", "--verify", f"{BASE_REF}^{{commit}}"], "criterio")).strip()
+    if _timed_out(ctx, head, now):
+        return None
     data = _cached(ctx, head)
     changed = data is None
-    if changed:
-        commits, reverted = _autonomous(store, head)
-        data = {"sha": head, "commits": commits, "revertidos": reverted, "vazados": None}
-    commits = data["commits"]
-    first = min(commits, key=lambda c: c[1]) if commits else None
-    days = max(0, int((now - first[1]) // DAY)) if first else 0
-    floors = len(commits) >= V2_MIN_PUBLISHED and days >= V2_MIN_DAYS
-    if floors and data["vazados"] is None:
-        data["vazados"] = _leaks(store, head, [c[0] for c in commits])
-        changed = True
+    try:
+        if changed:
+            commits, reverted = _autonomous(store, head)
+            data = {"sha": head, "commits": commits, "revertidos": reverted, "vazados": None}
+        commits = data["commits"]
+        first = min(commits, key=lambda c: c[1]) if commits else None
+        days = max(0, int((now - first[1]) // DAY)) if first else 0
+        floors = len(commits) >= V2_MIN_PUBLISHED and days >= V2_MIN_DAYS
+        if floors and data["vazados"] is None:
+            data["vazados"] = _leaks(store, head, [c[0] for c in commits])
+            changed = True
+    except StartupTimeout:
+        ctx.data_dir.mkdir(parents=True, exist_ok=True)
+        rw_auto._write_json(ctx.data_dir / CRITERION_FILE, {"sha": head, "estouro": now})
+        raise
     if changed:
         ctx.data_dir.mkdir(parents=True, exist_ok=True)
         rw_auto._write_json(ctx.data_dir / CRITERION_FILE, data)
