@@ -142,6 +142,13 @@ class Padroes(Base):
         real = 'fulano.silva' + '@' + 'gmail' + '.com'
         self.assertEqual(self.linha('redis' + '://' + ':' + '$P' + '@' + real), [('doc.md', 'email')])
 
+    def test_email_colado_antes_do_esquema_de_modelo_e_achado(self):
+        real = 'fulano.silva' + '@' + 'gmail' + '.com'
+        for cola in ('://', '+redis' + '://'):
+            with self.subTest(cola=cola):
+                self.setUp()
+                self.assertEqual(self.linha(real + cola + ':' + '$P' + '@' + 'host'), [('doc.md', 'email')])
+
     def test_caminho_com_usuario_e_achado(self):
         usuario = 'ful' + 'ano'
         for forma in (f'/home/{usuario}/x', f'/Users/{usuario}/x',
@@ -181,6 +188,10 @@ class Padroes(Base):
         casos += ['redis' + '://' + ':' + 'senha9' + '@' + 'localhost:6379',
                   'postgres' + '://' + '<usuario>' + ':' + 'senha9' + '@' + 'host/db',
                   'https' + '://' + 'user' + ':' + 'pass' + '@' + 'host']
+        casos += [colado + 'postgres' + '://' + 'app' + ':' + 'Real9pass' + '@' + 'localhost/db'
+                  for colado in ('+', '-', '.', '1')]
+        casos += ['postgres' + '://' + 'app' + ':' + senha + '@' + 'localhost/db'
+                  for senha in ('%Real9pass%', '{{a}}' + 'Real9' + '{{b}}')]
         self.assertEqual(len(letras_digitos), 33)
         self.assertEqual(len(corpo + 'ghij'), 16)
         for caso in casos:
@@ -202,7 +213,10 @@ class Padroes(Base):
                  'redis' + '://' + ':' + '${REDIS_PASSWORD}' + '@' + 'host',
                  'redis' + '://' + ':' + '$REDIS_PASSWORD' + '@' + 'db.exemplo.org:6379',
                  'postgres' + '://' + 'app' + ':' + '%DB_PASS%' + '@' + 'host/db',
-                 'postgres' + '://' + 'app' + ':' + '{senha}' + '@' + 'host/db']
+                 'postgres' + '://' + 'app' + ':' + '{senha}' + '@' + 'host/db',
+                 'postgres' + '://' + 'app' + ':' + '{{.Password}}' + '@' + 'host/db',
+                 'postgres' + '://' + '<user>' + ':' + '<password>' + '@' + 'host.exemplo.org/db',
+                 'postgres' + '://' + 'app' + ':' + '%DB_PASS%' + '@' + 'db.exemplo.org/db']
         self.assertEqual(len('a1b2c3d4e5f6g7h'), 15)
         for caso in casos:
             with self.subTest(caso=caso):

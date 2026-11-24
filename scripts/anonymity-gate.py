@@ -60,11 +60,13 @@ PREFIXOS = re.compile(_FRONTEIRA + r'(?:sk-|ghp_|xox[bpars]-|AKIA)[A-Za-z0-9_-]{
 CABECALHO_HTTP = re.compile(_FRONTEIRA + r'(?:Bearer|Basic) (\S{16,})')
 # Qualquer esquema, sem lista e sem caixa (HTTPS, ftp, git+ssh, o postgresql de jdbc:postgresql, sufixo de
 # driver), seguido de usuário e senha antes do @. O usuário pode ser vazio, só a senha entre os dois-pontos
-# e o @ (a forma usual do redis). Grupo 1: usuário; grupo 2: senha.
-CONEXAO = re.compile(r'(?<![A-Za-z0-9+.-])[A-Za-z][A-Za-z0-9+.-]*://([^\s/:@]*):([^\s/@]+)@')
-# Senha de modelo, nas formas estreitas: <...>, ${...}, {...}, $NOME em maiúsculas e %NOME%. Uma senha que só
-# começa com $ ou % (%21abc, $x7Kp) é literal.
-SENHA_MODELO = re.compile(r'<[^>]*>|\$\{[^}]*\}|\{[^}]*\}|\$[A-Z_][A-Z0-9_]*|%[A-Za-z_][A-Za-z0-9_]*%')
+# e o @ (a forma usual do redis). Grupo 1: usuário; grupo 2: senha. Sem fronteira à esquerda: com esquema
+# genérico ela não evita falso positivo e deixava passar o esquema colado a um sinal, ponto ou dígito (a linha
+# de um bloco de diff). O achado começa na primeira letra do esquema.
+CONEXAO = re.compile(r'[A-Za-z][A-Za-z0-9+.-]*://([^\s/:@]*):([^\s/@]+)@')
+# Senha de modelo, nas formas estreitas: <...>, ${...}, {{...}} e {...} sem chave dentro, $NOME e %NOME% só em
+# maiúsculas. Uma senha que só começa com $ ou % (%21abc, $x7Kp), ou com minúscula entre os dois %, é literal.
+SENHA_MODELO = re.compile(r'<[^>]*>|\$\{[^}]*\}|\{\{[^{}]*\}\}|\{[^}]*\}|\$[A-Z_][A-Z0-9_]*|%[A-Z_][A-Z0-9_]*%')
 LONGA = re.compile(r'(?<![A-Za-z0-9])[A-Za-z0-9]{32,}(?![A-Za-z0-9])')
 SHA_DE_COMMIT = re.compile(r'[0-9a-fA-F]{40}')
 
@@ -169,17 +171,17 @@ def linhas_novas(repo, base):
 
 
 def _conexoes(texto):
-    """[(span, isenta)] de cada connection string com credencial. É isenta a de modelo (SENHA_MODELO).
+    """[(span, início da senha, isenta)] de cada connection string com credencial. É isenta a de modelo (SENHA_MODELO).
 
     Só a senha decide: um usuário de modelo com a senha literal (<usuario>:hunter2@) continua achado.
     """
-    return [(m.span(), bool(SENHA_MODELO.fullmatch(m.group(2)))) for m in CONEXAO.finditer(texto)]
+    return [(m.span(), m.start(2), bool(SENHA_MODELO.fullmatch(m.group(2)))) for m in CONEXAO.finditer(texto)]
 
 
 def _segredos(texto):
     """Os trechos com forma de segredo. Uma sequência longa dentro de um prefixo já achado não conta de novo."""
     achados = [m.span() for m in PREFIXOS.finditer(texto)]
-    achados += [span for span, isenta in _conexoes(texto) if not isenta]
+    achados += [span for span, _, isenta in _conexoes(texto) if not isenta]
     for m in CABECALHO_HTTP.finditer(texto):
         if re.search(r'[0-9]', m.group(1)):
             achados.append(m.span())
@@ -204,12 +206,13 @@ def _achados_da_linha(onde, texto, hashes, extras, publicos):
             achados.append(('lista', trecho))
         elif forma in extras:
             achados.append(('colheita', trecho))
-    # A senha de modelo seguida do @ e do host de um modelo de conexão não é endereço: o modelo vira espaço
-    # antes de buscar o e-mail, e um endereço real logo depois dele continua inteiro.
+    # A senha de modelo seguida do @ e do host de um modelo de conexão não é endereço: a senha e o @ viram
+    # espaço antes de buscar o e-mail. Só eles: o esquema fica, porque a classe dele engole o domínio de um
+    # endereço real colado antes, e o endereço real logo depois do @ continua inteiro.
     sem_modelos = texto
-    for (a, b), isenta in _conexoes(texto):
+    for (_, b), senha, isenta in _conexoes(texto):
         if isenta:
-            sem_modelos = sem_modelos[:a] + ' ' * (b - a) + sem_modelos[b:]
+            sem_modelos = sem_modelos[:senha] + ' ' * (b - senha) + sem_modelos[b:]
     for m in EMAIL.finditer(sem_modelos):
         if cpn.chave(m.group()) not in publicos:
             achados.append(('email', m.group()))
