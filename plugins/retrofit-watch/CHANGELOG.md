@@ -37,7 +37,9 @@
   - **Chaves novas da config:** `mode` (`manual`, `auto` ou `auto-dry`), `manual` (plugins ou skills
     sempre no modo manual), `store` (o clone de trabalho da loja), `auto_limits` (padrão
     `{"per_skill": 2, "per_session": 3}`), `harvest_roots` (padrão `["~/repos"]`) e `private_sources`
-    (denylists locais da colheita, nunca copiadas para repo).
+    (denylists locais da colheita, nunca copiadas para repo). A colheita parte cada nome por espaço, `-`,
+    `_`, `.` e CamelCase: o repo `foo-bar` gera também a frase `foo bar`, e a camada 1 a acha na prosa,
+    em qualquer caixa.
   - **Verbos novos do script:** `triage`, `held`, `hold`, `approve`, `discard` (`rw_auto.py`),
     `harvest`, `prepare`, `seal` (`rw_store.py`) e `publish` (`rw_gate.py`). O verbo
     `/retrofit-watch:retrofit-watch segurados` lista os itens à espera do dono. O aviso de startup diz

@@ -81,9 +81,30 @@ class RunAndNamesTest(unittest.TestCase):
         a, b = invented("alfa"), invented("beta")
         term = f"{a} de {b}"
         self.assertEqual(rw_store.expand(term),
-                         {term, f"{a} de", f"{a}_de", f"de {b}", f"de_{b}", a, b})
+                         {term, f"{a} de", f"{a}_de", f"de {b}", f"de_{b}", a, b,
+                          f"{a}-de-{b}", f"{a}_de_{b}", f"{a}de{b}"})
         self.assertEqual(rw_store.expand(f"  {a}  "), {a})
         self.assertEqual(rw_store.expand("   "), set())
+
+    def test_expand_breaks_a_compound_name(self):
+        # Final-F4: um nome de repo quase nunca tem espaço. O `-`, o `_`, o `.` e a fronteira do CamelCase
+        # também separam as partes, com a mesma política das palavras de um nome com espaço.
+        a, b = invented("alfa"), invented("beta")
+        forms = {f"{a} {b}", f"{a}_{b}", f"{a}-{b}", f"{a}{b}", a, b}
+        for term in (f"{a}-{b}", f"{a}_{b}", f"{a}.{b}"):
+            with self.subTest(term=term):
+                self.assertEqual(rw_store.expand(term), forms | {term})
+        camel_term = a.capitalize() + b.capitalize()
+        self.assertEqual(rw_store.expand(camel_term),
+                         {camel_term, f"{a.capitalize()} {b.capitalize()}", f"{a.capitalize()}_{b.capitalize()}",
+                          f"{a.capitalize()}-{b.capitalize()}", a.capitalize(), b.capitalize()})
+        # Uma parte curta (menos de MIN_WORD letras) não vira termo sozinha, como no nome com espaço.
+        short = rw_store.expand(f"{a}-de")
+        self.assertIn(f"{a} de", short)
+        self.assertNotIn("de", short)
+        # Um e-mail não se parte no `.` do domínio: a parte local já entra pela colheita, sozinha.
+        email = a + "@" + "example" + ".invalid"
+        self.assertEqual(rw_store.expand(email), {email})
 
     def test_worktree_and_branch_names_come_from_the_id_and_lote(self):
         ctx = rw.Context(home=tempfile.gettempdir(), data_dir=tempfile.gettempdir())

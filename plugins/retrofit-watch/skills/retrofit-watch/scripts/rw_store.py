@@ -141,18 +141,35 @@ def store_clone(ctx):
 
 # --- colheita ----------------------------------------------------------------------------------
 
+# O que separa as partes de um nome além do espaço (Final-F4): `-`, `_`, `.` e a fronteira do CamelCase
+# (`FooBar`, e `HTTPServer` entre `HTTP` e `Server`).
+PART_SEPARATORS = re.compile(r"[\s_.-]+")
+CAMEL_BOUNDARY = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
+
+
+def _parts(term):
+    """As partes de um nome. Um e-mail só se parte no espaço: o `.` do domínio não é parte de nome, e a
+    parte local entra na colheita sozinha."""
+    if "@" in term:
+        return term.split()
+    return [part for chunk in PART_SEPARATORS.split(term) for part in CAMEL_BOUNDARY.split(chunk) if part]
+
+
 def expand(term):
-    """O termo; com 2 ou mais palavras, também cada par de palavras vizinhas (`a b` e `a_b`) e cada
-    palavra com MIN_WORD letras ou mais. Termo em branco dá o conjunto vazio."""
+    """O termo; com 2 ou mais partes (separadas por espaço, `-`, `_`, `.` ou CamelCase), também cada par
+    de partes vizinhas (`a b` e `a_b`), cada parte com MIN_WORD letras ou mais e a frase das partes unidas
+    por espaço, por `-`, por `_` e sem separador. A camada 1 casa a frase sem diferença de caixa: o repo
+    `foo-bar` pega "Foo Bar" na prosa (Final-F4). Termo em branco dá o conjunto vazio."""
     term = term.strip() if isinstance(term, str) else ""
     if not term:
         return set()
     out = {term}
-    words = term.split()
+    words = _parts(term)
     if len(words) >= 2:
         for a, b in zip(words, words[1:]):
             out.update({f"{a} {b}", f"{a}_{b}"})
         out.update(w for w in words if len(w) >= MIN_WORD)
+        out.update(joint.join(words) for joint in (" ", "-", "_", ""))
     return out
 
 

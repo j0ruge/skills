@@ -549,6 +549,23 @@ class GateTest(GateHarness, unittest.TestCase):
         got = self.assertRefuses(rid, "nome-privado")
         self.assertIn(name, got[1])
 
+    def test_compound_name_written_in_prose_refuses(self):
+        # Final-F4: o nome colhido com `-`, `_`, `.` ou CamelCase, escrito em prosa com espaço e em outra
+        # caixa. As partes têm 3 letras: só a frase das duas pega o texto, nunca uma palavra sozinha.
+        a, b = "zq" + "f", "zq" + "b"
+        cases = {f"{a}-{b}": f"{a.capitalize()} {b.capitalize()}",
+                 f"{a}_{b}": f"{a} {b}",
+                 a.capitalize() + b.capitalize(): f"{a} {b}",
+                 f"{a}.{b}": f"{a.capitalize()} {b.capitalize()}"}
+        for harvested, prose in cases.items():
+            with self.subTest(harvested=harvested):
+                source = self.w.tmp / "privados.txt"
+                source.write_text(harvested + "\n", encoding="utf-8")
+                self.config(private_sources=[str(source)])
+                rid, wt = self.clean_retrofit(edit=lambda wt, prose=prose: append(wt / DOC, f"- Como o {prose} faz.\n"))
+                got = self.assertRefuses(rid, "nome-privado")
+                self.assertIn("colheita", got[1])
+
     def test_layer1_and_terms_errors_are_internal_not_clean(self):
         # C1 e T8-exc: um StoreError de uma guarda é `interno` (linha `erro`), nunca uma lista vazia.
         rid, wt = self.clean_retrofit()
