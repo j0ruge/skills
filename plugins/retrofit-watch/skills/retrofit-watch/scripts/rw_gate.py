@@ -116,6 +116,8 @@ class _Porta:
         if path.exists():
             self.approval = list(rw_auto.load_aprovado(path)["motivos"])
         self.skipped = set(self.approval or ()) & set(OVERRIDABLE)
+        # O sha que as guardas conferem: a guarda do rebase o grava; antes dela, None (item 10).
+        self.head = None
 
     def git(self, *args, what="porta"):
         return rw_store._git(list(args), self.worktree, self.env, what)
@@ -210,6 +212,7 @@ def _g_rebase(p):
     """4. Rebase sobre o `origin/main` (D7). Com conflito, `git rebase --abort`: o ramo fica como estava."""
     rc, out = rw_store.run(["git", "-C", p.worktree, "rebase", rw_store.BASE_REF], env=p.env)
     if rc == 0:
+        p.head = p.git("rev-parse", "HEAD").strip()
         return None
     rw_store.run(["git", "-C", p.worktree, "rebase", "--abort"], env=p.env)
     return "rebase", _short(f"git rebase {rw_store.BASE_REF} saiu {rc}: {out}")
@@ -644,8 +647,17 @@ def _g_caps(p):
     return None
 
 
+def _g_still(p):
+    """21. O HEAD é o que a guarda do rebase gravou: um commit feito no worktree durante as guardas não sobe
+    sem elas (item 10, C3). Um HEAD que sai e volta ao mesmo sha passa: o que sobe é esse sha."""
+    now = p.git("rev-parse", "HEAD").strip()
+    if now != p.head:
+        return "arvore-suja", f"o HEAD mudou durante as guardas: {p.head} -> {now}"
+    return None
+
+
 def _g_dry(p):
-    """21. O `auto-dry` faz tudo menos publicar: vem por último, para dizer se o resto passaria."""
+    """22. O `auto-dry` faz tudo menos publicar: vem por último, para dizer se o resto passaria."""
     return ("auto-dry", "mode auto-dry: nada se publica") if p.ctx.mode == "auto-dry" else None
 
 
@@ -672,12 +684,19 @@ GUARDS = (
     ("validate-versions", _g_versions),
     ("auditoria", _g_audit),
     ("teto", _g_caps),
+    ("arvore-suja", _g_still),
     ("auto-dry", _g_dry),
 )
 
 
 def refuse(ctx, rid, lote, notes):
-    """(motivo, detalhe) da primeira guarda que reprova, ou None quando o lote pode subir.
+    """(motivo, detalhe) da primeira guarda que reprova, ou None quando o lote pode subir (o `_check`)."""
+    return _check(ctx, rid, lote, notes)[0]
+
+
+def _check(ctx, rid, lote, notes):
+    """(recusa, head): a recusa é (motivo, detalhe) da primeira guarda que reprova, ou None quando o lote
+    pode subir; o head é o sha que as guardas conferiram (`_Porta.head`), o único que a porta publica.
 
     Com aprovado.json, pula a guarda cujo motivo está nos `motivos` dele e em OVERRIDABLE; o que a
     porta pulou entra em `notes`. retrofit.json ausente ou inválido é Malformed. Um StoreError de uma
@@ -691,10 +710,10 @@ def refuse(ctx, rid, lote, notes):
                 continue
             found = guard(p)
             if found is not None:
-                return found
+                return found, p.head
     except rw_store.StoreError as exc:
-        return "interno", _short(exc)
-    return None
+        return ("interno", _short(exc)), p.head
+    return None, p.head
 
 
 def _head(worktree):
@@ -887,13 +906,16 @@ def _error(ctx, rid, lote, motivo, detalhe):
     return _record(ctx, rw_auto._line(session, rid, f"{rid}/{lote}", plugin, [], "erro", motivo, detalhe, lote=lote))
 
 
-def _mark_approved(ctx, worktree, env):
-    """Troca o trailer por `Retrofit-Mode: autonomous-approved` com `commit --amend`. A árvore do commit
-    fica igual e o trailer sai com um valor só; outra coisa é StoreError."""
+def _mark_approved(ctx, worktree, env, reviewed):
+    """Troca o trailer por `Retrofit-Mode: autonomous-approved` com `commit --amend` e devolve o sha novo.
+    A mensagem vem do commit `reviewed`, o que as guardas conferiram, nunca do HEAD (item 10). Depois da
+    emenda, a árvore do HEAD é a de `reviewed`, o pai dele é o pai de `reviewed` e o trailer sai com um
+    valor só; outra coisa é StoreError."""
     def git(*args):
         return rw_store._git(list(args), worktree, env, "aprovacao")
-    tree = git("rev-parse", "HEAD^{tree}").strip()
-    message = git("log", "-1", "--format=%B")
+    tree = git("rev-parse", f"{reviewed}^{{tree}}").strip()
+    parent = git("rev-parse", f"{reviewed}^").strip()
+    message = git("log", "-1", "--format=%B", reviewed)
     fd, tmp = tempfile.mkstemp(dir=ctx.data_dir, prefix=".mensagem-")
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
@@ -907,20 +929,24 @@ def _mark_approved(ctx, worktree, env):
         os.unlink(tmp)
     if git("rev-parse", "HEAD^{tree}").strip() != tree:
         raise rw_store.StoreError("aprovacao: a emenda do trailer mudou a arvore do commit")
+    if git("rev-parse", "HEAD^").strip() != parent:
+        raise rw_store.StoreError("aprovacao: o commit emendado nao tem o pai do commit revisado")
     values = [v.strip() for v in git("log", "-1", f"--format=%(trailers:key={MARKER},valueonly)").splitlines()
               if v.strip()]
     if values != [APPROVED]:
         raise rw_store.StoreError(f"aprovacao: {MARKER} depois da emenda: {values}")
+    return git("rev-parse", "HEAD").strip()
 
 
-def _plan(ctx, rid, lote, retrofit, worktree, aprovado, detalhe):
+def _plan(ctx, rid, lote, retrofit, worktree, aprovado, detalhe, commit):
     """A linha `publicado` (`instalacao: "pendente"`) e as chaves da sessão a marcar feitas, montadas antes
-    do push: depois dele só se grava. O `commit` se acerta depois da emenda do trailer."""
+    do push: depois dele só se grava. O `commit` é o sha conferido, do parâmetro (item 10); ele se acerta
+    depois da emenda do trailer."""
     plugin, _ = _lote_kind(lote)
     pedido = rw_auto.retro_pedido(ctx, rid)
     line = rw_auto._line(pedido["sessao"], rid, f"{rid}/{lote}", plugin, list(retrofit["licoes"]), "publicado",
                          None, _short(detalhe), lote=lote)
-    line.update(commit=_head(worktree), ramo=rw_store.branch_name(rid, lote, retrofit["tentativa"]),
+    line.update(commit=commit, ramo=rw_store.branch_name(rid, lote, retrofit["tentativa"]),
                 worktree=str(worktree), versao=rw_store._version(worktree, plugin), aprovado=aprovado,
                 instalacao="pendente")
     return line, [e["key"] for e in pedido["skills"] if e["plugin"] == plugin]
@@ -974,7 +1000,7 @@ def _publish(ctx, rid, lote, effects, done):
         # Refaz só a instalação (D22). Sem linha `publicado` deste commit (a porta caiu entre o push e a
         # linha), grava a que faltou. O fecho roda sempre: a chamada de antes pode ter caído no meio dele.
         planned, keys = _plan(ctx, rid, lote, retrofit, worktree, _approved_marker(worktree, env),
-                              "o commit ja estava no origin/main")
+                              "o commit ja estava no origin/main", _head(worktree))
         line = _previous(ctx, rid, lote, planned["commit"])
         if line is None:
             line = rw_auto.append_registry(ctx, planned)
@@ -982,18 +1008,18 @@ def _publish(ctx, rid, lote, effects, done):
         _finish(ctx, line, keys)
     else:
         notes = []
-        found = refuse(ctx, rid, lote, notes)
+        found, head = _check(ctx, rid, lote, notes)
         if found is not None:
             return hold(ctx, rid, lote, *found)
         approved = (rw_auto.lote_dir(ctx, rid, lote) / "aprovado.json").exists()
-        line, keys = _plan(ctx, rid, lote, retrofit, worktree, approved, "; ".join(notes))
-        reviewed, pushed = line["commit"], False
+        line, keys = _plan(ctx, rid, lote, retrofit, worktree, approved, "; ".join(notes), head)
+        reviewed, pushed = head, False
         try:
             if approved:
-                _mark_approved(ctx, worktree, env)
-                line["commit"] = _head(worktree)
-            # O sha conferido: o HEAD lido logo depois do `refuse` (e da emenda do trailer, que só troca a
-            # mensagem). Um commit novo no worktree depois disso não sobe (Final-F7).
+                line["commit"] = _mark_approved(ctx, worktree, env, reviewed)
+            # O sha conferido: o HEAD que as guardas leram (`_Porta.head`, que o `_g_still` confere no fim
+            # delas) ou a emenda dele, que só troca a mensagem. Um commit novo no worktree depois disso não
+            # sobe (Final-F7, item 10).
             pushed, detail = effects.push(worktree, line["commit"])
         finally:
             # A emenda muda o patch (D20): um push que não saiu devolve o ramo ao commit revisado.
@@ -1020,7 +1046,7 @@ def publish(ctx, rid, lote, effects):
 
     1. Prende <dados>/publish.lock por até PUBLISH_LOCK_WAIT s até o fim; sem ela, linha `erro`, `trava`.
     2. `git fetch origin`. Com o commit já no `origin/main` (`already_published`), pula para o passo 6.
-    3. `refuse`; com recusa, `hold` e fim.
+    3. `_check`; com recusa, `hold` e fim. O sha que sobe é o que as guardas conferiram (item 10).
     4. Com aprovado.json, o trailer vira `Retrofit-Mode: autonomous-approved` (`commit --amend`).
     5. `effects.push`. Falha: linha `erro`, `push`. Certo: linha `publicado` com `instalacao: "pendente"`,
        o fecho das lições trazidas de volta e `mark_done` na sessão do pedido.json.

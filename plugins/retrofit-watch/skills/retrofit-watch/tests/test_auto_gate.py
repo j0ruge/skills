@@ -1250,6 +1250,20 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
         self.assertEqual(fx.calls, [])
         self.assertEqual(self.w.origin_main(), self.base)
 
+    def test_gate_stops_on_the_request_of_another_retro(self):
+        # T3-m1: o pedido.json de outra retro válida, de outra sessão. A linha `erro` não leva a sessão dele.
+        rid, wt = self.clean_retrofit()
+        other = self.w.retro([{}], [{}])
+        data = json.loads((rw_auto.retro_dir(self.ctx(), other) / "pedido.json").read_text(encoding="utf-8"))
+        data["sessao"] = "s2"
+        (rw_auto.retro_dir(self.ctx(), rid) / "pedido.json").write_text(json.dumps(data), encoding="utf-8")
+        fx = self.effects()
+        line, rc = self.publish(rid, fx)
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (3, "erro", "interno"), line)
+        self.assertIsNone(line["sessao"], line)
+        self.assertEqual(fx.calls, [])
+        self.assertEqual(self.w.origin_main(), self.base)
+
     def test_unwritable_registry_never_raises(self):
         rid, wt = self.clean_retrofit()
         (rw_auto.retro_dir(self.ctx(), rid) / "veredito.json").unlink()
@@ -1282,7 +1296,7 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
     def test_approved_commit_pushed_without_a_line_is_recorded_as_approved(self):
         # I1 (c): na recuperação, o `aprovado` sai do trailer do commit publicado.
         rid, wt, lote = self.description_lote()
-        rg._mark_approved(self.ctx(), wt, rw_store.git_env(home=self.w.home, nosystem=True))
+        rg._mark_approved(self.ctx(), wt, rw_store.git_env(home=self.w.home, nosystem=True), self.head(wt))
         self.w.git(self.w.other, "fetch", "-q", str(wt), "HEAD")
         self.w.git(self.w.other, "push", "-q", "origin", "FETCH_HEAD:main")
         fx = self.effects()
@@ -1572,7 +1586,7 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
         self.assertEqual(rc, 0, line)
         body = self.w.git(self.w.origin, "log", "-1", "--format=%B", "main").splitlines()
         self.assertEqual(body[-2:], [f"{rg.MARKER}: {rg.APPROVED}", other])
-        with mock.patch.object(rg, "refuse", wraps=rg.refuse) as spy:
+        with mock.patch.object(rg, "_check", wraps=rg._check) as spy:
             again, rc = self.publish(rid, self.effects(), lote)
         self.assertEqual((rc, again["commit"]), (0, line["commit"]), again)
         spy.assert_not_called()
@@ -1720,6 +1734,94 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
         self.assertEqual(rc, 0, line)
         self.assertNotEqual(self.head(wt), checked[0])
         self.assertEqual((self.w.origin_main(), line["commit"]), (checked[0], checked[0]))
+
+    # --- item 10: a porta publica o HEAD que ela conferiu ----------------------------------------
+
+    def after_check(self, then):
+        """Embrulha `rg._check`: depois dele, `then(head)` mexe no worktree (o commit "depois das guardas")."""
+        original = rg._check
+
+        def wrapped(ctx, rid, lote, notes):
+            got = original(ctx, rid, lote, notes)
+            then(got[1])
+            return got
+        return mock.patch.object(rg, "_check", side_effect=wrapped)
+
+    def test_commit_made_during_the_guards_is_held(self):
+        # Item 10: uma guarda a mais, antes de `_g_still`, emenda o commit do worktree no meio das guardas.
+        rid, wt = self.clean_retrofit()
+
+        def sabotage(p):
+            append(Path(p.worktree) / DOC, "- Uma linha que a camada 1 nao leu.\n")
+            self.amend(p.worktree)
+            return None
+        guards = list(rg.GUARDS)
+        at = next(i for i, (_, guard) in enumerate(guards) if guard is rg._g_caps) + 1
+        guards.insert(at, ("escopo", sabotage))
+        fx = self.effects()
+        with mock.patch.object(rg, "GUARDS", tuple(guards)):
+            line, rc = self.publish(rid, fx)
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (1, "segurado", "arvore-suja"), line)
+        self.assertIn("HEAD mudou", line["detalhe"])
+        self.assertEqual(self.w.origin_main(), self.base)
+        self.assertEqual(fx.calls, [])
+
+    def test_plan_records_the_checked_sha(self):
+        # Item 10: um commit novo no worktree depois do `_check` não entra na linha nem sobe.
+        rid, wt = self.clean_retrofit()
+        checked = []
+
+        def then(head):
+            checked.append(head)
+            (wt / "nota-nova.md").write_text("Uma linha que ninguem conferiu.\n", encoding="utf-8")
+            self.w.git(wt, "add", "-A")
+            self.w.git(wt, "commit", "-q", "-m", "docs: depois das guardas")
+        with self.after_check(then):
+            line, rc = self.publish(rid, self.effects())
+        self.assertEqual(rc, 0, line)
+        self.assertNotEqual(self.head(wt), checked[0])
+        self.assertEqual((line["commit"], self.w.origin_main()), (checked[0], checked[0]))
+
+    def test_approval_amends_the_reviewed_message(self):
+        # Item 10: depois do `_check`, a mensagem do HEAD ganha um nome; a emenda do trailer usa a revisada.
+        rid, wt, lote = self.description_lote()
+        name = invented("emenda")
+
+        def then(head):
+            message = self.w.git(wt, "log", "-1", "--format=%B")
+            self.w.git(wt, "commit", "-q", "--amend", "-m", message + "\n" + name + "\n")
+        with self.after_check(then):
+            line, rc = self.publish(rid, self.effects(), lote)
+        self.assertEqual(rc, 0, line)
+        body = self.w.git(self.w.origin, "log", "-1", "--format=%B", "main")
+        self.assertNotIn(name, body)
+        self.assertEqual(self.marker(), rg.APPROVED)
+        self.assertEqual(line["commit"], self.w.origin_main())
+
+    def test_approval_refuses_a_commit_on_top(self):
+        # Item 10: depois do `_check`, commits por cima do revisado que voltam à árvore dele. A emenda do
+        # último tem a árvore certa e outro pai: `interno`, nada sobe e o ramo volta ao revisado. Um só
+        # `commit --allow-empty` não chega à conferência do pai: o `commit --amend` dele sai 1 ("would make
+        # it empty") antes, e o mutante sem a conferência sobreviveria.
+        rid, wt, lote = self.description_lote()
+        reviewed = []
+
+        def then(head):
+            reviewed.append(head)
+            (wt / "nota-nova.md").write_text("Por cima do revisado.\n", encoding="utf-8")
+            self.w.git(wt, "add", "-A")
+            self.w.git(wt, "commit", "-q", "-m", "chore: por cima")
+            self.w.git(wt, "rm", "-q", "nota-nova.md")
+            self.w.git(wt, "commit", "-q", "-m", "chore: de volta a arvore revisada")
+            self.assertEqual(self.w.git(wt, "rev-parse", "HEAD^{tree}"), self.w.git(wt, "rev-parse", f"{head}^{{tree}}"))
+        fx = self.effects()
+        with self.after_check(then):
+            line, rc = self.publish(rid, fx, lote)
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (3, "erro", "interno"), line)
+        self.assertIn("pai do commit revisado", line["detalhe"])
+        self.assertEqual(self.w.origin_main(), self.base)
+        self.assertEqual(self.head(wt), reviewed[0])
+        self.assertEqual(fx.calls, [])
 
     def test_push_never_follows_tags(self):
         # Final-F9: com `push.followTags` na config do dono, o push da porta não leva uma tag ao `origin`.
