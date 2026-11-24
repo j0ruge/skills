@@ -132,6 +132,7 @@ No `~/.claude/retrofit-watch.json`, ao lado das chaves de hoje:
 | `private_sources` | caminhos de denylists locais que a colheita lê (nunca copiados para repo) | `[]` |
 | `harvest_roots` | pastas onde a colheita procura repos git | a definir pelo builder |
 | `auto_limits` | tetos da seção 5.10 | os da seção 5.10 |
+| `store` | caminho do clone de trabalho da loja, de onde saem os worktrees dos lotes | nenhum: sem ela, o `auto` não vale (motivo `sem-loja`) |
 
 O padrão `manual` garante que quem instala a loja pública não recebe o modo autônomo. O
 `RETROFIT_WATCH=off` continua desligando tudo.
@@ -174,9 +175,20 @@ revisor diz por quê).
 
 Uma lição é **publicável** só com: evidência confirmada, não coberta, genérica, procede, fora da
 lista do que não capturar, correção verificada e sem mudança de `description`. Qualquer outra
-combinação segura a lição ou a descarta (coberta, do projeto, não procede).
+combinação segura a lição ou a descarta.
 
-A mesma definição roda uma segunda vez sobre `termos-novos.json` (seção 5.6, camada 2).
+- **Descarta**, com linha `descartado` e o motivo no registro, fora do aviso de startup: coberta, do
+  projeto, não procede, evidência não confirmada, e a que cai na lista do que não capturar.
+- **Segura:** sem correção verificada, e não reproduzível sem evidência bastante no transcript.
+
+O mesmo agente roda uma segunda vez, sobre o commit do executor. Nessa passada ele julga os termos de
+`termos-novos.json` (seção 5.6, camada 2) e responde duas perguntas sobre o diff:
+
+- a mudança acrescenta uma regra que repete ou contradiz uma já escrita, em vez de corrigir a frase que
+  errou?
+- o diff faz só o que as lições declaradas dizem?
+
+As duas respostas vão em campos próprios do `anonimato.json`, e a porta recusa por elas (seção 5.7).
 
 ### 5.5 O executor (o retrofit)
 
@@ -186,7 +198,14 @@ modo full:
 
 - não espera a confirmação do passo 3; exige o `veredito.json` com a lição publicável, ou com a única
   pendência "muda a `description`" (então prepara o ramo pronto e para antes da porta, seção 5.8);
-- grava o baseline da `skill-quality-audit` e roda o gate dela, como hoje;
+- chama a família `skill-quality-audit` da loja conforme a mudança:
+  1. sempre: o baseline e o gate do script da fase 1, como hoje; um ERRO ou AVISO novo segura;
+  2. a lição põe ou muda um número, limite, caminho, flag ou versão: `skill-claim-check`;
+  3. a lição põe um caminho, uma reference ou uma dependência de fora da skill:
+     `skill-self-containment`;
+  4. o `SKILL.md` passa de ~400 linhas ou ~16 mil caracteres depois da mudança: `skill-refactoring`;
+- registra no selo as fases que rodou; a porta confere, por gatilhos mecânicos, que a fase exigida
+  está lá;
 - corrige a frase que errou em vez de acrescentar uma regra nova; procura a regra já escrita antes;
 - nas skills com `tests/`: escreve o teste que falha antes da correção, aplica a correção, mostra o
   teste passando e mata os mutantes da correção (o caso-modelo);
@@ -204,6 +223,10 @@ mensagem do commit, não sobre a árvore inteira:
 - a lista de hashes da loja (`scripts/private-names.sha256`);
 - a colheita local: nomes de repos git sob `harvest_roots`, dono e nome de cada `origin`, `user.name`
   e e-mail do git, usuário do `$HOME`, hostname, e os termos das `private_sources`;
+- o projeto da sessão: o `pedido.json` grava o `cwd`, e a colheita lê a raiz e o `origin` desse repo,
+  mesmo fora de `harvest_roots`;
+- um nome de várias palavras entra também em pares de palavras vizinhas e em palavras acima de um
+  tamanho mínimo;
 - padrões: e-mail, caminho absoluto com nome de usuário (`/home/<u>`, `/mnt/<x>/<pasta>`,
   `C:\Users\<u>`), forma de segredo ou token;
 - tira os termos da lista de públicos da loja.
@@ -216,8 +239,9 @@ olha só o que é novo no diff, e a lista de públicos existe.
 
 **Camada 2, o revisor julga o vocabulário novo.** O executor separa cada termo das linhas novas e da
 mensagem do commit com cara de nome próprio ou identificador (maiúscula no meio da frase, CamelCase,
-dígito ou `_` dentro da palavra, caminho, URL) que não existe em nenhum arquivo da loja no
-`origin/main` nem na lista de públicos. O revisor (seção 5.4) julga cada um: `público`, `privado` ou
+dígito ou `_` dentro da palavra, caminho, URL, nome em minúsculas com hífen) que não existe em nenhum
+arquivo da loja no `origin/main` nem na lista de públicos. Flag (`-x`, `--x`) e nome de arquivo com
+extensão não são candidatos. O revisor (seção 5.4) julga cada um: `público`, `privado` ou
 `dúvida`, com a linha de contexto e os nomes da colheita como referência. Só `público` em todos deixa
 passar.
 
@@ -226,6 +250,9 @@ passar.
 - "privado": o termo entra na lista de hashes (`check-private-names.py --add`), e o executor troca o
   termo por um genérico (`um projeto`, `<repo>`) e tenta a porta de novo;
 - "público": o termo entra na lista de públicos, e a porta roda de novo.
+
+A aprovação do dono não substitui a recusa por nome: um segurado por nome só sai quando o dono ensina
+o portão.
 
 **Antes da v1 ir ao ar:** a varredura inteira da loja com a colheita achou quatro nomes com cara de
 projeto local que não estão na lista. O dono os classifica uma vez (privado vai à lista; público vai
@@ -244,14 +271,22 @@ não faz push. A porta é um subcomando do script do plugin, determinístico, e 
 5. o commit tem `Co-Authored-By`, ou não tem a marca autônoma;
 6. o `fetch` e o rebase sobre o `origin/main` dão conflito;
 7. o teto da seção 5.10 foi atingido;
-8. o `mode` é `auto-dry`.
+8. o `mode` é `auto-dry`;
+9. o `anonimato.json` não é do diff atual: o commit mudou depois da segunda passada do revisor;
+10. a segunda passada diz que a mudança repete ou contradiz uma regra já escrita;
+11. a segunda passada diz que o diff faz mais do que as lições declaradas;
+12. falta no selo uma fase da auditoria que a mudança exige (seção 5.5);
+13. uma lição do commit é de um plugin que o pedido não trouxe, de um plugin excluído ou de uma skill
+    da lista `manual`.
 
-O `aprovado.json` do dono (seção 5.11) substitui só o item que segurou aquele retrofit, nunca os itens
-3 a 6.
+O `aprovado.json` do dono (seção 5.11) substitui só os itens que seguraram aquele retrofit, e só os
+itens 1, 7, 8, 10 e 11. Nunca os itens 2 a 6, o 9, o 12 e o 13.
 
-Passando tudo: push, `claude plugin marketplace update`, `claude plugin update`, `diff` do cache contra
-a loja, linha `publicado` no registro e marca no estado da sessão de que a retro daquela skill acabou.
-Uma trava no diretório de dados serializa duas portas ao mesmo tempo.
+Passando tudo: push, linha `publicado` no registro logo depois do push, marca no estado da sessão de
+que a retro daquela skill acabou, `claude plugin marketplace update`, `claude plugin update` e `diff`
+do cache contra a loja. A falha de instalação fica num campo próprio da linha, não no resultado: o
+commit já está no `origin/main`. Rodar a porta de novo num retrofit já publicado refaz só a
+instalação. Uma trava no diretório de dados serializa duas portas ao mesmo tempo.
 
 ### 5.8 O que segura um retrofit
 
@@ -276,7 +311,7 @@ worktree ficam até o dono decidir.
 
 **O registro:** `${CLAUDE_PLUGIN_DATA}/autonomo.jsonl`, só de acréscimo, uma linha por retrofit:
 instante, sessão, skill, id, resultado (`publicado`, `segurado`, `descartado`, `erro`), motivo,
-commit, ramo e versão.
+commit, ramo, versão e o estado da instalação.
 
 **O aviso de startup** (o `pending` de hoje, ampliado; uma linha ao dono, fora do contexto):
 
@@ -286,8 +321,10 @@ commit, ramo e versão.
 
 **O critério da v2 (o kit entra), escolhido pelo dono:** pelo menos 10 retrofits autônomos publicados
 e 14 dias de uso, sem nenhum revertido pelo dono e sem nenhum achado do sensor de nomes, no
-`origin/main`, num arquivo que um commit autônomo tocou. "Revertido" se mede por um commit no
-`origin/main` que reverte um commit com a marca autônoma. O aviso fica assim, por exemplo:
+`origin/main`, num arquivo que um commit autônomo tocou. A conta sai dos commits com a marca
+`Retrofit-Mode: autonomous` no `origin/main`, e não só do registro: um commit publicado cuja linha se
+perdeu conta, e uma linha sem commit não conta. "Revertido" se mede por um commit no `origin/main` que
+reverte um commit com a marca autônoma. O aviso fica assim, por exemplo:
 `retrofit-watch: 10 retrofits autônomos, 0 revertidos, 0 nomes vazados desde <data> — o kit pode entrar (ver a spec do modo autônomo)`.
 
 O critério da v3 (lean entra) usa a mesma forma, contado a partir da v2.
@@ -323,12 +360,18 @@ Um verbo novo, ao lado do `pendentes` de hoje: `/retrofit-watch:retrofit-watch s
 os segurados do registro sem linha de fim, com o motivo, o ramo e o worktree. Para cada um, o dono diz:
 
 - **liberar:** o "sim" vira um arquivo de aprovação do dono no diretório de dados (`aprovado.json`,
-  com o id e o instante). A porta aceita esse arquivo no lugar do item que segurou, mas roda **todas** as
-  outras guardas de novo: camada 1, testes, `validate-versions.py`, rebase. Num segurado por nome, o
-  "privado" ou o "público" do dono ensina o portão (seção 5.6) antes de a porta rodar. Num segurado sem
-  ramo (sem correção conhecida), liberar é o fluxo manual de hoje: o `/retrofit-skill`;
+  com o id, o instante e a lista dos motivos liberados; cada liberação acrescenta um). A porta aceita
+  esse arquivo no lugar dos itens que seguraram, mas roda **todas** as outras guardas de novo: camada
+  1, testes, `validate-versions.py`, rebase. Num segurado por nome, a aprovação não substitui a
+  recusa: só o "privado" ou o "público" do dono, que ensina o portão (seção 5.6), faz a porta passar.
+  Num segurado sem ramo (sem correção conhecida), liberar é o fluxo manual de hoje: o
+  `/retrofit-skill`, e depois o descarte com o motivo "resolvido à mão";
 - **descartar:** uma linha `descartado` no registro. O ramo e o worktree ficam, porque nada é apagado;
   a limpeza é da `git-housekeeping`, com o sim do dono.
+
+Contra a autoaprovação há uma regra escrita, com teste: o agente nunca roda `approve`, `--publico-add`
+nem `--add` sem a palavra do dono na conversa. O texto do hook e a referência do fluxo trazem a frase,
+e um teste confere que ela está lá. Não há guarda mecânica para isso na v1.
 
 Um retrofit liberado pelo dono é publicado com a marca `Retrofit-Mode: autonomous-approved` e **não**
 conta nos 10 do critério da v2, que mede o que saiu sem ele. Um segurado descartado também não conta.
@@ -344,6 +387,20 @@ conta nos 10 do critério da v2, que mede o que saiu sem ele. Um segurado descar
 - O critério da v2 (seção 5.9).
 - O caminho 1 de construção.
 - O plano que sair deste desenho passa por uma revisão do Fable antes da execução.
+
+Depois da revisão do plano (23/11):
+
+- A chave `store` na config aponta o clone de trabalho da loja; sem ela, o `auto` não vale.
+- A regra repetida tem guarda mecânica: pergunta na segunda passada do revisor e recusa na porta.
+- Lição com evidência não confirmada, ou na lista do que não capturar, é descartada, com linha no
+  registro e fora do aviso de startup.
+- O executor chama a família `skill-quality-audit` conforme a mudança (seção 5.5).
+- A colheita inclui o projeto da sessão, pelo `cwd` do pedido.
+- Nome em minúsculas com hífen é candidato da camada 2, fora flag, arquivo com extensão e palavra que
+  a loja já tem.
+- A recusa por nome não é substituível pela aprovação: só sai quando o dono ensina o portão.
+- A segunda passada do revisor confere o diff contra as lições declaradas.
+- Contra a autoaprovação, só a regra escrita com teste (seção 5.11).
 
 ## 7. Decisões minhas, para o dono corrigir
 
