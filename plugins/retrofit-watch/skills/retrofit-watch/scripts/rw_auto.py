@@ -528,6 +528,10 @@ def load_anonimato(path):
     return data
 
 
+def load_aprovado(path):
+    return _fields(_read_json(path), APROVADO_SPEC, str(path))
+
+
 # --- triagem -----------------------------------------------------------------------------------
 
 def in_request(ctx, pedido, licao):
@@ -708,7 +712,7 @@ def approve(ctx, rid, lote):
     path = folder / "aprovado.json"
     motivos = []
     if path.exists():
-        motivos = list(_fields(_read_json(path), APROVADO_SPEC, str(path))["motivos"])
+        motivos = list(load_aprovado(path)["motivos"])
     if reasons[-1] not in motivos:
         motivos.append(reasons[-1])
     folder.mkdir(parents=True, exist_ok=True)

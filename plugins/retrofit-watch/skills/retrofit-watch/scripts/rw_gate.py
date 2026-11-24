@@ -95,8 +95,7 @@ class _Porta:
         path = self.folder / "aprovado.json"
         self.approval = None
         if path.exists():
-            self.approval = list(rw_auto._fields(rw_auto._read_json(path), rw_auto.APROVADO_SPEC,
-                                                 str(path))["motivos"])
+            self.approval = list(rw_auto.load_aprovado(path)["motivos"])
         self.skipped = set(self.approval or ()) & set(OVERRIDABLE)
 
     def git(self, *args, what="porta"):
@@ -109,7 +108,9 @@ class _Porta:
         return [p for p in out.split("\0") if p]
 
     def diff(self, *paths):
-        return rw_store._git(["diff", "-U0", "--no-color", "--no-ext-diff", "--no-textconv", "--src-prefix=a/",
+        """O diff -U0 do ramo, lido como o patch_id lê: `--text`, sem diff externo nem textconv e no ambiente
+        neutro. Um `.gitattributes` do ramo com `binary` não esconde linha nova (T8-r1-text)."""
+        return rw_store._git(["diff", "-U0", "--text", "--no-color", "--no-ext-diff", "--no-textconv", "--src-prefix=a/",
                               "--dst-prefix=b/", f"{rw_store.BASE_REF}...HEAD", "--", *paths],
                              self.worktree, self.neutral, "porta")
 
@@ -264,7 +265,14 @@ def _g_request(p):
 
 def _g_publishable(p):
     """10a. Cada lição classifica como `publicar` (no lote `description`, como `ramo-pronto`)."""
-    veredito = _veredito(p)
+    try:
+        veredito = _veredito(p)
+    except rw_auto.Malformed:
+        # Com `sem-veredito` aprovado, a guarda 8 foi pulada: sem veredito, cada lição classifica como
+        # `segurar/sem-veredito`, e a porta segura com `nao-publicavel`, que o dono pode aprovar (I1).
+        if "sem-veredito" not in p.skipped:
+            raise
+        veredito = {}
     wanted = "publicar" if p.tipo == "auto" else "ramo-pronto"
     for n, licao in _lessons(p):
         destino, motivo = rw_auto.classify(licao, veredito.get(str(n)))
@@ -332,16 +340,30 @@ def _g_beyond(p):
     return ("diff-alem-das-licoes", _short(text)) if text is not None else None
 
 
+def _is_test_dir(path, plugin):
+    return re.fullmatch(rf"plugins/{re.escape(plugin)}/(skills/[^/]+/)?tests", path) is not None
+
+
 def _test_dirs(p):
-    base = p.worktree / "plugins" / p.plugin
-    dirs = [base / "tests"] + sorted(base.glob("skills/*/tests"))
-    return [d for d in dirs if d.is_dir()]
+    """(pastas de teste do plugin no worktree, as do `origin/main`), como caminhos relativos."""
+    root = p.worktree / "plugins" / p.plugin
+    here = [d.relative_to(p.worktree).as_posix() for d in [root / "tests"] + sorted(root.glob("skills/*/tests"))
+            if d.is_dir()]
+    out = rw_store._git(["ls-tree", "-r", "-d", "-z", "--name-only", rw_store.BASE_REF, "--", f"plugins/{p.plugin}"],
+                        p.worktree, p.neutral, "testes")
+    base = [x for x in out.split("\0") if x and _is_test_dir(x, p.plugin)]
+    return here, base
 
 
 def _g_tests(p):
-    """17. Os testes do plugin e a suíte da raiz (D11), sem gravar bytecode no worktree (M7)."""
+    """17. Os testes do plugin e a suíte da raiz (D11), sem gravar bytecode no worktree (M7). Uma pasta de
+    teste do `origin/main` que o ramo tira é `testes` (I2); a nota só vale para plugin que nunca teve teste."""
     env = dict(p.env, PYTHONDONTWRITEBYTECODE="1")
-    dirs = _test_dirs(p)
+    here, base = _test_dirs(p)
+    gone = [d for d in base if d not in here]
+    if gone:
+        return "testes", "o ramo tira pasta de testes do origin/main: " + ", ".join(gone)
+    dirs = [p.worktree / d for d in here]
     if not dirs:
         p.notes.append(f"testes: plugin {p.plugin} sem pasta de testes")
     for folder in dirs + [p.worktree / "tests"]:

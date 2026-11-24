@@ -220,12 +220,22 @@ def _inside_repo(path):
 def write_harvest(ctx, cwd=None):
     """Grava a colheita em <dados>/colheita.txt, um termo por linha, com permissão 0o600. Recusa a
     pasta de dados dentro de um repo: a colheita nunca grava nome em repo."""
+    path = _harvest_dir(ctx) / HARVEST_FILE
+    _atomic_write(path, _harvest_bytes(ctx, cwd))
+    return path
+
+
+def _harvest_dir(ctx):
+    """A pasta de dados, real; StoreError quando ela fica dentro de um repo git."""
     data = Path(os.path.realpath(ctx.data_dir))
     if _inside_repo(data):
         raise StoreError(f"a pasta de dados esta dentro de um repo git: {data}. A colheita fica fora de repo.")
-    path = data / HARVEST_FILE
-    _atomic_write(path, "".join(t + "\n" for t in sorted(harvest(ctx, cwd))).encode("utf-8"))
-    return path
+    return data
+
+
+def _harvest_bytes(ctx, cwd):
+    """A colheita serializada: um termo por linha, em ordem, em UTF-8."""
+    return "".join(t + "\n" for t in sorted(harvest(ctx, cwd))).encode("utf-8")
 
 
 def _atomic_write(path, body):
@@ -366,15 +376,13 @@ def _private_harvest(ctx, cwd):
     """A colheita de uma chamada só, num arquivo novo dela (O_EXCL, 0o600) na pasta de dados. Duas
     retros ao mesmo tempo, com `cwd` diferentes, nunca leem a colheita uma da outra (T7-race): o
     colheita.txt partilhado fica para o verbo `harvest`. Quem chama remove o arquivo."""
-    data = Path(os.path.realpath(ctx.data_dir))
-    if _inside_repo(data):
-        raise StoreError(f"a pasta de dados esta dentro de um repo git: {data}. A colheita fica fora de repo.")
+    data = _harvest_dir(ctx)
     data.mkdir(parents=True, exist_ok=True)
     path = data / f".colheita-{os.getpid()}-{os.urandom(6).hex()}.txt"
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     try:
         with os.fdopen(fd, "wb") as fh:
-            fh.write("".join(t + "\n" for t in sorted(harvest(ctx, cwd))).encode("utf-8"))
+            fh.write(_harvest_bytes(ctx, cwd))
     except BaseException:
         _unlink(path)
         raise

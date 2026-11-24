@@ -351,9 +351,11 @@ class GateTest(unittest.TestCase):
         self.assertRefuses(rid2, "sem-marca")
         self.approve(rid2, "demo", "teto")
         self.assertIsNone(self.refuse(rid2))
-        # Dois valores do trailer: a marca tem de ser uma só.
+        # Dois valores do trailer, os dois permitidos: a marca tem de ser uma só (T8-r1-mut).
         rid3, wt3 = self.clean_retrofit(trailer=None, message="fix(demo): v1.0.1\n\nRetrofit-Mode: autonomous\n"
-                                                              "Retrofit-Mode: autonomous-approved")
+                                                              "Retrofit-Mode: autonomous")
+        self.assertEqual(self.w.git(wt3, "log", "-1", "--format=%(trailers:key=Retrofit-Mode,valueonly)").split(),
+                         ["autonomous", "autonomous"])
         self.assertRefuses(rid3, "sem-marca")
 
     # --- guardas 8 a 10: veredito e lições -----------------------------------------------------
@@ -364,6 +366,26 @@ class GateTest(unittest.TestCase):
         path.unlink()
         self.assertRefuses(rid, "sem-veredito")
         path.write_text("{}", encoding="utf-8")
+        self.assertRefuses(rid, "sem-veredito")
+
+    def test_approved_missing_verdict_holds_as_not_publishable(self):
+        # I1: com `sem-veredito` aprovado e o veredito ainda ilegível, a porta segura com `nao-publicavel`
+        # (que o dono pode aprovar), nunca levanta.
+        rid, wt = self.clean_retrofit()
+        path = rw_auto.retro_dir(self.ctx(), rid) / "veredito.json"
+        for content in (None, "{}"):
+            with self.subTest(content=content):
+                if content is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    path.write_text(content, encoding="utf-8")
+                self.approve(rid, "demo", "sem-veredito")
+                got = self.assertRefuses(rid, "nao-publicavel")
+                self.assertIn("sem-veredito", got[1])
+                self.approve(rid, "demo", "sem-veredito", "nao-publicavel")
+                self.assertIsNone(self.refuse(rid))
+        # Sem a aprovação, o veredito ilegível continua `sem-veredito` na guarda 8.
+        (self.folder(rid) / "aprovado.json").unlink()
         self.assertRefuses(rid, "sem-veredito")
 
     def test_lesson_outside_the_request_refuses_at_the_gate(self):
@@ -446,6 +468,7 @@ class GateTest(unittest.TestCase):
         with mock.patch.object(rw_store, "layer1", side_effect=RuntimeError("outra")):
             with self.assertRaises(RuntimeError):
                 rg.refuse(self.ctx(), rid, "demo", [])
+        self.assertEqual(self.w.origin_main(), self.base)
 
     # --- guardas 12 a 16: a segunda passada do revisor -----------------------------------------
 
@@ -511,8 +534,26 @@ class GateTest(unittest.TestCase):
         got = self.assertRefuses(rid, "testes")
         self.assertTrue(got[1].startswith("tests "), got[1])
 
+    def test_removing_the_plugin_tests_refuses(self):
+        # I2: o ramo que tira uma pasta de testes do origin/main reprova, também quando sobra outra.
+        skill_tests = "plugins/demo/skills/demo/tests"
+        rid, wt = self.clean_retrofit(edit=lambda wt: self.w.git(wt, "rm", "-q", "-r", skill_tests))
+        got = self.assertRefuses(rid, "testes")
+        self.assertIn(skill_tests, got[1])
+        self.push_origin(lambda root: (Path(root) / "plugins/demo/tests").mkdir() or
+                         (Path(root) / "plugins/demo/tests/test_extra.py").write_text(
+                             "import unittest\n\n\nclass ExtraTest(unittest.TestCase):\n"
+                             "    def test_ok(self):\n        self.assertTrue(True)\n", encoding="utf-8"),
+                         "test: segunda pasta de testes")
+        rid, wt = self.clean_retrofit(edit=lambda wt: self.w.git(wt, "rm", "-q", "-r", "plugins/demo/tests"))
+        got = self.assertRefuses(rid, "testes")
+        self.assertIn("plugins/demo/tests", got[1])
+
     def test_plugin_without_tests_passes_with_a_note(self):
-        rid, wt = self.clean_retrofit(edit=lambda wt: self.w.git(wt, "rm", "-q", "-r", "plugins/demo/skills/demo/tests"))
+        # A nota vale só para o plugin cuja base no origin/main também não tem pasta de testes.
+        self.push_origin(lambda root: shutil.rmtree(Path(root) / "plugins/demo/skills/demo/tests"),
+                         "test: demo sem testes")
+        rid, wt = self.clean_retrofit()
         notes = []
         self.assertIsNone(self.refuse(rid, notes=notes))
         self.assertEqual(notes, ["testes: plugin demo sem pasta de testes"])
@@ -589,15 +630,49 @@ class GateTest(unittest.TestCase):
             (wt / refs).write_text("# Nota\n\nUma nota de apoio.\n", encoding="utf-8")
             append(wt / DOC, "- Detalhes em `references/nota.md`.\n")
 
-        def big(wt):
-            append(wt / DOC, "- Linha de preenchimento.\n" * rg.SKILL_MAX_LINES)
+        def hidden_claim(wt):
+            # T8-r1-text: um `.gitattributes` do ramo com `binary` não esconde a linha nova do diff.
+            (wt / "plugins/demo/skills/demo/.gitattributes").write_text("*.md binary\n", encoding="utf-8")
+            claim(wt)
 
-        for phase, edit in (("claim-check", claim), ("self-containment", reference), ("refactoring", big)):
-            with self.subTest(phase=phase):
-                rid, wt = self.clean_retrofit(edit=edit)
+        for phase, edit, after in (("claim-check", claim, None), ("claim-check", hidden_claim, None),
+                                   ("self-containment", reference, None),
+                                   ("refactoring", None, lambda wt: self.size_doc(wt, lines=rg.SKILL_MAX_LINES + 1)),
+                                   ("refactoring", None, lambda wt: self.size_doc(wt, chars=rg.SKILL_MAX_CHARS + 1))):
+            with self.subTest(phase=phase, edit=edit, after=after):
+                rid, wt = self.clean_retrofit(edit=edit, after=after)
                 got = self.assertRefuses(rid, "fase-de-auditoria")
                 self.assertTrue(got[1].startswith(phase + ":"), got[1])
                 self.seal(rid, fases=[phase])
+                self.assertIsNone(self.refuse(rid))
+
+    def size_doc(self, wt, lines=None, chars=None):
+        """Leva o SKILL.md do commit a exatamente `lines` linhas ou `chars` caracteres (com menos de
+        SKILL_MAX_LINES linhas) e emenda o commit."""
+        doc = wt / DOC
+        text = doc.read_text(encoding="utf-8")
+        if lines is not None:
+            text += "- Linha de preenchimento.\n" * (lines - len(text.splitlines()))
+        else:
+            filler = "- " + "texto de preenchimento sem numero " * 3 + "\n"
+            while len(text) + len(filler) < chars - 10:
+                text += filler
+            rest = chars - len(text)
+            text += "- " + "x" * (rest - 3) + "\n"
+        doc.write_text(text, encoding="utf-8")
+        self.amend(wt)
+        text = doc.read_text(encoding="utf-8")
+        if lines is not None:
+            self.assertEqual(len(text.splitlines()), lines)
+        else:
+            self.assertEqual(len(text), chars)
+            self.assertLess(len(text.splitlines()), rg.SKILL_MAX_LINES)
+
+    def test_skill_md_at_the_cap_needs_no_refactoring(self):
+        # S1: no teto (400 linhas, 16000 caracteres) a fase não se exige; uma a mais, sim (o teste acima).
+        for size in ({"lines": rg.SKILL_MAX_LINES}, {"chars": rg.SKILL_MAX_CHARS}):
+            with self.subTest(size=size):
+                rid, wt = self.clean_retrofit(after=lambda wt, size=size: self.size_doc(wt, **size))
                 self.assertIsNone(self.refuse(rid))
 
     def test_skill_md_already_over_the_cap_needs_no_refactoring(self):
@@ -688,6 +763,7 @@ class GateTest(unittest.TestCase):
                 with self.assertRaises(rw_auto.Malformed):
                     rg.refuse(self.ctx(), rid, "demo", [])
         self.assertEqual(rw_auto.read_registry(self.ctx()), [])
+        self.assertEqual(self.w.origin_main(), self.base)
 
     def test_hold_takes_only_the_gate_reasons(self):
         rid, wt = self.clean_retrofit()
@@ -704,6 +780,7 @@ class GateTest(unittest.TestCase):
                 self.assertEqual(rg.hold(ctx, rid, "demo", motivo, "")["resultado"], "erro")
         self.assertEqual(set(rg.OVERRIDABLE) - set(rg.GATE_REASONS), set())
         self.assertEqual(set(rg.ERRORS) - set(rg.GATE_REASONS), set())
+        self.assertEqual(self.w.origin_main(), self.base)
 
 
 if __name__ == "__main__":
