@@ -65,20 +65,21 @@ class StoreError(Exception):
 
 # --- processos ---------------------------------------------------------------------------------
 
-def run(cmd, cwd=None, timeout=RUN_TIMEOUT, env=None):
+def run(cmd, cwd=None, timeout=RUN_TIMEOUT, env=None, stderr=subprocess.STDOUT):
     """(rc, saída) do comando, com stdout e stderr juntos e decodificados sem erro. Nunca levanta:
     o tempo esgotado dá rc 124; o comando que não chegou a rodar (binário ausente, outro OSError ao
-    lançar, um NUL num argumento ou no cwd) dá rc 127."""
-    rc, raw = run_bytes(cmd, cwd=cwd, timeout=timeout, env=env)
+    lançar, um NUL num argumento ou no cwd) dá rc 127. `stderr=subprocess.DEVNULL` deixa só o stdout,
+    para a saída que é um valor (CR-r1 #4: o aviso do git no stderr não entra no caminho)."""
+    rc, raw = run_bytes(cmd, cwd=cwd, timeout=timeout, env=env, stderr=stderr)
     return rc, _decode(raw)
 
 
-def run_bytes(cmd, cwd=None, timeout=RUN_TIMEOUT, env=None):
+def run_bytes(cmd, cwd=None, timeout=RUN_TIMEOUT, env=None, stderr=subprocess.STDOUT):
     """O `run` com a saída em bytes, sem decodificar: o patch (D20) se calcula sobre os bytes, porque
     dois bytes diferentes fora do UTF-8 viram o mesmo U+FFFD na decodificação."""
     try:
         proc = subprocess.run([str(c) for c in cmd], cwd=None if cwd is None else str(cwd), env=env,
-                              stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                              stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=stderr,
                               timeout=timeout)
     except subprocess.TimeoutExpired as exc:
         return 124, exc.output or b""
@@ -277,10 +278,16 @@ def _session_project(cwd, env):
     critério da Tarefa 5, sem ler a mensagem do git, que pode vir traduzida), é StoreError com o caminho
     (C8): um `gitfile` quebrado, um `safe.directory` só na config de sistema ou uma config ilegível nunca
     tiram o projeto da colheita em silêncio (Final-F1)."""
-    rc, top = run(["git", "-C", str(cwd), "rev-parse", "--show-toplevel"], env=env)
+    # Só o stdout é o caminho: com rc 0, o git ainda pode pôr um aviso no stderr (uma chave obsoleta da
+    # config, como `core.fsyncObjectFiles`), e o aviso colado viraria outro caminho (CR-r1 #4).
+    command = ["git", "-C", str(cwd), "rev-parse", "--show-toplevel"]
+    rc, top = run(command, env=env, stderr=subprocess.DEVNULL)
     if rc == 0 and top.strip():
-        root = Path(top.strip())
-        return [root.name] + _origin_of(root, env)
+        root = top.strip()
+        if not (os.path.isabs(root) and os.path.isdir(root)):
+            raise StoreError(f"colheita: o rev-parse do projeto da sessao em {cwd} nao deu uma pasta: "
+                             f"{root[:500]!r}")
+        return [Path(root).name] + _origin_of(Path(root), env)
     # Um caminho com NUL não existe em sistema nenhum (o `os.stat` levantaria ValueError).
     if "\0" in str(cwd):
         return []
@@ -291,8 +298,10 @@ def _session_project(cwd, env):
         return []
     for folder in [start, *start.parents]:
         if not _gone(folder / ".git"):
+            # A mensagem do git só para o dono ler: roda de novo com o stderr junto.
+            _, out = run(command, env=env)
             raise StoreError(f"colheita: o projeto da sessao em {folder} nao le: git saiu {rc}: "
-                             f"{top.strip()[:500]}")
+                             f"{out.strip()[:500]}")
     return []
 
 

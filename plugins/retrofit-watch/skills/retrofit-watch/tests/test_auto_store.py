@@ -211,6 +211,30 @@ class HarvestTest(unittest.TestCase):
         # Um cwd que não é repo, ou que não existe, não derruba a colheita.
         self.assertIn(self.home.name, rw_store.harvest(self.ctx(), cwd=self.tmp / "nao-existe"))
 
+    def test_harvest_reads_the_project_path_from_stdout_only(self):
+        # CR-r1 #4: com `core.fsyncObjectFiles` na config do repo, o git 2.43 sai 0 no `rev-parse` e põe um
+        # aviso no stderr. O caminho é só o stdout: o nome e os termos do `origin` entram na colheita.
+        proj, owner, name = invented("wproj"), invented("wown"), invented("wrem")
+        root = make_repo(self.env, self.tmp / "fora" / proj, remote(owner, name))
+        tgit(self.env, root, "config", "core.fsyncObjectFiles", "true")
+        self.config()
+        got = rw_store.harvest(self.ctx(), cwd=root)
+        self.assertEqual({proj, owner, name} - got, set())
+        # Um stdout de rc 0 que não é uma pasta absoluta é StoreError, nunca um nome a menos: o caminho
+        # relativo (o `.` é pasta para quem roda) e a pasta que não existe.
+        real_run = rw_store.run
+        for label, out in (("relativo", "."), ("ausente", str(self.tmp / "nao-existe" / proj))):
+            with self.subTest(label):
+                def fake(cmd, *args, out=out, **kwargs):
+                    if "--show-toplevel" in cmd:
+                        return 0, out + "\n"
+                    return real_run(cmd, *args, **kwargs)
+
+                with mock.patch.object(rw_store, "run", fake):
+                    with self.assertRaises(rw_store.StoreError) as caught:
+                        rw_store.harvest(self.ctx(), cwd=root)
+                self.assertIn("nao deu uma pasta", str(caught.exception))
+
     def test_harvest_reads_a_symlinked_cwd_by_its_physical_path(self):
         # CR-r1 #2: o git sobe pelo caminho físico do `cwd` (o `-C` faz `chdir`). A busca do `.git` também:
         # um link fora de repo para um projeto que não lê é StoreError, e um link dentro de um repo bom para
