@@ -71,7 +71,7 @@
     - O termo que o dono põe na lista de públicos (`--publico-add`) conta como citado pela forma, sem
       diferença de maiúscula e com o acento que a recusa escreveu como escape do `ascii()`, e nunca por
       um pedaço do nome citado.
-  - **Testes:** a suíte do plugin tem 395 testes (54 da 0.3.7, todos lá e passando), a do
+  - **Testes:** a suíte do plugin tem 398 testes (54 da 0.3.7, todos lá e passando), a do
     `retrofit-skill` (`tests/test_modo_autonomo.py`) tem 9, e a da raiz tem 154 (80 da linha de base,
     3 pulados). Os testes novos desta entrada, em `tests/test_auto_docs.py`, prendem os quatro lugares da
     versão (`0.4.0` ou maior, porque a guarda `testes` roda esta suíte em todo retrofit), os verbos no
