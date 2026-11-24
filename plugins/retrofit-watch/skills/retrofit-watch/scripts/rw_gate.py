@@ -109,8 +109,9 @@ class _Porta:
 
     def diff(self, *paths):
         """O diff -U0 do ramo, lido como o patch_id lê: `--text`, sem diff externo nem textconv e no ambiente
-        neutro. Um `.gitattributes` do ramo com `binary` não esconde linha nova (T8-r1-text)."""
-        return rw_store._git(["diff", "-U0", "--text", "--no-color", "--no-ext-diff", "--no-textconv", "--src-prefix=a/",
+        neutro. Um `.gitattributes` do ramo com `binary` não esconde linha nova (T8-r1-text), e um nome com
+        acento sai sem aspas, como o `+++ b/` que o `linhas_do_diff` lê (N1)."""
+        return rw_store._git(["-c", "core.quotePath=false", "diff", "-U0", "--text", "--no-color", "--no-ext-diff", "--no-textconv", "--src-prefix=a/",
                               "--dst-prefix=b/", f"{rw_store.BASE_REF}...HEAD", "--", *paths],
                              self.worktree, self.neutral, "porta")
 
@@ -344,15 +345,17 @@ def _is_test_dir(path, plugin):
     return re.fullmatch(rf"plugins/{re.escape(plugin)}/(skills/[^/]+/)?tests", path) is not None
 
 
-def _test_dirs(p):
-    """(pastas de teste do plugin no worktree, as do `origin/main`), como caminhos relativos."""
-    root = p.worktree / "plugins" / p.plugin
-    here = [d.relative_to(p.worktree).as_posix() for d in [root / "tests"] + sorted(root.glob("skills/*/tests"))
-            if d.is_dir()]
-    out = rw_store._git(["ls-tree", "-r", "-d", "-z", "--name-only", rw_store.BASE_REF, "--", f"plugins/{p.plugin}"],
+def _tree_test_dirs(p, ref):
+    """As pastas de teste do plugin na árvore de `ref`, como caminhos relativos."""
+    out = rw_store._git(["ls-tree", "-r", "-d", "-z", "--name-only", ref, "--", f"plugins/{p.plugin}"],
                         p.worktree, p.neutral, "testes")
-    base = [x for x in out.split("\0") if x and _is_test_dir(x, p.plugin)]
-    return here, base
+    return sorted(x for x in out.split("\0") if x and _is_test_dir(x, p.plugin))
+
+
+def _test_dirs(p):
+    """(pastas de teste do plugin no HEAD, as do `origin/main`). As duas saem da árvore do git, nunca do disco:
+    uma pasta ignorada ou fora do índice que sobra no worktree não conta como teste do ramo (I2)."""
+    return _tree_test_dirs(p, "HEAD"), _tree_test_dirs(p, rw_store.BASE_REF)
 
 
 def _g_tests(p):

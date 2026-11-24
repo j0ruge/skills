@@ -7,12 +7,14 @@ coisa. Toda chamada da porta confere depois que o `origin/main` não mudou. Nenh
 o `claude` real ou um `origin` real. Todo nome inventado se monta em tempo de execução: um literal
 faria a camada 1 reprovar o próprio ramo.
 """
+import importlib.util
 import json
 import os
 import shutil
 import sys
 import time
 import unittest
+import warnings
 from pathlib import Path
 from unittest import mock
 
@@ -540,6 +542,17 @@ class GateTest(unittest.TestCase):
         rid, wt = self.clean_retrofit(edit=lambda wt: self.w.git(wt, "rm", "-q", "-r", skill_tests))
         got = self.assertRefuses(rid, "testes")
         self.assertIn(skill_tests, got[1])
+
+        def ignored(wt):
+            # A pasta sai do HEAD, mas fica no disco, ignorada por um `.gitignore` do plugin: não conta.
+            self.w.git(wt, "rm", "-q", "-r", "--cached", skill_tests)
+            (wt / "plugins/demo/.gitignore").write_text("skills/demo/tests/\n", encoding="utf-8")
+
+        rid, wt = self.clean_retrofit(edit=ignored)
+        self.assertTrue((wt / skill_tests).is_dir())
+        self.assertEqual(self.w.git(wt, "ls-tree", "--name-only", "HEAD", "--", skill_tests).strip(), "")
+        got = self.assertRefuses(rid, "testes")
+        self.assertIn(skill_tests, got[1])
         self.push_origin(lambda root: (Path(root) / "plugins/demo/tests").mkdir() or
                          (Path(root) / "plugins/demo/tests/test_extra.py").write_text(
                              "import unittest\n\n\nclass ExtraTest(unittest.TestCase):\n"
@@ -645,6 +658,27 @@ class GateTest(unittest.TestCase):
                 self.assertTrue(got[1].startswith(phase + ":"), got[1])
                 self.seal(rid, fases=[phase])
                 self.assertIsNone(self.refuse(rid))
+
+    def test_diff_keeps_accented_names_for_the_audit_gate(self):
+        # N1: no ambiente neutro, o git põe entre aspas um caminho fora do ASCII, e o `linhas_do_diff` só lê
+        # `+++ b/`. O diff da porta sai sem aspas, e as linhas novas do arquivo com acento contam.
+        rel = "plugins/demo/skills/demo/nota-t" + chr(0xE9) + "cnica.md"
+
+        def accented(wt):
+            (wt / rel).write_text("# Nota\n\n- Medido em 2026-11-01: 120 ms por chamada.\n", encoding="utf-8")
+
+        rid, wt = self.clean_retrofit(edit=accented)
+        text = rg._Porta(self.ctx(), rid, "demo", []).diff("plugins/demo/skills/demo")
+        self.assertIn("+++ b/" + rel, text.splitlines())
+        spec = importlib.util.spec_from_file_location("audit_gate_n1", wt / rg.AUDIT_GATE)
+        gate = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(gate)
+        diff = self.w.data / "n1-diff.txt"
+        diff.write_text(text, encoding="utf-8")
+        with warnings.catch_warnings():  # o `linhas_do_diff` não fecha o arquivo que lê
+            warnings.simplefilter("ignore", ResourceWarning)
+            novas, _ = gate.linhas_do_diff(diff)
+        self.assertEqual(novas.get(rel), {1, 2, 3})
 
     def size_doc(self, wt, lines=None, chars=None):
         """Leva o SKILL.md do commit a exatamente `lines` linhas ou `chars` caracteres (com menos de
