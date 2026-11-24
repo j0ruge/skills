@@ -613,8 +613,8 @@ def _audit_json(p, skill):
 
 
 def _extract_base(p, dest):
-    raw = rw_store._git_bytes(["archive", "--format=tar", rw_store.BASE_REF, f"plugins/{p.plugin}"], p.worktree,
-                              p.neutral, "auditoria")
+    raw = rw_store._git_bytes([*rw_store.ARCHIVE, rw_store.BASE_REF, f"plugins/{p.plugin}"], p.worktree,
+                              rw_store.archive_env(), "auditoria")
     # O filtro `data` recusa link, caminho absoluto e `..`; o Python sem ele levanta TypeError (D25).
     return rw_store.untar(raw, dest / "base")
 

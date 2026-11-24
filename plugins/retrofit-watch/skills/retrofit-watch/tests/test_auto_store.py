@@ -861,9 +861,12 @@ class StoreTest(unittest.TestCase):
         name = self.w.proj.name
         rel = "plugins/demo/skills/demo/references/nota.md"
         self.w.retrofit(wt, files={rel: f"Veja o {name} antes.\n"})
-        self.w.plant_blind_name_check(wt)
+        pyc = self.w.plant_blind_name_check(wt)
+        self.assertTrue(pyc.is_file() and pyc.is_relative_to(wt), pyc)
         self.assertEqual(self.w.git(wt, "status", "--porcelain", "--untracked-files=all"), "")
-        out = rw_store.seal(self.ctx(), rid, "demo", ["1"], [])
+        with mock.patch.dict(os.environ):
+            os.environ.pop("PYTHONPYCACHEPREFIX", None)  # o executor grava o bytecode no worktree
+            out = rw_store.seal(self.ctx(), rid, "demo", ["1"], [])
         self.assertTrue([f for f in out["camada1"] if f.startswith(f"{rel}:1: colheita")], out["camada1"])
 
     # --- seal ----------------------------------------------------------------------------------

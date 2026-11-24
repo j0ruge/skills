@@ -929,9 +929,11 @@ class GateTest(GateHarness, unittest.TestCase):
         name = self.w.proj.name
         rid, wt = self.clean_retrofit(edit=lambda wt: append(wt / DOC, f"- Como no {name}.\n"))
         pyc = self.w.plant_blind_name_check(wt)
-        self.assertTrue(pyc.is_file())
+        self.assertTrue(pyc.is_file() and pyc.is_relative_to(wt), pyc)
         self.assertQuiet(wt)
-        got = self.assertRefuses(rid, "nome-privado")
+        with mock.patch.dict(os.environ):
+            os.environ.pop("PYTHONPYCACHEPREFIX", None)  # o executor grava o bytecode no worktree
+            got = self.assertRefuses(rid, "nome-privado")
         self.assertIn(name, got[1])
 
     def test_planted_module_does_not_pass_the_versions_guard(self):
@@ -989,6 +991,77 @@ class GateTest(GateHarness, unittest.TestCase):
             self.assertIsNone(self.refuse(rid))
             self.assertEqual(len(kept), 1)
             self.assertEqual([x.name for x in self.w.data.iterdir() if x.name.startswith(".porta-")], [])
+
+    @contextlib.contextmanager
+    def owner_attributes(self, text):
+        """O arquivo global de atributos do dono (`~/.config/git/attributes`) com `text`, pelo HOME e pelo
+        XDG_CONFIG_HOME do ambiente: o git do ambiente neutro o leria sem o `core.attributesFile`."""
+        owner = self.w.tmp / "dono"
+        (owner / ".config/git").mkdir(parents=True, exist_ok=True)
+        (owner / ".config/git/attributes").write_text(text, encoding="utf-8")
+        with mock.patch.dict(os.environ, HOME=str(owner), XDG_CONFIG_HOME=str(owner / ".config")):
+            yield
+
+    def test_owner_attributes_do_not_drop_a_test_from_the_copy(self):
+        rel = "plugins/demo/skills/demo/tests/test_quebra.py"
+        rid, wt = self.clean_retrofit(edit=lambda wt: (wt / rel).write_text(failing_test("Quebra"), encoding="utf-8"))
+        with self.owner_attributes("test_quebra.py export-ignore\n"):
+            got = self.assertRefuses(rid, "testes")
+        self.assertIn("test_quebra", got[1])
+
+    def test_owner_attributes_do_not_drop_the_base_of_the_audit(self):
+        # A dívida antiga do origin/main não reprova; sem o SKILL.md na base, ela pareceria nova.
+        self.push_origin(self.extra_field, "chore: campo fora da spec")
+        rid, wt = self.clean_retrofit()
+        notes = []
+        with self.owner_attributes("SKILL.md export-ignore\n"):
+            self.assertIsNone(self.refuse(rid, notes=notes))
+        self.assertEqual(notes, [])
+
+    def test_planted_module_does_not_pass_the_audit_gate(self):
+        rid, wt = self.clean_retrofit(edit=self.extra_field)
+        planted = (wt / fs.AUDIT_GATE).parent / "json.py"
+        self.w.ignore(wt, "/" + planted.relative_to(wt).as_posix())
+        planted.write_text("raise SystemExit(0)\n", encoding="utf-8")
+        self.assertQuiet(wt)
+        got = self.assertRefuses(rid, "auditoria")
+        self.assertIn("NOVO", got[1])
+
+    def test_ignored_skill_does_not_reach_the_audit(self):
+        rid, wt = self.clean_retrofit()
+        planted = wt / "plugins/demo/skills/fantasma/SKILL.md"
+        self.w.ignore(wt, "/plugins/demo/skills/fantasma/")
+        planted.parent.mkdir(parents=True)
+        planted.write_text((wt / DOC).read_text(encoding="utf-8").replace("license: MIT\n",
+                                                                          "license: MIT\ncampo-extra: x\n", 1),
+                           encoding="utf-8")
+        self.assertQuiet(wt)
+        notes = []
+        self.assertIsNone(self.refuse(rid, notes=notes))
+        self.assertEqual(notes, [])
+
+    def test_ignored_auditor_on_disk_is_still_missing(self):
+        self.push_origin(lambda root: (Path(root) / fs.AUDITOR).unlink(), "chore: auditor ausente")
+        rid, wt = self.clean_retrofit()
+        self.w.ignore(wt, "/" + fs.AUDITOR)
+        (wt / fs.AUDITOR).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(fs.STORE_ROOT / fs.AUDITOR, wt / fs.AUDITOR)
+        self.assertQuiet(wt)
+        got = self.assertRefuses(rid, "auditoria")
+        self.assertIn("ausente", got[1])
+
+    def test_skill_md_read_by_the_audit_is_the_commit(self):
+        # O SKILL.md do disco cresce depois que o auditor o leu: o teto se mede no do commit.
+        rid, wt = self.clean_retrofit()
+        real = rg._audit_json
+
+        def growing(p, skill):
+            got = real(p, skill)
+            append(wt / DOC, "- Linha de preenchimento.\n" * (rg.SKILL_MAX_LINES + 10))
+            return got
+
+        with mock.patch.object(rg, "_audit_json", side_effect=growing):
+            self.assertIsNone(self.refuse(rid))
 
     # --- guardas 20 e 21: teto e auto-dry ------------------------------------------------------
 

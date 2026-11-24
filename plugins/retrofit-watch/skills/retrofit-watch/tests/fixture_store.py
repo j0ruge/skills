@@ -267,12 +267,17 @@ class StoreWorld(World):
 
     def plant_blind_name_check(self, wt):
         """Um `.pyc` do `check-private-names.py` de `wt` com o `candidatos` vazio, no caminho do
-        `cache_from_source`, que o import do portão lê sem conferir a fonte (UNCHECKED_HASH). O
-        `__pycache__/` é ignorado pelo `.gitignore` da loja. Devolve o caminho do `.pyc`."""
+        `cache_from_source` sem `PYTHONPYCACHEPREFIX` (o `__pycache__/` do worktree, como no executor), que o
+        import do portão lê sem conferir a fonte (UNCHECKED_HASH). O `__pycache__/` é ignorado pelo
+        `.gitignore` da loja. Quem chama tira o PYTHONPYCACHEPREFIX do ambiente do portão. Devolve o caminho."""
         import py_compile
         import tempfile
         source = Path(wt) / "scripts" / "check-private-names.py"
-        target = Path(importlib.util.cache_from_source(str(source)))
+        prefix, sys.pycache_prefix = sys.pycache_prefix, None
+        try:
+            target = Path(importlib.util.cache_from_source(str(source)))
+        finally:
+            sys.pycache_prefix = prefix
         blind = source.read_text(encoding="utf-8") + "\n\ndef candidatos(linha):\n    return iter(())\n"
         with tempfile.TemporaryDirectory() as tmp:
             src = Path(tmp) / source.name

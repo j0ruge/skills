@@ -471,6 +471,15 @@ def untar(raw, dest):
 
 
 TREE_PREFIX = ".porta-"
+# O `git archive` lê os atributos de fora da árvore (o arquivo global do dono, `~/.config/git/attributes`,
+# e o de sistema) mesmo sem config nenhuma: um `export-ignore` ali tiraria um teste da cópia, e um
+# `export-subst` mudaria o conteúdo. Os dois saem; vale o `.gitattributes` da árvore (C5).
+ARCHIVE = ("-c", f"core.attributesFile={os.devnull}", "archive", "--format=tar")
+
+
+def archive_env():
+    """O ambiente neutro do `git archive`, sem o arquivo de atributos de sistema."""
+    return dict(git_env(neutral=True), GIT_ATTR_NOSYSTEM="1")
 
 
 @contextlib.contextmanager
@@ -482,7 +491,7 @@ def clean_tree(ctx, worktree, ref):
     data.mkdir(parents=True, exist_ok=True)
     tmp = Path(tempfile.mkdtemp(dir=data, prefix=TREE_PREFIX))
     try:
-        raw = _git_bytes(["archive", "--format=tar", ref], worktree, git_env(neutral=True), "arvore limpa")
+        raw = _git_bytes([*ARCHIVE, ref], worktree, archive_env(), "arvore limpa")
         tree = tmp / "arvore"
         try:
             untar(raw, tree)
