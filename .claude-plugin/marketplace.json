@@ -1116,7 +1116,7 @@
     {
       "name": "git-housekeeping",
       "source": "./plugins/git-housekeeping",
-      "version": "0.10.0",
+      "version": "0.10.1",
       "description": "Safely deletes merged git branches (local and remote) and their worktrees, and clears session scratch folders (old handoffs, temp dirs). A read-only scan proves each merge and each folder's other copy; only the approved plan runs, with sha leases, a quarantine and confirmations. Triggers — merged branches, branch cleanup, stale worktrees, git housekeeping, prune branches, old handoffs, scratch folders.",
       "category": "development",
       "keywords": [

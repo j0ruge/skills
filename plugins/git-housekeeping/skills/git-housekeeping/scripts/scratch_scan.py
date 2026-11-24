@@ -48,6 +48,10 @@ def render(plan: dict) -> str:
     repos = ", ".join(f"{os.path.basename(r['path'])} ({r['ref']})" for r in plan["repos"]) or "nenhum"
     lines = [f"pastas de rascunho: {plan['root']} (recente: até {plan['recent_days']} dia(s); "
              f"repos: {repos}; prova por PR: {plan['gh']})"]
+    for path, refs in sorted(plan.get("sem_fetch", {}).items()):
+        lines.append(f"aviso: {os.path.basename(path)}: o remoto andou depois do último fetch "
+                     f"({', '.join(refs)}), e essas refs não provam cópia; rode git -C {path} fetch "
+                     "e o scan de novo")
     if not plan["procs_checked"]:
         lines.append("processos nas pastas: não conferido (sem /proc)")
     lines.append(f"citações lidas também em: {_fontes(plan['cites'])}")

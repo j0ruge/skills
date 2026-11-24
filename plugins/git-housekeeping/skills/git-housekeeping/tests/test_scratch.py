@@ -385,6 +385,54 @@ class ConteudoTest(ScratchCase):
         self.assertEqual(self.decisao(plan, "estudo"), "unproven")
         self.assertFalse(any(i["name"] == "estudo/c" for i in plan["items"]))
 
+    def empurrar_por_outra_copia(self, local):
+        """Outra cópia empurra um commit para a main do remoto; devolve a ponta nova, que tem de ser
+        diferente da `origin/main` de `local` (a testemunha de que o remoto andou depois do fetch)."""
+        outro = self.base / "outro"
+        if not outro.exists():
+            self.fx.git(self.base, "clone", "-q", str(self.fx.bare), str(outro))
+        ponta = self.fx.commit("empurrado por outra cópia", cwd=outro)
+        self.fx.git(outro, "push", "-q", "origin", "main")
+        self.assertNotEqual(ponta, self.fx.git(local, "rev-parse", "origin/main"))
+        return ponta
+
+    def test_remoto_a_frente_do_fetch_avisa_e_nao_prova(self):
+        """A ref cuja ponta remota o repo não tem não prova cópia, e o cabeçalho a nomeia: em
+        2026-11-24 ela caiu calada, e 551 arquivos que estavam no histórico saíram sem prova."""
+        self.publicar("doc.md", "publicado na main\n")
+        self.mk("copia.md", "publicado na main\n")
+        self.envelhecer()
+        out, plan = self.scan()
+        self.assertEqual(self.decisao(plan, "copia.md"), "delete", out)
+        self.assertNotIn("aviso:", out)
+        self.assertFalse(plan.get("sem_fetch"))
+        self.empurrar_por_outra_copia(self.fx.clone)
+        out, plan = self.scan()
+        self.assertEqual(self.decisao(plan, "copia.md"), "unproven", out)
+        self.assertIn(f"aviso: {self.fx.clone.name}: o remoto andou depois do último fetch (origin/main)", out)
+        self.assertEqual(list(plan.get("sem_fetch", {}).values()), [["origin/main"]])
+        self.fx.git(self.fx.clone, "fetch", "-q", "origin")
+        out, plan = self.scan()
+        self.assertEqual(self.decisao(plan, "copia.md"), "delete", out)
+        self.assertNotIn("aviso:", out)
+
+    def test_clone_com_o_remoto_a_frente_pede_o_fetch(self):
+        """O clone cuja branch andou no remoto depois do último fetch dele não diz que ela sumiu."""
+        clone = self.root / "so-clone"
+        self.fx.git(self.base, "clone", "-q", str(self.fx.bare), str(clone))
+        self.empurrar_por_outra_copia(clone)
+        self.envelhecer()
+        _, plan = self.scan()
+        item = self.item(plan, "so-clone")
+        self.assertEqual(item["decision"], "unproven")
+        self.assertIn("o remoto andou depois do último fetch do clone (origin/main): git fetch nele",
+                      item["reason"])
+        self.assertNotIn("nenhuma branch", item["reason"])
+        self.fx.git(clone, "fetch", "-q", "origin")
+        self.envelhecer()
+        _, plan = self.scan()
+        self.assertEqual(self.decisao(plan, "so-clone"), "delete")
+
     def test_regeneraveis(self):
         self.mk("ferramenta/.venv/pyvenv.cfg", "home = /usr\n")
         self.mk("ferramenta/__pycache__/a.pyc", data=b"\0pyc")

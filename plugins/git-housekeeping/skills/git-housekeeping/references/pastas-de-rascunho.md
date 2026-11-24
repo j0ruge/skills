@@ -58,6 +58,13 @@ a ponta igual à local ou à frente dela. A ref de uma branch apagada no remoto 
 próximo `git fetch --prune` a leva, e o que só ela alcança vai junto. É o mesmo caso do "único
 ponteiro local" do fluxo das branches. Sem resposta do remoto, só a default prova.
 
+A ref cuja ponta remota o repo ainda não tem também não prova: o remoto andou depois do último fetch,
+e sem o commit não há como saber se ele avançou ou reescreveu. Ela não some calada. O cabeçalho do
+relatório a nomeia numa linha `aviso:`, com o `git fetch` a rodar, e o clone aninhado diz o mesmo
+no motivo, em vez de "nenhuma branch do clone existe mais no remoto". Medido em 2026-11-24: outra
+sessão empurrou entre o fetch e o scan, a única ref viva do repo caiu, e os 551 arquivos de uma
+exportação, todos no histórico (um `LICENSE` com o mesmo blob da `origin/main`), saíram sem prova.
+
 Os casos de 2026-11-17 por trás das regras que não são óbvias:
 
 - **O nome não prova nada.** Do `plan-6a-scratch`, uma saída de extração que parecia se refazer pelo
@@ -105,6 +112,7 @@ um:
 | `N arquivo(s) sem prova de outra cópia (... KB): ...` | Abrir e decidir. Se o conteúdo tem cópia num lugar que o scan não lê, passar `--repo` ou `--igual` e rodar de novo. |
 | `N de M arquivos de <x> sem cópia igual em <destino>` | Refazer a cópia, ou decidir que os que faltam são descartáveis. |
 | `clone <x>: árvore suja` / `commit(s) fora das refs do remoto` / `tem stash` | Publicar ou descartar o que só existe no clone. |
+| `clone <x>: o remoto andou depois do último fetch do clone (...)` | `git fetch` no clone e rodar o scan de novo. |
 | `sha X fora da default de <repo>` | O commit não está na default: está numa branch, ou o `--repo` precisa de um `git fetch`. |
 | `sha X não existe em nenhum --repo` | O handoff é de um repo que não foi passado. Passe-o com `--repo`. |
 | `PR #N aberto` | Esperar o merge. |
@@ -130,6 +138,8 @@ Um item NÃO PROVADO nunca sai pelo apply: o `--only` com o nome dele sai com rc
 
 - O scan não faz `git fetch`. A prova usa as refs locais das branches vivas, e um commit publicado
   depois do último fetch não conta. Rode o `analyze.py` de cada `--repo` antes, ou um `git fetch`.
+  O remoto que anda entre o fetch e o scan (outra sessão empurrando) derruba as refs dele, e a linha
+  `aviso:` do cabeçalho diz quais.
 - Uma citação que mora fora das fontes não segura nada: num repo que não foi passado, no lado Windows
   ou em outra máquina. Passe cada repo de onde vêm os handoffs da raiz.
 - Medido em 2026-11-17, com 403 entradas (`ls -A ~/.wt | wc -l`) e 4 `--repo`: o scan levou de 89 a

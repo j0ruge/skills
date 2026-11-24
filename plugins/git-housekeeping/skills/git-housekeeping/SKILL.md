@@ -2,7 +2,7 @@
 name: git-housekeeping
 description: "Safely deletes merged git branches (local and remote) and their worktrees, and clears session scratch folders (old handoffs, temp dirs). A read-only scan proves each merge and each folder's other copy; only the approved plan runs, with sha leases, a quarantine and confirmations. Triggers — merged branches, branch cleanup, stale worktrees, git housekeeping, prune branches, old handoffs, scratch folders."
 metadata:
-  version: 0.10.0
+  version: 0.10.1
 ---
 
 # git-housekeeping
@@ -201,6 +201,9 @@ dentro. As regras, cada uma com o caso que a criou, a leitura dos handoffs e a q
    ```bash
    python3 "$SCRIPTS/scratch_scan.py" --root ~/.wt --repo <repo> --repo <outro> --plan <scratchpad>/rascunho.json
    ```
+
+   Uma linha `aviso:` abaixo do cabeçalho quer dizer que o remoto andou depois do fetch, e as refs
+   que ela nomeia não provaram nada: rode o `git fetch` e o scan de novo antes do passo 2.
 
 2. **Mostrar o relatório.** Mostre `SAI` e `SAI SE A LEITURA CONFIRMAR` inteiros, cada item com o
    tamanho e o motivo. `NÃO PROVADO` e `FICA` podem passar de cem itens. Agrupe-os pelo motivo, com a

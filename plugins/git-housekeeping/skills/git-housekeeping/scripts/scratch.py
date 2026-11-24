@@ -104,11 +104,16 @@ def load_repo(path) -> Repo:
     return Repo(top, ref, sha, hk.github_slug(url))
 
 
-def refs_vivas(repo):
-    """As refs remote-tracking do `origin` (ou do primeiro remoto) cuja branch existe no remoto agora
-    (`ls-remote`) com a ponta igual, ou à frente, da local; None se o remoto não responde. A ref de
-    uma branch apagada no remoto não é cópia: o próximo `fetch --prune` a leva, e o que só ela
-    alcança vai junto. É o mesmo caso do "único ponteiro local" do fluxo das branches."""
+def refs_do_remoto(repo):
+    """(vivas, sem_fetch), ou None se o remoto não responde. `vivas` são as refs remote-tracking do
+    `origin` (ou do primeiro remoto) cuja branch existe no remoto agora (`ls-remote`) com a ponta
+    igual, ou à frente, da local. A ref de uma branch apagada no remoto não é cópia: o próximo
+    `fetch --prune` a leva, e o que só ela alcança vai junto. É o mesmo caso do "único ponteiro
+    local" do fluxo das branches. `sem_fetch` são as que também não provam porque a ponta remota
+    não está no repo: o remoto andou depois do último fetch, e sem o commit não há como saber se
+    ele avançou ou reescreveu. Elas são ditas, nunca contadas: em 2026-11-24 outra sessão empurrou
+    entre o fetch e o scan, a única ref viva do repo caiu calada, e 551 arquivos que estavam no
+    histórico saíram sem prova."""
     remotes = hk.run_git(repo, "remote").stdout.split()
     if not remotes:
         return None
@@ -121,14 +126,30 @@ def refs_vivas(repo):
         sha, _, ref = line.partition("\t")
         heads[ref.removeprefix("refs/heads/")] = sha
     prefix = f"refs/remotes/{name}/"
-    out = []
+    vivas, sem_fetch = [], []
     for ref in hk.run_git(repo, "for-each-ref", "--format=%(refname)", prefix).stdout.split():
         remote_tip = heads.get(ref.removeprefix(prefix))
         tip = _commit(repo, ref)
-        if remote_tip and tip and (tip == remote_tip or (hk.has_commit(repo, remote_tip)
-                                                         and hk.is_ancestor(repo, tip, remote_tip))):
-            out.append(ref)
-    return out
+        if not (remote_tip and tip):
+            continue
+        if tip == remote_tip:
+            vivas.append(ref)
+        elif not hk.has_commit(repo, remote_tip):
+            sem_fetch.append(ref)
+        elif hk.is_ancestor(repo, tip, remote_tip):
+            vivas.append(ref)
+    return vivas, sem_fetch
+
+
+def refs_vivas(repo):
+    """As refs vivas de `refs_do_remoto`, ou None se o remoto não responde."""
+    r = refs_do_remoto(repo)
+    return None if r is None else r[0]
+
+
+def nomes_curtos(refs) -> str:
+    """`refs/remotes/origin/main` → `origin/main`, separados por vírgula."""
+    return ", ".join(r.removeprefix("refs/remotes/") for r in refs)
 
 
 def conta(path) -> tuple:
@@ -198,14 +219,18 @@ def clone_limpo(path) -> tuple:
         return False, f"árvore suja ({len(sujo)}: {', '.join(sujo[:3])})"
     if hk.run_git(path, "rev-parse", "-q", "--verify", "refs/stash").returncode == 0:
         return False, "tem stash"
-    vivas = refs_vivas(path)
-    if vivas is None:
+    remoto = refs_do_remoto(path)
+    if remoto is None:
         return False, "o remoto não respondeu (ls-remote)"
+    vivas, sem_fetch = remoto
+    andou = (f"o remoto andou depois do último fetch do clone ({nomes_curtos(sem_fetch)}): "
+             "git fetch nele") if sem_fetch else ""
     if not vivas:
-        return False, "nenhuma branch do clone existe mais no remoto"
+        return False, andou or "nenhuma branch do clone existe mais no remoto"
     fora = hk.run_git(path, "rev-list", "--count", "HEAD", "--branches", "--not", *vivas)
     if fora.returncode or fora.stdout.strip() != "0":
-        return False, f"{fora.stdout.strip() or '?'} commit(s) fora das branches que o remoto tem"
+        return False, (f"{fora.stdout.strip() or '?'} commit(s) fora das branches que o remoto tem"
+                       + (f"; {andou}" if andou else ""))
     url = hk.run_git(path, "config", "--get", f"remote.{remotes[0]}.url").stdout.strip()
     return True, f"tudo o que tem está no remoto ({url})"
 
@@ -354,16 +379,25 @@ class Contexto:
         self.igual = {os.path.realpath(k): v for k, v in (igual or {}).items()}
         self.cites = cites or {}
         self._blobs, self._msgs, self._issues, self._shas, self._refs = {}, {}, {}, {}, {}
+        self._sem_fetch = {}
         self.gh_ok, self.gh_erro = False, ""
 
     def refs(self, r: Repo) -> list:
         """As refs que provam cópia no repo: as vivas no remoto; sem resposta do remoto, só a
         default (`origin/...`); sem default no remoto, nenhuma."""
         if r.path not in self._refs:
-            vivas = refs_vivas(r.path)
+            remoto = refs_do_remoto(r.path)
+            vivas, self._sem_fetch[r.path] = remoto if remoto is not None else (None, [])
             self._refs[r.path] = (vivas if vivas is not None
                                   else [r.sha] if r.sha and r.ref.startswith("origin/") else [])
         return self._refs[r.path]
+
+    def sem_fetch(self) -> dict:
+        """As refs que não provam porque o remoto andou depois do último fetch, por repo."""
+        for r in self.repos:
+            self.refs(r)
+        return {p: [ref.removeprefix("refs/remotes/") for ref in refs]
+                for p, refs in self._sem_fetch.items() if refs}
 
     def blobs(self, r: Repo) -> set:
         if r.path not in self._blobs:
@@ -731,6 +765,7 @@ def scan(root, repos, cites, igual=None, recent_days=RECENTE_DIAS, procs=None, n
                     fica(h, f"é a única descrição de {cited}, que fica", [f"{h} cita {cited}"])
     gh = "sim" if ctx.gh_ok else (f"não ({ctx.gh_erro})" if ctx.gh_erro else "não usado")
     return {"version": PLAN_VERSION, "tool": "scratch", "root": root, "created": now,
-            "recent_days": recent_days, "repos": [r.__dict__ for r in repos], "cites": list(cites),
+            "recent_days": recent_days, "repos": [r.__dict__ for r in repos], "sem_fetch": ctx.sem_fetch(),
+            "cites": list(cites),
             "igual": {k: v for k, v in ctx.igual.items()}, "gh": gh, "procs_checked": procs is not None,
             "items": [i.__dict__ for i in items]}

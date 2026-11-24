@@ -1,5 +1,31 @@
 # Changelog — `git-housekeeping`
 
+## [0.10.1] — 2026-11-24
+
+### O remoto que anda depois do fetch não derruba mais a prova calado
+
+Nasceu da limpeza de duas pastas de rascunho de `~/.wt`. Uma exportação do repo `skills` (562
+arquivos) saiu em `NÃO PROVADO` com 551 arquivos "sem prova de outra cópia", entre eles um `LICENSE`
+com o mesmo blob da `origin/main`. Outra sessão tinha empurrado para a `main` entre o `git fetch` e o
+scan: a ponta remota (`347f3f1`) não estava no repo local (`c1d56d0`), o `refs_vivas` descartou a
+única ref viva do repo, e o cabeçalho continuou dizendo `skills (origin/main)`. Com um fetch novo, o
+mesmo scan deu `551 no histórico de skills`.
+
+- **O quê:** o `refs_do_remoto` separa as refs cuja ponta remota o repo não tem (`sem_fetch`). Elas
+  seguem sem provar, porque sem o commit não há como saber se o remoto avançou ou reescreveu, mas o
+  relatório as nomeia: uma linha `aviso: <repo>: o remoto andou depois do último fetch (<refs>) …`
+  abaixo do cabeçalho, com o `git -C <repo> fetch` a rodar. O plano ganha a chave `sem_fetch` no
+  topo; o formato dos itens não muda (`PLAN_VERSION` 1).
+- **O clone aninhado:** o motivo dizia "nenhuma branch do clone existe mais no remoto", que era
+  falso no mesmo caso. Agora diz "o remoto andou depois do último fetch do clone (…): git fetch nele".
+- **Por quê assim:** nenhuma decisão muda, só deixa de ser calada. Fazer o scan rodar o fetch
+  quebraria a regra de que ele só lê.
+- **Testes:** 2 novos (135 → 137), vermelhos no código anterior pelo motivo certo (falta o `aviso:`;
+  aparece a frase antiga) e com a testemunha de que a ponta remota difere da local.
+- **Docs:** uma frase no passo 1 das *Pastas de rascunho* do `SKILL.md`; em
+  `references/pastas-de-rascunho.md`, o caso em "A branch viva", uma linha na tabela do `NÃO
+  PROVADO` e o remoto que anda em "Limites e custo".
+
 ## [0.10.0] — 2026-11-23
 
 ### Os ignorados sem outra cópia do worktree vão para a quarentena
