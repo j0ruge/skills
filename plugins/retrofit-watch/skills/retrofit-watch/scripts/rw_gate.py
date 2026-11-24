@@ -1,8 +1,9 @@
-"""retrofit-watch, modo autônomo: as recusas da porta de publicação (spec 5.7).
+"""retrofit-watch, modo autônomo: a porta de publicação (spec 5.7).
 
 A porta (`publish <id> <lote>`) chama `refuse` antes de publicar e `hold` quando uma guarda reprova.
-Nada daqui faz push: as guardas só leem o worktree do lote, o rebaseiam sobre o `origin/main` e rodam
-as portas da loja (testes, `validate-versions.py`, auditoria, camada 1 do portão de anonimização).
+As guardas não fazem push: só leem o worktree do lote, o rebaseiam sobre o `origin/main` e rodam as
+portas da loja (testes, `validate-versions.py`, auditoria, camada 1 do portão de anonimização). O push
+e a instalação moram no `Effects`, que só o `publish` chama, depois de `refuse` passar (D22, D25).
 
 O worktree e o ramo saem do `<id>`, do `<lote>` e da `tentativa` (D9), nunca dos campos `worktree` e
 `ramo` do retrofit.json. Os arquivos do fluxo se leem das pastas do Context (C4): `pedido.json`,
@@ -13,11 +14,14 @@ e com o HOME do Context.
 import json
 import os
 import re
+import shutil
 import sys
 import tarfile
 import tempfile
+import time
 from pathlib import Path
 
+import retrofit_watch as rw
 import rw_auto
 import rw_store
 
@@ -51,6 +55,19 @@ CO_AUTHOR = re.compile(r"(?im)^[ \t]*co-authored-by[ \t]*:")
 FRONTMATTER_VERSION = re.compile(r"\s*version\s*:.*")
 DESCRIPTION_SUFFIX = "__description"
 DETAIL_MAX = 1500
+
+# A porta que publica (D22, D25).
+PUBLISH_LOCK = "publish.lock"
+PUBLISH_LOCK_WAIT = 900
+APPROVED = "autonomous-approved"
+BATCH_SSH = "ssh -o BatchMode=yes"
+# O `instalacao` da linha `publicado` que dá rc 0; os outros (`update`, `cache-difere`) dão rc 4.
+INSTALLED = ("ok", "nao-instalado")
+# O que a cópia instalada e o worktree têm e não conta na comparação (M7): a marca de uso do Claude
+# Code e o bytecode.
+CACHE_SKIP_DIRS = (".in_use", "__pycache__")
+CACHE_SKIP_SUFFIX = ".pyc"
+SHA_SHORT = 7
 
 
 def _lote_kind(lote):
@@ -158,10 +175,18 @@ def _g_clean(p):
     return ("arvore-suja", _short(out)) if out.strip() else None
 
 
+def network_env(env):
+    """O ambiente de um git que fala com o `origin`: nunca espera credencial nem a senha da chave SSH no
+    terminal (T9-ssh). O GIT_SSH_COMMAND que o dono já definiu fica como está."""
+    env = dict(env, GIT_TERMINAL_PROMPT="0")
+    if "GIT_SSH_COMMAND" not in env:
+        env["GIT_SSH_COMMAND"] = BATCH_SSH
+    return env
+
+
 def _g_fetch(p):
     """3. `git fetch origin`, sem nunca esperar credencial no terminal. Falha é `fetch`, nunca "em dia"."""
-    env = dict(p.env, GIT_TERMINAL_PROMPT="0")
-    rc, out = rw_store.run(["git", "-C", p.worktree, "fetch", "origin"], env=env)
+    rc, out = rw_store.run(["git", "-C", p.worktree, "fetch", "origin"], env=network_env(p.env))
     return ("fetch", _short(f"git fetch origin saiu {rc}: {out}")) if rc != 0 else None
 
 
@@ -589,3 +614,323 @@ def hold(ctx, rid, lote, motivo, detalhe):
     return rw_auto._hold(ctx, session, rid, f"{rid}/{lote}", plugin, list(retrofit["licoes"]), resultado, motivo,
                          detalhe, lote, commit=_head(worktree) or retrofit["commit"], ramo=branch,
                          worktree=str(worktree))
+
+
+# --- a porta que publica (D22, D25) -------------------------------------------------------------
+
+def _files(root):
+    """{caminho relativo: bytes} dos arquivos sob `root`, fora o `.in_use` e o bytecode (M7)."""
+    out = {}
+    for folder, dirs, names in os.walk(root):
+        dirs[:] = [d for d in dirs if d not in CACHE_SKIP_DIRS]
+        for name in names:
+            if name in CACHE_SKIP_DIRS or name.endswith(CACHE_SKIP_SUFFIX):
+                continue
+            path = Path(folder) / name
+            out[path.relative_to(root).as_posix()] = path.read_bytes()
+    return out
+
+
+class Effects:
+    """O que a porta faz fora do worktree: o push e a cópia instalada. Os testes usam um `FixtureEffects`,
+    que herda o `push` real e só empurra para o `origin` da fixture. Todo `~` resolve pelo `ctx.home` (C5):
+    o installed_plugins.json e o cache lidos são os do Context."""
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+
+    def push(self, worktree):
+        """`git push origin HEAD:main`, sem força, sem esperar senha no terminal: (True, saída) ou
+        (False, por quê)."""
+        env = network_env(rw_store.git_env(home=self.ctx.home, nosystem=True))
+        rc, out = rw_store.run(["git", "-C", worktree, "push", "origin", "HEAD:main"], env=env)
+        if rc != 0:
+            return False, _short(f"git push origin HEAD:main saiu {rc}: {out}")
+        return True, _short(out)
+
+    def _user_install(self, plugin):
+        """O plugin da loja está instalado no escopo `user` (D18)? Malformed com o arquivo ilegível."""
+        path = self.ctx.home / ".claude/plugins/installed_plugins.json"
+        if not path.exists():
+            return False
+        data = rw_auto._read_json(path)
+        entries = data.get("plugins") if isinstance(data, dict) else None
+        if not isinstance(entries, dict):
+            raise rw_auto.Malformed(f"{path}: sem o objeto `plugins`")
+        found = entries.get(f"{plugin}@{rw.MARKETPLACE}")
+        return isinstance(found, list) and any(isinstance(e, dict) and e.get("scope") == "user" for e in found)
+
+    def refresh_install(self, plugin):
+        """`claude plugin marketplace update <loja>` e `claude plugin update <plugin>@<loja> --scope user`.
+        Sem o `claude` no PATH, (False, "claude ausente"); plugin fora do escopo `user`, (True,
+        "nao-instalado"), sem chamar nada."""
+        exe = shutil.which("claude")
+        if not exe:
+            return False, "claude ausente"
+        try:
+            if not self._user_install(plugin):
+                return True, "nao-instalado"
+        except rw_auto.Malformed as exc:
+            return False, _short(exc)
+        env = dict(os.environ, HOME=str(self.ctx.home))
+        for args in (("plugin", "marketplace", "update", rw.MARKETPLACE),
+                     ("plugin", "update", f"{plugin}@{rw.MARKETPLACE}", "--scope", "user")):
+            rc, out = rw_store.run([exe, *args], env=env)
+            if rc != 0:
+                return False, _short(f"claude {' '.join(args)} saiu {rc}: {out}")
+        return True, "atualizado"
+
+    def cache_matches(self, ctx, worktree, plugin, versao):
+        """A cópia instalada (`~/.claude/plugins/cache/<loja>/<plugin>/<versao>`) tem os mesmos arquivos,
+        com os mesmos bytes, que `plugins/<plugin>` do worktree, fora o `.in_use` e o bytecode (M7). A
+        versão e o plugin viram pasta: fora do formato seguro, Malformed."""
+        rw_auto._safe(plugin, "plugin")
+        rw_auto._safe(versao, "versao")
+        cache = ctx.home / ".claude/plugins/cache" / rw.MARKETPLACE / plugin / versao
+        if not cache.is_dir():
+            return False, f"sem copia instalada em {cache}"
+        here, there = _files(Path(worktree) / "plugins" / plugin), _files(cache)
+        differ = sorted(set(here) ^ set(there)) + sorted(k for k in set(here) & set(there) if here[k] != there[k])
+        if differ:
+            return False, _short("a copia instalada difere em: " + ", ".join(differ))
+        return True, f"copia instalada igual: {cache}"
+
+
+def already_published(worktree, retrofit):
+    """O commit do worktree já está no `origin/main`? O HEAD não é a `base` do retrofit.json (o worktree
+    recém-preparado é ancestral de qualquer `origin/main` novo) e é ancestral do `origin/main`."""
+    if not Path(worktree).is_dir():
+        return False
+    env = rw_store.git_env(neutral=True)
+    rc, head = rw_store.run(["git", "-C", worktree, "rev-parse", "HEAD"], env=env)
+    head = head.strip()
+    if rc != 0 or not head or head == retrofit["base"]:
+        return False
+    rc, _ = rw_store.run(["git", "-C", worktree, "merge-base", "--is-ancestor", head, rw_store.BASE_REF], env=env)
+    return rc == 0
+
+
+def mark_done(ctx, session, key):
+    """A retro da skill acabou (D6): no estado da sessão, sob a trava dele, a chave entra em `done` e a
+    entrada dela fica com `reviews = MAX_REVIEWS`. O Stop hook não a pede de novo."""
+    with rw.State(ctx, session) as state:
+        st = state.data
+        if key not in st["done"]:
+            st["done"].append(key)
+        entry = st["skills"].get(key)
+        if isinstance(entry, dict):
+            entry["reviews"] = rw.MAX_REVIEWS
+        state.save()
+
+
+def _record(ctx, line):
+    """Grava a linha e a devolve; sem conseguir gravar, devolve a linha não gravada. Nunca levanta."""
+    try:
+        return rw_auto.append_registry(ctx, line)
+    except Exception:  # noqa: BLE001 — o publish nunca levanta (D25)
+        return dict(line, ts=int(time.time()))
+
+
+def _error(ctx, rid, lote, motivo, detalhe):
+    """A linha `erro` do lote pelo `hold`. Sem o retrofit.json ou o pedido.json para montá-la, grava uma
+    linha mínima com o porquê no `detalhe`. Nunca levanta."""
+    try:
+        return hold(ctx, rid, lote, motivo, detalhe)
+    except Exception as exc:  # noqa: BLE001
+        detalhe = _short(f"{detalhe}; a linha completa falhou: {type(exc).__name__}: {exc}")
+    session = None
+    try:
+        session = rw_auto.load_pedido(rw_auto.retro_dir(ctx, rid) / "pedido.json")["sessao"]
+    except Exception:  # noqa: BLE001
+        pass
+    lote_text = str(lote)
+    plugin = lote_text[:-len(DESCRIPTION_SUFFIX)] if lote_text.endswith(DESCRIPTION_SUFFIX) else lote_text
+    return _record(ctx, rw_auto._line(session, rid, f"{rid}/{lote}", plugin, [], "erro", motivo, detalhe, lote=lote))
+
+
+def _mark_approved(ctx, worktree, env):
+    """Troca o trailer por `Retrofit-Mode: autonomous-approved` com `commit --amend`. A árvore do commit
+    fica igual e o trailer sai com um valor só; outra coisa é StoreError."""
+    def git(*args):
+        return rw_store._git(list(args), worktree, env, "aprovacao")
+    tree = git("rev-parse", "HEAD^{tree}").strip()
+    message = git("log", "-1", "--format=%B")
+    fd, tmp = tempfile.mkstemp(dir=ctx.data_dir, prefix=".mensagem-")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
+            fh.write(message)
+        git("interpret-trailers", "--in-place", "--if-exists", "replace", "--trailer", f"{MARKER}: {APPROVED}", tmp)
+        git("commit", "-q", "--amend", "-F", tmp)
+    finally:
+        os.unlink(tmp)
+    if git("rev-parse", "HEAD^{tree}").strip() != tree:
+        raise rw_store.StoreError("aprovacao: a emenda do trailer mudou a arvore do commit")
+    values = [v.strip() for v in git("log", "-1", f"--format=%(trailers:key={MARKER},valueonly)").splitlines()
+              if v.strip()]
+    if values != [APPROVED]:
+        raise rw_store.StoreError(f"aprovacao: {MARKER} depois da emenda: {values}")
+
+
+def _plan(ctx, rid, lote, retrofit, worktree, aprovado, detalhe):
+    """A linha `publicado` (`instalacao: "pendente"`) e as chaves da sessão a marcar feitas, montadas antes
+    do push: depois dele só se grava. O `commit` se acerta depois da emenda do trailer."""
+    plugin, _ = _lote_kind(lote)
+    pedido = rw_auto.load_pedido(rw_auto.retro_dir(ctx, rid) / "pedido.json")
+    line = rw_auto._line(pedido["sessao"], rid, f"{rid}/{lote}", plugin, list(retrofit["licoes"]), "publicado",
+                         None, _short(detalhe), lote=lote)
+    line.update(commit=_head(worktree), ramo=rw_store.branch_name(rid, lote, retrofit["tentativa"]),
+                worktree=str(worktree), versao=rw_store._version(worktree, plugin), aprovado=aprovado,
+                instalacao="pendente")
+    return line, [e["key"] for e in pedido["skills"] if e["plugin"] == plugin]
+
+
+def _record_published(ctx, line, keys, done):
+    """Grava a primeira linha `publicado`; fecha cada lição do lote que um selo segurou por
+    `executor-recusou` e outro trouxe de volta (T9-seal); marca a retro feita na sessão (D6)."""
+    done["line"] = written = rw_auto.append_registry(ctx, line)
+    last = rw_auto.last_lines(rw_auto.read_registry(ctx))
+    for n in line["licoes"]:
+        item = f"{line['id']}/{line['plugin']}#{n}"
+        held_line = last.get(item)
+        if held_line and held_line.get("resultado") == "segurado" and held_line.get("motivo") == "executor-recusou":
+            closing = rw_auto._line(line["sessao"], line["id"], item, line["plugin"], [n], "publicado", None,
+                                    f"publicada no lote {line['id']}/{line['lote']}", lote=line["lote"])
+            closing.update(commit=line["commit"])
+            rw_auto.append_registry(ctx, closing)
+    for key in keys:
+        mark_done(ctx, line["sessao"], key)
+    return written
+
+
+def _previous(ctx, rid, lote, commit):
+    """A última linha `publicado` do lote com este `commit`, ou None."""
+    found = None
+    for line in rw_auto.read_registry(ctx):
+        if line.get("item") == f"{rid}/{lote}" and line.get("resultado") == "publicado" and line.get("commit") == commit:
+            found = line
+    return found
+
+
+def _approved_marker(worktree, env):
+    out = rw_store._git(["log", "-1", f"--format=%(trailers:key={MARKER},valueonly)"], worktree, env, "porta")
+    return [v.strip() for v in out.splitlines() if v.strip()] == [APPROVED]
+
+
+def _publish(ctx, rid, lote, effects, done):
+    plugin, _ = _lote_kind(lote)
+    retrofit = _retrofit(ctx, rid, lote)
+    worktree = rw_store.worktree_path(ctx, rid, lote, retrofit["tentativa"])
+    env = rw_store.git_env(home=ctx.home, nosystem=True)
+    if worktree.is_dir():
+        # 2. Uma falha deste fetch não se registra aqui: a guarda 3 busca de novo e a grava como `fetch`.
+        rw_store.run(["git", "-C", worktree, "fetch", "origin"], env=network_env(env))
+    if already_published(worktree, retrofit):
+        # Refaz só a instalação (D22). Sem linha `publicado` deste commit (a porta caiu entre o push e a
+        # linha), grava a que faltou, e com ela o fecho da sessão.
+        commit = _head(worktree)
+        line = _previous(ctx, rid, lote, commit)
+        if line is None:
+            line, keys = _plan(ctx, rid, lote, retrofit, worktree, _approved_marker(worktree, env),
+                               "o commit ja estava no origin/main")
+            line = _record_published(ctx, line, keys, done)
+        done["line"] = line
+    else:
+        notes = []
+        found = refuse(ctx, rid, lote, notes)
+        if found is not None:
+            return hold(ctx, rid, lote, *found)
+        approved = (rw_auto.lote_dir(ctx, rid, lote) / "aprovado.json").exists()
+        line, keys = _plan(ctx, rid, lote, retrofit, worktree, approved, "; ".join(notes))
+        reviewed, pushed = line["commit"], False
+        try:
+            if approved:
+                _mark_approved(ctx, worktree, env)
+                line["commit"] = _head(worktree)
+            pushed, detail = effects.push(worktree)
+        finally:
+            # A emenda muda o patch (D20): um push que não saiu devolve o ramo ao commit revisado.
+            if approved and not pushed:
+                rw_store._git(["reset", "-q", "--soft", reviewed], worktree, env, "porta")
+        if not pushed:
+            return hold(ctx, rid, lote, "push", detail)
+        _record_published(ctx, line, keys, done)
+    line = done["line"]
+    ok, detail = effects.refresh_install(plugin)
+    if not ok:
+        instalacao = "update"
+    elif detail == "nao-instalado":
+        instalacao = "nao-instalado"
+    else:
+        same, detail = effects.cache_matches(ctx, worktree, plugin, line["versao"])
+        instalacao = "ok" if same else "cache-difere"
+    return rw_auto.append_registry(ctx, dict(line, instalacao=instalacao, detalhe=_short(detail)))
+
+
+def publish(ctx, rid, lote, effects):
+    """A porta: publica o lote e devolve a última linha gravada no registro. Nunca levanta (D25).
+
+    1. Prende <dados>/publish.lock por até PUBLISH_LOCK_WAIT s até o fim; sem ela, linha `erro`, `trava`.
+    2. `git fetch origin`. Com o commit já no `origin/main` (`already_published`), pula para o passo 6.
+    3. `refuse`; com recusa, `hold` e fim.
+    4. Com aprovado.json, o trailer vira `Retrofit-Mode: autonomous-approved` (`commit --amend`).
+    5. `effects.push`. Falha: linha `erro`, `push`. Certo: linha `publicado` com `instalacao: "pendente"`,
+       o fecho das lições trazidas de volta e `mark_done` na sessão do pedido.json.
+    6. `effects.refresh_install` e, com o plugin instalado, `effects.cache_matches`: uma segunda linha
+       `publicado` com `instalacao` `ok`, `nao-instalado`, `update` ou `cache-difere`.
+    7. Exceção antes da primeira linha `publicado`: linha `erro`, `interno`, com o tipo e a mensagem. Depois
+       dela, outra linha `publicado` com `instalacao: "update"` (C10): o commit já está no `origin/main`."""
+    done = {}
+    try:
+        path = ctx.data_dir / PUBLISH_LOCK
+        try:
+            ctx.data_dir.mkdir(parents=True, exist_ok=True)
+            lock = rw._lock(path, PUBLISH_LOCK_WAIT)
+        except OSError as exc:
+            return _error(ctx, rid, lote, "trava", _short(f"{path}: {exc}"))
+        try:
+            return _publish(ctx, rid, lote, effects, done)
+        finally:
+            rw._unlock(lock)
+    except Exception as exc:  # noqa: BLE001 — D25: toda exceção vira linha
+        detail = _short(f"{type(exc).__name__}: {exc}")
+        if "line" in done:
+            return _record(ctx, dict(done["line"], instalacao="update", detalhe=detail))
+        return _error(ctx, rid, lote, "interno", detail)
+
+
+def exit_code(line):
+    """rc da porta pela linha: 0 publicado e instalado (ou não instalado); 4 publicado com a instalação
+    falha; 1 segurado; 3 erro."""
+    resultado = line.get("resultado")
+    if resultado == "publicado":
+        return 0 if line.get("instalacao") in INSTALLED else 4
+    return 1 if resultado == "segurado" else 3
+
+
+def phrase(line):
+    """A linha ao dono (spec 5.1), em ASCII com escape."""
+    plugin = line.get("plugin")
+    if line.get("resultado") == "publicado":
+        sha = str(line.get("commit") or "")[:SHA_SHORT]
+        text = f"retrofit-watch: {plugin} v{line.get('versao')} publicada sozinha ({sha})"
+        if exit_code(line) == 4:
+            text += f" — cópia instalada não atualizada: {line.get('instalacao')}"
+    else:
+        text = f"retrofit-watch: {plugin} segurada — {line.get('motivo')} (ramo {line.get('ramo')})"
+    return rw_store._ascii(text)
+
+
+USAGE = "publish <id> <lote>"
+
+
+def cli(args, ctx):
+    """O verbo `publish <id> <lote>`: a linha em JSON e, na última linha do stdout, a frase ao dono, tudo
+    em ASCII (o stdout do Windows é cp1252). rc pelo `exit_code`; 2, sem gravar linha, com a aridade
+    errada ou o `<id>` ou o `<lote>` fora do formato seguro."""
+    if len(args) != 2 or not all(rw_auto.SAFE_NAME.fullmatch(a) for a in args):
+        sys.stderr.write(rw_store._ascii(f"retrofit-watch: uso: retrofit_watch.py {USAGE}, com o id e o lote no "
+                                         f"formato seguro; recebido {args!r}") + "\n")
+        return 2
+    line = publish(ctx, args[0], args[1], Effects(ctx))
+    sys.stdout.write(json.dumps(line, indent=2) + "\n" + phrase(line) + "\n")
+    return exit_code(line)

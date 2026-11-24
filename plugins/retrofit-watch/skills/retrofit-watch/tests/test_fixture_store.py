@@ -208,6 +208,17 @@ class StoreWorldTest(unittest.TestCase):
         (self.w.store / "solto.txt").write_text("x\n")
         self.assertEqual(self.w.shared_state()[2], "?? solto.txt")
 
+    def test_shared_state_tells_the_index_from_the_tree(self):
+        # T9-strip: o `.strip()` tirava a coluna do índice da primeira linha do status.
+        with open(self.w.store / "README.md", "a", encoding="utf-8") as fh:
+            fh.write("mais uma linha\n")
+        in_tree = self.w.shared_state()
+        self.assertEqual(in_tree[2], " M README.md")
+        self.w.git(self.w.store, "add", "README.md")
+        in_index = self.w.shared_state()
+        self.assertEqual(in_index[2], "M  README.md")
+        self.assertNotEqual(in_tree, in_index)
+
     def test_config_is_auto_with_the_store(self):
         ctx = self.w.ctx()
         self.assertEqual(ctx.mode, "auto")

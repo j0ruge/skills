@@ -125,13 +125,14 @@ class StoreWorld(World):
 
     # --- git e scripts -------------------------------------------------------------------------
 
-    def git(self, cwd, *args, env=None):
-        """Roda o git no ambiente limpo e devolve a saída sem o fim de linha. Erro levanta."""
+    def git(self, cwd, *args, env=None, strip=True):
+        """Roda o git no ambiente limpo e devolve a saída sem o branco das pontas; com `strip=False`, só
+        sem a quebra de linha do fim. Erro levanta."""
         proc = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, env=env or self.env,
                               encoding="utf-8", errors="replace")
         if proc.returncode:
             raise subprocess.CalledProcessError(proc.returncode, ["git", *args], proc.stdout, proc.stderr)
-        return proc.stdout.strip()
+        return proc.stdout.strip() if strip else proc.stdout.removesuffix("\n")
 
     def run_script(self, repo, script, *args):
         """Um script Python da árvore `repo`, com `repo` como cwd. Devolve o CompletedProcess."""
@@ -274,9 +275,10 @@ class StoreWorld(World):
         return self.git(self.origin, "rev-parse", "main")
 
     def shared_state(self):
-        """(HEAD, ramo atual, `status --porcelain`) do clone compartilhado."""
+        """(HEAD, ramo atual, `status --porcelain`) do clone compartilhado. O status perde só a quebra de
+        linha do fim: a coluna da esquerda (o índice) começa com espaço quando só a árvore mudou."""
         return (self.git(self.store, "rev-parse", "HEAD"), self.git(self.store, "branch", "--show-current"),
-                self.git(self.store, "status", "--porcelain"))
+                self.git(self.store, "status", "--porcelain", strip=False))
 
     def assert_fixture_origin(self, path):
         """AssertionError quando o `origin` do repo em `path`, de busca ou de push, não está sob o

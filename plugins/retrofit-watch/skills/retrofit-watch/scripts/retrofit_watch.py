@@ -8,6 +8,7 @@ Registrado em hooks/hooks.json:
 Linha de comando: retrofit_watch.py queue [--done ID...]   (a fila das sessões headless)
                   retrofit_watch.py triage|held|hold|approve|discard ...   (modo autônomo, rw_auto.py)
                   retrofit_watch.py harvest|prepare|seal ...   (a loja do modo autônomo, rw_store.py)
+                  retrofit_watch.py publish <id> <lote>   (a porta de publicação, rw_gate.py)
 
 "Nossa" = skill do marketplace chewiesoft-marketplace (j0ruge/skills; retrofit modo full, o
 argumento é o nome do PLUGIN) ou skill versionada em git num repo de dono conhecido (modo lean).
@@ -60,6 +61,7 @@ SECOND_REVIEW_FRICTION = 2
 STATE_TTL_SECONDS = 14 * 24 * 3600
 QUEUE_FILE = "queue.jsonl"
 GIT_TIMEOUT = 2
+LOCK_POLL = 0.5
 # O transcript grava em cada registro de onde a sessão veio: `cli` na interativa, `sdk-cli` no
 # `claude -p` (medido em 2026-11-02: 69 sessões com retro ao vivo e 12 entradas interativas da fila
 # com `cli`, as 26 entradas de fase do `sdd run` com `sdk-cli`).
@@ -344,16 +346,35 @@ def classify_path(path, ctx):
 
 # --- estado ------------------------------------------------------------------------------------
 
-def _lock(path):
+def _lock(path, timeout=None):
     """Abre `path` e espera a trava exclusiva: flock no Unix; no Windows, msvcrt sobre o 1º byte (pode
-    passar do fim do arquivo vazio). O LK_LOCK desiste em ~10 s com OSError, que vai ao errors.log."""
+    passar do fim do arquivo vazio). O LK_LOCK desiste em ~10 s com OSError, que vai ao errors.log.
+
+    Com `timeout` (segundos), tenta sem bloquear a cada LOCK_POLL e levanta OSError no prazo; `timeout=0`
+    tenta uma vez só."""
     fh = open(path, "a")
-    if fcntl:
-        fcntl.flock(fh, fcntl.LOCK_EX)
-    else:
-        fh.seek(0)
-        msvcrt.locking(fh.fileno(), msvcrt.LK_LOCK, 1)
-    return fh
+    if timeout is None:
+        if fcntl:
+            fcntl.flock(fh, fcntl.LOCK_EX)
+        else:
+            fh.seek(0)
+            msvcrt.locking(fh.fileno(), msvcrt.LK_LOCK, 1)
+        return fh
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            if fcntl:
+                fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            else:
+                fh.seek(0)
+                msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+            return fh
+        except OSError:
+            left = deadline - time.monotonic()
+            if left <= 0:
+                fh.close()
+                raise
+            time.sleep(min(LOCK_POLL, left))
 
 
 def _unlock(fh):
@@ -945,6 +966,8 @@ CLI_USAGE = {
     "prepare": ("prepare <id> <lote> [--redo]", None),
     "seal": ("seal <id> <lote> --licoes L1,L2 [--fases a,b]", None),
     "harvest": ("harvest", None),
+    # A porta de publicação (rw_gate.py) também confere os próprios argumentos.
+    "publish": ("publish <id> <lote>", None),
 }
 
 
@@ -953,12 +976,16 @@ def cli(argv, ctx):
 
     rc 0 certo, 1 recusado, 2 uso, pasta de dados ausente ou ambígua, ou arquivo do fluxo fora do
     formato (rw_auto.Malformed). Os erros vão ao stderr, sem traceback. Os verbos da loja (`harvest`,
-    `prepare`, `seal`) vão ao rw_store.cli, que também dá 2 em StoreError e OSError."""
+    `prepare`, `seal`) vão ao rw_store.cli, que também dá 2 em StoreError e OSError. O `publish` vai ao
+    rw_gate.cli: 0 publicado e instalado, 1 segurado, 2 uso, 3 erro, 4 publicado com a instalação falha."""
     problem = data_dir_problem(ctx)
     if problem:
         sys.stderr.write(problem)
         return 2
     verb, args, kwargs = argv[0], list(argv[1:]), {}
+    if verb == "publish":
+        import rw_gate
+        return rw_gate.cli(args, ctx)
     if CLI_USAGE[verb][1] is None:
         import rw_store
         return rw_store.cli(verb, args, ctx)

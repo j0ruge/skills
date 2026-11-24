@@ -1,17 +1,24 @@
-"""Testes das recusas da porta de publicação (rw_gate.py): as 21 guardas de `refuse` e o `hold`.
+"""Testes da porta de publicação (rw_gate.py): as 21 guardas de `refuse`, o `hold` e o `publish`.
 
 Rodar: python3 plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_gate.py
 Cada teste parte de `clean_retrofit`: um retrofit limpo do `demo`, com veredito, selo e anonimato.json,
 na loja fixture da Tarefa 6 (um `origin` `--bare` e um clone, sob o diretório temporário), e sabota uma
-coisa. Toda chamada da porta confere depois que o `origin/main` não mudou. Nenhum teste toca a rede,
-o `claude` real ou um `origin` real. Todo nome inventado se monta em tempo de execução: um literal
-faria a camada 1 reprovar o próprio ramo.
+coisa. Toda chamada de `refuse` confere depois que o `origin/main` não mudou. O `publish` recebe os
+efeitos da fixture (`FixtureEffects`): o push real, só para o `origin` da fixture, e uma cópia do plugin
+no cache do HOME fixture no lugar do `claude plugin update`. Nenhum teste toca a rede, o `claude` real
+ou um `origin` real. Todo nome inventado se monta em tempo de execução: um literal faria a camada 1
+reprovar o próprio ramo.
 """
+import contextlib
 import importlib.util
+import io
 import json
 import os
 import shutil
+import subprocess
 import sys
+import tarfile
+import threading
 import time
 import unittest
 import warnings
@@ -21,6 +28,8 @@ from unittest import mock
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import fixture_store as fs  # noqa: E402
+from test_retrofit_watch import SCRIPT, HookHarness, skill_typed, tool  # noqa: E402
+import retrofit_watch as rw  # noqa: E402
 import rw_auto  # noqa: E402  (o test_retrofit_watch, importado pela fixture, põe scripts/ no path)
 import rw_gate as rg  # noqa: E402
 import rw_store  # noqa: E402
@@ -51,8 +60,9 @@ def failing_test(name="DemoBreak"):
             "        self.fail('quebrado de proposito')\n")
 
 
-@fs.requires_store
-class GateTest(unittest.TestCase):
+class GateHarness:
+    """A loja fixture e os auxiliares dos testes da porta. Quem herda é também um TestCase."""
+
     def setUp(self):
         self.w = fs.StoreWorld()
         self.w.data.mkdir(exist_ok=True)
@@ -161,6 +171,9 @@ class GateTest(unittest.TestCase):
             self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.push_origin(edit, "chore: um nome na lista de privados")
 
+
+@fs.requires_store
+class GateTest(GateHarness, unittest.TestCase):
     # --- o caso limpo --------------------------------------------------------------------------
 
     def test_clean_retrofit_passes_every_guard(self):
@@ -814,6 +827,655 @@ class GateTest(unittest.TestCase):
                 self.assertEqual(rg.hold(ctx, rid, "demo", motivo, "")["resultado"], "erro")
         self.assertEqual(set(rg.OVERRIDABLE) - set(rg.GATE_REASONS), set())
         self.assertEqual(set(rg.ERRORS) - set(rg.GATE_REASONS), set())
+        self.assertEqual(self.w.origin_main(), self.base)
+
+
+# --- a porta que publica (Tarefa 9) --------------------------------------------------------------
+
+def a_real_remote():
+    # Montado em tempo de execução: um literal de URL faria o portão do ramo reprovar este arquivo.
+    return "https" + "://" + "example" + ".invalid/" + "loja.git"
+
+
+def bump_config(path):
+    """Muda um byte da cópia: um `\\n` a mais no fim."""
+    append(path, "\n")
+
+
+class FixtureEffects(rg.Effects):
+    """Os efeitos da porta na loja fixture. O `push` é o real, depois do `assert_fixture_origin`. A
+    instalação copia o plugin do commit publicado (`git archive` do `main` do `origin`, nunca o worktree)
+    para o cache do HOME fixture, com um `.in_use` como o do Claude Code; `after_copy(pasta)` mexe na
+    cópia. Cada chamada fica em `calls`. `push` e `raises` trocam o resultado: uma tupla é devolvida,
+    uma exceção é levantada."""
+
+    def __init__(self, world, push=None, install=None, raises=None, after_copy=None, during_push=None):
+        super().__init__(world.ctx())
+        self.w, self.calls = world, []
+        self.push_result, self.install_result, self.raises = push, install, raises
+        self.after_copy, self.during_push = after_copy, during_push
+
+    def push(self, worktree):
+        self.calls.append("push")
+        if self.during_push:
+            self.during_push(worktree)
+        if isinstance(self.push_result, BaseException):
+            raise self.push_result
+        if self.push_result is not None:
+            return self.push_result
+        self.w.assert_fixture_origin(worktree)
+        return super().push(worktree)
+
+    def refresh_install(self, plugin):
+        self.calls.append("refresh_install")
+        if self.raises is not None:
+            raise self.raises
+        if self.install_result is not None:
+            return self.install_result
+        manifest = json.loads(self.w.git(self.w.origin, "show", f"main:plugins/{plugin}/.claude-plugin/plugin.json"))
+        dest = self.w.home / ".claude/plugins/cache" / rw.MARKETPLACE / plugin / manifest["version"]
+        raw = subprocess.run(["git", "-C", str(self.w.origin), "archive", "--format=tar", f"main:plugins/{plugin}"],
+                             capture_output=True, env=self.w.env, check=True).stdout
+        dest.mkdir(parents=True, exist_ok=True)
+        with tarfile.open(fileobj=io.BytesIO(raw)) as tar:
+            tar.extractall(dest, filter="data")
+        (dest / ".in_use").mkdir(exist_ok=True)
+        (dest / ".in_use" / "sessao").write_text("1\n", encoding="utf-8")
+        if self.after_copy:
+            self.after_copy(dest)
+        return True, "copiado"
+
+    def cache_matches(self, ctx, worktree, plugin, versao):
+        self.calls.append("cache_matches")
+        return super().cache_matches(ctx, worktree, plugin, versao)
+
+
+class ExitCodeTest(unittest.TestCase):
+    def test_exit_code_of_each_line(self):
+        cases = [({"resultado": "publicado", "instalacao": "ok"}, 0),
+                 ({"resultado": "publicado", "instalacao": "nao-instalado"}, 0),
+                 ({"resultado": "publicado", "instalacao": "update"}, 4),
+                 ({"resultado": "publicado", "instalacao": "cache-difere"}, 4),
+                 ({"resultado": "publicado", "instalacao": "pendente"}, 4),
+                 ({"resultado": "segurado", "instalacao": None}, 1),
+                 ({"resultado": "erro", "instalacao": None}, 3),
+                 ({"resultado": "outro", "instalacao": "ok"}, 3)]
+        for line, rc in cases:
+            with self.subTest(line=line):
+                self.assertEqual(rg.exit_code(line), rc)
+
+
+@fs.requires_store
+class PublishTest(GateHarness, HookHarness, unittest.TestCase):
+    # --- auxiliares ----------------------------------------------------------------------------
+
+    def effects(self, **kw):
+        return FixtureEffects(self.w, **kw)
+
+    def publish(self, rid, effects, lote="demo"):
+        line = rg.publish(self.ctx(), rid, lote, effects)
+        return line, rg.exit_code(line)
+
+    def lines(self, rid, lote="demo"):
+        return [x for x in rw_auto.read_registry(self.ctx()) if x.get("item") == f"{rid}/{lote}"]
+
+    def marker(self, repo=None, ref="main"):
+        return self.w.git(repo or self.w.origin, "log", "-1", f"--format=%(trailers:key={rg.MARKER},valueonly)", ref)
+
+    def head(self, wt):
+        return self.w.git(wt, "rev-parse", "HEAD")
+
+    def state(self):
+        return json.loads((self.w.data / "sessions/s1.json").read_text(encoding="utf-8"))
+
+    def cli(self, *args, effects):
+        """O verbo `publish` da CLI, no processo, com `effects` no lugar dos efeitos reais."""
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.object(rg, "Effects", lambda ctx: effects):
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                rc = rw.cli(["publish", *args], self.ctx())
+        return rc, out.getvalue(), err.getvalue()
+
+    def install_demo(self, scope="user"):
+        """Põe o `demo` da loja no installed_plugins.json do HOME fixture, no escopo `scope`."""
+        path = self.w.home / ".claude/plugins/installed_plugins.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data["plugins"][f"demo@{rw.MARKETPLACE}"] = [{"scope": scope, "installPath": str(self.w.tmp / "inst")}]
+        path.write_text(json.dumps(data), encoding="utf-8")
+
+    def two_lotes_of_demo(self):
+        """Dois lotes do `demo` da mesma base: o primeiro publicado, o segundo segurado por `rebase`. O
+        segundo traz outra lição no fim do SKILL.md: dois commits iguais no mesmo segundo teriam o mesmo
+        sha, e o segundo já estaria publicado."""
+        rid1, wt1 = self.clean_retrofit()
+        rid2, wt2 = self.clean_retrofit(edit=lambda wt: append(wt / DOC, "- Outra regra.\n"))
+        first, rc1 = self.publish(rid1, self.effects())
+        fx = self.effects()
+        second, rc2 = self.publish(rid2, fx)
+        self.assertEqual((rc1, rc2), (0, 1), (first, second))
+        self.assertEqual((second["resultado"], second["motivo"]), ("segurado", "rebase"))
+        self.assertEqual(fx.calls, [])
+        self.assertEqual(self.w.origin_main(), first["commit"])
+        return rid2, wt2, first
+
+    # --- o caminho limpo -----------------------------------------------------------------------
+
+    def test_publish_pushes_exactly_the_reviewed_commit(self):
+        rid, wt = self.clean_retrofit()
+        fx = self.effects()
+        line, rc = self.publish(rid, fx)
+        self.assertEqual(rc, 0, line)
+        self.assertEqual(self.w.origin_main(), self.head(wt))
+        self.assertEqual(self.w.git(self.w.origin, "rev-list", "--count", f"{self.base}..main"), "1")
+        self.assertEqual(self.marker(), "autonomous")
+        self.assertEqual((line["resultado"], line["instalacao"], line["commit"], line["versao"], line["aprovado"]),
+                         ("publicado", "ok", self.head(wt), "1.0.1", False))
+        self.assertEqual((line["ramo"], line["worktree"]), (rw_store.branch_name(rid, "demo"), str(wt)))
+        self.assertEqual(fx.calls, ["push", "refresh_install", "cache_matches"])
+        self.assertEqual([(x["resultado"], x["instalacao"]) for x in self.lines(rid)],
+                         [("publicado", "pendente"), ("publicado", "ok")])
+        self.assertEqual(self.lines(rid)[-1], line)
+
+    def test_shared_checkout_is_untouched_by_a_publication(self):
+        before = self.w.shared_state()
+        rid, wt = self.clean_retrofit()
+        line, rc = self.publish(rid, self.effects())
+        self.assertEqual(rc, 0, line)
+        self.assertEqual(self.w.shared_state(), before)
+
+    def test_published_skill_is_silenced_in_the_session_state(self):
+        self.install_demo()
+        rid, wt = self.clean_retrofit()
+        line, rc = self.publish(rid, self.effects())
+        self.assertEqual(rc, 0, line)
+        self.assertIn("full:demo", self.state()["done"])
+        # O `write` do GateHarness grava arquivos do lote; o do HookHarness, o transcript.
+        HookHarness.write(self, skill_typed("demo:demo"), *[tool(error=True)] * 3)
+        self.assertIsNone(self.run_hook())
+        self.assertEqual(self.state()["skills"]["full:demo"]["reviews"], rw.MAX_REVIEWS)
+
+    # --- recusa, push e instalação -------------------------------------------------------------
+
+    def test_refused_retrofit_never_reaches_the_effects(self):
+        rid, wt = self.clean_retrofit()
+        (rw_auto.retro_dir(self.ctx(), rid) / "veredito.json").unlink()
+        fx = self.effects()
+        line, rc = self.publish(rid, fx)
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (1, "segurado", "sem-veredito"))
+        self.assertEqual(fx.calls, [])
+        self.assertEqual(self.w.origin_main(), self.base)
+
+    def test_rejected_push_is_an_error_and_keeps_the_branch(self):
+        rid, wt = self.clean_retrofit()
+        fx = self.effects(push=(False, "recusado pelo remoto"))
+        line, rc = self.publish(rid, fx)
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (3, "erro", "push"))
+        self.assertIn("recusado pelo remoto", line["detalhe"])
+        self.assertEqual(fx.calls, ["push"])
+        branch = rw_store.branch_name(rid, "demo")
+        self.assertEqual(self.w.git(self.w.store, "rev-parse", "--verify", f"refs/heads/{branch}"), self.head(wt))
+        self.assertEqual([x["resultado"] for x in self.lines(rid)], ["erro"])
+        self.assertEqual(self.w.origin_main(), self.base)
+
+    def test_install_failure_after_push_is_still_published(self):
+        rid, wt = self.clean_retrofit()
+        line, rc = self.publish(rid, self.effects(install=(False, "o update saiu 1")))
+        self.assertEqual(rc, 4)
+        self.assertEqual([(x["resultado"], x["instalacao"]) for x in self.lines(rid)],
+                         [("publicado", "pendente"), ("publicado", "update")])
+        self.assertEqual(line["commit"], self.w.origin_main())
+        self.assertIn("o update saiu 1", line["detalhe"])
+        self.assertIn("full:demo", self.state()["done"])
+
+    def test_cache_mismatch_is_recorded_in_the_install_field(self):
+        rid, wt = self.clean_retrofit()
+        line, rc = self.publish(rid, self.effects(after_copy=lambda d: bump_config(d / ".claude-plugin/plugin.json")))
+        self.assertEqual((rc, line["instalacao"]), (4, "cache-difere"))
+        self.assertIn("plugin.json", line["detalhe"])
+        ctx = self.ctx()
+        effects = rg.Effects(ctx)
+        # Sem cópia da versão no cache: difere, nunca "igual".
+        self.assertFalse(effects.cache_matches(ctx, wt, "demo", "9.9.9")[0])
+        # A versão vira pasta: fora do formato seguro, nem se compara.
+        with self.assertRaises(rw_auto.Malformed):
+            effects.cache_matches(ctx, wt, "demo", "x/../1.0.1")
+
+    def test_bytecode_and_in_use_are_not_a_cache_mismatch(self):
+        # M7: o `__pycache__` do worktree (ignorado pelo git) e um `.pyc` solto na cópia não contam; o
+        # `.in_use` da cópia também não.
+        rid, wt = self.clean_retrofit()
+        cache = wt / "plugins/demo/skills/demo/tests/__pycache__"
+        cache.mkdir()
+        (cache / "x.cpython-312.pyc").write_bytes(b"\0")
+        # Um arquivo sem `.pyc` no `__pycache__`: a pasta inteira fica fora, não só o bytecode.
+        (cache / "x.lock").write_bytes(b"")
+
+        def stray(dest):
+            (dest / "solto.pyc").write_bytes(b"\0")
+        line, rc = self.publish(rid, self.effects(after_copy=stray))
+        self.assertEqual((rc, line["instalacao"]), (0, "ok"), line)
+
+    def test_plugin_not_installed_is_still_published(self):
+        rid, wt = self.clean_retrofit()
+        fx = self.effects(install=(True, "nao-instalado"))
+        line, rc = self.publish(rid, fx)
+        self.assertEqual((rc, line["resultado"], line["instalacao"]), (0, "publicado", "nao-instalado"))
+        self.assertNotIn("cache_matches", fx.calls)
+
+    # --- rodar de novo e as exceções -----------------------------------------------------------
+
+    def test_rerun_after_push_redoes_only_the_install(self):
+        rid, wt = self.clean_retrofit()
+        first, rc = self.publish(rid, self.effects(install=(False, "falhou")))
+        self.assertEqual(rc, 4)
+        pushed = self.w.origin_main()
+        (rw_auto.retro_dir(self.ctx(), rid) / "veredito.json").unlink()
+        fx = self.effects()
+        line, rc = self.publish(rid, fx)
+        self.assertEqual((rc, line["resultado"], line["instalacao"], line["commit"]), (0, "publicado", "ok", pushed),
+                         line)
+        self.assertNotIn("push", fx.calls)
+        self.assertEqual(self.w.origin_main(), pushed)
+        self.assertEqual([x["instalacao"] for x in self.lines(rid)], ["pendente", "update", "ok"])
+
+    def test_crash_after_push_is_recovered_by_a_rerun(self):
+        # Ruling T9-crash: pela C10, a exceção depois da primeira linha `publicado` é `publicado` com
+        # `instalacao: "update"` e rc 4, não `erro` e rc 3 como o brief escreveu.
+        rid, wt = self.clean_retrofit()
+        line, rc = self.publish(rid, self.effects(raises=RuntimeError("caiu no meio")))
+        self.assertEqual((rc, line["resultado"], line["instalacao"]), (4, "publicado", "update"), line)
+        self.assertIn("RuntimeError: caiu no meio", line["detalhe"])
+        pushed = self.w.origin_main()
+        self.assertEqual(pushed, self.head(wt))
+        fx = self.effects()
+        line, rc = self.publish(rid, fx)
+        self.assertEqual((rc, line["instalacao"]), (0, "ok"), line)
+        self.assertNotIn("push", fx.calls)
+        self.assertEqual(self.w.origin_main(), pushed)
+
+    def test_crash_before_the_first_published_line_is_an_internal_error(self):
+        rid, wt = self.clean_retrofit()
+        line, rc = self.publish(rid, self.effects(push=RuntimeError("o push caiu")))
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (3, "erro", "interno"))
+        self.assertIn("RuntimeError: o push caiu", line["detalhe"])
+        self.assertEqual([x["resultado"] for x in self.lines(rid)], ["erro"])
+        self.assertEqual(self.w.origin_main(), self.base)
+
+    def test_publish_without_a_retrofit_json_is_an_error_line(self):
+        rid = self.w.retro([{}], [{}])
+        fx = self.effects()
+        line, rc = self.publish(rid, fx)
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (3, "erro", "interno"))
+        self.assertIn("Malformed", line["detalhe"])
+        self.assertEqual(rw_auto.read_registry(self.ctx())[-1], line)
+        self.assertEqual(fx.calls, [])
+
+    def test_unwritable_registry_never_raises(self):
+        rid, wt = self.clean_retrofit()
+        (rw_auto.retro_dir(self.ctx(), rid) / "veredito.json").unlink()
+        # O registro vira pasta: nenhuma linha se grava.
+        (self.w.data / rw_auto.REGISTRY).unlink(missing_ok=True)
+        (self.w.data / rw_auto.REGISTRY).mkdir()
+        fx = self.effects()
+        line, rc = self.publish(rid, fx)
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (3, "erro", "interno"), line)
+        self.assertIn("a linha completa falhou", line["detalhe"])
+        self.assertEqual(fx.calls, [])
+        self.assertEqual(self.w.origin_main(), self.base)
+
+    def test_commit_pushed_without_a_line_is_recorded_on_rerun(self):
+        # O push saiu e a porta caiu antes da linha: a próxima chamada grava a linha `publicado`, fecha a
+        # retro da sessão e instala, sem push. O commit sobe por outro clone: só o fetch do passo 2 mostra
+        # ao worktree que ele já está no `origin/main`.
+        rid, wt = self.clean_retrofit()
+        self.w.git(self.w.other, "fetch", "-q", str(wt), "HEAD")
+        self.w.git(self.w.other, "push", "-q", "origin", "FETCH_HEAD:main")
+        self.assertNotEqual(self.w.git(wt, "rev-parse", "origin/main"), self.head(wt))
+        fx = self.effects()
+        line, rc = self.publish(rid, fx)
+        self.assertEqual((rc, line["instalacao"], line["commit"]), (0, "ok", self.head(wt)), line)
+        self.assertNotIn("push", fx.calls)
+        self.assertEqual([x["instalacao"] for x in self.lines(rid)], ["pendente", "ok"])
+        self.assertIn("full:demo", self.state()["done"])
+
+    def test_fresh_worktree_is_not_taken_as_published(self):
+        rid = self.w.retro([{}], [{}])
+        got = rw_store.prepare(self.ctx(), rid, "demo")
+        wt = Path(got["worktree"])
+        self.w.advance_origin({"tests/extra.txt": "x\n"}, "fix(demo2): v1.0.1\n\nRetrofit-Mode: autonomous")
+        self.w.git(wt, "fetch", "-q", "origin")
+        self.assertEqual(self.head(wt), got["base"])
+        self.assertFalse(rg.already_published(wt, got))
+
+    # --- a trava -------------------------------------------------------------------------------
+
+    def test_lock_failure_is_an_error_line(self):
+        rid, wt = self.clean_retrofit()
+        real, seen = rw._lock, []
+
+        def fake(path, timeout=None):
+            if Path(path).name == rg.PUBLISH_LOCK:
+                seen.append((Path(path), timeout))
+                raise OSError("trava ocupada")
+            return real(path, timeout)
+        fx = self.effects()
+        with mock.patch.object(rw, "_lock", fake):
+            line, rc = self.publish(rid, fx)
+        self.assertEqual(seen, [(self.w.data / rg.PUBLISH_LOCK, rg.PUBLISH_LOCK_WAIT)])
+        self.assertEqual(rg.PUBLISH_LOCK_WAIT, 900)
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (3, "erro", "trava"))
+        self.assertIn("trava ocupada", line["detalhe"])
+        self.assertEqual(fx.calls, [])
+        self.assertEqual(self.w.origin_main(), self.base)
+
+    def wait_for(self, path, timeout):
+        """Tenta a trava numa thread: (segundos até a resposta, "presa" ou "livre"), ou None se a
+        thread passou de 5 s esperando."""
+        got = []
+
+        def attempt():
+            start = time.monotonic()
+            try:
+                rw._unlock(rw._lock(path, timeout=timeout))
+                got.append((time.monotonic() - start, "livre"))
+            except OSError:
+                got.append((time.monotonic() - start, "presa"))
+        thread = threading.Thread(target=attempt, daemon=True)
+        thread.start()
+        thread.join(5)
+        return got[0] if got else None
+
+    @unittest.skipIf(rw.fcntl is None, "a trava de outro descritor no mesmo processo se mede onde há fcntl")
+    def test_lock_wait_has_a_deadline(self):
+        path = self.w.data / "espera.lock"
+        held = rw._lock(path)
+        try:
+            got = self.wait_for(path, 1)
+        finally:
+            rw._unlock(held)
+        self.assertIsNotNone(got, "a trava esperou sem prazo")
+        self.assertEqual(got[1], "presa")
+        self.assertGreaterEqual(got[0], 0.9)
+        self.assertLess(got[0], 5)
+
+    @unittest.skipIf(rw.fcntl is None, "a trava de outro descritor no mesmo processo se mede onde há fcntl")
+    def test_zero_timeout_fails_at_once(self):
+        # M18: `timeout=0` é "não espere", não "sem prazo".
+        path = self.w.data / "espera.lock"
+        held = rw._lock(path)
+        try:
+            got = self.wait_for(path, 0)
+        finally:
+            rw._unlock(held)
+        self.assertIsNotNone(got, "timeout=0 esperou sem prazo")
+        self.assertEqual(got[1], "presa")
+        self.assertLess(got[0], 0.5)
+        self.assertEqual(self.wait_for(path, 0)[1], "livre")
+
+    @unittest.skipIf(rw.fcntl is None, "a trava de outro descritor no mesmo processo se mede onde há fcntl")
+    def test_the_lock_is_held_during_the_push(self):
+        rid, wt = self.clean_retrofit()
+        tried = []
+
+        def during(worktree):
+            try:
+                rw._unlock(rw._lock(self.w.data / rg.PUBLISH_LOCK, timeout=0))
+                tried.append("livre")
+            except OSError:
+                tried.append("presa")
+        line, rc = self.publish(rid, self.effects(during_push=during))
+        self.assertEqual(rc, 0, line)
+        self.assertEqual(tried, ["presa"])
+
+    # --- duas portas, rebase e redo ------------------------------------------------------------
+
+    def test_second_gate_rebases_over_the_first_publication(self):
+        rid = self.w.retro([{}, {"plugin": "demo2"}], [{}, {}], skills=("demo", "demo2"))
+        ctx = self.ctx()
+        trees = {lote: Path(rw_store.prepare(ctx, rid, lote)["worktree"]) for lote in ("demo", "demo2")}
+
+        # O lote do `demo` acrescenta uma linha no README acima da do `demo2`: o rebase do segundo desloca
+        # os números de linha dele (os `@@`), e o patch não pode mudar por isso.
+        readme = trees["demo"] / "README.md"
+        lines = readme.read_text(encoding="utf-8").splitlines(keepends=True)
+        at = next(i for i, x in enumerate(lines) if x.startswith("- **demo** "))
+        lines.insert(at + 1, "  Uma nota do demo.\n")
+        readme.write_text("".join(lines), encoding="utf-8")
+        for lote in ("demo", "demo2"):
+            self.w.retrofit(trees[lote], plugin=lote)
+            self.seal(rid, lote)
+        first, rc1 = self.publish(rid, self.effects(), "demo")
+        # O rc 0 do segundo é a guarda 13 aceitando o anonimato.json da revisão de antes do rebase.
+        second, rc2 = self.publish(rid, self.effects(), "demo2")
+        self.assertEqual((rc1, rc2), (0, 0), (first, second))
+        self.assertEqual(self.w.git(self.w.origin, "rev-list", f"{self.base}..main").split(),
+                         [second["commit"], first["commit"]])
+        catalog = json.loads(self.w.git(self.w.origin, "show", "main:.claude-plugin/marketplace.json"))
+        self.assertEqual({e["name"]: e["version"] for e in catalog["plugins"]},
+                         {"demo": "1.0.1", "demo-cmd": "1.0.0", "demo2": "1.0.1"})
+
+    def test_second_lote_of_the_same_plugin_conflicts_and_is_held(self):
+        self.two_lotes_of_demo()
+
+    def test_a_rebase_hold_can_be_redone_and_published(self):
+        rid, wt, first = self.two_lotes_of_demo()
+        got = rw_store.prepare(self.ctx(), rid, "demo", redo=True)
+        self.assertEqual(got["tentativa"], 2)
+        wt2 = Path(got["worktree"])
+        self.w.retrofit(wt2, plugin="demo", version="1.0.2")
+        self.seal(rid)
+        line, rc = self.publish(rid, self.effects())
+        self.assertEqual((rc, line["resultado"], line["versao"]), (0, "publicado", "1.0.2"), line)
+        self.assertEqual((line["commit"], line["ramo"]), (self.w.origin_main(), rw_store.branch_name(rid, "demo", 2)))
+        old = rw_store.branch_name(rid, "demo")
+        self.assertEqual(self.w.git(self.w.store, "rev-parse", "--verify", f"refs/heads/{old}"), self.head(wt))
+
+    # --- a aprovação do dono -------------------------------------------------------------------
+
+    def description_lote(self):
+        lote = "demo__description"
+        rid, wt = self.clean_retrofit(licoes=({"muda_description": True},), lote=lote)
+        held, rc = self.publish(rid, self.effects(), lote)
+        self.assertEqual((rc, held["motivo"]), (1, "muda-description"))
+        rw_auto.approve(self.ctx(), rid, lote)
+        return rid, wt, lote
+
+    def test_owner_approval_publishes_with_the_approved_marker(self):
+        rid, wt, lote = self.description_lote()
+        tree = self.w.git(wt, "rev-parse", "HEAD^{tree}")
+        line, rc = self.publish(rid, self.effects(), lote)
+        self.assertEqual((rc, line["resultado"], line["aprovado"]), (0, "publicado", True), line)
+        self.assertEqual(self.marker(), "autonomous-approved")
+        self.assertEqual(self.w.git(self.w.origin, "rev-parse", "main^{tree}"), tree)
+        self.assertEqual(self.w.git(self.w.origin, "rev-list", "--count", f"{self.base}..main"), "1")
+        self.assertEqual(line["commit"], self.w.origin_main())
+
+    def test_rejected_push_of_an_approved_lote_can_be_rerun(self):
+        # O push recusado devolve o ramo ao commit revisado: a emenda do trailer muda o patch (D20), e sem
+        # isso a próxima porta seguraria por `revisao-desatualizada`.
+        rid, wt, lote = self.description_lote()
+        reviewed = self.head(wt)
+        line, rc = self.publish(rid, self.effects(push=(False, "recusado")), lote)
+        self.assertEqual((rc, line["motivo"]), (3, "push"))
+        self.assertEqual(self.head(wt), reviewed)
+        self.assertEqual(self.marker(wt, "HEAD"), "autonomous")
+        line, rc = self.publish(rid, self.effects(), lote)
+        self.assertEqual((rc, line["aprovado"]), (0, True), line)
+        self.assertEqual(self.marker(), "autonomous-approved")
+
+    @unittest.skipIf(os.name == "nt", "os hooks do git do teste são scripts de shell")
+    def test_amend_that_changes_the_tree_or_drops_the_marker_is_an_error(self):
+        # Um hook do clone que reescreve um arquivo no commit, ou tira o trailer da mensagem, faz a emenda
+        # publicar outra coisa: a porta para antes do push, com `interno`, e devolve o ramo ao revisado.
+        hooks = self.w.store / ".git/hooks"
+        cases = (("pre-commit", '#!/bin/sh\necho mais >> README.md\ngit add README.md\n', "arvore"),
+                 ("commit-msg", '#!/bin/sh\nsed -i "/^Retrofit-Mode/d" "$1"\n', rg.MARKER))
+        for hook, body, why in cases:
+            with self.subTest(hook=hook):
+                rid, wt, lote = self.description_lote()
+                reviewed = self.head(wt)
+                (hooks / hook).write_text(body, encoding="utf-8")
+                (hooks / hook).chmod(0o755)
+                try:
+                    fx = self.effects()
+                    line, rc = self.publish(rid, fx, lote)
+                finally:
+                    (hooks / hook).unlink()
+                self.assertEqual((rc, line["resultado"], line["motivo"]), (3, "erro", "interno"), line)
+                self.assertIn(why, line["detalhe"])
+                self.assertEqual(fx.calls, [])
+                self.assertEqual(self.head(wt), reviewed)
+                self.assertEqual(self.w.origin_main(), self.base)
+
+    def test_lesson_brought_back_by_a_second_seal_is_closed(self):
+        # T9-seal: a lição que o primeiro selo segurou (`executor-recusou`) volta no segundo; publicado o
+        # lote, ela ganha a linha que a fecha, e `held()` não a lista mais.
+        rid = self.w.retro([{}, {}], [{}, {}])
+        ctx = self.ctx()
+        wt = Path(rw_store.prepare(ctx, rid, "demo")["worktree"])
+        self.w.retrofit(wt)
+        rw_store.seal(ctx, rid, "demo", ["1"], [])
+        self.assertEqual([x["item"] for x in rw_auto.held(ctx)], [f"{rid}/demo#2"])
+        rw_store.seal(ctx, rid, "demo", ["1", "2"], [])
+        self.review(rid)
+        line, rc = self.publish(rid, self.effects())
+        self.assertEqual((rc, line["licoes"]), (0, [1, 2]), line)
+        self.assertEqual(rw_auto.held(ctx), [])
+        last = rw_auto.last_lines(rw_auto.read_registry(ctx))
+        closing = last[f"{rid}/demo#2"]
+        self.assertEqual((closing["resultado"], closing["commit"], closing["detalhe"], closing["licoes"]),
+                         ("publicado", line["commit"], f"publicada no lote {rid}/demo", [2]))
+        self.assertNotIn(f"{rid}/demo#1", last)
+
+    # --- o ambiente do git de rede -------------------------------------------------------------
+
+    def test_network_git_runs_in_batch_mode(self):
+        # T9-ssh: o fetch e o push nunca pedem a senha da chave no terminal; o GIT_SSH_COMMAND do dono fica.
+        own = "ssh -o " + "IdentitiesOnly=yes"
+        for inherited, plugin in ((None, "demo"), (own, "demo2")):
+            with self.subTest(inherited=inherited):
+                rid, wt = self.clean_retrofit(licoes=({"plugin": plugin},), skills=(plugin,), lote=plugin)
+                with mock.patch.dict(os.environ):
+                    os.environ.pop("GIT_SSH_COMMAND", None)
+                    if inherited:
+                        os.environ["GIT_SSH_COMMAND"] = inherited
+                    with mock.patch.object(rw_store, "run", wraps=rw_store.run) as spy:
+                        line, rc = self.publish(rid, self.effects(), plugin)
+                self.assertEqual(rc, 0, line)
+                calls = [c for c in spy.call_args_list if {"fetch", "push"} & {str(a) for a in c.args[0]}]
+                verbs = [next(str(a) for a in c.args[0] if str(a) in ("fetch", "push")) for c in calls]
+                self.assertEqual(verbs.count("push"), 1, verbs)
+                self.assertGreaterEqual(verbs.count("fetch"), 2, verbs)
+                for call in calls:
+                    env = call.kwargs["env"]
+                    self.assertEqual(env["GIT_TERMINAL_PROMPT"], "0")
+                    self.assertEqual(env["GIT_SSH_COMMAND"], inherited or "ssh -o BatchMode=yes")
+
+    def test_fixture_push_refuses_a_real_remote(self):
+        rid, wt = self.clean_retrofit()
+        self.w.git(wt, "remote", "set-url", "--push", "origin", a_real_remote())
+        with mock.patch.object(rw_store, "run", wraps=rw_store.run) as spy:
+            with self.assertRaises(AssertionError):
+                self.effects().push(wt)
+            line, rc = self.publish(rid, self.effects())
+        self.assertEqual([c for c in spy.call_args_list if "push" in [str(a) for a in c.args[0]]], [])
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (3, "erro", "interno"))
+        self.assertIn("AssertionError", line["detalhe"])
+        self.assertEqual(self.w.origin_main(), self.base)
+
+    # --- os efeitos reais ----------------------------------------------------------------------
+
+    def test_real_effects_without_claude_fail_closed(self):
+        empty = self.w.tmp / "sem-claude"
+        empty.mkdir()
+        with mock.patch.dict(os.environ, {"PATH": str(empty)}):
+            self.assertEqual(rg.Effects(self.ctx()).refresh_install("demo"), (False, "claude ausente"))
+
+    @unittest.skipIf(os.name == "nt", "o claude falso é um script de shell")
+    def test_real_effects_update_only_a_user_scope_install(self):
+        bindir = self.w.tmp / "bin-claude"
+        bindir.mkdir()
+        log = self.w.tmp / "claude.log"
+        fake = bindir / "claude"
+        fake.write_text(f'#!/bin/sh\necho "$@" >> "{log}"\nexit "${{FAKE_RC:-0}}"\n', encoding="utf-8")
+        fake.chmod(0o755)
+        effects = rg.Effects(self.ctx())
+        path = {"PATH": f"{bindir}{os.pathsep}{os.environ.get('PATH', '')}"}
+        with mock.patch.dict(os.environ, path):
+            self.assertEqual(effects.refresh_install("demo"), (True, "nao-instalado"))
+            self.install_demo(scope="project")
+            self.assertEqual(effects.refresh_install("demo"), (True, "nao-instalado"))
+            self.assertFalse(log.exists())
+            self.install_demo()
+            ok, detail = effects.refresh_install("demo")
+            self.assertTrue(ok, detail)
+            self.assertNotEqual(detail, "nao-instalado")
+            self.assertEqual(log.read_text(encoding="utf-8").splitlines(),
+                             [f"plugin marketplace update {rw.MARKETPLACE}",
+                              f"plugin update demo@{rw.MARKETPLACE} --scope user"])
+            with mock.patch.dict(os.environ, {"FAKE_RC": "3"}):
+                ok, detail = effects.refresh_install("demo")
+        self.assertFalse(ok)
+        self.assertIn("3", detail)
+
+    # --- a linha de comando --------------------------------------------------------------------
+
+    def test_cli_publish_prints_the_line_and_the_phrase(self):
+        rid, wt = self.clean_retrofit()
+        rc, out, err = self.cli(rid, "demo", effects=self.effects(install=(False, "sem rede")))
+        self.assertEqual(rc, 4, err)
+        sha = self.w.origin_main()
+        lines = out.splitlines()
+        self.assertEqual(lines[-1], f"retrofit-watch: demo v1.0.1 publicada sozinha ({sha[:7]}) \\u2014 "
+                                    "c\\xf3pia instalada n\\xe3o atualizada: update")
+        self.assertEqual(json.loads("\n".join(lines[:-1]))["instalacao"], "update")
+        rc, out, err = self.cli(rid, "demo", effects=self.effects())
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(out.splitlines()[-1], f"retrofit-watch: demo v1.0.1 publicada sozinha ({sha[:7]})")
+        self.assertTrue(out.isascii())
+
+    def test_cli_publish_in_auto_dry_never_calls_effects(self):
+        rid, wt = self.clean_retrofit()
+        self.config(mode="auto-dry")
+        fx = self.effects()
+        rc, out, err = self.cli(rid, "demo", effects=fx)
+        self.assertEqual(rc, 1, err)
+        self.assertEqual(fx.calls, [])
+        self.assertEqual(self.w.origin_main(), self.base)
+        lines = out.splitlines()
+        self.assertEqual(lines[-1], f"retrofit-watch: demo segurada \\u2014 auto-dry (ramo {rw_store.branch_name(rid, 'demo')})")
+        self.assertEqual(json.loads("\n".join(lines[:-1]))["motivo"], "auto-dry")
+
+    def test_cli_publish_refuses_names_out_of_format(self):
+        # T7-rc: <id> ou <lote> fora do formato é uso (rc 2), sem traceback e sem linha no registro.
+        rid, wt = self.clean_retrofit()
+        before = rw_auto.read_registry(self.ctx())
+        fx = self.effects()
+        for args in ((rid,), (rid, "demo", "x"), ("../" + rid, "demo"), (rid, "demo\n"), (rid, "-demo"),
+                     (rid, "d" + chr(0xE9) + "mo")):
+            with self.subTest(args=args):
+                rc, out, err = self.cli(*args, effects=fx)
+                self.assertEqual((rc, out), (2, ""), err)
+                self.assertTrue(err.isascii(), err)
+                self.assertIn("publish <id> <lote>", err)
+                self.assertNotIn("Traceback", err)
+        self.assertEqual(rw_auto.read_registry(self.ctx()), before)
+        self.assertEqual(fx.calls, [])
+
+    def test_cli_lines_are_ascii_on_cp1252(self):
+        # M4: `→` não existe no cp1252; `é` e `ç` existem e deixariam vivo o `ensure_ascii=False`.
+        arrow = chr(0x2192)
+        rid, wt = self.clean_retrofit(review={"regra_repetida": f"SKILL.md:3 repete {arrow} a regra"})
+        env = dict(self.w.env, CLAUDE_PLUGIN_DATA=str(self.w.data), PYTHONIOENCODING="cp1252")
+        proc = subprocess.run([sys.executable, str(SCRIPT), "publish", rid, "demo"], capture_output=True, env=env,
+                              timeout=600)
+        self.assertEqual(proc.returncode, 1, proc.stderr.decode("utf-8", "replace"))
+        self.assertTrue(proc.stdout.isascii(), proc.stdout)
+        text = proc.stdout.decode("cp1252")
+        lines = text.splitlines()
+        self.assertIn("segurada", lines[-1])
+        line = json.loads("\n".join(lines[:-1]))
+        self.assertEqual((line["motivo"], line["detalhe"]), ("regra-repetida", f"SKILL.md:3 repete {arrow} a regra"))
         self.assertEqual(self.w.origin_main(), self.base)
 
 
