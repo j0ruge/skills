@@ -175,18 +175,24 @@ def _g_clean(p):
     return ("arvore-suja", _short(out)) if out.strip() else None
 
 
-def network_env(env):
-    """O ambiente de um git que fala com o `origin`: nunca espera credencial nem a senha da chave SSH no
-    terminal (T9-ssh). O GIT_SSH_COMMAND que o dono já definiu fica como está."""
+def network_env(env, worktree):
+    """O ambiente de um git que fala com o `origin` a partir de `worktree`: nunca espera credencial no
+    terminal, nem a senha da chave SSH (T9-ssh). O `ssh -o BatchMode=yes` só entra quando o dono não
+    escolheu o ssh: sem GIT_SSH_COMMAND, sem GIT_SSH e sem `core.sshCommand` na config que este mesmo
+    ambiente lê no worktree (T9-ssh2). A variável venceria as duas outras escolhas."""
     env = dict(env, GIT_TERMINAL_PROMPT="0")
-    if "GIT_SSH_COMMAND" not in env:
-        env["GIT_SSH_COMMAND"] = BATCH_SSH
+    if "GIT_SSH_COMMAND" in env or "GIT_SSH" in env:
+        return env
+    rc, out = rw_store.run(["git", "-C", worktree, "config", "--get", "core.sshCommand"], env=env)
+    if rc == 0 and out.strip():
+        return env
+    env["GIT_SSH_COMMAND"] = BATCH_SSH
     return env
 
 
 def _g_fetch(p):
     """3. `git fetch origin`, sem nunca esperar credencial no terminal. Falha é `fetch`, nunca "em dia"."""
-    rc, out = rw_store.run(["git", "-C", p.worktree, "fetch", "origin"], env=network_env(p.env))
+    rc, out = rw_store.run(["git", "-C", p.worktree, "fetch", "origin"], env=network_env(p.env, p.worktree))
     return ("fetch", _short(f"git fetch origin saiu {rc}: {out}")) if rc != 0 else None
 
 
@@ -642,7 +648,7 @@ class Effects:
     def push(self, worktree):
         """`git push origin HEAD:main`, sem força, sem esperar senha no terminal: (True, saída) ou
         (False, por quê)."""
-        env = network_env(rw_store.git_env(home=self.ctx.home, nosystem=True))
+        env = network_env(rw_store.git_env(home=self.ctx.home, nosystem=True), worktree)
         rc, out = rw_store.run(["git", "-C", worktree, "push", "origin", "HEAD:main"], env=env)
         if rc != 0:
             return False, _short(f"git push origin HEAD:main saiu {rc}: {out}")
@@ -696,18 +702,51 @@ class Effects:
         return True, f"copia instalada igual: {cache}"
 
 
-def already_published(worktree, retrofit):
-    """O commit do worktree já está no `origin/main`? O HEAD não é a `base` do retrofit.json (o worktree
-    recém-preparado é ancestral de qualquer `origin/main` novo) e é ancestral do `origin/main`."""
-    if not Path(worktree).is_dir():
+def _sealed_patch(ctx, rid, lote):
+    """O `patch` da segunda passada do revisor (anonimato.json), ou None sem ela."""
+    try:
+        return rw_auto.load_anonimato(rw_auto.lote_dir(ctx, rid, lote) / "anonimato.json")["patch"]
+    except rw_auto.Malformed:
+        return None
+
+
+def _published_patches(worktree, env):
+    """O patch do commit do HEAD contra o pai dele: com a mensagem dele e, quando o trailer é o da
+    aprovação, também com o trailer de antes da emenda da porta (o revisor selou esse)."""
+    message = rw_store._git_bytes(["log", "--format=%B", "HEAD^..HEAD"], worktree, env, "porta")
+    found = {rw_store.patch_id(worktree, base="HEAD^")}
+    approved, reviewed = f"{MARKER}: {APPROVED}".encode(), f"{MARKER}: autonomous".encode()
+    if message.count(approved) == 1:
+        found.add(rw_store.patch_id(worktree, base="HEAD^", message=message.replace(approved, reviewed)))
+    return found
+
+
+def already_published(worktree, retrofit, sealed):
+    """O commit do lote já está no `origin/main`? Vale quando as quatro coisas valem (T9-pub):
+    - o HEAD está no ramo do lote (o do id, do lote e da tentativa, nunca o `ramo` do retrofit.json);
+    - o HEAD não é a `base` do retrofit.json (o worktree recém-preparado é ancestral de qualquer
+      `origin/main` novo);
+    - o HEAD é ancestral do `origin/main`;
+    - o patch do commit do HEAD é o `sealed`, o da revisão: um worktree levado a outro commit do
+      `origin/main` (por `reset --hard`) está no ramo e é ancestral, mas não é o lote."""
+    if not Path(worktree).is_dir() or not sealed:
         return False
     env = rw_store.git_env(neutral=True)
+    branch = rw_store.branch_name(retrofit["id"], retrofit["lote"], retrofit["tentativa"])
+    rc, current = rw_store.run(["git", "-C", worktree, "branch", "--show-current"], env=env)
+    if rc != 0 or current.strip() != branch:
+        return False
     rc, head = rw_store.run(["git", "-C", worktree, "rev-parse", "HEAD"], env=env)
     head = head.strip()
     if rc != 0 or not head or head == retrofit["base"]:
         return False
     rc, _ = rw_store.run(["git", "-C", worktree, "merge-base", "--is-ancestor", head, rw_store.BASE_REF], env=env)
-    return rc == 0
+    if rc != 0:
+        return False
+    try:
+        return sealed in _published_patches(worktree, env)
+    except rw_store.StoreError:  # sem pai (raiz), por exemplo: não é o commit de um lote
+        return False
 
 
 def mark_done(ctx, session, key):
@@ -823,8 +862,8 @@ def _publish(ctx, rid, lote, effects, done):
     env = rw_store.git_env(home=ctx.home, nosystem=True)
     if worktree.is_dir():
         # 2. Uma falha deste fetch não se registra aqui: a guarda 3 busca de novo e a grava como `fetch`.
-        rw_store.run(["git", "-C", worktree, "fetch", "origin"], env=network_env(env))
-    if already_published(worktree, retrofit):
+        rw_store.run(["git", "-C", worktree, "fetch", "origin"], env=network_env(env, worktree))
+    if already_published(worktree, retrofit, _sealed_patch(ctx, rid, lote)):
         # Refaz só a instalação (D22). Sem linha `publicado` deste commit (a porta caiu entre o push e a
         # linha), grava a que faltou, e com ela o fecho da sessão.
         commit = _head(worktree)

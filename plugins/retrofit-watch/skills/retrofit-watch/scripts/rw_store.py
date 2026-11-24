@@ -347,17 +347,19 @@ def _git_bytes(args, cwd, env, what):
     return out
 
 
-def patch_id(worktree):
+def patch_id(worktree, base=BASE_REF, message=None):
     """O sha256 do que o ramo muda (D20 e M13), sobre os bytes de `git diff -U0 --no-renames
     origin/main...HEAD` sem os dois arquivos de lista: as linhas `+` e `-` (os nomes de arquivo vêm nas
     `+++` e `---`), as de PATCH_HEADERS, e a mensagem de cada commit. O rebase não o muda; mudar
-    conteúdo, nome, modo ou mensagem muda."""
+    conteúdo, nome, modo ou mensagem muda. `base` troca o `origin/main` (a porta mede o commit já
+    publicado contra `HEAD^`); `message`, em bytes, troca a mensagem lida do log."""
     env = git_env(neutral=True)
     exclude = [f":(exclude){f}" for f in LIST_FILES]
     diff = _git_bytes(["-c", "core.quotePath=false", "diff", "-U0", "--no-renames", "--text", "--no-ext-diff",
                        "--no-textconv", "--src-prefix=a/", "--dst-prefix=b/", "--no-color", "--no-relative",
-                       f"{BASE_REF}...HEAD", "--", ".", *exclude], worktree, env, "patch")
-    message = _git_bytes(["log", "--format=%B", f"{BASE_REF}..HEAD"], worktree, env, "patch")
+                       f"{base}...HEAD", "--", ".", *exclude], worktree, env, "patch")
+    if message is None:
+        message = _git_bytes(["log", "--format=%B", f"{base}..HEAD"], worktree, env, "patch")
     digest = hashlib.sha256()
     for line in diff.split(b"\n"):
         if line.startswith((b"+", b"-")) or line.startswith(PATCH_HEADERS):

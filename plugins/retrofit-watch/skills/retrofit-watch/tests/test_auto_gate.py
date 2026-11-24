@@ -1139,13 +1139,49 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
         self.assertIn("full:demo", self.state()["done"])
 
     def test_fresh_worktree_is_not_taken_as_published(self):
+        # A base tem pai e o `sealed` é o patch dela: só a comparação com a `base` separa o worktree
+        # recém-preparado de um lote publicado.
+        self.w.advance_origin({"tests/antes.txt": "x\n"}, "chore: um commit antes da base")
         rid = self.w.retro([{}], [{}])
         got = rw_store.prepare(self.ctx(), rid, "demo")
         wt = Path(got["worktree"])
+        sealed = rw_store.patch_id(wt, base="HEAD^")
         self.w.advance_origin({"tests/extra.txt": "x\n"}, "fix(demo2): v1.0.1\n\nRetrofit-Mode: autonomous")
         self.w.git(wt, "fetch", "-q", "origin")
         self.assertEqual(self.head(wt), got["base"])
-        self.assertFalse(rg.already_published(wt, got))
+        self.assertFalse(rg.already_published(wt, got, sealed))
+
+    def test_published_lote_on_another_branch_goes_through_refuse(self):
+        # T9-pub: o commit do lote está no `origin/main`, mas o worktree saiu do ramo do lote.
+        rid, wt = self.clean_retrofit()
+        self.w.git(self.w.other, "fetch", "-q", str(wt), "HEAD")
+        self.w.git(self.w.other, "push", "-q", "origin", "FETCH_HEAD:main")
+        self.w.git(wt, "fetch", "-q", "origin")
+        retrofit = self.read(rid, "retrofit.json")
+        sealed = self.read(rid, "anonimato.json")["patch"]
+        self.assertTrue(rg.already_published(wt, retrofit, sealed))
+        self.w.git(wt, "checkout", "-q", "-b", "outro-ramo")
+        self.assertFalse(rg.already_published(wt, retrofit, sealed))
+        fx = self.effects()
+        line, rc = self.publish(rid, fx)
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (1, "segurado", "escopo"), line)
+        self.assertIn("outro-ramo", line["detalhe"])
+        self.assertEqual(fx.calls, [])
+
+    def test_worktree_reset_to_origin_main_is_not_published(self):
+        # T9-pub: no ramo do lote, levado por `reset --hard` a um commit do `origin/main` depois da base.
+        rid, wt = self.clean_retrofit()
+        moved = self.w.advance_origin({"tests/extra.txt": "x\n"}, "chore: outro commit no origin")
+        self.w.git(wt, "fetch", "-q", "origin")
+        self.w.git(wt, "reset", "-q", "--hard", "origin/main")
+        self.assertEqual(self.head(wt), moved)
+        retrofit = self.read(rid, "retrofit.json")
+        self.assertFalse(rg.already_published(wt, retrofit, self.read(rid, "anonimato.json")["patch"]))
+        fx = self.effects()
+        line, rc = self.publish(rid, fx)
+        self.assertEqual((rc, line["resultado"], line["motivo"]), (1, "segurado", "escopo"), line)
+        self.assertEqual(fx.calls, [])
+        self.assertEqual(self.w.origin_main(), moved)
 
     # --- a trava -------------------------------------------------------------------------------
 
@@ -1289,6 +1325,11 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
         self.assertEqual(self.w.git(self.w.origin, "rev-parse", "main^{tree}"), tree)
         self.assertEqual(self.w.git(self.w.origin, "rev-list", "--count", f"{self.base}..main"), "1")
         self.assertEqual(line["commit"], self.w.origin_main())
+        # De novo: a emenda do trailer não tira o lote de "já publicado" (o revisor selou o de antes).
+        fx = self.effects()
+        again, rc = self.publish(rid, fx, lote)
+        self.assertEqual((rc, again["resultado"], again["commit"]), (0, "publicado", line["commit"]), again)
+        self.assertNotIn("push", fx.calls)
 
     def test_rejected_push_of_an_approved_lote_can_be_rerun(self):
         # O push recusado devolve o ramo ao commit revisado: a emenda do trailer muda o patch (D20), e sem
@@ -1357,6 +1398,7 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
                 rid, wt = self.clean_retrofit(licoes=({"plugin": plugin},), skills=(plugin,), lote=plugin)
                 with mock.patch.dict(os.environ):
                     os.environ.pop("GIT_SSH_COMMAND", None)
+                    os.environ.pop("GIT_SSH", None)
                     if inherited:
                         os.environ["GIT_SSH_COMMAND"] = inherited
                     with mock.patch.object(rw_store, "run", wraps=rw_store.run) as spy:
@@ -1370,6 +1412,31 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
                     env = call.kwargs["env"]
                     self.assertEqual(env["GIT_TERMINAL_PROMPT"], "0")
                     self.assertEqual(env["GIT_SSH_COMMAND"], inherited or "ssh -o BatchMode=yes")
+
+    def test_network_env_keeps_the_owner_ssh(self):
+        # T9-ssh2: GIT_SSH_COMMAND, GIT_SSH ou `core.sshCommand` do dono: nenhum BatchMode por cima.
+        rid, wt = self.clean_retrofit()
+        own = "ssh -o " + "IdentitiesOnly=yes"
+        base = {k: v for k, v in rw_store.git_env(home=self.w.home, nosystem=True).items()
+                if k not in ("GIT_SSH_COMMAND", "GIT_SSH")}
+        self.assertEqual(rg.network_env(base, wt)["GIT_SSH_COMMAND"], "ssh -o BatchMode=yes")
+        for label, env in (("GIT_SSH_COMMAND", dict(base, GIT_SSH_COMMAND=own)),
+                           ("GIT_SSH", dict(base, GIT_SSH="/usr/bin/ssh"))):
+            with self.subTest(label):
+                got = rg.network_env(env, wt)
+                self.assertEqual(got["GIT_TERMINAL_PROMPT"], "0")
+                self.assertEqual(got.get("GIT_SSH_COMMAND"), env.get("GIT_SSH_COMMAND"))
+        with self.subTest("core.sshCommand"):
+            self.w.git(wt, "config", "core.sshCommand", own)
+            got = rg.network_env(base, wt)
+            self.assertEqual(got["GIT_TERMINAL_PROMPT"], "0")
+            self.assertNotIn("GIT_SSH_COMMAND", got)
+            # A config lida é a do ambiente do push: com o HOME do Context e no worktree.
+            self.w.git(wt, "config", "--unset", "core.sshCommand")
+            (self.w.home / ".gitconfig").write_text(
+                (self.w.home / ".gitconfig").read_text(encoding="utf-8") + f"[core]\n\tsshCommand = {own}\n",
+                encoding="utf-8")
+            self.assertNotIn("GIT_SSH_COMMAND", rg.network_env(base, wt))
 
     def test_fixture_push_refuses_a_real_remote(self):
         rid, wt = self.clean_retrofit()
