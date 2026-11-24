@@ -204,8 +204,8 @@ def _achados_da_linha(onde, texto, hashes, extras, publicos):
             achados.append(('lista', trecho))
         elif forma in extras:
             achados.append(('colheita', trecho))
-    # O '$SENHA@host.com' de um modelo de conexão não é endereço: o modelo vira espaço antes de buscar o e-mail,
-    # e um endereço real logo depois dele continua inteiro.
+    # A senha de modelo seguida do @ e do host de um modelo de conexão não é endereço: o modelo vira espaço
+    # antes de buscar o e-mail, e um endereço real logo depois dele continua inteiro.
     sem_modelos = texto
     for (a, b), isenta in _conexoes(texto):
         if isenta:
