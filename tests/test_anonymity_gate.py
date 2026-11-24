@@ -448,6 +448,15 @@ class TermosNovos(Base):
     def test_flag_e_arquivo_com_extensao_nao_saem(self):
         self.assertEqual(self.nomes(linha='rode com --dry' + '-run e -x, depois abra notas-de' + '-campo.md'), [])
 
+    def test_dominio_novo_e_termo(self):
+        # o de país, o de duas letras da lista e um de três letras, que só a lista de TLDs pega
+        dominios = ['zor' + 'vanel.com' + '.br', 'qux' + 'lab' + '.io', 'qux' + 'lab' + '.dev']
+        self.assertEqual(self.nomes(linha='veja ' + ', '.join(dominios) + ', depois volte'), dominios)
+
+    def test_arquivo_e_atributo_de_codigo_nao_saem(self):
+        self.assertEqual(self.nomes(linha='abra notas-de' + '-campo.md, rode script' + '.py e leia self' + '.repo'),
+                         [])
+
     def test_termo_que_a_loja_ja_tem_nao_sai(self):
         self.base({'velho.md': f'fala do {PROPRIO.lower()} e do {HIFEN}\n'})
         self.assertEqual(self.nomes(linha=f'o {PROPRIO.upper()} e o {HIFEN} de novo'), [])

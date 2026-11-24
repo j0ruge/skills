@@ -267,15 +267,22 @@ _FIM_DE_FRASE = ('.', '!', '?')
 _FLAG = re.compile(r'--?[A-Za-z0-9][\w-]*')
 _VERSAO = re.compile(r'v?\d+(?:\.\d+)+(?:[-+][\w.]+)?|v\d+')
 _SHA = re.compile(r'[0-9a-f]{7,40}')
-_ARQUIVO = re.compile(r'[^/\\]+\.[A-Za-z][A-Za-z0-9]{0,5}')
+# A palavra com ponto: o último segmento decide entre nome de arquivo (fora), domínio (dentro) e o resto.
+EXTENSOES = frozenset({'md', 'py', 'json', 'txt', 'sh', 'ps1', 'yml', 'yaml', 'toml', 'js', 'ts', 'html', 'css',
+                       'csv', 'cfg', 'ini', 'lock', 'log', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'pdf', 'xml', 'rs',
+                       'go', 'rb', 'java', 'c', 'h', 'cpp', 'hpp', 'sql', 'bat', 'cmd', 'zip', 'gz', 'tar', 'tgz',
+                       'sha256', 'diff', 'patch', 'tex', 'bib', 'docx', 'xlsx', 'pptx', 'mp4', 'env', 'mjs', 'tsx',
+                       'jsx', 'ipynb', 'pyc'})
+TLDS = frozenset({'com', 'org', 'net', 'io', 'dev', 'app', 'ai', 'co', 'info', 'edu', 'gov'})
 _LETRA = re.compile(r'[^\W\d_]')
 _HIFEN_ENTRE = re.compile(r'[^\W_]-[^\W_]')
 
 
 def _termos_da_linha(texto):
     """Os candidatos a termo de uma linha, na ordem: caminho ou URL, CamelCase, maiúscula fora do início da
-    frase, palavra com dígito ou sublinhado, e palavra em minúsculas com hífen. Fora: flag, número, data,
-    versão, sha e nome de arquivo com extensão. Uma URL tem barra: cai na regra do caminho."""
+    frase, palavra com dígito ou sublinhado, palavra em minúsculas com hífen, e domínio (último segmento num
+    TLD genérico da lista ou de país, com duas letras). Fora: flag, número, data, versão, sha e nome de arquivo
+    (último segmento em EXTENSOES). Uma URL tem barra: cai na regra do caminho."""
     termos, inicio = [], True
     for m in _PALAVRA_TERMO.finditer(texto):
         bruto = m.group()
@@ -288,8 +295,16 @@ def _termos_da_linha(texto):
         if '/' in palavra or '\\' in palavra:
             termos.append(palavra)
             continue
-        if any(f.fullmatch(palavra) for f in (_FLAG, _VERSAO, _SHA, _ARQUIVO)):
+        if any(f.fullmatch(palavra) for f in (_FLAG, _VERSAO, _SHA)):
             continue
+        if '.' in palavra:
+            fim = palavra.rsplit('.', 1)[1].lower()
+            if fim in EXTENSOES:
+                continue  # nome de arquivo: a extensão ganha do domínio de país (md, sh, rs)
+            if fim in TLDS or (len(fim) == 2 and fim.isascii() and fim.isalpha()):
+                termos.append(palavra)  # domínio: a camada 1 só o vê dentro de um e-mail
+                continue
+            # o resto (atributo de código, abreviação) segue para as outras regras
         if (any(a.islower() and b.isupper() for a, b in zip(palavra, palavra[1:]))
                 or (palavra[0].isupper() and not no_inicio)
                 or re.search(r'[\d_]', palavra)
