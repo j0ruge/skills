@@ -281,7 +281,9 @@ O aviso de startup junta numa linha ao dono um segmento por assunto:
   `retrofit.json` e sem linha, confira o selo e o `anonimato.json` e rode `publish`; sem selo, rode
   `hold` com o motivo do executor (passo 7). Numa retro com lição sem linha, rode `triage <id>` de novo
   e leve cada lote dela ao passo 4. Se o `triage` sair 2 por causa do `veredito.json`, volte ao passo 2.
-- `N publicados com a cópia instalada atrás (…)`: o aviso só nomeia os plugins. O `<id>` e o `<lote>`
-  estão na última linha `publicado` de cada plugin em `<dados>/autonomo.jsonl` (chaves `id` e `lote`).
-  Rode `publish <id> <lote>` de novo.
+- `N plugins com a cópia instalada atrás da última publicação (…)`: o aviso conta só a última publicação
+  de cada plugin, o lote com o push mais recente. Uma publicação mais nova do mesmo plugin substitui a
+  anterior: um lote antigo que ficou atrás sai do aviso, e não precisa de `publish` de novo. O aviso só
+  nomeia os plugins. O `<id>` e o `<lote>` estão na linha `publicado` do lote mais recente de cada plugin
+  em `<dados>/autonomo.jsonl` (chaves `id` e `lote`). Rode `publish <id> <lote>` desse lote de novo.
 - `… — o kit pode entrar (…)`: o critério da v2 se cumpriu. Só informa.

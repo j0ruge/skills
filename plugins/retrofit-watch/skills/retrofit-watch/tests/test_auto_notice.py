@@ -164,10 +164,40 @@ class RegistryNoticeTest(NoticeHarness, unittest.TestCase):
         self.line("a1", "a1/demo#2", "publicado", lote="demo")
         got = rw_auto.install_behind(self.ctx())
         self.assertEqual([e["item"] for e in got], ["a1/demo"])
-        self.assertEqual(self.pending(), "retrofit-watch: 1 publicado com a cópia instalada atrás (demo)")
+        self.assertEqual(self.pending(), "retrofit-watch: 1 plugin com a cópia instalada atrás da última publicação "
+                                         "(demo)")
         for state in ("pendente", "cache-difere"):
             self.line("e1", "e1/demo2", "publicado", plugin="demo2", lote="demo2", instalacao=state)
             self.assertEqual([e["item"] for e in rw_auto.install_behind(self.ctx())], ["a1/demo", "e1/demo2"], state)
+
+    def test_a_newer_publication_of_the_plugin_replaces_the_one_behind(self):
+        # Final-F3: o aviso conta só a última publicação de cada plugin. O lote A atrás e o lote B do mesmo
+        # plugin em dia: o plugin sai do aviso; o `publish` de A de novo daria `cache-difere` para sempre.
+        clock = [self.t0]
+
+        def at(rid, state):
+            clock[0] += 60
+            with mock.patch("time.time", return_value=clock[0]):
+                self.line(rid, f"{rid}/demo", "publicado", lote="demo", instalacao=state)
+        at("a1", "pendente")
+        at("a1", "update")
+        self.assertEqual([e["item"] for e in rw_auto.install_behind(self.ctx())], ["a1/demo"])
+        at("b1", "pendente")
+        at("b1", "ok")
+        self.assertEqual(rw_auto.install_behind(self.ctx()), [])
+        self.assertIsNone(self.pending())
+        # Rodar o `publish` de A de novo não traz A de volta: B continua a última publicação do plugin.
+        at("a1", "cache-difere")
+        self.assertEqual(rw_auto.install_behind(self.ctx()), [])
+        # A e B atrás: o plugin aparece uma vez, pelo lote B.
+        at("c1", "pendente")
+        at("c1", "update")
+        at("d1", "pendente")
+        at("d1", "cache-difere")
+        got = rw_auto.install_behind(self.ctx())
+        self.assertEqual([e["item"] for e in got], ["d1/demo"])
+        self.assertEqual(self.pending(), "retrofit-watch: 1 plugin com a cópia instalada atrás da última "
+                                         "publicação (demo)")
 
     def test_a_failing_segment_keeps_the_queue_notice(self):
         self.queue_one()

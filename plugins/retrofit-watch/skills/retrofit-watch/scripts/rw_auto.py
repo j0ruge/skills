@@ -724,10 +724,26 @@ def orphans(ctx, now=None):
 
 
 def install_behind(ctx):
-    """Os itens cuja última linha é `publicado` com `instalacao` em BEHIND. A linha de uma lição trazida
-    de volta (T9) não tem `instalacao` e fica fora."""
-    return [entry for entry in last_lines(read_registry(ctx)).values()
-            if entry.get("resultado") == "publicado" and entry.get("instalacao") in BEHIND]
+    """A última linha da última publicação de cada plugin, quando ela é `publicado` com `instalacao` em
+    BEHIND. A última publicação é o lote cuja primeira linha `publicado` (a do push) tem o maior `ts`; no
+    mesmo `ts`, a gravada depois. Uma publicação mais nova do mesmo plugin substitui a anterior: o lote
+    antigo que ficou atrás sai do aviso, e rodar o `publish` dele de novo não o traz de volta (Final-F3).
+    A linha de uma lição trazida de volta (T9) não é de lote e fica fora."""
+    registry = read_registry(ctx)
+    last = last_lines(registry)
+    pushed = {}  # item -> (ts, posição) da primeira linha `publicado` do lote
+    for i, entry in enumerate(registry):
+        if entry.get("resultado") == "publicado" and _is_batch(entry) and entry["item"] not in pushed:
+            ts = entry.get("ts")
+            pushed[entry["item"]] = (ts if isinstance(ts, (int, float)) and not isinstance(ts, bool) else 0, i)
+    newest = {}  # plugin -> (chave, item)
+    for item, key in pushed.items():
+        plugin = str(last[item].get("plugin"))
+        if plugin not in newest or key > newest[plugin][0]:
+            newest[plugin] = (key, item)
+    chosen = sorted(newest.values())
+    return [last[item] for _, item in chosen
+            if last[item].get("resultado") == "publicado" and last[item].get("instalacao") in BEHIND]
 
 
 def _amount(n, one, many):
@@ -770,7 +786,7 @@ def behind_notice(ctx):
     if not items:
         return None
     names = ", ".join(str(e.get("plugin")) for e in items)
-    return f"{_amount(len(items), 'publicado', 'publicados')} com a cópia instalada atrás ({names})"
+    return f"{_amount(len(items), 'plugin', 'plugins')} com a cópia instalada atrás da última publicação ({names})"
 
 
 # O que vem depois de `<id>/` num item: `<lote>`, ou `<plugin>#<n>` na lição sem ramo.
