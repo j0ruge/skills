@@ -291,6 +291,23 @@ class HarvestTest(unittest.TestCase):
                 with self.assertRaises(rw_store.StoreError) as caught:
                     rw_store.harvest(self.ctx(), cwd=cwd)
                 self.assertIn(str(root), str(caught.exception))
+        # CR-r2 #2: a mensagem do git sai de uma segunda chamada, com o stderr junto (a primeira o tira).
+        # O teste confere as chamadas, e não o texto do git, que pode vir traduzido.
+        with self.subTest("a segunda chamada traz o stderr"):
+            real_run = rw_store.run
+            calls = []
+
+            def records(cmd, *args, **kwargs):
+                if "--show-toplevel" in cmd:
+                    calls.append(kwargs.get("stderr", subprocess.STDOUT))
+                return real_run(cmd, *args, **kwargs)
+
+            with mock.patch.object(rw_store, "run", records):
+                with self.assertRaises(rw_store.StoreError):
+                    rw_store.harvest(self.ctx(), cwd=root)
+            self.assertEqual(len(calls), 2, calls)
+            self.assertIs(calls[0], subprocess.DEVNULL)
+            self.assertIsNot(calls[1], subprocess.DEVNULL)
         # A pasta sem `.git` em lugar nenhum acima dela continua sem erro.
         plain = self.tmp / "sem-repo" / "sub"
         plain.mkdir(parents=True)
