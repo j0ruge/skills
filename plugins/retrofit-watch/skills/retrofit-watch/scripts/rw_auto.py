@@ -926,11 +926,17 @@ def discard(ctx, rid, item, motivo="descartado-pelo-dono"):
                                       "descartado", motivo, lote=last.get("lote")))
 
 
-def _lote_licoes(path):
+def _lote_fields(path, lote):
+    """(plugin, licoes) do retrofit.json do lote (Final-F2): o `plugin` é o do arquivo, nunca um pedaço do
+    nome, porque um plugin pode ter `__` no nome. Com o arquivo ilegível, o plugin sai do nome pela regra
+    da porta (o sufixo `__description`, D2) e as lições ficam vazias."""
     try:
-        return list(load_retrofit(path)["licoes"])
+        retrofit = load_retrofit(path)
     except Malformed:
-        return []
+        suffix = "__description"
+        plugin = lote[:-len(suffix)] if lote.endswith(suffix) and len(lote) > len(suffix) else lote
+        return plugin, []
+    return retrofit["plugin"], list(retrofit["licoes"])
 
 
 def discard_retro(ctx, rid, motivo="descartado-pelo-dono"):
@@ -970,9 +976,8 @@ def discard_retro(ctx, rid, motivo="descartado-pelo-dono"):
         for lote in lotes:
             item = f"{rid}/{lote}"
             if item not in items:
-                lines.append(_line(session, rid, item, lote.partition("__")[0],
-                                   _lote_licoes(lote_dir(ctx, rid, lote) / "retrofit.json"),
-                                   "descartado", motivo, lote=lote))
+                plugin, numbers = _lote_fields(lote_dir(ctx, rid, lote) / "retrofit.json", lote)
+                lines.append(_line(session, rid, item, plugin, numbers, "descartado", motivo, lote=lote))
         if licoes is False:
             item = RETRO_ITEM.format(rid=rid)
             if not any(e.get("id") == rid and e.get("item") == item for e in registry):

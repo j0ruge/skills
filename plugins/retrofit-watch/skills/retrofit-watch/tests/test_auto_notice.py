@@ -333,6 +333,25 @@ class OrphanTest(NoticeHarness, unittest.TestCase):
         self.assertEqual(rw_auto.held(self.ctx()), held, "o lote segurado continua em aberto")
         self.assertEqual(rw_auto.orphans(self.ctx(), now=ts + 2 * 3600), [])
 
+    def test_discard_retro_takes_the_plugin_from_the_retrofit_json(self):
+        # Final-F2: um plugin com `__` no nome. O `plugin` da linha é o do retrofit.json do lote, nunca o
+        # pedaço do nome antes do primeiro `__`; com o retrofit.json ilegível, sai do nome pela regra da
+        # porta (o sufixo `__description`).
+        rid = self.w.retro([{}], [{}])
+        rw_store.prepare(self.ctx(), rid, "demo")
+        self.line(rid, f"{rid}/demo", "segurado", motivo="testes", lote="demo")
+        plugin = "ab__cd"
+        good = json.loads((rw_auto.lote_dir(self.ctx(), rid, "demo") / "retrofit.json").read_text(encoding="utf-8"))
+        folder = rw_auto.lote_dir(self.ctx(), rid, plugin)
+        folder.mkdir()
+        rw_auto._write_json(folder / "retrofit.json", dict(good, lote=plugin, plugin=plugin, licoes=[3]))
+        broken = rw_auto.lote_dir(self.ctx(), rid, plugin + "__description")
+        broken.mkdir()
+        (broken / "retrofit.json").write_text("{", encoding="utf-8")
+        got = rw_auto.discard_retro(self.ctx(), rid)
+        self.assertEqual([(e["lote"], e["plugin"], e["licoes"]) for e in got],
+                         [(plugin, plugin, [3]), (plugin + "__description", plugin, [])])
+
     def test_discard_retro_refuses_when_nothing_is_open(self):
         rid = self.w.retro([{}, {}], None)
         self.line(rid, f"{rid}/demo#1", "descartado", motivo="coberta")
