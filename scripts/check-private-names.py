@@ -12,7 +12,7 @@ O nome é comparado por palavras, sem caixa e sem separador: a mesma entrada peg
 com prefixo e sufixo, e nunca um pedaço de outra palavra. A forma com espaço só vale se estiver na lista.
 
 Uso (da raiz ou de qualquer pasta):
-  python3 scripts/check-private-names.py                varre a loja; rc 0 limpa, 1 com achados, 2 sem lista
+  python3 scripts/check-private-names.py                varre a loja; rc 0 limpa, 1 com achados, 2 sem lista ou arquivo ilegível
   python3 scripts/check-private-names.py --add NOME     acrescenta o nome à lista
   python3 scripts/check-private-names.py --remove NOME  tira o nome da lista (coincidência com palavra comum)
 """
@@ -90,21 +90,35 @@ def arquivos(raiz):
             if p.is_file() and not PULAR & set(p.relative_to(raiz).parts)]
 
 
+def linhas_da_arvore(raiz):
+    """(caminho relativo, linha, texto) de cada linha da árvore; a linha 0 é o próprio caminho. Binário só dá o caminho.
+
+    Os dois portões que leem a árvore leem por aqui. Pula só o que não tem conteúdo: o arquivo rastreado que
+    saiu do disco e a pasta (um gitlink). A pasta se reconhece antes de ler, e não pelo IsADirectoryError: no
+    Windows, ler uma pasta dá PermissionError. Qualquer outro erro de leitura sobe: um arquivo ilegível não vira
+    árvore limpa.
+    """
+    for rel in arquivos(raiz):
+        caminho = Path(raiz) / rel
+        if caminho.is_dir():
+            continue
+        try:
+            dados = caminho.read_bytes()
+        except FileNotFoundError:
+            continue
+        yield rel, 0, rel
+        if b'\0' not in dados:
+            for numero, texto in enumerate(dados.decode('utf-8', 'replace').splitlines(), start=1):
+                yield rel, numero, texto
+
+
 def varrer(raiz, hashes):
     """[(caminho relativo, linha, trecho)] de cada ocorrência; a linha 0 é o próprio caminho. Binário só tem o caminho varrido."""
     achados = []
-    for rel in arquivos(raiz):
-        try:
-            dados = (Path(raiz) / rel).read_bytes()
-        except OSError:
-            continue
-        linhas = [(0, rel)]
-        if b'\0' not in dados:
-            linhas += list(enumerate(dados.decode('utf-8', 'replace').splitlines(), start=1))
-        for numero, linha in linhas:
-            for trecho, forma in candidatos(linha):
-                if _resumo(forma) in hashes:
-                    achados.append((rel, numero, trecho))
+    for rel, numero, linha in linhas_da_arvore(raiz):
+        for trecho, forma in candidatos(linha):
+            if _resumo(forma) in hashes:
+                achados.append((rel, numero, trecho))
     return achados
 
 
@@ -139,7 +153,11 @@ def main(argv=None):
     except (OSError, ValueError) as exc:
         print(f'lista de nomes privados inutilizavel: {exc}')
         return 2
-    achados = varrer(RAIZ, hashes)
+    try:
+        achados = varrer(RAIZ, hashes)
+    except OSError as exc:
+        print(f'leitura da arvore falhou: {exc}'.encode('ascii', 'backslashreplace').decode('ascii'))
+        return 2
     for rel, numero, trecho in achados:
         print(f'{rel}:{numero}: nome privado "{ascii(trecho)[1:-1]}"')
     if achados:

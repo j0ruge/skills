@@ -260,11 +260,19 @@ def _normalizar_extras(extras):
 
 
 # Candidato a termo da camada 2. A palavra é o trecho entre espaços e entre os sinais que cercam palavra
-# (vírgula, parênteses, aspas, crase, barra vertical); pontuação de fim de frase e ênfase saem das pontas.
-# O hífen da ponta esquerda fica: é o que separa a flag do resto.
-_PALAVRA_TERMO = re.compile(r'[^\s,;()\[\]{}<>"\'`|]+')
+# (vírgula, parênteses, aspas retas e tipográficas, aspas angulares, travessão, meia-risca, crase, barra
+# vertical); pontuação de fim de frase e ênfase saem das pontas. O hífen da ponta esquerda fica: é o que
+# separa a flag do resto.
+_PALAVRA_TERMO = re.compile(r'[^\s,;()\[\]{}<>"\'`|“”‘’«»—–]+')
 _FIM_DE_FRASE = ('.', '!', '?')
+# Título abreviado: o ponto dele não fecha a frase, e ele mesmo não é termo (o nome vem depois).
+_TITULOS = frozenset({'dr', 'dra', 'sr', 'sra', 'prof', 'profa', 'eng', 'mr', 'mrs', 'ms'})
+# Marcador de bloco Markdown no começo da linha, depois do recuo: a linha abre frase.
+_MARCADOR = re.compile(r'\s*(?:(?:[-*+]|\d+\.|#{1,6})(?:\s|$)|[|>])')
 _FLAG = re.compile(r'--?[A-Za-z0-9][\w-]*')
+# Flag com valor: só o nome da flag fica fora; o valor depois do = é a palavra.
+_FLAG_COM_VALOR = re.compile(r'--?[A-Za-z0-9][\w-]*=(.*)')
+_TRECHO = re.compile(r'[^\W_]+')
 _VERSAO = re.compile(r'v?\d+(?:\.\d+)+(?:[-+][\w.]+)?|v\d+')
 _SHA = re.compile(r'[0-9a-f]{7,40}')
 # A palavra com ponto: o último segmento decide entre nome de arquivo (fora), domínio (dentro) e o resto.
@@ -273,23 +281,34 @@ EXTENSOES = frozenset({'md', 'py', 'json', 'txt', 'sh', 'ps1', 'yml', 'yaml', 't
                        'go', 'rb', 'java', 'c', 'h', 'cpp', 'hpp', 'sql', 'bat', 'cmd', 'zip', 'gz', 'tar', 'tgz',
                        'sha256', 'diff', 'patch', 'tex', 'bib', 'docx', 'xlsx', 'pptx', 'mp4', 'env', 'mjs', 'tsx',
                        'jsx', 'ipynb', 'pyc'})
-TLDS = frozenset({'com', 'org', 'net', 'io', 'dev', 'app', 'ai', 'co', 'info', 'edu', 'gov'})
+# Os sufixos de rede privada dão nome de máquina. O home fica fora: Path.home e ctx.home são código.
+TLDS = frozenset({'com', 'org', 'net', 'io', 'dev', 'app', 'ai', 'co', 'info', 'edu', 'gov',
+                  'local', 'lan', 'internal', 'corp', 'intranet', 'localdomain', 'arpa'})
 _LETRA = re.compile(r'[^\W\d_]')
 _HIFEN_ENTRE = re.compile(r'[^\W_]-[^\W_]')
 
 
-def _termos_da_linha(texto):
-    """Os candidatos a termo de uma linha, na ordem: caminho ou URL, CamelCase, maiúscula fora do início da
-    frase, palavra com dígito ou sublinhado, palavra em minúsculas com hífen, e domínio (último segmento num
-    TLD genérico da lista ou de país, com duas letras). Fora: flag, número, data, versão, sha e nome de arquivo
-    (último segmento em EXTENSOES). Uma URL tem barra: cai na regra do caminho."""
-    termos, inicio = [], True
+def _termos_da_linha(texto, inicio=True):
+    """(termos, inicio): os candidatos a termo de uma linha e se a palavra seguinte abre frase.
+
+    Os candidatos, na ordem: caminho ou URL, CamelCase, maiúscula fora do início da frase (em qualquer trecho
+    alfanumérico da palavra: @Nome, dono:Nome), palavra com dígito ou sublinhado, palavra em minúsculas com
+    hífen, e domínio (último segmento num TLD da lista ou de país, com duas letras). Fora: flag (o valor depois
+    do = é palavra), número, data, versão, sha, título abreviado e nome de arquivo (último segmento em
+    EXTENSOES). Uma URL tem barra: cai na regra do caminho. inicio diz se a primeira palavra abre frase."""
+    termos = []
     for m in _PALAVRA_TERMO.finditer(texto):
         bruto = m.group()
         palavra = bruto.lstrip('*').rstrip('.:!?*')
         if not re.search(r'[^\W_]', palavra):
             continue  # marcador de lista, de título ou de citação: não muda o início da frase
-        no_inicio, inicio = inicio, bruto.rstrip('*').endswith(_FIM_DE_FRASE)
+        titulo = palavra.lower() in _TITULOS
+        no_inicio, inicio = inicio, bruto.rstrip('*').endswith(_FIM_DE_FRASE) and not titulo
+        if titulo:
+            continue
+        valor = _FLAG_COM_VALOR.fullmatch(palavra)
+        if valor:
+            palavra = valor.group(1)
         if not _LETRA.search(palavra):
             continue  # número, data e hora (2026-11-23, 0.4.0, 12:30) e caminho sem letra (0/1)
         if '/' in palavra or '\\' in palavra:
@@ -306,11 +325,11 @@ def _termos_da_linha(texto):
                 continue
             # o resto (atributo de código, abreviação) segue para as outras regras
         if (any(a.islower() and b.isupper() for a, b in zip(palavra, palavra[1:]))
-                or (palavra[0].isupper() and not no_inicio)
+                or (not no_inicio and any(t.group()[0].isupper() for t in _TRECHO.finditer(palavra)))
                 or re.search(r'[\d_]', palavra)
                 or (palavra == palavra.lower() and _HIFEN_ENTRE.search(palavra))):
             termos.append(palavra)
-    return termos
+    return termos, inicio
 
 
 def _na_loja(repo, base, termo):
@@ -329,11 +348,22 @@ def termos_novos(repo, base, publicos=None):
     """[{termo, onde, contexto}] dos candidatos das linhas novas que a loja em base não tem e que não são públicos.
 
     Sem repetição de termo (sem caixa), na ordem de aparição. onde é arquivo:linha, ou <mensagem>.
+
+    A frase atravessa a quebra de linha: uma linha só abre frase quando é a primeira da sequência (o mesmo
+    arquivo ou a mesma mensagem, números seguidos, sem a linha 0 do caminho), vem depois de linha em branco
+    ou de linha que fecha frase, ou começa com marcador de bloco Markdown.
     """
     publicos = carregar_publicos() if publicos is None else publicos
     itens, vistos = [], set()
+    anterior, inicio = None, True
     for onde, numero, texto in linhas_novas(repo, base):
-        for termo in _termos_da_linha(texto):
+        if numero <= 1 or anterior != (onde, numero - 1) or _MARCADOR.match(texto):
+            inicio = True
+        anterior = (onde, numero)
+        termos, inicio = _termos_da_linha(texto, inicio)
+        if not texto.strip():
+            inicio = True
+        for termo in termos:
             if termo.lower() in vistos:
                 continue
             vistos.add(termo.lower())
@@ -353,17 +383,9 @@ def varrer_arvore(raiz, extras, hashes=None, publicos=None):
     publicos = carregar_publicos() if publicos is None else publicos
     extras = _normalizar_extras(extras)
     achados = []
-    for rel in cpn.arquivos(raiz):
-        try:
-            dados = (Path(raiz) / rel).read_bytes()
-        except OSError:
-            continue
-        linhas = [(0, rel)]
-        if b'\0' not in dados:
-            linhas += list(enumerate(dados.decode('utf-8', 'replace').splitlines(), start=1))
-        for numero, texto in linhas:
-            for tipo, trecho in _nomes_da_linha(texto, hashes, extras, publicos):
-                achados.append((rel, numero, tipo, trecho))
+    for rel, numero, texto in cpn.linhas_da_arvore(raiz):
+        for tipo, trecho in _nomes_da_linha(texto, hashes, extras, publicos):
+            achados.append((rel, numero, tipo, trecho))
     return achados
 
 
@@ -434,7 +456,8 @@ def main(argv=None):
         _dizer(f'git falhou: {(exc.stderr or b"").decode("utf-8", "replace").strip()}')
         return 2
     except OSError as exc:
-        _dizer(f'git inutilizavel: {exc}')
+        # Na árvore, o erro é de leitura (um arquivo rastreado ilegível, ou o git que lista os arquivos).
+        _dizer(f'{"leitura da arvore falhou" if args.arvore else "git inutilizavel"}: {exc}')
         return 2
     if args.termos:
         print(json.dumps(itens))

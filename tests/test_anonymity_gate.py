@@ -3,8 +3,10 @@
 Este arquivo é varrido como qualquer outro, e a camada 1 roda sobre o próprio ramo: todo texto de
 sabotagem (nome inventado, e-mail, caminho com usuário, forma de segredo) é montado em tempo de execução.
 """
+import contextlib
 import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -449,13 +451,76 @@ class TermosNovos(Base):
         self.assertEqual(self.nomes(linha='rode com --dry' + '-run e -x, depois abra notas-de' + '-campo.md'), [])
 
     def test_dominio_novo_e_termo(self):
-        # o de país, o de duas letras da lista e um de três letras, que só a lista de TLDs pega
+        # o de país, o de duas letras da lista e um de três letras, que só a lista de TLDs pega; depois, os
+        # nomes de máquina com sufixo de rede privada (o home.arpa cai pelo arpa)
         dominios = ['zor' + 'vanel.com' + '.br', 'qux' + 'lab' + '.io', 'qux' + 'lab' + '.dev']
-        self.assertEqual(self.nomes(linha='veja ' + ', '.join(dominios) + ', depois volte'), dominios)
+        # o prefixo só tem letras: um dígito faria a regra do dígito pegar o host, com ou sem a lista
+        hosts = [f'zor{letra}.{sufixo}' for letra, sufixo in zip(
+            'abcdefg', ['local', 'lan', 'internal', 'corp', 'intranet', 'localdomain', 'home.arpa'])]
+        self.assertEqual(self.nomes(linha='veja ' + ', '.join(dominios + hosts) + ', depois volte'), dominios + hosts)
+        self.assertEqual(ag.TLDS & ag.EXTENSOES, set())
 
     def test_arquivo_e_atributo_de_codigo_nao_saem(self):
-        self.assertEqual(self.nomes(linha='abra notas-de' + '-campo.md, rode script' + '.py e leia self' + '.repo'),
+        self.assertEqual(self.nomes(linha='abra notas-de' + '-campo.md, rode script' + '.py e leia self' + '.repo'
+                                          ' e ctx' + '.home'),
                          [])
+
+    def test_nome_colado_a_pontuacao_e_termo(self):
+        casos = [(f'o relatorio do “{PROPRIO}” saiu', PROPRIO),
+                 (f'o nome ‘{PROPRIO}’ saiu', PROPRIO),
+                 (f'o nome «{PROPRIO}» saiu', PROPRIO),
+                 (f'a loja—{PROPRIO} disse', PROPRIO),
+                 (f'a loja–{PROPRIO} disse', PROPRIO),
+                 (f'veja @{PROPRIO} aqui', '@' + PROPRIO),
+                 (f'rode --author={PROPRIO} agora', PROPRIO),
+                 (f'o owner:{PROPRIO} ok', 'owner:' + PROPRIO)]
+        for linha, termo in casos:
+            with self.subTest(linha=linha):
+                self.assertEqual(ag._termos_da_linha(linha)[0], [termo])
+
+    def test_titulo_abreviado_nao_fecha_frase_nem_e_termo(self):
+        outro = 'Qux' + 'mira'
+        self.assertEqual(ag._termos_da_linha(f'falei com o Dr. {PROPRIO} e com a Sra. {outro} ontem')[0],
+                         [PROPRIO, outro])
+
+    def linhas(self, *linhas, mensagem='novo'):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': 'um\n' + ''.join(l + '\n' for l in linhas)}, mensagem=mensagem)
+        return self.nomes()
+
+    def test_frase_quebrada_na_mensagem_e_termo(self):
+        self.commit({'doc.md': 'limpo\n'}, mensagem=f'fix: medido na maquina do\n{PROPRIO} ontem, com o teste')
+        self.assertEqual([(t['termo'], t['onde']) for t in self.termos()], [(PROPRIO, '<mensagem>')])
+
+    def test_frase_quebrada_no_arquivo_e_termo(self):
+        self.assertEqual(self.linhas('veja o relatorio do', f'{PROPRIO} ontem'), [PROPRIO])
+
+    def test_linha_depois_de_fim_de_frase_abre_frase(self):
+        self.assertEqual(self.linhas('veja o teste.', 'Depois rode o outro'), [])
+
+    def test_linha_depois_de_linha_em_branco_abre_frase(self):
+        self.assertEqual(self.linhas('veja o teste', '', 'Depois rode o outro'), [])
+
+    def test_linha_com_marcador_markdown_abre_frase(self):
+        self.assertEqual(self.linhas('veja o teste', '- Depois rode', '  * Agora rode', '+ Feito isso',
+                                     '1. Rode mais', '## Titulo aqui', '| Coluna um |', '> Citado aqui'), [])
+
+    def test_linhas_que_nao_se_seguem_abrem_frase(self):
+        # dois trechos do mesmo arquivo, com uma linha antiga entre eles
+        self.base({'doc.md': 'um\ndois\ntres\n'})
+        self.commit({'doc.md': 'um\nveja o teste\ndois\nDepois rode\ntres\n'})
+        self.assertEqual(self.nomes(), [])
+
+    def test_linha_de_outro_arquivo_abre_frase(self):
+        # a.md:2 e b.md:3 têm números seguidos, mas são de arquivos diferentes
+        self.base({'a.md': 'x\ny\n', 'b.md': 'x\ny\nz\n'})
+        self.commit({'a.md': 'x\nveja o teste\ny\n', 'b.md': 'x\ny\nDepois rode\nz\n'})
+        self.assertEqual(self.nomes(), [])
+
+    def test_caminho_do_arquivo_novo_nao_continua_a_frase(self):
+        self.base({'doc.md': 'um\n'})
+        self.commit({'notas.md': 'Depois rode o teste\n'})
+        self.assertEqual(self.nomes(), [])
 
     def test_termo_que_a_loja_ja_tem_nao_sai(self):
         self.base({'velho.md': f'fala do {PROPRIO.lower()} e do {HIFEN}\n'})
@@ -524,6 +589,42 @@ class Arvore(Base):
         self.base({'doc.md': f'um\nem {caminho}, fale com {EMAIL}\n'})
         self.assertEqual(ag.varrer_arvore(self.repo, set(), hashes=self.hashes, publicos=set()), [])
 
+    def ilegivel(self, nome=None):
+        """Read_bytes que falha com PermissionError (o chmod 000 não vale no Windows nem para o root).
+
+        A mensagem tem acento: a saída de erro dos portões tem de sair em ASCII mesmo assim."""
+        real = Path.read_bytes
+
+        def falso(caminho):
+            if nome is None or caminho.name == nome:
+                raise PermissionError(13, 'sem permissão', str(caminho))
+            return real(caminho)
+
+        return unittest.mock.patch.object(Path, 'read_bytes', falso)
+
+    def test_arquivo_ilegivel_na_arvore_e_erro_nos_dois_portoes(self):
+        self.base({'doc.md': f'o {PROPRIO} saiu\n', 'outro.md': 'limpo\n'})
+        with self.ilegivel('doc.md'):
+            with self.assertRaises(PermissionError):
+                ag.varrer_arvore(self.repo, {PROPRIO}, hashes=self.hashes, publicos=set())
+            with self.assertRaises(PermissionError):
+                cpn.varrer(self.repo, {cpn.resumo(PROPRIO)})
+
+    def test_arquivo_que_saiu_do_disco_e_pulado(self):
+        self.base({'doc.md': 'limpo\n', 'outro.md': f'o {PROPRIO} saiu\n'})
+        (self.repo / 'doc.md').unlink()
+        self.assertEqual(ag.varrer_arvore(self.repo, {PROPRIO}, hashes=self.hashes, publicos=set()),
+                         [('outro.md', 1, 'colheita', PROPRIO.lower())])
+
+    def test_pasta_rastreada_e_pulada(self):
+        # um gitlink (submódulo): o git lista a pasta, que não tem conteúdo a ler
+        self.base({'outro.md': f'o {PROPRIO} saiu\n'})
+        sha = self.git('rev-parse', 'HEAD').stdout.decode().strip()
+        self.git('update-index', '--add', '--cacheinfo', f'160000,{sha},sub')
+        (self.repo / 'sub').mkdir()
+        self.assertEqual(ag.varrer_arvore(self.repo, {PROPRIO}, hashes=self.hashes, publicos=set()),
+                         [('outro.md', 1, 'colheita', PROPRIO.lower())])
+
 
 class LinhaDeComandoNova(Base):
     rodar = LinhaDeComando.rodar
@@ -581,6 +682,31 @@ class LinhaDeComandoNova(Base):
         self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
         self.assertIn('git falhou', r.stdout)
         self.assertNotIn('Traceback', r.stderr)
+
+    def test_termos_com_grep_quebrado_sai_2_sem_lista(self):
+        # um valor ruim de grep.threads derruba só o git grep (rc 128): o diff e o log seguem
+        self.base({'doc.md': 'um\n'})
+        self.commit({'doc.md': f'um\no {PROPRIO} saiu\n'})
+        self.git('config', 'grep.threads', 'nao')
+        r = self.rodar('--termos', '--base', 'base', '--repo', str(self.repo))
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn('git falhou', r.stdout)
+        self.assertIn('grep.threads', r.stdout)
+        self.assertNotIn('[', r.stdout)
+        self.assertNotIn('Traceback', r.stderr)
+
+    def test_arquivo_ilegivel_sai_2_nos_dois_portoes(self):
+        # o main em processo, porque o caso sabotado é um read_bytes trocado
+        self.base({'doc.md': f'o {PROPRIO} saiu\n'})
+        for nome, chamar in (('anonymity-gate', lambda: ag.main(['--arvore', '--repo', str(self.repo)])),
+                             ('check-private-names', lambda: cpn.main([]))):
+            with self.subTest(portao=nome):
+                saida = io.StringIO()
+                with Arvore.ilegivel(self), contextlib.redirect_stdout(saida):
+                    rc = chamar()
+                self.assertEqual(rc, 2, saida.getvalue())
+                self.assertIn('leitura da arvore falhou', saida.getvalue())
+                self.assertTrue(saida.getvalue().isascii(), saida.getvalue())
 
 
 if __name__ == '__main__':
