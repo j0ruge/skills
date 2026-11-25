@@ -1,7 +1,7 @@
 ---
 name: zitadel-idp
 metadata:
-  version: 0.25.1
+  version: 0.26.0
 description: "Self-hosted Zitadel v4 OIDC field guide — a numbered quirk catalogue, working docker-compose and an idempotent TypeScript bootstrap. High-friction traps: FirstInstance env placement, JWT/JWKS over self-signed HTTPS, `--tlsMode external` and the console's mixed-content `Failed to fetch`, v2.66→v4, API v1→v2, silent-renew, 401 storms, UI language from the `locale` claim. Triggers — zitadel, oidc self-hosted, JWKS, masterkey, v2.66→v4, tlsMode external, pre-cutover check, locale claim."
 ---
 
@@ -51,7 +51,7 @@ If you are merely calling a pre-existing Zitadel deployment from your code, you 
 | When proving a bootstrap actually wrote what the YAML declares, or reading who holds which role, with each account's e-mail, or the `projectId` and the org that owns it (no PAT needed) | `references/troubleshooting.md` §"The bootstrap logs `reuse` for everything" |
 | When one account loops back to the login screen while others log in fine | `references/troubleshooting.md` §"One account loops back…" |
 | When creating a test/seed user and proving its password works, with no browser | `references/api-cheatsheet.md` §"Seed an admin user" + §"Prove a user's password without a browser" |
-| When provisioning real people's accounts by script — which PAT, the password policy, proving the password without locking anyone out | `references/api-cheatsheet.md` §"Provision real accounts by script" + Quirks 57, 58 and 59 |
+| When provisioning real people's accounts by script — which PAT, the password policy, proving the password without locking anyone out | `references/api-cheatsheet.md` §"Provision real accounts by script" + Quirks 57, 58, 59 and 63 |
 | When driving the SPA's UI language from the user's IdP language (`locale` claim) | `references/spa-recipes.md` §"Recipe — UI language from the IdP" |
 | When changing an existing user's language (`preferredLanguage`) | `references/api-cheatsheet.md` §"Change an existing user's language" |
 
@@ -120,7 +120,8 @@ These bite first-time Zitadel integrators consistently. One line per quirk; the 
 59. The Console's "Add Human User" with an initial password has no "must change" option, so the account is born with `passwordChangeRequired: false`; for real people, create through the API with `password.changeRequired: true`.
 60. A batch with e-mails derived from names creates a second account for anyone who already had one under another spelling; the exact e-mail search cannot see it, and a census by name stem in the projections can.
 61. The projection-suffix discovery can return two generations (`users13` next to `users14`), and the older one is frozen since the upgrade; `projections.current_states` says which one is live.
-62. Self-registration is on by default (`allowRegister`): with no SMTP the person is stuck on the code screen, the account lands in the instance's default org out of an org-scoped PAT's sight, and SMTP must wait for that decision.
+62. Self-registration is on by default (`allowRegister`): with no SMTP the person is stuck on the code screen, the account lands in the instance's default org out of an org-scoped PAT's sight, and SMTP must wait for that decision; org registration is a second key (`disallowPublicOrgRegistration`), and a closed person page still answers `200`.
+63. Deactivating a machine user kills its PATs for good: the Console still lists them, reactivating does not revive them (`401 Errors.Token.Invalid (AUTH-7fs1e)`), and each batch needs a new PAT.
 
 ## Migration v2.66 → v4 + API v2
 

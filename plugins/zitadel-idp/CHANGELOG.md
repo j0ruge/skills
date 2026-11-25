@@ -1,5 +1,39 @@
 # Changelog — zitadel-idp
 
+## [0.26.0] — 2026-11-25
+
+### Added
+
+- **Quirk 63: desativar o usuário de máquina mata os PATs dele de vez** (`quirks.md`, índice do `SKILL.md`,
+  `api-cheatsheet.md` §"Provision real accounts by script", passo 1). Na v4.15.0, o handler de tokens apaga os
+  tokens do usuário de `auth.tokens` no `UserDeactivated`, `UserLocked` e `UserRemoved`, e não tem caso para o
+  `UserReactivated` (`internal/auth/repository/eventsourcing/handler/token.go:233-241`). O PAT segue em
+  `projections.personal_access_tokens3`, que é o que o Console lista. Medido em 2026-11-25 numa produção v4.15.0:
+  depois de reativar a conta, o PAT antigo deu `401 Errors.Token.Invalid (AUTH-7fs1e)`, e um PAT novo funcionou.
+  O passo 1 dizia que reativar "brings the power back": corrigido. Sintoma que teria evitado: uma rodada parada
+  num `401`, com o PAT ainda listado no Console e a conta já reativada.
+- **A conta que já existe e nunca entrou** (`api-cheatsheet.md`, passo 3). O censo conta os logins em
+  `eventstore.events2` pelo `creator` do evento: a prova do passo 4 pela Session API grava o mesmo
+  `user.human.password.check.succeeded` de um login, com o usuário de máquina como creator, e o login pelo Login v1
+  grava `LOGIN`. A senha temporária vai por `POST /v2/users/{userId}/password` com `changeRequired: true`, e a coluna
+  `resets` impede uma segunda senha por cima da que a pessoa já recebeu. Medido em 2026-11-25, só lendo, numa
+  produção v4.15.0. Sintomas que teria evitado: a conta nunca usada lida como "entrou uma vez", e um login de
+  verdade no primeiro minuto jogado fora por uma janela de tempo.
+
+### Changed
+
+- **Quirk 62: o registro de organização é uma segunda chave, e o fechamento foi medido.** O
+  `/ui/login/register/org` lê só a restrição `disallowPublicOrgRegistration` (`register_org_handler.go:41-49`
+  responde `404`, `:60-68` responde `409`), e nunca o `allowRegister`. Medido em 2026-11-25 numa produção v4.15.0,
+  depois que um robô usou as duas páginas e deixou duas orgs `TestOrg<hex>` e doze contas "Test Worker" em estado
+  `6`: as duas escritas deram `200`, só o `allowRegister` mudou dos 17 campos, a página de org passou a `404`, e o
+  login seguiu funcionando. A página de pessoa fechada ainda responde `200`, porque o `renderError` desenha o erro
+  com esse status (`register_handler.go:58-59`): a prova é o corpo. A frase "Neither change was run" saiu, porque
+  as duas mudanças rodaram. O `troubleshooting.md` §"Self-registration…" ganhou a mesma nota. Sintoma que teria
+  evitado: o `allowRegister` fechado e a porta de org, a que o robô usou, aberta.
+- Smoke do Codex: segue o da 0.20.0 (nenhum arquivo novo, e a contagem de recursos não mudou).
+- Dívida que fica: a linha 345 do README da loja ainda diz "54 quirks" (fora deste retrofit).
+
 ## [0.25.1] — 2026-11-19
 
 ### Changed

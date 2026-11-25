@@ -445,7 +445,7 @@ Creating people's accounts in a batch (managers, directors) differs from seeding
 
    `expiresAt` is an RFC 3339 instant a few days ahead. The response carries `tokenId` and `token`. The org membership (`POST /management/v1/orgs/me/members` with `{"userId": …, "roles": ["ORG_OWNER"]}`, also `200`) is the one that is **not** enough. Make the machine user an instance member with `IAM_OWNER` instead. The API call for that was not measured; the Console path was, in production on 2026-11-10: the instance's administrators page (pt-BR "Administradores", `/ui/console/instance/members`), "Adicionar um Administrador", role `IAM_OWNER`. With that PAT the org probe above listed 2 orgs, and the batch created 4 accounts and added a role by union to 2 more. The page opens only for an instance member: in a dev instance, an account with no instance role that opened `/ui/console/instance/members` landed on the Console home, with no error. Who holds an instance role, with no PAT: `SELECT u.username, m.roles FROM projections.instance_members4 m JOIN projections.users14 u ON u.id = m.user_id AND u.instance_id = m.instance_id`.
 
-   When the batch is done, `DELETE /v2/users/${machineUserId}` answered `200`, and the `GET` then `404`. Deactivating keeps the account on record instead: in production, the machine user's own PAT answered `200` to `POST /v2/users/${machineUserId}/deactivate` (empty JSON body), and the next call with that PAT got `401`; the projection then read state `2`. The user stays an instance member, inactive, so reactivating it brings the power back.
+   When the batch is done, `DELETE /v2/users/${machineUserId}` answered `200`, and the `GET` then `404`. Deactivating keeps the account on record instead: in production, the machine user's own PAT answered `200` to `POST /v2/users/${machineUserId}/deactivate` (empty JSON body), and the next call with that PAT got `401`; the projection then read state `2`. The user stays an instance member, inactive. Reactivating it brings the account back, but not its PATs: they are dead for good (Quirk 63), so the next batch generates a new one.
 
    **Send the PAT from a file, too, never as an argument.** A `curl -H "Authorization: Bearer $PAT"` puts the token in the process list and in any tool transcript that records the command. Build a header file once, `0600`, pass it with `-H @file`, and delete it when the batch ends:
 
@@ -471,6 +471,22 @@ Creating people's accounts in a batch (managers, directors) differs from seeding
    - **An account the person made by self-registration** lives in the instance's default org, in state `6`, unverified and with no grant (Quirk 62). Only the instance-member PAT of step 1 can find it (Quirk 57). Roles alone do not let the person in: the code screen comes from the unverified e-mail, not from the grants. Delete it, then create the account in the project's org with the same e-mail. First prove, with no PAT, that nobody used it: zero rows for its `user_id` in `projections.user_grants5` and in `projections.sessions8`, and a `change_date` equal to its `creation_date` in `projections.users14`. Then `DELETE /v2/users/${userId}`: it answered `200`, and the `GET` then `404`. The username (the e-mail) is free again, and step 4 creates the new account with it. Measured 2026-11-19 on a v4.15.0 staging instance.
    - **More than one match:** stop (Quirk 54).
    - **One match:** do not create. Add the roles to the existing grant by union, never replacing the other apps' roles (§"User grants", Quirk 55). Leave the password alone, and do not probe it (Quirk 58).
+   - **One match, and the person never logged in:** an old account with no password login belongs to someone who does not know the password, and the batch leaves passwords alone. Count the logins read-only in `eventstore.events2`, split by the event's `creator`. Every Session API check writes `user.human.password.check.succeeded`, the batch's own proof of step 4 included, so a raw count reads `1` for an account nobody used. The proof's creator is the provisioning machine user; a login through Login v1 is `LOGIN`. Never select the `payload`: the one of `user.human.password.changed` carries the password hash. The suffixes are the v4.15.0 ones (Quirk 61), and the SQL goes in a file to `docker exec -i -e PGOPTIONS='-c default_transaction_read_only=on' <postgres-idp-ctr> psql -U zitadel -d zitadel`:
+
+     ```sql
+     select u.username,
+            count(*) filter (where e.event_type = 'user.human.password.check.succeeded' and e.creator <> m.id) as logins,
+            count(*) filter (where e.event_type = 'user.human.password.changed' and e.creator <> m.id) as changes,
+            count(*) filter (where e.event_type = 'user.human.password.changed' and e.creator = m.id) as resets
+       from projections.users14 u
+       join projections.users14 m on m.instance_id = u.instance_id and m.username = 'provisioning-batch'
+       left join eventstore.events2 e
+         on e.aggregate_id = u.id and e.instance_id = u.instance_id and e.aggregate_type = 'user'
+      where u.username in ('<email>')
+      group by 1;
+     ```
+
+     No row at all means the machine user has another username. With `logins` and `resets` at `0`, give a temporary password with a forced change, generated and stored as in steps 2 and 4: `POST /v2/users/${userId}/password` with `{"newPassword": {"password": "…", "changeRequired": true}}`. It answered `200`, the re-read showed `passwordChangeRequired`, and the stored value passed the Session API. The reset and its proof are the machine user's too, so the account then reads `resets` `1` and `logins` `0` until the person logs in: do not reset it again, or the password they received stops working. Measured 2026-11-25 on a v4.15.0 production instance, read-only: five accounts the batch created read `0` logins, each with one check by the machine user a second after its creation; an account with two Login v1 logins, both with creator `LOGIN`, read `2`; the reset account read `0` logins and `1` reset. A time window after the creation, in place of the creator, would also drop a real login made inside it.
 
 4. **Create, then prove in the destination**, in this order:
    - Create with `username` equal to the email (Quirk 33), `email.isVerified: true` when the instance has no SMTP (Quirk 35) and `password.changeRequired: true`.
