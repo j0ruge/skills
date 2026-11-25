@@ -407,17 +407,18 @@
     },
     {
       "plugin": "zitadel-idp",
-      "version": "0.20.0",
+      "version": "0.27.0",
       "skills": [
         "zitadel-idp:zitadel-idp"
       ],
       "paths": [
-        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/zitadel-idp/0.20.0/skills/zitadel-idp/SKILL.md",
-        "/home/joruge/.codex/plugins/cache/chewiesoft-marketplace/zitadel-idp/0.20.0/skills/zitadel-idp/assets/bootstrap-zitadel.ts"
+        "~/.wt/codex-smoke-zitadel-idp-027/home/plugins/cache/chewiesoft-marketplace/zitadel-idp/0.27.0/skills/zitadel-idp/SKILL.md",
+        "~/.wt/codex-smoke-zitadel-idp-027/home/plugins/cache/chewiesoft-marketplace/zitadel-idp/0.27.0/skills/zitadel-idp/scripts/close-public-registration.sh"
       ],
-      "conclusion": "Vou usar a skill `zitadel-idp:zitadel-idp` para conferir os dois arquivos instalados e o fallback do asset, apenas por leitura.\n`zitadel-idp:zitadel-idp` — Próximo passo: informar objetivo/sintoma e, para bootstrap, URL, caminho do PAT, nomes, roles e URIs; fallback confirmado em `assets/bootstrap-zitadel.ts`, relativo à skill instalada, sem template no projeto; lacunas: nomes fixos da instalação de origem, caminhos PAT/saída dependentes do projeto original e comentário `ListProjectRoles` contradiz a Quirk 49; nenhuma ferramenta adicional necessária para esta leitura.",
+      "conclusion": "Skill instalada: `zitadel-idp` (plugin `zitadel-idp`, versão `0.27.0`).  \nLinha do `SKILL.md`: | When closing public self-registration on an instance (both keys) and proving it | run `scripts/close-public-registration.sh` (it only reads without `--apply`) + Quirk 62 |  \nUso: `IDP=https://idp.example.com PAT_FILE=/path/to/pat ./close-public-registration.sh [--apply] [--remove-orgs-prefix PREFIX]`  \nO script fecha e verifica o autocadastro público de pessoas e organizações no Zitadel v4. Sem `--apply`, só consulta e simula.  \nSaídas: `0` concluído ou simulado, `1` interrompido ou verificação falhou, `2` erro de uso.\n(codex-cli 0.172.0, 2026-11-25, CODEX_HOME descartável instalado do catálogo local do repositório: marketplace add, plugin add e plugin list com a 0.27.0 enabled; descoberta e leitura do SKILL.md e de scripts/close-public-registration.sh pelo cache, os dois cat com exit 0; o script não foi executado)",
       "read_commands": [
-        "/usr/bin/zsh -lc 'cat /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/zitadel-idp/0.20.0/skills/zitadel-idp/SKILL.md /home/joruge/.codex/plugins/cache/chewiesoft-marketplace/zitadel-idp/0.20.0/skills/zitadel-idp/assets/bootstrap-zitadel.ts'"
+        "/usr/bin/zsh -lc \"cat '~/.wt/codex-smoke-zitadel-idp-027/home/plugins/cache/chewiesoft-marketplace/zitadel-idp/0.27.0/skills/zitadel-idp/SKILL.md'\"",
+        "/usr/bin/zsh -lc \"cat '~/.wt/codex-smoke-zitadel-idp-027/home/plugins/cache/chewiesoft-marketplace/zitadel-idp/0.27.0/skills/zitadel-idp/scripts/close-public-registration.sh'\""
       ]
     }
   ]

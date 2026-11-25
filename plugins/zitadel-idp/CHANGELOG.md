@@ -1,5 +1,30 @@
 # Changelog — zitadel-idp
 
+## [0.27.0] — 2026-11-25
+
+### Added
+
+- **`scripts/close-public-registration.sh`: fecha as duas chaves do registro público e prova** (Quirk 62, tabela de
+  tarefas do `SKILL.md`, `troubleshooting.md` §"Self-registration…"). É a versão genérica do script que fechou o
+  registro numa produção e num staging v4.15.0 em 2026-11-25:
+  - grava a restrição `disallowPublicOrgRegistration` e o `allowRegister=false`, com os 17 campos da política lidos
+    do `GET`;
+  - só lê sem `--apply`, e com `--remove-orgs-prefix` apaga a org de teste cujas contas são todas `@example.com` e
+    que não tem projeto;
+  - pede `IDP` e `PAT_FILE`, sem default, e manda o PAT por um cabeçalho `0600`, nunca por argumento.
+
+  Duas falhas do script de origem, corrigidas aqui:
+  - **A segunda corrida reprovava a prova**, que exigia o `allowRegister` como campo mudado mesmo quando ele já
+    estava desligado. Medido no staging já fechado: o de origem saiu 1, e este saiu 0, sem escrita.
+  - **Uma org com política própria e `allowRegister: true` passava como fechada.** A prova agora relê a política
+    de cada org, e reprova nesse caso. Medido num IdP falso: rc 1 com a org aberta, rc 0 com a herança.
+
+  Testado também: `shellcheck` 0, `--help` 0, e três usos inválidos com rc 2. Sintoma que teria evitado: um
+  fechamento que parece feito e deixa uma porta aberta, ou um script de segurança que reprova quando tudo está
+  certo e ensina a ignorar o vermelho.
+- Smoke do Codex refeito na 0.27.0 (codex-cli 0.172.0, `CODEX_HOME` descartável): instalação, descoberta e leitura
+  do `SKILL.md` e do script novo pelo cache, sem executá-lo. A linha do `compatibility.md` passa a 16 arquivos.
+
 ## [0.26.0] — 2026-11-25
 
 ### Added

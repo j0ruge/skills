@@ -1,7 +1,7 @@
 ---
 name: zitadel-idp
 metadata:
-  version: 0.26.0
+  version: 0.27.0
 description: "Self-hosted Zitadel v4 OIDC field guide — a numbered quirk catalogue, working docker-compose and an idempotent TypeScript bootstrap. High-friction traps: FirstInstance env placement, JWT/JWKS over self-signed HTTPS, `--tlsMode external` and the console's mixed-content `Failed to fetch`, v2.66→v4, API v1→v2, silent-renew, 401 storms, UI language from the `locale` claim. Triggers — zitadel, oidc self-hosted, JWKS, masterkey, v2.66→v4, tlsMode external, pre-cutover check, locale claim."
 ---
 
@@ -37,6 +37,7 @@ If you are merely calling a pre-existing Zitadel deployment from your code, you 
 |------|------|
 | When bringing up Zitadel locally for the first time | `references/docker-compose-bootstrap.md` + use `assets/docker-compose.zitadel.yml` as starting point |
 | When a local Zitadel is broken and must be reset | run `scripts/reset-zitadel.sh` |
+| When closing public self-registration on an instance (both keys) and proving it | run `scripts/close-public-registration.sh` (it only reads without `--apply`) + Quirk 62 |
 | When creating Org/Project/Roles/App programmatically | `references/api-cheatsheet.md` + copy `assets/bootstrap-zitadel.ts` (the idempotent template) |
 | When validating Zitadel JWT in Node | `references/token-validation.md` |
 | When mapping domain `tenantId` to Zitadel `orgId` | `references/tenant-org-mapping.md` |
