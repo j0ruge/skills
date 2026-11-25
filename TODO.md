@@ -8,6 +8,15 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 ## Aberto
 <!-- sdd:open -->
 
+### Curadoria de terceiros
+
+- [ ] **Criar uma área de skills de terceiros e incorporar o par de QA** —
+  `CLAUDE.md:5` (`developed exclusively`) — distinguir as skills curadas das autorais na loja.
+  Direção: começar por `qa-report` e `qa-execution`, de Pedro Nauck, comparando o upstream com as cópias locais.
+  Preservar o retrofit de `qa-execution` sobre evidência sintética, homologação e falhas preexistentes.
+  Registrar autoria, revisão de origem, licença e diferenças locais. Validar as referências entre as duas skills.
+  Fonte: [pedronauck/skills](https://github.com/pedronauck/skills) — descoberto por `mantenedor` (2026-11-24)
+
 ### Rulings do merge da retrofit-watch 0.4.0
 
 - [ ] **O commit autônomo sem guarda de autor** —
