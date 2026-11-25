@@ -67,12 +67,6 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 
 ### Passos do dono antes de ligar o modo auto
 
-- [ ] **Classificar os nomes da colheita** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:336` (`write_harvest`) — o passo 1 do
-  dono: o verbo `harvest` e depois `scripts/anonymity-gate.py --arvore --extra <arquivo>`. Cada nome vai a
-  `--add` (privado) ou a `--publico-add` (público), até o segundo comando sair 0. O `harvest` com rc 2 e o
-  nome de uma pasta: ela existe sob `harvest_roots` e não lê.
-  Fonte: `docs/superpowers/plans/2026-11-23-retrofit-watch-modo-autonomo.md` — descoberto por `plano` (2026-11-24)
 - [ ] **O ensaio auto-dry e ligar o auto** —
   `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:96` (`AUTO_MODES`) — os passos 2
   e 3: `"mode": "auto-dry"` e `"store"` na config, uma sessão com `bypassPermissions` e uma skill da loja
