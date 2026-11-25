@@ -27,7 +27,8 @@ Em transcript sintético na revisão `ba3da3c`, não houve pedido de retro em ne
 ## Como operar
 
 - Use o kit [sdd_agents](https://github.com/j0ruge/sdd_agents) para planejar, verificar e publicar
-  em worktree próprio, a partir de `origin/main`. Rode `sdd-link-agents` no worktree antes do preflight.
+  em worktree próprio, a partir de `origin/main`. Rode `sdd-link-agents` e
+  `PHASE_ENGINE=codex sdd preflight` no worktree. O worker usa `PHASE_ENGINE=codex` ao lançar `sdd run`.
 - O `TEST_CMD` roda a suíte da loja e `test_retrofit_watch.py`, que cobre atribuição. Os testes
   do modo autônomo e de publicação da retrofit-watch não fazem parte deste gate.
   Para a suíte completa do plugin, use um `TMPDIR` sem ancestral com marcador `.git`.
