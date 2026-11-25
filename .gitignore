@@ -2,3 +2,9 @@ __pycache__/
 
 # Local audit artifacts produced by /codereview:coderabbit-pr
 *-review.md
+
+# Logs locais do runner SDD. Os registros duráveis ficam em docs/handoffs/.
+.sdd/logs/
+
+# Espelhos locais dos agentes SDD. Os links de sdd-link-agents usam caminhos da máquina.
+.claude/agents/sdd-*.md

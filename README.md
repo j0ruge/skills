@@ -776,6 +776,12 @@ Para atualizar plugins instalados:
 /plugin marketplace update
 ```
 
+## Backlog e desenvolvimento
+
+O [TODO.md](TODO.md) é a fonte do backlog. A primeira
+[campanha SDD](docs/campaigns/20261125-loja-skills/campaign.md) valida o fluxo com uma missão da
+`retrofit-watch`, mantendo aprovação e merge com o mantenedor.
+
 ## References
 
 ### Claude Code

@@ -20,6 +20,8 @@ PERSONAL_HOME = Path.home()
 
 
 @unittest.skipUnless(CLI and BWRAP, 'Prova real requer Codex CLI e Bubblewrap no Linux')
+@unittest.skipIf(os.environ.get('SKILLS_SKIP_NATIVE_DISTRIBUTION') == '1',
+                 'Rode no host: o sandbox do SDD não permite um segundo namespace Bubblewrap')
 class DistributionTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
