@@ -17,6 +17,12 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Registrar autoria, revisão de origem, licença e diferenças locais. Validar as referências entre as duas skills.
   Fonte: [pedronauck/skills](https://github.com/pedronauck/skills) — descoberto por `mantenedor` (2026-11-24)
 
+- [ ] **Incorporar a skill `handoff`, de Matt Pocock (@mattpocock)** —
+  incluir na área de skills de terceiros, com crédito visível ao criador e link para o upstream.
+  Direção: fixar a revisão de origem, preservar o aviso da licença MIT e documentar as adaptações locais
+  para referências que resolvem fora da pasta temporária e retomada de revisão com escopo Git explícito.
+  Fonte: [mattpocock/skills — handoff](https://github.com/mattpocock/skills/tree/main/skills/productivity/handoff) — 2026-11-25
+
 ### Rulings do merge da retrofit-watch 0.4.0
 
 - [ ] **O commit autônomo sem guarda de autor** —
