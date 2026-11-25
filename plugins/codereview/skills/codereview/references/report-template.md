@@ -105,7 +105,7 @@ Table. One that asserts the same confirms it without a reproduction. Measured 20
 (round 3 of an sdd mission): two agents on different files said that a focus
 ref on a region and on the heading inside it "probably" leaves the focus on the region after a retry
 (one MEDIUM, one LOW); the page tests already asserted `document.activeElement` is the region while
-loading and the `<h1>` once the item loads (`Warehouse/index.test.tsx:178`, the same in Service and
+loading and the `<h1>` once the item loads (`Items/index.test.tsx:178`, the same in Service and
 Shelfs), green at the reviewed head.
 
 **An open PR's body may already declare the finding.** The body of the branch's PR often lists what

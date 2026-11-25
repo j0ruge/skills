@@ -893,7 +893,7 @@ it covers", e não entrou de novo.
     da decisão registrada, e só o elemento que a referência não tem é julgado por conta própria.
   - **Por quê:** dois agentes deram MEDIUM contra o merge base: a descrição que foi para o
     `gray-300` ("uma regressão do próprio PR") e os rótulos que foram do `gray-450` para o
-    `gray-400`. O `cac59e4` tinha os dois tokens (linhas 67 e 94 do `Warehouse/styles.ts`). O MEDIUM
+    `gray-400`. O `cac59e4` tinha os dois tokens (linhas 67 e 94 do `Items/styles.ts`). O MEDIUM
     que ficou foi o "ABC" do chip, que a referência não tem, com 2,36:1.
 - **`references/configuration.md`, *Re-review rounds*: o conserto de CSS não tem guarda para
   mutar.**
@@ -1027,7 +1027,7 @@ caracteres do teto do C1 (19.949 de 20.000) e muda só no `metadata.version`, co
   - **Por quê:** dois agentes, em grupos diferentes, disseram que um `focusRef` ligado a uma região e
     ao `<h1>` dentro dela "provavelmente" deixava o foco na região depois de "Tentar de novo" (um
     MEDIUM, um LOW). Os testes de página já afirmavam `document.activeElement` na região durante a
-    carga e no `<h1>` depois (`src/pages/Warehouse/index.test.tsx:178`, e o mesmo no Service e no
+    carga e no `<h1>` depois (`src/pages/Items/index.test.tsx:178`, e o mesmo no Service e no
     Shelfs), verdes no head revisado. A skill só mandava procurar o teste no 6.11, no "No test covers
     it" e no mutante de vacuidade, e numa revisão completa nenhum agente lê arquivo de teste.
 - **Não aplicada:** um agente de DOCS levantou de novo um achado que a rodada anterior tinha refutado,
@@ -3902,7 +3902,7 @@ PR #5 on `eb-analytics` (`feat(server): cloud sync backend`) was blocked by GitG
 
 ## Histórico Pré-Marketplace
 
-A skill existia como v2.0.0 informal no repositório `report_frontend` (sem disciplina semver). O histórico abaixo documenta a evolução antes da publicação no marketplace.
+A skill existia como v2.0.0 informal num repositório de projeto (sem disciplina semver). O histórico abaixo documenta a evolução antes da publicação no marketplace.
 
 - **v2.0.0** (2026-03-10): Reescrita completa — classificação de arquivos por categoria, progressive disclosure via references, override de configuração stack-agnostic, grading scale A-F, cap de 50 findings
 - **v1.0.0** (2026-03): Versão inicial com análise básica de diffs e relatório estruturado

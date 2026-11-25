@@ -116,7 +116,7 @@ afterAll(async () => {
 ```typescript
 const isCI = process.env.CI === 'true' || process.env.NODE_ENV === 'test';
 
-describe('E2E: Service Report Routes', () => {
+describe('E2E: Order Routes', () => {
   if (isCI) {
     it.skip('Skipping E2E tests in CI', () => {});
     return;

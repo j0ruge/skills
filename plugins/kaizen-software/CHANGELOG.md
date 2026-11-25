@@ -543,7 +543,7 @@ planejado com esta skill e com o material destinado à diretoria):
 
 ### O render como unidade do Check, e Kaizen fora do código
 
-Lições de uma sessão real (aula de Escola Bíblica montada como deck HTML para projetor, sem git nem testes,
+Lições de uma sessão real (uma aula montada como deck HTML para projetor, sem git nem testes,
 organizada com esta skill):
 
 - **Armadilha "Validador verde não prova que nada sumiu" estendida para asset visual.** Para "limpar" o SVG do

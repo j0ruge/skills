@@ -830,7 +830,7 @@ coisas que o caso de 18/09 não mostrou:
 
 - **Dois desempates baratos antes do `_diag`.** (a) Um **vizinho no mesmo host, na mesma versão**,
   pode anunciar o que o seu esconde: o `core-api-runner` registrou em claro `Runner version v2.335.1
-  is deprecated and cannot receive messages` enquanto o `report-frontend-runner`, idêntico, parava mudo
+  is deprecated and cannot receive messages` enquanto o `web-runner`, idêntico, parava mudo
   em `Listening for Jobs`. Leia `docker logs --tail 3` de **todos** os runners do host. (b) O
   `SelfUpdate-*.log` do dia termina em `Waiting for Runner.Listener (12) to complete` e nada depois;
   no caso medido havia um por dia, sempre às 01:58, desde 24/07 — o swap morrendo no restart do

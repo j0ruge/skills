@@ -150,7 +150,7 @@ O Width do ComboBox deve acomodar o conteudo mais longo + padding interno (~20px
 |----------|-------|-------------|
 | "Jan." a "Dec." | 4 | 80px |
 | "Good" / "No Good" | 7 | 120px |
-| "JCY-1900" | 8 | 130px |
+| "ABC-1234" | 8 | 130px |
 | "No.1 & No.2" | 12 | 160px |
 | "406.031MHz ±5KHz" | 17 | 200px |
 

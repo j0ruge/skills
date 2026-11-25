@@ -59,7 +59,7 @@ melhorar.
 
 Captured from a real session **resuming an interrupted migration on a nearly-full `C:` (36 GB free)** — the user explicitly wanted "copy, confirm, delete one by one to avoid filling the disk," which the existing whole-folder flow didn't cover. Each lesson cost time:
 
-- The automated per-repo delete **silently kept two repos** (`eb-analytics`, `panda-video-downloader`): `Remove-Item` hit a `nul` file and errored `Incorrect function`, aborting those directories while reporting success for everything else. The copies were complete and validated — only the Windows delete failed. `\\?\` cleared it instantly. This is invisible until you hit it, and reads like "the migration broke."
+- The automated per-repo delete **silently kept two repos** (`eb-analytics` and one more): `Remove-Item` hit a `nul` file and errored `Incorrect function`, aborting those directories while reporting success for everything else. The copies were complete and validated — only the Windows delete failed. `\\?\` cleared it instantly. This is invisible until you hit it, and reads like "the migration broke."
 - **`df -h ~` reported ~950 GB free** while `C:` had only **36.8 GB** — the vhdx's 1 TB *virtual* size, not real headroom. The real budget for "can I duplicate this before deleting?" is `Get-PSDrive C`, not the Linux `df`.
 - A prior crashed run had left **empty placeholder dirs** for the not-yet-copied repos. A per-repo `rsync -an` dry-run (counting `^[<>]f` itemize lines) distinguished "already synced" (0) from "half-done" (>0) exactly, making the resume safe and the delete gate trustworthy where a top-level count couldn't.
 

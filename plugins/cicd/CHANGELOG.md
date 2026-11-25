@@ -832,7 +832,7 @@ leu. E as duas versões estouravam o cap de 500 do `CLAUDE.md`.
   deploy `queued` semanas depois"** (preflight gate + watchdog, com YAML) + Lição 51
   (+ linha no Quick Troubleshooting e 2 linhas na tabela "Sintomas → seção"; a nota de
   trigger do reference passou a citar §11). Motivação: incidente no
-  `report_frontend` (staging) — o deploy ficou `queued` por **~5
+  `<repo>` (staging) — o deploy ficou `queued` por **~5
   semanas** sem ninguém perceber. Um job `deploy` em `runs-on: [self-hosted, <label>]`
   fica em fila **silenciosamente** quando o runner está offline: sem ❌, sem e-mail, e
   o **`timeout-minutes` não conta tempo em fila** (só começa após um runner pegar o

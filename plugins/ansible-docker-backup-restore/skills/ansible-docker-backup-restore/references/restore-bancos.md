@@ -174,8 +174,8 @@ aborto às três da manhã precisa saber para onde correr.
 `pg_stat_activity` por `usename`. Mas o pool do ORM conecta na primeira consulta: logo depois do
 `healthy`, quando o healthcheck da aplicação não toca o banco, a leitura mostra só a sua própria
 sessão, e a prova sai vazia. Faça antes uma requisição que consulte o banco (um `/health/ready`),
-e só então leia. Medido num staging restaurado: a primeira leitura deu só `lighthouse|psql|1`, e
-depois do `/health/ready` apareceu `lighthouse_app|1`.
+e só então leia. Medido num staging restaurado: a primeira leitura deu só `owner|psql|1`, e
+depois do `/health/ready` apareceu `app_user|1`.
 
 ## 7. Antes de apagar linhas de um banco no ar: copie, e prove que a cópia volta
 
