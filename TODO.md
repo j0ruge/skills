@@ -202,6 +202,12 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   O linter sem baseline detecta o desvio. Direção: atualizar a referência do item sobre fetch e push.
   Fonte: revisão r1 — descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 
+- [ ] **ID de chamada reaproveitado entre mensagens passa por vínculo novo** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:600` (`duplicate = call_id`) —
+  após trocar a mensagem ativa, o ID consumido antes ainda pode preservar a monitorada diante de uma carga externa.
+  Direção: medir a janela de ambiguidade antes de ampliar a detecção além da mensagem ativa.
+  Fonte: revisão r2 — descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
+
 ## Decidido — não reabrir
 <!-- sdd:decided -->
 

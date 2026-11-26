@@ -29,3 +29,4 @@
 - 2026-11-25 22:52 · `R1` · R1 sabotage: inserção de marca para origem desconhecida → test_legacy_closed_attribution_ignores_unknown_source
 - 2026-11-25 22:52 · `R1` · R1 sabotage: marca de consumo removida → test_reused_consumed_call_id_stops_attribution
 - 2026-11-25 22:52 · `R1` · Quatro regressões passaram de vermelho a verde em `eb44360`. As 18 degradações foram detectadas com grupo próprio, 20 s e 512 MiB. I1 manteve `1 0 1 0 0 1`, F1 ficou em silêncio nas três variantes e a suíte passou com 75 testes do hook.
+2026-11-25 22:59 · `R2` · r2 confirmou descarte de vínculo posterior e crescimento do estado por tentativas falhas. Sonda em leitura contínua e retomada registrada no checkpoint.
