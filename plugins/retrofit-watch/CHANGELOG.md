@@ -9,8 +9,8 @@
   Stop. Cargas externas de mensagem posterior ou sem vínculo continuam encerrando a atribuição
   futura, sem apagar contadores de sessões iniciadas na 0.4.0. Corrige a issue #12.
 - Após a carga externa encerrar a atribuição, o metadado atrasado da monitorada não a reabre
-  quando o `sourceToolUseID` está ausente ou vazio. Um comando slash explícito ainda pode
-  iniciar uma nova atribuição para a skill que ele nomeia.
+  sem vínculo comprovado, inclusive na retomada da 0.4.0 ou com IDs repetidos. Metadado externo
+  atrasado preserva o slash mais novo e tentativa sem carga não invalida outro vínculo.
 
 ## [0.4.0] — 2026-11-24
 

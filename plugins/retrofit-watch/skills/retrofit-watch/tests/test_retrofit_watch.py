@@ -536,6 +536,72 @@ class StopTest(HookHarness, unittest.TestCase):
         for field in ("skills", "pending", "done"):
             self.assertEqual(saved[field], legacy[field])
 
+    def test_legacy_closed_attribution_ignores_unknown_source(self):
+        ours, other = self.identified_loads("msg_2")
+        self.write(ours[:2], other[:2])
+        state_path = self.w.data / "sessions/s1.json"
+        state_path.parent.mkdir(parents=True)
+        info = rw.classify_plugin("codereview", self.w.ctx())
+        key = info["key"]
+        legacy = dict(offset=self.w.transcript.stat().st_size, current=None,
+                      skills={key: dict(info, reviews=0, work=0, friction=0)},
+                      classified={}, pending=[], done=[])
+        state_path.write_text(json.dumps(legacy), encoding="utf-8")
+        self.write(other[2:], ours[2:], tool(error=True))
+        self.assertIsNone(self.run_hook())
+        saved = json.loads(state_path.read_text(encoding="utf-8"))
+        self.assertEqual(saved["skills"], legacy["skills"])
+        self.assertEqual(saved["offset"], self.w.transcript.stat().st_size)
+        self.assertEqual(saved["skill_calls"], {})
+
+    def test_reused_consumed_call_id_stops_attribution(self):
+        self.write(*self.identified_loads())
+        self.assertIsNone(self.run_hook())
+        state_path = self.w.data / "sessions/s1.json"
+        saved = json.loads(state_path.read_text(encoding="utf-8"))
+        self.assertEqual(saved["skill_message"], "msg_1")
+        self.assertEqual(saved["skill_calls"], {"toolu_1": False, "toolu_2": False})
+        path = make_skill(self.w.other_skill.parent, "writing-plans")
+        call, result, meta = skill_via_tool("superpowers:writing-plans", path)
+        call["message"]["id"] = "msg_1"
+        call["message"]["content"][0]["id"] = "toolu_2"
+        result["message"]["content"][0]["tool_use_id"] = "toolu_2"
+        meta["sourceToolUseID"] = "toolu_2"
+        self.write([call, result, meta], tool(error=True))
+        self.assertIsNone(self.run_hook())
+
+    def test_pending_slash_survives_older_external_metadata(self):
+        ours, other = self.identified_loads("msg_2")
+        slash = skill_typed("graphify", self.w.graphify)
+        self.write(ours, other[:2])
+        self.assertIsNone(self.run_hook())
+        self.write(slash[:1], other[2:])
+        self.assertIsNone(self.run_hook())
+        self.write(slash[1:], tool(error=True))
+        self.assertIn("/retrofit-skill:retrofit-skill graphify", self.context_of(self.run_hook()))
+        self.write(skill_typed("retrofit-skill:retrofit-skill", args="graphify"))
+        self.assertIsNone(self.run_hook())
+        saved = json.loads((self.w.data / "sessions/s1.json").read_text(encoding="utf-8"))
+        self.assertIsNone(saved["pending_slash"])
+
+    def test_failed_unknown_skill_keeps_pending_monitored_call(self):
+        ours, _ = self.identified_loads()
+        ours[0]["message"]["content"][0]["input"]["skill"] = "coderabbit-pr"
+        call, result, _ = skill_via_tool("nao-instalada", self.w.other_skill)
+        call["message"]["id"] = "msg_2"
+        result["message"]["content"][0].update(content="Unknown skill: nao-instalada", is_error=True)
+        # Sem metadado ou histórico, o Stop procura o marcador no formato compacto do Claude.
+        self.w.transcript.write_text(
+            "".join(json.dumps(row, separators=(",", ":")) + "\n" for row in (*ours[:2], call, result)),
+            encoding="utf-8",
+        )
+        self.assertIsNone(self.run_hook())
+        unmatched = dict(ours[2], sourceToolUseID="toolu_unmatched")
+        self.write([unmatched], tool(error=True))
+        self.assertIsNone(self.run_hook())
+        self.write(ours[2:], tool(error=True))
+        self.assert_codereview_retro()
+
     def test_quoted_base_directory_is_not_a_skill_load(self):
         self.write(quoted_base_dir(self.w.mkt_skill), *[tool(error=True)] * 3)
         self.assertIsNone(self.run_hook())

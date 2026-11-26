@@ -478,7 +478,12 @@ class Scanner:
         # trabalho nem atrito de skill nenhuma (spec 5.10, D13). Quem decide é o cmd_stop.
         self.silent = False
 
-    def _watch(self, info, origin=None):
+    def _watch(self, info, origin=None, *, preserve_slash=False):
+        # Só uma carga reconhecida aposenta vínculos de outras mensagens.
+        if origin and origin[0] != self.st["skill_message"]:
+            self.st["skill_message"] = origin[0]
+            self.st["skill_calls"] = {call: message for call, message in self.st["skill_calls"].items()
+                                      if message == origin[0]}
         if info is None:
             current = self.st["current_origin"]
             # O caminho ainda pode excluir a própria chamada reconhecida pelo nome.
@@ -489,7 +494,8 @@ class Scanner:
             self.st["current"] = None
             self.st["current_origin"] = None
             self.st["attribution_closed"] = True
-            self.st["pending_slash"] = None
+            if not preserve_slash:
+                self.st["pending_slash"] = None
             return
         key = info["key"]
         entry = self.st["skills"].setdefault(key, dict(info, reviews=0, work=0, friction=0))
@@ -592,10 +598,9 @@ class Scanner:
         call_id = self._transcript_id(call_id)
         calls = self.st["skill_calls"]
         duplicate = call_id in calls
-        if message_id is None or message_id != self.st["skill_message"]:
-            calls.clear()
-            # A string vazia registra uma carga sem ID, distinta de um estado legado.
-            self.st["skill_message"] = message_id or ""
+        if self.st["skill_message"] is None:
+            # Já vimos uma chamada, ainda que nenhuma carga tenha sido reconhecida.
+            self.st["skill_message"] = ""
         if call_id is None:
             return None
         calls[call_id] = False if duplicate else message_id
@@ -609,8 +614,9 @@ class Scanner:
         source = self._transcript_id(source)
         # Um metadado de chamada descartada ou ambígua não pode reabrir a atribuição.
         # Uma externa sem vínculo continua encerrando-a, inclusive no estado legado.
-        unlinked = False if source and self.st["skill_message"] is not None else None
-        message_id = self.st["skill_calls"].pop(source, unlinked)
+        unlinked = False if source and (self.st["skill_message"] is not None
+                                        or self.st["attribution_closed"]) else None
+        message_id = self.st["skill_calls"].get(source, unlinked)
         if message_id is False and info is not None:
             return
         # Sem vínculo não há prova de nova carga após o encerramento. O slash digitado
@@ -621,7 +627,10 @@ class Scanner:
                 return
         if source is None:
             self.st["pending_slash"] = None
-        self._watch(info, [message_id, source] if message_id else None)
+        self._watch(info, [message_id, source] if message_id else None, preserve_slash=source is not None)
+        # Reter o ID consumido na mensagem ativa impede que uma repetição vire um novo vínculo.
+        if source in self.st["skill_calls"]:
+            self.st["skill_calls"][source] = False
 
     def user_text(self, text):
         if text.startswith(INTERRUPT):
