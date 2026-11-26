@@ -150,6 +150,15 @@ def skill_via_tool(skill_name, path):
     ]
 
 
+def identified_load(name, path, message_id, call_id):
+    call, result, meta = skill_via_tool(name, path)
+    call["message"]["id"] = message_id
+    call["message"]["content"][0]["id"] = call_id
+    result["message"]["content"][0]["tool_use_id"] = call_id
+    meta["sourceToolUseID"] = call_id
+    return call, result, meta
+
+
 def skill_typed(command, path=None, args=""):
     lines = [{"type": "user", "message": {"role": "user", "content":
               f"<command-message>{command}</command-message>\n<command-name>/{command}</command-name>"
@@ -400,18 +409,10 @@ class StopTest(HookHarness, unittest.TestCase):
         self.assertIsNone(self.run_hook())
 
     def identified_loads(self, other_message="msg_1"):
-        loads = []
-        for name, path, message_id, call_id in (
+        return [identified_load(*args) for args in (
             ("codereview:coderabbit-pr", self.w.mkt_skill, "msg_1", "toolu_1"),
             ("superpowers:brainstorming", self.w.other_skill, other_message, "toolu_2"),
-        ):
-            call, result, meta = skill_via_tool(name, path)
-            call["message"]["id"] = message_id
-            call["message"]["content"][0]["id"] = call_id
-            result["message"]["content"][0]["tool_use_id"] = call_id
-            meta["sourceToolUseID"] = call_id
-            loads.append((call, result, meta))
-        return loads
+        )]
 
     def assert_codereview_retro(self):
         self.assertIn("/retrofit-skill:retrofit-skill codereview", self.context_of(self.run_hook()))
@@ -643,6 +644,102 @@ class StopTest(HookHarness, unittest.TestCase):
         saved = json.loads((self.w.data / "sessions/s1.json").read_bytes())
         self.assertEqual(saved["skill_calls"], {"toolu_2": False})
 
+    def assert_graphify_retro(self):
+        context = self.context_of(self.run_hook())
+        self.assertIn("`/retrofit-skill:retrofit-skill graphify`", context)
+        self.assertNotIn("`/retrofit-skill:retrofit-skill codereview`", context)
+
+    def interleaved_skill_loads(self):
+        return (identified_load("coderabbit-pr", self.w.mkt_skill, "msg_z", "toolu_a"),
+                identified_load("graphify", self.w.graphify, "msg_a", "toolu_b"),
+                identified_load("coderabbit-pr", self.w.mkt_skill, "msg_z", "toolu_c"))
+
+    def test_message_order_survives_failed_call(self):
+        for resume in (False, True):
+            for failed in (False, True):
+                world = World()
+                self.addCleanup(world.cleanup)
+                with self.subTest(resume=resume, failed=failed), mock.patch.object(self, "w", world):
+                    first, newer, second = self.interleaved_skill_loads()
+                    first[1]["message"]["content"][0]["is_error"] = failed
+                    self.write(first[:1], newer[:2], second[:2], first[1:2], compact=True)
+                    if resume:
+                        self.assertIsNone(self.run_hook())
+                    self.write(second[2:], newer[2:])
+                    if not failed:
+                        self.write(first[2:])
+                    self.write(tool(error=True))
+                    self.assert_graphify_retro()
+
+    def test_message_order_survives_consumed_call(self):
+        for resume in (False, True):
+            for interleaved in (False, True):
+                world = World()
+                self.addCleanup(world.cleanup)
+                with self.subTest(resume=resume, interleaved=interleaved), mock.patch.object(self, "w", world):
+                    first, newer, second = self.interleaved_skill_loads()
+                    self.write(first)
+                    groups = (newer, second) if interleaved else (second, newer)
+                    self.write(*(group[:2] for group in groups), compact=True)
+                    if resume:
+                        self.assertIsNone(self.run_hook())
+                    self.write(newer[2:], second[2:], tool(error=True))
+                    self.assert_graphify_retro()
+
+    def test_failed_call_id_cannot_prove_same_message(self):
+        for resume in (False, True):
+            for duplicate in (False, True):
+                world = World()
+                self.addCleanup(world.cleanup)
+                with self.subTest(resume=resume, duplicate=duplicate), mock.patch.object(self, "w", world):
+                    monitored, external = self.identified_loads()
+                    failed_id = "toolu_2" if duplicate else "toolu_f"
+                    call, result, _ = identified_load("nao-instalada", world.other_skill, "msg_1", failed_id)
+                    result["message"]["content"][0]["is_error"] = True
+                    self.write(monitored, [call, result], compact=True)
+                    if resume:
+                        self.assertIsNone(self.run_hook())
+                    # Mede a decisão pelo nome antes de a confirmação por caminho poder interferir.
+                    self.write(external[:2], tool(error=True))
+                    if duplicate:
+                        self.assertIsNone(self.run_hook())
+                        self.assertFalse((world.data / "errors.log").exists())
+                    else:
+                        self.assert_codereview_retro()
+
+    def test_old_state_recovers_order_from_pending_calls(self):
+        first, newer, second = self.interleaved_skill_loads()
+        self.write(first, newer[:2], second[:2], compact=True)
+        self.assertIsNone(self.run_hook())
+        path = self.w.data / "sessions/s1.json"
+        saved = json.loads(path.read_bytes())
+        saved.pop("skill_message_order", None)
+        path.write_text(json.dumps(saved), encoding="utf-8")
+        self.write(newer[2:], second[2:], tool(error=True))
+        self.assert_graphify_retro()
+
+    def test_failed_ids_retire_with_their_active_message(self):
+        for linked in (True, False):
+            world = World()
+            self.addCleanup(world.cleanup)
+            with self.subTest(linked=linked), mock.patch.object(self, "w", world):
+                older, _, _ = self.interleaved_skill_loads()
+                call, result, _ = identified_load("nao-instalada", world.other_skill, "msg_z", "toolu_f")
+                result["message"]["content"][0]["is_error"] = True
+                self.write(older, [call, result])
+                self.assertIsNone(self.run_hook())
+                path = world.data / "sessions/s1.json"
+                before = json.loads(path.read_bytes())
+                self.assertEqual(before["failed_skill_calls"], ["toolu_f"])
+                self.assertNotIn("toolu_f", before["skill_calls"])
+                # O ID da falha não desqualifica uma carga de outra mensagem.
+                newer = identified_load("graphify", world.graphify, "msg_a", "toolu_f")
+                self.write(newer if linked else skill_typed("brainstorming", world.other_skill))
+                self.assertIsNone(self.run_hook())
+                after = json.loads(path.read_bytes())
+                self.assertEqual(after["failed_skill_calls"], [])
+                self.assertEqual(after["skill_message_order"], ["msg_a"] if linked else [])
+
     def test_failed_skill_calls_do_not_accumulate_in_saved_state(self):
         path = self.w.data / "sessions/s1.json"
         sizes = []
@@ -670,7 +767,10 @@ class StopTest(HookHarness, unittest.TestCase):
             self.assertIsNone(self.run_hook())
             state = path.read_bytes()
             with self.subTest(tentativas=end):
-                self.assertEqual(json.loads(state)["skill_calls"], {})
+                saved = json.loads(state)
+                self.assertEqual(saved["skill_calls"], {})
+                self.assertEqual(saved["skill_message_order"], [])
+                self.assertEqual(saved["failed_skill_calls"], [])
             sizes.append(len(state))
         self.assertLessEqual(max(sizes) - min(sizes), 1024)
 

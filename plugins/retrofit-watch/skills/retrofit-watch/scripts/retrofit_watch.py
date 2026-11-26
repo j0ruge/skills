@@ -419,8 +419,12 @@ class State:
         for key, default in (("offset", 0), ("skills", {}), ("current", None), ("classified", {}),
                              ("pending", []), ("done", []), ("current_origin", None),
                              ("skill_message", None), ("skill_calls", {}),
-                             ("attribution_closed", False), ("pending_slash", None)):
+                             ("failed_skill_calls", []), ("attribution_closed", False),
+                             ("pending_slash", None)):
             self.data.setdefault(key, default)
+        if "skill_message_order" not in self.data:
+            messages = (self.data["skill_message"], *self.data["skill_calls"].values())
+            self.data["skill_message_order"] = list(dict.fromkeys(m for m in messages if m))
         return self
 
     def save(self):
@@ -479,13 +483,15 @@ class Scanner:
         self.silent = False
 
     def _watch(self, info, origin=None, *, preserve_slash=False):
-        # Só uma carga reconhecida aposenta vínculos antigos. A ordem de inserção
-        # registra quando cada mensagem apareceu, mesmo se os metadados chegarem fora de ordem.
+        # Só uma carga reconhecida aposenta vínculos antigos. Consumir uma chamada
+        # não muda a posição da mensagem na ordem de chegada.
         if origin and origin[0] != self.st["skill_message"]:
             calls = self.st["skill_calls"]
-            messages = list(dict.fromkeys(message for message in calls.values() if message))
-            live = set(messages[messages.index(origin[0]):])
+            messages = self.st["skill_message_order"]
+            del messages[:messages.index(origin[0])]
+            live = set(messages)
             self.st["skill_message"] = origin[0]
+            self.st["failed_skill_calls"].clear()
             self.st["skill_calls"] = {call: message for call, message in calls.items() if message in live}
         if info is None:
             current = self.st["current_origin"]
@@ -494,6 +500,8 @@ class Scanner:
                 return
             if origin is None:
                 self.st["skill_calls"].clear()
+                self.st["skill_message_order"].clear()
+                self.st["failed_skill_calls"].clear()
             self.st["current"] = None
             self.st["current_origin"] = None
             self.st["attribution_closed"] = True
@@ -600,14 +608,20 @@ class Scanner:
         message_id = self._transcript_id(message_id)
         call_id = self._transcript_id(call_id)
         calls = self.st["skill_calls"]
-        duplicate = call_id in calls
+        duplicate = (call_id in calls or (message_id == self.st["skill_message"]
+                                         and call_id in self.st["failed_skill_calls"]))
         if self.st["skill_message"] is None:
             # Já vimos uma chamada, ainda que nenhuma carga tenha sido reconhecida.
             self.st["skill_message"] = ""
         if call_id is None:
             return None
         calls[call_id] = False if duplicate else message_id
-        return [message_id, call_id] if message_id and not duplicate else None
+        if not message_id or duplicate:
+            return None
+        messages = self.st["skill_message_order"]
+        if message_id not in messages:
+            messages.append(message_id)
+        return [message_id, call_id]
 
     def skill_path(self, path, source):
         cache = self.st["classified"]
@@ -687,7 +701,12 @@ class Scanner:
                         call_id = self._transcript_id(block.get("tool_use_id"))
                         calls = self.st["skill_calls"]
                         if calls.get(call_id) is not False:
-                            calls.pop(call_id, None)
+                            message_id = calls.pop(call_id, None)
+                            if message_id and message_id == self.st["skill_message"]:
+                                # Sem vínculo para o metadado, mas também sem prova se o ID voltar.
+                                self.st["failed_skill_calls"].append(call_id)
+                            elif message_id and message_id not in calls.values():
+                                self.st["skill_message_order"].remove(message_id)
                         self._bump("friction")
                     elif block.get("type") == "text":
                         self.user_text(block.get("text", ""))

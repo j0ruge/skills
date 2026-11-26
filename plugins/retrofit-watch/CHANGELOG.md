@@ -13,6 +13,8 @@
   atrasado preserva o slash mais novo e tentativa sem carga não invalida outro vínculo.
 - Confirmações fora de ordem preservam as chamadas posteriores que ainda aguardam metadados.
   Resultados de erro descartam o vínculo da tentativa correspondente, inclusive após a retomada.
+- O consumo ou a falha de uma chamada não muda a precedência entre mensagens com cargas ainda
+  relevantes. Reusar o ID de uma tentativa falha da mensagem ativa não comprova a origem da carga.
 
 ## [0.4.0] — 2026-11-24
 
