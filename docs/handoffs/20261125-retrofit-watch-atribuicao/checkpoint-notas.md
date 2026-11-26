@@ -76,3 +76,4 @@
 - 2026-11-25 23:22 · `R3` · R3 sabotage: erro não aposenta a ordem sem outro vínculo → test_failed_skill_calls_do_not_accumulate_in_saved_state
 - 2026-11-25 23:22 · `R3` · R3 sabotage: comentários, README, CHANGELOG e âncoras do backlog conferidos no contexto. As sondas de Red provaram as asserções da fixture, sem comportamento executável nos trechos de prosa.
 - 2026-11-25 23:22 · `R3` · Red reproduziu as seis divergências em f382fa2. Em 43c2d49, 25 degradações detectadas, cinco Checks e TEST_CMD verdes. R2 manteve zero vínculos após 10, 100 e 1.000 falhas. A suíte do hook passou com 83 testes.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-25 23:57 · written by the runner
