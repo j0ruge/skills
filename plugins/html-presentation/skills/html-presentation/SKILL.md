@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.7.3"
+  version: "1.8.0"
 ---
 
 # HTML Presentation
@@ -244,7 +244,7 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
 | `assets/deck-template.html` | Starting point for every deck: engine, footer, notes, presenter window, print, sample slides per component |
 | `scripts/build.py` | Run on every build: inlines assets, generates the script, enforces the gates |
 | `scripts/shoot.sh` | Every inspection round: screenshots, laptop views, PDF, contact sheets |
-| `scripts/check-presenter.mjs` | Step 6 when Playwright is installed, and after porting an engine fix: presenter window, shared timer, key hint, focus click, keys on the popup's buttons, steps, hover tips, footer labels, reduced motion |
+| `scripts/check-presenter.mjs` | Step 6 when Playwright is installed, and after porting an engine fix: presenter window, shared timer, key hint, focus click, keys on the popup's buttons, steps, hover tips, click zoom, footer labels, reduced motion |
 | `scripts/check-fit.mjs` | Step 6 when Playwright is installed, and after any text change: a slide out of the window, clipped text, content under the source line or inside the footer |
 | `references/layout-and-type.md` | Read when composing slides (step 4): components, scale, mockups, what to refuse |
 | `references/engine.md` | Read only when changing navigation, notes, presenter window or print behavior |

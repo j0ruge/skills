@@ -108,10 +108,22 @@ b,strong{font-weight:600;color:var(--fg)}
 .chip.neutral{background:var(--neutral-bg);color:var(--neutral-fg)}
 .ico{stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .src{position:absolute;right:128px;bottom:124px;font-size:19px;color:var(--fg3);text-align:right;line-height:1.4}
-/* Imagem que cresce com o mouse: --zoom é a escala, --zoom-origin o ponto que fica parado. Meça a caixa
-   ampliada: ela tem de ficar dentro do palco e acima do rodapé (references/layout-and-type.md). */
-.zoom{position:relative;transform-origin:var(--zoom-origin,left center);transition:transform .2s ease,box-shadow .2s ease;cursor:zoom-in}
-.zoom:hover{transform:scale(var(--zoom,1.5));z-index:60;box-shadow:0 0 0 2000px rgb(0 0 0/.5),0 24px 80px rgb(0 0 0/.45)}
+/* Foto com zoom por clique: <div class="zoom" tabindex="0" style="--ar:W/H"><img …></div>, com a altura dada pelo
+   bloco (ex.: .zoom-row .zoom{height:470px}). O clique na moldura (cursor zoom-in) abre a foto: a classe .on, posta
+   pelo motor (bloco "Fotos com zoom"). A foto vai da moldura ao centro do palco por transform, e a transição faz a
+   ida e a volta. Aberta, a capa (::after, o palco inteiro, cursor zoom-out) recebe todo clique, e o clique só fecha a
+   foto. Pelo teclado, o :focus-visible abre. A foto não recebe o mouse. O bloco da moldura não leva .enter: o
+   transform da entrada mudaria a referência do fixed da capa por 0,45 s. A sombra em repouso é a mesma com alfa 0:
+   o véu só muda de opacidade. Por que clique, e não mouse: references/layout-and-type.md, "Zoom on click". */
+.zoom{display:block;aspect-ratio:var(--ar);cursor:zoom-in;outline:none}
+.zoom img{display:block;width:100%;height:100%;position:relative;z-index:0;pointer-events:none;
+  box-shadow:0 0 0 2000px rgb(0 0 0/0),0 11px 38px rgb(0 0 0/0);
+  transition:transform .3s cubic-bezier(.4,0,.2,1),box-shadow .3s ease,z-index 0s .3s}
+.zoom.on img,.zoom:focus-visible img{transform:translate(var(--dx,0px),var(--dy,0px)) scale(var(--k,1.5));z-index:60;
+  box-shadow:0 0 0 2000px rgb(0 0 0/.5),0 11px 38px rgb(0 0 0/.45);
+  transition:transform .42s cubic-bezier(.4,0,.2,1),box-shadow .42s ease,z-index 0s}
+.zoom.on::after{content:"";position:fixed;inset:0;z-index:61;cursor:zoom-out}
+.zoom:focus-visible{outline:3px solid var(--brand);outline-offset:4px}
 .pin{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:9999px;background:var(--brand-strong);color:#fff;font-family:var(--mono);font-weight:600;font-size:19px}
 
 .cols{display:grid;gap:64px;flex:1;min-height:0}
@@ -478,9 +490,31 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
   });
   stage.addEventListener('mouseout', e => { if (!e.relatedTarget?.closest?.('[data-tip],[data-g]')) hideTip(); });
 
+  // Fotos com zoom (.zoom). O clique na moldura abre a foto (classe .on): ela vai da moldura ao centro do palco por
+  // transform, e a transição do CSS faz a ida e a volta. Com uma foto aberta, o clique em qualquer ponto só a fecha
+  // (no click do #viewport, abaixo). O mouse sozinho não abre nem fecha: sob o mouse, a foto abria de passagem e
+  // trocava pela de baixo (TCC, 26/11/2026). O foco do teclado (:focus-visible, no CSS) fecha a foto do clique: nunca
+  // duas abertas. ALT é a altura da foto aberta, em px do palco: cabe qualquer foto até 1,92:1.
+  const ALT = 1000;
+  let aberta = null;
+  const mira = zm => {
+    const r0 = stage.getBoundingClientRect(), z = r0.width / 1920, r = zm.getBoundingClientRect();
+    const tl = (r.left - r0.left) / z, tt = (r.top - r0.top) / z, tw = r.width / z, th = r.height / z;
+    const v = { dx: 960 - (tl + tw / 2), dy: 540 - (tt + th / 2) };
+    for (const k in v) zm.style.setProperty('--' + k, v[k] + 'px');
+    zm.style.setProperty('--k', ALT / th);
+  };
+  const fecharZoom = () => { if (aberta) aberta.classList.remove('on'); aberta = null; };
+  const abrirZoom = zm => { mira(zm); zm.classList.add('on'); aberta = zm; };
+  stage.addEventListener('focusin', e => {
+    const zm = e.target.closest?.('.zoom'); if (!zm) return;
+    if (zm !== aberta) fecharZoom();
+    mira(zm);
+  });
+
   // s: etapa de chegada (0 = início; 'end' = toda revelada, para quem volta de trás)
   function show(k, from, s = 0) {
-    hideTip();
+    hideTip(); fecharZoom();
     i = Math.max(0, Math.min(N - 1, k));
     st = s === 'end' ? steps[i] : Math.max(0, Math.min(steps[i], Number.isInteger(s) ? s : 0));
     slides.forEach((x, j) => x.classList.toggle('active', j === i));
@@ -534,6 +568,14 @@ FINISH: sem revisão independente e sem screenshot conferido, não está pronto.
   // O clique que só traz a janela à frente (deck sob o popup numa tela só) não navega, nem o da faixa fora do palco
   addEventListener('focus', () => { focusAt = performance.now(); });
   document.getElementById('viewport').addEventListener('click', e => {
+    // Fotos com zoom: o clique na moldura abre a foto; com uma foto aberta, o clique só a fecha; o clique nos vãos de
+    // uma fileira (.zoom-row) e na legenda não navega: o apresentador aponta ali com o mouse. O clique solta o foco da
+    // moldura; senão a tecla seguinte acenderia o :focus-visible e abriria a foto.
+    const zm = e.target.closest?.('.zoom');
+    if (zm && e.detail) zm.blur();
+    if (aberta) { fecharZoom(); return; }
+    if (zm) { abrirZoom(zm); return; }
+    if (e.target.closest?.('.zoom-row, figure:has(.zoom)')) return;
     const r = stage.getBoundingClientRect();
     if (performance.now() - focusAt < 400 || e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return;
     e.clientX - r.left > r.width / 3 ? next() : prev();

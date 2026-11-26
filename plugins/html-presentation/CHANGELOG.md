@@ -3,6 +3,33 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.8.0] — 2026-11-26
+
+### Zoom por clique no template; o `check-presenter` tira os testes de clique de cima das fotos
+
+- **Zoom por clique.** Na defesa de TCC, o autor experimentou a fileira de fotos da 1.7.3 e a reprovou: a foto abria
+  quando o mouse passava, a foto aberta trocava pela de baixo, e o clique ao lado dela trocava a lâmina. Um QA de
+  usabilidade, feito por um agente independente, achou mais dois defeitos. A foto fechava quando o mouse passava da
+  borda por ~150 ms, e a volta caía na miniatura de baixo, que abria. A curva `cubic-bezier(.16,1,.3,1)` punha metade
+  de um caminho de 637 px em ~36 ms. Espera, margem e tolerância ao tremor resolveram os casos do QA, mas o autor
+  ficou só com o clique ("total controle"). O template troca o `.zoom:hover` (escala no lugar) pela moldura
+  `div.zoom`. O clique abre, e a foto viaja por `transform` até o centro do palco, com 1000 px de altura. A capa
+  `::after` cobre o palco com o cursor `zoom-out`, e o clique só fecha. O motor ganha o bloco "Fotos com zoom", o
+  `fecharZoom()` em `show()` e a guarda no clique da moldura, da `.zoom-row` e de `figure:has(.zoom)`.
+- **A prova.** No deck da defesa, um sensor do projeto com 17 verificações ficou verde nas lâminas 3 e 4. Cada uma
+  das 14 cópias sabotadas, uma por mecanismo, ficou vermelha. Num deck de teste feito do template novo, as três fotos
+  abriram a 0,0 px do centro, com 1000 px de altura.
+- **Falso alarme no `check-presenter`.** Os testes de clique usavam a lâmina 3, e no deck da defesa ela tem fotos no
+  centro. As duas verificações de clique falharam sem defeito no motor. Agora os testes avançam até uma lâmina com os
+  dois pontos livres de foto. Sem esse pulo, o deck de teste repete as duas falhas. Três verificações novas cobrem o
+  zoom por clique: o clique abre sem trocar a lâmina, o clique só fecha, e a troca de lâmina fecha. Uma cópia sem a
+  guarda do clique reprova as três. Um deck sem `div.zoom` dá "pulado", inclusive o zoom antigo em `img.zoom`.
+- `references/layout-and-type.md`: as entradas *Zoom on hover* e *Zoom to the center* viram *Zoom on click*. Saem
+  duas lições que valiam só para o zoom sob o mouse, que o template não tem mais. Uma é a do rodapé (escala no lugar,
+  21/11). A outra é a da foto que piscava (`:hover` na foto, 26/11). As notas do PDF e do `build.py` passam para a
+  entrada nova, com a migração de um deck antigo.
+- O `SKILL.md` muda só na tabela de arquivos ("click zoom"), porque está a 19,9 mil caracteres.
+
 ## [1.7.3] — 2026-11-26
 
 ### Fileira de fotos que vão ao centro do palco, sem piscar; a fileira que esticava as imagens
