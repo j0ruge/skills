@@ -88,13 +88,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 ### O que o uso da retrofit-watch 0.4.0 mostrou
 
 - [ ] **A skill de fora carregada na mesma mensagem apaga a atribuição da vigiada** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:479` (`_watch`) — a carga de uma
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:480` (`_watch`) — a carga de uma
   skill não vigiada põe `current = None`. Em 2026-11-25, uma mensagem carregou a `zitadel-idp` e uma skill de
   terceiro juntas: o trabalho seguinte ficou sem dono, ela fechou com `work: 0`, e o hook não pediu a retro dela,
   nem no modo autônomo. O zero existe para não atribuir trabalho de outra tarefa, e o conserto não o tira de todo.
   Direção: a de fora no mesmo `message.id` da vigiada não zera; um caso prova o par, outro que a de fora numa
-  mensagem seguinte ainda zera. Fonte: a linha do tempo das cargas de skill no transcript de uma sessão
-  interativa — descoberto por `investigação do modo auto` (2026-11-25)
+  mensagem seguinte ainda zera. RESOLVED by 682cd3d
+  Fonte: transcript interativo — descoberto por `investigação do modo auto` (2026-11-25)
 
 ### LOW da codereview da retrofit-watch 0.4.0
 
