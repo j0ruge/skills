@@ -172,7 +172,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: `rows.get` com mensagem; `assertIn("--retro", rw.CLI_USAGE["discard"][0])`.
   Fonte: codereview r1 #21 e #22 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **O CHANGELOG 0.4.0 cita só o fetch e o push** —
-  `plugins/retrofit-watch/CHANGELOG.md:66` (`push`) — o ponto da config de sistema cita só o `fetch` e o
+  `plugins/retrofit-watch/CHANGELOG.md:82` (`push`) — o ponto da config de sistema cita só o `fetch` e o
   `push` da porta, e o `prepare` também usa o `remote_env` (r1 #24).
   Direção: "todo git que fala com o `origin`".
   Fonte: codereview r1 #24 — descoberto por `codereview r1` (2026-11-24)
@@ -193,12 +193,12 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 ### Revisão da atribuição da retrofit-watch
 
 - [ ] **O registro da missão mistura a medição histórica com o estado atual** —
-  `docs/handoffs/20261125-retrofit-watch-atribuicao/00-missao.md:76` (`I1 está vermelha`) —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/00-missao.md:76` (`I1 estava vermelha`) —
   a frase usa HEAD para a medição anterior à correção e lista uma aprovação que já consta do aceite.
   Direção: ancorar o Red no commit anterior e separar aprovação registrada de merge pendente.
   Fonte: revisão r1 — descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 - [ ] **A publicação do patch desloca uma âncora do backlog da retrofit-watch** —
-  `plugins/retrofit-watch/CHANGELOG.md:78` (`push`) — a entrada 0.4.1 deslocou a âncora de 66 para 78.
+  `plugins/retrofit-watch/CHANGELOG.md:82` (`push`) — a entrada 0.4.1 deslocou a âncora original da linha 66.
   O linter sem baseline detecta o desvio. Direção: atualizar a referência do item sobre fetch e push.
   Fonte: revisão r1 — descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 

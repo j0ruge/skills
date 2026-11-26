@@ -73,4 +73,4 @@ O worker respondeu às duas perguntas pela delegação assinada do L1, seguindo 
 
 ## Pendências para o humano
 
-I1 está vermelha no HEAD pelos resultados esperados. A aprovação do plano pelo gate SDD regular e o merge do futuro PR para `main` cabem ao mantenedor.
+I1 estava vermelha em `e45db9e` antes da correção e passou em `682cd3d`. O mantenedor aprovou o plano em 25/11/2026. O merge do futuro PR para `main` é a decisão pendente do mantenedor.
