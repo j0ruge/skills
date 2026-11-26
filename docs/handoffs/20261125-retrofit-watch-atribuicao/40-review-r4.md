@@ -184,7 +184,7 @@ for name, scenario in (("ordem_ultimo_vinculo", order), ("reuso_pre_ativacao", f
 
 | ID | Incremento | Check (comando → esperado) | Status | Commit |
 |---|---|---|---|---|
-| R4 | Preservar a precedência após a falha do último vínculo e a ambiguidade do ID falho antes do reconhecimento (r4, achados 1–2) | `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -c "$(sed -n '/^~~~python$/,/^~~~$/{ /^~~~/!p; }' docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r4.md)"` → `ordem_ultimo_vinculo_continua=graphify,graphify ordem_ultimo_vinculo_retomada=graphify,graphify reuso_pre_ativacao_continua=codoreview,silêncio reuso_pre_ativacao_retomada=codoreview,silêncio` | pending | — |
+| R4 | Preservar a precedência após a falha do último vínculo e a ambiguidade do ID falho antes do reconhecimento (r4, achados 1–2) | `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -c "$(sed -n '/^~~~python$/,/^~~~$/{ /^~~~/!p; }' docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r4.md)"` → `ordem_ultimo_vinculo_continua=graphify,graphify ordem_ultimo_vinculo_retomada=graphify,graphify reuso_pre_ativacao_continua=codereview,silêncio reuso_pre_ativacao_retomada=codereview,silêncio` | pending | — |
 
 - R3, achados 1–2 de r3, fechado em `43c2d49`. A sonda independente reproduziu as seis divergências na base e devolveu os seis pares esperados no HEAD.
 - R4 não pede histórico global de chamadas falhas. Pede preservar as duas decisões quando ainda há uma carga concorrente pendente. Manter os cinco Checks existentes, em especial o descarte de falhas isoladas de R2.
