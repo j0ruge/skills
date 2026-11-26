@@ -196,10 +196,12 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   `docs/handoffs/20261125-retrofit-watch-atribuicao/00-missao.md:76` (`I1 estava vermelha`) —
   a frase usa HEAD para a medição anterior à correção e lista uma aprovação que já consta do aceite.
   Direção: ancorar o Red no commit anterior e separar aprovação registrada de merge pendente.
+  RESOLVED by 9e79cb6
   Fonte: revisão r1 — descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 - [ ] **A publicação do patch desloca uma âncora do backlog da retrofit-watch** —
   `plugins/retrofit-watch/CHANGELOG.md:82` (`push`) — a entrada 0.4.1 deslocou a âncora original da linha 66.
   O linter sem baseline detecta o desvio. Direção: atualizar a referência do item sobre fetch e push.
+  RESOLVED by 9e79cb6
   Fonte: revisão r1 — descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 
 - [ ] **ID de chamada reaproveitado entre mensagens passa por vínculo novo** —
