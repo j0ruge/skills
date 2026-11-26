@@ -6,3 +6,5 @@
 
 - 2026-11-25 22:14 · `I1` · TDD confirmado no Stop. Sonda de `0 0 0 0 0 1` para `1 0 1 0 0 1`. A suíte rodou sem GIT_DIR/GIT_WORK_TREE herdados do Git privado do runner, conforme o handoff.
 - 2026-11-25 22:21 · `F1` · BUG-01 confirmado em dois Stops. Com sourceToolUseID ausente ou vazio, o metadado atrasado reabriu a atribuição. Teste vermelho e correção em pending no checkpoint.
+- 2026-11-25 22:25 ·  · BUG-01 corrigido em . Dois Stops ficaram em silêncio com ID válido, ausente ou vazio. A sonda de I1 manteve  e a suíte passou com 71 testes da retrofit-watch.
+- 2026-11-25 22:25 · `F1` · BUG-01 corrigido em `c704301`. Dois Stops ficaram em silêncio com ID válido, ausente ou vazio. A sonda de I1 manteve `1 0 1 0 0 1` e a suíte passou com 71 testes da retrofit-watch.

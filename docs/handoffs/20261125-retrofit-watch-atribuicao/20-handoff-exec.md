@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a21565-5794-76b2-bc0b-4c3a052508b9
-data: 2026-11-25 22:14
-gate: "env -u GIT_DIR -u GIT_WORK_TREE bash -c 'source .sdd/config.sh && eval \"$TEST_CMD\"' em 682cd3d → rc 0, 154 testes da loja (3 pulados), 68 testes da retrofit-watch, adaptadores e catálogo válidos, validador confirmou 0.4.1."
+sessao: 01a21572-6b63-7961-b8d5-5847c22cb1bb
+data: 2026-11-25 22:25
+gate: "env -u GIT_DIR -u GIT_WORK_TREE bash -c 'source .sdd/config.sh && eval \"$TEST_CMD\"' em c704301 → rc 0. Loja: 154 testes, 3 pulados. Retrofit-watch: 71 testes. Adaptadores e catálogo válidos e versão 0.4.1 confirmada."
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,18 +14,18 @@ gate: "env -u GIT_DIR -u GIT_WORK_TREE bash -c 'source .sdd/config.sh && eval \"
 
 ## TL;DR
 
-A retrofit-watch 0.4.1 preserva a atribuição quando duas cargas distintas têm origem confirmada na mesma mensagem do assistente.
-A sonda passou de `0 0 0 0 0 1` para `1 0 1 0 0 1`. Os testes de Stop em subprocesso e a suíte da loja passaram.
-QA deve repetir a sonda de I1 e verificar a transição entre as duas chamadas de Stop.
+F1 fechou o BUG-01. Metadado atrasado sem vínculo não reabre a atribuição que uma carga externa posterior encerrou.
+A jornada em dois Stops ficou em silêncio nas três variantes. A carga legítima por slash, a retomada da 0.4.0 e a sonda de I1 passaram.
+A QA precisa repetir a jornada, a sonda e a suíte e atualizar o handoff dela antes do REVIEW.
 
 ## Estado do repo
 
 - **Branch:** `fix/retrofit-watch-atribuicao-mesma-mensagem`, sem upstream configurado neste checkout temporário.
-- **Último commit do incremento:** `682cd3d` — preservar a atribuição na mesma mensagem.
+- **Último commit do incremento:** `c704301` — manter a atribuição encerrada sem vínculo.
 - **Working tree:** limpo após o commit dos registros desta fase.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `682cd3d` → rc 0. Loja: 154 testes, 3 pulados. Retrofit-watch: 68 testes. `validate-versions.py` confirmou `retrofit-watch: v0.4.1`.
-- **E2E:** sonda da célula de I1 no `checkpoint.md` em `682cd3d` → `1 0 1 0 0 1`. Os testes Stop usaram subprocesso e JSON de sessão em disco.
-- **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_auto_docs.ReleaseTest.test_the_four_places_agree_at_0_4_0_or_later` em `682cd3d` → 1 teste, rc 0.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `c704301` → rc 0. Loja: 154 testes, 3 pulados. Retrofit-watch: 71 testes. Adaptadores e catálogo válidos e versão 0.4.1 confirmada.
+- **E2E:** célula de F1 no `checkpoint.md` em `c704301` → `linked=silêncio missing=silêncio empty=silêncio` e `1 0 1 0 0 1`.
+- **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_auto_docs.ReleaseTest.test_the_four_places_agree_at_0_4_0_or_later` em `c704301` → 1 teste, rc 0.
 
 ## O que foi feito
 
@@ -33,20 +33,26 @@ QA deve repetir a sonda de I1 e verificar a transição entre as duas chamadas d
 - `682cd3d` — adicionou 13 testes de regressão e sincronizou manifesto, catálogo Claude, README, SKILL.md e CHANGELOG para 0.4.1.
 - No Red, os dois positivos canônicos não emitiram a retro, o caso com blocos agrupados também ficou em silêncio e o metadado atrasado reabriu indevidamente a atribuição.
 
+### Retorno da QA — BUG-01
+
+- `c704301` — persistiu o encerramento entre Stops. Metadado da monitorada sem ID válido não reabre a atribuição encerrada. A confirmação por chamada vinculada e a carga explícita por slash continuam disponíveis. O formato 0.4.0 conserva o fallback e o histórico.
+- `c704301` — incorporou à suíte de Stop os casos com ID ausente e vazio e o controle por slash, com metadado atrasado de outra skill intercalado. Em `bf0dae7` com os testes novos e sem a correção, os três falharam por emitirem retro de `codereview`. O caso com ID preservado e o controle da 0.4.0 já passavam. A reprodução de terminal da QA foi preservada.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1 com a sonda executável e o hash da correção. |
+| `checkpoint.md` | I1 e F1 com as sondas executáveis e os hashes das correções. |
 | `checkpoint-notas.md` | Evidência de execução e isolamento do Git na suíte. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
+| `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
 | `TODO.md` | Issue #12 marcada `RESOLVED by 682cd3d` até o merge. |
 
 ## Boot da próxima fase
 
-Leia `00-missao.md`, `01-plano.md` e `checkpoint.md` nesta pasta. Da raiz do repositório, rode a célula de I1 e espere `1 0 1 0 0 1`. Depois execute a suíte indicada acima. Use Python 3, Git e um diretório temporário gravável. Os testes criam seus próprios transcripts e estado, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode a célula de F1 da raiz do repositório. A primeira parte reproduz o BUG-01 em dois Stops e deve imprimir `linked=silêncio missing=silêncio empty=silêncio`. A segunda repete a sonda de I1 e deve imprimir `1 0 1 0 0 1`. Use Python 3, Git e um diretório temporário gravável. Os testes criam seus próprios transcripts e estado, sem iniciar o Claude Code.
 
-Confira as jornadas da monitorada com a externa na mesma mensagem e em mensagem posterior, com e sem corte antes do metadado externo. Na retomada da 0.4.0 sem vínculo, confirme silêncio, avanço de offset e preservação dos contadores. A supressão por caminho na própria chamada e o slash externo continuam funcionando.
+Rode `env -u GIT_DIR -u GIT_WORK_TREE bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'`. Confira o teste com slash após o encerramento, a retomada da 0.4.0 com preservação do histórico e o avanço do offset entre Stops. Registre a repetição em `30-handoff-qa.md` antes de encaminhar ao REVIEW.
 
 ## Pendências / Decisions for a Human
 
