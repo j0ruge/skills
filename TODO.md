@@ -217,6 +217,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r3.md` — descoberto por
   `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 
+- [ ] **O handoff de R3 não distingue de qual mensagem é a chamada pendente** —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:55` (`outra chamada pendente`) —
+  a frase estende a garantia a uma chamada de outra mensagem, mas a sonda de R4 devolve o alvo errado nesse caso.
+  Direção: qualificar a garantia sem confundir vínculo restante na mesma mensagem com pendência em outra.
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r4.md` —
+  descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-26)
+
 ## Decidido — não reabrir
 <!-- sdd:decided -->
 
