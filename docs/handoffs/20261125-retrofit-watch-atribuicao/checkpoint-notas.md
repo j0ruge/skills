@@ -47,3 +47,4 @@
 - 2026-11-25 23:07 · `R2` · R2 sabotage: consulta direta anterior recolocada com o predicado novo → sem diferença semântica
 - 2026-11-25 23:07 · `R2` · R2 sabotage: comentários, README e CHANGELOG conferidos no contexto e entre si. Não há comportamento executável a degradar nessas linhas.
 - 2026-11-25 23:07 · `R2` · Red reproduziu alvo indevido e crescimento. Em `485e6c0`, 13 degradações detectadas e quatro Checks verdes. R2 emitiu graphify seis vezes e reteve zero vínculos após 10, 100 e 1.000 erros. Suíte verde com 78 testes do hook.
+- 2026-11-25 23:14 · `R3` · r3, achados 1–2: ordem muda após erro ou consumo e ID de falha reaproveitado preserva a monitorada. Check confirmado em Red nas seis variantes em 87b9dc4. I1, F1, R1 e R2 verdes.

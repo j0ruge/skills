@@ -208,6 +208,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: medir a janela de ambiguidade antes de ampliar a detecção além da mensagem ativa.
   Fonte: revisão r2 — descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 
+- [ ] **Metadado externo antigo encerra a atribuição de uma carga posterior** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:622` (`unlinked = False`) —
+  após confirmar a carga posterior, o metadado externo antigo encerra o crédito futuro. O caso já falha na base.
+  Direção: diferenciar ID comprovadamente obsoleto de metadado sem origem conhecida.
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r3.md` — descoberto por
+  `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
+
 ## Decidido — não reabrir
 <!-- sdd:decided -->
 
