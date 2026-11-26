@@ -418,7 +418,8 @@ class State:
             self.data = {"created": time.time()}
         for key, default in (("offset", 0), ("skills", {}), ("current", None), ("classified", {}),
                              ("pending", []), ("done", []), ("current_origin", None),
-                             ("skill_message", None), ("skill_calls", {})):
+                             ("skill_message", None), ("skill_calls", {}),
+                             ("attribution_closed", False), ("pending_slash", None)):
             self.data.setdefault(key, default)
         return self
 
@@ -487,6 +488,8 @@ class Scanner:
                 self.st["skill_calls"].clear()
             self.st["current"] = None
             self.st["current_origin"] = None
+            self.st["attribution_closed"] = True
+            self.st["pending_slash"] = None
             return
         key = info["key"]
         entry = self.st["skills"].setdefault(key, dict(info, reviews=0, work=0, friction=0))
@@ -498,6 +501,7 @@ class Scanner:
             entry["reviews"] = MAX_REVIEWS
         self.st["current"] = key
         self.st["current_origin"] = origin
+        self.st["attribution_closed"] = False
 
     def _bump(self, field):
         if self.silent:
@@ -583,6 +587,7 @@ class Scanner:
         return None
 
     def _skill_origin(self, message_id, call_id):
+        self.st["pending_slash"] = None
         message_id = self._transcript_id(message_id)
         call_id = self._transcript_id(call_id)
         calls = self.st["skill_calls"]
@@ -608,6 +613,14 @@ class Scanner:
         message_id = self.st["skill_calls"].pop(source, unlinked)
         if message_id is False and info is not None:
             return
+        # Sem vínculo não há prova de nova carga após o encerramento. O slash digitado
+        # é explícito e pode iniciar outra atribuição, mas só para a skill que ele nomeia.
+        if source is None and info is not None and self.st["attribution_closed"]:
+            plugin, _, name = (self.st["pending_slash"] or "").rpartition(":")
+            if name not in info.get("skills", [info["arg"]]) or (plugin and plugin != info["arg"]):
+                return
+        if source is None:
+            self.st["pending_slash"] = None
         self._watch(info, [message_id, source] if message_id else None)
 
     def user_text(self, text):
@@ -650,6 +663,7 @@ class Scanner:
                 command = CMD_RE.search(content)
                 if command:
                     args = ARGS_RE.search(content)
+                    self.st["pending_slash"] = command.group(1)
                     self.invocation(command.group(1), args.group(1) if args else "")
                 else:
                     self.user_text(content)

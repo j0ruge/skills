@@ -446,12 +446,37 @@ class StopTest(HookHarness, unittest.TestCase):
         self.write([our_call, our_result, other_result, our_meta, other_meta], tool(error=True))
         self.assert_codereview_retro()
 
-    def test_late_monitored_metadata_does_not_reopen_attribution(self):
+    def assert_late_monitored_metadata_does_not_reopen_attribution(self, source):
         ours, other = self.identified_loads("msg_2")
+        if source is None:
+            del ours[2]["sourceToolUseID"]
+        else:
+            ours[2]["sourceToolUseID"] = source
         self.write(ours[:2], other)
         self.assertIsNone(self.run_hook())
         self.write(ours[2:], tool(error=True))
         self.assertIsNone(self.run_hook())
+
+    def test_late_monitored_metadata_does_not_reopen_attribution(self):
+        self.assert_late_monitored_metadata_does_not_reopen_attribution("toolu_1")
+
+    def test_late_monitored_metadata_without_source_does_not_reopen_attribution(self):
+        self.assert_late_monitored_metadata_does_not_reopen_attribution(None)
+
+    def test_late_monitored_metadata_with_empty_source_does_not_reopen_attribution(self):
+        self.assert_late_monitored_metadata_does_not_reopen_attribution("")
+
+    def test_typed_slash_can_start_new_attribution_after_external_skill(self):
+        ours, other = self.identified_loads("msg_2")
+        slash = skill_typed("graphify", self.w.graphify)
+        del ours[2]["sourceToolUseID"]
+        self.write(ours[:2], other, slash[:1])
+        self.assertIsNone(self.run_hook())
+        self.write(ours[2:], tool(error=True))
+        self.assertIsNone(self.run_hook())
+        self.write(slash[1:], tool(error=True))
+        text = self.context_of(self.run_hook())
+        self.assertIn("/retrofit-skill:retrofit-skill graphify", text)
 
     def test_late_monitored_metadata_does_not_override_external_slash_skill(self):
         ours, _ = self.identified_loads()
