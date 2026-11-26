@@ -3,6 +3,24 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.7.3] — 2026-11-26
+
+### Fileira de fotos que vão ao centro do palco, sem piscar; a fileira que esticava as imagens
+
+- **Zoom ao centro.** A entrada *Zoom on hover* amplia a imagem no lugar, a partir de um ponto fixo. Numa fileira de
+  três figuras, esse ponto empurra as das pontas para fora do palco. A `references/layout-and-type.md` ganha a
+  variante: uma moldura guarda o tamanho de repouso, e no `:hover` dela a foto ganha `position:fixed` no centro, com
+  `pointer-events:none`. Dentro do `#stage` escalado, o `fixed` se mede no palco. Na defesa de TCC, um sensor
+  Playwright mediu 0 px do centro a cada 50 ms durante 500 ms. Com o `:hover` na própria foto, 4 a 6 de 11 amostras
+  voltaram pequenas: a foto saía de baixo do cursor e piscava. Com a ampliação no lugar, a foto da ponta esquerda ficou
+  a 637 px do centro.
+- **Fileira de figuras esticada.** No mesmo deck, as três imagens saíram de 9 % a 20 % mais largas e encostadas, com o
+  `build.py` e o `check-fit.mjs` verdes. A captura mostrou o defeito. Uma linha que cobre as três colunas `auto`
+  alarga as colunas, e o `figure` em coluna flexível estica a moldura por cima do `aspect-ratio`. A reference diz
+  as três regras que resolveram.
+- Só a reference muda: o template e os scripts ficam como estão. A classe no template e um sensor em `scripts/`
+  ficam para quando forem provados ali.
+
 ## [1.7.2] — 2026-11-22
 
 ### Uma pasta `--out` por deck: o build recusa o roteiro de outro deck; a lâmina privada fora do pacote de revisão

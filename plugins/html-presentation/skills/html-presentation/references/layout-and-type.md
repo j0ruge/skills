@@ -58,6 +58,23 @@ on the same `DESIGN.md` as a deck (22/11/2026), the brand magenta `#e60073` meas
   `check-fit.mjs` and `shoot.sh` see only the resting state, so they pass either way. The PDF shows the small image:
   what the slide needs must be readable without the zoom. `build.py` inlines the image into `dist/` (HTML and PDF);
   an image kept out of the repository must have its `dist/` files ignored too, or it returns through them.
+- **Zoom to the center** (a row of photos or figures): scaling in place from one origin pushes the side images off
+  the stage, so here the photo leaves its place for the stage center. Wrap each `<img>` in a box that holds the
+  resting size (`height` and `aspect-ratio:W/H`, `tabindex="0"`). On the box's `:hover` and `:focus-visible`, give
+  the image `position:fixed;left:50%;top:50%;height:1000px;transform:translate(-50%,-50%);pointer-events:none`.
+  Inside the scaled `#stage`, `fixed` resolves against the stage, so the photo lands on its center at any window
+  size. The hover lives on the box, which does not move, and the enlarged photo takes no pointer: with the `:hover`
+  on the image itself, the photo left the cursor and blinked (TCC defence deck, 26/11/2026: 4 to 6 of 11 samples,
+  taken every 50 ms for 500 ms, came back small). Keep `.enter` off that block, because the entrance transform
+  becomes the reference of `fixed` for 0.45 s. Measure with Playwright the center (within 20 px) and the height over
+  those 500 ms, and prove the probe on two copies: one without the centering rule (637 px off center there) and one
+  with the hover on the image.
+- **Row of figures** (`figure` with a caption): in a grid of `repeat(3,auto)` columns, a line that spans the three
+  (`grid-column:1/-1`) widens the `auto` columns to the container, and a `figure` in a flex column stretches the
+  image box over its `aspect-ratio`. In the same deck the three images came out 9 to 20 % wider and touching, with
+  `build.py` and `check-fit.mjs` green; only the shot showed it. Put the full-width line after the grid, give the
+  figure `align-items:flex-start`, and give the caption `contain:inline-size;align-self:stretch`, or it wraps one
+  word per line.
 - **Hover tip** (`data-tip`, `data-g` + `#glossario`): text in another language (titles, a poem, a colophon) and
   terms the audience may not know. The questions the presenter asks after reading the deck are the list: in the
   Farel deck (19/10/2026) they became the glossary entries, and the slides stayed as clean as before. Write each

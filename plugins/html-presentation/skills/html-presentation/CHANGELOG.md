@@ -2,6 +2,17 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-11-26 — the same TCC deck, a slide with three photos of the equipment (v1.7.3)
+- The author asked for real photos of the equipment, from the maker's public brochure, and for each photo to grow and
+  go to the center of the screen under the mouse. The slide holds three figures in one row.
+- The first build stretched the three images 9 to 20 % (462, 800 and 402 px wide instead of 393, 732 and 334, measured
+  with Playwright on a copy with the old CSS) and left no gap between them. `build.py` and `check-fit.mjs` were
+  green; the shot showed it. A glossary line spanning the grid widened the `auto` columns, and the flex `figure`
+  stretched the image box over its `aspect-ratio`.
+- A project probe (Playwright, center within 20 px, sampled every 50 ms for 500 ms) went red on a copy without the
+  centering rule and on a copy with the `:hover` on the image (the photo blinked), and green on the deck.
+- Lesson added: the entries *Zoom to the center* and *Row of figures* in `references/layout-and-type.md`.
+
 ## 2026-11-22 — the same TCC deck, version 2 rebuilt beside version 1 (v1.7.2)
 - The author asked for two text changes in version 2 (slide 2, and a hover entry for "recall"). The build of
   `src/defesa-tcc-v2.html --out dist` overwrote `dist/roteiro-de-fala.md`, the tracked script of version 1, and left
