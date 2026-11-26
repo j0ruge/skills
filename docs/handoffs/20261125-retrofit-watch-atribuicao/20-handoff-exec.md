@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a21588-8810-76c3-926b-bf3726322212
-data: 2026-11-25 22:52
-gate: "env -u GIT_DIR -u GIT_WORK_TREE bash -c 'source .sdd/config.sh && eval \"$TEST_CMD\"' em eb44360 → rc 0. Loja: 154 testes, 3 pulados. Retrofit-watch: 75 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada. Checks de I1, F1 e R1 verdes."
+sessao: 01a21595-86a0-7932-b0ad-851bc66ca28c
+data: 2026-11-25 23:07
+gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' em 485e6c0 → rc 0. Loja: 154 testes, 3 pulados. Retrofit-watch: 78 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada. Checks de I1, F1, R1 e R2 verdes.'
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,18 +14,18 @@ gate: "env -u GIT_DIR -u GIT_WORK_TREE bash -c 'source .sdd/config.sh && eval \"
 
 ## TL;DR
 
-R1 fechou os quatro achados de atribuição da rodada r1, com testes de Stop e estado real em disco.
-A suíte passou com 75 testes do hook. I1 manteve `1 0 1 0 0 1` e F1 ficou em silêncio nas três variantes.
-A QA deve repetir R1, os controles de I1 e F1 e a suíte antes de devolver o patch à revisão.
+R2 preservou o vínculo da carga posterior quando as confirmações chegam fora de ordem.
+As seis ordens emitiram `graphify`. Após 10, 100 e 1.000 falhas, o estado reteve zero vínculos.
+Os quatro Checks e a suíte passaram. A QA deve repetir as jornadas e conferir os controles de atribuição.
 
 ## Estado do repo
 
 - **Branch:** `fix/retrofit-watch-atribuicao-mesma-mensagem`, em Git isolado pelo runner.
-- **Último commit do incremento:** `eb44360` — preservar apenas vínculos de atribuição comprovados.
+- **Último commit do incremento:** `485e6c0` — preservar chamadas pendentes e descartar vínculos falhos.
 - **Working tree:** limpo após o commit deste registro.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `eb44360` → rc 0. Loja: 154 testes, 3 pulados. Retrofit-watch: 75 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada.
-- **E2E:** células de I1, F1 e R1 no `checkpoint.md` em `eb44360` → saídas esperadas, incluindo `regressoes=4`.
-- **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_auto_docs.ReleaseTest.test_the_four_places_agree_at_0_4_0_or_later` em `eb44360` → 1 teste, rc 0.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `485e6c0` → rc 0. Loja: 154 testes, 3 pulados. Retrofit-watch: 78 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada.
+- **E2E:** células de I1, F1, R1 e R2 em `checkpoint.md` executadas em `485e6c0`. I1 retornou `1 0 1 0 0 1`, F1 ficou em silêncio nas três variantes, R1 terminou em `regressoes=4` e R2 deu `graphify` nas seis combinações e `falhas=estavel`.
+- **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_auto_docs.ReleaseTest.test_the_four_places_agree_at_0_4_0_or_later` em `485e6c0` → 1 teste, rc 0.
 
 ## O que foi feito
 
@@ -44,11 +44,17 @@ A QA deve repetir R1, os controles de I1 e F1 e a suíte antes de devolver o pat
 - `eb44360` — preserva o slash mais novo ao receber metadado externo atrasado e mantém o vínculo pendente quando uma tentativa posterior não resulta em carga reconhecida.
 - `eb44360` — adiciona quatro regressões. As quatro falharam em `1a07661` com os testes novos e sem a correção. Foram detectadas 18 degradações sob grupo de processos próprio, timeout de 20 s e memória virtual de 512 MiB. O arquivo original foi restaurado após cada degradação.
 
+### Retorno da revisão — rodada r2
+
+- `485e6c0` — ao confirmar uma carga, a limpeza retira os vínculos antigos e mantém os das mensagens posteriores. Metadado atrasado da monitorada antiga não reassume a atribuição.
+- `485e6c0` — resultado de erro retira só o vínculo da tentativa correspondente, inclusive quando chega em outro Stop sem carga reconhecida. A marca dos IDs consumidos continua protegida.
+- `485e6c0` — três testes de Stop novos e um controle ampliado. Antes da correção, dois subcasos pediram retro para `codereview`, e o estado cresceu 28.712 bytes entre 10 e 1.000 falhas. Após a correção, a sonda mediu zero vínculos e estados de 239, 240 e 241 bytes. Foram detectadas 13 degradações com grupo próprio, timeout de 20 s e 512 MiB de memória virtual. A variante equivalente de acesso direto não mudou nenhuma saída.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1, F1 e R1 com as sondas executáveis e os hashes das correções. |
+| `checkpoint.md` | I1, F1, R1 e R2 com as sondas executáveis e os hashes das correções. |
 | `checkpoint-notas.md` | Evidência de execução e isolamento do Git na suíte. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
@@ -56,13 +62,13 @@ A QA deve repetir R1, os controles de I1 e F1 e a suíte antes de devolver o pat
 
 ## Boot da próxima fase
 
-Leia o `checkpoint.md` e rode as três células de Check da raiz. R1 deve terminar em `regressoes=4`. Confira o silêncio sem novo crédito com estado legado encerrado e ID sem vínculo, o silêncio para ID consumido e reutilizado, o pedido de `graphify` com metadado externo intercalado e o pedido de `codereview` após a tentativa falha de outra skill.
+Leia o `checkpoint.md` e rode as quatro células de Check da raiz. Em R2, confira `graphify` nas três ordens contínuas e nas três retomadas. A sonda deve terminar em `falhas=estavel`. Para ver vínculos e bytes, acrescente `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py --medir` ao comando de R2.
 
-I1 deve imprimir `1 0 1 0 0 1` e F1 deve ficar silencioso com ID ligado, ausente e vazio. Rode `env -u GIT_DIR -u GIT_WORK_TREE bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'`. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcripts e estado próprios, sem iniciar o Claude Code. Registre a repetição em `30-handoff-qa.md` antes de devolver ao REVIEW.
+Confirme também `1 0 1 0 0 1` em I1, silêncio nas três variantes de F1 e `regressoes=4` em R1. Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'`. Use Python 3, Git e diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code. Registre a repetição em `30-handoff-qa.md`. A retomada da revisão segue a decisão do mantenedor registrada em `40-review-r2.md`.
 
 ## Pendências / Decisions for a Human
 
-- O merge cabe ao mantenedor. A execução não publicou a versão nem abriu PR.
+- O merge e a decisão de retomar a revisão após a parada da rodada r2 cabem ao mantenedor. A execução não publicou a versão nem abriu PR.
 
 ## Riscos e não-feitos
 
@@ -74,3 +80,7 @@ I1 deve imprimir `1 0 1 0 0 1` e F1 deve ficar silencioso com ID ligado, ausente
 - kit: `bin/sdd-codex:468` exporta `GIT_DIR` e `GIT_WORK_TREE` para o Git privado. Na primeira execução literal de `TEST_CMD`, fixtures Git da loja herdaram essas variáveis, geraram commits de teste no espelho privado e a suíte terminou com 2 falhas e 146 erros. O reflog e a árvore idêntica confirmaram a ponta anterior `7bd6eeb`, restaurada no espelho sem editar a árvore de trabalho. A repetição com as duas variáveis removidas passou antes e depois da correção. Isolar as variáveis no ambiente de testes que criam repositórios evita redirecionar `git -C`. Nenhuma mudança foi feita no kit.
 
 - Os dois achados de documentação da rodada r1 permanecem nos itens já abertos em `TODO.md`.
+
+- O achado r2 #3, reuso de ID entre mensagens, permanece no item já aberto em `TODO.md`.
+
+- kit: em R2, a execução literal voltou a herdar o Git privado. O reflog e a comparação da árvore confirmaram o início em `0aa7b40`. A ponta e a referência temporária criada pelas fixtures foram restauradas no espelho. A suíte passou com as duas variáveis removidas, antes e depois da correção.
