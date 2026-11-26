@@ -417,7 +417,8 @@ class State:
         if self.data is None:
             self.data = {"created": time.time()}
         for key, default in (("offset", 0), ("skills", {}), ("current", None), ("classified", {}),
-                             ("pending", []), ("done", [])):
+                             ("pending", []), ("done", []), ("current_origin", None),
+                             ("skill_message", None), ("skill_calls", {})):
             self.data.setdefault(key, default)
         return self
 
@@ -476,9 +477,16 @@ class Scanner:
         # trabalho nem atrito de skill nenhuma (spec 5.10, D13). Quem decide é o cmd_stop.
         self.silent = False
 
-    def _watch(self, info):
+    def _watch(self, info, origin=None):
         if info is None:
+            current = self.st["current_origin"]
+            # O caminho ainda pode excluir a própria chamada reconhecida pelo nome.
+            if origin and current and origin[0] == current[0] and origin[1] != current[1]:
+                return
+            if origin is None:
+                self.st["skill_calls"].clear()
             self.st["current"] = None
+            self.st["current_origin"] = None
             return
         key = info["key"]
         entry = self.st["skills"].setdefault(key, dict(info, reviews=0, work=0, friction=0))
@@ -489,6 +497,7 @@ class Scanner:
         if key in self.st["done"]:
             entry["reviews"] = MAX_REVIEWS
         self.st["current"] = key
+        self.st["current_origin"] = origin
 
     def _bump(self, field):
         if self.silent:
@@ -553,25 +562,53 @@ class Scanner:
         elif name in ("Edit", "Write"):
             self.kit_todo_written(tool_input.get("file_path"))
 
-    def invocation(self, name, args):
+    def invocation(self, name, args, origin=None):
         plugin = name.split(":", 1)[0]
         if plugin == "retrofit-skill":
             self._retrofit_ran(args)
-            self.st["current"] = None
+            self._watch(None)
         elif ":" not in name and kit_of(name, self.ctx):
             self.kit(kit_of(name, self.ctx))
         elif ":" in name:
             info = classify_plugin(plugin, self.ctx)
             if info is not None:
-                self._watch(info)
+                self._watch(info, origin)
             elif self.ctx.installed_marketplaces(plugin):
-                self.st["current"] = None
+                self._watch(None, origin)
 
-    def skill_path(self, path):
+    @staticmethod
+    def _transcript_id(value):
+        if isinstance(value, str) and value and not any(c.isspace() for c in value):
+            return value
+        return None
+
+    def _skill_origin(self, message_id, call_id):
+        message_id = self._transcript_id(message_id)
+        call_id = self._transcript_id(call_id)
+        calls = self.st["skill_calls"]
+        duplicate = call_id in calls
+        if message_id is None or message_id != self.st["skill_message"]:
+            calls.clear()
+            # A string vazia registra uma carga sem ID, distinta de um estado legado.
+            self.st["skill_message"] = message_id or ""
+        if call_id is None:
+            return None
+        calls[call_id] = False if duplicate else message_id
+        return [message_id, call_id] if message_id and not duplicate else None
+
+    def skill_path(self, path, source):
         cache = self.st["classified"]
         if path not in cache:
             cache[path] = classify_path(path, self.ctx)
-        self._watch(cache[path])
+        info = cache[path]
+        source = self._transcript_id(source)
+        # Um metadado de chamada descartada ou ambígua não pode reabrir a atribuição.
+        # Uma externa sem vínculo continua encerrando-a, inclusive no estado legado.
+        unlinked = False if source and self.st["skill_message"] is not None else None
+        message_id = self.st["skill_calls"].pop(source, unlinked)
+        if message_id is False and info is not None:
+            return
+        self._watch(info, [message_id, source] if message_id else None)
 
     def user_text(self, text):
         if text.startswith(INTERRUPT):
@@ -595,7 +632,8 @@ class Scanner:
                 self.last_tool = name
                 tool_input = block.get("input") if isinstance(block.get("input"), dict) else {}
                 if name == "Skill":
-                    self.invocation(str(tool_input.get("skill", "")), tool_input.get("args", ""))
+                    origin = self._skill_origin(msg.get("id"), block.get("id"))
+                    self.invocation(str(tool_input.get("skill", "")), tool_input.get("args", ""), origin)
                 elif name not in NON_WORK_TOOLS:
                     self.tool_use(name, tool_input)
                     self._bump("work")
@@ -605,7 +643,8 @@ class Scanner:
                     for block in content:
                         text = block.get("text", "") if isinstance(block, dict) else ""
                         if block.get("type") == "text" and text.startswith(BASE_PREFIX):
-                            self.skill_path(text[len(BASE_PREFIX):].split("\n", 1)[0].strip())
+                            self.skill_path(text[len(BASE_PREFIX):].split("\n", 1)[0].strip(),
+                                            d.get("sourceToolUseID"))
                 return
             if isinstance(content, str):
                 command = CMD_RE.search(content)

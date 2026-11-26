@@ -1,5 +1,14 @@
 # Changelog — retrofit-watch
 
+## [0.4.1] — 2026-11-25
+
+### Fixed
+
+- A carga de uma skill externa na mesma mensagem do assistente não interrompe a atribuição da
+  monitorada quando os identificadores confirmam o vínculo. A correlação atravessa chamadas de
+  Stop. Cargas externas de mensagem posterior ou sem vínculo continuam encerrando a atribuição
+  futura, sem apagar contadores de sessões iniciadas na 0.4.0. Corrige a issue #12.
+
 ## [0.4.0] — 2026-11-24
 
 ### Added

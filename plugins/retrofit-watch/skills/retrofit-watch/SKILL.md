@@ -5,7 +5,7 @@ license: MIT
 compatibility: Claude Code 2.1.163+ (Stop additionalContext); testado na 2.1.283 em 2026-09-30. Hook em Python 3, só biblioteca padrão, e git no PATH.
 metadata:
   author: JorUge
-  version: "0.4.0"
+  version: "0.4.1"
 ---
 
 # retrofit-watch
@@ -146,7 +146,9 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
 
 - **Skill usada dentro de subagente** não é vista: ela não aparece no transcript principal.
 - **A atribuição gruda na última skill carregada** até outra ser carregada, inclusive em outra
-  tarefa da mesma sessão. Medido em 2026-10-02 (376 sessões, 14 dias): 41% do atrito atribuído
+  tarefa da mesma sessão. Uma skill externa não encerra a atribuição da monitorada quando o hook
+  consegue ligar as duas cargas à mesma mensagem do assistente. Se a externa veio depois ou o vínculo
+  não pôde ser confirmado, ela encerra a atribuição para trabalho futuro. Medido em 2026-10-02 (376 sessões, 14 dias): 41% do atrito atribuído
   vem depois de um prompt novo seu. Encerrar no prompt novo foi refutado: a continuação chega como
   "sim", "roda", "pode empurrar", sem "?" antes. Por isso a retro filtra por evidência ligada à
   skill (seção 2 do `criteria.md`): atrito de outra tarefa é "sem lições novas". Fases headless

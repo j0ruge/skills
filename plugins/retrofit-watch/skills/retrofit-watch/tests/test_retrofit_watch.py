@@ -399,6 +399,118 @@ class StopTest(HookHarness, unittest.TestCase):
                    skill_via_tool("superpowers:brainstorming", self.w.other_skill), *[tool(error=True)] * 3)
         self.assertIsNone(self.run_hook())
 
+    def identified_loads(self, other_message="msg_1"):
+        loads = []
+        for name, path, message_id, call_id in (
+            ("codereview:coderabbit-pr", self.w.mkt_skill, "msg_1", "toolu_1"),
+            ("superpowers:brainstorming", self.w.other_skill, other_message, "toolu_2"),
+        ):
+            call, result, meta = skill_via_tool(name, path)
+            call["message"]["id"] = message_id
+            call["message"]["content"][0]["id"] = call_id
+            result["message"]["content"][0]["tool_use_id"] = call_id
+            meta["sourceToolUseID"] = call_id
+            loads.append((call, result, meta))
+        return loads
+
+    def assert_codereview_retro(self):
+        self.assertIn("/retrofit-skill:retrofit-skill codereview", self.context_of(self.run_hook()))
+
+    def test_third_party_skill_in_same_message_keeps_attribution(self):
+        self.write(*self.identified_loads(), tool(error=True))
+        self.assert_codereview_retro()
+
+    def test_third_party_skill_in_later_message_stops_attribution(self):
+        self.write(*self.identified_loads("msg_2"), tool(error=True))
+        self.assertIsNone(self.run_hook())
+
+    def test_third_party_skill_in_same_message_keeps_attribution_after_resume(self):
+        ours, other = self.identified_loads()
+        self.write(ours, other[:2])
+        self.assertIsNone(self.run_hook())
+        self.write(other[2:], tool(error=True))
+        self.assert_codereview_retro()
+
+    def test_third_party_skill_in_later_message_stops_attribution_after_resume(self):
+        ours, other = self.identified_loads("msg_2")
+        self.write(ours, other[:2])
+        self.assertIsNone(self.run_hook())
+        self.write(other[2:], tool(error=True))
+        self.assertIsNone(self.run_hook())
+
+    def test_same_message_with_two_skill_blocks_before_metadata(self):
+        (our_call, our_result, our_meta), (other_call, other_result, other_meta) = self.identified_loads()
+        # A monitorada só é reconhecida pelo caminho, depois de ambas as chamadas.
+        our_call["message"]["content"][0]["input"]["skill"] = "coderabbit-pr"
+        our_call["message"]["content"].extend(other_call["message"]["content"])
+        self.write([our_call, our_result, other_result, our_meta, other_meta], tool(error=True))
+        self.assert_codereview_retro()
+
+    def test_late_monitored_metadata_does_not_reopen_attribution(self):
+        ours, other = self.identified_loads("msg_2")
+        self.write(ours[:2], other)
+        self.assertIsNone(self.run_hook())
+        self.write(ours[2:], tool(error=True))
+        self.assertIsNone(self.run_hook())
+
+    def test_late_monitored_metadata_does_not_override_external_slash_skill(self):
+        ours, _ = self.identified_loads()
+        self.write(ours[:2], skill_typed("brainstorming", self.w.other_skill))
+        self.assertIsNone(self.run_hook())
+        self.write(ours[2:], tool(error=True))
+        self.assertIsNone(self.run_hook())
+
+    def test_missing_source_stops_attribution(self):
+        ours, other = self.identified_loads()
+        other[2].pop("sourceToolUseID")
+        self.write(ours, other, tool(error=True))
+        self.assertIsNone(self.run_hook())
+
+    def test_unknown_source_stops_attribution(self):
+        ours, other = self.identified_loads()
+        other[2]["sourceToolUseID"] = "toolu_unknown"
+        self.write(ours, other, tool(error=True))
+        self.assertIsNone(self.run_hook())
+
+    def test_shared_call_id_is_not_proof_of_same_message(self):
+        ours, other = self.identified_loads()
+        other[0]["message"]["content"][0]["id"] = "toolu_1"
+        other[1]["message"]["content"][0]["tool_use_id"] = "toolu_1"
+        other[2]["sourceToolUseID"] = "toolu_1"
+        self.write(ours[:1], other, tool(error=True))
+        self.assertIsNone(self.run_hook())
+
+    def test_same_message_skill_name_keeps_attribution_before_metadata(self):
+        ours, other = self.identified_loads()
+        self.write(ours, other[:2], tool(error=True))
+        self.assert_codereview_retro()
+
+    def test_path_can_exclude_the_same_call_recognized_by_plugin_name(self):
+        cfg = self.w.home / ".claude/retrofit-watch.json"
+        cfg.write_text(json.dumps({"exclude": ["coderabbit-pr"]}), encoding="utf-8")
+        ours, _ = self.identified_loads()
+        self.write(ours, tool(error=True))
+        self.assertIsNone(self.run_hook())
+
+    def test_legacy_state_resumes_at_offset_and_keeps_history(self):
+        ours, other = self.identified_loads()
+        self.write(ours, other[:2])
+        state_path = self.w.data / "sessions/s1.json"
+        state_path.parent.mkdir(parents=True)
+        info = rw.classify_plugin("codereview", self.w.ctx())
+        key = info["key"]
+        legacy = dict(offset=self.w.transcript.stat().st_size, current=key,
+                      skills={key: dict(info, reviews=1, work=3, friction=1)},
+                      classified={}, pending=[], done=["full:ticket"])
+        state_path.write_text(json.dumps(legacy), encoding="utf-8")
+        self.write(other[2:], tool(error=True))
+        self.assertIsNone(self.run_hook())
+        saved = json.loads(state_path.read_text(encoding="utf-8"))
+        self.assertEqual(saved["offset"], self.w.transcript.stat().st_size)
+        self.assertIsNone(saved["current"])
+        for field in ("skills", "pending", "done"):
+            self.assertEqual(saved[field], legacy[field])
+
     def test_quoted_base_directory_is_not_a_skill_load(self):
         self.write(quoted_base_dir(self.w.mkt_skill), *[tool(error=True)] * 3)
         self.assertIsNone(self.run_hook())
