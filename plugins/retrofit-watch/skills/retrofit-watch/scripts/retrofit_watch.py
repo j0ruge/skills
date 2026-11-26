@@ -479,11 +479,14 @@ class Scanner:
         self.silent = False
 
     def _watch(self, info, origin=None, *, preserve_slash=False):
-        # Só uma carga reconhecida aposenta vínculos de outras mensagens.
+        # Só uma carga reconhecida aposenta vínculos antigos. A ordem de inserção
+        # registra quando cada mensagem apareceu, mesmo se os metadados chegarem fora de ordem.
         if origin and origin[0] != self.st["skill_message"]:
+            calls = self.st["skill_calls"]
+            messages = list(dict.fromkeys(message for message in calls.values() if message))
+            live = set(messages[messages.index(origin[0]):])
             self.st["skill_message"] = origin[0]
-            self.st["skill_calls"] = {call: message for call, message in self.st["skill_calls"].items()
-                                      if message == origin[0]}
+            self.st["skill_calls"] = {call: message for call, message in calls.items() if message in live}
         if info is None:
             current = self.st["current_origin"]
             # O caminho ainda pode excluir a própria chamada reconhecida pelo nome.
@@ -681,6 +684,10 @@ class Scanner:
                     if not isinstance(block, dict):
                         continue
                     if block.get("type") == "tool_result" and block.get("is_error"):
+                        call_id = self._transcript_id(block.get("tool_use_id"))
+                        calls = self.st["skill_calls"]
+                        if calls.get(call_id) is not False:
+                            calls.pop(call_id, None)
                         self._bump("friction")
                     elif block.get("type") == "text":
                         self.user_text(block.get("text", ""))
@@ -924,7 +931,9 @@ def cmd_stop(payload, ctx):
             state.save()
             return None
         markers = MARKERS + tuple(kit.encode() for kit in ctx.kits)
-        if not st["skills"] and not any(marker in chunk for marker in markers):
+        # O erro pode chegar em outro Stop, sem o marcador da chamada no trecho novo.
+        if not st["skills"] and not (st["skill_calls"] and b'"is_error"' in chunk) and not any(
+                marker in chunk for marker in markers):
             state.save()
             return None
         scanner = Scanner(st, ctx)

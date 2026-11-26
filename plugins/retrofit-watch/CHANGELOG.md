@@ -11,6 +11,8 @@
 - Após a carga externa encerrar a atribuição, o metadado atrasado da monitorada não a reabre
   sem vínculo comprovado, inclusive na retomada da 0.4.0 ou com IDs repetidos. Metadado externo
   atrasado preserva o slash mais novo e tentativa sem carga não invalida outro vínculo.
+- Confirmações fora de ordem preservam as chamadas posteriores que ainda aguardam metadados.
+  Resultados de erro descartam o vínculo da tentativa correspondente, inclusive após a retomada.
 
 ## [0.4.0] — 2026-11-24
 

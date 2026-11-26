@@ -286,11 +286,11 @@ class HookHarness:
     """Escreve o transcript, roda o hook num subprocesso e lê o contexto devolvido. Quem herda
     cria `self.w` (um World) no próprio setUp."""
 
-    def write(self, *groups):
+    def write(self, *groups, compact=False):
         with open(self.w.transcript, "a", encoding="utf-8") as fh:
             for group in groups:
                 for entry in group:
-                    fh.write(json.dumps(entry) + "\n")
+                    fh.write(json.dumps(entry, separators=(",", ":") if compact else None) + "\n")
 
     def run_hook(self, sub="stop", last="Feito.", active=False, env=None, raw=None, mode="default",
                  script=SCRIPT):
@@ -557,6 +557,11 @@ class StopTest(HookHarness, unittest.TestCase):
     def test_reused_consumed_call_id_stops_attribution(self):
         self.write(*self.identified_loads())
         self.assertIsNone(self.run_hook())
+        # Um resultado atrasado não apaga a marca de consumo.
+        _, other = self.identified_loads()
+        other[1]["message"]["content"][0]["is_error"] = True
+        self.write(other[1:2])
+        self.assertIsNone(self.run_hook())
         state_path = self.w.data / "sessions/s1.json"
         saved = json.loads(state_path.read_text(encoding="utf-8"))
         self.assertEqual(saved["skill_message"], "msg_1")
@@ -601,6 +606,73 @@ class StopTest(HookHarness, unittest.TestCase):
         self.assertIsNone(self.run_hook())
         self.write(ours[2:], tool(error=True))
         self.assert_codereview_retro()
+
+    def test_newer_skill_metadata_wins_regardless_of_confirmation_order(self):
+        for resume in (False, True):
+            for order in ("sem", "antes", "depois"):
+                world = World()
+                self.addCleanup(world.cleanup)
+                with self.subTest(resume=resume, order=order), mock.patch.object(self, "w", world):
+                    older, newer = self.identified_loads("msg_2")
+                    # O ID é opaco, não ordenável.
+                    older[0]["message"]["id"] = "msg_z"
+                    newer[0]["message"]["id"] = "msg_a"
+                    older[0]["message"]["content"][0]["input"]["skill"] = "coderabbit-pr"
+                    newer[0]["message"]["content"][0]["input"]["skill"] = "graphify"
+                    newer[2]["message"]["content"][0]["text"] = f"{rw.BASE_PREFIX}{world.graphify}"
+                    self.write(older[:2], newer[:2])
+                    if order != "sem":
+                        self.write(older[2:] if order == "antes" else newer[2:])
+                    if resume:
+                        self.assertIsNone(self.run_hook())
+                    self.write(older[2:] if order == "depois" else newer[2:], tool(error=True))
+                    context = self.context_of(self.run_hook())
+                    self.assertIn("/retrofit-skill:retrofit-skill graphify", context)
+                    self.assertNotIn("/retrofit-skill:retrofit-skill codereview", context)
+
+    def test_new_skill_retires_older_consumed_and_unlinked_calls(self):
+        older, newer = self.identified_loads("msg_2")
+        newer[0]["message"]["content"][0]["input"]["skill"] = "graphify"
+        newer[2]["message"]["content"][0]["text"] = f"{rw.BASE_PREFIX}{self.w.graphify}"
+        call, result, meta = skill_via_tool("coderabbit-pr", self.w.mkt_skill)
+        call["message"]["id"] = "msg_1"
+        unlinked = skill_via_tool("nao-instalada", self.w.other_skill)
+        unlinked[0]["message"]["content"][0]["id"] = "toolu_no_message"
+        self.write(older[:2], newer[:2], [call, result, meta], unlinked[:1], newer[2:])
+        self.assertIsNone(self.run_hook())
+        saved = json.loads((self.w.data / "sessions/s1.json").read_bytes())
+        self.assertEqual(saved["skill_calls"], {"toolu_2": False})
+
+    def test_failed_skill_calls_do_not_accumulate_in_saved_state(self):
+        path = self.w.data / "sessions/s1.json"
+        sizes = []
+        for start, end in ((0, 10), (10, 100), (100, 1000)):
+            for index in range(start, end):
+                call, result, _ = skill_via_tool("nao-instalada", self.w.other_skill)
+                call_id = f"toolu_f{index:05}"
+                call["message"]["id"] = f"msg_{index:05}"
+                call["message"]["content"][0]["id"] = call_id
+                result["message"]["content"][0].update(
+                    tool_use_id=call_id, content="Unknown skill: nao-instalada", is_error=True)
+                self.write([call], compact=True)
+                if index == 0:
+                    self.assertIsNone(self.run_hook())
+                    self.assertIn(call_id, json.loads(path.read_bytes())["skill_calls"])
+                self.write([result])
+                if index == 0:
+                    _, malformed = tool(error=True)
+                    malformed["message"]["content"][0]["tool_use_id"] = []
+                    self.write([malformed])
+                    self.assertIsNone(self.run_hook())
+                    with self.subTest(tentativas=1):
+                        self.assertNotIn(call_id, json.loads(path.read_bytes())["skill_calls"])
+                        self.assertFalse((self.w.data / "errors.log").exists())
+            self.assertIsNone(self.run_hook())
+            state = path.read_bytes()
+            with self.subTest(tentativas=end):
+                self.assertEqual(json.loads(state)["skill_calls"], {})
+            sizes.append(len(state))
+        self.assertLessEqual(max(sizes) - min(sizes), 1024)
 
     def test_quoted_base_directory_is_not_a_skill_load(self):
         self.write(quoted_base_dir(self.w.mkt_skill), *[tool(error=True)] * 3)
