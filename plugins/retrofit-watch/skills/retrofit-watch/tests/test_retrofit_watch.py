@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tracemalloc
 import unittest
 from unittest import mock
 from pathlib import Path
@@ -560,6 +561,67 @@ class StopTest(HookHarness, unittest.TestCase):
                     self.assertIsNone(out)
                     self.assertIsNone(saved["current"])
 
+    def test_legacy_migration_preserves_split_typed_slash(self):
+        for scenario in ("matched", "unrelated", "invalid", "consumed", "cache_mismatch", "later_stop"):
+            with self.subTest(scenario=scenario), self.sub_world() as world:
+                ours, other = self.identified_loads("msg_2")
+                command = "outra-skill" if scenario == "unrelated" else "graphify"
+                direct = skill_typed(command, world.graphify)
+                self.write(ours, other, direct[:1], compact=True)
+                if scenario == "consumed":
+                    self.write(skill_typed("brainstorming", world.other_skill)[1:])
+                if scenario == "invalid":
+                    with world.transcript.open("ab") as fh:
+                        fh.write(b"null\n")
+                info = rw.classify_plugin("codereview", world.ctx())
+                credits = dict(info, reviews=1, work=0, friction=1)
+                state = dict(offset=world.transcript.stat().st_size, current=None,
+                             classified={str(world.mkt_skill): info, str(world.other_skill): None},
+                             skills={info["key"]: credits}, pending=[], done=[])
+                if scenario == "cache_mismatch":
+                    del state["classified"][str(world.mkt_skill)]
+                path = world.data / "sessions/s1.json"
+                path.parent.mkdir(parents=True)
+                path.write_text(json.dumps(state), encoding="utf-8")
+                if scenario == "later_stop":
+                    out, migrated = self.checked_stop()
+                    self.assertIsNone(out)
+                    self.assertEqual(migrated["pending_slash"], "graphify")
+                self.write(direct[1:], tool(error=True), compact=True)
+                out, saved = self.checked_stop()
+                self.assertEqual(saved["skills"][info["key"]], credits)
+                if scenario in ("matched", "later_stop"):
+                    self.assertIn("`/retrofit-skill:retrofit-skill graphify`", self.context_of(out))
+                    local = saved["skills"][saved["current"]]
+                    self.assertEqual((local["work"], local["friction"], local["reviews"]), (0, 0, 1))
+                else:
+                    self.assertIsNone(out)
+                    self.assertIsNone(saved["current"])
+                self.assertEqual(saved["pending_slash"], command if scenario == "unrelated" else None)
+
+    def test_legacy_replay_reads_prefix_with_bounded_memory(self):
+        row = json.dumps({"type": "system", "text": "x" * 4096}).encode() + b"\n"
+        with self.w.transcript.open("wb") as fh:
+            fh.write(b" \t\n")
+            for _ in range(2048):
+                fh.write(row)
+        offset = self.w.transcript.stat().st_size
+        path = self.w.data / "sessions/s1.json"
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps(dict(offset=offset, current=None, skills={})), encoding="utf-8")
+        payload = dict(session_id="s1", transcript_path=str(self.w.transcript))
+        with mock.patch.dict(os.environ, RETROFIT_WATCH="force"):
+            tracemalloc.start()
+            try:
+                self.assertIsNone(rw.cmd_stop(payload, self.w.ctx()))
+                _, peak = tracemalloc.get_traced_memory()
+            finally:
+                tracemalloc.stop()
+        saved = json.loads(path.read_bytes())
+        self.assertEqual(saved["offset"], offset)
+        self.assertEqual(saved["skill_calls"], {})
+        self.assertLess(peak, 2 * 1024 * 1024)
+
     def test_legacy_pending_call_order(self):
         cuts = {}
         for scenario in ("late", "new", "alone", "name_only", "fresh", "cache_only",
@@ -610,6 +672,8 @@ class StopTest(HookHarness, unittest.TestCase):
     def test_legacy_prefix_read_once_without_recounting(self):
         local = identified_load("codereview:coderabbit-pr", self.w.mkt_skill, "msg_local", "toolu_local")
         delayed = identified_load("graphify", self.w.graphify, "msg_delayed", "toolu_delayed")
+        with self.w.transcript.open("ab") as fh:
+            fh.write(b" \t\n")
         self.write(skill_typed("dev-script:dev-script"),
                    skill_typed("retrofit-skill:retrofit-skill", args="dev-script"),
                    local, tool(error=True), delayed[:2], compact=True)
@@ -634,13 +698,15 @@ class StopTest(HookHarness, unittest.TestCase):
             actual = open(path, mode)
             stream = mock.MagicMock(wraps=actual)
 
-            def track_read(*args):
+            def track_read(method, *args):
                 start = stream.tell()
-                value = actual.read(*args)
+                value = method(*args)
                 reads.append((start, len(value)))
                 return value
 
-            stream.read.side_effect = track_read
+            stream.read.side_effect = lambda *args: track_read(actual.read, *args)
+            stream.readline.side_effect = lambda *args: track_read(actual.readline, *args)
+            stream.fileno.side_effect = actual.fileno
             stream.__enter__.return_value = stream
             stream.__exit__.side_effect = actual.__exit__
             return stream
@@ -662,7 +728,12 @@ class StopTest(HookHarness, unittest.TestCase):
             self.assertEqual(saved["skill_call_history"], {"toolu_local": ["msg_local"]})
             self.write(delayed[2:], tool(error=True), compact=True)
             out = rw.cmd_stop(payload, self.w.ctx())
-            self.assertEqual([read for read in reads if read[0] < offset], [(0, offset)])
+            end = 0
+            for start, size in reads:
+                if start < offset:
+                    self.assertEqual(start, end)
+                    end += size
+            self.assertEqual(end, offset)
             reads.clear()
             rw.cmd_stop(dict(payload, session_id="new"), self.w.ctx())
             self.assertEqual(reads, [(0, self.w.transcript.stat().st_size)])
@@ -676,11 +747,17 @@ class StopTest(HookHarness, unittest.TestCase):
         ours, other = self.identified_loads("msg_2")
         local = identified_load("coderabbit-pr", self.w.mkt_skill, "msg_local", "toolu_local")
         self.write(ours, tool(error=True), other, local[:2], compact=True)
+        with self.w.transcript.open("ab") as fh:
+            fh.write(b"null\n")
         offset = self.w.transcript.stat().st_size + 30
         path = self.w.data / "sessions/s1.json"
         path.parent.mkdir(parents=True)
         path.write_text(json.dumps(dict(offset=offset, current=None, skills={},
                                         classified={str(self.w.other_skill): None})), encoding="utf-8")
+        payload = dict(session_id="s1", transcript_path=str(self.w.transcript))
+        with mock.patch.dict(os.environ, RETROFIT_WATCH="force"), mock.patch.object(rw.Scanner, "entry") as entry:
+            self.assertIsNone(rw.cmd_stop(payload, self.w.ctx()))
+            entry.assert_not_called()
         for _ in range(2):
             self.assertIsNone(self.run_hook())
             saved = json.loads(path.read_bytes())
@@ -694,6 +771,40 @@ class StopTest(HookHarness, unittest.TestCase):
         out, saved = self.checked_stop()
         self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
         self.assertNotIn("legacy_prefix_truncated", saved)
+
+    def test_legacy_prefix_read_stops_without_importing_partial_evidence(self):
+        for interruption in (b"{", OSError("leitura interrompida")):
+            with self.subTest(interruption=interruption), self.sub_world() as world:
+                local = identified_load("graphify", world.graphify, "msg_local", "toolu_local")
+                self.write(local[:2], compact=True)
+                offset = world.transcript.stat().st_size
+                path = world.data / "sessions/s1.json"
+                path.parent.mkdir(parents=True)
+                path.write_text(json.dumps(dict(offset=offset, current=None, skills={})), encoding="utf-8")
+                payload = dict(session_id="s1", transcript_path=str(world.transcript))
+                with world.transcript.open("rb") as fh:
+                    stream = mock.MagicMock()
+                    stream.__enter__.return_value = stream
+                    stream.fileno.return_value = fh.fileno()
+                    first = fh.readline()
+                    stream.readline.side_effect = [first, interruption]
+
+                    def interrupt_first_read(filename, mode):
+                        if filename == payload["transcript_path"]:
+                            rw.open.side_effect = open
+                            return stream
+                        return open(filename, mode)
+
+                    with mock.patch.dict(os.environ, RETROFIT_WATCH="force"), mock.patch.object(
+                            rw, "open", side_effect=interrupt_first_read, create=True):
+                        self.assertIsNone(rw.cmd_stop(payload, world.ctx()))
+                    self.assertEqual(stream.readline.call_args_list,
+                                     [mock.call(offset), mock.call(offset - len(first))])
+                saved = json.loads(path.read_bytes())
+                self.assertEqual(saved["offset"], offset)
+                self.assertEqual(saved["skill_calls"], {})
+                self.assertIsNone(saved["skill_message"])
+                self.assertEqual(saved.get("legacy_prefix_truncated", False), isinstance(interruption, bytes))
 
     def test_legacy_missing_prefix_uses_saved_classification(self):
         local = identified_load("coderabbit-pr", self.w.mkt_skill, "msg_local", "toolu_local")
@@ -984,6 +1095,38 @@ class StopTest(HookHarness, unittest.TestCase):
                         self.assertFalse((world.data / "errors.log").exists())
                     else:
                         self.assert_codereview_retro()
+
+    def test_failed_unowned_call_id_cannot_prove_same_message(self):
+        for resume in (False, True):
+            for reused in (False, True):
+                with self.subTest(resume=resume, reused=reused), self.sub_world() as world:
+                    ours, external = self.identified_loads()
+                    call_id = "toolu_2" if reused else "toolu_failed"
+                    failed = identified_load("nao-instalada", world.other_skill, "msg_1", call_id)
+                    del failed[0]["message"]["id"]
+                    failed[1]["message"]["content"][0]["is_error"] = True
+                    self.write(ours, failed[:2], compact=True)
+                    if resume:
+                        out, before = self.checked_stop(mode="plan")
+                        self.assertIsNone(out)
+                        self.assertNotIn(call_id, before["skill_calls"])
+                        self.assertEqual(before["skill_call_history"][call_id], [])
+                    self.write(external, tool(error=True), compact=True)
+                    out, saved = self.checked_stop()
+                    entry = saved["skills"]["full:codereview"]
+                    if reused:
+                        self.assertIsNone(out)
+                        self.assertIsNone(saved["current"])
+                        self.assertEqual((entry["work"], entry["friction"], entry["reviews"]), (0, 1, 0))
+                    else:
+                        self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                        self.assertEqual(entry["reviews"], 1)
+                        self.assertEqual(saved["skill_call_history"][call_id], [])
+                        self.write(identified_load("graphify", world.graphify, "msg_2", "toolu_new"))
+                        out, saved = self.checked_stop()
+                        self.assertIsNone(out)
+                        self.assertEqual(saved["skill_message"], "msg_2")
+                    self.assertNotIn(call_id, saved["skill_call_history"])
 
     def checked_stop(self, **kwargs):
         out = self.run_hook(**kwargs)

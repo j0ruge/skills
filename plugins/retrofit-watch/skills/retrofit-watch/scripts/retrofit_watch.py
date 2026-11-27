@@ -699,14 +699,13 @@ class Scanner:
         if source is None:
             self.st["pending_slash"] = None
         self._watch(info, [message_id, source] if message_id else None, preserve_slash=source is not None)
-        self._retire_skill_call(source, consumed=True)
+        self._retire_skill_call(source)
 
-    def _retire_skill_call(self, call_id, *, consumed=False):
+    def _retire_skill_call(self, call_id):
         calls = self.st["skill_calls"]
         if call_id in calls:
             message = calls.pop(call_id)
-            if message or consumed:
-                self.st["skill_call_history"][call_id] = [message] if message else []
+            self.st["skill_call_history"][call_id] = [message] if message else []
             self._prune_skill_correlation()
 
     def user_text(self, text):
@@ -778,37 +777,41 @@ class Scanner:
 
 
 def recover_legacy_correlation(path, st, ctx):
-    offset = st["offset"]
-    try:
-        with open(path, "rb") as fh:
-            prefix = fh.read(offset)
-    except OSError:
-        return
-    if len(prefix) < offset:
-        st["legacy_prefix_truncated"] = True
-        return
-    if not prefix.endswith(b"\n"):
-        return
+    remaining = st["offset"]
     replay = dict(st, skills={}, current=None, classified=st["classified"].copy(), done=[],
                   skill_calls={}, skill_message_order=[], skill_call_history={}, attribution_closed=False)
     scanner = Scanner(replay, ctx)
     scanner.silent = True
-    for line in prefix.split(b"\n"):
-        if not line.strip():
-            continue
-        try:
-            entry = json.loads(line)
-        except ValueError:
-            return
-        if not isinstance(entry, dict):
-            return
-        scanner.entry(entry)
+    try:
+        with open(path, "rb") as fh:
+            if os.fstat(fh.fileno()).st_size < remaining:
+                st["legacy_prefix_truncated"] = True
+                return
+            while remaining:
+                line = fh.readline(remaining)
+                if not line.endswith(b"\n"):
+                    if len(line) < remaining:
+                        st["legacy_prefix_truncated"] = True
+                    return
+                remaining -= len(line)
+                if not line.strip():
+                    continue
+                try:
+                    entry = json.loads(line)
+                except ValueError:
+                    return
+                if not isinstance(entry, dict):
+                    return
+                scanner.entry(entry)
+    except OSError:
+        return
     # A leitura serve para recuperar vínculos, sem substituir a atribuição gravada pela 0.4.0.
     if replay["current"] != st["current"] or (st["attribution_closed"] and not replay["attribution_closed"]):
         return
     # O cache legado confirma se a origem reconstruída corresponde à carga que foi observada.
     if replay["classified"] == st["classified"]:
         st["current_origin"] = replay["current_origin"]
+        st["pending_slash"] = replay["pending_slash"]
     for key in ("attribution_closed", "skill_message", "skill_calls", "skill_message_order",
                 "skill_call_history", "skill_correlation_lost"):
         st[key] = replay[key]

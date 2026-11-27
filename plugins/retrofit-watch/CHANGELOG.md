@@ -13,6 +13,7 @@
   atrasado preserva o slash mais novo e tentativa sem carga não invalida outro vínculo.
 - Confirmações fora de ordem preservam as chamadas posteriores que ainda aguardam metadados.
   Resultados de erro descartam o vínculo da tentativa correspondente, inclusive após a retomada.
+  Se a tentativa falha não tiver origem, a marca do ID permanece na janela de correlação.
 - A ordem de uma mensagem é mantida se perder o último vínculo enquanto uma mensagem posterior
   ainda aguarda confirmação. Reusar um ID falho, consumido ou ambíguo na janela retida não
   comprova a origem, mesmo antes de uma carga daquela mensagem ser reconhecida. Ao exceder
@@ -29,6 +30,8 @@
 - Na migração da 0.4.0, o primeiro Stop consulta uma vez o trecho até o offset salvo para
   recuperar a ordem de chamadas pendentes. Uma externa posterior encerra a atribuição até
   sem metadado de caminho. O trecho antigo não reconta trabalho nem gera pedidos de retro.
+  A leitura é feita linha a linha e preserva o slash digitado ainda pendente quando o
+  prefixo válido confirma o estado salvo.
 
 ## [0.4.0] — 2026-11-24
 

@@ -40,6 +40,9 @@ Aplicar a mesma decisão na classificação por nome e por caminho. Ao reconhece
 
 **Check executável.** Da raiz, executar a célula de I1 em `checkpoint.md`. Ela lê o bloco Python abaixo do plano materializado. `L1_PLAN` é opcional e permite a mesma leitura de um rascunho em memória no Linux. A ordem da saída é: mesma mensagem contínua, posterior contínua, mesma mensagem retomada, posterior retomada, estado antigo sem vínculo, monitorada sozinha. Esperado `1 0 1 0 0 1`. Antes da correção `0 0 0 0 0 1`.
 
+No quinto caso, a chamada externa não tem `message.id` válido. Seu `sourceToolUseID` aponta
+para a chamada, mas o prefixo não comprova que ela veio da mesma mensagem.
+
 ~~~python
 import json
 import os
@@ -61,7 +64,7 @@ def measure(second_id=None, split=False, legacy=False):
     ctx._installed = {'codereview': {rw.MARKETPLACE}, 'superpowers': {'claude-plugins-official'}}
     rows = load_skill(ctx, 'codereview:coderabbit-pr', 'chewiesoft-marketplace/codereview/2.0.0/skills/coderabbit-pr', 'm1', 'u1')
     if second_id:
-        rows += load_skill(ctx, 'superpowers:brainstorming', 'claude-plugins-official/superpowers/6.4.1/skills/brainstorming', second_id, 'u2')
+        rows += load_skill(ctx, 'superpowers:brainstorming', 'claude-plugins-official/superpowers/6.4.1/skills/brainstorming', None if legacy else second_id, 'u2')
     rows += tool(error=True)
     chunks = (rows[:5], rows[5:]) if split else (rows,)
     snapshot = {}
