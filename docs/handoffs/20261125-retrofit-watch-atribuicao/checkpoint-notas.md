@@ -321,3 +321,4 @@
 - 2026-11-27 17:48 · `R10` · Red em `df6407a`: quatro achados reproduzidos. Os três testes escritos antes da correção deram quatro falhas e dois erros de marca ausente. A suíte anterior estava verde, com 154 testes da loja (3 pulados) e 107 do hook.
 - 2026-11-27 17:48 · `R10` · Green em `e65902c`: 12 Checks e TEST_CMD isolado verdes, com 154 testes da loja (3 pulados) e 111 do hook. A migração de 160 MiB concluiu sob 256 MiB. A sabotagem final detectou 32 de 33 variações, com uma equivalente.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 17:50 · written by the runner
+- 2026-11-27 17:58 · `R11` · A revisão r11 reuniu os achados 1–2. A primeira atribuição perdia a marca de ID falho sem origem, e um registro de 96 MiB impedia a retomada sob 256 MiB. Os 12 Checks já fechados e o TEST_CMD passaram.
