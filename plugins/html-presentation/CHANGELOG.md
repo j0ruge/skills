@@ -3,11 +3,27 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.10.1] — 2026-11-27
+
+### A variante larga com condição, e testes do build
+
+- **A condição.** A armadilha *Empty stage* do `SKILL.md` mandava "add `.wide`" sem ressalva, e o registro da 1.10.0
+  diz que o efeito depende da fonte. Agora ela diz "Try `.wide`; the shot decides", com o mesmo tamanho, porque o
+  `SKILL.md` está a 2 caracteres do teto de 20 mil. A tabela de tipos do `layout-and-type.md` leva o detalhe: a fonte
+  decide quantas linhas o título ocupa, e a variante fica só quando a captura mostra menos linhas.
+- **A contagem.** O título do caso tem 83 caracteres, não "cerca de 84": a revisão da retro recontou, e o registro
+  da 1.10.0 foi corrigido nos dois CHANGELOGs.
+- **Os testes.** O plugin não tinha pasta de testes, e a porta da `retrofit-watch` registrou isso ao publicar a
+  1.10.0. `tests/test_build.py` roda o `build.py` sobre uma cópia do template, só com a biblioteca padrão: o template
+  passa, gera o roteiro e traz a variante larga; seis portões reprovam (orçamento de tempo, recurso externo, lâmina
+  sem nota, asset ausente, dica sem verbete, outro deck na mesma pasta); e um recurso externo dentro de comentário
+  passa. Cada portão foi provado por uma mutação no `build.py` ou no template, e as 8 mutações reprovaram a suíte.
+
 ## [1.10.0] — 2026-11-27
 
 ### Variante larga do título no template
 
-- **O caso.** Um título-afirmação novo, de cerca de 84 caracteres, quebrou em 3 linhas sob o
+- **O caso.** Um título-afirmação novo, de 83 caracteres, quebrou em 3 linhas sob o
   `.head .t-title{max-width:30ch}` do template. A captura mostrou o título em ~60 % da largura e a metade direita do
   palco vazia. O `check-fit` aprovou, porque mede caixa fora do lugar, e não linhas de título. Cada deck reinventava
   uma variante larga.

@@ -7,7 +7,7 @@ Read while composing slides. The template (`assets/deck-template.html`) has one 
 | Role | Size / weight | Notes |
 |---|---|---|
 | Cover title (`.t-hero`) | 132 / 700, tracking −0.035em | Two lines max |
-| Slide title (`.t-title`) | 76 / 700 | A full claim, not a label. `max-width:30ch`; `class="t-title wide"` (`none`) for one-liners and for a claim that wraps to 3 lines there |
+| Slide title (`.t-title`) | 76 / 700 | A full claim, not a label. `max-width:30ch`; `class="t-title wide"` (`none`) for one-liners and for a claim that wraps to 3 lines there; the font sets the line count, so keep `.wide` only when the shot shows fewer lines |
 | Lead (`.t-lead`) | 36 / 400 | One or two sentences that work without narration |
 | Body / rule text | 29–31 / 400 | Never below 25 for anything the back row must read |
 | Labels, chips, table headers, footer | ≥ 19 / 600, uppercase, 0.08em | 15–17 px disappears on a compressed video call |

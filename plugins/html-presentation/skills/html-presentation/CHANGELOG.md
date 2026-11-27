@@ -2,8 +2,18 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-11-27 — the `.wide` advice gets its condition, and the build gets tests (v1.10.1)
+- The 1.10.0 gotcha said "add `.wide`" with no condition, while its own record says the line count depends on the
+  font. The second review pass of that retro saw the gap and had no question that covered it. The gotcha now says
+  "Try `.wide`; the shot decides", at the same length (the `SKILL.md` sits 2 characters under the 20,000 cap), and
+  the type table in `layout-and-type.md` carries the detail.
+- The case title has 83 characters, not "about 84": the reviewer recounted it. Both changelogs now say 83.
+- The plugin had no tests folder, and the publish gate noted it. `tests/test_build.py` runs `build.py` on a copy of
+  the template with the standard library only. Each gate was proven by a mutation of `build.py` or the template:
+  all 8 mutations failed the suite.
+
 ## 2026-11-27 — a long claim title in three lines, half the stage blank (v1.10.0)
-- A slide got a new claim title of about 84 characters. Under the template's `.head .t-title{max-width:30ch}` the
+- A slide got a new claim title of 83 characters. Under the template's `.head .t-title{max-width:30ch}` the
   shot showed it in 3 lines, about 60 % of the width, with the right half of the stage empty. `check-fit` said
   "encaixe ok": it measures boxes out of place, not title lines.
 - The deck already had a local `.head .t-title.wide{max-width:none}` from earlier sessions; the template did not.
