@@ -191,3 +191,15 @@
 - 2026-11-27 14:24 · R8 na revisão r8, achados 1–2: o ID já pendente com dono perde a marca ao colidir com chamada sem origem; o legado de fe38d1f com carga externa e histórico vazio reabre o crédito. Sonda em 90837f5 com três falsos pedidos, nove Checks e TEST_CMD verdes. Platô B nos mesmos critérios estritos.
 - 2026-11-27 14:25 · R8 · Na colisão, a evidência sem origem pode vir da chamada pendente, da nova chamada ou da marca anterior. Preserve os donos ainda vivos e a marca sem origem conforme os controles R5 a R8. Para estado 0.4.0 encerrado com histórico vazio, prove no código legado qual classificação nula já encerrava a atribuição e mantenha o controle sem externa. Confira as âncoras do CHANGELOG após as mudanças de documentação da versão.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 14:26 · written by the runner
+- 2026-11-27 14:33 · `R8` · R8 sabotage: ignorar o fechamento explícito já salvo → test_legacy_external_without_history_ignores_delayed_metadata
+- 2026-11-27 14:33 · `R8` · R8 sabotage: inferir encerramento mesmo com skill ativa → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:33 · `R8` · R8 sabotage: ignorar o histórico ao migrar → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:33 · `R8` · R8 sabotage: repor a inferência legada sem o cache de caminhos → test_legacy_external_without_history_ignores_delayed_metadata
+- 2026-11-27 14:33 · `R8` · R8 sabotage: considerar a classificação não nula como encerramento → test_legacy_external_without_history_ignores_delayed_metadata
+- 2026-11-27 14:33 · `R8` · R8 sabotage: tratar kit sem dono como caminho de skill → test_legacy_external_without_history_ignores_delayed_metadata
+- 2026-11-27 14:33 · `R8` · R8 sabotage: não consultar as classificações persistidas → test_legacy_external_without_history_ignores_delayed_metadata
+- 2026-11-27 14:33 · `R8` · R8 sabotage: repor a junção que só considera a primeira origem → test_unowned_collision_after_owned_pending_survives_pruning
+- 2026-11-27 14:33 · `R8` · R8 sabotage: ignorar a pendência original sem origem → test_unowned_pending_collision_survives_pruning
+- 2026-11-27 14:33 · `R8` · R8 sabotage: ignorar a marca de consumo sem origem → test_unowned_collision_survives_confirmation_of_live_owner, test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 14:33 · `R8` · R8 sabotage: ignorar a marca mista já retida → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 14:33 · `R8` · Red em 2166607 com três falsos pedidos na sonda. Green em 8b861d2: dez Checks, sonda R8 e repetição R7 com a 0.4.0 real, onze degradações detectadas e TEST_CMD isolado com 154 testes da loja (3 pulados) e 100 do hook. Versão 0.4.1 confirmada. As duas âncoras do CHANGELOG já fora da tolerância continuam no item aberto do TODO, sem duplicar a origem.
