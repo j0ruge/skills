@@ -187,3 +187,4 @@
 - 2026-11-27 14:16 · `R7` · R7 sabotage: ignorar a marca de consumo sem origem ao combinar evidências → test_unowned_collision_survives_confirmation_of_live_owner, test_unowned_consumed_id_survives_intermediate_collision
 - 2026-11-27 14:16 · `R7` · R7 sabotage: ignorar a marca mista ao combinar evidências → test_unowned_collision_survives_confirmation_of_live_owner
 - 2026-11-27 14:16 · `R7` · Red em 9081588 com cinco divergências na sonda e nos dois testes. Green em 830629b: nove Checks, sonda com o estado gravado pela 0.4.0, onze degradações detectadas e TEST_CMD isolado com 154 testes da loja (3 pulados) e 98 do hook. Versão 0.4.1 confirmada.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 14:17 · written by the runner
