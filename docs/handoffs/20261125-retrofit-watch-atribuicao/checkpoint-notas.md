@@ -371,3 +371,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 19:20 · written by the runner
 - 2026-11-27 19:24 · r19 · Suíte e 14 Checks verdes em 739d485. Markdown binário corrigido em f41ad63. O bloco da r15 ainda mascara a rejeição do pré-scan, registrada no item existente do backlog. Documentation B, demais A, sem incremento pendente.
 - 2026-11-27 19:46 · Pós-r19 · Reproduzido rc 0 na receita completa com contagem inválida. O commit 26feade põe todas as etapas no mesmo subshell estrito. Bash e Zsh passaram no caso válido e retornaram rc 1 no negativo, sem executar os testes de release. Os controles também forçaram comparador externo, cor, ausência de prefixos e Markdown binário.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 19:46 · written by the runner
