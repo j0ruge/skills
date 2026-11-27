@@ -269,6 +269,12 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r14.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
+- [ ] **Marcador RESOLVED by fora da linha do corpo no backlog** — `TODO.md:268` (`RESOLVED by`) —
+  O marcador em linha própria consome uma das oito linhas do item.
+  Direção: colocar o marcador ao fim do corpo ou junto da fonte.
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r15.md` —
+  descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
+
 ## Decidido — não reabrir
 <!-- sdd:decided -->
 
