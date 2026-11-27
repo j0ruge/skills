@@ -537,6 +537,29 @@ class StopTest(HookHarness, unittest.TestCase):
         for field in ("skills", "pending", "done"):
             self.assertEqual(saved[field], legacy[field])
 
+    def test_legacy_migration_recovers_active_message_origin(self):
+        for message, keeps_attribution in (("msg_1", True), ("msg_2", False)):
+            with self.subTest(message=message), self.sub_world() as world:
+                ours, other = self.identified_loads(message)
+                self.write(ours, compact=True)
+                info = rw.classify_plugin("codereview", world.ctx())
+                state = dict(offset=world.transcript.stat().st_size, current=info["key"],
+                             classified={str(world.mkt_skill): info},
+                             skills={info["key"]: dict(info, reviews=0, work=0, friction=0)})
+                path = world.data / "sessions/s1.json"
+                path.parent.mkdir(parents=True)
+                path.write_text(json.dumps(state), encoding="utf-8")
+                self.write(other, tool(error=True), compact=True)
+
+                out, saved = self.checked_stop()
+
+                if keeps_attribution:
+                    self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                    self.assertEqual(saved["current_origin"], ["msg_1", "toolu_1"])
+                else:
+                    self.assertIsNone(out)
+                    self.assertIsNone(saved["current"])
+
     def test_legacy_pending_call_order(self):
         cuts = {}
         for scenario in ("late", "new", "alone", "name_only", "fresh", "cache_only",
