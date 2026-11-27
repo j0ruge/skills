@@ -276,9 +276,16 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 
 - [ ] **Pré-scan manual da revisão pode passar sem analisar linhas** —
   `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r15.md:117` (`scan_secrets.sh`) —
-  Com cor forçada ou sem prefixos no diff, a receita sai com rc 0 e zero linhas analisadas.
-  Direção: fixar o formato do diff e verificar a entrada da varredura. RESOLVED by 3b8ef98
+  Cor e prefixos foram cobertos por `3b8ef98`. Na r17, o comparador externo ainda deu rc 0 e zero linhas.
+  Direção: desabilitar comparação externa e conferir a contagem de entrada.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r16.md` —
+  descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
+
+- [ ] **Controle negativo da r16 perde a receita original** —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r16.md:152` (`recipe=`) —
+  A extração lê a r15 atual e o bloco termina antes de chamar o scanner.
+  Direção: extrair a receita do blob histórico. A r17 confirmou as quatro varreduras com essa origem.
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r17.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
 ## Decidido — não reabrir
