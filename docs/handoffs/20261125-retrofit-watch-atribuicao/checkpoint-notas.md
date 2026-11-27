@@ -80,3 +80,62 @@
 - 2026-11-26 00:04 · `R4` · Revisão r4, achados 1–2. Ordem após falha do último vínculo e reuso antes da ativação deram quatro divergências. R3 e os cinco Checks verdes. Platô nos três critérios estritos B.
 - 2026-11-26 00:32 · `R4` · Replanejamento em [plano-r4.md](plano-r4.md). Ordem e IDs falhos passam a ter retenção própria. Red reproduzido em 762f440 e controle de 1.000 falhas concorrentes medido. Execução aguarda aceite.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 10:31 · written by the runner
+- 2026-11-27 10:41 · `R4` · R4 sabotage: limite de mensagens ampliado → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: limite de IDs ampliado → test_correlation_overflow_persists_conservative_fallback, test_oversized_saved_correlation_is_disabled_before_metadata
+- 2026-11-27 10:41 · `R4` · R4 sabotage: estado novo não recebe padrão de precisão → test_intermediate_state_recovers_failed_and_unowned_ids, test_message_order_survives_last_failed_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: histórico é reiniciado em toda retomada → test_failed_call_before_activation_cannot_prove_same_message, test_intermediate_state_recovers_failed_and_unowned_ids
+- 2026-11-27 10:41 · `R4` · R4 sabotage: marcas antigas sem dono são descartadas → test_intermediate_state_recovers_failed_and_unowned_ids
+- 2026-11-27 10:41 · `R4` · R4 sabotage: marca antiga fica também na tabela de pendências → test_intermediate_state_recovers_failed_and_unowned_ids
+- 2026-11-27 10:41 · `R4` · R4 sabotage: mensagem ativa não é recuperada na migração → test_intermediate_state_recovers_failed_and_unowned_ids
+- 2026-11-27 10:41 · `R4` · R4 sabotage: IDs falhos antigos não são migrados → test_intermediate_state_recovers_failed_and_unowned_ids
+- 2026-11-27 10:41 · `R4` · R4 sabotage: marcas migradas não são instaladas → test_intermediate_state_recovers_failed_and_unowned_ids
+- 2026-11-27 10:41 · `R4` · R4 sabotage: não se confere saturação do estado retomado → test_oversized_saved_correlation_is_disabled_before_metadata
+- 2026-11-27 10:41 · `R4` · R4 sabotage: limpeza conserva pendências → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: limpeza conserva posições → test_correlation_overflow_persists_conservative_fallback, test_failed_ids_retire_with_their_active_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: limpeza conserva histórico → test_correlation_overflow_persists_conservative_fallback, test_failed_ids_retire_with_their_active_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: falhas sem avanço são tratadas como confirmação → test_failed_call_before_activation_cannot_prove_same_message, test_message_order_survives_last_failed_call, test_distinct_failed_messages_do_not_accumulate_behind_pending_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: confirmação não aposenta posições anteriores → test_ambiguous_id_survives_retirement_of_one_owner, test_message_order_survives_last_failed_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: mensagem confirmada não se torna ativa → test_reused_consumed_call_id_stops_attribution
+- 2026-11-27 10:41 · `R4` · R4 sabotage: perder vínculo apaga a posição no meio da janela → test_message_order_survives_last_failed_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: não há descarte no fim da janela → test_distinct_failed_messages_do_not_accumulate_behind_pending_call, test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-27 10:41 · `R4` · R4 sabotage: posição da carga ativa sem pendências é descartada → test_reused_consumed_call_id_stops_attribution, test_failed_call_before_activation_cannot_prove_same_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: posição da pendência posterior é descartada → test_message_order_survives_last_failed_call, test_distinct_failed_messages_do_not_accumulate_behind_pending_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: avanço deixa pendentes os vínculos anteriores → test_new_skill_retires_older_consumed_and_unlinked_calls, test_newer_skill_metadata_wins_regardless_of_confirmation_order, test_message_order_survives_last_failed_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: histórico preserva proprietários aposentados → test_ambiguous_id_survives_retirement_of_one_owner, test_failed_ids_retire_with_their_active_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: histórico sem dono cai mesmo sem avanço → test_consumed_unlinked_call_keeps_id_without_inventing_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: a lista de donos retidos não é atualizada → test_ambiguous_id_survives_retirement_of_one_owner
+- 2026-11-27 10:41 · `R4` · R4 sabotage: histórico de mensagens aposentadas nunca é descartado → test_distinct_failed_messages_do_not_accumulate_behind_pending_call, test_failed_skill_calls_do_not_accumulate_in_saved_state, test_failed_ids_retire_with_their_active_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: saturação por mensagens é ignorada → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: saturação por IDs ignora pendências → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: saturação por IDs ignora histórico → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: o teto é negado antes de ser excedido → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: saturação não limpa a janela → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: saturação preserva a origem anterior → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: saturação não persiste a perda de precisão → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: uma carga confirmada não aciona o descarte → test_message_order_survives_last_failed_call, test_reused_consumed_call_id_stops_attribution
+- 2026-11-27 10:41 · `R4` · R4 sabotage: encerramento sem origem não limpa a janela → test_failed_ids_retire_with_their_active_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: chamadas voltam a criar vínculos depois de saturar → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: ID ausente é inserido como vínculo → test_invalid_call_id_cannot_establish_message_position
+- 2026-11-27 10:41 · `R4` · R4 sabotage: a posição de uma mensagem já vista é duplicada → test_message_order_survives_last_failed_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: uma chamada sem mensagem ganha posição → test_consumed_unlinked_call_keeps_id_without_inventing_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: ignora duplicidade no mapa de pendências → test_duplicate_pending_id_does_not_select_either_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: ignora duplicidade no histórico → test_failed_call_before_activation_cannot_prove_same_message, test_reused_consumed_call_id_stops_attribution, test_intermediate_state_recovers_failed_and_unowned_ids
+- 2026-11-27 10:41 · `R4` · R4 sabotage: duplica e preserva a pendência anterior → test_duplicate_pending_id_does_not_select_either_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: o segundo dono do ID duplicado não é registrado → test_ambiguous_id_survives_retirement_of_one_owner
+- 2026-11-27 10:41 · `R4` · R4 sabotage: o primeiro dono do ID duplicado não é registrado → test_duplicate_pending_id_does_not_select_either_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: duplicidade não deixa marca → test_ambiguous_id_survives_retirement_of_one_owner
+- 2026-11-27 10:41 · `R4` · R4 sabotage: duplicidade não aciona descarte → test_ambiguous_calls_without_pending_peer_are_pruned
+- 2026-11-27 10:41 · `R4` · R4 sabotage: duplicidade ainda prova origem pelo nome → test_failed_call_id_cannot_prove_same_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: chamada nova não registra vínculo → test_message_order_survives_last_failed_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: carga sem mensagem inventa origem pelo nome → test_consumed_unlinked_call_keeps_id_without_inventing_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: metadado sem ID ainda tem crédito após saturação → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: carga por caminho ignora a decisão conservadora → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: confirmação não consome o vínculo → test_reused_consumed_call_id_stops_attribution, test_consumed_unlinked_call_keeps_id_without_inventing_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: consumo sem origem não conserva marca → test_consumed_unlinked_call_keeps_id_without_inventing_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: retirada não conserva o dono do ID → test_reused_consumed_call_id_stops_attribution, test_failed_call_before_activation_cannot_prove_same_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: retirada deixa o vínculo disponível → test_reused_consumed_call_id_stops_attribution, test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-27 10:41 · `R4` · R4 sabotage: retirada não aciona descarte → test_distinct_failed_messages_do_not_accumulate_behind_pending_call, test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-27 10:41 · `R4` · R4 sabotage: cargas novas não acionam verificação de tamanho → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: resultado de erro não retira vínculo → test_distinct_failed_messages_do_not_accumulate_behind_pending_call, test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-27 10:41 · `R4` · R4 sabotage: erro atrasado apaga a marca de consumo → test_reused_consumed_call_id_stops_attribution
+- 2026-11-27 10:41 · `R4` · Red em b3e9117: quatro divergências na sonda e oito subcasos em Stop. Green em 893c9c6: seis Checks, 58 degradações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 94 do hook, release 0.4.1. Provas nativas impedidas pelo namespace Bubblewrap.
