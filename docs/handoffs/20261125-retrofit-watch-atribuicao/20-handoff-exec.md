@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a21ece-ea91-77e2-a81a-b8ff93e29623
-data: 2026-11-27 18:05
-gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' em fb5e489 → rc 0. Loja com 154 testes (3 pulados). Hook com 113 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada. Os 13 Checks de checkpoint.md passaram.'
+sessao: 01a21edd-09d0-7ba0-bf86-42c33cb70546
+data: 2026-11-27 18:20
+gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' em d77e6a1 → rc 0. Loja com 154 testes (3 pulados). Hook com 114 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada. Os 14 Checks de checkpoint.md passaram.'
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,18 +14,18 @@ gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''sourc
 
 ## TL;DR
 
-R11 preserva a marca de ID falho sem origem na primeira confirmação.
-Na migração da 0.4.0, um registro acima de 2 MiB invalida só a reconstrução. O trecho novo segue a partir do estado salvo.
-As duas regressões duráveis, os 13 Checks e o TEST_CMD passaram.
-A QA deve começar por R11, sob teto de 256 MiB, e repetir os controles de R10.
+R12 impede que metadado atrasado sem vínculo reabra a atribuição quando a migração da 0.4.0 não comprova o prefixo.
+O offset avança e a proteção é salva mesmo em um Stop sem trabalho. Carga nova e slash explícito continuam funcionando.
+A regressão durável, os 14 Checks e o TEST_CMD passaram.
+A QA deve começar pelo Check de R12 e repetir os controles de I1, F1 e R9–R11.
 
 ## Estado do repo
 
 - **Branch:** `fix/retrofit-watch-atribuicao-mesma-mensagem`, em Git isolado pelo runner.
-- **Último commit do incremento:** `fb5e489` — preservar a marca sem origem e retomar após registro legado grande.
+- **Último commit do incremento:** `d77e6a1` — manter a atribuição encerrada quando o prefixo legado não pôde ser comprovado.
 - **Working tree:** limpo após o commit deste registro.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `fb5e489` → rc 0. Loja com 154 testes (3 pulados). Hook com 113 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada.
-- **E2E:** os 13 Checks de `checkpoint.md` passaram em `fb5e489`, incluindo F1 e as trocas de versão em R9–R11.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `d77e6a1` → rc 0. Loja com 154 testes (3 pulados). Hook com 114 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada.
+- **E2E:** os 14 Checks de `checkpoint.md` passaram em `d77e6a1`, incluindo as jornadas com a 0.4.0 real.
 - **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_auto_docs.ReleaseTest.test_the_four_places_agree_at_0_4_0_or_later` em `8b861d2` → 1 teste, rc 0.
 
 ## O que foi feito
@@ -177,21 +177,43 @@ A QA deve começar por R11, sob teto de 256 MiB, e repetir os controles de R10.
   antes e depois, com grupos de processos próprios, teto de 12 s e 512 MiB de memória
   virtual. As notas registram o sensor de cada variação.
 
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `fb5e489` → rc 0. Loja com 154 testes (3 pulados). Hook com 113 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada.
+- **E2E:** os 13 Checks de `checkpoint.md` passaram em `fb5e489`, incluindo F1 e as trocas de versão em R9–R11.
+
+### Retorno da revisão — rodada r12
+
+- `d77e6a1` — quando não há atribuição ativa, a migração parte do encerramento conservador.
+  Só uma reconstrução completa e compatível pode substituir esse estado. A proteção não
+  importa vínculos parciais e persiste mesmo se o primeiro Stop não tiver trabalho elegível.
+- Red em `4837f6e`: a sonda com `--expect` retornou rc 1 com
+  `at_limit=silêncio above_delayed=graphify above_delayed_resumed=graphify above_fresh=graphify above_slash=graphify`.
+  A regressão falhou em `delayed` e `resumed`. Os controles passaram.
+- Green em `d77e6a1`: a célula R12 retornou
+  `at_limit=silêncio above_delayed=silêncio above_delayed_resumed=silêncio above_fresh=graphify above_slash=graphify regressao=1`.
+  O offset chegou ao fim em todos os cenários. A regressão também confirma que a leitura
+  completa sem externa ainda autoriza a carga pendente e que uma atribuição ativa é preservada.
+- Cinco mutações detectadas, com controles verdes antes e depois. Cada execução usou grupo
+  próprio de processos, timeout de 20 s e teto de 256 MiB de memória virtual.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1, F1 e R1–R11 com as sondas executáveis e os hashes das correções. |
-| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R11. |
+| `checkpoint.md` | I1, F1 e R1–R12 com as sondas executáveis e os hashes das correções. |
+| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R12. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
 | `TODO.md` | Issue #12 e ordem legada marcadas `RESOLVED by 682cd3d` e `RESOLVED by 8fa5c7d` até o merge. |
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as 13 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as 14 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
-- Comece por R11. A célula em `checkpoint.md` executa a sonda de `40-review-r11.md`
+- Comece por R12. A célula extrai a sonda de `40-review-r12.md`, roda a migração sob
+  256 MiB e exige silêncio no limite e acima dele, inclusive após um Stop sem trabalho.
+  Exija `graphify` para carga nova e slash explícito, avanço de offset e `regressao=1`.
+
+- Repita R11. A célula em `checkpoint.md` executa a sonda de `40-review-r11.md`
   e as duas regressões duráveis. Exija `marca_novo=1,1`, `marca_reuso=1,1`, silêncio
   no reuso e `codereview` para ID novo nos dois modos. Sob teto de 256 MiB, os quatro
   subprocessos das duas versões devem pedir `graphify` e avançar o offset, tanto no
@@ -248,7 +270,8 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 - A consulta ao trecho já consumido só vale na migração da 0.4.0. Se o trecho não
   estiver utilizável ou contradisser a atribuição gravada, prevalece a evidência persistida.
   O limite de 2 MiB por registro vale para a reconstrução do prefixo, não para um delta
-  novo. Dados de correlação disponíveis só no prefixo são descartados se ele exceder o limite.
+  novo. Sem atribuição ativa, uma reconstrução não comprovada deixa a sessão em silêncio
+  para metadado atrasado sem vínculo, até uma carga confirmada no trecho novo.
 - Modo autônomo, fila e distribuição Codex ficaram fora do patch.
 
 - A medida de crescimento cobre tentativas em mensagens distintas. IDs de mensagens já aposentadas não integram a janela de correlação. Ampliar o histórico continua fora do R4.

@@ -346,3 +346,10 @@
 - 2026-11-27 18:13 · REVIEW r12 · `R12` · Achado 1: acima de 2 MiB, a migração aceita metadado atrasado após externa legada e pede retro indevida. A base ficou em silêncio sob o mesmo teto. Suíte e 13 Checks fechados passaram.\n
 - 2026-11-27 18:14 · R12 · Se a reconstrução não puder comprovar o prefixo, uma sessão legada sem atribuição ativa começa em fallback conservador persistido. Metadado atrasado sem vínculo não confirma carga; falha de leitura não justifica importar estado parcial nem bloquear vínculos novos e slash explícito no delta. Preserve o fluxo quando a leitura completa comprova a ausência de externa. Cubra o limite exato, limite mais um byte e retomada em Stop posterior.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 18:15 · written by the runner
+- 2026-11-27 18:20 · `R12` · Red em 4837f6e. A sonda sob 256 MiB pediu graphify com metadado atrasado acima do limite, com e sem Stop intermediário. A regressão falhou em delayed e resumed.
+- 2026-11-27 18:20 · `R12` · R12 sabotage 1: ignorar encerramento já persistido → rc 1, test_legacy_pending_call_order (cache_only)
+- 2026-11-27 18:20 · `R12` · R12 sabotage 2: remover fallback conservador → rc 1, test_legacy_oversized_replay_does_not_reopen_from_delayed_metadata (delayed e resumed)
+- 2026-11-27 18:20 · `R12` · R12 sabotage 3: encerrar também a atribuição ativa → rc 1, test_legacy_oversized_replay_does_not_reopen_from_delayed_metadata (active)
+- 2026-11-27 18:20 · `R12` · R12 sabotage 4: remover a proteção do encerramento persistido → rc 1, test_legacy_pending_call_order (cache_only)
+- 2026-11-27 18:20 · `R12` · R12 sabotage 5: restaurar a condição anterior → rc 1, test_legacy_oversized_replay_does_not_reopen_from_delayed_metadata (no_external) e test_legacy_pending_call_order (alone)
+- 2026-11-27 18:20 · `R12` · Green em d77e6a1. Os 14 Checks passaram com a saída esperada. TEST_CMD isolado passou com 154 testes da loja (3 pulados) e 114 do hook. Os controles de sabotagem passaram antes e depois sob grupo próprio, 20 s e 256 MiB.
