@@ -50,14 +50,44 @@ on the same `DESIGN.md` as a deck (22/11/2026), the brand magenta `#e60073` meas
   and scaled by 0.665); a 560 px crop of the controls the slide pointed at, shown at 760 px, brought them to 20 to
   24 px. Crop with a script holding a table of boxes over the original capture, so a recapture is cropped the same
   way, and put the numbered pins on the crop's edges, as for mockups.
-- **Zoom on hover** (`class="zoom"` on an `<img>`): a real screen or a photo that the room cannot read at slide
-  size grows while the mouse is over it, and the rest of the slide dims. Set the scale in `--zoom` (default 1.5) and
-  the fixed point in `--zoom-origin` (default `left center`). Measure the enlarged box with Playwright
-  (`getBoundingClientRect` after `mouse.move`): it must stay inside the stage and above the footer. In a TCC defence
-  deck (21/11/2026) an 895 × 560 image at 1.7 went 41 px into the footer, and 1.55 stopped 1 px above it.
-  `check-fit.mjs` and `shoot.sh` see only the resting state, so they pass either way. The PDF shows the small image:
-  what the slide needs must be readable without the zoom. `build.py` inlines the image into `dist/` (HTML and PDF);
-  an image kept out of the repository must have its `dist/` files ignored too, or it returns through them.
+- **Zoom on click** (`<div class="zoom" tabindex="0" style="--ar:W/H"><img …></div>`; the block gives the height,
+  as in `.zoom-row .zoom{height:470px}`): a real screen or a photo that the room cannot read at slide size. A click
+  on the frame (cursor `zoom-in`) opens it: the engine adds `.on`, and the photo travels by `transform` from its
+  frame to the stage center, `ALT` = 1000 px tall, while the rest of the slide dims. Then a cover
+  (`.zoom.on::after`, the whole stage, cursor `zoom-out`) takes every click, and a click only closes the photo.
+  Tab opens it too (`:focus-visible`). A click on the frame, on the gaps of a row (`.zoom-row`) or on a caption
+  (`figure:has(.zoom)`) never changes the slide, and a slide change closes the photo.
+  - Why a click and not the mouse (TCC defence deck, 26/11/2026). The first version opened under the mouse, and
+    the author rejected it after one try. The photo opened while the mouse crossed it, the open photo swapped for
+    the one hidden under it, and a click beside it changed the slide. A usability QA then found two more defects.
+    The photo closed when the mouse passed its edge for ~150 ms, and the return landed on the thumbnail under it,
+    which opened. The ease `cubic-bezier(.16,1,.3,1)` put half of a 637 px travel in ~36 ms, so it still looked
+    like a jump. An intent delay, a margin and a tremor tolerance fixed the QA's cases. Even so, the author kept
+    only the click ("total control"). Use `cubic-bezier(.4,0,.2,1)`, .42 s out and .3 s back. The same deck
+    moved its single RADAR screen from a hover scale in place to this zoom.
+  - Keep the cover. Without it, the `mousedown` on another frame moves the focus there, the Tab rule closes the
+    open photo, and the click opens the other one: a swap where the presenter wanted a close.
+  - The click drops the frame's focus (`blur()`). Without it, the next key turns `:focus-visible` on and opens the
+    photo.
+  - Keep `.enter` off the block that holds the frame. During the 0.45 s entrance, its transform becomes the
+    reference of the cover's `fixed`, and the cover covers only that block.
+  - At 1000 px tall, any image up to 1.92:1 fits the stage. A wider one passes 1920 px: lower `ALT` for it and
+    measure the open box with Playwright.
+  - A probe that measured the center (within 20 px) and the height every 50 ms passed the version the author
+    rejected. Let the presenter try every interaction before calling it done. Then prove each mechanism with a
+    sabotaged copy: the TCC deck has 14 copies, from a cover with `content:none` to a block with `.enter`.
+  - `check-fit.mjs` and `shoot.sh` see only the resting state. The PDF shows the small image: what the slide needs
+    must be readable without the zoom. `build.py` inlines the image into `dist/` (HTML and PDF); an image kept out
+    of the repository must have its `dist/` files ignored too, or it returns through them.
+  - Decks built before 1.8.0 have `<img class="zoom">` with `:hover`, a scale in place. To move one to the click,
+    wrap the image in the frame, and port the engine's "Fotos com zoom" block, the `fecharZoom()` in `show()` and
+    the guard at the top of the `#viewport` click. `check-presenter.mjs` checks only the `div.zoom` frame.
+- **Row of figures** (`figure` with a caption, in a `.zoom-row` grid when the photos zoom): in a grid of
+  `repeat(3,auto)` columns, a line that spans the three (`grid-column:1/-1`) widens the `auto` columns to the
+  container, and a `figure` in a flex column stretches the image box over its `aspect-ratio`. In the same deck the
+  three images came out 9 to 20 % wider and touching, with `build.py` and `check-fit.mjs` green; only the shot
+  showed it. Put the full-width line after the grid, give the figure `align-items:flex-start`, and give the caption
+  `contain:inline-size;align-self:stretch`, or it wraps one word per line.
 - **Hover tip** (`data-tip`, `data-g` + `#glossario`): text in another language (titles, a poem, a colophon) and
   terms the audience may not know. The questions the presenter asks after reading the deck are the list: in the
   Farel deck (19/10/2026) they became the glossary entries, and the slides stayed as clean as before. Write each

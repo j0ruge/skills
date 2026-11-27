@@ -3,6 +3,72 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.9.0] — 2026-11-26
+
+### O `check-fit` mede o número de página do PDF
+
+- **O caso.** No deck da defesa de TCC, a capa ganhou um quarto metadado, a banca examinadora, e a linha de crédito
+  desceu para uma segunda linha, alinhada à direita. Na impressão, o `.slide::after` põe o número "01 / 19" em
+  `right:128px; bottom:52px`, no mesmo canto. A captura, o `check-fit` nos quatro tamanhos e o `check-presenter`
+  ficaram verdes. Só a página 1 do PDF, aberta a olho, mostrou o número sobre o crédito.
+- **A passada nova.** Depois das quatro medidas de tela, o `check-fit.mjs` mede uma vez em `print`, a 1920×1080. O
+  pseudo-elemento não tem caixa própria: uma sonda copia o estilo calculado do `::after` e o texto dele, e um `Range`
+  mede os glifos. Assim o número desenhado sobre a lâmina inteira (`inset:0`, alinhado embaixo à direita) também
+  mede certo. Só texto conta: foto ou fundo sob o número é escolha de desenho, e texto sob ele é defeito. A lâmina
+  com texto sob o número reprova (saída 1). Um deck sem número na impressão aparece na saída como "nenhum número de
+  página na impressão" e não reprova.
+- **A prova.** O deck da defesa ficou verde, com o número medido nas 19 lâminas. Uma cópia com o crédito à direita
+  reprovou a lâmina 1 (`div.credit`). Uma cópia com `inset:0` no número da capa deu o mesmo par, verde e vermelho.
+  Uma cópia sem a regra do `::after` mediu 0 lâminas e disse isso, sem "livre". O template da skill passou, com o
+  número medido nas 8 lâminas.
+- O `SKILL.md` muda em duas frases, a do passo 6 e a da tabela de arquivos, porque está a 19,9 mil caracteres. O
+  caso fica no cabeçalho do script.
+
+## [1.8.0] — 2026-11-26
+
+### Zoom por clique no template; o `check-presenter` tira os testes de clique de cima das fotos
+
+- **Zoom por clique.** Na defesa de TCC, o autor experimentou a fileira de fotos da 1.7.3 e a reprovou: a foto abria
+  quando o mouse passava, a foto aberta trocava pela de baixo, e o clique ao lado dela trocava a lâmina. Um QA de
+  usabilidade, feito por um agente independente, achou mais dois defeitos. A foto fechava quando o mouse passava da
+  borda por ~150 ms, e a volta caía na miniatura de baixo, que abria. A curva `cubic-bezier(.16,1,.3,1)` punha metade
+  de um caminho de 637 px em ~36 ms. Espera, margem e tolerância ao tremor resolveram os casos do QA, mas o autor
+  ficou só com o clique ("total controle"). O template troca o `.zoom:hover` (escala no lugar) pela moldura
+  `div.zoom`. O clique abre, e a foto viaja por `transform` até o centro do palco, com 1000 px de altura. A capa
+  `::after` cobre o palco com o cursor `zoom-out`, e o clique só fecha. O motor ganha o bloco "Fotos com zoom", o
+  `fecharZoom()` em `show()` e a guarda no clique da moldura, da `.zoom-row` e de `figure:has(.zoom)`.
+- **A prova.** No deck da defesa, um sensor do projeto com 17 verificações ficou verde nas lâminas 3 e 4. Cada uma
+  das 14 cópias sabotadas, uma por mecanismo, ficou vermelha. Num deck de teste feito do template novo, as três fotos
+  abriram a 0,0 px do centro, com 1000 px de altura.
+- **Falso alarme no `check-presenter`.** Os testes de clique usavam a lâmina 3, e no deck da defesa ela tem fotos no
+  centro. As duas verificações de clique falharam sem defeito no motor. Agora os testes avançam até uma lâmina com os
+  dois pontos livres de foto. Sem esse pulo, o deck de teste repete as duas falhas. Três verificações novas cobrem o
+  zoom por clique: o clique abre sem trocar a lâmina, o clique só fecha, e a troca de lâmina fecha. Uma cópia sem a
+  guarda do clique reprova as três. Um deck sem `div.zoom` dá "pulado", inclusive o zoom antigo em `img.zoom`.
+- `references/layout-and-type.md`: as entradas *Zoom on hover* e *Zoom to the center* viram *Zoom on click*. Saem
+  duas lições que valiam só para o zoom sob o mouse, que o template não tem mais. Uma é a do rodapé (escala no lugar,
+  21/11). A outra é a da foto que piscava (`:hover` na foto, 26/11). As notas do PDF e do `build.py` passam para a
+  entrada nova, com a migração de um deck antigo.
+- O `SKILL.md` muda só na tabela de arquivos ("click zoom"), porque está a 19,9 mil caracteres.
+
+## [1.7.3] — 2026-11-26
+
+### Fileira de fotos que vão ao centro do palco, sem piscar; a fileira que esticava as imagens
+
+- **Zoom ao centro.** A entrada *Zoom on hover* amplia a imagem no lugar, a partir de um ponto fixo. Numa fileira de
+  três figuras, esse ponto empurra as das pontas para fora do palco. A `references/layout-and-type.md` ganha a
+  variante: uma moldura guarda o tamanho de repouso, e no `:hover` dela a foto ganha `position:fixed` no centro, com
+  `pointer-events:none`. Dentro do `#stage` escalado, o `fixed` se mede no palco. Na defesa de TCC, um sensor
+  Playwright mediu 0 px do centro a cada 50 ms durante 500 ms. Com o `:hover` na própria foto, 4 a 6 de 11 amostras
+  voltaram pequenas: a foto saía de baixo do cursor e piscava. Com a ampliação no lugar, a foto da ponta esquerda ficou
+  a 637 px do centro.
+- **Fileira de figuras esticada.** No mesmo deck, as três imagens saíram de 9 % a 20 % mais largas e encostadas, com o
+  `build.py` e o `check-fit.mjs` verdes. A captura mostrou o defeito. Uma linha que cobre as três colunas `auto`
+  alarga as colunas, e o `figure` em coluna flexível estica a moldura por cima do `aspect-ratio`. A reference diz
+  as três regras que resolveram.
+- Só a reference muda: o template e os scripts ficam como estão. A classe no template e um sensor em `scripts/`
+  ficam para quando forem provados ali.
+
 ## [1.7.2] — 2026-11-22
 
 ### Uma pasta `--out` por deck: o build recusa o roteiro de outro deck; a lâmina privada fora do pacote de revisão

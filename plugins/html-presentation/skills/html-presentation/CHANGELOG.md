@@ -2,6 +2,44 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-11-26 — the same TCC deck: a credit line under the PDF page number (v1.9.0)
+- The cover gained the examining board as a fourth metadata item. Four items filled the row, so the credit line moved
+  to a second row, right-aligned. In print, `.slide::after` draws "01 / 19" at `right:128px; bottom:52px`, the same
+  corner. The shot, `check-fit` at four sizes and `check-presenter` were green. Page 1 of the PDF, opened by eye,
+  showed the number over the credit. The credit moved to the left.
+- `check-fit.mjs` now measures once in print media. A probe copies the computed style of `::after` and its text, and
+  a `Range` measures the glyphs. Only text counts, because a photo or a tint under the number can be intended.
+- Proved on the defence deck (green, 19 numbers measured), a copy with the credit on the right (red, slide 1), the
+  same pair with an `inset:0` number, a copy without the `::after` rule (0 measured, said so) and the template (green,
+  8 numbers).
+
+## 2026-11-26 — the same TCC deck: the author rejected the hover zoom and kept the click (v1.8.0)
+- The author tried the 1.7.3 row of photos once and rejected it. A photo opened as the mouse crossed it, the open
+  photo swapped for the one hidden under it, and a click beside it changed the slide. The project probe (center and
+  height every 50 ms) had been green on that version: it measured geometry, not how the zoom felt.
+- A usability QA by an independent agent found two more defects with Playwright scripts. The photo closed when the
+  mouse passed its edge for ~150 ms, and the return landed on the thumbnail under it, which opened. The deck's ease
+  `cubic-bezier(.16,1,.3,1)` put half of a 637 px travel in ~36 ms. An intent delay (300 ms), a margin (80 px), a
+  grace time (350 ms) and a tremor tolerance (5 px) fixed the QA's cases.
+- The author then asked that a click open the photo at once, and after trying it kept only the click: "total
+  control". The intent machinery went away. The cover (`::after` over the whole stage) stayed, because without it the
+  `mousedown` on another frame swapped photos. The same deck moved its single RADAR screen, a hover scale in place,
+  to the click zoom.
+- `check-presenter.mjs` failed its two click checks on that deck: slide 3, where it clicks, has photos at the center.
+- Lessons added: the template's click zoom, the entry *Zoom on click* in `references/layout-and-type.md`, and the
+  click checks of `check-presenter.mjs` (a free slide, and three zoom checks).
+
+## 2026-11-26 — the same TCC deck, a slide with three photos of the equipment (v1.7.3)
+- The author asked for real photos of the equipment, from the maker's public brochure, and for each photo to grow and
+  go to the center of the screen under the mouse. The slide holds three figures in one row.
+- The first build stretched the three images 9 to 20 % (462, 800 and 402 px wide instead of 393, 732 and 334, measured
+  with Playwright on a copy with the old CSS) and left no gap between them. `build.py` and `check-fit.mjs` were
+  green; the shot showed it. A glossary line spanning the grid widened the `auto` columns, and the flex `figure`
+  stretched the image box over its `aspect-ratio`.
+- A project probe (Playwright, center within 20 px, sampled every 50 ms for 500 ms) went red on a copy without the
+  centering rule and on a copy with the `:hover` on the image (the photo blinked), and green on the deck.
+- Lesson added: the entries *Zoom to the center* and *Row of figures* in `references/layout-and-type.md`.
+
 ## 2026-11-22 — the same TCC deck, version 2 rebuilt beside version 1 (v1.7.2)
 - The author asked for two text changes in version 2 (slide 2, and a hover entry for "recall"). The build of
   `src/defesa-tcc-v2.html --out dist` overwrote `dist/roteiro-de-fala.md`, the tracked script of version 1, and left

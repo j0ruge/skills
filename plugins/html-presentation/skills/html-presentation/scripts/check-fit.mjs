@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Layout check for the built deck: fails when a slide leaves the window, clips text, runs under its source line,
-// enters the footer, or has a source line that grew into the left margin.
+// enters the footer, has a source line that grew into the left margin, or puts text under the PDF page number.
 //
 // Usage: node check-fit.mjs dist/<name>.html
 // Exit:  0 everything fits · 1 a slide failed · 2 could not measure (no slides, no #stage or #footer, navigation that
@@ -12,6 +12,11 @@
 //
 // Each slide is measured fully revealed, its fullest state, at Full HD, on both laptops and on a laptop under a
 // browser frame. Anything that paints counts against the footer: text, a background, a border, an image, an SVG.
+//
+// Then once more in print, where the footer is gone and .slide::after prints the page number at the bottom right.
+// Why: in the TCC deck (26/11/2026) the cover gained a fourth metadata item, and its credit line moved to a second
+// row, right-aligned, under "01 / 19" in the PDF. The shot and the four screen sizes were green; only page 1 of the
+// PDF showed it. Only text counts here: a photo or a tint under the number is a design choice, text under it is not.
 import { createRequire } from 'node:module';
 import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -63,6 +68,64 @@ function measure() {
     who,
     bad: [...bad].slice(0, 5),
   };
+}
+
+/** Runs in the page under print media. For each slide, finds visible text whose glyphs cross the page number of
+ *  .slide::after. A pseudo-element has no box to read: a probe takes its computed style and its text, and a Range
+ *  measures the glyphs, so a number drawn over the whole slide (inset:0, aligned bottom-right) still measures right. */
+function measurePrint() {
+  const label = (el) => `${el.tagName.toLowerCase()}.${el.className?.baseVal ?? el.className}`.slice(0, 60);
+  const cross = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
+  const out = { measured: 0, without: [], bad: [] };
+  [...document.querySelectorAll('section.slide')].forEach((slide, i) => {
+    const ps = getComputedStyle(slide, '::after');
+    const c = ps.content || '';
+    const attr = c.match(/^attr\(\s*([\w-]+)\s*\)$/);
+    const text = attr ? slide.getAttribute(attr[1]) || '' : /^".*"$/.test(c) ? c.slice(1, -1) : '';
+    if (ps.display === 'none' || !text.trim()) { out.without.push(i + 1); return; }
+    const probe = document.createElement('span');
+    for (let k = 0; k < ps.length; k++) if (ps[k] !== 'content') probe.style.setProperty(ps[k], ps.getPropertyValue(ps[k]));
+    probe.textContent = text;
+    slide.appendChild(probe);
+    const range = document.createRange();
+    range.selectNodeContents(probe);
+    const num = range.getBoundingClientRect();
+    probe.remove();
+    if (!num.width || !num.height) { out.without.push(i + 1); return; }
+    out.measured++;
+    const under = new Set();
+    const walk = document.createTreeWalker(slide, NodeFilter.SHOW_TEXT);
+    for (let t = walk.nextNode(); t; t = walk.nextNode()) {
+      const el = t.parentElement;
+      if (!t.textContent.trim() || el.closest('aside.notes')) continue;
+      let seen = true;
+      for (let a = el; a && a !== slide.parentElement; a = a.parentElement) {
+        const cs = getComputedStyle(a);
+        if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) { seen = false; break; }
+      }
+      if (!seen) continue;
+      const r = document.createRange();
+      r.selectNodeContents(t);
+      if ([...r.getClientRects()].some((q) => q.width && q.height && cross(q, num))) under.add(label(el));
+    }
+    if (under.size) out.bad.push({ n: i + 1, numero: text.trim().slice(-12), sob_o_numero: [...under].slice(0, 5) });
+  });
+  return out;
+}
+
+/** Measures the PDF page numbers once, in print media at the page size. Returns how many slides failed. */
+async function measurePrintPass(nav, url) {
+  const ctx = await nav.newContext({ viewport: { width: 1920, height: 1080 }, reducedMotion: 'reduce' });
+  const page = await ctx.newPage();
+  await page.goto(url);
+  await page.emulateMedia({ media: 'print' });
+  await page.evaluate(async () => { void document.body.offsetHeight; await document.fonts.ready; });
+  await page.waitForTimeout(250);
+  const m = await page.evaluate(measurePrint);
+  await ctx.close();
+  const without = m.without.length ? (m.measured ? m.without.join(', ') : 'todas') : 'nenhuma';
+  console.log(`impressão (PDF): número de página medido em ${m.measured} lâminas; sem número: ${without}; reprovadas: ${m.bad.length ? JSON.stringify(m.bad) : 'nenhuma'}`);
+  return m;
 }
 
 /** Opens slide n fully revealed. The engine reads the hash only on load, so a change of hash alone would not reach it. */
@@ -122,7 +185,11 @@ try {
   } else {
     let failed = 0;
     for (const size of SIZES) failed += await measureSize(nav, url, deck.steps, size);
-    console.log(failed ? `FALHOU: ${failed} reprovação(ões) em ${deck.steps.length} lâminas` : `encaixe ok: ${deck.steps.length} lâminas em ${SIZES.length} tamanhos`);
+    const print = await measurePrintPass(nav, url);
+    failed += print.bad.length;
+    // A deck without a page number in print is reported, not failed: zero numbers measured never reads as "ok" for them.
+    const pdf = print.measured ? `número do PDF livre em ${print.measured}` : 'nenhum número de página na impressão (data-print?)';
+    console.log(failed ? `FALHOU: ${failed} reprovação(ões) em ${deck.steps.length} lâminas` : `encaixe ok: ${deck.steps.length} lâminas em ${SIZES.length} tamanhos; ${pdf}`);
     process.exitCode = failed ? 1 : 0;
   }
 } catch (e) {

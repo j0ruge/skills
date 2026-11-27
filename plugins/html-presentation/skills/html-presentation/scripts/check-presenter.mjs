@@ -8,7 +8,8 @@
 // rehearsal (Manutenção Proativa deck, 16/10/2026). The activation click is simulated with a window
 // `focus` event: Playwright emulates focus, so the page never sees the real one (references/engine.md).
 // A deck with data-steps also gets the step checks; one without prints "pulado". So does a deck with hover tips
-// (data-tip / data-g): the tip must open with text, inside the stage, and close when the mouse leaves. The last
+// (data-tip / data-g): the tip must open with text, inside the stage, and close when the mouse leaves. A deck with
+// click zoom (div.zoom) gets three checks: the click opens without navigating, closes, and a slide change closes. The last
 // tab opens with reduced motion, as shoot.sh does: no transition may still run there, and the hidden footer
 // labels must be the colliding ones.
 // Without a global Playwright: npm i --prefix <dir> playwright@<version whose chromium-NNNN is already in
@@ -90,9 +91,15 @@ await pop.close(); await sleep(300);
 await wiggle(); const h1 = await hint(); await sleep(3600); const h2 = await hint();
 check('sem a janela P, a dica aparece com o mouse e some parada', h1 > 0.5 && h2 === 0, `opacidade ${h1} → ${h2}`);
 
-// clicks start mid-deck: on the cover a click that goes back changes nothing and would pass by accident
+// clicks start mid-deck: on the cover a click that goes back changes nothing and would pass by accident. They also
+// start on a slide whose two click points are free: a click on a photo with zoom opens it and never navigates, and
+// a deck with photos at the center of slide 3 failed both click checks here (TCC deck, 26/11/2026)
 await page.keyboard.press('Home'); await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight'); await sleep(300);
 const box = await page.evaluate(() => { const r = document.getElementById('stage').getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; });
+const ZOOM = '.zoom, .zoom-row, figure:has(.zoom)';
+const free = () => page.evaluate(([pts, z]) => pts.every(([x, y]) => !document.elementFromPoint(x, y)?.closest?.(z)),
+  [[[box[0] + box[2] / 2, box[1] + box[3] / 2], [box[0] + box[2] / 6, box[1] + box[3] / 2]], ZOOM]);
+for (let n = 0; n < N && !(await free()) && (await deckIdx()) < N - 1; n++) { await page.keyboard.press('ArrowRight'); await sleep(200); }
 // each click is measured from where it starts: a wrong move by one check must not make the next one pass
 const click = async (name, x, y, delta, before = () => {}) => {
   const from = await deckIdx(); await before();
@@ -148,6 +155,26 @@ if (tipAt >= 0) {
   await page.mouse.move(2, 2); await sleep(300);
   check('dica: fecha quando o mouse sai do termo', await page.evaluate(() => !document.getElementById('tip').classList.contains('on')), 'continua aberta');
 } else console.log('pulado  dica ao passar o mouse (nenhum data-tip/data-g)');
+
+// Zoom por clique (a moldura div.zoom): o clique na foto a abre sem trocar a lâmina; com ela aberta, o clique no terço
+// esquerdo, que voltaria, só a fecha; e a troca de lâmina a fecha. No TCC (26/11/2026), o clique ao lado da foto
+// trocava a lâmina. Um deck com img.zoom tem o zoom antigo, sob o mouse, e fica de fora.
+const zoomAt = await page.evaluate(() => [...document.querySelectorAll('.slide')].findIndex(s => s.querySelector('div.zoom')));
+if (zoomAt >= 0) {
+  await page.goto(url + '#' + (zoomAt + 1)); await page.reload(); await page.waitForLoadState('load'); await sleep(700);
+  const here = await deckIdx(), open = () => page.evaluate(() => Boolean(document.querySelector('.slide.active .zoom.on')));
+  await page.locator('.slide.active div.zoom').first().click(); await sleep(600);
+  const opened = await open(), d1 = await deckIdx();
+  check('zoom: o clique na foto a abre e não troca a lâmina', opened && d1 === here, `aberta: ${opened}, lâmina ${here} → ${d1}`);
+  if (d1 !== here) { await page.goto(url + '#' + (zoomAt + 1)); await page.reload(); await page.waitForLoadState('load'); await sleep(700); }
+  await page.mouse.click(box[0] + box[2] / 6, box[1] + box[3] / 2); await sleep(500);
+  const closed = !(await open()), d2 = await deckIdx();
+  check('zoom: com a foto aberta, o clique só a fecha', opened && closed && d2 === here, `fechada: ${closed}, lâmina ${here} → ${d2}`);
+  if (d2 !== here) { await page.goto(url + '#' + (zoomAt + 1)); await page.reload(); await page.waitForLoadState('load'); await sleep(700); }
+  await page.locator('.slide.active div.zoom').first().click(); await sleep(600);
+  await page.keyboard.press('ArrowRight'); await sleep(300); await page.keyboard.press('ArrowLeft'); await sleep(600);
+  check('zoom: a troca de lâmina fecha a foto', !(await open()) && (await deckIdx()) === here, `aberta na volta: ${await open()}, lâmina ${await deckIdx()}`);
+} else console.log('pulado  zoom por clique (nenhuma moldura div.zoom)');
 
 // Teclas na janela P. Enter e Espaço num botão focado pelo Tab são do botão; depois de um clique de mouse, Espaço segue
 // avançando. Antes, Enter no "Zerar" avançava sem zerar, e Espaço no "Anterior" avançava (Portal, 03/11/2026). E
