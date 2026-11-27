@@ -31,9 +31,9 @@
 - Na migração da 0.4.0, o primeiro Stop consulta uma vez o trecho até o offset salvo para
   recuperar a ordem de chamadas pendentes. Uma externa posterior encerra a atribuição até
   sem metadado de caminho. O trecho antigo não reconta trabalho nem gera pedidos de retro.
-  A leitura é feita linha a linha e preserva o slash digitado ainda pendente quando o
-  prefixo válido confirma o estado salvo. Se um registro ultrapassar 2 MiB, o hook descarta a
-  reconstrução parcial e processa o trecho novo a partir do estado salvo.
+  A leitura linha a linha preserva o slash pendente se o prefixo confirma o estado salvo.
+  Acima de 2 MiB por registro, o hook segue do offset salvo sem importar vínculos parciais.
+  Sem atribuição ativa, esse fallback também ignora metadado atrasado sem vínculo.
 
 ## [0.4.0] — 2026-11-24
 

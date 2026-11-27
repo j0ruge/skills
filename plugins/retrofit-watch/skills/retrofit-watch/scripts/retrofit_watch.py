@@ -781,6 +781,8 @@ class Scanner:
 
 def recover_legacy_correlation(path, st, ctx):
     remaining = st["offset"]
+    was_closed = st["attribution_closed"]
+    st["attribution_closed"] = was_closed or st["current"] is None
     replay = dict(st, skills={}, current=None, classified=st["classified"].copy(), done=[],
                   skill_calls={}, skill_message_order=[], skill_call_history={}, attribution_closed=False)
     scanner = Scanner(replay, ctx)
@@ -811,7 +813,7 @@ def recover_legacy_correlation(path, st, ctx):
     except OSError:
         return
     # A leitura serve para recuperar vínculos, sem substituir a atribuição gravada pela 0.4.0.
-    if replay["current"] != st["current"] or (st["attribution_closed"] and not replay["attribution_closed"]):
+    if replay["current"] != st["current"] or (was_closed and not replay["attribution_closed"]):
         return
     # O cache legado confirma se a origem reconstruída corresponde à carga que foi observada.
     if replay["classified"] == st["classified"]:

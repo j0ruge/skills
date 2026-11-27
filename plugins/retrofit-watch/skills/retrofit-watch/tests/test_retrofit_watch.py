@@ -667,6 +667,54 @@ class StopTest(HookHarness, unittest.TestCase):
             self.assertEqual((local["work"], local["friction"], local["reviews"]), (0, 0, 1))
             self.assertIsNone(self.checked_stop()[0])
 
+    def test_legacy_oversized_replay_does_not_reopen_from_delayed_metadata(self):
+        for scenario in ("at_limit", "no_external", "delayed", "resumed", "fresh", "slash", "active"):
+            with self.subTest(scenario=scenario), self.sub_world() as world:
+                local = identified_load("graphify", world.graphify, "msg_local", "toolu_local")
+                external = identified_load("superpowers:brainstorming", world.other_skill,
+                                           "msg_later", "toolu_later")
+                self.write(local[:2], external[:2] if scenario != "no_external" else (), compact=True)
+                size = 2 * 1024 * 1024 + (scenario not in ("at_limit", "no_external"))
+                head, tail = b'{"type":"system","text":"', b'"}\n'
+                with world.transcript.open("ab") as fh:
+                    fh.write(head + b"x" * (size - len(head) - len(tail)) + tail)
+                before = dict(offset=world.transcript.stat().st_size, current=None, skills={}, classified={})
+                if scenario == "active":
+                    info = rw.classify_plugin("codereview", world.ctx())
+                    key = info["key"]
+                    before.update(current=key, skills={key: dict(info, work=0, friction=0, reviews=0)})
+                state = world.data / "sessions/s1.json"
+                state.parent.mkdir(parents=True)
+                state.write_text(json.dumps(before), encoding="utf-8")
+                if scenario in ("resumed", "active"):
+                    self.write([{"type": "system", "text": "pausa"}], compact=True)
+                    out, saved = self.checked_stop(env={"RETROFIT_WATCH": "force"})
+                    self.assertIsNone(out)
+                    for field in ("current", "skills", "classified"):
+                        self.assertEqual(saved[field], before[field])
+                    self.assertEqual(saved["skill_calls"], {})
+                    self.assertEqual(saved["attribution_closed"], scenario == "resumed")
+                    if scenario == "active":
+                        continue
+                rows = local[2:]
+                if scenario == "fresh":
+                    rows = identified_load("graphify", world.graphify, "msg_fresh", "toolu_fresh")
+                elif scenario == "slash":
+                    rows = skill_typed("graphify", world.graphify)
+                self.write(rows, tool(error=True), compact=True)
+                out, saved = self.checked_stop(env={"RETROFIT_WATCH": "force"})
+                if scenario in ("no_external", "fresh", "slash"):
+                    self.assertIn("`/retrofit-skill:retrofit-skill graphify`", self.context_of(out))
+                    skill = saved["skills"][saved["current"]]
+                    self.assertEqual((skill["work"], skill["friction"], skill["reviews"]), (0, 0, 1))
+                else:
+                    self.assertIsNone(out)
+                    self.assertIsNone(saved["current"])
+                    self.assertEqual(saved["skills"], {})
+                    calls = {"toolu_later": "msg_later"} if scenario == "at_limit" else {}
+                    self.assertEqual(saved["skill_calls"], calls)
+                    self.assertTrue(saved["attribution_closed"])
+
     def test_legacy_pending_call_order(self):
         cuts = {}
         for scenario in ("late", "new", "alone", "name_only", "fresh", "cache_only",
