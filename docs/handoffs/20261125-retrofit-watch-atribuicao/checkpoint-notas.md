@@ -171,3 +171,4 @@
 - 2026-11-27 13:56 · `R6` · R6 sabotage: não gravar a evidência combinada → test_unowned_collision_survives_confirmation_of_live_owner
 - 2026-11-27 13:56 · `R6` · R6 sabotage: repor a guarda de colisão de R5 → test_unowned_collision_survives_confirmation_of_live_owner
 - 2026-11-27 13:56 · `R6` · Red em 274d877: três divergências na sonda e três subcasos no teste inicial. Green em cd55517: oito Checks, 18 degradações detectadas e TEST_CMD com 154 testes da loja (3 pulados) e 96 do hook. Duas retomadas leram o estado gravado antes de R6. Versão 0.4.1 confirmada.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 13:59 · written by the runner
