@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a21d34-7066-7ce3-ad4e-5e629b30e0bd
-data: 2026-11-27 10:41
-gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' em 893c9c6 → rc 0. Loja: 154 testes, 3 pulados. Retrofit-watch: 94 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada. Os seis Checks passaram.'
+sessao: 01a21d5a-63d3-79d3-89f0-4085d312f396
+data: 2026-11-27 11:18
+gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' em c52f09c → rc 0. Loja com 154 testes (3 pulados). Hook com 95 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada. Os sete Checks de checkpoint.md passaram.'
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,18 +14,18 @@ gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''sourc
 
 ## TL;DR
 
-R4 preserva a precedência se o último vínculo falha e uma mensagem posterior ainda aguarda confirmação.
-Um ID falho antes da ativação também não comprova origem enquanto sua mensagem estiver retida.
-A suíte e os seis Checks passaram. QA deve repetir as jornadas abaixo e encaminhar as provas nativas ao host.
+R5 conserva a marca de ID consumido sem origem quando uma tentativa intermediária colide e sai da janela.
+A externa com ID reutilizado não mantém a atribuição, em leitura contínua ou retomada. O ID novo ainda vale.
+A suíte e os sete Checks passaram. QA deve repetir a jornada de R5 no transcript e no estado em disco.
 
 ## Estado do repo
 
 - **Branch:** `fix/retrofit-watch-atribuicao-mesma-mensagem`, em Git isolado pelo runner.
-- **Último commit do incremento:** `893c9c6` — conservar evidências de cargas concorrentes.
+- **Último commit do incremento:** `c52f09c` — conservar marca de ID consumido sem origem.
 - **Working tree:** limpo após o commit deste registro.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `893c9c6` → rc 0. Loja: 154 testes, 3 pulados. Retrofit-watch: 94 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada.
-- **E2E:** os seis Checks de `checkpoint.md` passaram em `893c9c6`, incluindo a jornada de terminal de F1.
-- **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_auto_docs.ReleaseTest.test_the_four_places_agree_at_0_4_0_or_later` em `893c9c6` → 1 teste, rc 0.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `c52f09c` → rc 0. Loja com 154 testes (3 pulados). Hook com 95 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada.
+- **E2E:** os sete Checks de `checkpoint.md` passaram em `c52f09c`, incluindo a jornada de terminal de F1.
+- **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_auto_docs.ReleaseTest.test_the_four_places_agree_at_0_4_0_or_later` em `c52f09c` → 1 teste, rc 0.
 
 ## O que foi feito
 
@@ -63,11 +63,22 @@ A suíte e os seis Checks passaram. QA deve repetir as jornadas abaixo e encamin
 - `893c9c6` — adiciona 11 testes de Stop. Em `b3e9117` sem a correção, a sonda de R4 mostrou as quatro divergências e os dois testes principais falharam em oito subcasos. Em Green, foram detectadas 58 degradações em cópias temporárias com grupo próprio, teto de 25 s e 512 MiB de memória virtual.
 - `893c9c6` — nos lotes de 10, 100 e 1.000 falhas em mensagens distintas, o estado reteve zero registros sem pendência e somente a chamada antiga no cenário concorrente. O metadado dessa chamada ainda gerou retro de `graphify`.
 
+### Retorno da revisão — rodada r5
+
+- `c52f09c` — conserva a marca sem dono ao colidir com uma tentativa posterior. A poda continua retirando
+  a posição da tentativa sem vínculo. A janela, os tetos e o descarte ao avançar a mensagem ativa não mudaram.
+- `c52f09c` — adiciona uma regressão com 16 casos. Em `c8ddc39`, com o teste novo e sem o ajuste do hook,
+  os quatro casos de colisão sem dono falharam. Em Green, todo Stop avançou o offset até o fim do
+  transcript sem gerar `errors.log`. A variante ambígua não creditou trabalho, atrito ou retro.
+- `c52f09c` — a sonda R5 confirmou `marca_apos_disputa=1` e silêncio após a colisão nos dois modos.
+  O controle de ID novo pediu retro de `codereview`. Cinco degradações foram detectadas, com
+  grupo de processos próprio, timeout de 25 s e teto de 512 MiB de memória virtual por processo.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1, F1 e R1–R4 com as sondas executáveis e os hashes das correções. |
+| `checkpoint.md` | I1, F1 e R1–R5 com as sondas executáveis e os hashes das correções. |
 | `checkpoint-notas.md` | Evidência de execução e isolamento do Git na suíte. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
@@ -75,14 +86,18 @@ A suíte e os seis Checks passaram. QA deve repetir as jornadas abaixo e encamin
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as seis células de Check da raiz. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as sete células de Check da raiz. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
 - I1 deve imprimir `1 0 1 0 0 1`. F1 deve ficar em silêncio nas três variantes e R1 deve terminar em `regressoes=4`.
 - R2 deve emitir `graphify` nas seis combinações e terminar em `falhas=estavel`. Acrescente `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py --medir` para conferir os lotes. Em `43c2d49` foram 0 vínculos e 292, 293 e 294 bytes após 10, 100 e 1.000 tentativas.
 - R3 deve emitir `graphify,graphify` nos quatro pares de ordem, tanto após erro quanto após consumo. Nos dois pares de reuso, o ID novo deve preservar `codereview` e o reaproveitado deve ficar em silêncio.
 - R4 deve emitir `graphify,graphify` nos pares de ordem e `codereview,silêncio` nos pares de reuso, tanto em leitura contínua quanto em retomada. Os testes permanentes também interrompem antes e depois do erro e entre as confirmações.
 
-Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` e registre a repetição em `30-handoff-qa.md`. Após QA, o aceite para uma rodada de revisão consta em `plano-r4.md`.
+- R5 deve emitir `codereview` para ID novo e silêncio nos casos de reuso, com e sem colisão,
+  em leitura contínua e em retomada. Após a disputa, a sonda deve imprimir `marca_apos_disputa=1`.
+  O teste permanente reabre o estado em disco antes e depois da colisão e verifica os contadores.
+
+Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` e registre a repetição em `30-handoff-qa.md`.
 
 ## Pendências / Decisions for a Human
 
@@ -109,3 +124,5 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 - O metadado externo obsoleto ainda pode encerrar uma carga posterior. O caso anterior a R3 permanece no item já aberto em `TODO.md`.
 
 - kit: a execução literal em R3 voltou a contaminar o espelho Git privado com fixtures. O teste foi encerrado, o reflog e a árvore confirmaram a ponta inicial `f382fa2` e a referência temporária foi removida. As repetições isoladas de `TEST_CMD` passaram antes da correção e no commit final. A correção do ambiente do runner permanece fora da missão.
+
+- A rastreabilidade das medições históricas permanece no item aberto de `TODO.md` apontado pela revisão r5.
