@@ -292,7 +292,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 - [ ] **A reprodução do limite do backlog perde o caminho do kit** —
   `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r15.md:132` (`SDD_KIT`) —
   Bash e Zsh retornam rc 127 ao reproduzir o limite de linhas após o bloco estrito.
-  Direção: resolver o caminho do kit na própria instrução que valida a amostra temporária.
+  Direção: localizar o kit no bloco da amostra temporária. RESOLVED by 41a6ca5
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r20.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
