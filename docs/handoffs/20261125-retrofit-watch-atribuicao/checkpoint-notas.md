@@ -343,3 +343,4 @@
 - 2026-11-27 18:05 · `R11` · R11 sabotage 16: não interromper a reconstrução quando falta quebra → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
 - 2026-11-27 18:05 · `R11` · Green em fb5e489. Os 13 Checks igualaram o resultado esperado. TEST_CMD isolado passou com 154 testes da loja (3 pulados) e 113 do hook. A jornada sob 256 MiB retomou os dois tamanhos de registro e avançou o offset. As 16 mutações foram detectadas, com controles verdes sob os mesmos tetos.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:07 · written by the runner
+- 2026-11-27 18:13 · REVIEW r12 · `R12` · Achado 1: acima de 2 MiB, a migração aceita metadado atrasado após externa legada e pede retro indevida. A base ficou em silêncio sob o mesmo teto. Suíte e 13 Checks fechados passaram.\n
