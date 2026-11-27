@@ -270,7 +270,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 
 - [ ] **Marcador RESOLVED by fora da linha do corpo no backlog** — `TODO.md:268` (`RESOLVED by`) —
   O marcador em linha própria consome uma das oito linhas do item.
-  Direção: colocar o marcador ao fim do corpo ou junto da fonte.
+  Direção: colocar o marcador ao fim do corpo ou junto da fonte. RESOLVED by 42905fc
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r15.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
