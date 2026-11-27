@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a21ea4-00eb-71a3-ac60-63babbb46801
-data: 2026-11-27 17:23
-gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' em 8fa5c7d → rc 0. Loja com 154 testes (3 pulados). Hook com 106 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada. Os onze Checks de checkpoint.md passaram.'
+sessao: 01a21ebc-9d5f-7470-b810-8e2f120961cc
+data: 2026-11-27 17:48
+gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' em e65902c → rc 0. Loja com 154 testes (3 pulados). Hook com 111 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada. Os 12 Checks de checkpoint.md passaram.'
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,18 +14,18 @@ gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''sourc
 
 ## TL;DR
 
-R9 recupera a ordem de cargas na migração da 0.4.0 sem recontar trabalho nem mudar o offset salvo.
-Com estados legados idênticos, só a chamada posterior à externa continua elegível.
-O encerramento pelo nome já basta quando o transcript confirma a ordem, mesmo sem caminho externo.
-Os onze Checks e o TEST_CMD passaram. QA deve começar pela sonda R9 com a 0.4.0 real.
+R10 preserva o slash digitado na migração da 0.4.0 e impede que ID falho sem origem prove uma nova carga.
+O prefixo é lido linha a linha até o offset salvo. A correlação parcial não é importada.
+I1 e F1 voltaram a `1 0 1 0 0 1`. Os 12 Checks e o TEST_CMD passaram.
+A QA deve começar pelo Check R10 com a 0.4.0 real e repetir R9.
 
 ## Estado do repo
 
 - **Branch:** `fix/retrofit-watch-atribuicao-mesma-mensagem`, em Git isolado pelo runner.
-- **Último commit do incremento:** `8fa5c7d` — recuperar a ordem de cargas na migração da 0.4.0.
+- **Último commit do incremento:** `e65902c` — preservar evidências na retomada da 0.4.0.
 - **Working tree:** limpo após o commit deste registro.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `8fa5c7d` → rc 0. Loja com 154 testes (3 pulados). Hook com 106 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada.
-- **E2E:** os onze Checks passaram em `8fa5c7d`, incluindo a jornada de terminal de F1 e a troca de versão em R9.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `e65902c` → rc 0. Loja com 154 testes (3 pulados). Hook com 111 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada.
+- **E2E:** os 12 Checks passaram em `e65902c`, incluindo a jornada de F1 e as trocas de versão em R9 e R10.
 - **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_auto_docs.ReleaseTest.test_the_four_places_agree_at_0_4_0_or_later` em `8b861d2` → 1 teste, rc 0.
 
 ## O que foi feito
@@ -141,19 +141,44 @@ Os onze Checks e o TEST_CMD passaram. QA deve começar pela sonda R9 com a 0.4.0
   A assinatura de `read_delta` é coberta pelo recuo normal e pela proteção do legado.
   Alterar só o padrão do parâmetro não muda o outro chamador, que sempre usa offset zero.
 
+### Retorno da revisão — rodada r10
+
+- `e65902c` — lê o prefixo uma vez, em linhas limitadas pelo offset salvo, e só importa
+  evidência de um prefixo validado. Preserva o slash digitado ainda pendente quando a
+  reconstrução confirma a atribuição e o cache. Offset, histórico e contadores não são recontados.
+- `e65902c` — registra IDs falhos sem origem na janela já existente. Um reuso não comprova
+  que a nova carga veio da mesma mensagem. O controle com ID novo conserva a atribuição.
+- `e65902c` — restaura o quinto caso de I1 e F1 sem um `message.id` externo válido.
+  O caso correlacionado continua positivo. Não muda nenhuma saída esperada.
+- Red em `df6407a`: slash migrado em silêncio, ID falho sem origem creditava `codereview`
+  nos dois cortes, prefixo de 160 MiB registrava `MemoryError` sob 256 MiB e I1/F1 davam
+  `1 0 1 0 1 1`. Os três testes permanentes falharam antes da mudança de produção.
+- Green em `e65902c`: a troca real de binários recuperou o slash correto, manteve silêncio
+  para o comando alheio e para reuso de ID falho, e migrou o prefixo de 160 MiB sob 256 MiB.
+  As três regressões nomeadas e o teste adicional de leitura interrompida passaram.
+  Os 12 Checks igualaram todo o stdout esperado, além de retornarem rc 0.
+- Sabotagem final em cópia temporária: 32 de 33 variações detectadas. A assinatura antiga com
+  um parâmetro opcional sem uso é equivalente. Os controles rodaram antes e após as mutações
+  com grupo de processos próprio, teto de 14 s e 512 MiB de memória virtual.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1, F1 e R1–R9 com as sondas executáveis e os hashes das correções. |
-| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9. |
+| `checkpoint.md` | I1, F1 e R1–R10 com as sondas executáveis e os hashes das correções. |
+| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9 e R10. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
 | `TODO.md` | Issue #12 e ordem legada marcadas `RESOLVED by 682cd3d` e `RESOLVED by 8fa5c7d` até o merge. |
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as onze células de Check da raiz. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as 12 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+
+- Comece por R10. A célula em `checkpoint.md` extrai a sonda de `40-review-r10.md`
+  e a 0.4.0 de `fe38d1f`, roda os dois hooks em diretórios temporários e exige `prefixo_041=ok`,
+  `checks_i1_f1=2` e `regressoes=3`. Confira também os controles de slash alheio, externa
+  sem vínculo e ID novo. Não é preciso iniciar, parar ou reiniciar uma sessão real de Claude Code.
 
 - I1 deve imprimir `1 0 1 0 0 1`. F1 deve ficar em silêncio nas três variantes e R1 deve terminar em `regressoes=4`.
 - R2 deve emitir `graphify` nas seis combinações e terminar em `falhas=estavel`. Acrescente `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py --medir` para conferir os lotes. Em `43c2d49` foram 0 vínculos e 292, 293 e 294 bytes após 10, 100 e 1.000 tentativas.
@@ -199,6 +224,7 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 - Os três testes de distribuição nativa seguem pulados pelo `TEST_CMD` no sandbox. Em um clone temporário de `893c9c6`, `env -u SKILLS_SKIP_NATIVE_DISTRIBUTION python3 -B -m unittest discover -s tests -p test_codex_distribution.py -v` retornou rc 1 nos três por não conseguir criar o namespace Bubblewrap. Nenhum chegou ao primeiro comando do CLI dentro do namespace. Repetir no host com suporte a Bubblewrap.
 - A consulta ao trecho já consumido só vale na migração da 0.4.0. Se o trecho não
   estiver utilizável ou contradisser a atribuição gravada, prevalece a evidência persistida.
+  O limite de memória de R10 foi medido na leitura do prefixo, não para um delta novo.
 - Modo autônomo, fila e distribuição Codex ficaram fora do patch.
 
 - A medida de crescimento cobre tentativas em mensagens distintas. IDs de mensagens já aposentadas não integram a janela de correlação. Ampliar o histórico continua fora do R4.

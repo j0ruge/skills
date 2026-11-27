@@ -252,3 +252,71 @@
 - 2026-11-27 17:38 · `R10` · Revisão r10, achados 1–4: slash legado, ID falho sem origem, memória do prefixo e vetor I1/F1 divergente. R1–R9 e TEST_CMD verdes. Performance caiu de A para B.
 - 2026-11-27 17:39 · R10 · Leia o prefixo anterior ao offset de forma incremental, usando memória proporcional à linha e sem aplicar correlação parcial se o prefixo não passar na validação. Preserve o slash pendente comprovado e a marca de um ID falho sem origem até que possa ser aposentada. Em I1 e F1, mantenha o vetor aprovado e retire do caso sem prova os IDs que a migração agora consegue recuperar. Repita R9 e os onze checks anteriores.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 17:40 · written by the runner
+- 2026-11-27 17:48 · `R10` · R10 sabotage 01 (primeira passagem): repor o argumento removido na confirmação → rc 1, test_legacy_prefix_read_once_without_recounting, test_failed_unowned_call_id_cannot_prove_same_message
+- 2026-11-27 17:48 · `R10` · R10 sabotage 02 (primeira passagem): repor a assinatura anterior sem usá-la → rc 0, nenhuma sonda ficou vermelha. Equivalente, pois nenhum chamador passa o parâmetro opcional e o método não o consulta.
+- 2026-11-27 17:48 · `R10` · R10 sabotage 03 (primeira passagem): repor a guarda que só registra falha com origem → rc 1, test_failed_unowned_call_id_cannot_prove_same_message, test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 17:48 · `R10` · R10 sabotage 04 (primeira passagem): trocar a marca sem origem por dono fictício → rc 0, nenhuma sonda ficou vermelha. A poda normalizou a lista com valor nulo para a marca vazia. A passagem final usa um dono válido.
+- 2026-11-27 17:48 · `R10` · R10 sabotage 05 (primeira passagem): zerar os bytes esperados em vez de usar o offset salvo → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_migration_recovers_active_message_origin, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 06 (primeira passagem): usar o offset salvo menos um byte → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 07 (primeira passagem): repor a leitura integral do prefixo antes da validação → rc 1, test_legacy_prefix_read_once_without_recounting, test_legacy_replay_reads_prefix_with_bounded_memory
+- 2026-11-27 17:48 · `R10` · R10 sabotage 08 (primeira passagem): repor a comparação pela quantidade lida sem detectar o tamanho do arquivo → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:48 · `R10` · R10 sabotage 09 (primeira passagem): não proteger o offset quando o arquivo já é menor → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:48 · `R10` · R10 sabotage 10 (primeira passagem): continuar após constatar prefixo menor, removendo o retorno → rc 0, nenhuma sonda ficou vermelha
+- 2026-11-27 17:48 · `R10` · R10 sabotage 11 (primeira passagem): trocar o laço por condição simples → rc 1, erro de sintaxe antes da sonda. A passagem final usa um laço de uma iteração.
+- 2026-11-27 17:48 · `R10` · R10 sabotage 12 (primeira passagem): não limitar a leitura de linha ao offset → rc 0, nenhuma sonda ficou vermelha
+- 2026-11-27 17:48 · `R10` · R10 sabotage 13 (primeira passagem): repor a validação do delimitador depois do replay em vez de respeitar o limite da linha → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 14 (primeira passagem): não detectar truncamento quando a linha termina antes do limite → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 15 (primeira passagem): não marcar truncamento descoberto durante a leitura → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 16 (primeira passagem): importar evidência parcial após linha incompleta → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 17 (primeira passagem): não descontar os bytes da linha → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 18 (primeira passagem): tratar separador branco como JSON → rc 0, nenhuma sonda ficou vermelha
+- 2026-11-27 17:48 · `R10` · R10 sabotage 19 (primeira passagem): importar prefixo após separador branco → rc 0, nenhuma sonda ficou vermelha
+- 2026-11-27 17:48 · `R10` · R10 sabotage 20 (primeira passagem): não decodificar o registro JSON → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_migration_recovers_active_message_origin, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 21 (primeira passagem): propagar JSON inválido em vez de retornar silenciosamente → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 22 (primeira passagem): pular JSON inválido e aplicar os demais vínculos → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 23 (primeira passagem): tratar escalar como se fosse um registro → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 24 (primeira passagem): aplicar os demais vínculos após um escalar → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 25 (primeira passagem): não entregar o registro ao scanner isolado → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_migration_recovers_active_message_origin, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 26 (primeira passagem): ignorar falha de leitura só depois de importar o prefixo parcial → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 27 (primeira passagem): refazer a lista de registros por split, em vez de iterar linha a linha → rc 1, test_legacy_replay_reads_prefix_with_bounded_memory
+- 2026-11-27 17:48 · `R10` · R10 sabotage 28 (primeira passagem): compartilhar o cache em vez de isolá-lo → rc 1, test_legacy_migration_preserves_split_typed_slash
+- 2026-11-27 17:48 · `R10` · R10 sabotage 29 (primeira passagem): compartilhar a atribuição gravada durante a reconstrução → rc 1, test_legacy_replay_does_not_replace_saved_current
+- 2026-11-27 17:48 · `R10` · R10 sabotage 30 (primeira passagem): scanner de migração não silencioso → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 31 (primeira passagem): não preservar o slash pendente → rc 1, test_legacy_migration_preserves_split_typed_slash
+- 2026-11-27 17:48 · `R10` · R10 sabotage 32 (primeira passagem): aceitar slash de reconstrução cujo cache divergiu do salvo → rc 1, test_legacy_migration_preserves_split_typed_slash
+- 2026-11-27 17:48 · `R10` · R10 sabotage 33 (primeira passagem): repor a origem no caso legado sem prova → stdout de I1 divergiu, 1 0 1 0 1 1
+- 2026-11-27 17:48 · `R10` · R10 sabotage 01 (final): repor o argumento removido na confirmação → rc 1, test_legacy_prefix_read_once_without_recounting, test_failed_unowned_call_id_cannot_prove_same_message
+- 2026-11-27 17:48 · `R10` · R10 sabotage 02 (final): repor a assinatura anterior sem usá-la → rc 0, nenhuma sonda ficou vermelha. Equivalente, pois nenhum chamador passa o parâmetro opcional e o método não o consulta.
+- 2026-11-27 17:48 · `R10` · R10 sabotage 03 (final): repor a guarda que só registra falha com origem → rc 1, test_failed_unowned_call_id_cannot_prove_same_message, test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 17:48 · `R10` · R10 sabotage 04 (final): atribuir a falha sem origem à mensagem ativa → rc 1, test_failed_unowned_call_id_cannot_prove_same_message, test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 17:48 · `R10` · R10 sabotage 05 (final): zerar os bytes esperados em vez de usar o offset salvo → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_migration_recovers_active_message_origin, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 06 (final): usar o offset salvo menos um byte → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 07 (final): repor a leitura integral do prefixo antes da validação → rc 1, test_legacy_prefix_read_once_without_recounting, test_legacy_replay_reads_prefix_with_bounded_memory
+- 2026-11-27 17:48 · `R10` · R10 sabotage 08 (final): repor a comparação pela quantidade lida sem detectar o tamanho do arquivo → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:48 · `R10` · R10 sabotage 09 (final): não proteger o offset quando o arquivo já é menor → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:48 · `R10` · R10 sabotage 10 (final): continuar após constatar prefixo menor, removendo o retorno → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:48 · `R10` · R10 sabotage 11 (final): parar após a primeira linha em vez de ler toda a janela → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 12 (final): não limitar a leitura de linha ao offset → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 13 (final): repor a validação do delimitador depois do replay em vez de respeitar o limite da linha → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 14 (final): não detectar truncamento quando a linha termina antes do limite → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 15 (final): não marcar truncamento descoberto durante a leitura → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 16 (final): importar evidência parcial após linha incompleta → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 17 (final): não descontar os bytes da linha → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 18 (final): tratar separador branco como JSON → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 19 (final): importar prefixo após separador branco → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 20 (final): não decodificar o registro JSON → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_migration_recovers_active_message_origin, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 21 (final): propagar JSON inválido em vez de retornar silenciosamente → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 22 (final): pular JSON inválido e aplicar os demais vínculos → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 23 (final): tratar escalar como se fosse um registro → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 24 (final): aplicar os demais vínculos após um escalar → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 25 (final): não entregar o registro ao scanner isolado → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_migration_recovers_active_message_origin, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 26 (final): ignorar falha de leitura só depois de importar o prefixo parcial → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 27 (final): refazer a lista de registros por split, em vez de iterar linha a linha → rc 1, test_legacy_replay_reads_prefix_with_bounded_memory
+- 2026-11-27 17:48 · `R10` · R10 sabotage 28 (final): compartilhar o cache em vez de isolá-lo → rc 1, test_legacy_migration_preserves_split_typed_slash
+- 2026-11-27 17:48 · `R10` · R10 sabotage 29 (final): compartilhar a atribuição gravada durante a reconstrução → rc 1, test_legacy_replay_does_not_replace_saved_current
+- 2026-11-27 17:48 · `R10` · R10 sabotage 30 (final): scanner de migração não silencioso → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 31 (final): não preservar o slash pendente → rc 1, test_legacy_migration_preserves_split_typed_slash
+- 2026-11-27 17:48 · `R10` · R10 sabotage 32 (final): aceitar slash de reconstrução cujo cache divergiu do salvo → rc 1, test_legacy_migration_preserves_split_typed_slash
+- 2026-11-27 17:48 · `R10` · R10 sabotage 33 (final): repor a origem no caso legado sem prova → stdout de I1 divergiu, 1 0 1 0 1 1
+- 2026-11-27 17:48 · `R10` · Red em `df6407a`: quatro achados reproduzidos. Os três testes escritos antes da correção deram quatro falhas e dois erros de marca ausente. A suíte anterior estava verde, com 154 testes da loja (3 pulados) e 107 do hook.
+- 2026-11-27 17:48 · `R10` · Green em `e65902c`: 12 Checks e TEST_CMD isolado verdes, com 154 testes da loja (3 pulados) e 111 do hook. A migração de 160 MiB concluiu sob 256 MiB. A sabotagem final detectou 32 de 33 variações, com uma equivalente.
