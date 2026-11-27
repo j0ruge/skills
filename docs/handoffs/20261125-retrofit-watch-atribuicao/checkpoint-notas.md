@@ -203,3 +203,4 @@
 - 2026-11-27 14:33 · `R8` · R8 sabotage: ignorar a marca de consumo sem origem → test_unowned_collision_survives_confirmation_of_live_owner, test_unowned_consumed_id_survives_intermediate_collision
 - 2026-11-27 14:33 · `R8` · R8 sabotage: ignorar a marca mista já retida → test_unowned_collision_survives_confirmation_of_live_owner
 - 2026-11-27 14:33 · `R8` · Red em 2166607 com três falsos pedidos na sonda. Green em 8b861d2: dez Checks, sonda R8 e repetição R7 com a 0.4.0 real, onze degradações detectadas e TEST_CMD isolado com 154 testes da loja (3 pulados) e 100 do hook. Versão 0.4.1 confirmada. As duas âncoras do CHANGELOG já fora da tolerância continuam no item aberto do TODO, sem duplicar a origem.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 14:35 · written by the runner
