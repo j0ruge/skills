@@ -323,3 +323,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 17:50 · written by the runner
 - 2026-11-27 17:58 · `R11` · A revisão r11 reuniu os achados 1–2. A primeira atribuição perdia a marca de ID falho sem origem, e um registro de 96 MiB impedia a retomada sob 256 MiB. Os 12 Checks já fechados e o TEST_CMD passaram.
 - 2026-11-27 17:59 · R11 · Diferencie a primeira confirmação, que ainda não prova a aposentadoria da marca sem origem, do avanço entre duas mensagens confirmadas. Limite a leitura de cada registro legado antes de alocar e decodificar a linha. Quando o registro ultrapassar esse limite, aplique o fallback conservador sem importar estado parcial e processe o delta. Preserve os controles de prefixo longo em linhas curtas, leitura única e contadores da migração.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 18:00 · written by the runner
