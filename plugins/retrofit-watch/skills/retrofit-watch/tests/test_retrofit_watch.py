@@ -537,6 +537,202 @@ class StopTest(HookHarness, unittest.TestCase):
         for field in ("skills", "pending", "done"):
             self.assertEqual(saved[field], legacy[field])
 
+    def test_legacy_pending_call_order(self):
+        cuts = {}
+        for scenario in ("late", "new", "alone", "name_only", "fresh", "cache_only",
+                         "bad_line", "scalar", "partial"):
+            with self.subTest(scenario=scenario), self.sub_world() as world:
+                local = identified_load("coderabbit-pr", world.mkt_skill, "msg_local", "toolu_local")
+                other = identified_load("superpowers:brainstorming", world.other_skill,
+                                        "msg_other", "toolu_other")
+                confirmed = scenario not in ("alone", "name_only")
+                external = other if confirmed and scenario != "cache_only" else (
+                    other[:2] if scenario == "name_only" else ())
+                invalid = {"bad_line": b'{"type":\n', "scalar": b"null\n", "partial": b"{}"}
+                groups = (external, local[:2]) if scenario in ("new", *invalid) else (local[:2], external)
+                self.write(*groups, tool(), compact=True)
+                if scenario in invalid:
+                    with world.transcript.open("ab") as fh:
+                        fh.write(invalid[scenario])
+                before = dict(offset=world.transcript.stat().st_size, current=None, skills={},
+                              classified={str(world.other_skill): None} if confirmed else {},
+                              pending=[], done=[])
+                path = world.data / "sessions/s1.json"
+                path.parent.mkdir(parents=True)
+                path.write_text(json.dumps(before), encoding="utf-8")
+                if scenario == "partial":
+                    with world.transcript.open("ab") as fh:
+                        fh.write(b"\n")
+                if scenario in ("late", "new"):
+                    cuts[scenario] = dict(before, classified={"external": None})
+                if scenario == "fresh":
+                    local = identified_load("coderabbit-pr", world.mkt_skill, "msg_fresh", "toolu_fresh")
+                    self.write(local[:2], compact=True)
+                self.write(local[2:], tool(error=True), compact=True)
+                out, saved = self.checked_stop()
+                if scenario in ("new", "alone", "fresh"):
+                    self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                    entry = saved["skills"]["full:codereview"]
+                    self.assertEqual(tuple(entry[k] for k in ("work", "friction", "reviews")), (0, 0, 1))
+                else:
+                    self.assertIsNone(out)
+                    self.assertEqual(saved["skills"], {})
+                    self.assertTrue(saved["attribution_closed"])
+                if scenario in invalid or scenario == "cache_only":
+                    self.assertEqual(saved["skill_calls"], {})
+                    self.assertEqual(saved["skill_message_order"], [])
+                    self.assertEqual(saved["skill_call_history"], {})
+        self.assertEqual(cuts["late"], cuts["new"])
+
+    def test_legacy_prefix_read_once_without_recounting(self):
+        local = identified_load("codereview:coderabbit-pr", self.w.mkt_skill, "msg_local", "toolu_local")
+        delayed = identified_load("graphify", self.w.graphify, "msg_delayed", "toolu_delayed")
+        self.write(skill_typed("dev-script:dev-script"),
+                   skill_typed("retrofit-skill:retrofit-skill", args="dev-script"),
+                   local, tool(error=True), delayed[:2], compact=True)
+        offset = self.w.transcript.stat().st_size
+        info = rw.classify_plugin("codereview", self.w.ctx())
+        legacy = dict(offset=offset, current=info["key"],
+                      skills={info["key"]: dict(info, reviews=1, work=2, friction=1)},
+                      classified={}, pending=[info["label"]], done=["full:ticket"], entrypoint="cli")
+        path = self.w.data / "sessions/s1.json"
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps(legacy), encoding="utf-8")
+        payload = dict(session_id="s1", transcript_path=str(self.w.transcript), last_assistant_message="Feito.")
+        reads = []
+        historical_bumps = []
+        bump = rw.Scanner._bump
+
+        def track_bump(scanner, field):
+            historical_bumps.append((field, scanner.silent))
+            bump(scanner, field)
+
+        def track_open(path, mode):
+            actual = open(path, mode)
+            stream = mock.MagicMock(wraps=actual)
+
+            def track_read(*args):
+                start = stream.tell()
+                value = actual.read(*args)
+                reads.append((start, len(value)))
+                return value
+
+            stream.read.side_effect = track_read
+            stream.__enter__.return_value = stream
+            stream.__exit__.side_effect = actual.__exit__
+            return stream
+
+        with self.w.transcript.open("ab") as fh:
+            fh.write(b" ")
+        with mock.patch.dict(os.environ, RETROFIT_WATCH="force"), mock.patch.object(
+                rw, "open", side_effect=track_open, create=True):
+            with mock.patch.object(rw.Scanner, "_bump", track_bump):
+                self.assertIsNone(rw.cmd_stop(payload, self.w.ctx()))
+            self.assertEqual(historical_bumps, [("work", True), ("friction", True)])
+            saved = json.loads(path.read_bytes())
+            for field, value in legacy.items():
+                self.assertEqual(saved[field], value, field)
+            self.assertFalse((self.w.data / "metrics.jsonl").exists())
+            self.assertEqual(saved["skill_calls"].get("toolu_delayed"), "msg_delayed")
+            self.assertEqual(saved["skill_message"], "msg_local")
+            self.assertEqual(saved["skill_message_order"], ["msg_local", "msg_delayed"])
+            self.assertEqual(saved["skill_call_history"], {"toolu_local": ["msg_local"]})
+            self.write(delayed[2:], tool(error=True), compact=True)
+            out = rw.cmd_stop(payload, self.w.ctx())
+            self.assertEqual([read for read in reads if read[0] < offset], [(0, offset)])
+            reads.clear()
+            rw.cmd_stop(dict(payload, session_id="new"), self.w.ctx())
+            self.assertEqual(reads, [(0, self.w.transcript.stat().st_size)])
+        self.assertIn("`/retrofit-skill:retrofit-skill graphify`", self.context_of(out))
+        saved = json.loads(path.read_bytes())
+        self.assertEqual(saved["offset"], self.w.transcript.stat().st_size)
+        self.assertEqual(saved["skills"][info["key"]], legacy["skills"][info["key"]])
+        self.assertEqual(saved["done"], legacy["done"])
+
+    def test_legacy_truncated_transcript_does_not_rewind(self):
+        ours, other = self.identified_loads("msg_2")
+        local = identified_load("coderabbit-pr", self.w.mkt_skill, "msg_local", "toolu_local")
+        self.write(ours, tool(error=True), other, local[:2], compact=True)
+        offset = self.w.transcript.stat().st_size + 30
+        path = self.w.data / "sessions/s1.json"
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps(dict(offset=offset, current=None, skills={},
+                                        classified={str(self.w.other_skill): None})), encoding="utf-8")
+        for _ in range(2):
+            self.assertIsNone(self.run_hook())
+            saved = json.loads(path.read_bytes())
+            self.assertEqual(saved["offset"], offset)
+            self.assertEqual(saved["skills"], {})
+            self.assertTrue(saved["attribution_closed"])
+            self.assertEqual(saved["skill_calls"], {})
+        with self.w.transcript.open("ab") as fh:
+            fh.write(b" " * 29 + b"\n")
+        self.write(ours, tool(error=True), compact=True)
+        out, saved = self.checked_stop()
+        self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+        self.assertNotIn("legacy_prefix_truncated", saved)
+
+    def test_legacy_missing_prefix_uses_saved_classification(self):
+        local = identified_load("coderabbit-pr", self.w.mkt_skill, "msg_local", "toolu_local")
+        self.write(local[:2], compact=True)
+        offset = self.w.transcript.stat().st_size
+        path = self.w.data / "sessions/s1.json"
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps(dict(offset=offset, current=None, skills={},
+                                        classified={str(self.w.other_skill): None})), encoding="utf-8")
+        self.write(local[2:], tool(error=True), compact=True)
+        payload = dict(session_id="s1", transcript_path=str(self.w.transcript), last_assistant_message="Feito.")
+        def fail_first_open(path, mode):
+            if path == str(self.w.transcript) and mode == "rb":
+                rw.open.side_effect = open
+                raise OSError("prefixo indisponível")
+            return open(path, mode)
+
+        with mock.patch.dict(os.environ, RETROFIT_WATCH="force"), mock.patch.object(
+                rw, "open", side_effect=fail_first_open, create=True):
+            self.assertIsNone(rw.cmd_stop(payload, self.w.ctx()))
+        saved = json.loads(path.read_bytes())
+        self.assertTrue(saved["attribution_closed"])
+        self.assertEqual(saved["skills"], {})
+        self.assertEqual(saved["offset"], self.w.transcript.stat().st_size)
+
+    def test_legacy_replay_does_not_replace_saved_current(self):
+        for scenario in ("closed", "pending"):
+            with self.subTest(scenario=scenario), self.sub_world() as world:
+                ours, other = self.identified_loads("msg_2")
+                local = identified_load("graphify", world.graphify, "msg_local", "toolu_local")
+                groups = (ours, other[:2]) if scenario == "closed" else (local[:2],)
+                self.write(*groups, compact=True)
+                info = rw.classify_plugin("codereview", world.ctx())
+                legacy = dict(offset=world.transcript.stat().st_size, current=info["key"],
+                              skills={info["key"]: dict(info, reviews=1, work=2, friction=1)})
+                path = world.data / "sessions/s1.json"
+                path.parent.mkdir(parents=True)
+                path.write_text(json.dumps(legacy), encoding="utf-8")
+                out, saved = self.checked_stop()
+                self.assertIsNone(out)
+                for field, value in legacy.items():
+                    self.assertEqual(saved[field], value)
+                self.assertFalse(saved["attribution_closed"])
+                self.assertEqual(saved["skill_calls"], {})
+
+    def test_legacy_replay_respects_correlation_ceiling(self):
+        _, other = self.identified_loads("msg_2")
+        local = identified_load("coderabbit-pr", self.w.mkt_skill, "msg_local", "toolu_local")
+        self.write(other, local[:2], compact=True)
+        path = self.w.data / "sessions/s1.json"
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps(dict(offset=self.w.transcript.stat().st_size, current=None,
+                                        classified={str(self.w.other_skill): None})), encoding="utf-8")
+        self.write(local[2:], tool(error=True), compact=True)
+        payload = dict(session_id="s1", transcript_path=str(self.w.transcript), last_assistant_message="Feito.")
+        with mock.patch.dict(os.environ, RETROFIT_WATCH="force"), mock.patch.object(rw, "MAX_SKILL_MESSAGES", 1):
+            self.assertIsNone(rw.cmd_stop(payload, self.w.ctx()))
+        saved = json.loads(path.read_bytes())
+        self.assertTrue(saved["skill_correlation_lost"])
+        self.assertEqual(saved["skill_calls"], {})
+        self.assertEqual(saved["skills"], {})
+
     def test_legacy_closed_attribution_ignores_unknown_source(self):
         ours, other = self.identified_loads("msg_2")
         self.write(ours[:2], other[:2])

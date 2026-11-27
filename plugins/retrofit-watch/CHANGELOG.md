@@ -26,6 +26,9 @@
 - Sem skill ativa, a retomada da 0.4.0 respeita o encerramento indicado pelo histórico ou
   por um caminho de skill não monitorada. A marca de colisão com chamada sem origem
   sobrevive à poda em ambas as ordens da disputa, enquanto a mensagem ativa não mudar.
+- Na migração da 0.4.0, o primeiro Stop consulta uma vez o trecho até o offset salvo para
+  recuperar a ordem de chamadas pendentes. Uma externa posterior encerra a atribuição até
+  sem metadado de caminho. O trecho antigo não reconta trabalho nem gera pedidos de retro.
 
 ## [0.4.0] — 2026-11-24
 

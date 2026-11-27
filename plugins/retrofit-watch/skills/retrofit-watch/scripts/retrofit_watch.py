@@ -418,6 +418,7 @@ class State:
             self.data, self.is_new = None, True
         if self.data is None:
             self.data = {"created": time.time()}
+        self.legacy = "skill_calls" not in self.data and self.data.get("offset", 0) > 0
         for key, default in (("offset", 0), ("skills", {}), ("current", None), ("classified", {}),
                              ("pending", []), ("done", []), ("current_origin", None),
                              ("skill_message", None), ("skill_calls", {}),
@@ -468,10 +469,10 @@ class State:
 
 # --- transcript --------------------------------------------------------------------------------
 
-def read_delta(path, offset):
+def read_delta(path, offset, *, rewind=True):
     """Bytes novos do transcript até a última linha completa. Devolve (bytes, novo_offset)."""
     size = os.path.getsize(path)
-    if offset > size:
+    if rewind and offset > size:
         offset = 0
     with open(path, "rb") as fh:
         fh.seek(offset)
@@ -776,6 +777,40 @@ class Scanner:
                 self.entry(entry)
 
 
+def recover_legacy_correlation(path, st, ctx):
+    offset = st["offset"]
+    try:
+        with open(path, "rb") as fh:
+            prefix = fh.read(offset)
+    except OSError:
+        return
+    if len(prefix) < offset:
+        st["legacy_prefix_truncated"] = True
+        return
+    if not prefix.endswith(b"\n"):
+        return
+    replay = dict(st, skills={}, current=None, classified=st["classified"].copy(), done=[],
+                  skill_calls={}, skill_message_order=[], skill_call_history={}, attribution_closed=False)
+    scanner = Scanner(replay, ctx)
+    scanner.silent = True
+    for line in prefix.split(b"\n"):
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+        except ValueError:
+            return
+        if not isinstance(entry, dict):
+            return
+        scanner.entry(entry)
+    # A leitura serve para recuperar vínculos, sem substituir a atribuição gravada pela 0.4.0.
+    if replay["current"] != st["current"] or (st["attribution_closed"] and not replay["attribution_closed"]):
+        return
+    for key in ("attribution_closed", "skill_message", "skill_calls", "skill_message_order",
+                "skill_call_history", "skill_correlation_lost"):
+        st[key] = replay[key]
+
+
 # --- decisão e mensagem ------------------------------------------------------------------------
 
 def eligible(entry):
@@ -971,7 +1006,11 @@ def cmd_stop(payload, ctx):
         return None
     with State(ctx, payload.get("session_id")) as state:
         st = state.data
-        chunk, new_offset = read_delta(transcript, st["offset"])
+        if state.legacy:
+            recover_legacy_correlation(transcript, st, ctx)
+        chunk, new_offset = read_delta(transcript, st["offset"], rewind=not st.get("legacy_prefix_truncated"))
+        if new_offset > st["offset"]:
+            st.pop("legacy_prefix_truncated", None)
         st["offset"] = new_offset
         found = None
         for found in ENTRYPOINT_RE.finditer(chunk):
