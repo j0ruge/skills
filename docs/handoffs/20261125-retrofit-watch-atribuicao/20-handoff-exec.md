@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a21ebc-9d5f-7470-b810-8e2f120961cc
-data: 2026-11-27 17:48
-gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' em e65902c → rc 0. Loja com 154 testes (3 pulados). Hook com 111 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada. Os 12 Checks de checkpoint.md passaram.'
+sessao: 01a21ece-ea91-77e2-a81a-b8ff93e29623
+data: 2026-11-27 18:05
+gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' em fb5e489 → rc 0. Loja com 154 testes (3 pulados). Hook com 113 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada. Os 13 Checks de checkpoint.md passaram.'
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,18 +14,18 @@ gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''sourc
 
 ## TL;DR
 
-R10 preserva o slash digitado na migração da 0.4.0 e impede que ID falho sem origem prove uma nova carga.
-O prefixo é lido linha a linha até o offset salvo. A correlação parcial não é importada.
-I1 e F1 voltaram a `1 0 1 0 0 1`. Os 12 Checks e o TEST_CMD passaram.
-A QA deve começar pelo Check R10 com a 0.4.0 real e repetir R9.
+R11 preserva a marca de ID falho sem origem na primeira confirmação.
+Na migração da 0.4.0, um registro acima de 2 MiB invalida só a reconstrução. O trecho novo segue a partir do estado salvo.
+As duas regressões duráveis, os 13 Checks e o TEST_CMD passaram.
+A QA deve começar por R11, sob teto de 256 MiB, e repetir os controles de R10.
 
 ## Estado do repo
 
 - **Branch:** `fix/retrofit-watch-atribuicao-mesma-mensagem`, em Git isolado pelo runner.
-- **Último commit do incremento:** `e65902c` — preservar evidências na retomada da 0.4.0.
+- **Último commit do incremento:** `fb5e489` — preservar a marca sem origem e retomar após registro legado grande.
 - **Working tree:** limpo após o commit deste registro.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `e65902c` → rc 0. Loja com 154 testes (3 pulados). Hook com 111 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada.
-- **E2E:** os 12 Checks passaram em `e65902c`, incluindo a jornada de F1 e as trocas de versão em R9 e R10.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `fb5e489` → rc 0. Loja com 154 testes (3 pulados). Hook com 113 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada.
+- **E2E:** os 13 Checks de `checkpoint.md` passaram em `fb5e489`, incluindo F1 e as trocas de versão em R9–R11.
 - **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_auto_docs.ReleaseTest.test_the_four_places_agree_at_0_4_0_or_later` em `8b861d2` → 1 teste, rc 0.
 
 ## O que foi feito
@@ -161,21 +161,44 @@ A QA deve começar pelo Check R10 com a 0.4.0 real e repetir R9.
   um parâmetro opcional sem uso é equivalente. Os controles rodaram antes e após as mutações
   com grupo de processos próprio, teto de 14 s e 512 MiB de memória virtual.
 
+### Retorno da revisão — rodada r11
+
+- `fb5e489` — mantém a marca sem origem até haver avanço entre mensagens confirmadas.
+  Reuso do ID falho fica em silêncio, mas ID novo da mesma mensagem ainda pede retro.
+- `fb5e489` — limita a leitura de cada registro na migração a 2 MiB. Se o registro
+  não couber, descarta toda a reconstrução e aplica o trecho novo ao estado salvo.
+- Red em `8984d38`: a marca passou de `1` a `0` após a primeira confirmação. O
+  reuso pediu `codereview` e o registro de 96 MiB deixou o offset parado sob 256 MiB.
+  As duas regressões falharam antes da correção.
+- Green em `fb5e489`: os dois binários pediram `graphify` e avançaram o offset nos dois
+  perfis de prefixo sob 256 MiB. A regressão confere que contadores e histórico não são
+  recontados e que vínculos parciais não chegam ao estado.
+- Sabotagem em cópia temporária: 16 de 16 variações detectadas. Os controles passaram
+  antes e depois, com grupos de processos próprios, teto de 12 s e 512 MiB de memória
+  virtual. As notas registram o sensor de cada variação.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1, F1 e R1–R10 com as sondas executáveis e os hashes das correções. |
-| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9 e R10. |
+| `checkpoint.md` | I1, F1 e R1–R11 com as sondas executáveis e os hashes das correções. |
+| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R11. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
 | `TODO.md` | Issue #12 e ordem legada marcadas `RESOLVED by 682cd3d` e `RESOLVED by 8fa5c7d` até o merge. |
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as 12 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as 13 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
-- Comece por R10. A célula em `checkpoint.md` extrai a sonda de `40-review-r10.md`
+- Comece por R11. A célula em `checkpoint.md` executa a sonda de `40-review-r11.md`
+  e as duas regressões duráveis. Exija `marca_novo=1,1`, `marca_reuso=1,1`, silêncio
+  no reuso e `codereview` para ID novo nos dois modos. Sob teto de 256 MiB, os quatro
+  subprocessos das duas versões devem pedir `graphify` e avançar o offset, tanto no
+  prefixo de linhas curtas quanto no de registro de 96 MiB. Depois confirme que o
+  registro grande não trouxe consigo contadores ou vínculos do prefixo.
+
+- Repita R10. A célula em `checkpoint.md` extrai a sonda de `40-review-r10.md`
   e a 0.4.0 de `fe38d1f`, roda os dois hooks em diretórios temporários e exige `prefixo_041=ok`,
   `checks_i1_f1=2` e `regressoes=3`. Confira também os controles de slash alheio, externa
   sem vínculo e ID novo. Não é preciso iniciar, parar ou reiniciar uma sessão real de Claude Code.
@@ -224,7 +247,8 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 - Os três testes de distribuição nativa seguem pulados pelo `TEST_CMD` no sandbox. Em um clone temporário de `893c9c6`, `env -u SKILLS_SKIP_NATIVE_DISTRIBUTION python3 -B -m unittest discover -s tests -p test_codex_distribution.py -v` retornou rc 1 nos três por não conseguir criar o namespace Bubblewrap. Nenhum chegou ao primeiro comando do CLI dentro do namespace. Repetir no host com suporte a Bubblewrap.
 - A consulta ao trecho já consumido só vale na migração da 0.4.0. Se o trecho não
   estiver utilizável ou contradisser a atribuição gravada, prevalece a evidência persistida.
-  O limite de memória de R10 foi medido na leitura do prefixo, não para um delta novo.
+  O limite de 2 MiB por registro vale para a reconstrução do prefixo, não para um delta
+  novo. Dados de correlação disponíveis só no prefixo são descartados se ele exceder o limite.
 - Modo autônomo, fila e distribuição Codex ficaram fora do patch.
 
 - A medida de crescimento cobre tentativas em mensagens distintas. IDs de mensagens já aposentadas não integram a janela de correlação. Ampliar o histórico continua fora do R4.

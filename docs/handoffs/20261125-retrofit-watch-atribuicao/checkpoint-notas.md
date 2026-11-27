@@ -324,3 +324,21 @@
 - 2026-11-27 17:58 · `R11` · A revisão r11 reuniu os achados 1–2. A primeira atribuição perdia a marca de ID falho sem origem, e um registro de 96 MiB impedia a retomada sob 256 MiB. Os 12 Checks já fechados e o TEST_CMD passaram.
 - 2026-11-27 17:59 · R11 · Diferencie a primeira confirmação, que ainda não prova a aposentadoria da marca sem origem, do avanço entre duas mensagens confirmadas. Limite a leitura de cada registro legado antes de alocar e decodificar a linha. Quando o registro ultrapassar esse limite, aplique o fallback conservador sem importar estado parcial e processe o delta. Preserve os controles de prefixo longo em linhas curtas, leitura única e contadores da migração.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 18:00 · written by the runner
+- 2026-11-27 18:05 · `R11` · Red em 8984d38. A primeira confirmação apagou a marca nos dois casos retomados. O reuso pediu retro indevida e o registro de 96 MiB sob 256 MiB gerou MemoryError sem avançar o offset. As duas regressões duráveis falharam antes da correção.
+- 2026-11-27 18:05 · `R11` · R11 sabotage 1: ampliar o limite por registro para 64 MiB → rc 1, test_legacy_replay_recovers_after_oversized_line
+- 2026-11-27 18:05 · `R11` · R11 sabotage 2: ignorar qual era a mensagem anterior → rc 1, test_failed_unowned_call_id_cannot_prove_same_message
+- 2026-11-27 18:05 · `R11` · R11 sabotage 3: aceitar a primeira confirmação como avanço de mensagem com origem → rc 1, test_failed_unowned_call_id_survives_first_attribution
+- 2026-11-27 18:05 · `R11` · R11 sabotage 4: tratar nova confirmação da mesma mensagem como avanço → rc 1, test_failed_unowned_call_id_cannot_prove_same_message
+- 2026-11-27 18:05 · `R11` · R11 sabotage 5: nunca avançar a ordem das mensagens → rc 1, test_failed_unowned_call_id_cannot_prove_same_message
+- 2026-11-27 18:05 · `R11` · R11 sabotage 6: repor a poda anterior da marca sem origem → rc 1, test_failed_unowned_call_id_survives_first_attribution
+- 2026-11-27 18:05 · `R11` · R11 sabotage 7: aposentar a marca mesmo sem avanço → rc 1, test_failed_unowned_call_id_cannot_prove_same_message
+- 2026-11-27 18:05 · `R11` · R11 sabotage 8: não aposentar nenhuma marca sem origem → rc 1, test_failed_unowned_call_id_cannot_prove_same_message
+- 2026-11-27 18:05 · `R11` · R11 sabotage 9: limitar a leitura ao offset, sem teto por registro → rc 1, test_legacy_replay_recovers_after_oversized_line
+- 2026-11-27 18:05 · `R11` · R11 sabotage 10: ignorar o offset no limite de leitura → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 18:05 · `R11` · R11 sabotage 11: repor a leitura de até todo o prefixo restante → rc 1, test_legacy_replay_recovers_after_oversized_line
+- 2026-11-27 18:05 · `R11` · R11 sabotage 12: ler sem passar limite → rc 1, test_legacy_replay_recovers_after_oversized_line
+- 2026-11-27 18:05 · `R11` · R11 sabotage 13: usar o restante do prefixo como sensor de truncamento → rc 1, test_legacy_replay_recovers_after_oversized_line
+- 2026-11-27 18:05 · `R11` · R11 sabotage 14: marcar como truncado também o registro no limite → rc 1, test_legacy_replay_recovers_after_oversized_line
+- 2026-11-27 18:05 · `R11` · R11 sabotage 15: importar a evidência parcial quando falta quebra → rc 1, test_legacy_replay_recovers_after_oversized_line
+- 2026-11-27 18:05 · `R11` · R11 sabotage 16: não interromper a reconstrução quando falta quebra → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 18:05 · `R11` · Green em fb5e489. Os 13 Checks igualaram o resultado esperado. TEST_CMD isolado passou com 154 testes da loja (3 pulados) e 113 do hook. A jornada sob 256 MiB retomou os dois tamanhos de registro e avançou o offset. As 16 mutações foram detectadas, com controles verdes sob os mesmos tetos.
