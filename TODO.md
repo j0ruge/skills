@@ -88,13 +88,12 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 ### O que o uso da retrofit-watch 0.4.0 mostrou
 
 - [ ] **A skill de fora carregada na mesma mensagem apaga a atribuição da vigiada** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:532` (`_watch`) — a carga de uma
-  skill não vigiada põe `current = None`. Em 2026-11-25, uma mensagem carregou a `zitadel-idp` e uma skill de
-  terceiro juntas: o trabalho seguinte ficou sem dono, ela fechou com `work: 0`, e o hook não pediu a retro dela,
-  nem no modo autônomo. O zero existe para não atribuir trabalho de outra tarefa, e o conserto não o tira de todo.
-  Direção: a de fora no mesmo `message.id` da vigiada não zera; um caso prova o par, outro que a de fora numa
-  mensagem seguinte ainda zera. RESOLVED by 682cd3d
-  Fonte: transcript interativo — descoberto por `investigação do modo auto` (2026-11-25)
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:542` (`_watch`) —
+  uma mensagem carregou `zitadel-idp` e uma externa juntas. A monitorada ficou com `work: 0` e sem pedido de retro.
+  Direção: preservar o par no mesmo `message.id` e testar que a externa posterior ainda encerra a atribuição.
+  Corrigido no patch 0.4.1. RESOLVED by 682cd3d
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/00-missao.md` (transcript interativo) —
+  descoberto por `investigação do modo auto` (2026-11-25)
 
 ### LOW da codereview da retrofit-watch 0.4.0
 
@@ -172,7 +171,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: `rows.get` com mensagem; `assertIn("--retro", rw.CLI_USAGE["discard"][0])`.
   Fonte: codereview r1 #21 e #22 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **O CHANGELOG 0.4.0 cita só o fetch e o push** —
-  `plugins/retrofit-watch/CHANGELOG.md:93` (`push`) — o ponto da config de sistema cita só o `fetch` e o
+  `plugins/retrofit-watch/CHANGELOG.md:101` (`push`) — o ponto da config de sistema cita só o `fetch` e o
   `push` da porta, e o `prepare` também usa o `remote_env` (r1 #24).
   Direção: "todo git que fala com o `origin`".
   Fonte: codereview r1 #24 — descoberto por `codereview r1` (2026-11-24)
@@ -195,38 +194,39 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 - [ ] **O registro da missão mistura a medição histórica com o estado atual** —
   `docs/handoffs/20261125-retrofit-watch-atribuicao/00-missao.md:76` (`I1 estava vermelha`) —
   a frase usa HEAD para a medição anterior à correção e lista uma aprovação que já consta do aceite.
-  Direção: ancorar o Red no commit anterior e separar aprovação registrada de merge pendente.
-  RESOLVED by 9e79cb6
-  Fonte: revisão r1 — descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
+  Direção: ancorar o Red no commit anterior e separar aprovação de merge. RESOLVED by 9e79cb6
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r1.md` —
+  descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 - [ ] **A publicação do patch desloca uma âncora do backlog da retrofit-watch** —
-  `plugins/retrofit-watch/CHANGELOG.md:93` (`push`) — a entrada 0.4.1 deslocou a âncora original da linha 66.
+  `plugins/retrofit-watch/CHANGELOG.md:101` (`push`) — a entrada 0.4.1 deslocou a âncora original da linha 66.
   O linter sem baseline detecta o desvio. Direção: atualizar a referência do item sobre fetch e push.
-  RESOLVED by 9e79cb6
-  Fonte: revisão r1 — descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
+  A primeira correção ficou em `9e79cb6`. RESOLVED by 9e79cb6
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r1.md` —
+  descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 
 - [ ] **ID de chamada reaproveitado entre mensagens passa por vínculo novo** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:643` (`_skill_origin`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:653` (`_skill_origin`) —
   após trocar a mensagem ativa, o ID consumido antes ainda pode preservar a monitorada diante de uma carga externa.
   Direção: medir a janela de ambiguidade antes de ampliar a detecção além da mensagem ativa.
-  Fonte: revisão r2 — descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r2.md` —
+  descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 
 - [ ] **Metadado externo antigo encerra a atribuição de uma carga posterior** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:688` (`unlinked = False`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:692` (`unlinked = False`) —
   após confirmar a carga posterior, o metadado externo antigo encerra o crédito futuro. O caso já falha na base.
   Direção: diferenciar ID comprovadamente obsoleto de metadado sem origem conhecida.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r3.md` — descoberto por
   `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 
 - [ ] **O handoff de R3 não distingue de qual mensagem é a chamada pendente** —
-  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:55` (`outra chamada pendente`) —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:56` (`outra chamada pendente`) —
   a frase estende a garantia a uma chamada de outra mensagem, mas a sonda de R4 devolve o alvo errado nesse caso.
-  Direção: qualificar a garantia sem confundir vínculo restante na mesma mensagem com pendência em outra.
-  RESOLVED by 893c9c6
+  Direção: distinguir vínculo restante na mesma mensagem de pendência em outra. RESOLVED by 893c9c6
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r4.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-26)
 
 - [ ] **Medições históricas da atribuição sem saída preservada** —
-  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:63` (`58 degradações`) —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:64` (`58 degradações`) —
   totais de mutações e a prova nativa foram resumidos sem as saídas nos artefatos de revisão.
   Direção: guardar os resultados junto do commit e do comando que os produziu.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r5.md` —
@@ -253,6 +253,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r10.md` — descoberto por
   `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
+### Documentação da loja
+
+- [ ] **Separar o histórico de releases da tabela de plugins no README** —
+  `README.md:147` (`Available Plugins`) — a tabela repete notas de várias versões e dificulta comparar plugins.
+  Direção: manter nome, versão, descrição curta e links na tabela. Preservar detalhes nos changelogs e referências.
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/45-docs.md` —
+  descoberto por `sdd-docs` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
 ## Decidido — não reabrir
 <!-- sdd:decided -->

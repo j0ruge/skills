@@ -6,6 +6,22 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-11-27 — Atribuição da retrofit-watch medida na saída do Stop
+
+Missão `20261125-retrofit-watch-atribuicao`.
+
+- **Antes:** em `e45db9e`, o Check de I1 no [checkpoint](docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint.md)
+  produziu `0 0 0 0 0 1`. O pedido para `codereview` sumia em leitura contínua e ao retomar
+  quando uma externa carregava na mesma mensagem.
+- **Depois:** em `682cd3d`, o mesmo Check produziu `1 0 1 0 0 1`. Só os dois casos com origem
+  na mesma mensagem mudaram. A carga posterior e o legado sem vínculo continuaram em silêncio.
+- **Padronizado:** a suíte de Stop testa tanto o alvo da retro quanto o silêncio, o offset e
+  a preservação do histórico. O Check de R12 cobre o falso pedido após uma migração incompleta
+  e os controles de carga nova e slash explícito. O aprendizado ficou nos testes executáveis
+  da [suíte de atribuição](plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py).
+
+---
+
 ## 2026-11-22 — Descoberta global de skills do Claude Code no Antigravity CLI sem symlinks versionados
 
 - **Antes:** a integração local com o Antigravity CLI dependia de symlinks manuais em `~/.agents/skills/` (escopo restrito ao `$HOME`) apontando para `~/.claude/plugins/cache/<marketplace>/<plugin>/<versao>/skills/`. Ao atualizar `codereview` no Claude Code (`2.27.15` → `2.30.1`), o symlink quebrou silenciosamente.
