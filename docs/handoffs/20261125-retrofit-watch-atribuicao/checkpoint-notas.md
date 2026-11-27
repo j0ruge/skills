@@ -141,3 +141,4 @@
 - 2026-11-27 10:41 · `R4` · Red em b3e9117: quatro divergências na sonda e oito subcasos em Stop. Green em 893c9c6: seis Checks, 58 degradações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 94 do hook, release 0.4.1. Provas nativas impedidas pelo namespace Bubblewrap.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 10:42 · written by the runner
 - 2026-11-27 10:51 · R5 · Revisão r5, achado 1: a colisão intermediária descarta a marca de ID consumido sem origem. O Stop pede retro de codereview em leitura contínua e retomada. Na base e no controle de reuso direto, fica em silêncio.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 11:13 · written by the runner
