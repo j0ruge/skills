@@ -63,11 +63,11 @@ A issue #11 e o projeto 0.5.0 seguem em seu próprio fluxo. O L1 exclui mudança
 
 O worker respondeu às duas perguntas pela delegação assinada do L1, seguindo as opções recomendadas.
 
-1. Question 2110f0453b3646d0aba5d8f1253a5658
+1. Pergunta registrada pelo relay
    - question: Medi o pedido de retro do \`codereview\` na saída de \`cmd\_stop\`, usando os fixtures do plugin e estado em memória. Com o mesmo trabalho após as cargas, o pedido apareceu com a monitorada sozinha e sumiu nos dois casos com a externa. A correção deve mudar apenas o resultado em que as duas cargas têm o mesmo \`message.id\`.&#10;&#10;O Check do L1 deve cobrir também o caso em que o hook salva o estado entre a chamada \`Skill\` e a chegada da linha \`isMeta\` com o diretório da skill?&#10;&#10;A (recomendada) — Sim. Testar a leitura contínua e a retomada em duas chamadas do hook. Na retomada, preservar a atribuição quando \`sourceToolUseID\` ligar a carga à mesma mensagem. Com estado antigo sem essa correlação, manter o encerramento conservador.&#10;&#10;B — Testar o par e a mensagem posterior em uma única leitura. Na retomada, manter o encerramento conservador mesmo quando a correlação estava disponível antes de salvar o estado.
    - answer: (other: A (recomendada) — Sim. Testar a leitura contínua e a retomada em duas chamadas do hook. Na retomada, preservar a atribuição quando \`sourceToolUseID\` ligar a carga à mesma mensagem. Com estado antigo sem essa correlação, manter o encerramento conservador.)
 
-2. Question c1a081a67b2a45658e1306d43437126f
+2. Pergunta registrada pelo relay
    - question: Medi também a retomada em duas chamadas de \`cmd\_stop\`, com o estado serializado em JSON em memória entre elas. Hoje, o pedido de retro some tanto com o mesmo \`message.id\` quanto com IDs distintos. O controle com a monitorada sozinha emitiu o pedido esperado.&#10;&#10;Qual versão deve identificar a correção da issue #12?&#10;&#10;A (recomendada) — 0.4.1. É o próximo patch após a 0.4.0 registrada na loja e mantém a 0.5.0 reservada ao trabalho da issue #11.&#10;&#10;B — Outra versão de patch da série 0.4.x. Indique o número que o mantenedor reservou para esta correção.
    - answer: (other: A (recomendada) — 0.4.1. É o próximo patch após a 0.4.0 registrada na loja e mantém a 0.5.0 reservada ao trabalho da issue #11.)
 
