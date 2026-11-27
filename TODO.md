@@ -276,8 +276,9 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 
 - [ ] **Pré-scan manual da revisão pode passar sem analisar linhas** —
   `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r15.md:117` (`scan_secrets.sh`) —
-  Cor e prefixos foram cobertos por `3b8ef98`. Na r17, o comparador externo ainda deu rc 0 e zero linhas.
-  Direção: usar o diff nativo com formato explícito. RESOLVED by 261bff5
+  `3b8ef98` cobriu cor e prefixos. `261bff5` cobriu comparadores e conversores.
+  Na r18, Markdown binário ainda deu rc 0 e zero linhas. Evidência em `40-review-r18.md`.
+  Direção: pedir diff textual para Markdown e conferir a contagem de linhas analisadas.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r16.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
