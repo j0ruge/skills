@@ -251,3 +251,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 17:28 · written by the runner
 - 2026-11-27 17:38 · `R10` · Revisão r10, achados 1–4: slash legado, ID falho sem origem, memória do prefixo e vetor I1/F1 divergente. R1–R9 e TEST_CMD verdes. Performance caiu de A para B.
 - 2026-11-27 17:39 · R10 · Leia o prefixo anterior ao offset de forma incremental, usando memória proporcional à linha e sem aplicar correlação parcial se o prefixo não passar na validação. Preserve o slash pendente comprovado e a marca de um ID falho sem origem até que possa ser aposentada. Em I1 e F1, mantenha o vetor aprovado e retire do caso sem prova os IDs que a migração agora consegue recuperar. Repita R9 e os onze checks anteriores.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 17:40 · written by the runner
