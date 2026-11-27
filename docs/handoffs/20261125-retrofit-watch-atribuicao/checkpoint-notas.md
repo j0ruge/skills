@@ -354,3 +354,4 @@
 - 2026-11-27 18:20 · `R12` · R12 sabotage 5: restaurar a condição anterior → rc 1, test_legacy_oversized_replay_does_not_reopen_from_delayed_metadata (no_external) e test_legacy_pending_call_order (alone)
 - 2026-11-27 18:20 · `R12` · Green em d77e6a1. Os 14 Checks passaram com a saída esperada. TEST_CMD isolado passou com 154 testes da loja (3 pulados) e 114 do hook. Os controles de sabotagem passaram antes e depois sob grupo próprio, 20 s e 256 MiB.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:21 · written by the runner
+- 2026-11-27 18:29 · r13 · R12 verificado em 91a7b7d: sonda vermelha na base e verde no HEAD, 14 Checks, suíte e quatro mutações confirmados. Nota A em todos os critérios, sem novo incremento.
