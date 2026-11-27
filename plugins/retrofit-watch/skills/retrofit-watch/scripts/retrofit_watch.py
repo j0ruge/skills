@@ -517,7 +517,9 @@ class Scanner:
             self.st["skill_calls"] = {call: message for call, message in calls.items() if message in live}
         for call, owners in list(history.items()):
             retained = [message for message in owners if message in live]
-            if retained or (not owners and not advanced):
+            if (not owners or owners[0] is None) and not advanced:
+                history[call] = [None, *retained] if retained else []
+            elif retained:
                 history[call] = retained
             else:
                 del history[call]
@@ -657,11 +659,13 @@ class Scanner:
         calls = self.st["skill_calls"]
         history = self.st["skill_call_history"]
         if call_id in calls or call_id in history:
-            # A marca sem origem não pode depender da permanência da mensagem que colidiu.
-            if history.get(call_id) != []:
-                owners = history.get(call_id, [])
-                owners = dict.fromkeys((*owners, calls.pop(call_id, None), message_id))
-                history[call_id] = [owner for owner in owners if owner]
+            # A marca sem origem é [] sozinha e None antes dos donos durante a disputa.
+            owners = history.get(call_id)
+            known = dict.fromkeys((*(owners or ()), calls.pop(call_id, None), message_id))
+            retained = [owner for owner in known if owner]
+            if owners == [] or (owners and owners[0] is None):
+                retained.insert(0, None)
+            history[call_id] = retained
             self._prune_skill_correlation()
             return None
         calls[call_id] = message_id

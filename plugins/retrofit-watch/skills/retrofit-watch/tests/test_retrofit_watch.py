@@ -903,7 +903,7 @@ class StopTest(HookHarness, unittest.TestCase):
 
     def test_unowned_consumed_id_survives_intermediate_collision(self):
         for cuts in ((), ("before",), ("after",), ("before", "after")):
-            for scenario in ("new", "reused", "interleaved", "owned_interleaved"):
+            for scenario in ("new", "reused", "interleaved", "owned_interleaved", "retained_then_pruned"):
                 with self.subTest(cuts=cuts, scenario=scenario), self.sub_world() as world:
                     name = "codereview:coderabbit-pr"
                     active = identified_load(name, world.mkt_skill, "msg_a", "toolu_active")
@@ -921,9 +921,15 @@ class StopTest(HookHarness, unittest.TestCase):
                         self.assertIsNone(out)
                         self.assertEqual(saved["skill_call_history"]["toolu_s"], owners)
 
-                    if scenario in ("interleaved", "owned_interleaved"):
+                    if scenario == "retained_then_pruned":
+                        pending = identified_load("nao-instalada", world.other_skill, "msg_b", "toolu_pending")
+                        self.write(pending[:1], compact=True)
+                    if scenario in ("interleaved", "owned_interleaved", "retained_then_pruned"):
                         collision = identified_load("nao-instalada", world.other_skill, "msg_b", "toolu_s")
                         self.write(collision[:1], compact=True)
+                    if scenario == "retained_then_pruned":
+                        pending[1]["message"]["content"][0]["is_error"] = True
+                        self.write(pending[1:2], compact=True)
                     if "after" in cuts:
                         out, saved = self.checked_stop()
                         self.assertIsNone(out)
@@ -942,7 +948,66 @@ class StopTest(HookHarness, unittest.TestCase):
                     else:
                         self.assertIsNone(out)
                         self.assertIsNone(saved["current"])
+                        # Só o erro da pendência anterior à externa pode contar como atrito.
+                        friction = int(scenario == "retained_then_pruned")
+                        self.assertEqual((skill["work"], skill["friction"], skill["reviews"]), (0, friction, 0))
+
+    def test_unowned_collision_survives_confirmation_of_live_owner(self):
+        for resume in (False, True):
+            for duplicate in (False, True):
+                with self.subTest(resume=resume, duplicate=duplicate), self.sub_world() as world:
+                    name = "codereview:coderabbit-pr"
+                    active = identified_load(name, world.mkt_skill, "msg_a", "toolu_active")
+                    consumed = skill_via_tool(name, world.mkt_skill)
+                    refresh = identified_load(name, world.mkt_skill, "msg_a", "toolu_refresh")
+                    pending = identified_load("coderabbit-pr", world.mkt_skill, "msg_b", "toolu_pending")
+                    collision = identified_load("nao-instalada", world.other_skill, "msg_b", "toolu_s")
+                    self.write(active, consumed, refresh, compact=True)
+                    if resume:
+                        out, saved = self.checked_stop()
+                        self.assertIsNone(out)
+                        self.assertEqual(saved["skill_call_history"]["toolu_s"], [])
+
+                    self.write(pending[:2], collision[:1], compact=True)
+                    if resume:
+                        out, saved = self.checked_stop()
+                        self.assertIsNone(out)
+                        self.assertEqual(saved["skill_message_order"], ["msg_a", "msg_b"])
+                        self.assertEqual(saved["skill_calls"], {"toolu_pending": "msg_b"})
+                        self.assertEqual(saved["skill_call_history"].get("toolu_s"), [None, "msg_b"])
+
+                    self.write(collision[:1], compact=True)
+                    if resume:
+                        out, saved = self.checked_stop()
+                        self.assertIsNone(out)
+                        self.assertEqual(saved["skill_call_history"].get("toolu_s"), [None, "msg_b"])
+
+                    self.write(pending[2:], compact=True)
+                    if resume:
+                        out, saved = self.checked_stop()
+                        self.assertIsNone(out)
+                        self.assertFalse(saved["skill_correlation_lost"])
+                        self.assertEqual(saved["current_origin"], ["msg_b", "toolu_pending"])
+                        self.assertEqual(saved["skill_message_order"], ["msg_b"])
+                        self.assertEqual(saved["skill_call_history"].get("toolu_s"), ["msg_b"])
+
+                    call_id = "toolu_s" if duplicate else "toolu_new"
+                    external = identified_load("superpowers:brainstorming", world.other_skill, "msg_b", call_id)
+                    self.write(external, tool(error=True), compact=True)
+                    out, saved = self.checked_stop()
+                    skill = saved["skills"]["full:codereview"]
+                    if duplicate:
+                        self.assertIsNone(out)
+                        self.assertIsNone(saved["current"])
                         self.assertEqual((skill["work"], skill["friction"], skill["reviews"]), (0, 0, 0))
+                    else:
+                        self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                        self.assertEqual(skill["reviews"], 1)
+                        later = identified_load(name, world.mkt_skill, "msg_c", "toolu_later")
+                        self.write(later, compact=True)
+                        out, saved = self.checked_stop()
+                        self.assertIsNone(out)
+                        self.assertEqual(saved["skill_call_history"], {"toolu_later": ["msg_c"]})
 
     def test_invalid_call_id_cannot_establish_message_position(self):
         for value in (None, "id com espaços", []):

@@ -20,6 +20,9 @@
 - Enquanto a mensagem ativa não muda, a poda de uma tentativa intermediária que reutilizou um
   ID consumido sem origem não apaga sua marca. Reusar esse ID numa carga externa não comprova
   a origem para preservar a atribuição.
+- Se a mensagem que reutilizou o ID continuar na janela e for confirmada, sua colisão continua
+  registrada. A confirmação pode aposentar a marca sem origem, mas não libera o ID enquanto
+  uma mensagem que colidiu com ele continuar retida.
 
 ## [0.4.0] — 2026-11-24
 
