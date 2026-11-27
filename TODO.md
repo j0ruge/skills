@@ -264,8 +264,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 
 - [ ] **A fonte do incidente da atribuição leva à reprodução sintética** —
   `TODO.md:95` (`transcript interativo`) — a missão citada registra o caso sintético, não o incidente descrito.
-  Direção: separar a fonte do incidente da evidência de reprodução, ou marcar a fonte original como indisponível.
-  RESOLVED by 1b6b72f
+  Direção: distinguir a origem do relato da reprodução no handoff. RESOLVED by 1b6b72f
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r14.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
