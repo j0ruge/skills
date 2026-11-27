@@ -364,3 +364,4 @@
 2026-11-27 18:50 · r15 · Delta verificado em 11ae63baa9d93c2236f04c651fd5900d5ba1151a. Suíte, quatro testes de release e 14 Checks passaram. Fonte da r14 confirmada, um desvio de formato no backlog. Documentation B, demais notas A, sem R13.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:51 · written by the runner
 - 2026-11-27 18:57 · r16 · Delta revisado em 0389ae5. Suíte e 14 Checks verdes. Marcador da r15 confirmado em 42905fc. Receita manual do pré-scan registrada no backlog. Documentation B, demais A, sem incremento pendente.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:59 · written by the runner
