@@ -17,6 +17,9 @@
   ainda aguarda confirmação. Reusar um ID falho, consumido ou ambíguo na janela retida não
   comprova a origem, mesmo antes de uma carga daquela mensagem ser reconhecida. Ao exceder
   64 mensagens ou 1.024 IDs retidos, o hook deixa de correlacionar na sessão, sem apagar contadores.
+- Enquanto a mensagem ativa não muda, a poda de uma tentativa intermediária que reutilizou um
+  ID consumido sem origem não apaga sua marca. Reusar esse ID numa carga externa não comprova
+  a origem para preservar a atribuição.
 
 ## [0.4.0] — 2026-11-24
 

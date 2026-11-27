@@ -657,9 +657,11 @@ class Scanner:
         calls = self.st["skill_calls"]
         history = self.st["skill_call_history"]
         if call_id in calls or call_id in history:
-            owners = history.get(call_id, [])
-            owners = dict.fromkeys((*owners, calls.pop(call_id, None), message_id))
-            history[call_id] = [owner for owner in owners if owner]
+            # A marca sem origem não pode depender da permanência da mensagem que colidiu.
+            if history.get(call_id) != []:
+                owners = history.get(call_id, [])
+                owners = dict.fromkeys((*owners, calls.pop(call_id, None), message_id))
+                history[call_id] = [owner for owner in owners if owner]
             self._prune_skill_correlation()
             return None
         calls[call_id] = message_id
