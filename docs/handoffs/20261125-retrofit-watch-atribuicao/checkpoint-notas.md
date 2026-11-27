@@ -345,3 +345,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:07 · written by the runner
 - 2026-11-27 18:13 · REVIEW r12 · `R12` · Achado 1: acima de 2 MiB, a migração aceita metadado atrasado após externa legada e pede retro indevida. A base ficou em silêncio sob o mesmo teto. Suíte e 13 Checks fechados passaram.\n
 - 2026-11-27 18:14 · R12 · Se a reconstrução não puder comprovar o prefixo, uma sessão legada sem atribuição ativa começa em fallback conservador persistido. Metadado atrasado sem vínculo não confirma carga; falha de leitura não justifica importar estado parcial nem bloquear vínculos novos e slash explícito no delta. Preserve o fluxo quando a leitura completa comprova a ausência de externa. Cubra o limite exato, limite mais um byte e retomada em Stop posterior.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 18:15 · written by the runner
