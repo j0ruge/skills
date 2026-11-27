@@ -366,3 +366,4 @@
 - 2026-11-27 18:57 · r16 · Delta revisado em 0389ae5. Suíte e 14 Checks verdes. Marcador da r15 confirmado em 42905fc. Receita manual do pré-scan registrada no backlog. Documentation B, demais A, sem incremento pendente.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:59 · written by the runner
 - 2026-11-27 19:05 · r17 · Delta revisado em 1b7d883. Suíte e 14 Checks verdes. Cor e prefixos confirmados. Comparador externo e recorte histórico da r16 registrados no backlog. Documentation B, demais A, sem incremento pendente.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 19:07 · written by the runner
