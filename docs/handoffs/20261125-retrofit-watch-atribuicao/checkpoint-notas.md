@@ -374,3 +374,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 19:46 · written by the runner
 - 2026-11-27 19:51 · r20 · Suíte e 14 Checks verdes em e32b365. Propagação da rejeição confirmada em 26feade. Reprodução documental da r15 falha sem SDD_KIT no shell externo e foi registrada no backlog. Documentation B, demais A, sem incremento pendente.
 - 2026-11-27 19:53 · Pós-r20 · A sonda da r15 localiza o kit no próprio bloco em 41a6ca5. Com SDD_KIT ausente, Bash e Zsh deram 0, 1 e 0 para as amostras de seis, nove e oito linhas. A execução do bloco completo continuou dando rc 1 no controle de contagem divergente. A evidência histórica da r20 está fixada ao blob revisado.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 19:53 · written by the runner
