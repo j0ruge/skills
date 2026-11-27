@@ -299,7 +299,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 - [ ] **A reprodução do limite do backlog não fixa a versão da amostra** —
   `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r15.md:129` (`item do incidente`) —
   Com o item atual, as três inserções dão oito linhas e rc 0 em vez da rejeição esperada.
-  Direção: copiar a amostra do blob histórico indicado na r20.
+  Direção: copiar a amostra do blob histórico indicado na r20. RESOLVED by a664c98
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r21.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
