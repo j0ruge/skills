@@ -242,7 +242,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 - [ ] **A migração perde a ordem de cargas anteriores ao offset** —
   `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:428` (`attribution_closed`) —
   a 0.4.0 não distingue os dois cortes, com perda de retro nova e falso pedido quando só houve nome externo.
-  Direção: avaliar como recuperar a ordem sem recontar trabalho ou explicitar a política quando não houver evidência.
+  Direção: recuperar só a ordem sem recontar trabalho. RESOLVED by 8fa5c7d
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r9.md` — descoberto por
   `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 

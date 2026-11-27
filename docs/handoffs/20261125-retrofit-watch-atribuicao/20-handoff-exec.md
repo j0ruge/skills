@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a21e0b-5cc4-7d51-8c3d-af80f0be2faf
-data: 2026-11-27 14:33
-gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' em 8b861d2 → rc 0. Loja com 154 testes (3 pulados). Hook com 100 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada. Os dez Checks de checkpoint.md passaram.'
+sessao: 01a21ea4-00eb-71a3-ac60-63babbb46801
+data: 2026-11-27 17:23
+gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' em 8fa5c7d → rc 0. Loja com 154 testes (3 pulados). Hook com 106 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada. Os onze Checks de checkpoint.md passaram.'
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,18 +14,18 @@ gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''sourc
 
 ## TL;DR
 
-R8 preserva a ambiguidade quando a segunda chamada não tem origem e a primeira já tinha dono.
-A retomada da 0.4.0 respeita o encerramento por caminho externo, mesmo sem histórico monitorado.
-O ID fresco, o legado sem externa e a carga nova continuam pedindo retro.
-O TEST_CMD e os dez Checks passaram. QA deve repetir as duas jornadas de R8.
+R9 recupera a ordem de cargas na migração da 0.4.0 sem recontar trabalho nem mudar o offset salvo.
+Com estados legados idênticos, só a chamada posterior à externa continua elegível.
+O encerramento pelo nome já basta quando o transcript confirma a ordem, mesmo sem caminho externo.
+Os onze Checks e o TEST_CMD passaram. QA deve começar pela sonda R9 com a 0.4.0 real.
 
 ## Estado do repo
 
 - **Branch:** `fix/retrofit-watch-atribuicao-mesma-mensagem`, em Git isolado pelo runner.
-- **Último commit do incremento:** `8b861d2` — preservar a ambiguidade e o encerramento legado.
+- **Último commit do incremento:** `8fa5c7d` — recuperar a ordem de cargas na migração da 0.4.0.
 - **Working tree:** limpo após o commit deste registro.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `8b861d2` → rc 0. Loja com 154 testes (3 pulados). Hook com 100 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada.
-- **E2E:** os dez Checks de `checkpoint.md` passaram em `8b861d2`, incluindo a jornada de terminal de F1.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `8fa5c7d` → rc 0. Loja com 154 testes (3 pulados). Hook com 106 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada.
+- **E2E:** os onze Checks passaram em `8fa5c7d`, incluindo a jornada de terminal de F1 e a troca de versão em R9.
 - **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_auto_docs.ReleaseTest.test_the_four_places_agree_at_0_4_0_or_later` em `8b861d2` → 1 teste, rc 0.
 
 ## O que foi feito
@@ -118,19 +118,42 @@ O TEST_CMD e os dez Checks passaram. QA deve repetir as duas jornadas de R8.
   degradações detectadas em cópia temporária. O controle sem mutação passou antes e depois
   com grupo de processos próprio, 25 s e 512 MiB de memória virtual.
 
+### Retorno da revisão — rodada r9
+
+- `8fa5c7d` — consulta uma vez o prefixo da sessão 0.4.0, até o offset salvo, e reutiliza a
+  correlação do scanner em estado isolado. Importa apenas o encerramento e os vínculos
+  confirmados sem substituir a atribuição gravada ou alterar a janela. O Stop seguinte lê
+  só o delta, mesmo quando o metadado ainda não chegou no primeiro Stop.
+- `8fa5c7d` — mantém a evidência persistida se não conseguir ler ou validar o prefixo. Se o
+  arquivo estiver menor que o offset, não recua para recontar o histórico.
+- Red em `adbf954`: a chamada local posterior ficou em silêncio e a confirmação local mais
+  antiga pediu retro quando a externa não tinha metadado. O primeiro lote de testes também
+  acusou a falta da leitura única e o recuo em arquivo encurtado.
+- Green em `8fa5c7d`: os cortes da 0.4.0 real persistiram o mesmo estado antes do delta.
+  A confirmação local posterior à externa pediu retro de `codereview`. A anterior ficou em
+  silêncio com ou sem metadado externo. O controle sem externa e a carga nova pediram retro.
+  Os testes permanentes verificam a leitura única, o offset, a atribuição gravada, os
+  contadores, os pedidos pendentes e os resultados já registrados.
+- Em cópias temporárias, 38 de 40 execuções mutantes ficaram vermelhas. As outras duas
+  ficaram vermelhas após ampliar as sondas e repetir. Os controles sem mutações passaram
+  com grupo de processos próprio, 18 s e 512 MiB de memória virtual, antes e após restaurar
+  a cópia. Cada resultado, com código de saída e nome da sonda, está nas notas de execução.
+  A assinatura de `read_delta` é coberta pelo recuo normal e pela proteção do legado.
+  Alterar só o padrão do parâmetro não muda o outro chamador, que sempre usa offset zero.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1, F1 e R1–R8 com as sondas executáveis e os hashes das correções. |
-| `checkpoint-notas.md` | Evidência de execução e isolamento do Git na suíte. |
+| `checkpoint.md` | I1, F1 e R1–R9 com as sondas executáveis e os hashes das correções. |
+| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
-| `TODO.md` | Issue #12 marcada `RESOLVED by 682cd3d` até o merge. |
+| `TODO.md` | Issue #12 e ordem legada marcadas `RESOLVED by 682cd3d` e `RESOLVED by 8fa5c7d` até o merge. |
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as dez células de Check da raiz. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as onze células de Check da raiz. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
 - I1 deve imprimir `1 0 1 0 0 1`. F1 deve ficar em silêncio nas três variantes e R1 deve terminar em `regressoes=4`.
 - R2 deve emitir `graphify` nas seis combinações e terminar em `falhas=estavel`. Acrescente `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py --medir` para conferir os lotes. Em `43c2d49` foram 0 vínculos e 292, 293 e 294 bytes após 10, 100 e 1.000 tentativas.
@@ -159,6 +182,11 @@ Leia `checkpoint.md` e rode as dez células de Check da raiz. Use Python 3, Git 
   Na célula R8, exija `regressoes=2`. Os testes verificam offset completo, ausência de
   `errors.log` e contadores zerados nos casos negativos.
 
+- R9 deve repetir as quatro jornadas do Check com a 0.4.0 de `fe38d1f`. Confira o silêncio
+  nos dois cortes com a externa posterior e o pedido nos casos de carga local posterior
+  e de sessão sem externa. Rode também os testes `test_legacy_*` via TEST_CMD para cobrir
+  metadado no Stop seguinte, ausência de evidência, carga nova e preservação do estado.
+
 Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` e registre a repetição em `30-handoff-qa.md`.
 
 ## Pendências / Decisions for a Human
@@ -169,8 +197,8 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 
 - Não houve smoke no host Claude Code ou no Windows. As jornadas foram medidas com transcripts sintéticos no formato do hook e persistência em disco.
 - Os três testes de distribuição nativa seguem pulados pelo `TEST_CMD` no sandbox. Em um clone temporário de `893c9c6`, `env -u SKILLS_SKIP_NATIVE_DISTRIBUTION python3 -B -m unittest discover -s tests -p test_codex_distribution.py -v` retornou rc 1 nos três por não conseguir criar o namespace Bubblewrap. Nenhum chegou ao primeiro comando do CLI dentro do namespace. Repetir no host com suporte a Bubblewrap.
-- O leitor aceita o formato anterior. Donos já omitidos por uma versão anterior não são
-  reconstruídos a partir do transcript já consumido.
+- A consulta ao trecho já consumido só vale na migração da 0.4.0. Se o trecho não
+  estiver utilizável ou contradisser a atribuição gravada, prevalece a evidência persistida.
 - Modo autônomo, fila e distribuição Codex ficaram fora do patch.
 
 - A medida de crescimento cobre tentativas em mensagens distintas. IDs de mensagens já aposentadas não integram a janela de correlação. Ampliar o histórico continua fora do R4.
@@ -194,6 +222,5 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 - A receita histórica do plano que herda o Git privado continua no item aberto de `TODO.md`
   apontado por `40-review-r7.md`. Execute a receita isolada deste handoff.
 
-- O sensor de forma do `TODO.md` ainda acusa as mesmas duas âncoras do CHANGELOG que estavam
-  fora da tolerância antes de R8. A recorrência é da mesma missão do item aberto apontado em
-  `40-review-r8.md`, sem duplicata. A âncora de código deslocada pelo próprio R8 foi atualizada.
+- As duas âncoras do CHANGELOG apontadas em R8 foram reposicionadas em `9f9a08c`.
+  A recorrência histórica permanece no item já aberto, sem duplicata.

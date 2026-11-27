@@ -206,3 +206,44 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 14:35 · written by the runner
 - 2026-11-27 17:12 · R9 · O mantenedor autorizou consultar uma única vez o trecho anterior ao offset na migração da 0.4.0, apenas para recuperar a ordem e a identidade das cargas. R9 substitui essa restrição do plano do R4 somente para a migração. Preserve offset, atribuição histórica, contadores, pendências e resultados já gravados. Reutilize a correlação do scanner em estado isolado, sem recontar eventos, registrar pedidos antigos ou reprocessar o histórico em Stops seguintes. Leia só até o offset salvo. Se o trecho anterior estiver indisponível ou truncado, mantenha o comportamento conservador conforme a evidência presente. Em TDD, prove as duas ordens com o estado legado igual, a externa sem metadado, a carga nova, a leitura única mesmo com o metadado chegando depois e a integridade dos contadores, offsets e fluxo normal. Após comprovar R9, vincule o registro correspondente no TODO ao commit de correção.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 17:13 · written by the runner
+- 2026-11-27 17:23 · `R9` · R9 sabotage 01: não reconhecer a sessão legada → rc 1, test_legacy_missing_prefix_uses_saved_classification, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 02: reler também estado já migrado → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 03: não proteger contra recuo do offset → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 04: usar o offset inicial para recortar histórico → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 05: não tratar falha de acesso ao prefixo → rc 1, test_legacy_missing_prefix_uses_saved_classification
+- 2026-11-27 17:23 · `R9` · R9 sabotage 06: ler além do offset salvo → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 07: ignorar encurtamento do prefixo → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 08: não persistir a proteção do offset encurtado → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 09: aceitar um corte no meio de uma linha → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 10: compartilhar contadores com a varredura isolada → rc 1, test_legacy_prefix_read_once_without_recounting, test_legacy_replay_does_not_replace_saved_current
+- 2026-11-27 17:23 · `R9` · R9 sabotage 11: compartilhar cache de caminhos com a varredura isolada → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 12: compartilhar resultados de retro com a varredura isolada → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 13: tentar interpretar linhas vazias como eventos → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 14: aceitar prefixo com JSON inválido → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 15: aceitar JSON que não é evento → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 16: omitir a varredura de cada evento → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 17: aceitar atribuição incompatível com a gravada → rc 1, test_legacy_replay_does_not_replace_saved_current
+- 2026-11-27 17:23 · `R9` · R9 sabotage 18: descartar a evidência persistida de encerramento → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 19: não recuperar encerramento pelo nome → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 20: não recuperar a mensagem ativa → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 21: não recuperar chamadas pendentes → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 22: não recuperar a ordem das mensagens → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 23: não recuperar o histórico de consumo → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 24: não aplicar os campos de correlação recuperados → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 25: não acionar a migração no Stop → rc 1, test_legacy_missing_prefix_uses_saved_classification, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 26: repor a leitura que recua no arquivo encurtado → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 27: não limpar proteção depois da retomada do delta → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 28: contar trabalho e atrito no trecho isolado → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 29: não gravar a perda de correlação por limite → rc 1, test_legacy_replay_respects_correlation_ceiling
+- 2026-11-27 17:23 · `R9` · R9 sabotage 30: desproteger o corte depois de confirmar que faltam bytes → rc 0 na primeira sonda, redetectado no caso 33
+- 2026-11-27 17:23 · `R9` · R9 sabotage 31: não recuperar a correlação de nenhuma linha → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting, test_legacy_replay_respects_correlation_ceiling
+- 2026-11-27 17:23 · `R9` · R9 sabotage 32: herdar a atribuição atual no estado isolado → rc 0 na primeira sonda, redetectado no caso 34
+- 2026-11-27 17:23 · `R9` · R9 sabotage 33: varrer o prefixo incompleto apesar da proteção de offset → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 34: herdar a atribuição atual no estado isolado → rc 1, test_legacy_replay_does_not_replace_saved_current
+- 2026-11-27 17:23 · `R9` · R9 sabotage 35: abrir prefixo também em sessão sem offset → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 36: compartilhar chamadas do estado efetivo → rc 1, test_legacy_pending_call_order, test_legacy_replay_does_not_replace_saved_current
+- 2026-11-27 17:23 · `R9` · R9 sabotage 37: compartilhar ordem do estado efetivo → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 38: compartilhar histórico de consumo do estado efetivo → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 39: iniciar o scanner isolado já encerrado pela inferência legada → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 40: limpar a proteção mesmo sem avanço do delta → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · Red em `adbf954`: duas ordens legadas divergiram da sonda e quatro subcasos falharam no primeiro lote de testes. Green em `8fa5c7d`: onze Checks, a sonda R7 com `fe38d1f` e o TEST_CMD isolado passaram (154 testes da loja, 3 pulados, e 106 do hook). Das 40 execuções mutantes, 38 falharam. As duas primeiras sobreviventes foram detectadas após reforçar as sondas.
