@@ -79,3 +79,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-25 23:57 · written by the runner
 - 2026-11-26 00:04 · `R4` · Revisão r4, achados 1–2. Ordem após falha do último vínculo e reuso antes da ativação deram quatro divergências. R3 e os cinco Checks verdes. Platô nos três critérios estritos B.
 - 2026-11-26 00:32 · `R4` · Replanejamento em [plano-r4.md](plano-r4.md). Ordem e IDs falhos passam a ter retenção própria. Red reproduzido em 762f440 e controle de 1.000 falhas concorrentes medido. Execução aguarda aceite.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 10:31 · written by the runner
