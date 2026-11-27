@@ -555,6 +555,59 @@ class StopTest(HookHarness, unittest.TestCase):
         self.assertEqual(saved["offset"], self.w.transcript.stat().st_size)
         self.assertEqual(saved["skill_calls"], {})
 
+    def test_legacy_closed_before_upgrade_ignores_delayed_metadata(self):
+        for scenario in ("linked", "missing", "empty", "modern", "modern_empty", "slash", "new",
+                         "no_history", "active"):
+            with self.subTest(scenario=scenario), self.sub_world() as world:
+                ours, external = self.identified_loads("msg_2")
+                key = "full:codereview"
+                groups = (ours[:2],) if scenario == "active" else (ours[:2], external, tool())
+                if scenario == "no_history":
+                    groups = (tool(),)
+                elif scenario == "modern_empty":
+                    groups = (external,)
+                self.write(*groups, compact=True)
+                out, before = self.checked_stop()
+                self.assertIsNone(out)
+                self.assertEqual(before["current"], key if scenario == "active" else None)
+                if scenario in ("no_history", "modern_empty"):
+                    self.assertEqual(before["skills"], {})
+                else:
+                    self.assertEqual(tuple(before["skills"][key][field]
+                                           for field in ("work", "friction", "reviews")), (0, 0, 0))
+                if scenario not in ("modern", "modern_empty"):
+                    fields = ("created", "offset", "skills", "current", "classified",
+                              "pending", "done", "entrypoint")
+                    saved = {field: before[field] for field in fields if field in before}
+                    (world.data / "sessions/s1.json").write_text(json.dumps(saved), encoding="utf-8")
+                    self.assertNotIn("attribution_closed",
+                                     json.loads((world.data / "sessions/s1.json").read_bytes()))
+                if scenario in ("missing", "modern", "modern_empty", "slash", "no_history"):
+                    del ours[2]["sourceToolUseID"]
+                elif scenario == "empty":
+                    ours[2]["sourceToolUseID"] = ""
+                if scenario != "active":
+                    self.write(ours[2:])
+                if scenario == "slash":
+                    self.write(skill_typed("graphify", world.graphify))
+                elif scenario == "new":
+                    self.write(identified_load("graphify", world.graphify, "msg_3", "toolu_3"))
+                self.write(tool(error=True))
+                out, after = self.checked_stop()
+                if scenario in ("slash", "new", "no_history", "active"):
+                    target = "graphify" if scenario in ("slash", "new") else "codereview"
+                    self.assertIn(f"`/retrofit-skill:retrofit-skill {target}`", self.context_of(out))
+                    self.assertFalse(after["attribution_closed"])
+                else:
+                    self.assertIsNone(out)
+                    self.assertIsNone(after["current"])
+                    self.assertTrue(after["attribution_closed"])
+                if scenario == "modern_empty":
+                    self.assertEqual(after["skills"], {})
+                elif scenario not in ("no_history", "active"):
+                    self.assertEqual(tuple(after["skills"][key][field]
+                                           for field in ("work", "friction", "reviews")), (0, 0, 0))
+
     def test_reused_consumed_call_id_stops_attribution(self):
         self.write(*self.identified_loads())
         self.assertIsNone(self.run_hook())
@@ -1008,6 +1061,58 @@ class StopTest(HookHarness, unittest.TestCase):
                         out, saved = self.checked_stop()
                         self.assertIsNone(out)
                         self.assertEqual(saved["skill_call_history"], {"toolu_later": ["msg_c"]})
+
+    def test_unowned_pending_collision_survives_pruning(self):
+        for resume in (False, True):
+            for scenario in ("new", "unowned", "owned", "consumed"):
+                with self.subTest(resume=resume, scenario=scenario), self.sub_world() as world:
+                    ours, _ = self.identified_loads()
+                    call_id = "toolu_original"
+                    owner = "msg_1" if scenario in ("owned", "consumed") else None
+                    if scenario == "consumed":
+                        original = identified_load("codereview:coderabbit-pr", world.mkt_skill,
+                                                   owner, call_id)
+                        active_origin = ["msg_1", call_id]
+                    else:
+                        original = identified_load("graphify", world.graphify, owner, call_id)[:2]
+                        active_origin = ["msg_1", ours[0]["message"]["content"][0]["id"]]
+                    self.write(ours, original, compact=True)
+                    if resume:
+                        out, before = self.checked_stop()
+                        self.assertIsNone(out)
+                        self.assertEqual(before["current_origin"], active_origin)
+                        if scenario == "consumed":
+                            self.assertNotIn(call_id, before["skill_calls"])
+                            self.assertEqual(before["skill_call_history"][call_id], ["msg_1"])
+                        else:
+                            self.assertIn(call_id, before["skill_calls"])
+                            self.assertEqual(before["skill_calls"][call_id], owner)
+
+                    collision = identified_load("nao-instalada", world.other_skill, "msg_2", call_id)
+                    self.write(collision[:2], compact=True)
+                    if resume:
+                        out, middle = self.checked_stop()
+                        self.assertIsNone(out)
+                        self.assertEqual(middle["current_origin"], active_origin)
+                        self.assertEqual(middle["skill_message_order"], ["msg_1"])
+                        self.assertFalse(middle["skill_correlation_lost"])
+                        self.assertNotIn(call_id, middle["skill_calls"])
+                        if scenario != "new":
+                            self.assertEqual(middle["skill_call_history"].get(call_id),
+                                             [owner] if owner else [])
+
+                    external = identified_load("superpowers:brainstorming", world.other_skill,
+                                               "msg_1", "toolu_new" if scenario == "new" else call_id)
+                    self.write(external, tool(error=True), compact=True)
+                    out, after = self.checked_stop()
+                    skill = after["skills"]["full:codereview"]
+                    if scenario == "new":
+                        self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                        self.assertEqual(skill["reviews"], 1)
+                    else:
+                        self.assertIsNone(out)
+                        self.assertIsNone(after["current"])
+                        self.assertEqual((skill["work"], skill["friction"], skill["reviews"]), (0, 0, 0))
 
     def test_invalid_call_id_cannot_establish_message_position(self):
         for value in (None, "id com espaços", []):
