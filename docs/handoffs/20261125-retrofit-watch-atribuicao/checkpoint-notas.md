@@ -139,3 +139,4 @@
 - 2026-11-27 10:41 · `R4` · R4 sabotage: resultado de erro não retira vínculo → test_distinct_failed_messages_do_not_accumulate_behind_pending_call, test_failed_skill_calls_do_not_accumulate_in_saved_state
 - 2026-11-27 10:41 · `R4` · R4 sabotage: erro atrasado apaga a marca de consumo → test_reused_consumed_call_id_stops_attribution
 - 2026-11-27 10:41 · `R4` · Red em b3e9117: quatro divergências na sonda e oito subcasos em Stop. Green em 893c9c6: seis Checks, 58 degradações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 94 do hook, release 0.4.1. Provas nativas impedidas pelo namespace Bubblewrap.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 10:42 · written by the runner
