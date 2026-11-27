@@ -152,3 +152,22 @@
 - 2026-11-27 11:27 · `R6` · Revisão r6, achado 1: confirmar a mensagem que colidiu apaga a marca do ID ainda ambíguo. O Stop pede retro no HEAD em leitura contínua e retomada. A base fica em silêncio nos dois modos. R5 e os sete Checks passaram.
 - 2026-11-27 13:51 · R6 · O mantenedor autorizou a correção e as rodadas de revisão necessárias. Preserve os dois fatos do ID ambíguo durante a disputa: a marca do consumo sem origem e as mensagens conhecidas que colidiram. Podar uma tentativa não apaga a marca anterior. Confirmar outra mensagem pode aposentar a marca sem origem, mantendo a evidência dos donos ainda retidos. Verifique R5 e R6 juntos nos Stops contínuos e retomados, incluindo a leitura do estado salvo antes do R6.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 13:51 · written by the runner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: ignorar marca vazia na poda → test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 13:56 · `R6` · R6 sabotage: ignorar marca mista na poda → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: manter marca sem origem após confirmação → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: descartar donos ao preservar a marca → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: manter marcador nulo sem donos → test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 13:56 · `R6` · R6 sabotage: manter IDs sem donos após confirmação → test_ambiguous_calls_without_pending_peer_are_pruned, test_new_skill_retires_older_consumed_and_unlinked_calls, test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: repor condição de poda de R5 → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: descartar histórico anterior ao colidir → test_unowned_collision_survives_confirmation_of_live_owner, test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 13:56 · `R6` · R6 sabotage: omitir donos já conhecidos ao colidir → test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 13:56 · `R6` · R6 sabotage: omitir remoção do vínculo pendente → test_duplicate_pending_id_does_not_select_either_message
+- 2026-11-27 13:56 · `R6` · R6 sabotage: omitir mensagem que colidiu → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: contar mais de uma vez o mesmo dono → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: descartar donos ao filtrar origens ausentes → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: ignorar marca vazia ao combinar evidências → test_unowned_collision_survives_confirmation_of_live_owner, test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 13:56 · `R6` · R6 sabotage: ignorar marca mista ao combinar evidências → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: não gravar o marcador nulo no histórico → test_unowned_collision_survives_confirmation_of_live_owner, test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 13:56 · `R6` · R6 sabotage: não gravar a evidência combinada → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: repor a guarda de colisão de R5 → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · Red em 274d877: três divergências na sonda e três subcasos no teste inicial. Green em cd55517: oito Checks, 18 degradações detectadas e TEST_CMD com 154 testes da loja (3 pulados) e 96 do hook. Duas retomadas leram o estado gravado antes de R6. Versão 0.4.1 confirmada.
