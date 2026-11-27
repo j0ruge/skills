@@ -33,8 +33,10 @@ internos dos títulos das perguntas e não acrescentou identificadores equivalen
 
 ~~~bash
 (
-  set -o pipefail
-  git -c diff.noprefix=false -P diff --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ 91a7b7d5b6b0f58abfcbcb569ba423d2088d6790...3af42ecc55cb7267189720a9e8de6e729e770fdd --unified=0 -- . ':(exclude)docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh"
+  set -euo pipefail
+  scan=$(git -c diff.noprefix=false -P diff --text --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ 91a7b7d5b6b0f58abfcbcb569ba423d2088d6790...3af42ecc55cb7267189720a9e8de6e729e770fdd --unified=0 -- . ':(exclude)docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh")
+  jq -e '.scanned.added_lines == 382 and .errors == [] and .findings == []' <<< "$scan" >/dev/null
+  printf '%s\n' "$scan"
 )
 ~~~
 
