@@ -566,7 +566,8 @@ class StopTest(HookHarness, unittest.TestCase):
         state_path = self.w.data / "sessions/s1.json"
         saved = json.loads(state_path.read_text(encoding="utf-8"))
         self.assertEqual(saved["skill_message"], "msg_1")
-        self.assertEqual(saved["skill_calls"], {"toolu_1": False, "toolu_2": False})
+        self.assertEqual(saved["skill_calls"], {})
+        self.assertEqual(saved["skill_call_history"], {"toolu_1": ["msg_1"], "toolu_2": ["msg_1"]})
         path = make_skill(self.w.other_skill.parent, "writing-plans")
         call, result, meta = skill_via_tool("superpowers:writing-plans", path)
         call["message"]["id"] = "msg_1"
@@ -642,7 +643,8 @@ class StopTest(HookHarness, unittest.TestCase):
         self.write(older[:2], newer[:2], [call, result, meta], unlinked[:1], newer[2:])
         self.assertIsNone(self.run_hook())
         saved = json.loads((self.w.data / "sessions/s1.json").read_bytes())
-        self.assertEqual(saved["skill_calls"], {"toolu_2": False})
+        self.assertEqual(saved["skill_calls"], {})
+        self.assertEqual(saved["skill_call_history"], {"toolu_2": ["msg_2"]})
 
     def assert_graphify_retro(self):
         context = self.context_of(self.run_hook())
@@ -707,6 +709,218 @@ class StopTest(HookHarness, unittest.TestCase):
                     else:
                         self.assert_codereview_retro()
 
+    def checked_stop(self, **kwargs):
+        out = self.run_hook(**kwargs)
+        self.assertFalse((self.w.data / "errors.log").exists())
+        saved = json.loads((self.w.data / "sessions/s1.json").read_bytes())
+        self.assertEqual(saved["offset"], self.w.transcript.stat().st_size)
+        return out, saved
+
+    def test_message_order_survives_last_failed_call(self):
+        for cut in (None, 0, 1, 2):
+            for failed in (False, True):
+                with self.subTest(cut=cut, failed=failed), self.sub_world():
+                    first, newer, retry = self.interleaved_skill_loads()
+                    first[1]["message"]["content"][0]["is_error"] = failed
+                    self.write(first[:1], newer[:2], compact=True)
+                    for index, rows in enumerate((first[1:2], retry[:2] + newer[2:], retry[2:])):
+                        if cut == index:
+                            out, saved = self.checked_stop()
+                            self.assertIsNone(out)
+                            if cut == 1:
+                                self.assertEqual(saved["skill_message_order"], ["msg_z", "msg_a"])
+                        self.write(rows, compact=True)
+                    self.write(tool(error=True))
+                    out, _ = self.checked_stop()
+                    context = self.context_of(out)
+                    self.assertIn("`/retrofit-skill:retrofit-skill graphify`", context)
+                    self.assertNotIn("`/retrofit-skill:retrofit-skill codereview`", context)
+
+    def sub_world(self):
+        world = World()
+        self.addCleanup(world.cleanup)
+        return mock.patch.object(self, "w", world)
+
+    def test_failed_call_before_activation_cannot_prove_same_message(self):
+        for cut in (None, 0, 1, 2):
+            for duplicate in (False, True):
+                with self.subTest(cut=cut, duplicate=duplicate), self.sub_world() as world:
+                    fail = identified_load("nao-instalada", world.other_skill, "msg_z", "toolu_f")
+                    fail[1]["message"]["content"][0]["is_error"] = True
+                    monitored = identified_load("coderabbit-pr", world.mkt_skill, "msg_z", "toolu_m")
+                    external = identified_load("superpowers:brainstorming", world.other_skill,
+                                               "msg_z", "toolu_f" if duplicate else "toolu_n")
+                    self.write(fail[:1], monitored[:2], compact=True)
+                    for index, rows in enumerate((fail[1:2], monitored[2:], external)):
+                        if cut == index:
+                            self.assertIsNone(self.checked_stop()[0])
+                        self.write(rows, compact=True)
+                    self.write(tool(error=True))
+                    out, saved = self.checked_stop()
+                    if duplicate:
+                        self.assertIsNone(out)
+                        self.assertIsNone(saved["current"])
+                    else:
+                        self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+
+    def test_distinct_failed_messages_do_not_accumulate_behind_pending_call(self):
+        pending = identified_load("graphify", self.w.graphify, "msg_z", "toolu_pending")
+        self.write(pending[:2], compact=True)
+        self.assertIsNone(self.checked_stop()[0])
+        for start, end in ((0, 10), (10, 100), (100, 1000)):
+            for index in range(start, end):
+                fail = identified_load("nao-instalada", self.w.other_skill, f"msg_{index}", f"toolu_{index}")
+                fail[1]["message"]["content"][0]["is_error"] = True
+                self.write(fail[:2], compact=True)
+            out, saved = self.checked_stop()
+            self.assertIsNone(out)
+            self.assertEqual(saved["skill_calls"], {"toolu_pending": "msg_z"})
+            self.assertEqual(saved["skill_message_order"], ["msg_z"])
+            self.assertFalse(saved.get("skill_call_history"))
+            self.assertFalse(saved.get("skill_correlation_lost"))
+        self.write(pending[2:], tool(error=True))
+        self.assert_graphify_retro()
+
+    def test_duplicate_pending_id_does_not_select_either_message(self):
+        for cut in (False, True):
+            with self.subTest(cut=cut), self.sub_world() as world:
+                first, newer, retry = self.interleaved_skill_loads()
+                other = identified_load("graphify", world.graphify, "msg_a", "toolu_a")
+                self.write(first[:2], newer[:2], retry[:2], other[:2], compact=True)
+                if cut:
+                    out, saved = self.checked_stop()
+                    self.assertIsNone(out)
+                    self.assertNotIn("toolu_a", saved["skill_calls"])
+                    self.assertEqual(saved["skill_call_history"]["toolu_a"], ["msg_z", "msg_a"])
+                self.write(retry[2:], other[2:], tool(error=True))
+                out, _ = self.checked_stop()
+                context = self.context_of(out)
+                self.assertIn("`/retrofit-skill:retrofit-skill codereview`", context)
+                self.assertNotIn("`/retrofit-skill:retrofit-skill graphify`", context)
+
+    def test_ambiguous_id_survives_retirement_of_one_owner(self):
+        first, later, retry = self.interleaved_skill_loads()
+        duplicate = identified_load("graphify", self.w.graphify, "msg_a", "toolu_a")
+        latest = identified_load("coderabbit-pr", self.w.mkt_skill, "msg_a", "toolu_d")
+        self.write(first[:1], later[:1], retry[:1], duplicate[:1], latest, compact=True)
+        out, saved = self.checked_stop()
+        self.assertIsNone(out)
+        self.assertEqual(saved["skill_call_history"]["toolu_a"], ["msg_a"])
+        self.assertEqual(saved["skill_message_order"], ["msg_a"])
+        self.write(duplicate[2:], tool(error=True))
+        self.assert_codereview_retro()
+
+    def test_intermediate_state_recovers_failed_and_unowned_ids(self):
+        for old_id in ("toolu_old_failed", "toolu_old_unowned"):
+            with self.subTest(old_id=old_id), self.sub_world() as world:
+                ours, _ = self.identified_loads()
+                self.write(ours)
+                out, old = self.checked_stop()
+                self.assertIsNone(out)
+                old.pop("skill_call_history")
+                old["failed_skill_calls"] = ["toolu_old_failed"]
+                old["skill_calls"]["toolu_old_unowned"] = False
+                path = world.data / "sessions/s1.json"
+                path.write_text(json.dumps(old), encoding="utf-8")
+                out, saved = self.checked_stop()
+                self.assertIsNone(out)
+                self.assertEqual(saved["skill_call_history"],
+                                 {"toolu_old_failed": ["msg_1"], "toolu_old_unowned": []})
+                self.assertEqual(saved["skill_calls"], {})
+                self.write(identified_load("superpowers:brainstorming", world.other_skill, "msg_1", old_id),
+                           tool(error=True))
+                out, saved = self.checked_stop()
+                self.assertIsNone(out)
+                self.assertIsNone(saved["current"])
+
+    def test_correlation_overflow_persists_conservative_fallback(self):
+        for limit in ("MAX_SKILL_MESSAGES", "MAX_SKILL_CALL_IDS"):
+            with self.subTest(limit=limit), self.sub_world() as world:
+                script = world.tmp / "limited.py"
+                source = SCRIPT.read_text(encoding="utf-8")
+                script.write_text(source.replace(f"{limit} = " + ("64" if limit.endswith("MESSAGES") else "1024"),
+                                                 f"{limit} = 2"), encoding="utf-8")
+                ours, external = self.identified_loads()
+                first = identified_load("graphify", world.graphify, "msg_z", "toolu_a")
+                second = identified_load("graphify", world.graphify,
+                                         "msg_y" if limit.endswith("MESSAGES") else "msg_z", "toolu_b")
+                self.write(ours, first[:2], compact=True)
+                out, saved = self.checked_stop(script=script)
+                self.assertIsNone(out)
+                self.assertFalse(saved.get("skill_correlation_lost"))
+                self.write(second[:2], compact=True)
+                out, saved = self.checked_stop(script=script)
+                self.assertIsNone(out)
+                self.assertTrue(saved.get("skill_correlation_lost"))
+                self.assertIsNone(saved["current_origin"])
+                self.assertEqual(saved["skill_calls"], {})
+                self.assertEqual(saved["skill_message_order"], [])
+                self.assertEqual(saved["skill_call_history"], {})
+                fresh = identified_load("graphify", world.graphify, "msg_fresh", "toolu_fresh")
+                unlinked = dict(second[2], sourceToolUseID=None)
+                self.write(fresh[:2], [unlinked], compact=True)
+                out, saved = self.checked_stop()
+                self.assertIsNone(out)
+                self.assertEqual(saved["current"], "full:codereview")
+                self.assertEqual(saved["skill_calls"], {})
+                self.assertEqual(saved["skill_message_order"], [])
+                self.write(external, second[2:], tool(error=True))
+                out, saved = self.checked_stop()
+                self.assertIsNone(out)
+                self.assertTrue(saved["skill_correlation_lost"])
+                self.assertEqual(saved["skills"]["full:codereview"]["work"], 0)
+                self.write(skill_typed("graphify", world.graphify), tool(error=True))
+                self.assert_graphify_retro()
+
+    def test_oversized_saved_correlation_is_disabled_before_metadata(self):
+        first, later, retry = self.interleaved_skill_loads()
+        self.write(first[:1], later[:1], retry[:1], compact=True)
+        self.assertIsNone(self.checked_stop()[0])
+        script = self.w.tmp / "limited.py"
+        source = SCRIPT.read_text(encoding="utf-8")
+        script.write_text(source.replace("MAX_SKILL_CALL_IDS = 1024", "MAX_SKILL_CALL_IDS = 2"),
+                          encoding="utf-8")
+        self.write(later[2:], tool(error=True))
+        out, saved = self.checked_stop(script=script)
+        self.assertIsNone(out)
+        self.assertTrue(saved["skill_correlation_lost"])
+        self.assertEqual(saved["skill_calls"], {})
+
+    def test_consumed_unlinked_call_keeps_id_without_inventing_message(self):
+        anonymous = skill_via_tool("codereview:coderabbit-pr", self.w.mkt_skill)
+        self.write(anonymous[:2], compact=True)
+        out, saved = self.checked_stop()
+        self.assertIsNone(out)
+        self.assertEqual(saved["current"], "full:codereview")
+        self.assertIsNone(saved["current_origin"])
+        self.assertEqual(saved["skill_message_order"], [])
+        self.write(anonymous[2:])
+        out, saved = self.checked_stop()
+        self.assertIsNone(out)
+        self.assertEqual(saved["skill_call_history"], {"toolu_s": []})
+        self.assertEqual(saved["skill_calls"], {})
+        self.assertEqual(saved["skill_message_order"], [])
+
+    def test_invalid_call_id_cannot_establish_message_position(self):
+        for value in (None, "id com espaços", []):
+            with self.subTest(value=value), self.sub_world() as world:
+                call, _, _ = identified_load("graphify", world.graphify, "msg_z", value)
+                self.write([call], compact=True)
+                out, saved = self.checked_stop()
+                self.assertIsNone(out)
+                self.assertEqual(saved["skill_calls"], {})
+                self.assertEqual(saved["skill_message_order"], [])
+
+    def test_ambiguous_calls_without_pending_peer_are_pruned(self):
+        first, later, _ = self.interleaved_skill_loads()
+        later[0]["message"]["content"][0]["id"] = "toolu_a"
+        self.write(first[:1], later[:1], compact=True)
+        out, saved = self.checked_stop()
+        self.assertIsNone(out)
+        self.assertEqual(saved["skill_calls"], {})
+        self.assertEqual(saved["skill_message_order"], [])
+        self.assertEqual(saved["skill_call_history"], {})
+
     def test_old_state_recovers_order_from_pending_calls(self):
         first, newer, second = self.interleaved_skill_loads()
         self.write(first, newer[:2], second[:2], compact=True)
@@ -730,15 +944,19 @@ class StopTest(HookHarness, unittest.TestCase):
                 self.assertIsNone(self.run_hook())
                 path = world.data / "sessions/s1.json"
                 before = json.loads(path.read_bytes())
-                self.assertEqual(before["failed_skill_calls"], ["toolu_f"])
+                self.assertEqual(before["skill_call_history"]["toolu_f"], ["msg_z"])
                 self.assertNotIn("toolu_f", before["skill_calls"])
-                # O ID da falha não desqualifica uma carga de outra mensagem.
-                newer = identified_load("graphify", world.graphify, "msg_a", "toolu_f")
+                newer = identified_load("graphify", world.graphify, "msg_a", "toolu_new")
                 self.write(newer if linked else skill_typed("brainstorming", world.other_skill))
                 self.assertIsNone(self.run_hook())
                 after = json.loads(path.read_bytes())
-                self.assertEqual(after["failed_skill_calls"], [])
+                self.assertNotIn("toolu_f", after["skill_call_history"])
                 self.assertEqual(after["skill_message_order"], ["msg_a"] if linked else [])
+                if linked:
+                    # Fora da janela, a falha antiga não invalida o ID da nova carga.
+                    self.write(identified_load("graphify", world.graphify, "msg_a", "toolu_f"),
+                               tool(error=True))
+                    self.assert_graphify_retro()
 
     def test_failed_skill_calls_do_not_accumulate_in_saved_state(self):
         path = self.w.data / "sessions/s1.json"
@@ -770,7 +988,7 @@ class StopTest(HookHarness, unittest.TestCase):
                 saved = json.loads(state)
                 self.assertEqual(saved["skill_calls"], {})
                 self.assertEqual(saved["skill_message_order"], [])
-                self.assertEqual(saved["failed_skill_calls"], [])
+                self.assertEqual(saved["skill_call_history"], {})
             sizes.append(len(state))
         self.assertLessEqual(max(sizes) - min(sizes), 1024)
 

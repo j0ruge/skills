@@ -13,8 +13,10 @@
   atrasado preserva o slash mais novo e tentativa sem carga não invalida outro vínculo.
 - Confirmações fora de ordem preservam as chamadas posteriores que ainda aguardam metadados.
   Resultados de erro descartam o vínculo da tentativa correspondente, inclusive após a retomada.
-- O consumo ou a falha de uma chamada não muda a precedência entre mensagens com cargas ainda
-  relevantes. Reusar o ID de uma tentativa falha da mensagem ativa não comprova a origem da carga.
+- A ordem de uma mensagem é mantida se perder o último vínculo enquanto uma mensagem posterior
+  ainda aguarda confirmação. Reusar um ID falho, consumido ou ambíguo na janela retida não
+  comprova a origem, mesmo antes de uma carga daquela mensagem ser reconhecida. Ao exceder
+  64 mensagens ou 1.024 IDs retidos, o hook deixa de correlacionar na sessão, sem apagar contadores.
 
 ## [0.4.0] — 2026-11-24
 

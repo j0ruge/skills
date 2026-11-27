@@ -64,6 +64,8 @@ DEFAULT_OWNERS = ("j0ruge", "chewiesoft")
 ALWAYS_EXCLUDED = {"retrofit-skill", "retrofit-watch", "skill-quality-audit"}
 DEFAULT_KITS = ("sdd",)
 MAX_REVIEWS = 2
+MAX_SKILL_MESSAGES = 64
+MAX_SKILL_CALL_IDS = 1024
 FIRST_REVIEW_WORK = 5
 SECOND_REVIEW_FRICTION = 2
 STATE_TTL_SECONDS = 14 * 24 * 3600
@@ -419,12 +421,22 @@ class State:
         for key, default in (("offset", 0), ("skills", {}), ("current", None), ("classified", {}),
                              ("pending", []), ("done", []), ("current_origin", None),
                              ("skill_message", None), ("skill_calls", {}),
-                             ("failed_skill_calls", []), ("attribution_closed", False),
+                             ("skill_correlation_lost", False), ("attribution_closed", False),
                              ("pending_slash", None)):
             self.data.setdefault(key, default)
         if "skill_message_order" not in self.data:
             messages = (self.data["skill_message"], *self.data["skill_calls"].values())
             self.data["skill_message_order"] = list(dict.fromkeys(m for m in messages if m))
+        if "skill_call_history" not in self.data:
+            calls = self.data["skill_calls"]
+            # Estados intermediários não registravam a origem dos IDs consumidos ou ambíguos.
+            history = {call: [] for call, message in calls.items() if message is False}
+            for call in history:
+                del calls[call]
+            active = self.data["skill_message"]
+            for call in self.data.pop("failed_skill_calls", []):
+                history[call] = [active] if active else []
+            self.data["skill_call_history"] = history
         return self
 
     def save(self):
@@ -481,27 +493,52 @@ class Scanner:
         # Verdadeiro enquanto um pedido autônomo está aberto: o próprio fluxo não conta como
         # trabalho nem atrito de skill nenhuma (spec 5.10, D13). Quem decide é o cmd_stop.
         self.silent = False
+        self._bound_skill_correlation()
+
+    def _clear_skill_correlation(self):
+        self.st["skill_calls"].clear()
+        self.st["skill_message_order"].clear()
+        self.st["skill_call_history"].clear()
+
+    def _prune_skill_correlation(self, confirmed=None):
+        calls = self.st["skill_calls"]
+        order = self.st["skill_message_order"]
+        history = self.st["skill_call_history"]
+        advanced = confirmed is not None and confirmed != self.st["skill_message"]
+        if advanced:
+            del order[:order.index(confirmed)]
+            self.st["skill_message"] = confirmed
+        # Uma posição sem vínculo só interessa à carga ativa ou a uma disputa com pendência posterior.
+        pending = set(calls.values())
+        while order and order[-1] != self.st["skill_message"] and order[-1] not in pending:
+            order.pop()
+        live = set(order)
+        if advanced:
+            self.st["skill_calls"] = {call: message for call, message in calls.items() if message in live}
+        for call, owners in list(history.items()):
+            retained = [message for message in owners if message in live]
+            if retained or (not owners and not advanced):
+                history[call] = retained
+            else:
+                del history[call]
+
+    def _bound_skill_correlation(self):
+        if (len(self.st["skill_message_order"]) > MAX_SKILL_MESSAGES
+                or len(self.st["skill_calls"]) + len(self.st["skill_call_history"]) > MAX_SKILL_CALL_IDS):
+            self._clear_skill_correlation()
+            self.st["current_origin"] = None
+            self.st["skill_correlation_lost"] = True
 
     def _watch(self, info, origin=None, *, preserve_slash=False):
-        # Só uma carga reconhecida aposenta vínculos antigos. Consumir uma chamada
-        # não muda a posição da mensagem na ordem de chegada.
-        if origin and origin[0] != self.st["skill_message"]:
-            calls = self.st["skill_calls"]
-            messages = self.st["skill_message_order"]
-            del messages[:messages.index(origin[0])]
-            live = set(messages)
-            self.st["skill_message"] = origin[0]
-            self.st["failed_skill_calls"].clear()
-            self.st["skill_calls"] = {call: message for call, message in calls.items() if message in live}
+        if origin:
+            self._prune_skill_correlation(origin[0])
         if info is None:
             current = self.st["current_origin"]
             # O caminho ainda pode excluir a própria chamada reconhecida pelo nome.
             if origin and current and origin[0] == current[0] and origin[1] != current[1]:
                 return
             if origin is None:
-                self.st["skill_calls"].clear()
-                self.st["skill_message_order"].clear()
-                self.st["failed_skill_calls"].clear()
+                self._clear_skill_correlation()
             self.st["current"] = None
             self.st["current_origin"] = None
             self.st["attribution_closed"] = True
@@ -605,23 +642,28 @@ class Scanner:
 
     def _skill_origin(self, message_id, call_id):
         self.st["pending_slash"] = None
+        if self.st["skill_correlation_lost"]:
+            return None
         message_id = self._transcript_id(message_id)
         call_id = self._transcript_id(call_id)
-        calls = self.st["skill_calls"]
-        duplicate = (call_id in calls or (message_id == self.st["skill_message"]
-                                         and call_id in self.st["failed_skill_calls"]))
         if self.st["skill_message"] is None:
             # Já vimos uma chamada, ainda que nenhuma carga tenha sido reconhecida.
             self.st["skill_message"] = ""
         if call_id is None:
             return None
-        calls[call_id] = False if duplicate else message_id
-        if not message_id or duplicate:
-            return None
         messages = self.st["skill_message_order"]
-        if message_id not in messages:
+        if message_id and message_id not in messages:
             messages.append(message_id)
-        return [message_id, call_id]
+        calls = self.st["skill_calls"]
+        history = self.st["skill_call_history"]
+        if call_id in calls or call_id in history:
+            owners = history.get(call_id, [])
+            owners = dict.fromkeys((*owners, calls.pop(call_id, None), message_id))
+            history[call_id] = [owner for owner in owners if owner]
+            self._prune_skill_correlation()
+            return None
+        calls[call_id] = message_id
+        return [message_id, call_id] if message_id else None
 
     def skill_path(self, path, source):
         cache = self.st["classified"]
@@ -631,23 +673,29 @@ class Scanner:
         source = self._transcript_id(source)
         # Um metadado de chamada descartada ou ambígua não pode reabrir a atribuição.
         # Uma externa sem vínculo continua encerrando-a, inclusive no estado legado.
-        unlinked = False if source and (self.st["skill_message"] is not None
-                                        or self.st["attribution_closed"]) else None
+        conservative = self.st["attribution_closed"] or self.st["skill_correlation_lost"]
+        unlinked = False if source and (self.st["skill_message"] is not None or conservative) else None
         message_id = self.st["skill_calls"].get(source, unlinked)
         if message_id is False and info is not None:
             return
         # Sem vínculo não há prova de nova carga após o encerramento. O slash digitado
         # é explícito e pode iniciar outra atribuição, mas só para a skill que ele nomeia.
-        if source is None and info is not None and self.st["attribution_closed"]:
+        if source is None and info is not None and conservative:
             plugin, _, name = (self.st["pending_slash"] or "").rpartition(":")
             if name not in info.get("skills", [info["arg"]]) or (plugin and plugin != info["arg"]):
                 return
         if source is None:
             self.st["pending_slash"] = None
         self._watch(info, [message_id, source] if message_id else None, preserve_slash=source is not None)
-        # Reter o ID consumido na mensagem ativa impede que uma repetição vire um novo vínculo.
-        if source in self.st["skill_calls"]:
-            self.st["skill_calls"][source] = False
+        self._retire_skill_call(source, consumed=True)
+
+    def _retire_skill_call(self, call_id, *, consumed=False):
+        calls = self.st["skill_calls"]
+        if call_id in calls:
+            message = calls.pop(call_id)
+            if message or consumed:
+                self.st["skill_call_history"][call_id] = [message] if message else []
+            self._prune_skill_correlation()
 
     def user_text(self, text):
         if text.startswith(INTERRUPT):
@@ -673,6 +721,7 @@ class Scanner:
                 if name == "Skill":
                     origin = self._skill_origin(msg.get("id"), block.get("id"))
                     self.invocation(str(tool_input.get("skill", "")), tool_input.get("args", ""), origin)
+                    self._bound_skill_correlation()
                 elif name not in NON_WORK_TOOLS:
                     self.tool_use(name, tool_input)
                     self._bump("work")
@@ -699,14 +748,7 @@ class Scanner:
                         continue
                     if block.get("type") == "tool_result" and block.get("is_error"):
                         call_id = self._transcript_id(block.get("tool_use_id"))
-                        calls = self.st["skill_calls"]
-                        if calls.get(call_id) is not False:
-                            message_id = calls.pop(call_id, None)
-                            if message_id and message_id == self.st["skill_message"]:
-                                # Sem vínculo para o metadado, mas também sem prova se o ID voltar.
-                                self.st["failed_skill_calls"].append(call_id)
-                            elif message_id and message_id not in calls.values():
-                                self.st["skill_message_order"].remove(message_id)
+                        self._retire_skill_call(call_id)
                         self._bump("friction")
                     elif block.get("type") == "text":
                         self.user_text(block.get("text", ""))

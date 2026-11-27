@@ -149,8 +149,10 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
   tarefa da mesma sessão. Uma skill externa não encerra a atribuição da monitorada quando o hook
   consegue ligar as duas cargas à mesma mensagem do assistente. Se a externa veio depois ou o vínculo
   não pôde ser confirmado, ela encerra a atribuição para trabalho futuro. Metadado atrasado sem
-  vínculo não reabre a atribuição. Um slash explícito ainda pode iniciar a atribuição da skill
-  que ele nomeia. Medido em 2026-10-02 (376 sessões, 14 dias): 41% do atrito atribuído
+  vínculo não reabre a atribuição. IDs falhos ou repetidos na janela de correlação não comprovam
+  origem. Se a janela exceder 64 mensagens ou 1.024 IDs retidos, o hook deixa de correlacionar
+  até outra sessão. Os contadores são preservados e um slash explícito ainda pode iniciar
+  a atribuição da skill que ele nomeia. Medido em 2026-10-02 (376 sessões, 14 dias): 41% do atrito atribuído
   vem depois de um prompt novo seu. Encerrar no prompt novo foi refutado: a continuação chega como
   "sim", "roda", "pode empurrar", sem "?" antes. Por isso a retro filtra por evidência ligada à
   skill (seção 2 do `criteria.md`): atrito de outra tarefa é "sem lições novas". Fases headless
