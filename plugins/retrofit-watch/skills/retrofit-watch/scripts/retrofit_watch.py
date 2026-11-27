@@ -423,8 +423,11 @@ class State:
                              ("skill_message", None), ("skill_calls", {}),
                              ("skill_correlation_lost", False), ("pending_slash", None)):
             self.data.setdefault(key, default)
-        # A 0.4.0 mantinha o histórico ao encerrar a atribuição.
-        self.data.setdefault("attribution_closed", self.data["current"] is None and bool(self.data["skills"]))
+        if "attribution_closed" not in self.data:
+            # Na 0.4.0, caminho sem dono encerrava a atribuição, mas kit sem dono não.
+            self.data["attribution_closed"] = self.data["current"] is None and (
+                bool(self.data["skills"]) or any(info is None and not path.startswith("kit:")
+                                                 for path, info in self.data["classified"].items()))
         if "skill_message_order" not in self.data:
             messages = (self.data["skill_message"], *self.data["skill_calls"].values())
             self.data["skill_message_order"] = list(dict.fromkeys(m for m in messages if m))
@@ -665,7 +668,7 @@ class Scanner:
             owners = history.get(call_id)
             known = dict.fromkeys((*(owners or ()), calls.pop(call_id, None), message_id))
             retained = [owner for owner in known if owner]
-            if unowned or owners == [] or (owners and owners[0] is None):
+            if message_id is None or unowned or owners == [] or (owners and owners[0] is None):
                 retained.insert(0, None)
             history[call_id] = retained
             self._prune_skill_correlation()

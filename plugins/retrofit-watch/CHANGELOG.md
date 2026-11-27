@@ -23,9 +23,9 @@
 - Se a mensagem que reutilizou o ID continuar na janela e for confirmada, sua colisão continua
   registrada. A confirmação pode aposentar a marca sem origem, mas não libera o ID enquanto
   uma mensagem que colidiu com ele continuar retida.
-- A retomada da 0.4.0 preserva o encerramento já gravado quando há histórico e nenhuma
-  skill ativa. Um ID sem origem ainda pendente também conserva a marca de colisão
-  se a tentativa que o reutilizou sair da janela sem trocar a mensagem ativa.
+- Sem skill ativa, a retomada da 0.4.0 respeita o encerramento indicado pelo histórico ou
+  por um caminho de skill não monitorada. A marca de colisão com chamada sem origem
+  sobrevive à poda em ambas as ordens da disputa, enquanto a mensagem ativa não mudar.
 
 ## [0.4.0] — 2026-11-24
 
