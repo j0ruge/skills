@@ -360,3 +360,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:37 · written by the runner
 2026-11-27 18:41 · `r14` · Delta documental em 3af42ec. Suíte e 14 Checks confirmados. Fonte histórica imprecisa registrada no backlog, sem R13. Documentation B e demais critérios A.
 - 2026-11-27 18:44 · Revisão após DOCS · A r14 confirmou os 14 Checks e atribuiu B em Documentation pela fonte do incidente. A referência foi precisada em 1b6b72f. As receitas usam o checkout do kit resolvido pelo sdd no PATH. Ao escrever a próxima revisão, use caminhos relativos ou variáveis nos comandos publicados.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:45 · written by the runner
