@@ -3,6 +3,20 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.10.0] — 2026-11-27
+
+### Variante larga do título no template
+
+- **O caso.** Um título-afirmação novo, de cerca de 84 caracteres, quebrou em 3 linhas sob o
+  `.head .t-title{max-width:30ch}` do template. A captura mostrou o título em ~60 % da largura e a metade direita do
+  palco vazia. O `check-fit` aprovou, porque mede caixa fora do lugar, e não linhas de título. Cada deck reinventava
+  uma variante larga.
+- **A mudança.** O `deck-template.html` traz `.head .t-title.wide{max-width:none}`. A tabela de tipos do
+  `layout-and-type.md` manda `class="t-title wide"` para título de uma linha e para a afirmação que quebra em 3
+  linhas no `30ch`. A armadilha *Empty stage* do `SKILL.md` aponta para a variante.
+- **O limite.** O efeito depende da fonte: com a fonte do deck, o mesmo título deu 3 linhas no `30ch` e 2 no `none`;
+  com a fonte padrão do template, 3 nos dois casos. Quem decide é a captura.
+
 ## [1.9.0] — 2026-11-26
 
 ### O `check-fit` mede o número de página do PDF

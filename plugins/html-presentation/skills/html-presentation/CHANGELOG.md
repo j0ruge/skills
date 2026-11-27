@@ -2,6 +2,17 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-11-27 — a long claim title in three lines, half the stage blank (v1.10.0)
+- A slide got a new claim title of about 84 characters. Under the template's `.head .t-title{max-width:30ch}` the
+  shot showed it in 3 lines, about 60 % of the width, with the right half of the stage empty. `check-fit` said
+  "encaixe ok": it measures boxes out of place, not title lines.
+- The deck already had a local `.head .t-title.wide{max-width:none}` from earlier sessions; the template did not.
+  With `class="t-title wide"` the title took 2 lines, and `check-fit`, `check-presenter` and the deck's zoom sensor
+  stayed green.
+- The effect depends on the font: the reviewer's fixture gave 3 lines in `30ch` and 2 in `none` with the deck's
+  font, and 3 in both with the template's default font. The shot decides, not the character count.
+- The template now carries the `.wide` variant; the type table and the "Empty stage" gotcha point to it.
+
 ## 2026-11-26 — the same TCC deck: a credit line under the PDF page number (v1.9.0)
 - The cover gained the examining board as a fourth metadata item. Four items filled the row, so the credit line moved
   to a second row, right-aligned. In print, `.slide::after` draws "01 / 19" at `right:128px; bottom:52px`, the same

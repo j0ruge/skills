@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.9.0"
+  version: "1.10.0"
 ---
 
 # HTML Presentation
@@ -190,8 +190,8 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
   active label showed on every slide (IACS deck, 30/09/2026). The template measures after the first slide is
   shown and again when the fonts load: before that, the empty page number left the line 85 px wider and a
   self-hosted font was still loading (19/10/2026). `check-presenter.mjs` checks that the hidden labels collide.
-- **Empty stage.** A narrow `max-width` on titles makes 3-line headings and leaves the bottom third blank. If
-  a slide looks sparse, raise the type before adding content.
+- **Empty stage.** A 3-line title in `30ch` leaves the stage half blank, and `check-fit` passes: add `.wide`.
+  If a slide looks sparse, raise the type before adding content.
 - **Cover title over its metadata.** The cover places `.body`, `.hline` and `.meta` at fixed `top` values, so a
   hero title that gains a line runs over the line and the metadata: at 132 px a two-line title beside a photo
   wrapped to three (Portal deck, 03/11/2026). Look at the cover shot; shorten the title or lower the hero size.
