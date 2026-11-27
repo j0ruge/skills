@@ -112,18 +112,18 @@ repetiu I1. R12 retornou `at_limit=silêncio above_delayed=silêncio
 above_delayed_resumed=silêncio above_fresh=graphify above_slash=graphify regressao=1`.
 
 ~~~bash
-git show 3af42ecc55cb7267189720a9e8de6e729e770fdd:TODO.md | sed -n '91,97p'
-git -P show 1b6b72f -- TODO.md
 (
   set -euo pipefail
+  git show 3af42ecc55cb7267189720a9e8de6e729e770fdd:TODO.md | sed -n '91,97p'
+  git -P show 1b6b72f -- TODO.md
   scan=$(git -c diff.noprefix=false -P diff --text --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ 3af42ecc55cb7267189720a9e8de6e729e770fdd...11ae63baa9d93c2236f04c651fd5900d5ba1151a --unified=0 -- . ':(exclude)docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh")
   jq -e '.scanned.added_lines == 175 and .errors == [] and .findings == []' <<< "$scan" >/dev/null
   printf '%s\n' "$scan"
+  SDD_KIT=$(dirname "$(dirname "$(readlink -f "$(command -v sdd)")")")
+  bash "$SDD_KIT/tests/check-checkpoint.sh" --check docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint.md
+  bash "$SDD_KIT/tests/check-todo.sh" --check TODO.md --allow-empty
+  env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_auto_docs.ReleaseTest
 )
-SDD_KIT=$(dirname "$(dirname "$(readlink -f "$(command -v sdd)")")")
-bash "$SDD_KIT/tests/check-checkpoint.sh" --check docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint.md
-bash "$SDD_KIT/tests/check-todo.sh" --check TODO.md --allow-empty
-env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_auto_docs.ReleaseTest
 ~~~
 
 Para reproduzir o achado 1, copie o item do incidente já marcado como resolvido
