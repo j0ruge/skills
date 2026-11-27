@@ -4,7 +4,9 @@
 
 **Arquitetura.** Registrar separadamente a posição da mensagem, a situação de cada ID de chamada e a atribuição vigente. Todos os eventos da mesma mensagem consultam a mesma posição enquanto ela participa da decisão.
 
-**Base e escopo.** `762f440`, branch `fix/retrofit-watch-atribuicao-mesma-mensagem`. Python, estado JSON por sessão, fixtures `StopTest` e validadores do kit. R4 é o único incremento pendente. Esta revisão do plano complementa o [plano original](01-plano.md), preserva as decisões aprovadas e está pendente de aceite para implementação.
+**Base e escopo.** `762f440`, branch `fix/retrofit-watch-atribuicao-mesma-mensagem`. Python, estado JSON por sessão, fixtures `StopTest` e validadores do kit. R4 é o único incremento pendente. Esta revisão do plano complementa o [plano original](01-plano.md) e preserva as decisões aprovadas.
+
+**Aceite.** Em 27/11/2026, o mantenedor autorizou no Codex a implementação do R4 e uma rodada de revisão após a correção.
 
 ## O que os dois casos têm em comum
 
@@ -57,4 +59,4 @@ reuso_pre_ativacao_continua=codereview,silêncio
 reuso_pre_ativacao_retomada=codereview,silêncio
 ```
 
-No Red de `762f440`, os dois pares de ordem imprimiram `graphify,codereview` e os dois pares de reuso imprimiram `codereview,codereview`. A publicação da issue #12 ainda exige uma revisão do código após R4, com autorização para essa rodada. O merge cabe ao mantenedor.
+No Red de `762f440`, os dois pares de ordem imprimiram `graphify,codereview` e os dois pares de reuso imprimiram `codereview,codereview`. O mesmo resultado foi confirmado em `02e0331` pelo `check-checkpoint.sh --red` antes da retomada. O merge cabe ao mantenedor.
