@@ -1,6 +1,6 @@
 ---
 missao: 20261125-retrofit-watch-atribuicao
-atualizado: 2026-11-27 10:41
+atualizado: 2026-11-27 10:51
 ---
 
 # Checkpoint — Atribuição da retrofit-watch por mensagem
@@ -13,6 +13,7 @@ atualizado: 2026-11-27 10:41
 | R2 | Preservar vínculos de cargas posteriores e aposentar tentativas que falharam (r2, achados 1–2) | `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -c "$(sed -n '/^~~~python$/,/^~~~$/{ /^~~~/!p; }' docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r2.md)"` → `continua=graphify,graphify,graphify retomada=graphify,graphify,graphify falhas=estavel` | done | 485e6c0 |
 | R3 | Preservar a ordem das mensagens após remover vínculos e rejeitar o reuso do ID de uma chamada falha na mensagem ativa (r3, achados 1–2) | `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -c "$(sed -n '/^~~~python$/,/^~~~$/{ /^~~~/!p; }' docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r3.md)"` → `ordem_erro_continua=graphify,graphify ordem_erro_retomada=graphify,graphify ordem_consumo_continua=graphify,graphify ordem_consumo_retomada=graphify,graphify reuso_apos_erro_continua=codereview,silêncio reuso_apos_erro_retomada=codereview,silêncio` | done | 43c2d49 |
 | R4 | Preservar a precedência após a falha do último vínculo e a ambiguidade do ID falho antes do reconhecimento (r4, achados 1–2) | `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -c "$(sed -n '/^~~~python$/,/^~~~$/{ /^~~~/!p; }' docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r4.md)"` → `ordem_ultimo_vinculo_continua=graphify,graphify ordem_ultimo_vinculo_retomada=graphify,graphify reuso_pre_ativacao_continua=codereview,silêncio reuso_pre_ativacao_retomada=codereview,silêncio` | done | 893c9c6 |
+| R5 | Conservar a marca de consumo de ID sem origem quando uma tentativa intermediária colide e sai da janela (r5, achado 1) | `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -c "$(sed -n '/^~~~python$/,/^~~~$/{ /^~~~/!p; }' docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r5.md)"` → `continua_novo=codereview continua_repetido=silêncio continua_intercalada=silêncio retomada_novo=codereview retomada_repetido=silêncio marca_apos_disputa=1 retomada_intercalada=silêncio` | pending | — |
 
 ## Incrementos de fix (QA e REVIEW)
 

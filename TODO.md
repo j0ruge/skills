@@ -225,6 +225,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r4.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-26)
 
+- [ ] **Medições históricas da atribuição sem saída preservada** —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:63` (`58 degradações`) —
+  totais de mutações e a prova nativa foram resumidos sem as saídas nos artefatos de revisão.
+  Direção: guardar os resultados junto do commit e do comando que os produziu.
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r5.md` —
+  descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
+
 ## Decidido — não reabrir
 <!-- sdd:decided -->
 
