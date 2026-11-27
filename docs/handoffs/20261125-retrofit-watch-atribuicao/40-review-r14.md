@@ -32,7 +32,7 @@ adicionadas. Zero ocorrências e zero erros. O delta removeu dois identificadore
 internos dos títulos das perguntas e não acrescentou identificadores equivalentes.
 
 ~~~bash
-git -P diff 91a7b7d5b6b0f58abfcbcb569ba423d2088d6790...3af42ecc55cb7267189720a9e8de6e729e770fdd --unified=0 -- . ':(exclude)docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint-notas.md' | bash /home/joruge/.agents/skills/codereview/scripts/scan_secrets.sh
+git -P diff 91a7b7d5b6b0f58abfcbcb569ba423d2088d6790...3af42ecc55cb7267189720a9e8de6e729e770fdd --unified=0 -- . ':(exclude)docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh"
 ~~~
 
 ### Código, cobertura e sincronização
@@ -119,9 +119,10 @@ A sonda vermelha usa a seção “Evidências reproduzíveis” da r13, com a tr
 já documentada ali.
 
 ~~~bash
+SDD_KIT=$(dirname "$(dirname "$(readlink -f "$(command -v sdd)")")")
 env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_auto_docs.ReleaseTest
-bash /home/joruge/.wt/sdd-kit-8a56249/tests/check-checkpoint.sh --check docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint.md
-bash /home/joruge/.wt/sdd-kit-8a56249/tests/check-todo.sh --check TODO.md --allow-empty
+bash "$SDD_KIT/tests/check-checkpoint.sh" --check docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint.md
+bash "$SDD_KIT/tests/check-todo.sh" --check TODO.md --allow-empty
 rg -n 'zitadel-idp|work: 0|transcript interativo|construtores de transcript' TODO.md docs/handoffs/20261125-retrofit-watch-atribuicao/00-missao.md
 ~~~
 

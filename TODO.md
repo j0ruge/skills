@@ -92,7 +92,8 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   uma mensagem carregou `zitadel-idp` e uma externa juntas. A monitorada ficou com `work: 0` e sem pedido de retro.
   Direção: preservar o par no mesmo `message.id` e testar que a externa posterior ainda encerra a atribuição.
   Corrigido no patch 0.4.1. RESOLVED by 682cd3d
-  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/00-missao.md` (transcript interativo) —
+  Fonte: relato observado em transcript interativo. A reprodução sintética está em
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/00-missao.md` —
   descoberto por `investigação do modo auto` (2026-11-25)
 
 ### LOW da codereview da retrofit-watch 0.4.0
