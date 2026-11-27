@@ -116,7 +116,7 @@ git show 3af42ecc55cb7267189720a9e8de6e729e770fdd:TODO.md | sed -n '91,97p'
 git -P show 1b6b72f -- TODO.md
 (
   set -o pipefail
-  git -c diff.noprefix=false -P diff --no-color --src-prefix=a/ --dst-prefix=b/ 3af42ecc55cb7267189720a9e8de6e729e770fdd...11ae63baa9d93c2236f04c651fd5900d5ba1151a --unified=0 -- . ':(exclude)docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh"
+  git -c diff.noprefix=false -P diff --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ 3af42ecc55cb7267189720a9e8de6e729e770fdd...11ae63baa9d93c2236f04c651fd5900d5ba1151a --unified=0 -- . ':(exclude)docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh"
 )
 SDD_KIT=$(dirname "$(dirname "$(readlink -f "$(command -v sdd)")")")
 bash "$SDD_KIT/tests/check-checkpoint.sh" --check docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint.md

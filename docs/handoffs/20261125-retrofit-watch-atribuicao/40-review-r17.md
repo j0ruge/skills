@@ -149,8 +149,8 @@ printf 'Comparação externa de dois arquivos\n'
 SH
   chmod +x "$fixture/compare"
   for r in 14 15; do
-    recipe=$(sed -n 's/^  \(git -c diff.noprefix=false .*scan_secrets\.sh"\)$/\1/p' \
-      "$mission/40-review-r$r.md")
+    recipe=$(git show "1b7d883:$mission/40-review-r$r.md" \
+      | sed -n 's/^  \(git -c diff.noprefix=false .*scan_secrets\.sh"\)$/\1/p')
     test -n "$recipe"
     env GIT_EXTERNAL_DIFF="$fixture/compare" bash -o pipefail -c "$recipe"
     native=${recipe/" -P diff "/" -P diff --no-ext-diff --no-textconv "}
@@ -161,7 +161,7 @@ SH
 
 As receitas publicadas retornam rc 0 e `(0, 0)`. O controle nativo retorna
 `(9, 382)` na r14 e `(3, 175)` na r15. Para o achado 2, execute o bloco
-“controle negativo” da seção “Evidências reproduzíveis” da r16 como publicado
+“controle negativo” da seção “Evidências reproduzíveis” da r16 em `2086fc6`
 e depois troque somente a origem da extração por esta linha no mesmo bloco.
 
 ~~~bash

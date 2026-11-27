@@ -149,7 +149,7 @@ só altera a configuração dos processos da sonda.
 (
   set -euo pipefail
   report=docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r15.md
-  recipe=$(sed -n '/^git -P diff .*scan_secrets\.sh"$/p' "$report")
+  recipe=$(git show "24b801c:${report}" | sed -n '/^git -P diff .*scan_secrets\.sh"$/p')
   test -n "$recipe"
   bash -o pipefail -c "$recipe"
   env GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=diff.noprefix GIT_CONFIG_VALUE_0=true \
