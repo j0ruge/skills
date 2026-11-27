@@ -175,3 +175,15 @@
 - 2026-11-27 14:07 · `R7` · Revisão r7, achados 1–2: retomada da 0.4.0 já encerrada e colisão seguida de poda com ID pendente sem origem. Cinco Reds confirmados, oito Checks concluídos verdes e platô de notas.
 - 2026-11-27 14:09 · R7 · Ao reconstruir a atribuição de um estado 0.4.0, preserve o encerramento que o estado já comprova e cubra o estado inicial sem histórico. Na colisão, distinga uma pendência sem origem de um ID ausente no mapa. Mantenha os controles de R5 e R6 para apurar separadamente a origem conhecida e a marca sem origem.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 14:09 · written by the runner
+- 2026-11-27 14:16 · `R7` · R7 sabotage: repor inicialização antiga de encerramento na lista de defaults → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:16 · `R7` · R7 sabotage: omitir default de slash na lista modificada → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:16 · `R7` · R7 sabotage: omitir migração de encerramento → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:16 · `R7` · R7 sabotage: não considerar o histórico da sessão ao migrar → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:16 · `R7` · R7 sabotage: não considerar a skill ativa ao migrar → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:16 · `R7` · R7 sabotage: sobrescrever encerramento já explícito no estado atual → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:16 · `R7` · R7 sabotage: confundir ausência no mapa com pendência sem origem → test_unowned_consumed_id_survives_intermediate_collision, test_unowned_pending_collision_survives_pruning
+- 2026-11-27 14:16 · `R7` · R7 sabotage: tratar pendência com dono como pendência sem origem → test_unowned_pending_collision_survives_pruning
+- 2026-11-27 14:16 · `R7` · R7 sabotage: repor guarda de colisão sem considerar a pendência sem origem → test_unowned_pending_collision_survives_pruning
+- 2026-11-27 14:16 · `R7` · R7 sabotage: ignorar a marca de consumo sem origem ao combinar evidências → test_unowned_collision_survives_confirmation_of_live_owner, test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 14:16 · `R7` · R7 sabotage: ignorar a marca mista ao combinar evidências → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 14:16 · `R7` · Red em 9081588 com cinco divergências na sonda e nos dois testes. Green em 830629b: nove Checks, sonda com o estado gravado pela 0.4.0, onze degradações detectadas e TEST_CMD isolado com 154 testes da loja (3 pulados) e 98 do hook. Versão 0.4.1 confirmada.
