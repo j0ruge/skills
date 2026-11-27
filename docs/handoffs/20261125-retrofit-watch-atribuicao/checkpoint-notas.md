@@ -149,3 +149,4 @@
 - 2026-11-27 11:18 · `R5` · R5 sabotage: não gravar a colisão quando há donos → test_ambiguous_id_survives_retirement_of_one_owner, test_duplicate_pending_id_does_not_select_either_message
 - 2026-11-27 11:18 · `R5` · Red em c8ddc39: três divergências na sonda e quatro subcasos em Stop. Green em c52f09c: sete Checks, cinco degradações detectadas e TEST_CMD com 154 testes da loja (3 pulados) e 95 do hook. Versão 0.4.1 confirmada.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 11:19 · written by the runner
+- 2026-11-27 11:27 · `R6` · Revisão r6, achado 1: confirmar a mensagem que colidiu apaga a marca do ID ainda ambíguo. O Stop pede retro no HEAD em leitura contínua e retomada. A base fica em silêncio nos dois modos. R5 e os sete Checks passaram.
