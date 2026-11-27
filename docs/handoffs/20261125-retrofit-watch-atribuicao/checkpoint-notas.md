@@ -378,3 +378,4 @@
 - 2026-11-27 19:58 · r21 · Delta revisado em 757396c. Suíte e 14 Checks verdes. Conserto de 41a6ca5 confirmado em Bash e Zsh. Amostra implícita da r15 registrada no backlog. Documentation B, demais A, sem incremento pendente.
 - 2026-11-27 20:01 · Pós-r21 · A fonte da amostra foi fixada em a664c98. A verificação extraiu o SHA da receita publicada, construiu as amostras de seis, nove e oito linhas e reproduziu rc 0/1/0 em Bash e Zsh, sem SDD_KIT no ambiente.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 20:01 · written by the runner
+- 2026-11-27 20:05 · r22 · Em a07e588, suíte e 14 Checks verdes. A fonte fixada em a664c98 reproduziu rc 0/1/0 em Bash e Zsh. Todos os critérios em A, sem achado novo ou incremento pendente.
