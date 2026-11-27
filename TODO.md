@@ -232,6 +232,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r5.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
+- [ ] **A receita histórica de suíte do plano herda o Git privado do runner** —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/01-plano.md:121` (`TEST_CMD`)
+  — As variáveis do Git do runner desviam os comandos Git das fixtures. O handoff de execução já isola as duas.
+  Direção: na triagem da prosa histórica, apontar para a receita isolada e manter a evidência da execução.
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r7.md` — descoberto por
+  `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
+
 ## Decidido — não reabrir
 <!-- sdd:decided -->
 
