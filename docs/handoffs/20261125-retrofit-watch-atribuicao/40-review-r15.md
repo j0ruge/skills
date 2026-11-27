@@ -126,8 +126,10 @@ above_delayed_resumed=silêncio above_fresh=graphify above_slash=graphify regres
 )
 ~~~
 
-Para reproduzir o achado 1, copie o item do incidente já marcado como resolvido
-para um `TODO.md` temporário com os marcadores `sdd:open` e `sdd:decided`.
+Para reproduzir o achado 1, use o item do incidente «A fonte do incidente da
+atribuição leva à reprodução sintética» do blob obtido com
+`git show 11ae63baa9d93c2236f04c651fd5900d5ba1151a:TODO.md`.
+Copie o item para um `TODO.md` temporário com os marcadores `sdd:open` e `sdd:decided`.
 Use `TODO.md:1` na âncora do item para a cópia isolada. Com `fixture` apontando
 para a pasta temporária, execute a validação abaixo para cada amostra.
 
@@ -140,7 +142,7 @@ para a pasta temporária, execute a validação abaixo para cada amostra.
 ~~~
 
 O item de seis linhas passa.
-Insira três linhas curtas antes de `RESOLVED by` e repita. A saída acusa
+Insira três linhas curtas antes da linha isolada de `RESOLVED by` e repita. A saída acusa
 `9 content lines, cap is 8`. Junte o marcador à terceira linha inserida e
 repita. O item de oito linhas volta a passar.
 
