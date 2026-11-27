@@ -274,6 +274,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r15.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
+- [ ] **Pré-scan manual da revisão pode passar sem analisar linhas** —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r15.md:117` (`scan_secrets.sh`) —
+  Com cor forçada ou sem prefixos no diff, a receita sai com rc 0 e zero linhas analisadas.
+  Direção: fixar o formato do diff e conferir rc e contagem de entrada quando o delta não for vazio.
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r16.md` —
+  descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
+
 ## Decidido — não reabrir
 <!-- sdd:decided -->
 
