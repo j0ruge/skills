@@ -128,9 +128,18 @@ above_delayed_resumed=silêncio above_fresh=graphify above_slash=graphify regres
 
 Para reproduzir o achado 1, copie o item do incidente já marcado como resolvido
 para um `TODO.md` temporário com os marcadores `sdd:open` e `sdd:decided`.
-Use `TODO.md:1` na âncora do item para a cópia isolada. Rode
-`bash "$SDD_KIT/tests/check-todo.sh" --check "$fixture/TODO.md" --allow-empty`
-com `fixture` apontando para a pasta temporária. O item de seis linhas passa.
+Use `TODO.md:1` na âncora do item para a cópia isolada. Com `fixture` apontando
+para a pasta temporária, execute a validação abaixo para cada amostra.
+
+~~~bash
+(
+  set -euo pipefail
+  SDD_KIT=$(dirname "$(dirname "$(readlink -f "$(command -v sdd)")")")
+  bash "$SDD_KIT/tests/check-todo.sh" --check "$fixture/TODO.md" --allow-empty
+)
+~~~
+
+O item de seis linhas passa.
 Insira três linhas curtas antes de `RESOLVED by` e repita. A saída acusa
 `9 content lines, cap is 8`. Junte o marcador à terceira linha inserida e
 repita. O item de oito linhas volta a passar.

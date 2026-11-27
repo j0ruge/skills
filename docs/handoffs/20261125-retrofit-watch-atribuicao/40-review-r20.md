@@ -128,8 +128,9 @@ O merge continua com o mantenedor.
   incidente da atribuição leva à reprodução sintética” em
   `git show 11ae63baa9d93c2236f04c651fd5900d5ba1151a:TODO.md`.
   Adapte a âncora para `TODO.md:1`, em um `TODO.md` temporário com os dois marcadores.
-  Anexe ao arquivo que executa o bloco o comando de reprodução da r15 que consulta
-  `$SDD_KIT/tests/check-todo.sh`. Rode com `env -u SDD_KIT fixture="$fixture" bash "$receita"`
+  Anexe ao arquivo que executa o bloco o comando de reprodução da r15 no blob
+  `e32b365:docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r15.md`
+  que consulta `$SDD_KIT/tests/check-todo.sh`. Rode com `env -u SDD_KIT fixture="$fixture" bash "$receita"`
   e repita com `zsh`. Para o controle, execute apenas esse comando depois de copiar para
   o mesmo shell a definição de `SDD_KIT` da receita e repita nas amostras de seis,
   nove e oito linhas. Nenhuma cópia temporária foi versionada.
