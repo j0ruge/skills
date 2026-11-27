@@ -357,3 +357,4 @@
 - 2026-11-27 18:29 · r13 · R12 verificado em 91a7b7d: sonda vermelha na base e verde no HEAD, 14 Checks, suíte e quatro mutações confirmados. Nota A em todos os critérios, sem novo incremento.
 - intervention: sdd run --phase DOCS (the starting phase was forced from the CLI) — DOCS — 2026-11-27 18:31 · written by the runner
 - 2026-11-27 18:36 · DOCS · Documentação e Kaizen em `e58f9fc`. Suíte, E2E, release e 14 Checks confirmados. Checklist de drift e conferência do backlog em `45-docs.md`.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:37 · written by the runner
