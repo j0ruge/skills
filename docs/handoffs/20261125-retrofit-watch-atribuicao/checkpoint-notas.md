@@ -362,3 +362,4 @@
 - 2026-11-27 18:44 · Revisão após DOCS · A r14 confirmou os 14 Checks e atribuiu B em Documentation pela fonte do incidente. A referência foi precisada em 1b6b72f. As receitas usam o checkout do kit resolvido pelo sdd no PATH. Ao escrever a próxima revisão, use caminhos relativos ou variáveis nos comandos publicados.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:45 · written by the runner
 2026-11-27 18:50 · r15 · Delta verificado em 11ae63baa9d93c2236f04c651fd5900d5ba1151a. Suíte, quatro testes de release e 14 Checks passaram. Fonte da r14 confirmada, um desvio de formato no backlog. Documentation B, demais notas A, sem R13.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:51 · written by the runner
