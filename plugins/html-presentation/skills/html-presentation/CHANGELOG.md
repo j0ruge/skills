@@ -2,6 +2,17 @@
 
 Per-session lessons for this skill. The versioned history is `plugins/html-presentation/CHANGELOG.md`.
 
+## 2026-11-26 — the same TCC deck: a credit line under the PDF page number (v1.9.0)
+- The cover gained the examining board as a fourth metadata item. Four items filled the row, so the credit line moved
+  to a second row, right-aligned. In print, `.slide::after` draws "01 / 19" at `right:128px; bottom:52px`, the same
+  corner. The shot, `check-fit` at four sizes and `check-presenter` were green. Page 1 of the PDF, opened by eye,
+  showed the number over the credit. The credit moved to the left.
+- `check-fit.mjs` now measures once in print media. A probe copies the computed style of `::after` and its text, and
+  a `Range` measures the glyphs. Only text counts, because a photo or a tint under the number can be intended.
+- Proved on the defence deck (green, 19 numbers measured), a copy with the credit on the right (red, slide 1), the
+  same pair with an `inset:0` number, a copy without the `::after` rule (0 measured, said so) and the template (green,
+  8 numbers).
+
 ## 2026-11-26 — the same TCC deck: the author rejected the hover zoom and kept the click (v1.8.0)
 - The author tried the 1.7.3 row of photos once and rejected it. A photo opened as the mouse crossed it, the open
   photo swapped for the one hidden under it, and a click beside it changed the slide. The project probe (center and

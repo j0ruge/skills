@@ -3,6 +3,27 @@
 Versioned history of the plugin (mirrors `plugin.json`). The per-session record lives in
 `skills/html-presentation/CHANGELOG.md`.
 
+## [1.9.0] — 2026-11-26
+
+### O `check-fit` mede o número de página do PDF
+
+- **O caso.** No deck da defesa de TCC, a capa ganhou um quarto metadado, a banca examinadora, e a linha de crédito
+  desceu para uma segunda linha, alinhada à direita. Na impressão, o `.slide::after` põe o número "01 / 19" em
+  `right:128px; bottom:52px`, no mesmo canto. A captura, o `check-fit` nos quatro tamanhos e o `check-presenter`
+  ficaram verdes. Só a página 1 do PDF, aberta a olho, mostrou o número sobre o crédito.
+- **A passada nova.** Depois das quatro medidas de tela, o `check-fit.mjs` mede uma vez em `print`, a 1920×1080. O
+  pseudo-elemento não tem caixa própria: uma sonda copia o estilo calculado do `::after` e o texto dele, e um `Range`
+  mede os glifos. Assim o número desenhado sobre a lâmina inteira (`inset:0`, alinhado embaixo à direita) também
+  mede certo. Só texto conta: foto ou fundo sob o número é escolha de desenho, e texto sob ele é defeito. A lâmina
+  com texto sob o número reprova (saída 1). Um deck sem número na impressão aparece na saída como "nenhum número de
+  página na impressão" e não reprova.
+- **A prova.** O deck da defesa ficou verde, com o número medido nas 19 lâminas. Uma cópia com o crédito à direita
+  reprovou a lâmina 1 (`div.credit`). Uma cópia com `inset:0` no número da capa deu o mesmo par, verde e vermelho.
+  Uma cópia sem a regra do `::after` mediu 0 lâminas e disse isso, sem "livre". O template da skill passou, com o
+  número medido nas 8 lâminas.
+- O `SKILL.md` muda em duas frases, a do passo 6 e a da tabela de arquivos, porque está a 19,9 mil caracteres. O
+  caso fica no cabeçalho do script.
+
 ## [1.8.0] — 2026-11-26
 
 ### Zoom por clique no template; o `check-presenter` tira os testes de clique de cima das fotos

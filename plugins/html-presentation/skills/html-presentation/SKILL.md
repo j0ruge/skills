@@ -4,7 +4,7 @@ description: "Build a polished, self-contained HTML slide deck (1920×1080) for 
 license: MIT
 metadata:
   author: JorUge
-  version: "1.8.0"
+  version: "1.9.0"
 ---
 
 # HTML Presentation
@@ -118,8 +118,9 @@ at launch and names the build it wants: 1.58.0 uses 1208, 20/11/2026) and run it
 `NODE_PATH=<dir>/node_modules`.
 
 Also run `node <skill>/scripts/check-fit.mjs dist/<name>.html`, with the same Playwright. It fails when a slide
-leaves the window, clips text, runs under its source line or enters the footer, and exits 2 when it could not
-measure. Run it again after any text change, and still look at the shot: it measures boxes, not how the slide reads.
+leaves the window, clips text, runs under its source line, enters the footer or puts text under the PDF page number,
+and exits 2 when it could not measure. Run it again after any text change, and still look at the shot: it measures
+boxes, not how the slide reads.
 
 ### 7. Independent review
 
@@ -245,7 +246,7 @@ the laptop while the projector shows the deck) · `F` fullscreen · `R` reset th
 | `scripts/build.py` | Run on every build: inlines assets, generates the script, enforces the gates |
 | `scripts/shoot.sh` | Every inspection round: screenshots, laptop views, PDF, contact sheets |
 | `scripts/check-presenter.mjs` | Step 6 when Playwright is installed, and after porting an engine fix: presenter window, shared timer, key hint, focus click, keys on the popup's buttons, steps, hover tips, click zoom, footer labels, reduced motion |
-| `scripts/check-fit.mjs` | Step 6 when Playwright is installed, and after any text change: a slide out of the window, clipped text, content under the source line or inside the footer |
+| `scripts/check-fit.mjs` | Step 6 when Playwright is installed, and after any text change: a slide out of the window, clipped text, content under the source line or inside the footer, text under the PDF page number |
 | `references/layout-and-type.md` | Read when composing slides (step 4): components, scale, mockups, what to refuse |
 | `references/engine.md` | Read only when changing navigation, notes, presenter window or print behavior |
 | `references/review.md` | Read before step 7, when spawning the reviewer: input packet and verdict format |
