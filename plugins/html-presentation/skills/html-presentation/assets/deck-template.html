@@ -72,6 +72,7 @@ h1,h2,h3{font-weight:700;letter-spacing:-.02em;color:var(--fg);text-wrap:balance
 b,strong{font-weight:600;color:var(--fg)}
 .head{display:flex;flex-direction:column;gap:26px;margin-bottom:64px}
 .head .t-title{max-width:30ch}  /* estreito demais gera 3 linhas e deixa o palco vazio embaixo */
+.head .t-title.wide{max-width:none}  /* afirmação longa que quebra em 3 linhas no 30ch: class="t-title wide" */
 
 /* ── Rodapé: linha-horizonte de progresso por seção ─────────────────── */
 #footer{position:absolute;left:128px;right:128px;bottom:52px;height:56px;display:grid;grid-template-columns:auto 1fr auto;align-items:end;gap:48px;z-index:4}
