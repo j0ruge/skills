@@ -369,3 +369,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 19:07 · written by the runner
 - 2026-11-27 19:13 · r18 · Delta revisado em b466c6c. Suíte e 14 Checks verdes. Comparador externo e recorte histórico confirmados. Falso verde com Markdown binário mantido no backlog. Documentation B, demais A, sem incremento pendente.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 19:20 · written by the runner
+- 2026-11-27 19:24 · r19 · Suíte e 14 Checks verdes em 739d485. Markdown binário corrigido em f41ad63. O bloco da r15 ainda mascara a rejeição do pré-scan, registrada no item existente do backlog. Documentation B, demais A, sem incremento pendente.

@@ -1,6 +1,6 @@
 ---
 missao: 20261125-retrofit-watch-atribuicao
-atualizado: 2026-11-27 19:13
+atualizado: 2026-11-27 19:24
 ---
 
 # Checkpoint — Atribuição da retrofit-watch por mensagem

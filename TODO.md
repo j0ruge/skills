@@ -277,8 +277,8 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 - [ ] **Pré-scan manual da revisão pode passar sem analisar linhas** —
   `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r15.md:117` (`scan_secrets.sh`) —
   `3b8ef98` cobriu cor e prefixos. `261bff5` cobriu comparadores e conversores.
-  Na r18, Markdown binário ainda deu rc 0 e zero linhas. Evidência em `40-review-r18.md`.
-  Direção: usar diff textual e exigir a contagem esperada. RESOLVED by f41ad63
+  `f41ad63` corrigiu Markdown binário. Na r19, o bloco da r15 ainda saiu com rc 0 após a contagem rejeitada.
+  Direção: propagar a falha do pré-scan ao bloco inteiro. Evidência em `40-review-r19.md`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r16.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
