@@ -174,3 +174,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 13:59 · written by the runner
 - 2026-11-27 14:07 · `R7` · Revisão r7, achados 1–2: retomada da 0.4.0 já encerrada e colisão seguida de poda com ID pendente sem origem. Cinco Reds confirmados, oito Checks concluídos verdes e platô de notas.
 - 2026-11-27 14:09 · R7 · Ao reconstruir a atribuição de um estado 0.4.0, preserve o encerramento que o estado já comprova e cubra o estado inicial sem histórico. Na colisão, distinga uma pendência sem origem de um ID ausente no mapa. Mantenha os controles de R5 e R6 para apurar separadamente a origem conhecida e a marca sem origem.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 14:09 · written by the runner
