@@ -151,9 +151,11 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
   não pôde ser confirmado, ela encerra a atribuição para trabalho futuro. Metadado atrasado sem
   vínculo não reabre a atribuição. Ao retomar a 0.4.0, o primeiro Stop consulta uma vez o trecho
   até o offset salvo para recuperar vínculos e distinguir uma chamada pendente anterior à externa
-  de uma posterior. O hook não reconta trabalho antigo. Sem um trecho utilizável, vale o estado
-  já gravado, inclusive a indicação de encerramento por caminho externo. IDs falhos ou repetidos
-  não comprovam origem. Se a janela exceder 64 mensagens ou 1.024 IDs retidos, o hook deixa de correlacionar
+  de uma posterior. O hook não reconta trabalho antigo. Se um registro ultrapassar 2 MiB ou o
+  prefixo não for utilizável, o hook processa o trecho novo a partir do estado já gravado,
+  inclusive se a atribuição já foi encerrada por um caminho externo. Vínculos parciais não são
+  importados. IDs falhos ou repetidos não comprovam origem. A primeira confirmação não descarta
+  uma marca sem origem. Acima de 64 mensagens ou 1.024 IDs retidos, o hook deixa de correlacionar
   até outra sessão. Os contadores são preservados e um slash explícito ainda pode iniciar
   a atribuição da skill que ele nomeia. Medido em 2026-10-02 (376 sessões, 14 dias): 41% do atrito atribuído
   vem depois de um prompt novo seu. Encerrar no prompt novo foi refutado: a continuação chega como

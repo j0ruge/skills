@@ -622,6 +622,51 @@ class StopTest(HookHarness, unittest.TestCase):
         self.assertEqual(saved["skill_calls"], {})
         self.assertLess(peak, 2 * 1024 * 1024)
 
+    def test_legacy_replay_recovers_after_oversized_line(self):
+        ours, _ = self.identified_loads()
+        delayed = identified_load("graphify", self.w.graphify, "msg_later", "toolu_delayed")
+        self.write(ours, tool(error=True), delayed[:2], compact=True)
+        with self.w.transcript.open("ab") as fh:
+            fh.write(b'{"type":"system","text":"')
+            slab = b"x" * (1024 * 1024)
+            for _ in range(8):
+                fh.write(slab)
+            fh.write(b'"}\n')
+        info = rw.classify_plugin("codereview", self.w.ctx())
+        credits = dict(info, reviews=1, work=2, friction=1)
+        offset = self.w.transcript.stat().st_size
+        legacy = dict(offset=offset, current=info["key"], skills={info["key"]: credits},
+                      classified={str(self.w.mkt_skill): info}, done=["full:ticket"])
+        path = self.w.data / "sessions/s1.json"
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps(legacy), encoding="utf-8")
+        self.write(skill_typed("graphify", self.w.graphify), tool(error=True), compact=True)
+        payload = dict(session_id="s1", transcript_path=str(self.w.transcript), last_assistant_message="Feito.")
+        with mock.patch.dict(os.environ, RETROFIT_WATCH="force"), mock.patch.object(
+                rw, "read_delta", wraps=rw.read_delta) as read_delta:
+            tracemalloc.start()
+            try:
+                out = rw.cmd_stop(payload, self.w.ctx())
+                _, peak = tracemalloc.get_traced_memory()
+            finally:
+                tracemalloc.stop()
+        with self.subTest("leitura limitada"):
+            self.assertLess(peak, 6 * 1024 * 1024)
+        with self.subTest("fallback sem correlação parcial"):
+            read_delta.assert_called_once_with(str(self.w.transcript), offset, rewind=True)
+            saved = json.loads(path.read_bytes())
+            self.assertEqual(saved["offset"], self.w.transcript.stat().st_size)
+            self.assertEqual(saved["skill_calls"], {})
+            self.assertEqual(saved["skill_call_history"], {})
+            self.assertEqual(saved["skill_message_order"], [])
+            self.assertIsNone(saved["skill_message"])
+            self.assertEqual(saved["skills"][info["key"]], credits)
+            self.assertEqual(saved["done"], legacy["done"])
+            self.assertIn("`/retrofit-skill:retrofit-skill graphify`", self.context_of(out))
+            local = saved["skills"][saved["current"]]
+            self.assertEqual((local["work"], local["friction"], local["reviews"]), (0, 0, 1))
+            self.assertIsNone(self.checked_stop()[0])
+
     def test_legacy_pending_call_order(self):
         cuts = {}
         for scenario in ("late", "new", "alone", "name_only", "fresh", "cache_only",
@@ -1127,6 +1172,37 @@ class StopTest(HookHarness, unittest.TestCase):
                         self.assertIsNone(out)
                         self.assertEqual(saved["skill_message"], "msg_2")
                     self.assertNotIn(call_id, saved["skill_call_history"])
+
+    def test_failed_unowned_call_id_survives_first_attribution(self):
+        for resume in (False, True):
+            for reused in (False, True):
+                with self.subTest(resume=resume, reused=reused), self.sub_world() as world:
+                    ours, external = self.identified_loads()
+                    call_id = "toolu_2" if reused else "toolu_failed"
+                    call, fail, _ = identified_load("nao-instalada", world.other_skill, None, call_id)
+                    del call["message"]["id"]
+                    fail["message"]["content"][0]["is_error"] = True
+                    self.write([call, fail], compact=True)
+                    if resume:
+                        out, saved = self.checked_stop(mode="plan")
+                        self.assertIsNone(out)
+                        self.assertIsNone(saved["current"])
+                        self.assertEqual(saved["skill_call_history"].get(call_id), [])
+                    self.write(ours, compact=True)
+                    if resume:
+                        out, saved = self.checked_stop(mode="plan")
+                        self.assertIsNone(out)
+                        self.assertEqual(saved["current"], "full:codereview")
+                        self.assertEqual(saved["skill_call_history"].get(call_id), [])
+                    self.write(external, tool(error=True), compact=True)
+                    out, saved = self.checked_stop()
+                    entry = saved["skills"]["full:codereview"]
+                    self.assertEqual((entry["work"], entry["friction"], entry["reviews"]), (0, 0, int(not reused)))
+                    if reused:
+                        self.assertIsNone(out)
+                        self.assertIsNone(saved["current"])
+                    else:
+                        self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
 
     def checked_stop(self, **kwargs):
         out = self.run_hook(**kwargs)

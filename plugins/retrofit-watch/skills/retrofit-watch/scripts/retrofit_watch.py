@@ -66,6 +66,7 @@ DEFAULT_KITS = ("sdd",)
 MAX_REVIEWS = 2
 MAX_SKILL_MESSAGES = 64
 MAX_SKILL_CALL_IDS = 1024
+MAX_LEGACY_RECORD_BYTES = 2 * 1024 * 1024
 FIRST_REVIEW_WORK = 5
 SECOND_REVIEW_FRICTION = 2
 STATE_TTL_SECONDS = 14 * 24 * 3600
@@ -509,7 +510,8 @@ class Scanner:
         calls = self.st["skill_calls"]
         order = self.st["skill_message_order"]
         history = self.st["skill_call_history"]
-        advanced = confirmed is not None and confirmed != self.st["skill_message"]
+        previous = self.st["skill_message"]
+        advanced = confirmed is not None and confirmed != previous
         if advanced:
             del order[:order.index(confirmed)]
             self.st["skill_message"] = confirmed
@@ -522,7 +524,8 @@ class Scanner:
             self.st["skill_calls"] = {call: message for call, message in calls.items() if message in live}
         for call, owners in list(history.items()):
             retained = [message for message in owners if message in live]
-            if (not owners or owners[0] is None) and not advanced:
+            # Só o avanço entre mensagens confirmadas aposenta a ambiguidade sem origem.
+            if (not owners or owners[0] is None) and not (advanced and previous):
                 history[call] = [None, *retained] if retained else []
             elif retained:
                 history[call] = retained
@@ -788,10 +791,12 @@ def recover_legacy_correlation(path, st, ctx):
                 st["legacy_prefix_truncated"] = True
                 return
             while remaining:
-                line = fh.readline(remaining)
+                limit = min(remaining, MAX_LEGACY_RECORD_BYTES)
+                line = fh.readline(limit)
                 if not line.endswith(b"\n"):
-                    if len(line) < remaining:
+                    if len(line) < limit:
                         st["legacy_prefix_truncated"] = True
+                    # Registro sem quebra dentro do limite: não importar reconstrução parcial.
                     return
                 remaining -= len(line)
                 if not line.strip():

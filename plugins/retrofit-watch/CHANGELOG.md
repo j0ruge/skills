@@ -13,7 +13,8 @@
   atrasado preserva o slash mais novo e tentativa sem carga não invalida outro vínculo.
 - Confirmações fora de ordem preservam as chamadas posteriores que ainda aguardam metadados.
   Resultados de erro descartam o vínculo da tentativa correspondente, inclusive após a retomada.
-  Se a tentativa falha não tiver origem, a marca do ID permanece na janela de correlação.
+  Se a tentativa falha não tiver origem, a marca do ID permanece na janela de correlação,
+  inclusive após a primeira confirmação.
 - A ordem de uma mensagem é mantida se perder o último vínculo enquanto uma mensagem posterior
   ainda aguarda confirmação. Reusar um ID falho, consumido ou ambíguo na janela retida não
   comprova a origem, mesmo antes de uma carga daquela mensagem ser reconhecida. Ao exceder
@@ -22,8 +23,8 @@
   ID consumido sem origem não apaga sua marca. Reusar esse ID numa carga externa não comprova
   a origem para preservar a atribuição.
 - Se a mensagem que reutilizou o ID continuar na janela e for confirmada, sua colisão continua
-  registrada. A confirmação pode aposentar a marca sem origem, mas não libera o ID enquanto
-  uma mensagem que colidiu com ele continuar retida.
+  registrada. O avanço entre mensagens confirmadas pode aposentar a marca sem origem, mas não
+  libera o ID enquanto uma mensagem que colidiu com ele continuar retida.
 - Sem skill ativa, a retomada da 0.4.0 respeita o encerramento indicado pelo histórico ou
   por um caminho de skill não monitorada. A marca de colisão com chamada sem origem
   sobrevive à poda em ambas as ordens da disputa, enquanto a mensagem ativa não mudar.
@@ -31,7 +32,8 @@
   recuperar a ordem de chamadas pendentes. Uma externa posterior encerra a atribuição até
   sem metadado de caminho. O trecho antigo não reconta trabalho nem gera pedidos de retro.
   A leitura é feita linha a linha e preserva o slash digitado ainda pendente quando o
-  prefixo válido confirma o estado salvo.
+  prefixo válido confirma o estado salvo. Se um registro ultrapassar 2 MiB, o hook descarta a
+  reconstrução parcial e processa o trecho novo a partir do estado salvo.
 
 ## [0.4.0] — 2026-11-24
 
