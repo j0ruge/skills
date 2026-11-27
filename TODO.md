@@ -249,7 +249,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 - [ ] **Três âncoras da atribuição apontam para linhas vizinhas** —
   `TODO.md:91` (`_watch`) — as referências a `_watch`, `_skill_origin` e `unlinked = False`
   passam a tolerância de dez linhas, mas abrem trechos vizinhos em vez dos símbolos citados.
-  Direção: alinhar as três linhas à próxima alteração do backlog.
+  Direção: alinhar as três linhas à próxima alteração do backlog. RESOLVED by e58f9fc
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r10.md` — descoberto por
   `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
