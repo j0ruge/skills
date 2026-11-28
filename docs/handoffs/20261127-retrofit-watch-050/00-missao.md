@@ -42,7 +42,7 @@ A `retrofit-watch` 0.5.0 reconhece o repo pelo `origin`, prepara um lote por ski
 | a | Grill sem perguntas abertas não endereçadas | ✅ | As duas escolhas recebidas estão abaixo. A adoção privada tem dono e fase próprios. |
 | b | Kaizen e DDD cobertos no desenho | ✅ | K1–K8 e D1–D6 abaixo. |
 | c | Autocontenção | ✅ | I1 identifica arquivos, fixture de origem, ambiente, contratos, casos, comando e resultado. |
-| d | Checks vermelhos na base de aprovação | ✗ | Em `7e623fe`, as quatro células executadas individualmente deram `1`, `1`, `1`, `falhou`. O `--check` do kit leu quatro linhas em memória, rc 0. O `--red` deu rc 95 porque o checkpoint em memória fica fora do worktree. Exigir rc 0 no arquivo materializado sobre a base integrada. |
+| d | Checks vermelhos na base de aprovação | ✅ | No checkpoint materializado sobre `6329df5`, `--check` e `--red` retornaram rc 0 antes da aprovação. As quatro células deram `1`, `1`, `1`, `falhou`. |
 | e | Versões | ✅ | Pedido do mantenedor fixa `retrofit-watch` 0.5.0 e `retrofit-skill` 0.12.0. `JIRA_ENABLED=false`. |
 | f | ADR alocado | ✅ | A decisão proposta está vinculada em `docs/adr/0001-retrofit-lean-publicacao.md`. |
 
@@ -63,7 +63,7 @@ A `retrofit-watch` 0.5.0 reconhece o repo pelo `origin`, prepara um lote por ski
 
 | # | Decisão de domínio | Status | Invariante |
 |---|---|---|---|
-| D1 | Identidade da origem | ✅ | O slug normalizado distingue repos. O caminho identifica a pasta dentro daquele repo. |
+| D1 | Identidade da origem | ✅ | O slug normalizado identifica a entrada da lista. A origem efetiva distingue o destino Git e a pasta identifica a skill. |
 | D2 | Unidade de trabalho | ✅ | Um lote reúne lições da mesma skill e origem. Colisão de nome produz retenção explícita. |
 | D3 | Fronteira de escrita | ✅ | A edição pertence ao worktree do lote. A cópia em uso acompanha a `main`. |
 | D4 | Autorização | ✅ | Aprovação privada vale para o patch revisto e apenas para motivos substituíveis. |
