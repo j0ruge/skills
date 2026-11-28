@@ -451,6 +451,69 @@ class StopTest(HookHarness, unittest.TestCase):
                         target = "graphify" if outcome == "independent" else "codereview"
                         self.assertIn(f"/retrofit-skill:retrofit-skill {target}", self.context_of(out))
 
+    def test_ambiguous_call_failure_does_not_close_attribution(self):
+        for case in ("before", "after", "missing_message", "distinct", "unrelated", "active"):
+            for resumed in (False, True):
+                with self.subTest(case=case, resumed=resumed), self.sub_world() as world:
+                    ours, _ = self.identified_loads()
+                    prior_id = "toolu_1" if case in ("before", "after", "missing_message") else "toolu_other"
+                    prior = identified_load("irrelevante", world.other_skill, "msg_old", prior_id)
+                    keep = identified_load("irrelevante", world.other_skill, "msg_keep", "toolu_keep")
+                    if case == "missing_message":
+                        ours[0]["message"].pop("id")
+                    if case in ("after", "unrelated"):
+                        self.write(ours[:1], prior[:1], keep[:1], compact=True)
+                        if case == "unrelated":
+                            self.write(prior[:1], compact=True)
+                    else:
+                        self.write(prior[:1], keep[:1], ours[:1], compact=True)
+                    closes = case in ("unrelated", "active")
+                    if resumed:
+                        out, saved = self.checked_stop(mode="plan")
+                        self.assertIsNone(out)
+                        self.assertEqual(saved["current"], "full:codereview")
+                        if case == "before":
+                            self.assertIn(prior_id, saved["skill_call_history"])
+                            self.assertIsNone(saved["current_origin"])
+                    error = (ours if closes else prior)[1]
+                    error["message"]["content"][0]["is_error"] = True
+                    self.write([error], tool(error=True), compact=True)
+                    out, saved = self.checked_stop()
+                    credits = saved["skills"]["full:codereview"]
+                    self.assertEqual(credits["reviews"], int(not closes))
+                    self.assertEqual(saved["attribution_closed"], closes)
+                    if closes:
+                        self.assertIsNone(out)
+                        self.assertIsNone(saved["current"])
+                        self.assertEqual((credits["work"], credits["friction"]), (0, 0))
+                    else:
+                        self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                        self.assertEqual(saved["current"], "full:codereview")
+
+    def test_malformed_saved_origin_does_not_break_stop(self):
+        for origin in (["msg_1", "toolu_1"], ["msg_1"], 42, {"message": "msg_1"},
+                       ["msg_1", "toolu_1", "extra"], ["msg_1", []], ["bad id", "toolu_1"], []):
+            with self.subTest(origin=origin), self.sub_world() as world:
+                ours, _ = self.identified_loads()
+                self.write(ours, tool(), tool(), compact=True)
+                out, saved = self.checked_stop(mode="plan")
+                self.assertIsNone(out)
+                self.assertEqual(saved["skills"]["full:codereview"]["work"], 2)
+                saved.pop("current_call")
+                saved["current_origin"] = origin
+                path = world.data / "sessions/s1.json"
+                path.write_text(json.dumps(saved), encoding="utf-8")
+                self.write(tool(), tool(), tool(), compact=True)
+                out, after = self.checked_stop()
+                self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                self.assertIn("5 chamadas", self.context_of(out))
+                self.assertEqual(after["current"], saved["current"])
+                self.assertEqual(after["created"], saved["created"])
+                intact = origin == ["msg_1", "toolu_1"]
+                self.assertEqual(after["current_origin"], origin if intact else None)
+                self.assertEqual(after["current_call"], "toolu_1" if intact else None)
+                self.assertEqual(after["skills"]["full:codereview"]["reviews"], 1)
+
     def test_active_call_failure_without_message_origin(self):
         for case in ("name", "path", "success", "other_id", "missing_id", "invalid_call", "typed_missing_id"):
             for resumed in (False, True):

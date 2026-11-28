@@ -15,8 +15,9 @@
   Resultados de erro descartam o vínculo da tentativa correspondente, inclusive após a retomada.
   Se a tentativa falha não tiver origem, a marca do ID permanece na janela de correlação,
   inclusive após a primeira confirmação.
-- Se falhar a chamada que abriu a atribuição ativa, seu crédito futuro termina sem apagar os
-  outros vínculos. O ID da chamada basta para reconhecer a falha, mesmo sem ID de mensagem.
+- Se o erro estiver ligado sem ambiguidade à chamada que abriu a atribuição ativa, seu crédito
+  futuro termina sem apagar os outros vínculos, mesmo sem ID de mensagem. Uma origem salva
+  inválida é descartada sem zerar a atribuição, os contadores ou o offset.
   Metadados externos atrasados não encerram a atribuição quando remontam à mesma mensagem
   por vínculo confirmado ou quando há prova de ID aposentado.
 - Tentativas irrelevantes preservam o slash explícito. Blocos inválidos não ocultam caminhos

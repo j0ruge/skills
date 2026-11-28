@@ -17,7 +17,7 @@ própria carga que o hook reconheceu primeiro pelo nome.
 |---|---|
 | Uma carga externa distinta e uma monitorada na mesma mensagem, com vínculo confiável | Mantém a monitorada. |
 | Uma carga externa posterior ou sem prova de que veio da mesma mensagem | Encerra a atribuição. O trabalho já creditado permanece registrado. |
-| Resultado de erro da chamada que abriu a atribuição ativa | Encerra a atribuição sem apagar os outros vínculos pendentes. O ID da chamada basta, mesmo sem `message.id`. |
+| Resultado de erro ligado sem ambiguidade à chamada que abriu a atribuição ativa | Encerra a atribuição sem apagar os outros vínculos pendentes. Não exige `message.id`. Um ID disputado não encerra a atribuição. |
 | Metadado externo com ID comprovadamente aposentado por uma mensagem posterior | Não altera a atribuição. ID desconhecido ou fora da janela mantém o tratamento conservador. |
 | Metadado atrasado da monitorada sem vínculo, depois do encerramento | Não reabre a atribuição. Uma carga nova com vínculo ou um slash explícito para a própria skill pode iniciá-la. |
 
@@ -40,6 +40,9 @@ correlação lendo o trecho anterior a esse offset, linha por linha. Essa leitur
 não reconta trabalho ou atrito, não gera pedidos de retro e não substitui a
 atribuição ativa já salva. Quando o prefixo confirma o estado, o hook pode
 recuperar também a origem ativa e um slash pendente.
+
+Se a origem gravada tiver formato inválido, o Stop descarta essa origem, preserva
+a atribuição e os contadores e continua a partir do offset salvo.
 
 Se o prefixo não puder ser reconstruído, por exemplo porque um registro passa
 de 2 MiB, nenhum vínculo parcial é importado. O Stop processa o trecho novo

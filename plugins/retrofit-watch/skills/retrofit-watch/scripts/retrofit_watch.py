@@ -426,6 +426,9 @@ class State:
                              ("skill_correlation_lost", False), ("pending_slash", None)):
             self.data.setdefault(key, default)
         origin = self.data["current_origin"]
+        if (not isinstance(origin, list) or len(origin) != 2
+                or not all(map(Scanner._transcript_id, origin))):
+            self.data["current_origin"] = origin = None
         self.data.setdefault("current_call", origin[1] if origin else None)
         if "slash_prior_calls" not in self.data:
             # Sem a ordem gravada, não presumir que uma chamada pendente é posterior ao slash.
@@ -761,6 +764,10 @@ class Scanner:
                 if name == "Skill":
                     call_id = self._transcript_id(block.get("id"))
                     origin = self._skill_origin(msg.get("id"), call_id)
+                    if call_id not in self.st["skill_calls"]:
+                        if call_id == self.st["current_call"]:
+                            self.st["current_call"] = None
+                        call_id = None
                     self.invocation(str(tool_input.get("skill", "")), tool_input.get("args", ""), origin,
                                     call_id=call_id)
                     self._bound_skill_correlation()
