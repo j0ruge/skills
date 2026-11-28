@@ -155,6 +155,7 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
 - `4ea2ef0` — setup e elegibilidade compartilham a leitura direta de `.git/HEAD`. A validação recusa a referência indireta, conserva o marcador e permite retomar com HEAD canônico. Se o ramo mudar antes do fetch, o avanço distingue a recusa de um clone ausente, registra `fora-da-main` e preserva as refs.
 - Em `e184101`, os dois testes dirigidos falharam pelos comportamentos descritos na r9, com o controle de remoção do marcador verde. Na candidata, o Check R15, 167 regressões dirigidas e os 11 testes da retrofit-skill passaram. As 19 sabotagens de comportamento foram detectadas em cópia descartável, com controle de oito provas sem pulos, grupo de processos próprio, 20 s e 512 MiB por execução.
 - Depois do EXEC, as três provas nativas de distribuição e a camada 1 de anonimização passaram no host Linux em `42042d1`.
+- A suíte ampla no mesmo host, com diretório temporário isolado, executou 612 testes. A única falha foi `test_second_skill_of_the_same_plugin_is_recorded`, reproduzida na base.
 
 ## Artefatos
 
