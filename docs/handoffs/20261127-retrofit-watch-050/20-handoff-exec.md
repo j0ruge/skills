@@ -2,9 +2,9 @@
 missao: 20261127-retrofit-watch-050
 fase: EXEC
 status: done
-sessao: 01a221f8-d696-7cc0-82ea-2cd906fc52bd
-data: 2026-11-28 08:53
-gate: "Em d0edd6609cbbbe6f2d4b6a172cb86d7b85ca899a, `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp GIT_CEILING_DIRECTORIES=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c '. .sdd/config.sh && eval \"$TEST_CMD\"'` → rc 0, 154 testes da loja (3 pulados) e 144 do Stop. Adaptadores, catálogo e versões válidos. O Check R16 do checkpoint retornou 0, inclusive `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py`."
+sessao: 01a2220f-19ad-7372-9904-8c9b247e321f
+data: 2026-11-28 09:20
+gate: "Em 0321097be5c1e3c9090238a7c4a4b4c4daa606fa, `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp GIT_CEILING_DIRECTORIES=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c '. .sdd/config.sh && eval \"$TEST_CMD\"'` → rc 0, 154 testes da loja (3 pulos nativos configurados) e 144 do Stop. Adaptadores, catálogo e versões válidos. `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_live.LiveTest.test_setup_keeps_pending_when_main_redirects_during_validation test_lean_live.LiveTest.test_setup_and_advance_accept_packed_main_with_empty_loose_dir test_lean_live.LiveTest.test_setup_rejects_missing_main_ref test_lean_live.LiveTest.test_advance_reports_unreadable_main_ref_separately >/dev/null && env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → 0, com as quatro regressões e a jornada de QA."
 ---
 
 # Handoff — EXEC — Retrofit de skills locais listadas
@@ -14,16 +14,17 @@ gate: "Em d0edd6609cbbbe6f2d4b6a172cb86d7b85ca899a, `env -u GIT_DIR -u GIT_WORK_
 
 ## TL;DR
 
-I1–I4 e R1–R16 concluídos. O setup não libera a cópia se a main redireciona para outro ramo.
-Se a releitura de HEAD falhar antes do fetch, o avanço grava `erro` e preserva as refs.
-O Check R16, a jornada de QA e o TEST_CMD passaram. Comece a QA pelo Check de R16.
+I1–I4 e R1–R17 concluídos. O setup mantém a pendência se a main deixar de ser direta,
+e aceita a main empacotada válida. O avanço distingue HEAD ilegível de ref da main ilegível.
+Check R17, jornada de QA, 174 regressões dirigidas e TEST_CMD verdes. Comece a QA pelo Check de R17.
+A suíte ampla manteve os mesmos casos vermelhos da base no sandbox.
 
 ## Estado do repo
 
 - **Branch:** `feat/retrofit-watch-050-loja` — base de comparação `origin/main` local.
-- **Último commit de produto:** `d0edd66` — recusa main simbólica e distingue falha de leitura.
+- **Último commit de produto:** `0321097` — valida a ref da main na liberação do clone.
 - **Working tree:** limpo após o commit de checkpoint, notas e handoff.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp GIT_CEILING_DIRECTORIES=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c '. .sdd/config.sh && eval "$TEST_CMD"'` → rc 0 em `d0edd66`. 154 testes da loja, 3 pulados, e 144 do Stop. Adaptadores, catálogo e versões válidos.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp GIT_CEILING_DIRECTORIES=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c '. .sdd/config.sh && eval "$TEST_CMD"'` → rc 0 em `0321097`. 154 testes da loja, 3 pulados, e 144 do Stop. Adaptadores, catálogo e versões válidos.
 - **E2E:** sem `E2E_CMD` na config. Jornada automatizada em `sonda-qa.py` com remotos bare de fixture. Nenhum deploy ou repo privado real.
 
 ## O que foi feito
@@ -180,18 +181,42 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
   FAILED (failures=1)
   ```
 
+### Revisão r11 e correção de R17
+
+- `0321097` — a ref da main é conferida antes e após remover o marcador. Um redirecionamento
+  mantém a cópia pendente, preserva os arquivos locais e permite retomar com a mesma origem.
+  O setup e a elegibilidade aceitam a main empacotada mesmo com diretório vazio no caminho
+  solto e recusam a ref ausente. Antes do fetch, a falha de releitura da ref produz
+  `refs/heads/main do clone ilegível`, sem fetch nem alteração de refs.
+- Em `2905b0c` com as regressões novas, os quatro casos da r11 ficaram vermelhos.
+  Em `0321097`, o Check R17 e a jornada retornaram 0. As regressões dirigidas descritas no boot
+  completaram 174 testes sem pulos. A camada 1 passou com
+  `python3 -B scripts/anonymity-gate.py --camada1 --base origin/main --repo "$GIT_DIR"`.
+- Trinta sabotagens foram detectadas em cópia descartável, cada execução com grupo próprio,
+  teto de 20 s e 512 MiB. Os controles antes e depois completaram 12 testes em fixtures com
+  SHA-1 e um teste com Git real em SHA-256, sem pulos. As notas registram a sonda que acusou
+  cada alteração.
+- Na suíte ampla da retrofit-watch, o sandbox registrou 614 testes na base `2905b0c` e
+  619 na candidata, com as mesmas 5 falhas e 176 erros. A comparação dos casos descartou
+  apenas os endereços de memória das funções exibidos pelo unittest. As duas cópias rodaram
+  `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR="$dir" GIT_CEILING_DIRECTORIES=/tmp python3 -B -m unittest discover -s plugins/retrofit-watch/skills/retrofit-watch/tests -p 'test_*.py' -v`,
+  com `dir` isolado em `/tmp/r17-base.QS2akf/fixtures-base` e
+  `/tmp/r17-base.QS2akf/fixtures-final`, respectivamente. O marcador ancestral `/tmp/.git`
+  interferiu nas fixtures de colheita. A falha da segunda skill full também ocorreu nas duas
+  árvores. Ambas foram registradas no TODO, sem alteração no código de colheita ou atribuição.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Vinte Checks e seus commits. |
+| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Vinte e um Checks e seus commits. |
 | `docs/retrofit-watch/clone-dedicado.md` | Contrato de clone, selo, ensaio, publicação e avanço. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py` | Cópia de distribuição com contratos dos dois plugins e controles do catálogo. |
 | `KAIZEN_LOG.md` e `TODO.md` | Medida da fixture, limite da adoção e achados fora do escopo. |
 
 ## Boot da próxima fase
 
-Para QA, leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Comece pelo Check de R16. Em clone pendente da fixture, confira que HEAD direto não basta quando a main resolve para outro ramo. O marcador deve ficar e a elegibilidade só volta após corrigir a ref. Antes do fetch, a falha de leitura deve persistir como `erro` com a mensagem `HEAD do clone ilegível`, sem busca nem alteração das refs. Repita R14 e R15 para conferir a trava, o HEAD indireto e o diagnóstico distinto `fora-da-main`.
+Para QA, leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Comece pelo Check de R17. Em clone pendente da fixture, redirecione a ref da main durante a validação da trava e na remoção do marcador. O clone deve continuar pendente e retomar após corrigir a ref, com os arquivos locais intactos. Confira avanço com main empacotada e diretório solto vazio, recusa quando a main não existe e o diagnóstico `refs/heads/main do clone ilegível` sem fetch quando só a ref falha. Repita R14–R16 para conferir a trava, o ramo errado e o diagnóstico distinto `HEAD do clone ilegível`.
 Para reproduzir a jornada de bare local com HOME isolado, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py`.
 Não é preciso preparar remotos reais nem iniciar serviços. Para as regressões dirigidas, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests:plugins/retrofit-skill/tests python3 -B -m unittest test_fixture_private test_lean_auto test_lean_window test_lean_live test_lean_batch test_lean_gate test_auto_docs test_modo_autonomo`.
 
@@ -235,10 +260,14 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
 
 ## Pendências / Decisions for a Human
 
+- A r11 pede decisão humana antes de autorizar outra rodada automática de REVIEW. O fechamento de R17 não reavalia as notas da r11.
+
 - A adoção privada fica com cada dono. Inventariar e preservar estado ignorado ou não rastreado
   antes de repontar links. Medir o gate real no ambiente do dono, fora desta missão.
 
 ## Riscos e não-feitos
+
+- R17 rodou no Linux com Git 2.43.0 e bares locais. Não houve execução nativa em Windows ou macOS nem adoção privada real.
 
 - R16 foi verificado no Linux com remotos bare de fixture. A cobertura de Windows permanece nos dublês Linux.
 
@@ -265,6 +294,8 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
 - A suíte ampla no host teve a mesma falha preexistente de atribuição no teste da segunda skill full tanto na base (487 testes) quanto no candidato da QA (555 testes).
 
 ## Achados fora de escopo
+
+- O temporário sob o marcador Git do sandbox e a recorrência R17 da segunda skill full estão no `TODO.md`. A rastreabilidade do resultado histórico de R15 no host segue no item editorial já citado pela r11.
 
 - A receita que herda a localização Git do runner voltou a desviar as fixtures. O item existente em `TODO.md` ganhou a recorrência R11. A árvore de produto não foi afetada.
 - A janela de remoção por caminho no Windows está em `TODO.md`, na seção do clone dedicado.

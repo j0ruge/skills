@@ -386,3 +386,34 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 08:57 · written by the runner
 2026-11-28 09:06 · `R17` · REVIEW r11 agrupou os quatro achados em Git local. A troca durante o setup perde a pendência, a main empacotada com diretório solto vazio é recusada, a main ausente é aceita e o erro da ref é atribuído ao HEAD. TEST_CMD, 169 regressões e jornada verdes. O gate segue vermelho com platô nos critérios estritos e Documentation em B.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 09:09 · written by the runner
+- 2026-11-28 09:20 · `R17` · R17 sabotage: ignora SHA-256 da ref → test_live_main_accepts_sha256_loose_and_packed_refs
+- 2026-11-28 09:20 · `R17` · R17 sabotage: lê metadados fora de .git → test_setup_and_advance_accept_packed_main_with_empty_loose_dir
+- 2026-11-28 09:20 · `R17` · R17 sabotage: consulta a ref de outro ramo → test_setup_keeps_pending_when_main_redirects_during_validation, test_setup_and_advance_accept_packed_main_with_empty_loose_dir
+- 2026-11-28 09:20 · `R17` · R17 sabotage: segue link ao consultar a ref solta → test_setup_and_advance_accept_packed_main_with_empty_loose_dir
+- 2026-11-28 09:20 · `R17` · R17 sabotage: propaga a ausência no lstat em vez de consultar a tabela → test_setup_rejects_main_resolving_to_other_branch
+- 2026-11-28 09:20 · `R17` · R17 sabotage: trata ref ausente como arquivo regular → test_setup_rejects_main_resolving_to_other_branch
+- 2026-11-28 09:20 · `R17` · R17 sabotage: não prioriza a ref solta regular → test_setup_keeps_pending_when_main_redirects_during_validation, test_advance_reports_unreadable_main_ref_separately
+- 2026-11-28 09:20 · `R17` · R17 sabotage: lê arquivo errado no lugar da ref solta → test_setup_keeps_pending_when_main_redirects_during_validation, test_advance_reports_unreadable_main_ref_separately
+- 2026-11-28 09:20 · `R17` · R17 sabotage: volta a aceitar ref solta sem SHA → test_setup_rejects_missing_main_ref
+- 2026-11-28 09:20 · `R17` · R17 sabotage: volta a bloquear diretório no caminho solto → test_setup_and_advance_accept_packed_main_with_empty_loose_dir
+- 2026-11-28 09:20 · `R17` · R17 sabotage: aceita link com fallback para a main empacotada → test_setup_and_advance_accept_packed_main_with_empty_loose_dir
+- 2026-11-28 09:20 · `R17` · R17 sabotage: abre o arquivo errado para refs empacotadas → test_setup_and_advance_accept_packed_main_with_empty_loose_dir
+- 2026-11-28 09:20 · `R17` · R17 sabotage: relaxa o nome exato da main empacotada → test_setup_rejects_missing_main_ref
+- 2026-11-28 09:20 · `R17` · R17 sabotage: aceita linha empacotada sem SHA → test_setup_rejects_missing_main_ref
+- 2026-11-28 09:20 · `R17` · R17 sabotage: aceita qualquer tabela empacotada → test_setup_rejects_missing_main_ref
+- 2026-11-28 09:20 · `R17` · R17 sabotage: volta a tomar ausência da tabela como sucesso → test_setup_rejects_missing_main_ref
+- 2026-11-28 09:20 · `R17` · R17 sabotage: propaga FileNotFoundError ao faltar a tabela → test_setup_rejects_missing_main_ref
+- 2026-11-28 09:20 · `R17` · R17 sabotage: classifica falha de I/O na main como ramo errado → test_advance_reports_unreadable_main_ref_separately
+- 2026-11-28 09:20 · `R17` · R17 sabotage: lê ref da main no lugar de HEAD → test_advance_reports_unreadable_head_before_fetch, test_setup_and_advance_accept_packed_main_with_empty_loose_dir
+- 2026-11-28 09:20 · `R17` · R17 sabotage: ignora HEAD simbólico indireto → test_setup_and_eligibility_agree_on_symbolic_main, test_advance_reports_branch_change_before_fetch
+- 2026-11-28 09:20 · `R17` · R17 sabotage: deixa escapar erro de I/O em HEAD → test_advance_reports_unreadable_head_before_fetch, test_live_clone_requires_readable_main
+- 2026-11-28 09:20 · `R17` · R17 sabotage: não confere a própria ref depois de HEAD → test_setup_rejects_missing_main_ref, test_setup_rejects_main_resolving_to_other_branch, test_advance_reports_unreadable_main_ref_separately
+- 2026-11-28 09:20 · `R17` · R17 sabotage: omite recusa de I/O na main → test_advance_reports_unreadable_main_ref_separately
+- 2026-11-28 09:20 · `R17` · R17 sabotage: volta a atribuir ao HEAD o erro da ref → test_advance_reports_unreadable_main_ref_separately
+- 2026-11-28 09:20 · `R17` · R17 sabotage: ignora resultado negativo da conferência da ref → test_setup_rejects_missing_main_ref, test_setup_rejects_main_resolving_to_other_branch
+- 2026-11-28 09:20 · `R17` · R17 sabotage: deixa falha de leitura escapar da elegibilidade → test_live_clone_requires_readable_main
+- 2026-11-28 09:20 · `R17` · R17 sabotage: volta a liberar a pendência sem conferir a ref após a remoção → test_setup_keeps_pending_when_main_redirects_during_validation
+- 2026-11-28 09:20 · `R17` · R17 sabotage: volta a remover a pendência sem conferir a ref após validar a trava → test_setup_keeps_pending_when_main_redirects_during_validation
+- 2026-11-28 09:20 · `R17` · R17 sabotage: não reconfere main antes de buscar → test_advance_reports_branch_change_before_fetch, test_advance_reports_unreadable_head_before_fetch, test_advance_reports_unreadable_main_ref_separately
+- 2026-11-28 09:20 · `R17` · R17 sabotage: exige main mesmo quando o avanço pede só a identidade → test_advance_leaves_wrong_branch_dirty_tree_and_divergence_alone, test_advance_reports_branch_change_before_fetch
+- 2026-11-28 09:20 · `R17` · Quatro Reds em 2905b0c. Em 0321097, Check R17, 174 regressões dirigidas, TEST_CMD, jornada de QA e camada 1 verdes. As 30 sabotagens foram detectadas em cópia descartável, com 12 controles SHA-1 e um em SHA-256, grupo próprio, 20 s e 512 MiB por execução. A antiga guarda de None no fetch ficou inalcançável porque a conferência passou a lançar StoreError. A suíte ampla manteve 5 falhas e 176 erros nos mesmos casos em 614 testes da base e 619 da candidata. As limitações do temporário e da segunda skill full estão no TODO.
