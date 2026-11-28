@@ -46,7 +46,10 @@ a publicação autônoma é da porta.
    `git -C <worktree> push --no-follow-tags origin HEAD:main`. Se o pre-push ou o remoto recusar,
    não publique status nem faça avanço. Mostre o resultado e conserve o worktree.
 4. Confirme o SHA recebido na main. Registre o resultado do gate com
-   `gh api --hostname <servidor-validado> -X POST repos/<dono/repo>/statuses/<sha> -f state=success -f context=local/ci -f description=<resumo>`.
+   `gh api --hostname <host-sem-porta> -X POST <endpoint> -f state=success -f context=local/ci -f description=<resumo>`.
+   Use `repos/<dono/repo>/statuses/<sha>` quando a API atende na porta padrão.
+   Para uma origem HTTPS com porta própria, use `https://<host>:<porta>/api/v3/repos/<dono/repo>/statuses/<sha>`.
+   A porta do transporte SSH fica fora da chamada da API.
    Rode `retrofit_watch.py live-advance <dono/repo>` e confira o HEAD do clone dedicado.
    Se um desses dois passos falhar, diga qual e preserve o SHA já publicado.
 

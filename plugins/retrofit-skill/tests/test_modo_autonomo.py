@@ -282,6 +282,9 @@ class PrivateFlowTest(unittest.TestCase):
             for field in ("clone dedicado", "sim do dono", "HEAD:main", "pre-push", "local/ci", "live-advance"):
                 self.assertIn(field, text)
             self.assertNotIn("--no-verify", text)
+        manual = section(read(REFERENCE), "Retro manual de repo listado")
+        self.assertIn("--hostname <host-sem-porta>", manual)
+        self.assertIn("https://<host>:<porta>/api/v3/repos/<dono/repo>/statuses/<sha>", manual)
 
 if __name__ == "__main__":
     unittest.main()
