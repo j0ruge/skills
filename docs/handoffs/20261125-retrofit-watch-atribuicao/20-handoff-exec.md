@@ -14,18 +14,18 @@ gate: 'TEST_CMD em 41f2952 com GIT_DIR e GIT_WORK_TREE removidos retornou rc 0. 
 
 ## TL;DR
 
-R19 permite retomar o Stop mesmo com IDs aposentados malformados no estado salvo.
-A transição conserva o ID válido, o teto, o progresso do offset e a atribuição.
-TEST_CMD, 21 Checks, F1 e cinco mutações verificados. A QA começa por R19 e F1.
-As três provas nativas não foram repetidas no sandbox.
+R20 exige um ID válido antes de ignorar metadado externo por aposentadoria.
+R19 continua protegendo a transição com dados salvos malformados.
+O TEST_CMD, os 22 Checks, F1 e os controles de R19 e R20 passaram.
+As três provas nativas passaram no host Linux. A QA começa por R20, R19 e F1.
 
 ## Estado do repo
 
-- **Branch:** `fix/retrofit-watch-atribuicao-mesma-mensagem`, em Git isolado pelo runner, sem envio ao remoto.
-- **Último commit do incremento:** `bdf75fa` — valida os IDs aposentados usados na transição.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` no conteúdo de `bdf75fa` → rc 0. Loja com 154 testes (3 pulados), hook com 133, adaptadores, catálogo e versão 0.4.1 válidos.
-- **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest -q test_auto_docs.ReleaseTest` → 4 testes, rc 0.
-- **E2E:** os 21 Checks de `checkpoint.md` retornaram rc 0 e stdout esperado. F1 manteve `linked=silêncio missing=silêncio empty=silêncio`.
+- **Branch** `fix/retrofit-watch-atribuicao-mesma-mensagem`, ligada ao PR #13.
+- O incremento mais recente é R20 em `41f2952`. R19 em `bdf75fa` mediu 133 testes do hook.
+- O `TEST_CMD` de `.sdd/config.sh` foi executado para R20 com `GIT_DIR` e `GIT_WORK_TREE` removidos. Retornou rc 0 com 154 testes da loja (3 pulados) e 134 do hook. Adaptadores, catálogo e versão 0.4.1 foram validados.
+- A suíte `test_auto_docs.ReleaseTest` passou com quatro testes. As três provas de distribuição nativa passaram separadamente no host Linux, fora do sandbox.
+- A r30 confirmou rc 0 e a saída esperada dos 22 Checks. F1 manteve `linked=silêncio missing=silêncio empty=silêncio`.
 
 ## O que foi feito
 
@@ -286,7 +286,7 @@ As três provas nativas não foram repetidas no sandbox.
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1, F1 e R1–R19 com as sondas executáveis e os hashes das correções. |
+| `checkpoint.md` | I1, F1 e R1–R20 com as sondas executáveis e os hashes das correções. |
 | `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R19. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
@@ -294,9 +294,9 @@ As três provas nativas não foram repetidas no sandbox.
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as 21 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as 22 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
-- Comece por R19 e F1. A célula R19 extrai a sonda de `40-review-r28.md` com
+- Comece por R20, R19 e F1. R20 exercita fonte ausente, vazia e inválida. A célula R19 extrai a sonda de `40-review-r28.md` com
   `--expect` e roda a regressão permanente. Confira a retro de `codereview`, o offset no
   fim e a perda da janela sem erro nos três casos da sonda. O teste permanente também
   confere o campo opcional ausente ou inválido, os IDs sobreviventes e os contadores.
@@ -387,7 +387,7 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 
 ## Pendências / Decisions for a Human
 
-- O mantenedor decide o merge do PR #13. Esta execução não alterou o remoto nem publicou a versão.
+- O merge do PR #13 segue a delegação full e a verificação do SHA pelo worker.
 
 ## Riscos e não-feitos
 
@@ -398,11 +398,11 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 - Um estado intermediário já salvo sem ID da chamada e sem origem de mensagem não prova qual
   chamada abriu a atribuição. Se não houver reconstrução legada, a comparação começa nas
   cargas observadas com o código novo. Ordem de slash não gravada não prova precedência.
-- R14 e R15 não repetiram as três provas de distribuição nativa que o TEST_CMD pula. O bloqueio
-  de Bubblewrap e a necessidade de repetir fora do sandbox continuam registrados abaixo.
+- As medições de R14 e R15 não incluem as provas de distribuição nativa. R20 confirma
+  as três provas no host Linux.
 
 - Não houve smoke no host Claude Code ou no Windows. As jornadas foram medidas com transcripts sintéticos no formato do hook e persistência em disco.
-- Os três testes de distribuição nativa seguem pulados pelo `TEST_CMD` no sandbox. Em um clone temporário de `893c9c6`, `env -u SKILLS_SKIP_NATIVE_DISTRIBUTION python3 -B -m unittest discover -s tests -p test_codex_distribution.py -v` retornou rc 1 nos três por não conseguir criar o namespace Bubblewrap. Nenhum chegou ao primeiro comando do CLI dentro do namespace. Repetir no host com suporte a Bubblewrap.
+- Os três testes de distribuição nativa seguem pulados pelo `TEST_CMD` no sandbox. Em um clone temporário de `893c9c6`, `env -u SKILLS_SKIP_NATIVE_DISTRIBUTION python3 -B -m unittest discover -s tests -p test_codex_distribution.py -v` retornou rc 1 nos três por não conseguir criar o namespace Bubblewrap. Nenhum chegou ao primeiro comando do CLI dentro do namespace. O R20 confirmou as três no host.
 - A consulta ao trecho já consumido só vale na migração da 0.4.0. Se o trecho não
   estiver utilizável ou contradisser a atribuição gravada, prevalece a evidência persistida.
   O limite de 2 MiB por registro vale para a reconstrução do prefixo, não para um delta
@@ -416,7 +416,7 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 - As três provas nativas foram tentadas nesta sessão no HEAD inicial `824db1f` com
   `env -u GIT_DIR -u GIT_WORK_TREE -u SKILLS_SKIP_NATIVE_DISTRIBUTION python3 -B -m unittest discover -s tests -p test_codex_distribution.py`.
   As três pararam em `bwrap: No permissions to create new namespace`, antes de executar o CLI
-  dentro do namespace. Repetir no host com Bubblewrap habilitado.
+  dentro do namespace. O R20 confirmou as três no host.
 
 ## Achados fora de escopo
 
