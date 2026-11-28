@@ -2,9 +2,9 @@
 missao: 20261127-retrofit-watch-050
 fase: EXEC
 status: done
-sessao: 01a22124-f0cb-7542-8307-f26fe34a7de6
-data: 2026-11-28 05:02
-gate: "Em 30d619b, env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval \"$TEST_CMD\"' → rc 0. Adaptadores e catálogo válidos, 154 testes da loja (3 pulados), 144 do Stop e versões validadas. O Check de R3 no checkpoint, incluindo a sonda de QA, imprimiu 0."
+sessao: 01a2213a-8ca8-76b1-8aeb-e7a1a87696ae
+data: 2026-11-28 05:23
+gate: "Em def54f4, env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval \"$TEST_CMD\"' → rc 0. Adaptadores e catálogo válidos, 154 testes da loja (3 pulados), 144 do Stop e versões validadas. A célula R5 do checkpoint imprimiu 0 sobre o Git delegado, com a regressão SSH, camada 1 desde a base da r2 e sonda de QA."
 ---
 
 # Handoff — EXEC — Retrofit de skills locais listadas
@@ -14,16 +14,16 @@ gate: "Em 30d619b, env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBY
 
 ## TL;DR
 
-I1–I4 e R1–R3 concluídos. A porta privada vincula aprovação ao patch e os efeitos ao servidor autorizado.
-O setup pode ser repetido após falha, o avanço reconfere o clone após o fetch e os avisos são por dono/repo.
-O TEST_CMD e a sonda local passaram. QA deve repetir os Checks da rodada e validar distribuição nativa.
+I1–I4 e R1–R5 concluídos. A porta distingue caminhos de origem e não repassa a porta SSH à API de status.
+A regressão confirmou o mesmo SHA no bare, no status capturado e no clone. O TEST_CMD, o Check R5
+e a sonda local passaram. QA deve repetir as provas da rodada e validar distribuição nativa no host.
 
 ## Estado do repo
 
 - **Branch:** `feat/retrofit-watch-050-loja` — base de comparação `origin/main` local.
-- **Último commit de produto:** `30d619b` — recupera o setup e preserva o clone durante o avanço.
+- **Último commit de produto:** `def54f4` — separa a porta SSH do status privado.
 - **Working tree:** limpo após o commit de checkpoint, notas e handoff.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `30d619b`. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `def54f4`. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos.
 - **E2E:** sem `E2E_CMD` na config. Jornada automatizada em `sonda-qa.py` com remotos bare de fixture. Nenhum deploy ou repo privado real.
 
 ## O que foi feito
@@ -42,18 +42,28 @@ O TEST_CMD e a sonda local passaram. QA deve repetir os Checks da rodada e valid
   após o fetch e separa os registros por slug completo. O startup distingue falta de registro
   de JSON inválido. Controle de 20 testes do clone e 43 mutações detectadas com tetos de 30 s e 512 MiB.
 
+### Rodada 2 de revisão
+
+- `4f9d3cb` — R4 mantém a chave da lista separada do caminho efetivo e distingue origens com o
+  mesmo slug fora da equivalência do GitHub público. O Check e a sonda passaram, com 11 contraprovas.
+- `def54f4` — R5 conserva a origem de transporte do Git e entrega ao `gh` o servidor sem a porta SSH.
+  Preserva a porta HTTPS não padrão e o fallback bare da fixture. As duas formas SSH da
+  elegibilidade usam loopback, sem alterar o scanner. Red por divergência no argumento do `gh`,
+  Check R5 e 130 regressões verdes, 13 mutações detectadas em cópias descartáveis com grupo próprio,
+  teto de 20 s e 512 MiB por processo. As 62 âncoras do TODO passaram.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Sete Checks e seus commits. |
+| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Nove Checks e seus commits. |
 | `docs/retrofit-watch/clone-dedicado.md` | Contrato de clone, selo, ensaio, publicação e avanço. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py` | Cópia de distribuição com contratos dos dois plugins e controles do catálogo. |
 | `KAIZEN_LOG.md` e `TODO.md` | Medida da fixture, limite da adoção e achados fora do escopo. |
 
 ## Boot da próxima fase
 
-Leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Priorize os Checks R1–R3 e repita os quatro de I1–I4. Não use um
+Leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Priorize os Checks R4 e R5, confira R1–R3 e repita os quatro de I1–I4. Não use um
 `TMPDIR` com ancestral Git. Desarme `GIT_DIR` e `GIT_WORK_TREE` do runner antes de executar testes que criam repos.
 A jornada que muda para o usuário é o Stop de uma skill em repo listado, seguido de pedido, selo, revisão e porta.
 Comece com `PrivateWorld` em `plugins/retrofit-watch/skills/retrofit-watch/tests/fixture_private.py` e
@@ -66,6 +76,15 @@ Para R3, use `test_lean_live`. O Check reproduz erro no setup, troca de ramo dur
 colisão de basenames e JSON inválido. Execute também `sonda-qa.py` conforme a célula do checkpoint.
 O clone continua em `<live_dir>/<repo>`. O registro que alimenta o startup agora fica em
 `<dados>/live/<dono>/<repo>.json`, sem migração. O aviso de um repo não substitui o de outro.
+
+Para R4 e R5, use os Checks do checkpoint. R4 cobre caminhos diferentes com o mesmo slug.
+R5 mantém a publicação no bare de fixture e captura o status após o push. A variante SSH usa
+o servidor sem a porta de transporte e o controle HTTPS conserva sua porta explícita.
+A camada 1 da rodada usa a base `1f1b008`. No EXEC delegado, o `HEAD` descoberto sem
+`GIT_DIR` era anterior ao commit novo. Para o scanner, que desarma essa variável, confirme
+primeiro o SHA descoberto pelo Git. Em um checkout comum da candidata, rode a célula sem adaptação.
+Para conferir somente o scanner sobre a cópia delegada, use
+`python3 scripts/anonymity-gate.py --camada1 --base 1f1b008 --repo "$GIT_DIR"`.
 
 Em `04a1a77`, além do TEST_CMD, os contratos `test_auto_docs test_modo_autonomo` passaram com 44 testes.
 `TMPDIR=/var/tmp python3 -m unittest discover -s plugins/retrofit-skill/tests -v` passou com 11.
@@ -96,9 +115,9 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
   O Check de release não precisa de Git no temporário.
 - As três provas nativas falharam antes de iniciar o cliente isolado. O Bubblewrap não pôde criar
   o namespace. Falta repetir no host da QA.
-- `python3 scripts/anonymity-gate.py --camada1 --base d28e095` ficou limpo em I4. A comparação da
-  branch inteira com `origin/main` retornou rc 1, com três sinalizações anteriores a I4.
-  QA precisa reavaliar esse gate antes de encaminhar a entrega.
+- Em `def54f4`, a camada 1 desde a base da r2 está limpa. A comparação da branch inteira com
+  `origin/main` ainda retorna rc 1 por três sinalizações preexistentes. QA deve reavaliar
+  esse gate antes de encaminhar a entrega.
 
 ## Achados fora de escopo
 
@@ -106,9 +125,11 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
   os caminhos da loja no worktree errado. Não integra R3.
 - Aprovação pública da v1 não vinculada ao patch revisto → `TODO.md`, rulings da retrofit-watch 0.4.0.
 - Segunda skill full do mesmo plugin ausente no estado, inclusive na base → `TODO.md`, recorrência I4.
-- Camada 1 sobre `origin/main` ainda sinaliza a impressão digital pública do plano e quatro URLs
-  SSH de fixture em `test_lean_auto.py`, todas anteriores a R3 → `TODO.md`, minors adiados.
-  `python3 scripts/anonymity-gate.py --camada1 --base 5c6c947` passou em `30d619b`.
+- Camada 1 sobre `origin/main` ainda sinaliza a impressão digital pública do plano e duas URLs
+  SSH de fixture anteriores à rodada → `TODO.md`, minors adiados. R5 removeu os dois alertas
+  novos da r2 sem mudar o scanner.
+- Corrida residual após a prova de ancestralidade → `TODO.md`, item sobre mover outro ramo
+  após a última conferência. Não integra R5.
 - kit: o EXEC recebeu as variáveis `GIT_DIR` e `GIT_WORK_TREE` da cópia privada do runner
   (`bin/sdd`, ambiente delegado do EXEC). Testes que criam repos podem operar na cópia do runner
   em vez da fixture. Em R3, a primeira execução criou commits vazios e um ref na cópia do runner.

@@ -205,3 +205,17 @@
 - 2026-11-28 05:16 · `R4` · R4 sabotage: Identidade remove o sufixo do caminho → test_distinct_repo_paths_have_distinct_origin_ids, test_same_host_distinct_repo_paths_stay_manual
 - 2026-11-28 05:16 · `R4` · R4 sabotage: Retorno descarta o caminho fora do GitHub → test_distinct_repo_paths_have_distinct_origin_ids, test_same_host_distinct_repo_paths_stay_manual
 - 2026-11-28 05:16 · `R4` · Em `4f9d3cb`, o Red mostrou colisão de identidade e elegibilidade incorreta em quatro variações do caminho. Check R4 e sonda local verdes. TEST_CMD passou com 154 testes da loja (3 pulados), 144 do Stop, adaptadores, catálogo e versões. Passaram também 82 regressões lean, 11 testes do retrofit-skill e 44 checagens de documentação. Controle íntegro com quatro testes sem skip e 11 mutações detectadas em cópias descartáveis, sob grupo próprio, 20 s e 512 MiB por processo. As renomeações equivalentes foram cobertas pelo comportamento do bloco e as duas regressões foram conferidas no Red. Texto conferido no README, CHANGELOG, contrato e referências dos dois plugins. Camada 1 limpa no delta de R4 e 62 âncoras válidas. Nenhum repo real acionado. R5 continua pending.
+- 2026-11-28 05:23 · `R5` · R5 sabotage: A URL deixa de vir da origem revalidada → test_private_status_uses_api_host_not_ssh_port
+- 2026-11-28 05:23 · `R5` · R5 sabotage: Restaura o descarte da URL validada → test_private_status_uses_api_host_not_ssh_port
+- 2026-11-28 05:23 · `R5` · R5 sabotage: Retira o fallback do bare → test_dry_then_approval_and_idempotent_retry
+- 2026-11-28 05:23 · `R5` · R5 sabotage: Perde a normalização de caixa do esquema → test_private_status_uses_api_host_not_ssh_port
+- 2026-11-28 05:23 · `R5` · R5 sabotage: Retira a porta também de HTTPS → test_private_status_keeps_custom_https_port
+- 2026-11-28 05:23 · `R5` · R5 sabotage: Conserva a porta do SSH → test_private_status_uses_api_host_not_ssh_port
+- 2026-11-28 05:23 · `R5` · R5 sabotage: Restaura a entrega da autoridade Git ao status → test_private_status_uses_api_host_not_ssh_port
+- 2026-11-28 05:23 · `R5` · R5 sabotage: O clone usa outro host → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 05:23 · `R5` · R5 sabotage: O SSH SCP aponta para outro host → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 05:23 · `R5` · R5 sabotage: O SSH com porta padrão passa a usar outra porta → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 05:23 · `R5` · R5 sabotage: O HTTPS explícito perde a diferença de porta → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 05:23 · `R5` · R5 sabotage: Restaura o falso positivo da forma SCP → camada 1
+- 2026-11-28 05:23 · `R5` · R5 sabotage: Restaura o falso positivo da forma SSH com porta → camada 1
+- 2026-11-28 05:23 · `R5` · Em `def54f4`, o Red capturou a porta SSH em `--hostname` e o controle HTTPS já estava verde. Check R5 e sonda verdes. TEST_CMD passou com 154 testes da loja (3 pulados), 144 do Stop, adaptadores, catálogo e versões. Passaram 130 regressões dirigidas, 62 âncoras e 13 mutações em cópias descartáveis, com quatro controles íntegros sem skip, grupo próprio, 20 s e 512 MiB por processo. README, CHANGELOG, contrato e referência conferidos. O Check foi executado com descoberta Git sobre a cópia delegada, pois o HEAD do worktree direto ainda era o de entrada. Camada 1 da rodada limpa, três alertas antigos contra origin/main no TODO. Nenhum repo real acionado. Sem incrementos pendentes.
