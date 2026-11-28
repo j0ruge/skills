@@ -6,13 +6,15 @@
   do clone dedicado, sem ocupar o checkout de desenvolvimento.
 - O ensaio roda o pre-push do repo e conserva o remoto. Sem aprovação vinculada ao patch,
   a publicação exige 10 publicações autônomas da loja, 14 dias e zero vazamentos.
-  Um revert da loja ou de repo listado reinicia a janela.
+  Reverter uma publicação autônoma na loja ou num repo listado reinicia a janela.
 - O selo, a revisão e a aprovação privados cobrem todos os arquivos alterados
   da skill, inclusive caminhos que o fluxo full reserva às listas da loja.
 - O pedido privado vincula o lote ao destino Git efetivo. Fora do GitHub público
   nas portas padrão, o mesmo slug não torna transportes ou caminhos diferentes equivalentes.
   A porta aponta o `local/ci` ao servidor conferido, sem repassar à API a porta do SSH.
   Em HTTPS com porta não padrão, usa a URL absoluta da API e passa ao `gh` o hostname sem porta.
+- O Stop reconfere a origem da sessão e inclui o caminho rastreado da skill no pedido
+  privado. O preparo e a porta exigem um `SKILL.md` regular nesse mesmo caminho.
 - Após publicar, registra o SHA em `local/ci` e avança o clone com `--ff-only`.
   Se detectar uma troca de ramo antes do fetch, registra `fora-da-main` sem buscar.
   Na releitura antes da busca, distingue HEAD ilegível de uma ref da main ilegível.

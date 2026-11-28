@@ -17,11 +17,13 @@ Tipos de achado:
             de commit)
 
 A lista de públicos (scripts/public-names.txt) isenta lista, colheita, email e o segmento de caminho.
-Nunca isenta segredo. O arquivo private-names.sha256 é isento só de segredo, porque é feito de hashes.
+A lista de públicos nunca isenta segredo. Só o scan da loja isenta o arquivo de hashes
+private-names.sha256. A camada 1 privada recebe os dois commits e não usa essa exceção.
 
 Uso (da raiz ou de qualquer pasta):
   python3 scripts/anonymity-gate.py --camada1 --base REF [--repo DIR] [--extra ARQUIVO]
       rc 0 limpa, 1 com achados, 2 uso ou lista inutilizável
+  python3 scripts/anonymity-gate.py --camada1 --private --base SHA --head SHA [--repo DIR]
   python3 scripts/anonymity-gate.py --termos --base REF [--repo DIR]
       para a camada 2: imprime em JSON os termos novos ({termo, onde, contexto}); rc 0 só quando correu até o
       fim, 2 em falha do git ou lista inutilizável (nunca uma lista vazia no lugar do erro)
@@ -142,11 +144,11 @@ def _destino(alvo):
     return alvo[2:] if alvo.startswith('b/') else alvo
 
 
-def linhas_novas(repo, base):
+def linhas_novas(repo, base, *, head='HEAD'):
     """[(onde, linha, texto)]: as linhas acrescentadas desde a base, o caminho de cada arquivo novo e as mensagens."""
     novas = []
     for rel in _git(repo, '-c', 'core.quotePath=false', 'diff', '--no-renames', '--no-relative', '--name-only',
-                    '--diff-filter=A', '-z', f'{base}...HEAD').split('\0'):
+                    '--diff-filter=A', '-z', f'{base}...{head}').split('\0'):
         if rel:
             novas.append((rel, 0, rel))
     onde, numero, em_cabecalho = None, 0, False
@@ -157,7 +159,7 @@ def linhas_novas(repo, base):
     diff = _git(repo, '-c', 'core.quotePath=false', 'diff', '-U0', '--no-renames', '--text', '--no-ext-diff',
                 '--no-textconv', '--src-prefix=a/', '--dst-prefix=b/', '--no-color', '--no-relative',
                 '--inter-hunk-context=0',
-                f'{base}...HEAD')
+                f'{base}...{head}')
     for linha in diff.split('\n'):
         if linha.startswith('diff --git '):
             onde, em_cabecalho = None, True
@@ -170,7 +172,7 @@ def linhas_novas(repo, base):
         elif linha.startswith('+') and onde is not None:
             novas.append((onde, numero, linha[1:]))
             numero += 1
-    for mensagem in _git(repo, 'log', '-z', '--format=%B', f'{base}..HEAD').split('\0'):
+    for mensagem in _git(repo, 'log', '-z', '--format=%B', f'{base}..{head}').split('\0'):
         for i, texto in enumerate(mensagem.splitlines(), start=1):
             novas.append((MENSAGEM, i, texto))
     return novas
@@ -216,7 +218,7 @@ def _nomes_da_linha(texto, hashes, extras, publicos):
     return achados
 
 
-def _achados_da_linha(onde, texto, hashes, extras, publicos):
+def _achados_da_linha(onde, texto, hashes, extras, publicos, *, private=False):
     achados = _nomes_da_linha(texto, hashes, extras, publicos)
     # A senha de modelo seguida do @ e do host de um modelo de conexão não é endereço: a senha e o @ viram
     # espaço antes de buscar o e-mail. Só eles: o esquema fica, porque a classe dele engole o domínio de um
@@ -238,19 +240,19 @@ def _achados_da_linha(onde, texto, hashes, extras, publicos):
                 continue  # C:/Users/<u> casa com duas formas: um achado só
             vistos.append(m.span())
             achados.append(('caminho', m.group()))
-    if onde != ISENTO_DE_SEGREDO:
+    if private or onde != ISENTO_DE_SEGREDO:
         achados += [('segredo', s) for s in _segredos(texto)]
     return achados
 
 
-def camada1(repo, base, extras=frozenset(), hashes=None, publicos=None):
+def camada1(repo, base, extras=frozenset(), hashes=None, publicos=None, *, head='HEAD', private=False):
     """[(onde, linha, tipo, trecho)] de cada achado nas linhas novas desde a base."""
     hashes = cpn.carregar() if hashes is None else hashes
     publicos = carregar_publicos() if publicos is None else publicos
     extras = _normalizar_extras(extras)
     achados = []
-    for onde, numero, texto in linhas_novas(repo, base):
-        for tipo, trecho in _achados_da_linha(onde, texto, hashes, extras, publicos):
+    for onde, numero, texto in linhas_novas(repo, base, head=head):
+        for tipo, trecho in _achados_da_linha(onde, texto, hashes, extras, publicos, private=private):
             achados.append((onde, numero, tipo, trecho))
     return achados
 
@@ -427,9 +429,17 @@ def main(argv=None):
     modo.add_argument('--publico-add', metavar='NOME')
     modo.add_argument('--publico-remove', metavar='NOME')
     parser.add_argument('--base')
+    parser.add_argument('--head')
+    parser.add_argument('--private', action='store_true')
     parser.add_argument('--repo')
     parser.add_argument('--extra', action='append', default=[], metavar='ARQUIVO')
     args = parser.parse_args(argv)
+    if args.private:
+        if not args.camada1 or not all(re.fullmatch(r'[0-9a-f]{40}(?:[0-9a-f]{24})?', ref or '')
+                                       for ref in (args.base, args.head)):
+            parser.error('--private exige --camada1 e SHAs completos em --base e --head')
+    elif args.head is not None:
+        parser.error('--head exige --private')
     try:
         if args.publico_add is not None:
             return publico_mudar('--publico-add', args.publico_add)
@@ -451,7 +461,8 @@ def main(argv=None):
         elif args.arvore:
             achados = varrer_arvore(args.repo or cpn.RAIZ, extras, hashes=hashes, publicos=publicos)
         else:
-            achados = camada1(args.repo or '.', args.base, extras=extras, hashes=hashes, publicos=publicos)
+            achados = camada1(args.repo or '.', args.base, extras=extras, hashes=hashes, publicos=publicos,
+                              head=args.head or 'HEAD', private=args.private)
     except subprocess.CalledProcessError as exc:
         _dizer(f'git falhou: {(exc.stderr or b"").decode("utf-8", "replace").strip()}')
         return 2

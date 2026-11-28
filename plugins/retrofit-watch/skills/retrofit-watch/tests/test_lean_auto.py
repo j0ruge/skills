@@ -6,7 +6,7 @@ import unittest
 from unittest import mock
 
 import test_retrofit_watch as watch
-from fixture_private import PrivateWorld, SLUG
+from fixture_private import PASTA, PrivateWorld, SKILL, SLUG
 import rw_auto as auto
 import rw_store as store
 
@@ -29,7 +29,7 @@ class OriginTest(unittest.TestCase):
                 self.assertIsNone(rw.origin_slug(url))
 
 
-class LeanAutoTest(unittest.TestCase):
+class LeanAutoTest(watch.HookHarness, unittest.TestCase):
     def setUp(self):
         self.w = PrivateWorld()
         self.addCleanup(self.w.cleanup)
@@ -38,6 +38,42 @@ class LeanAutoTest(unittest.TestCase):
 
     def reason(self, *, entry=None, payload=PAYLOAD, entrypoint="cli"):
         return auto.why_manual(self.w.ctx(), payload, self.entry if entry is None else entry, [], entrypoint)
+
+    def test_origin_recheck_uses_the_evidence_checkout_despite_inherited_git_locations(self):
+        with mock.patch.dict("os.environ", GIT_DIR=str(self.w.store / ".git"), GIT_WORK_TREE=str(self.w.store)):
+            self.assertIsNone(self.reason())
+
+    def test_stop_dispatch_uses_the_evidence_checkout_identity(self):
+        w = self.w
+        for session in ("original", "reescrito", "legado"):
+            with self.subTest(session=session):
+                w.transcript.write_text("")
+                w.git(w.dev, "remote", "set-url", "origin", str(w.remote))
+                self.write(watch.with_entrypoint(watch.skill_via_tool(SKILL, w.skill), "cli"), watch.tool())
+                payload = {"session_id": session, "transcript_path": str(w.transcript),
+                           "last_assistant_message": "Feito.", "permission_mode": "bypassPermissions"}
+                env = {"GIT_ALLOW_PROTOCOL": ""}
+                self.assertIsNone(self.run_hook(raw=json.dumps(payload), env=env))
+                if session == "reescrito":
+                    w.git(w.dev, "remote", "set-url", "origin", f"https://example.invalid/{SLUG}.git")
+                if session == "legado":
+                    state_file = w.data / "sessions" / f"{session}.json"
+                    state = json.loads(state_file.read_text())
+                    for entry in (*state["classified"].values(), *state["skills"].values()):
+                        entry.pop("skill_path", None)
+                    state_file.write_text(json.dumps(state))
+                self.write(*[watch.tool()] * 5)
+                output = self.context_of(self.run_hook(raw=json.dumps(payload), env=env))
+                if session == "original":
+                    self.assertIn("6 chamadas", output)
+                    self.assertIn("[modo autônomo:", output)
+                else:
+                    self.assertNotIn("[modo autônomo:", output)
+                    self.assertIn("/retrofit-skill:retrofit-skill", output)
+
+        requests = list((w.data / auto.AUTO_DIR).glob("*/pedido.json"))
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(auto.load_pedido(requests[0])["skills"][0]["skill_path"], f"{PASTA}/SKILL.md")
 
     def test_only_owned_tracked_local_skills_can_enter(self):
         self.assertEqual(self.entry["origin"], SLUG)
@@ -122,7 +158,7 @@ class LeanAutoTest(unittest.TestCase):
         other_bare = w.tmp / "outro" / f"{SLUG}.git"
         w.git(w.dev, "remote", "set-url", "origin", str(other_bare))
         self.assertEqual(self.reason(entry=rw.classify_path(w.skill, w.ctx())), "sem-clone")
-        self.assertEqual(self.reason(entry=dict(self.entry, origin_identity=None)), "sem-clone")
+        self.assertEqual(self.reason(entry=dict(self.entry, origin_identity=None)), "origem-da-skill")
 
     def test_unverified_transport_equivalence_stays_manual(self):
         w = self.w

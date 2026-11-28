@@ -36,12 +36,14 @@ CRITERIA = HERE.parent / "references" / "criteria.md"
 SCRIPT = HERE / "retrofit_watch.py"
 
 # Motivos de uma entrada ficar no modo manual, na ordem em que why_manual os confere.
-REASONS = ("modo", "kit-ou-lean", "lista-manual", "permissao", "entrypoint", "sem-loja", "sem-clone", "teto")
+REASONS = ("modo", "kit-ou-lean", "lista-manual", "permissao", "entrypoint", "sem-loja",
+           "origem-da-skill", "sem-clone", "teto")
 # Os motivos que a linha ao dono explica. Os outros não ganham acréscimo: são o modo manual de
 # sempre (o `modo`, a lista `manual`, o kit ou a skill lean) ou uma sessão que não é a interativa.
 REASON_TEXT = {
     "permissao": "o modo autônomo só vale com o modo de permissão bypassPermissions",
     "sem-loja": "falta na config a chave store com o clone de trabalho da loja",
+    "origem-da-skill": "a origem atual ou o caminho rastreado da skill não confere com a sessão",
     "sem-clone": "a elegibilidade do clone dedicado ficou sem confirmação (retrofit_watch.py live-setup <dono/repo>)",
     "teto": "o teto de retrofits autônomos da sessão (auto_limits) foi atingido",
 }
@@ -179,10 +181,19 @@ def why_manual(ctx, payload, entry, registry, entrypoint, *, deadline=None):
     if ctx.store is None:
         return "sem-loja"
     if lean:
-        from rw_store import live_clone
+        from rw_store import STARTUP_TIMEOUT, live_clone
 
+        if deadline is None:
+            deadline = time.monotonic() + STARTUP_TIMEOUT
         origin = entry.get("origin_identity")
-        if not origin or live_clone(ctx, lean, origin=origin, deadline=deadline) is None:
+        checkout = entry.get("repo")
+        if (not isinstance(origin, list) or not origin or origin[0] != lean
+                or not valid_skill_path(entry.get("skill_path"))
+                or not isinstance(checkout, str) or not os.path.isabs(checkout)
+                or rw._toplevel(checkout, deadline=deadline) != checkout
+                or rw._owned_origin(checkout, ctx, deadline=deadline) != origin):
+            return "origem-da-skill"
+        if live_clone(ctx, lean, origin=origin, deadline=deadline) is None:
             return "sem-clone"
     limits = ctx.auto_limits
     session = payload.get("session_id") or "unknown"
@@ -259,6 +270,7 @@ def open_request(ctx, payload, entries, *, deadline=None):
                        "modo": effective if slug else ctx.mode})
         if slug:
             skills[-1]["origin_id"] = rw.origin_id(entry["origin_identity"])
+            skills[-1]["skill_path"] = entry["skill_path"]
     pedido = {
         "id": rid,
         "sessao": session,
@@ -505,6 +517,12 @@ def valid_skill_folder(value):
                     for part in value.split("/")))
 
 
+def valid_skill_path(value):
+    return (isinstance(value, str) and value.endswith("/SKILL.md")
+            and valid_skill_folder(value.removesuffix("/SKILL.md"))
+            and not re.search(r"[\ud800-\udfff]", value))
+
+
 PRIVATE_RETROFIT_SPEC = {**RETROFIT_SPEC, "repo": rw.valid_slug, "pasta": valid_skill_folder,
                          "origin_id": _origin_id}
 DIFF_SPEC = {
@@ -598,6 +616,8 @@ def load_pedido(path):
                 else PEDIDO_SKILL_SPEC)
         if isinstance(entry, dict) and entry.get("repo") is not None:
             spec = PEDIDO_SKILL_PRIVATE_SPEC
+            if "skill_path" in entry:
+                spec = spec | {"skill_path": valid_skill_path}
         _fields(entry, spec, f"{path}: `skills`[{i}]")
     return data
 
@@ -961,7 +981,6 @@ def lean_mode_notice(ctx):
         return None
     from rw_store import lean_mode_state
 
-    mode, revert_day = lean_mode_state(ctx)
     path = ctx.data_dir / "lean-modo.json"
     ctx.data_dir.mkdir(parents=True, exist_ok=True)
     try:
@@ -969,6 +988,7 @@ def lean_mode_notice(ctx):
     except OSError:
         return None
     try:
+        mode, revert_day = lean_mode_state(ctx)
         try:
             data = _read_json(path)
             last = data.get("modo") if isinstance(data, dict) else None
@@ -1057,14 +1077,13 @@ def approve(ctx, rid, lote):
     folder = lote_dir(ctx, rid, lote)
     item = f"{rid}/{lote}"
     registry = read_registry(ctx)
-    prepared = folder / "retrofit.json"
-    retrofit = load_retrofit(prepared) if prepared.exists() else {}
-    if retrofit.get("repo"):
+    last = last_lines(registry).get(item, {})
+    if last.get("repo"):
         from rw_gate import OVERRIDABLE_PRIVATE
 
-        last = last_lines(registry).get(item, {})
+        retrofit = load_retrofit(folder / "retrofit.json")
         reason, patch = last.get("motivo"), retrofit["patch"]
-        if (last.get("resultado") != "segurado" or last.get("repo") != retrofit["repo"]
+        if (last.get("resultado") != "segurado" or last["repo"] != retrofit.get("repo")
                 or not patch or last.get("patch") != patch):
             raise Malformed(f"o lote {item} não tem recusa do patch selado")
         path = folder / "aprovado.json"

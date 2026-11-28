@@ -366,6 +366,16 @@ class LinhaDeComando(Base):
         self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
         self.assertIn('lista inutilizavel', r.stdout)
 
+    def test_camada1_privada_verifica_a_lista_com_o_par_de_commits(self):
+        lista = 'scripts/private-names.sha256'
+        self.base({lista: '# cabeçalho\n'})
+        base = self.git('rev-parse', 'HEAD').stdout.decode().strip()
+        self.commit({lista: '# cabeçalho\n' + hashlib.sha256(b'fixture').hexdigest() + '\n'})
+        head = self.git('rev-parse', 'HEAD').stdout.decode().strip()
+        r = self.rodar('--camada1', '--private', '--base', base, '--head', head, '--repo', str(self.repo))
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn(f'{lista}:2: segredo', r.stdout)
+
     def test_sem_git_sai_2_com_mensagem(self):
         self.commit({'doc.md': 'limpo\n'})
         vazio = self.dir / 'sem-git'

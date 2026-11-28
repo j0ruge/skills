@@ -18,7 +18,6 @@ Todo git daqui roda sem as variáveis de localização herdadas (um hook do git 
 HOME do Context: o `~` resolve pelo ctx.home, nunca pelo HOME real. Os erros são StoreError; a saída do
 portão fora do formato também, nunca uma lista vazia (falha fechada).
 """
-import configparser
 import contextlib
 import ctypes
 import hashlib
@@ -414,23 +413,30 @@ def _last_line(ctx, rid, lote):
     return rw_auto.last_lines(rw_auto.read_registry(ctx)).get(f"{rid}/{lote}")
 
 
-def _skill_folder(clone, base, skill, env):
-    """O caminho sai da árvore buscada, nunca de arquivo sujo ou de link da cópia em uso."""
-    raw = _git_bytes(["ls-tree", "-rz", base], clone, env, "pasta da skill")
-    suffix = f"{skill}/SKILL.md".encode()
-    folders = []
-    for row in raw.split(b"\0"):
-        meta, _, path = row.partition(b"\t")
-        if meta.startswith((b"100644 blob ", b"100755 blob ")) and (b"/" + path).endswith(b"/" + suffix):
-            try:
-                folder = path.decode("utf-8").removesuffix("/SKILL.md")
-            except UnicodeError:
-                continue
-            if rw_auto.valid_skill_folder(folder):
-                folders.append(folder)
-    if len(folders) != 1:
-        raise StoreError(f"pasta rastreada de {skill} ausente ou ambígua em {clone}")
-    return folders[0]
+def _private_request(pedido, repo, skill):
+    requested = [entry for entry in pedido["skills"] if entry["plugin"] == skill and entry.get("repo") == repo]
+    origins = {entry["origin_id"] for entry in requested}
+    if len(origins) != 1:
+        raise StoreError("origem ambígua no pedido privado")
+    paths = {entry.get("skill_path") for entry in requested}
+    if None in paths:
+        raise StoreError("pedido privado sem caminho rastreado da skill")
+    if len(paths) != 1:
+        raise StoreError("pasta ambígua no pedido privado")
+    path = paths.pop()
+    if path.rsplit("/", 2)[-2] != skill:
+        raise StoreError("pasta do pedido privado não corresponde à skill do lote")
+    return origins.pop(), path
+
+
+def _skill_folder(clone, base, skill_path, env):
+    """Confere o caminho literal do pedido na árvore buscada."""
+    raw = _git_bytes(["--literal-pathspecs", "ls-tree", "-z", "--full-tree", base, "--", skill_path],
+                     clone, env, "pasta da skill")
+    meta, _, path = raw.partition(b"\t")
+    if meta.startswith((b"100644 blob ", b"100755 blob ")) and path == skill_path.encode("utf-8") + b"\0":
+        return skill_path.removesuffix("/SKILL.md")
+    raise StoreError(f"pasta rastreada da skill ausente ou sem SKILL.md regular: {skill_path}")
 
 
 def _private_clone(ctx, slug, *, require_main=True):
@@ -440,10 +446,12 @@ def _private_clone(ctx, slug, *, require_main=True):
     return clone
 
 
-def _prepared(path, rid, lote, repo):
+def _prepared(path, rid, lote, repo, requested):
     current = rw_auto.load_retrofit(path)
     if (current["id"], current["lote"], current.get("repo")) != (rid, lote, repo):
         raise StoreError(f"{path}: origem ou identificação não corresponde ao lote")
+    if requested and (current["origin_id"], current["pasta"] + "/SKILL.md") != requested:
+        raise StoreError(f"{path}: origem ou pasta não corresponde ao pedido privado")
     return current
 
 
@@ -455,6 +463,7 @@ def prepare(ctx, rid, lote, redo=False):
     tentativa atual ainda sem selo, o `redo` devolve a atual: rodar duas vezes não abre duas."""
     found = _lote_of_triage(ctx, rid, lote)
     repo = found.get("repo")
+    requested = _private_request(rw_auto.retro_pedido(ctx, rid), repo, found["plugin"]) if repo else None
     store = _private_clone(ctx, repo) if repo else store_clone(ctx)
     path = rw_auto.lote_dir(ctx, rid, lote) / "retrofit.json"
     tentativa = 1
@@ -465,26 +474,22 @@ def prepare(ctx, rid, lote, redo=False):
                              f"`{REDO_REASON}`")
         if not path.exists():
             raise StoreError(f"--redo sem retrofit.json de {rid}/{lote}: rode prepare sem --redo")
-        current = _prepared(path, rid, lote, repo)
+        current = _prepared(path, rid, lote, repo, requested)
         if current["commit"] is None:
             return current
         tentativa = current["tentativa"] + 1
         # Nada é apagado (D23): o retrofit.json da tentativa anterior fica como retrofit-r<n>.json.
         _atomic_write(path.with_name(f"retrofit-r{current['tentativa']}.json"), path.read_bytes())
     elif path.exists():
-        return _prepared(path, rid, lote, repo)
+        return _prepared(path, rid, lote, repo, requested)
     worktree = worktree_path(ctx, rid, lote, tentativa)
     branch = branch_name(rid, lote, tentativa)
     env = git_env(home=ctx.home)
     if repo:
-        requested = {entry["origin_id"] for entry in rw_auto.retro_pedido(ctx, rid)["skills"]
-                     if entry["plugin"] == found["plugin"] and entry.get("repo") == repo}
-        if len(requested) != 1:
-            raise StoreError("origem ambígua no pedido privado")
-        origin_id = requested.pop()
+        origin_id, skill_path = requested
         _live_fetch(ctx, repo, store, expected_id=origin_id)
         base = _git(["rev-parse", BASE_REF], store, env, "base").strip()
-        pasta = _skill_folder(store, base, found["plugin"], env)
+        pasta = _skill_folder(store, base, skill_path, env)
     else:
         _git(["fetch", "origin"], store, remote_env(ctx, store), "fetch")
         base = BASE_REF
@@ -506,7 +511,7 @@ def prepare(ctx, rid, lote, redo=False):
 
 # As linhas do diff que o patch conta além das `+` e `-`: o cabeçalho que nomeia o arquivo e o modo.
 # Um arquivo vazio novo ou apagado e uma troca só de modo não têm linha `+`/`-`: só estas os nomeiam.
-# O rebase não as muda. Ficam fora os `@@` (números de linha) e o `index ` (os shas dos blobs).
+# O rebase não as muda. Os shas dos blobs (linha `index`) não entram no patch.
 PATCH_HEADERS = (b"diff --git ", b"new file mode ", b"deleted file mode ", b"old mode ", b"new mode ")
 
 
@@ -517,33 +522,36 @@ def _git_bytes(args, cwd, env, what):
     return out
 
 
-def patch_id(worktree, base=BASE_REF, message=None, *, private=False):
+def patch_id(worktree, base=BASE_REF, message=None, *, head="HEAD", private=False):
     """O sha256 do que o ramo muda (D20 e M13), sobre os bytes de `git diff -U0 --no-renames
     origin/main...HEAD` (só no full, sem as duas listas da loja): as linhas `+` e `-` (nomes nas
-    `+++` e `---`), as de PATCH_HEADERS, e a mensagem de cada commit. O rebase não o muda; mudar
-    conteúdo, nome, modo ou mensagem muda. `base` troca o `origin/main` (a porta mede o commit já
-    publicado contra `HEAD^`); `message`, em bytes, troca a mensagem lida do log."""
+    `+++` e `---`), as de PATCH_HEADERS, e a mensagem de cada commit. No privado, inclui as
+    coordenadas dos hunks: um rebase que as desloca pede nova revisão. `base` e `head` selecionam
+    os extremos; `message`, em bytes, troca a mensagem lida do log."""
     env = git_env(neutral=True)
     exclude = [] if private else [f":(exclude){f}" for f in LIST_FILES]
+    hunk_options = ["--inter-hunk-context=0"] if private else []
     diff = _git_bytes(["-c", "core.quotePath=false", "diff", "-U0", "--no-renames", "--text", "--no-ext-diff",
                        "--no-textconv", "--src-prefix=a/", "--dst-prefix=b/", "--no-color", "--no-relative",
-                       f"{base}...HEAD", "--", ".", *exclude], worktree, env, "patch")
+                       *hunk_options, f"{base}...{head}", "--", ".", *exclude], worktree, env, "patch")
     if message is None:
-        message = _git_bytes(["log", "--format=%B", f"{base}..HEAD"], worktree, env, "patch")
+        message = _git_bytes(["log", "--format=%B", f"{base}..{head}"], worktree, env, "patch")
     digest = hashlib.sha256()
     for line in diff.split(b"\n"):
         if line.startswith((b"+", b"-")) or line.startswith(PATCH_HEADERS):
             digest.update(line + b"\n")
+        elif private and line.startswith(b"@@ "):
+            digest.update(line.split(b" @@", 1)[0] + b" @@\n")
     digest.update(b"\0" + message)
     return digest.hexdigest()
 
 
-def _gate(tools, worktree, *args):
+def _gate(tools, worktree, *args, base=BASE_REF):
     """O portão de `tools` (a cópia do commit, `clean_tree`) sobre o git de `worktree`, sem gravar bytecode
     na cópia. O portão do disco do worktree nunca roda: um `.pyc` ou um `.py` ignorado ali trocaria um
     módulo dele (item 1)."""
     gate = Path(tools) / GATE
-    return run([sys.executable, gate, *args, "--base", BASE_REF, "--repo", worktree], cwd=worktree,
+    return run([sys.executable, gate, *args, "--base", base, "--repo", worktree], cwd=worktree,
                env=dict(git_env(neutral=True), PYTHONDONTWRITEBYTECODE="1"))
 
 
@@ -612,13 +620,15 @@ def _unlink(path):
         pass
 
 
-def layer1(ctx, rid, worktree, tools, private=False):
+def layer1(ctx, rid, worktree, tools, private=False, *, base=None, head=None):
     """Os achados da camada 1 no que o ramo de `worktree` acrescenta, pelo portão de `tools` (a cópia do
     commit), com a colheita feita agora (com o `cwd` do pedido.json), num arquivo só desta chamada. Saída
     do portão fora do formato é StoreError, nunca "nada achado" (C1). No lote privado só importam
     segredo e caminho com usuário, e não há colheita."""
     if private:
-        rc, out = _gate(tools, worktree, "--camada1")
+        if not base or not head:
+            raise StoreError("camada 1 privada sem o par de commits")
+        rc, out = _gate(tools, worktree, "--camada1", "--private", "--head", head, base=base)
     else:
         pedido = rw_auto.retro_pedido(ctx, rid)
         extra = _private_harvest(ctx, pedido["cwd"])
@@ -695,24 +705,29 @@ def seal(ctx, rid, lote, licoes, fases):
             phases.append(phase)
     folder = rw_auto.lote_dir(ctx, rid, lote)
     repo = found.get("repo")
-    retrofit = _prepared(folder / "retrofit.json", rid, lote, repo)
+    requested = _private_request(rw_auto.retro_pedido(ctx, rid), repo, found["plugin"]) if repo else None
+    retrofit = _prepared(folder / "retrofit.json", rid, lote, repo, requested)
     worktree = worktree_path(ctx, rid, lote, retrofit["tentativa"])
     env = git_env(neutral=True)
+    base, head = BASE_REF, "HEAD"
     if repo:
         clone = _private_clone(ctx, repo)
         common = _git(["rev-parse", "--path-format=absolute", "--git-common-dir"], worktree, env, "selo")
         if Path(common.strip()).resolve() != clone / ".git":
             raise StoreError("selo: worktree não pertence ao clone dedicado")
-    count = _git(["rev-list", "--count", f"{BASE_REF}..HEAD"], worktree, env, "selo").strip()
+        base = _git(["rev-parse", "--verify", f"{base}^{{commit}}"], worktree, env, "selo").strip()
+        head = _git(["rev-parse", "--verify", "HEAD^{commit}"], worktree, env, "selo").strip()
+    count = _git(["rev-list", "--count", f"{base}..{head}"], worktree, env, "selo").strip()
     if count in ("", "0"):
         raise StoreError(f"o ramo de {rid}/{lote} nao tem commit acima do {BASE_REF}")
-    commit = _git(["rev-parse", "HEAD"], worktree, env, "selo").strip()
+    commit = head if repo else _git(["rev-parse", "HEAD"], worktree, env, "selo").strip()
     versao = None if repo else _version(worktree, retrofit["plugin"])
-    patch = patch_id(worktree, private=bool(repo))
+    patch = patch_id(worktree, base=base, head=head, private=True) if repo else patch_id(worktree)
     # O lote privado nunca fornece os scripts que examinam o próprio diff.
     with clean_tree(ctx, store_clone(ctx) if repo else worktree, BASE_REF if repo else commit) as tools:
         termos = [] if repo else new_terms(worktree, tools)
-        camada1 = layer1(ctx, rid, worktree, tools, private=True) if repo else layer1(ctx, rid, worktree, tools)
+        camada1 = (layer1(ctx, rid, worktree, tools, base=base, head=head, private=True)
+                   if repo else layer1(ctx, rid, worktree, tools))
     rw_auto._write_json(folder / "termos-novos.json", {"patch": patch, "termos": termos})
     retrofit.update(licoes=chosen, fases=phases, commit=commit, versao=versao, patch=patch)
     rw_auto._write_json(folder / "retrofit.json", retrofit)
@@ -736,6 +751,7 @@ DAY = 86400
 STARTUP_TIMEOUT = 3
 CRITERION_FILE = "criterio.json"
 LEAN_WINDOW_FILE = "lean-janela.json"
+LEAK_SCAN_VERSION = 1
 LIVE_SETUP_PENDING = "rw-live-pending"
 LIVE_SETUP_HOOK = (b'#!/bin/sh\necho "retrofit-watch: este clone so segue a main; '
                    b'commite num worktree do lote" >&2\nexit 1\n')
@@ -757,8 +773,8 @@ class StartupTimeout(StoreError):
 def _startup_git(store, args, what, env=None, timeout=STARTUP_TIMEOUT):
     """A saída em bytes do git da loja, com o teto do startup, sem config nenhuma (ou com `env`, um ambiente
     também neutro); StartupTimeout com rc 124, StoreError com outro rc != 0."""
-    rc, out = run_bytes(["git", "--literal-pathspecs", "-C", str(store), *args], timeout=timeout,
-                        env=git_env(neutral=True) if env is None else env)
+    local = dict(git_env(neutral=True) if env is None else env, GIT_NO_LAZY_FETCH="1", GIT_ALLOW_PROTOCOL="")
+    rc, out = run_bytes(["git", "--literal-pathspecs", "-C", str(store), *args], timeout=timeout, env=local)
     if rc == 124:
         raise StartupTimeout(f"{what}: git {' '.join(args[:2])} passou de {timeout:.3g} s")
     if rc != 0:
@@ -779,11 +795,11 @@ def _marked_history(store, head, git):
     shas = {c[0] for c in commits}
     reverts = [[sha, int(ts), date] for sha, ts, date, _, body in records
                if any(any(s.startswith(m) for s in shas) for m in REVERTS.findall(body))]
-    return commits, reverts
+    return commits, reverts, {record[0] for record in records}
 
 
 def _autonomous(store, head):
-    commits, reverts = _marked_history(store, head, _startup_git)
+    commits, reverts, _ = _marked_history(store, head, _startup_git)
     return commits, len(reverts)
 
 
@@ -795,42 +811,65 @@ def _load_name_check(folder):
 
 
 def _leaks(store, head, shas, git=None):
-    """Os achados do sensor de nomes (o `varrer` do check-private-names.py, com a lista de hashes, os dois
-    do `head`) nos arquivos que os commits `shas` tocaram, como estão no `head`. Os arquivos saem do
-    `git archive` para uma pasta temporária, que o `varrer` lê sem o git (ela não tem `.git`). O archive é
-    o do `clean_tree` (ARCHIVE e `archive_env()`): um `export-ignore` nos atributos global ou de sistema
-    tiraria o arquivo do vazamento da contagem (Final-F5)."""
+    """Varre os blobs do head tocados pelos commits, após conferir a cobertura do arquivo exportado."""
     git = _startup_git if git is None else git
-    names = _decode(git(store, ["-c", "core.quotePath=false", "show", "--name-only", "--no-renames",
-                                         "--format=", "-z", *shas], "criterio"))
-    touched = sorted({n.lstrip("\n") for n in names.split("\0")} - {""})
-    present = []
-    if touched:
-        listed = _decode(git(store, ["ls-tree", "-r", "-z", "--name-only", head, "--", *touched],
-                                      "criterio"))
-        present = [n for n in listed.split("\0") if n]
-    raw = git(store, [*ARCHIVE, head, "--", NAME_CHECK, PRIVATE_LIST, *present], "criterio",
-                       env=archive_env())
-    wanted = set(present)
+    names = git(store, ["show", "--name-only", "--diff-merges=separate", "--no-renames", "--format=", "-z",
+                        *shas], "criterio").decode("utf-8", "surrogateescape")
+    touched = set(names.split("\0")) - {""}
+    sensor = {NAME_CHECK, PRIVATE_LIST}
+    listed = git(store, ["ls-tree", "-r", "-z", head, "--", *sorted(touched | sensor)], "criterio")
+    blobs = {}
+    for entry in listed.removesuffix(b"\0").split(b"\0"):
+        metadata, _, raw_name = entry.partition(b"\t")
+        name = raw_name.decode("utf-8", "surrogateescape")
+        if name in touched or name in sensor:
+            _, kind, oid = metadata.split()
+            if kind == b"blob":
+                blobs[name] = oid
+    if not sensor <= blobs.keys():
+        raise StoreError("criterio: arquivos do sensor ausentes da árvore")
+
+    raw = git(store, [*ARCHIVE, head, "--", *sorted(blobs)], "criterio", env=archive_env())
+    present = blobs.keys() & touched
+    remaining = dict(blobs)
     with tempfile.TemporaryDirectory(prefix="rw-criterio-") as tmp:
         tree, tool = Path(tmp) / "arvore", Path(tmp) / "sensor"
         tree.mkdir()
         tool.mkdir()
         with tarfile.open(fileobj=io.BytesIO(raw)) as tar:
             for member in tar:
-                if member.name in wanted:
-                    target = tree / member.name
-                elif member.name == NAME_CHECK:
-                    target = tool / Path(NAME_CHECK).name
-                elif member.name == PRIVATE_LIST:
-                    target = tool / Path(PRIVATE_LIST).name
-                else:
+                name = member.name
+                if name not in remaining:
                     continue
-                target.parent.mkdir(parents=True, exist_ok=True)
-                # O blob de um link simbólico é o caminho do alvo: o sensor lê esse texto, como o `git show`.
-                target.write_bytes(member.linkname.encode("utf-8", "surrogateescape") if member.issym()
-                                   else tar.extractfile(member).read())
+                if member.issym():
+                    data = member.linkname.encode("utf-8", "surrogateescape")
+                elif member.isfile():
+                    with tar.extractfile(member) as file:
+                        data = file.read()
+                else:
+                    raise StoreError("criterio: tipo inesperado no arquivo exportado")
+                oid = remaining.pop(name)
+                algorithm = {40: "sha1", 64: "sha256"}.get(len(oid))
+                if algorithm is None:
+                    raise StoreError("criterio: formato de blob desconhecido")
+                digest = hashlib.new(algorithm, f"blob {len(data)}\0".encode("ascii"), usedforsecurity=False)
+                digest.update(data)
+                if digest.hexdigest().encode("ascii") != oid:
+                    raise StoreError("criterio: conteúdo do blob difere da árvore")
+                if name in present:
+                    target = tree / name
+                    if not target.resolve().is_relative_to(tree.resolve()):
+                        raise StoreError("criterio: caminho do blob fora da árvore")
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    with target.open("xb") as file:
+                        file.write(data)
+                if name in sensor:
+                    (tool / Path(name).name).write_bytes(data)
+        if remaining:
+            raise StoreError("criterio: arquivo exportado não contém todos os blobs")
         check = _load_name_check(tool)
+        if set(check.arquivos(tree)) != present:
+            raise StoreError("criterio: sensor não cobre todos os blobs")
         return len(check.varrer(tree, check.carregar(tool / Path(PRIVATE_LIST).name)))
 
 
@@ -840,7 +879,8 @@ def _cached(ctx, head):
         data = json.loads((ctx.data_dir / CRITERION_FILE).read_bytes().decode("utf-8"))
     except (OSError, ValueError):
         return None
-    if not isinstance(data, dict) or set(data) != {"sha", "commits", "revertidos", "vazados"} or data["sha"] != head:
+    if (not isinstance(data, dict) or set(data) != {"sha", "commits", "revertidos", "vazados", "scan_version"}
+            or data["sha"] != head or data["scan_version"] != LEAK_SCAN_VERSION):
         return None
     commits, reverted, leaks = data["commits"], data["revertidos"], data["vazados"]
     if not (isinstance(commits, list) and all(
@@ -887,7 +927,8 @@ def criterion(ctx, now=None):
     try:
         if changed:
             commits, reverted = _autonomous(store, head)
-            data = {"sha": head, "commits": commits, "revertidos": reverted, "vazados": None}
+            data = {"sha": head, "commits": commits, "revertidos": reverted, "vazados": None,
+                    "scan_version": LEAK_SCAN_VERSION}
         commits = data["commits"]
         first = min(commits, key=lambda c: c[1]) if commits else None
         days = max(0, int((now - first[1]) // DAY)) if first else 0
@@ -929,21 +970,28 @@ def live_path(ctx, slug):
     return path
 
 
-def _configured_origin(path, *, allow_pending=False):
+def _configured_origin(path, *, allow_pending=False, deadline=None):
     """Lê o origin declarado pelo dono, sem aplicar reescritas de URL do Git."""
     gitdir = path / ".git"
-    config = configparser.ConfigParser(interpolation=None, allow_no_value=True)
     try:
         if (path.is_symlink() or gitdir.is_symlink() or
                 (not allow_pending and (gitdir / LIVE_SETUP_PENDING).exists()) or
                 not (gitdir / "HEAD").is_file()):
             return None
-        with (gitdir / "config").open(encoding="utf-8") as fh:
-            config.read_file(fh)
-        return rw_auto.rw.origin_identity(config['remote "origin"'].get("url"))
-    except (OSError, ValueError, KeyError, configparser.Error):
-        pass
-    return None
+    except OSError:
+        return None
+    remaining = STARTUP_TIMEOUT if deadline is None else deadline - time.monotonic()
+    if remaining <= 0:
+        return None
+    env = dict(git_env(neutral=True), GIT_NO_LAZY_FETCH="1", GIT_ALLOW_PROTOCOL="",
+               GIT_NO_REPLACE_OBJECTS="1")
+    rc, raw = run_bytes(["git", "config", "--file", gitdir / "config", "--no-includes",
+                         "--null", "--get-all", "remote.origin.url"],
+                        env=env, timeout=remaining, stderr=subprocess.DEVNULL)
+    values = raw.split(b"\0")
+    if rc or len(values) != 2 or values[-1]:
+        return None
+    return rw_auto.rw.origin_identity(_decode(values[0]))
 
 
 def _live_main_ref(path, *, deadline=None):
@@ -997,7 +1045,8 @@ def live_clone(ctx, slug, *, origin=None, require_main=True, deadline=None):
         path = live_path(ctx, slug)
     except StoreError:
         return None
-    configured = _configured_origin(path)
+    deadline = time.monotonic() + STARTUP_TIMEOUT if deadline is None else deadline
+    configured = _configured_origin(path, deadline=deadline)
     if configured and configured[0] == slug and (origin is None or configured == origin):
         # Leia o ramo depois do marcador, inclusive durante a remoção seguida de recusa.
         try:
@@ -1422,11 +1471,13 @@ def _live_fast_forward(path, env, before):
 
 def live_advance(ctx, slug, *, expected_id=None):
     """Avança o checkout dedicado sem sobrescrever estado local e registra o resultado."""
-    path = live_path(ctx, slug)
+    if not rw_auto.rw.valid_slug(slug) or slug not in ctx.lean_auto:
+        raise StoreError(f"repo sem destino autorizado: {slug}")
     env = git_env(home=ctx.home)
     before = after = None
     result, detail = "ok", ""
     try:
+        path = live_path(ctx, slug)
         # O diagnóstico de avanço ainda precisa identificar o clone fora da main.
         _private_clone(ctx, slug, require_main=False)
         before = after = _git(["rev-parse", "HEAD"], path, env, "HEAD").strip()
@@ -1469,11 +1520,14 @@ def _lean_leaks(ctx, heads, store, head, commits, git):
         cached = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         cached = None
-    if isinstance(cached, dict) and cached.get("heads") == heads and rw_auto._int(cached.get("vazados")):
+    selected = [sha for sha, *_ in commits]
+    proof = {"heads": heads, "commits": selected, "scan_version": LEAK_SCAN_VERSION}
+    if (isinstance(cached, dict) and all(cached.get(key) == value for key, value in proof.items())
+            and rw_auto._int(cached.get("vazados"))):
         return cached["vazados"]
-    leaks = _leaks(store, head, [sha for sha, *_ in commits], git=git)
+    leaks = _leaks(store, head, selected, git=git)
     ctx.data_dir.mkdir(parents=True, exist_ok=True)
-    rw_auto._write_json(path, {"heads": heads, "vazados": leaks})
+    rw_auto._write_json(path, dict(proof, vazados=leaks))
     return leaks
 
 
@@ -1491,8 +1545,9 @@ def lean_window(ctx, now=None, *, deadline=None):
         if remaining <= 0:
             raise StartupTimeout("janela lean: tempo de leitura esgotado")
         local = dict(git_env(neutral=True) if env is None else env,
-                     GIT_NO_LAZY_FETCH="1", GIT_ALLOW_PROTOCOL="", GIT_NO_REPLACE_OBJECTS="1")
-        return _startup_git(repo, args, what, env=local, timeout=remaining)
+                     GIT_NO_REPLACE_OBJECTS="1", GIT_GRAFT_FILE=os.devnull)
+        return _startup_git(repo, ["-c", "advice.graftFileDeprecated=false", *args], what,
+                            env=local, timeout=remaining)
 
     try:
         repos = {"store": store, **{slug: live_clone(ctx, slug, deadline=deadline) for slug in sorted(ctx.lean_auto)}}
@@ -1507,16 +1562,27 @@ def lean_window(ctx, now=None, *, deadline=None):
                 return None
             heads[key] = proof[1]
             # O ref pode continuar intacto depois de perder um ancestral, inclusive com cache positivo.
-            marked, reverted = _marked_history(repo, heads[key], git)
+            marked, reverted, history = _marked_history(repo, heads[key], git)
             reverts.extend(reverted)
             if key == "store":
-                commits = marked
+                commits, store_history = marked, history
         last = max(reverts, key=lambda c: c[1], default=None)
-        published = [c for c in commits if last is None or c[1] > last[1]]
+        boundaries = {sha for sha, *_ in reverts}
+        # Um revert em outro repo só ordena publicações da loja se houver ancestria em comum.
+        if not boundaries <= store_history:
+            published = []
+        else:
+            published = commits
+            for sha in sorted(boundaries):
+                after = set(git(store, ["rev-list", "--ancestry-path", f"{sha}..{heads['store']}"],
+                                "janela lean").decode("ascii").splitlines())
+                published = [c for c in published if c[0] in after]
         start = last or min(published, key=lambda c: c[1], default=None)
         days = max(0, int((now - start[1]) // DAY)) if start else 0
         floors = len(published) >= V2_MIN_PUBLISHED and days >= V2_MIN_DAYS
         leaks = _lean_leaks(ctx, heads, store, heads["store"], published, git) if floors else None
+        if time.monotonic() >= deadline:
+            return None
         return {"publicados": len(published), "dias": days, "desde": start[2] if start else None,
                 "ultimo_revert": last[1] if last else None, "vazados": leaks, "cumprido": floors and leaks == 0}
     except (StoreError, OSError, ValueError, ImportError, AttributeError, SyntaxError, tarfile.TarError):
@@ -1601,7 +1667,16 @@ def cli(verb, args, ctx):
         elif verb == "live-setup":
             result = {"clone": str(live_setup(ctx, *positional, url=options.get("--url")))}
         elif verb == "live-advance":
-            result = [live_advance(ctx, slug) for slug in (positional or sorted(ctx.lean_auto))]
+            result = []
+            for slug in positional or sorted(ctx.lean_auto):
+                try:
+                    result.append(live_advance(ctx, slug))
+                except (StoreError, rw_auto.Malformed, OSError) as exc:
+                    error = StoreError(f"avanço de {slug}: {exc}")
+                    rw_auto.rw.log_error(ctx, error)
+                    sys.stderr.write(_ascii(f"retrofit-watch: {error}") + "\n")
+                    result.append(dict(repo=slug, resultado="erro", antes=None, depois=None,
+                                       detalhe=str(exc), ts=int(time.time())))
         else:
             path = write_harvest(ctx)
             result = {"termos": len(path.read_text(encoding="utf-8").splitlines()), "arquivo": str(path)}

@@ -55,10 +55,14 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
 
 A lição local leva o mesmo `repo` do pedido e o nome da skill em `plugin` e
 `skill`. A triagem não mistura origens. Se outro repo ou a loja disputar o
-mesmo nome, a lição posterior fica segurada. O `prepare` busca a `main`
-no clone dedicado, localiza a pasta rastreada da skill e grava `repo`, `pasta` e
-`origin_id` em `retrofit.json`. A impressão digital vem do pedido e vincula o
-lote à origem da sessão. Uma troca de destino exige um novo pedido.
+mesmo nome, a lição posterior fica segurada. O Stop confere localmente se a origem
+do checkout ainda corresponde à identidade registrada com a evidência. O pedido
+privado grava essa identidade em `origin_id` e o caminho rastreado em `skill_path`.
+O `prepare` busca a `main` no clone dedicado, exige um `SKILL.md` regular no
+caminho relativo exato do pedido e grava `repo`, `pasta` e `origin_id` em
+`retrofit.json`. A porta reconfere esse caminho na base da publicação.
+Uma troca de origem ou um pedido privado antigo sem caminho exige um novo pedido
+ou resolução manual.
 O ramo e o worktree pertencem a esse clone.
 
 No lote privado, o executor usa apenas as lições do lote e o veredito.
@@ -74,18 +78,27 @@ após verificar o estado local e concluir a validação da publicação.
 
 ## Ensaio, publicação e aviso de startup
 
-Depois do selo o revisor grava `diff.json` para o patch da skill. `publish` confere a
-revisão e executa o pre-push do repo no worktree, com o mesmo SHA e refs do push.
+Depois do selo o revisor grava `diff.json` para o patch da skill. `publish` confere
+os achados do mesmo relatório cujo patch validou. A verificação de segredo e caminho
+e o cálculo do patch usam o mesmo par de commits fixado pelo rebase. O pre-push do
+repo roda no worktree com o mesmo SHA e refs do push. Se o executável mudar
+desde o ensaio, a porta aguarda um novo ensaio.
 Antes de buscar ou publicar, confere o destino efetivo do Git, inclusive reescritas
 de URL e `pushurl`. O slug sozinho não distingue servidores, transportes ou caminhos.
 Sem prova da janela v2, o gate verde deixa o lote em `auto-dry` e conserva o remoto.
+Só publicações que descendem dos reverts marcados no histórico Git da loja entram
+na nova janela. Um revert em histórico independente mantém o ensaio enquanto a
+ordem das publicações não puder ser comprovada. A medição usa refs locais e exige
+uma varredura completa dos blobs selecionados.
 O dono pode liberar esse motivo com `approve <id> <lote>`. A permissão vale para o
-patch segurado, que inclui todos os arquivos alterados do lote. As exclusões das listas
-da loja valem apenas no fluxo full. Emenda que altera o patch exige nova revisão e
-aprovação quando aplicável.
+patch segurado, que inclui todos os arquivos alterados do lote e as posições das
+edições. As exclusões das listas da loja, inclusive na verificação de segredo, valem
+apenas no fluxo full. Uma emenda ou um rebase que desloque as edições exige nova
+revisão e aprovação quando aplicável.
 
 Depois do push, o registro preserva o SHA mesmo quando `local/ci` ou o avanço do clone
-falham. A porta indica ao `gh` o servidor da origem conferida. Uma porta explícita de
+falham. O `local/ci` informa a última linha do pre-push real ou indica que a
+saída ficou indisponível na retomada. A porta indica ao `gh` o servidor da origem conferida. Uma porta explícita de
 SSH continua valendo para o Git, mas não é repassada à API de status. Uma porta
 HTTPS explícita não padrão fica na URL absoluta da API (`/api/v3/repos/…/statuses/…`).
 O argumento `--hostname` do `gh` identifica o servidor sem porta.

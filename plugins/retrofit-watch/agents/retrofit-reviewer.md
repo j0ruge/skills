@@ -37,10 +37,14 @@ a lição ou o commit dizem de si.
    `git -C <loja> show origin/main:plugins/<plugin>/skills/<skill>/SKILL.md` e
    `git -C <loja> grep -n <palavra> origin/main -- plugins/<plugin>`. Uma citação anterior não vale.
    Para uma lição com `repo`, leia `lean_auto` e `live_dir` em `~/.claude/retrofit-watch.json`
-   (o clone padrão fica em `~/.local/share/skills-live/<repo>`). Confirme que o slug listado
-   é o do `origin` do clone dedicado. Faça fetch nesse clone, localize a única pasta rastreada
-   da skill em `origin/main` com `git ls-tree -r --name-only origin/main` e leia
-   `git -C <clone> show origin/main:<pasta>/SKILL.md`. Uma cópia para a prova sai do
+   (o clone padrão fica em `~/.local/share/skills-live/<repo>`). Leia `origin_id` e `skill_path`
+   da entrada correspondente no `pedido.json`. Para buscar, use a mesma guarda do preparo nos
+   scripts do retrofit-watch, `rw_store._live_fetch(ctx, repo, rw_store.live_path(ctx, repo), expected_id=origin_id)`.
+   Crie o `retrofit_watch.Context()` no ambiente do pedido. A guarda confere a origem declarada e
+   a efetiva antes do fetch. Se a guarda aceitar, confira o caminho com
+   `git -C <clone> --literal-pathspecs ls-tree --full-tree origin/main -- <skill_path>`.
+   Leia `git -C <clone> show origin/main:<skill_path>` quando esse caminho exato for um blob regular
+   (modo `100644` ou `100755`). Uma cópia para a prova sai do
    `git archive origin/main <pasta>` desse clone, nunca da loja ou do checkout de desenvolvimento.
    Sem correspondência comprovada, não use a loja como substituta e registre a limitação no parecer.
 3. Confira a evidência no transcript. O `licoes.json` dá o caminho (`evidencia.transcript`), a entrada

@@ -1,5 +1,10 @@
 # Modo autônomo: o fluxo da sessão
 
+[Formatos](#formatos) · [Lições](#1-as-lições) · [Primeira revisão](#2-o-revisor-primeira-passada) ·
+[Triagem](#3-a-triagem) · [Lote](#4-por-lote) · [Resposta ao dono](#5-a-linha-ao-dono) ·
+[Retenções](#6-o-verbo-segurados) · [Falha do executor](#7-o-executor-que-falha) ·
+[Motivos](#8-a-tabela-de-motivos) · [Limites](#9-o-que-nunca-fazer) · [Startup](#o-aviso-de-startup)
+
 Esta página é para o agente da sessão do dono. Leia-a inteira ao receber o pedido autônomo do Stop hook
 (`[modo autônomo: …]`) ou o verbo `/retrofit-watch:retrofit-watch segurados`.
 
@@ -35,7 +40,8 @@ leitura que falhou, sem buscar nem alterar refs.
 Sem argumento, tenta os repos da lista.
 A origem da sessão precisa corresponder à do clone dedicado.
 Fora do GitHub público nas portas padrão, use a mesma URL Git efetiva, mesmo quando o slug é o mesmo.
-O pedido privado grava a impressão digital `origin_id`, que o lote usa para conferir o destino efetivo.
+O pedido privado grava a impressão digital `origin_id` e o caminho rastreado `skill_path`, relativo
+à raiz do checkout da sessão. O Stop confere a origem atual do checkout antes de abrir o pedido.
 
 ## Formatos
 
@@ -129,7 +135,9 @@ Para cada lote, nesta ordem:
 
 1. `retrofit_watch.py prepare <id> <lote>`. Ele faz `git fetch origin` na loja e cria o worktree do lote
    e o ramo `retrofit-auto/<lote>-<id>`. A saída é o `retrofit.json`. Para o lote privado, busca no
-   clone dedicado, cria o worktree a partir dele e grava também `repo` e `pasta`.
+   clone dedicado, exige um `SKILL.md` regular no caminho exato do pedido e grava também `repo` e
+   `pasta` no worktree do lote. Um pedido privado antigo sem `skill_path` precisa de nova sessão ou
+   resolução manual.
 2. Se houver lote da loja, antes da primeira segunda passada rode `retrofit_watch.py harvest` uma vez. Ele grava
    `<dados>/colheita.txt`, que o revisor usa como referência.
 3. Despache o executor com a ferramenta `Agent`:

@@ -505,7 +505,7 @@ class CorrectionTextTest(unittest.TestCase):
 class PrivateFlowTest(unittest.TestCase):
     def test_reviewer_and_watch_contract(self):
         agent = read(AGENT)
-        for field in ("origin/main:<pasta>/SKILL.md", "diff.json", "patch", "regra_repetida", "fora_das_licoes"):
+        for field in ("origin/main:<skill_path>", "diff.json", "patch", "regra_repetida", "fora_das_licoes"):
             self.assertIn(field, agent)
         for field in ("lean_auto", "live_dir"):
             self.assertIn(field, read(SKILL_MD))

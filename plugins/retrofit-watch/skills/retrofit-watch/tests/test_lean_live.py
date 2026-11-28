@@ -1,4 +1,5 @@
 """O clone em uso segue a main sem tocar o checkout de desenvolvimento."""
+from concurrent.futures import ThreadPoolExecutor
 import contextlib
 import errno
 import io
@@ -6,16 +7,17 @@ import json
 import os
 import shlex
 import shutil
-import time
 import subprocess
 import sys
 import unittest
 from unittest import mock
 
 from fixture_private import PrivateWorld, SLUG
+from fixture_store import requires_store
 import rw_store as store
 
 
+@requires_store
 class LiveTest(unittest.TestCase):
     def setUp(self):
         self.w = PrivateWorld()
@@ -441,6 +443,10 @@ class LiveTest(unittest.TestCase):
         w.git(w.live, "symbolic-ref", "HEAD", "refs/heads/main")
         self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
         self.assertFalse(pending.exists())
+        self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
+        w.git(w.live, "symbolic-ref", "HEAD", "refs/heads/atalho")
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+        w.git(w.live, "symbolic-ref", "HEAD", "refs/heads/main")
         self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
         self.assertEqual(store.live_advance(self.ctx, SLUG)["resultado"], "ok")
 
@@ -1035,6 +1041,22 @@ class LiveTest(unittest.TestCase):
         self.assertEqual(w.git(w.live, "rev-parse", "refs/heads/ramo-do-dono"), head)
         self.assertEqual((w.live / "estado").read_text(), "preservar")
 
+    def test_advance_batch_keeps_working_after_invalid_repo(self):
+        w = self.w
+        w.config(lean_auto=["fixture/aux", SLUG])
+        new = w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+        ctx = w.ctx()
+        out = io.StringIO()
+
+        with contextlib.redirect_stdout(out):
+            result = store.cli("live-advance", [], ctx)
+
+        self.assertEqual(result, 1)
+        self.assertEqual([(row["repo"], row["resultado"]) for row in json.loads(out.getvalue())],
+                         [("fixture/aux", "erro"), (SLUG, "ok")])
+        self.assertIn("fixture/aux", store.rw_auto.live_notice(ctx))
+        self.assertEqual(w.git(w.live, "rev-parse", "refs/heads/main"), new)
+
     def test_advance_leaves_wrong_branch_dirty_tree_and_divergence_alone(self):
         w = self.w
         head = w.git(w.live, "rev-parse", "HEAD")
@@ -1495,6 +1517,13 @@ class LiveTest(unittest.TestCase):
         self.assertEqual(store.live_advance(self.ctx, SLUG)["resultado"], "erro")
         self.assertEqual(w.git(w.live, "rev-parse", "origin/main"), head)
 
+    def test_live_clone_accepts_multiple_fetch_specs_with_one_declared_origin(self):
+        w = self.w
+        w.git(w.live, "config", "--local", "--add", "remote.origin.fetch", "+refs/tags/*:refs/tags/*")
+        self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
+        w.git(w.live, "config", "--local", "--add", "remote.origin.url", str(w.remote))
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+
     def test_advance_rejects_effective_origin_rewritten_to_another_repo(self):
         w = self.w
         before = w.git(w.live, "rev-parse", "origin/main")
@@ -1553,6 +1582,7 @@ class InstallTest(unittest.TestCase):
                     store._install_live_clone("cópia", "destino")
 
 
+@requires_store
 class StartupTest(unittest.TestCase):
     def setUp(self):
         self.w = PrivateWorld()
@@ -1564,9 +1594,7 @@ class StartupTest(unittest.TestCase):
 
     def test_spawn_is_detached_and_does_not_wait(self):
         with mock.patch.object(subprocess, "Popen") as launch, mock.patch.object(store, "lean_window"):
-            start = time.monotonic()
             store.rw_auto.rw.cmd_pending({}, self.ctx)
-            self.assertLess(time.monotonic() - start, 1)
         calls = [call for call in launch.call_args_list if call.args[0][-1] == "live-advance"]
         self.assertEqual(len(calls), 1)
         opts = calls[0].kwargs
@@ -1576,6 +1604,7 @@ class StartupTest(unittest.TestCase):
         self.assertTrue(opts["creationflags"] & subprocess.DETACHED_PROCESS if os.name == "nt"
                         else opts["start_new_session"])
         launch.return_value.wait.assert_not_called()
+        launch.return_value.communicate.assert_not_called()
 
     def test_no_list_does_not_spawn(self):
         self.w.config(lean_auto=[])
@@ -1610,9 +1639,8 @@ class StartupTest(unittest.TestCase):
         wrapper.write_text('#!/bin/sh\n'
                            'for arg in "$@"; do\n'
                            '  if [ "$arg" = fetch ]; then\n'
-                           f'    for i in 1 2 3 4 5 6 7 8 9 10; do\n'
-                           f'      [ -f {shlex.quote(str(guard))} ] && break\n'
-                           '      sleep 0.2\n'
+                           f'    while [ ! -f {shlex.quote(str(guard))} ]; do\n'
+                           '      sleep 0.05\n'
                            '    done\n'
                            '    exit 1\n'
                            '  fi\n'
@@ -1631,13 +1659,15 @@ class StartupTest(unittest.TestCase):
             return proc
 
         with mock.patch.dict(os.environ, PATH=f"{w.bindir}{os.pathsep}{os.environ['PATH']}"), \
-                mock.patch.object(subprocess, "Popen", side_effect=track):
-            start = time.monotonic()
-            rw.cmd_pending({}, self.ctx)
-            self.assertLess(time.monotonic() - start, 1)
-        self.assertEqual(len(child), 1)
-        self.assertIsNone(child[0].poll())
-        guard.touch()
+                mock.patch.object(subprocess, "Popen", side_effect=track), \
+                ThreadPoolExecutor(max_workers=1) as executor:
+            startup = executor.submit(rw.cmd_pending, {}, self.ctx)
+            try:
+                startup.result(timeout=10)
+                self.assertEqual(len(child), 1)
+                self.assertIsNone(child[0].poll())
+            finally:
+                guard.touch()
         self.assertEqual(child[0].wait(timeout=5), 1)
         with mock.patch.object(store, "spawn_live_advance", return_value=True):
             notice = rw.cmd_pending({}, self.ctx)
@@ -1654,6 +1684,12 @@ class StartupTest(unittest.TestCase):
             self.assertIsNone(notice(self.ctx))
             self.assertIn("de volta ao ensaio (revert de 2026-11-27)", notice(self.ctx))
             self.assertIsNone(notice(self.ctx))
+
+    def test_mode_notice_does_not_observe_without_the_notice_lock(self):
+        with mock.patch.object(store.rw_auto.rw, "_lock", side_effect=OSError("ocupado")), \
+                mock.patch.object(store, "lean_mode_state", return_value=("auto", None)) as observe:
+            self.assertIsNone(store.rw_auto.lean_mode_notice(self.ctx))
+        observe.assert_not_called()
 
     def test_advance_records_same_basename_without_losing_notice(self):
         w = self.w

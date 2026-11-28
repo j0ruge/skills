@@ -1881,6 +1881,19 @@ class PublishTest(GateHarness, HookHarness, unittest.TestCase):
         self.assertEqual((rc, again["resultado"], again["commit"]), (0, "publicado", line["commit"]), again)
         self.assertNotIn("push", fx.calls)
 
+    def test_full_approval_uses_the_recorded_reason_even_if_retrofit_is_unreadable(self):
+        lote = "demo__description"
+        rid, _ = self.clean_retrofit(licoes=({"muda_description": True},), lote=lote)
+        held, rc = self.publish(rid, self.effects(), lote)
+        self.assertEqual((rc, held["motivo"]), (1, "muda-description"))
+        ctx = self.ctx()
+        (rw_auto.lote_dir(ctx, rid, lote) / "retrofit.json").write_text("{", encoding="utf-8")
+
+        result = rw_auto.load_aprovado(rw_auto.approve(ctx, rid, lote))
+
+        self.assertEqual(result["motivos"], ["muda-description"])
+        self.assertNotIn("patch", result)
+
     # --- o ensino do portão com os verbos reais (Final-F1) ----------------------------------------
 
     def teach_public(self, wt, word):

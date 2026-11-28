@@ -248,19 +248,25 @@ def _slashed(path):
     return path.replace(os.sep, "/")
 
 
-def _git(args, cwd):
+def _git(args, cwd, *, deadline=None):
+    from rw_store import git_env
+
+    timeout = GIT_TIMEOUT if deadline is None else min(GIT_TIMEOUT, deadline - time.monotonic())
+    if timeout <= 0:
+        return None
+    env = dict(git_env(), GIT_NO_LAZY_FETCH="1", GIT_ALLOW_PROTOCOL="")
     try:
         proc = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True,
-                              timeout=GIT_TIMEOUT)
+                              timeout=timeout, env=env)
         return proc.stdout.strip() if proc.returncode == 0 else None
     except (OSError, subprocess.TimeoutExpired):
         return None
 
 
-def _toplevel(cwd):
+def _toplevel(cwd, *, deadline=None):
     """Raiz do repo no formato do SO: o git do Windows responde `C:/x`, e o realpath com que ela é
     comparada (o TODO.md do kit) vem `C:\\x`."""
-    top = _git(["rev-parse", "--show-toplevel"], cwd)
+    top = _git(["rev-parse", "--show-toplevel"], cwd, deadline=deadline)
     return os.path.normpath(top) if top else None
 
 
@@ -290,9 +296,9 @@ def _full(plugin, skill, ctx):
             "skills": [skill] if skill else []}
 
 
-def _lean(name, repo, origin=None):
+def _lean(name, repo, origin=None, skill_path=None):
     return {"key": f"lean:{repo}:{name}", "mode": "lean", "arg": name, "label": name, "repo": repo,
-            "origin": origin[0] if origin else None, "origin_identity": origin}
+            "origin": origin[0] if origin else None, "origin_identity": origin, "skill_path": skill_path}
 
 
 def valid_slug(value):
@@ -339,8 +345,8 @@ def origin_id(origin):
     return hashlib.sha256(json.dumps(origin).encode("ascii")).hexdigest()
 
 
-def _owned_origin(top, ctx):
-    origin = origin_identity(_git(["remote", "get-url", "origin"], top))
+def _owned_origin(top, ctx, *, deadline=None):
+    origin = origin_identity(_git(["remote", "get-url", "origin"], top, deadline=deadline))
     return origin if origin and origin[0].split("/")[0] in ctx.owners else None
 
 
@@ -382,9 +388,10 @@ def classify_path(path, ctx):
     name = os.path.basename(real.rstrip("/"))
     if name in ctx.config.get("include", []):
         top = _toplevel(real)
-        origin = (_local_origin(real, name, top, ctx) if top and name not in ctx.excluded
-                  and not _denied(real, ctx) and "/.agents/skills/" not in real + "/" else None)
-        return _lean(name, top, origin)
+        origin, skill_path = (_local_origin(real, name, top, ctx) if top and name not in ctx.excluded
+                              and not _denied(real, ctx) and "/.agents/skills/" not in real + "/"
+                              else (None, None))
+        return _lean(name, top, origin, skill_path)
     if name in ctx.excluded:
         return None
     home = _slashed(str(ctx.home))
@@ -412,21 +419,26 @@ def classify_path(path, ctx):
                 return _full(in_plugin.group(1), name, ctx)
         except (OSError, ValueError):
             pass
-    origin = _local_origin(real, name, top, ctx)
-    return _lean(name, top, origin) if origin else None
+    origin, skill_path = _local_origin(real, name, top, ctx)
+    return _lean(name, top, origin, skill_path) if origin else None
 
 
 def _local_origin(real, name, top, ctx):
     try:
         locked = json.loads(Path(top, "skills-lock.json").read_text()).get("skills", {})
         if name in locked:
-            return None
+            return None, None
     except (OSError, ValueError, AttributeError):
         pass
-    rel = os.path.relpath(os.path.join(real, "SKILL.md"), top)
-    if _git(["ls-files", "--error-unmatch", "--", rel], top) is None:
-        return None
-    return _owned_origin(top, ctx)
+    rel = _slashed(os.path.relpath(os.path.join(real, "SKILL.md"), top))
+    tracked = _git(["--literal-pathspecs", "ls-files", "--stage", "-z", "--", rel], top)
+    origin = _owned_origin(top, ctx) if tracked else None
+    if not origin:
+        return None, None
+    meta, _, path = tracked.partition("\t")
+    if (path == rel + "\0" and meta.startswith(("100644 ", "100755 ")) and meta.endswith(" 0")):
+        return origin, rel
+    return origin, None
 
 
 # --- estado ------------------------------------------------------------------------------------
@@ -660,6 +672,10 @@ class Scanner:
             return
         key = info["key"]
         entry = self.st["skills"].setdefault(key, dict(info, reviews=0, work=0, friction=0))
+        if info["mode"] == "lean" and (entry.get("skill_path") != info.get("skill_path")
+                                       or entry.get("origin_identity") != info.get("origin_identity")):
+            # A chave da sessão pode agrupar skills homônimas. A evidência mista fica manual.
+            entry["skill_path"] = None
         if "skills" in info:
             # Lista nova, nunca a do cache de classificação. Estado antigo não tem a chave.
             have = list(entry.get("skills") or [])

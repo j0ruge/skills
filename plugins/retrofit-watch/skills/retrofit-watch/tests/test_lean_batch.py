@@ -18,7 +18,7 @@ class BatchTest(unittest.TestCase):
         self.addCleanup(self.w.cleanup)
         self.ctx = self.w.ctx()
 
-    def request(self, *lessons, collision=False):
+    def request(self, *lessons, collision=False, legacy=False):
         w = self.w
         rid = w.retro(list(lessons), [{} for _ in lessons])
         path = auto.retro_dir(self.ctx, rid) / "pedido.json"
@@ -26,6 +26,8 @@ class BatchTest(unittest.TestCase):
         data["skills"] = [{"key": "lean:fixture", "plugin": SKILL, "label": SKILL,
                            "skills": [SKILL], "repo": SLUG, "modo": "auto-dry",
                            "origin_id": auto.rw.origin_id(auto.rw.origin_identity(str(w.remote)))}]
+        if not legacy:
+            data["skills"][0]["skill_path"] = f"{PASTA}/SKILL.md"
         if collision:
             data["skills"].insert(0, {"key": f"full:{SKILL}", "plugin": SKILL, "label": SKILL,
                                       "skills": [SKILL]})
@@ -126,18 +128,46 @@ class BatchTest(unittest.TestCase):
             with self.assertRaisesRegex(store.StoreError, "origem ambígua"):
                 store.prepare(self.ctx, rid, SKILL)
 
-    def test_prepare_rejects_ambiguous_tracked_folder(self):
+    def test_prepare_resolves_recorded_path_with_same_name_elsewhere(self):
         w = self.w
         rid = self.request(self.private())
-        w.commit_on_origin({f"outra/{SKILL}/SKILL.md": "segunda candidata"}, "Duplica o nome")
-        with self.assertRaisesRegex(store.StoreError, "ambígua"):
+        alternate = f"outra/{SKILL}/SKILL.md"
+        base = w.commit_on_origin({alternate: "outra skill"}, "Acrescenta outra skill")
+        lot = store.prepare(self.ctx, rid, SKILL)
+        self.assertEqual((lot["pasta"], lot["base"]), (PASTA, base))
+
+    def test_prepare_holds_when_the_recorded_path_disappears(self):
+        w = self.w
+        rid = self.request(self.private())
+        alternate = f"outra/{SKILL}/SKILL.md"
+        w.commit_on_origin({alternate: "outra skill"}, "Acrescenta outra skill")
+        w.git(w.dev, "rm", f"{PASTA}/SKILL.md")
+        w.git(w.dev, "commit", "-qm", "Retira a skill original")
+        w.git(w.dev, "push", "-q", "origin", "HEAD:main")
+        with self.assertRaisesRegex(store.StoreError, "pasta"):
             store.prepare(self.ctx, rid, SKILL)
+        self.assertFalse(auto.lote_dir(self.ctx, rid, SKILL).exists())
+
+    def test_prepare_holds_legacy_private_request_without_path(self):
+        rid = self.request(self.private(), legacy=True)
+        self.assertNotIn("skill_path", auto.retro_pedido(self.ctx, rid)["skills"][0])
+        with self.assertRaisesRegex(store.StoreError, "sem caminho rastreado"):
+            store.prepare(self.ctx, rid, SKILL)
+        self.assertFalse(auto.lote_dir(self.ctx, rid, SKILL).exists())
 
     def test_private_formats_reject_invalid_slug_and_paths(self):
         rid = self.request(self.private(repo="fixture/.."))
         with self.assertRaisesRegex(auto.Malformed, "repo"):
             auto.retro_licoes(self.ctx, rid)
         rid = self.request(self.private())
+        pedido_path = auto.retro_dir(self.ctx, rid) / "pedido.json"
+        pedido = auto.retro_pedido(self.ctx, rid)
+        for skill_path in ("../demo/SKILL.md", "/demo/SKILL.md", "demo/README.md", "demo\\SKILL.md"):
+            with self.subTest(skill_path=skill_path):
+                auto._write_json(pedido_path, pedido | {"skills": [pedido["skills"][0] | {"skill_path": skill_path}]})
+                with self.assertRaisesRegex(auto.Malformed, "skill_path"):
+                    auto.load_pedido(pedido_path)
+        auto._write_json(pedido_path, pedido)
         lot = store.prepare(self.ctx, rid, SKILL)
         path = auto.lote_dir(self.ctx, rid, SKILL) / "retrofit.json"
         for fields in ({"repo": None}, {"repo": "fixture/.."}, {"origin_id": "z" * 64}, {"pasta": "../fora"},
@@ -174,8 +204,9 @@ class BatchTest(unittest.TestCase):
         sealed = store.seal(self.ctx, rid, SKILL, [1], [])
         self.assertEqual(sealed["camada1"], [])
         self.assertIsNone(sealed["versao"])
-        self.assertEqual(sealed["patch"], store.patch_id(wt))
-        self.assertEqual(sealed["commit"], w.git(wt, "rev-parse", "HEAD"))
+        head = w.git(wt, "rev-parse", "HEAD")
+        self.assertEqual(sealed["patch"], store.patch_id(wt, base=lot["base"], head=head, private=True))
+        self.assertEqual(sealed["commit"], head)
         self.assertEqual(auto.load_retrofit(auto.lote_dir(self.ctx, rid, SKILL) / "retrofit.json")["patch"],
                          sealed["patch"])
         with changelog.open("a") as fh:

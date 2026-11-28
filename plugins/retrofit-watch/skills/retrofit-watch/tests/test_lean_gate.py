@@ -39,7 +39,7 @@ class GateTest(unittest.TestCase):
         self.folder = auto.retro_dir(self.ctx, rid)
         pedido = auto.retro_pedido(self.ctx, rid)
         pedido["skills"] = [{"key": "lean:fixture", "plugin": SKILL, "label": SKILL, "skills": [SKILL],
-                            "repo": SLUG, "modo": "auto-dry",
+                            "repo": SLUG, "modo": "auto-dry", "skill_path": f"{PASTA}/SKILL.md",
                             "origin_id": gate.rw.origin_id(gate.rw.origin_identity(str(w.remote)))}]
         auto._write_json(self.folder / "pedido.json", pedido)
         lot = store.prepare(self.ctx, rid, SKILL)
@@ -81,6 +81,12 @@ class GateTest(unittest.TestCase):
     def logs(self):
         return [json.loads(line) for line in self.w.gate_log.read_text().splitlines()]
 
+    def test_scope_keeps_the_requested_skill_when_main_adds_a_homonym(self):
+        w = self.w
+        self.edit()
+        self.base = w.commit_on_origin({f"outra/{SKILL}/SKILL.md": "outra skill"}, "Acrescenta outra skill")
+        self.assertEqual(self.publish()["motivo"], "auto-dry")
+
     def test_missing_gate(self):
         self.edit()
         hooks = self.w.tmp / "disabled-hooks"
@@ -101,7 +107,7 @@ class GateTest(unittest.TestCase):
         self.assertIn("gate: 0 passo(s)", self.held("auto-dry"))
         self.assertEqual(self.logs()[0]["stdin"], f"HEAD {before} refs/heads/main {self.base}\n")
         approval = auto.approve(self.ctx, self.rid, SKILL)
-        self.assertEqual(auto.load_aprovado(approval)["patch"], store.patch_id(self.wt))
+        self.assertEqual(auto.load_aprovado(approval)["patch"], store.patch_id(self.wt, private=True))
         out = self.publish()
         sha = self.remote_head()
         self.assertEqual((out["resultado"], out["commit"], out.get("repo")), ("publicado", sha, SLUG), out)
@@ -190,6 +196,52 @@ class GateTest(unittest.TestCase):
         self.review(fora_das_licoes="mudança além do pedido")
         self.held("diff-alem-das-licoes")
 
+    def test_second_review_is_read_once_for_both_findings(self):
+        self.edit()
+        with mock.patch.object(auto, "load_diff", wraps=auto.load_diff) as load:
+            self.held("auto-dry")
+        load.assert_called_once_with(self.lot / "diff.json")
+
+    def test_private_evidence_uses_the_rebased_commit_pair(self):
+        self.edit()
+        self.w.commit_on_origin({"nota.md": "Avanço independente.\n"}, "Acrescenta uma nota")
+        self.base = self.remote_head()
+        with (mock.patch.object(store, "layer1", wraps=store.layer1) as scan,
+              mock.patch.object(store, "patch_id", wraps=store.patch_id) as patch):
+            self.held("auto-dry")
+        head = self.w.git(self.wt, "rev-parse", "HEAD")
+        self.assertEqual(self.w.git(self.wt, "rev-parse", "HEAD^"), self.base)
+        options = dict(base=self.base, head=head, private=True)
+        scan.assert_called_once_with(self.ctx, self.rid, self.wt, mock.ANY, **options)
+        self.assertTrue(patch.call_args_list)
+        self.assertTrue(all(call == mock.call(self.wt, **options) for call in patch.call_args_list))
+
+    def test_private_seal_uses_the_same_commit_pair_for_identity_and_scan(self):
+        head = self.edit()
+        with (mock.patch.object(store, "layer1", wraps=store.layer1) as scan,
+              mock.patch.object(store, "patch_id", wraps=store.patch_id) as patch):
+            sealed = store.seal(self.ctx, self.rid, SKILL, [1], [])
+        options = dict(base=self.base, head=head, private=True)
+        self.assertEqual(sealed["commit"], head)
+        scan.assert_called_once_with(self.ctx, self.rid, self.wt, mock.ANY, **options)
+        patch.assert_called_once_with(self.wt, **options)
+
+    def test_private_patch_identity_binds_the_edit_location(self):
+        relative = f"{PASTA}/notas.md"
+        original = "Confira.\nPrimeira seção.\nConfira.\nSegunda seção.\n"
+        self.w.commit_on_origin({relative: original}, "Adiciona notas em duas seções")
+        self.open_batch()
+        self.edit()
+        note = self.wt / relative
+        note.write_text(original.replace("Confira.", "Valide.", 1))
+        self.w.git(self.wt, "commit", "-qa", "--amend", "--no-edit")
+        first = store.patch_id(self.wt, private=True)
+        legacy = store.patch_id(self.wt)
+        note.write_text("Confira.\nPrimeira seção.\nValide.\nSegunda seção.\n")
+        self.w.git(self.wt, "commit", "-qa", "--amend", "--no-edit")
+        self.assertEqual(store.patch_id(self.wt), legacy)
+        self.assertNotEqual(store.patch_id(self.wt, private=True), first)
+
     def test_status_failure_keeps_published_sha(self):
         head = self.edit()
         self.status.return_value = False, "sem acesso"
@@ -198,6 +250,51 @@ class GateTest(unittest.TestCase):
         self.assertEqual((gate.exit_code(out), out["instalacao"], self.remote_head(), out["commit"]),
                          (4, "status-falhou", head, head), out)
         self.assertEqual(self.w.git(self.w.live, "rev-parse", "HEAD"), head)
+        self.assertIn("local/ci", gate.phrase(out))
+        self.assertNotIn("instalada", gate.phrase(out))
+
+    def test_status_uses_the_real_hook_summary_on_retry(self):
+        head = self.edit()
+        hookpath = self.w.tmp / "status-summary-hooks"
+        hookpath.mkdir()
+        hook = hookpath / "pre-push"
+        hook.write_text('#!/bin/sh\necho "Verificação iniciada."\nprintf "%s\\n" "${RW_SUMMARY:-Ensaio passou.}"\n',
+                        encoding="utf-8")
+        hook.chmod(0o755)
+        self.w.git(self.wt, "config", "core.hooksPath", str(hookpath))
+        self.status.side_effect = [(False, "indisponível"), (True, "ok")]
+        push = self.effects.push_private
+
+        def real_summary(p, contract):
+            with mock.patch.dict(os.environ, RW_SUMMARY="Publicação verificada."):
+                return push(p, contract)
+
+        with mock.patch.object(store, "lean_mode", return_value="auto"), \
+                mock.patch.object(self.effects, "push_private", side_effect=real_summary):
+            out = self.publish()
+        self.assertEqual((out["instalacao"], out["commit"]), ("status-falhou", head), out)
+        self.assertIn("Ensaio passou.", out["gate"])
+        self.assertEqual(out.get("gate_push"), "Publicação verificada.")
+        self.assertEqual(gate.exit_code(self.publish()), 0)
+        self.assertEqual(self.status.call_args_list, [
+            mock.call(SLUG, head, "Publicação verificada.", host="localhost"),
+            mock.call(SLUG, head, "Publicação verificada.", host="localhost"),
+        ])
+
+    def test_push_requires_the_rehearsed_hook_content(self):
+        self.edit()
+        p = gate._Porta(self.ctx, self.rid, SKILL, [])
+        with mock.patch.object(store, "lean_mode", return_value="auto"):
+            refusal, contract = gate._check_private(p)
+        self.assertIsNone(refusal)
+        hook = self.wt / ".githooks/pre-push"
+        hook.write_bytes(hook.read_bytes() + b"\n# Atualiza o comentario da fixture.\n")
+        with mock.patch.object(store, "run", return_value=(0, "")) as run, \
+                mock.patch.object(gate, "_private_origin", return_value=(str(self.w.remote), p.env, None)), \
+                mock.patch.object(gate, "_prepush_path", return_value=hook):
+            ok, detail = self.effects.push_private(p, contract)
+        self.assertFalse(ok, detail)
+        run.assert_not_called()
 
     def test_advance_failure_keeps_publication_and_retry_advances(self):
         head = self.edit()
@@ -526,7 +623,7 @@ class GateTest(unittest.TestCase):
         self.status.assert_not_called()
         out = self.publish()
         self.assertEqual((gate.exit_code(out), out["commit"]), (0, head), out)
-        self.status.assert_called_once_with(SLUG, head, mock.ANY, host="localhost")
+        self.status.assert_called_once_with(SLUG, head, "pre-push real: saída indisponível", host="localhost")
         self.assertEqual(len(self.logs()), 2)
 
     def test_window_and_revert_rehearse_again_without_publishing(self):

@@ -1,5 +1,6 @@
 """Sonda de QA da CLI com dois bares locais e captura do status por um dublê de gh."""
 
+from datetime import datetime
 import json
 import os
 from pathlib import Path
@@ -61,7 +62,6 @@ def journey(w):
     (w.dev / "rascunho.txt").write_text("Em andamento\n")
     dev_before = snapshot()
     baseline = head()
-    day = subprocess.check_output(["date", "+%Y-%m-%d %H:%M"], text=True).split()[0]
     original = {str(p): (w.skill / p).read_text() for p in ("SKILL.md", "CHANGELOG.md")}
 
     def prepare(session, mode):
@@ -77,7 +77,8 @@ def journey(w):
         rid = read(w.data / f"sessions/{session}.json")["auto_open"]["id"]
         folder = auto.retro_dir(w.ctx(), rid)
         requests = read(folder / "pedido.json")["skills"]
-        assert [(s["repo"], s["plugin"], s["modo"]) for s in requests] == [(SLUG, SKILL, mode)]
+        assert [(s["repo"], s["plugin"], s["modo"], s["skill_path"]) for s in requests] == [
+            (SLUG, SKILL, mode, f"{PASTA}/SKILL.md")]
         write(folder / "licoes.json", {"id": rid, "licoes": [
             {"n": 1, "repo": SLUG, "plugin": SKILL, "skill": SKILL, "tipo": "pitfall",
              "evidencia": {"texto": "o comando falhou", "transcript": str(tx), "entrada": "1"},
@@ -94,9 +95,11 @@ def journey(w):
         assert w.git(wt, "rev-parse", "--path-format=absolute", "--git-common-dir") == str(w.live / ".git")
         with (wt / PASTA / "SKILL.md").open("a", encoding="utf-8") as fh:
             fh.write(f"\nConfira o resultado antes de seguir ({session}).\n")
+        now = datetime.now().astimezone()
         with (wt / PASTA / "CHANGELOG.md").open("a", encoding="utf-8") as fh:
-            fh.write(f"\n## {day}\n\n- Registra procedimento de verificação.\n")
-        w.git(wt, "commit", "-qam", "Documenta uma verificação", "-m", "Retrofit-Mode: autonomous")
+            fh.write(f"\n## {now.date().isoformat()}\n\n- Registra procedimento de verificação.\n")
+        w.git(wt, "commit", "-qam", "Documenta uma verificação", "-m", "Retrofit-Mode: autonomous",
+              env=dict(w.env, GIT_AUTHOR_DATE=now.isoformat()))
         return rid, wt
 
     def seal(rid):
@@ -178,14 +181,15 @@ def journey(w):
     assert w.git(manual_wt, "remote", "get-url", "--push", "origin") == str(w.remote)
     path = manual_wt / PASTA / "SKILL.md"
     path.write_text(original["SKILL.md"] + "\nRegistre a verificação manual.\n")
+    now = datetime.now().astimezone()
     with (manual_wt / PASTA / "CHANGELOG.md").open("a", encoding="utf-8") as fh:
-        fh.write(f"\n## {day}\n\n- Registra lição manual.\n")
+        fh.write(f"\n## {now.date().isoformat()}\n\n- Registra lição manual.\n")
     prior_log = w.gate_log.read_bytes()
     prior_status = status.read_bytes()
     assert head() == w.git(w.live, "rev-parse", "HEAD") == reverted
     assert w.gate_log.read_bytes() == prior_log and status.read_bytes() == prior_status
     print(f"Manual sem confirmação conservou bare e clone em {reverted[:12]}", flush=True)
-    w.git(manual_wt, "commit", "-qam", "Registra lição manual")
+    w.git(manual_wt, "commit", "-qam", "Registra lição manual", env=dict(w.env, GIT_AUTHOR_DATE=now.isoformat()))
     w.git(manual_wt, "push", "--no-follow-tags", "origin", "HEAD:main")
     manual = head()
     assert manual != reverted

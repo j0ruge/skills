@@ -13,6 +13,7 @@ da pasta do lote. Todo git roda pelo `rw_store.git_env` (C5): sem as variáveis 
 e com o HOME do Context.
 """
 import contextlib
+import hashlib
 import json
 import os
 import re
@@ -67,6 +68,7 @@ VERSION_FORM = re.compile(r"([0-9]+)\.([0-9]+)\.([0-9]+)")
 SKILL_DESCRIPTION = re.compile(r"^description:\s*(.*?)(?=\n[A-Za-z0-9_-]+:|\n---)", re.S | re.M)
 DESCRIPTION_SUFFIX = "__description"
 DETAIL_MAX = 1500
+PUSH_SUMMARY_UNAVAILABLE = "pre-push real: saída indisponível"
 
 # A porta que publica (D22, D25).
 PUBLISH_LOCK = "publish.lock"
@@ -138,7 +140,7 @@ class _Porta:
                 self.approval = list(loaded["motivos"])
         self.skipped = set(self.approval or ()) & set(OVERRIDABLE)
         # O sha que as guardas conferem: a guarda do rebase o grava; antes dela, None (item 10).
-        self.head = self.base = self.patch = None
+        self.head = self.base = self.patch = self.reviewed_diff = None
         self._stack = contextlib.ExitStack()
         self._tree = self._tools = None
 
@@ -265,7 +267,10 @@ def _g_fetch(p):
 
 def _g_rebase(p):
     """4. Rebase sobre o `origin/main` (D7). Com conflito, `git rebase --abort`: o ramo fica como estava."""
-    rc, out = rw_store.run(["git", "-C", p.worktree, "rebase", rw_store.BASE_REF], env=p.env)
+    base = rw_store.BASE_REF
+    if p.repo:
+        base = p.base = p.git("rev-parse", "--verify", f"{base}^{{commit}}").strip()
+    rc, out = rw_store.run(["git", "-C", p.worktree, "rebase", base], env=p.env)
     if rc == 0:
         p.head = p.git("rev-parse", "HEAD").strip()
         return None
@@ -569,7 +574,7 @@ def _g_layer1(p):
 
 def _anonimato(p):
     if p.repo:
-        return rw_auto.load_diff(p.folder / "diff.json")
+        return p.reviewed_diff
     return rw_auto.load_anonimato(p.folder / "anonimato.json")
 
 
@@ -867,14 +872,19 @@ def _private_fetch(p):
 
 
 def _private_scope(p):
-    p.base = p.git("rev-parse", rw_store.BASE_REF).strip()
     if p.git("rev-list", "--count", f"{p.base}..{p.head}").strip() != "1":
         return "escopo", "a porta privada publica um so commit acima do origin/main"
     paths = p.names()
     if not paths or any(not path.startswith(p.pasta + "/") for path in paths):
         return "escopo", "o diff do lote sai da pasta da skill"
     try:
-        expected = rw_store._skill_folder(p.worktree, p.base, p.plugin, p.env)
+        origin_id, skill_path = rw_store._private_request(p.pedido(), p.repo, p.plugin)
+    except (rw_auto.Malformed, rw_store.StoreError) as exc:
+        return "fora-do-pedido", _short(exc)
+    if origin_id != p.retrofit["origin_id"]:
+        return "fora-do-pedido", "a origem do lote nao corresponde à origem do pedido"
+    try:
+        expected = rw_store._skill_folder(p.worktree, p.base, skill_path, p.env)
     except rw_store.StoreError as exc:
         return "escopo", _short(exc)
     if expected != p.pasta:
@@ -892,7 +902,7 @@ def _private_changelog(p):
 
 
 def _private_approval(p):
-    p.patch = rw_store.patch_id(p.worktree, private=True)
+    p.patch = rw_store.patch_id(p.worktree, base=p.base, head=p.head, private=True)
     approval = p.private_approval
     if approval is not None:
         if (approval["id"], approval["lote"], approval.get("patch")) == (p.rid, p.lote, p.patch):
@@ -902,7 +912,8 @@ def _private_approval(p):
 
 
 def _private_layer1(p):
-    findings = rw_store.layer1(p.ctx, p.rid, p.worktree, p.tools(), private=True)
+    findings = rw_store.layer1(p.ctx, p.rid, p.worktree, p.tools(),
+                               base=p.base, head=p.head, private=True)
     for reason in ("segredo", "caminho"):
         hits = [f for f in findings if rw_store.GATE_FINDING.fullmatch(f)[1] == reason]
         if hits:
@@ -915,11 +926,12 @@ def _private_layer1(p):
 
 def _private_patch(p):
     try:
-        reviewed = _anonimato(p)
+        reviewed = rw_auto.load_diff(p.folder / "diff.json")
     except rw_auto.Malformed as exc:
         return "revisao-desatualizada", _short(exc)
     if p.patch != reviewed["patch"] or p.patch != p.retrofit["patch"]:
         return "revisao-desatualizada", "diff.json ou selo de outro patch"
+    p.reviewed_diff = reviewed
 
 
 def _private_still(p):
@@ -927,7 +939,7 @@ def _private_still(p):
     if found:
         return found
     if (p.git("rev-parse", rw_store.BASE_REF).strip() != p.base
-            or rw_store.patch_id(p.worktree, private=True) != p.patch):
+            or rw_store.patch_id(p.worktree, base=p.base, head=p.head, private=True) != p.patch):
         return "revisao-desatualizada", "a base ou o patch mudou durante a porta"
     return None
 
@@ -957,6 +969,13 @@ def _prepush_path(p, env):
     return path
 
 
+def _hook_digest(path):
+    try:
+        return hashlib.sha256(path.read_bytes()).digest()
+    except OSError as exc:
+        raise rw_store.StoreError(f"pre-push ilegível: {exc}") from exc
+
+
 def _prepush_line(p):
     return f"HEAD {p.head} refs/heads/main {p.base}"
 
@@ -969,6 +988,7 @@ def _rehearse(p):
             raise rw_store.StoreError(f"npm ci saiu {rc}: {_short(out)}")
     url, env, _ = _private_origin(p)
     path = _prepush_path(p, env)
+    digest = _hook_digest(path)
     # A ref que o hook vê é a do remoto de destino, não uma tracking ref presumida.
     remote = rw_store._git(["ls-remote", "--exit-code", "origin", "refs/heads/main"],
                            p.worktree, env, "pre-push").split()
@@ -982,7 +1002,9 @@ def _rehearse(p):
     summary = _short(f"pre-push saiu {rc}: {out}")
     if rc:
         raise rw_store.StoreError(summary)
-    return url, path, summary
+    if _prepush_path(p, env) != path or _hook_digest(path) != digest:
+        raise rw_store.StoreError("pre-push mudou durante o ensaio")
+    return url, path, summary, digest
 
 
 def _check_private(p):
@@ -1105,14 +1127,15 @@ class Effects:
         return True, _short(out)
 
     def push_private(self, p, contract):
-        url, hook, _ = contract
+        url, hook, _, digest = contract
         current, env, _ = _private_origin(p)
-        if current != url or _prepush_path(p, env) != hook:
+        if current != url or _prepush_path(p, env) != hook or _hook_digest(hook) != digest:
             return False, "origem ou pre-push mudou depois do ensaio"
         # O próprio Git resolve HEAD. Seu pre-push rejeita qualquer ref que não seja a ensaiada
         # e só então delega ao hook original, no worktree do lote e com a entrada intacta.
         with tempfile.TemporaryDirectory(dir=p.ctx.data_dir, prefix=".pre-push-real-") as tmp:
             wrapper = Path(tmp) / "pre-push"
+            report = Path(tmp) / "saida"
             wrapper.write_bytes(br'''#!/bin/sh
 set -eu
 [ "$#" = 2 ]
@@ -1124,15 +1147,25 @@ if IFS= read -r extra; then exit 1; fi
 [ "$(git rev-parse HEAD)" = "$RW_GATE_HEAD" ]
 [ -x "$RW_GATE_HOOK" ]
 hook=$RW_GATE_HOOK
-unset GIT_CONFIG_PARAMETERS RW_GATE_URL RW_GATE_REF RW_GATE_HEAD RW_GATE_HOOK
-printf '%s\n' "$ref" | "$hook" "$@"
+output=$RW_GATE_OUTPUT
+unset GIT_CONFIG_PARAMETERS RW_GATE_URL RW_GATE_REF RW_GATE_HEAD RW_GATE_HOOK RW_GATE_OUTPUT
+rc=0
+printf '%s\n' "$ref" | "$hook" "$@" >"$output" 2>&1 || rc=$?
+cat "$output" >&2
+exit "$rc"
 ''')
             wrapper.chmod(0o755)
             env = dict(env, RW_GATE_URL=url, RW_GATE_REF=_prepush_line(p), RW_GATE_HEAD=p.head,
-                       RW_GATE_HOOK=hook.as_posix())
+                       RW_GATE_HOOK=hook.as_posix(), RW_GATE_OUTPUT=report.as_posix())
             rc, out = rw_store.run(["git", "-C", p.worktree, "-c", f"core.hooksPath={Path(tmp).as_posix()}",
                                     "push", "--no-follow-tags", "origin", "HEAD:main"], env=env)
-        return rc == 0, _short(f"git push saiu {rc}: {out}")
+            if rc:
+                return False, _short(f"git push saiu {rc}: {out}")
+            try:
+                lines = report.read_text(encoding="utf-8", errors="replace").strip().splitlines()
+            except OSError:
+                return True, PUSH_SUMMARY_UNAVAILABLE
+            return True, _short(lines[-1]) if lines else "pre-push real passou sem resumo"
 
     def status(self, slug, sha, description, *, host):
         if not rw.valid_slug(slug):
@@ -1410,6 +1443,9 @@ def _publish_private(ctx, rid, lote, effects, done):
             ok, detail = effects.push_private(p, contract)
             if not ok:
                 return hold(ctx, rid, lote, "push", detail, patch=p.patch)
+            line["gate_push"] = detail
+            done["line"] = line
+            rw_auto._write_json(receipt, line)
         done["line"] = line
     status_ok = line.get("status_ok", False)
     status_detail = line.get("status_detalhe", "")
@@ -1419,8 +1455,8 @@ def _publish_private(ctx, rid, lote, effects, done):
             host = origin[1] or "localhost"
             if url.lower().startswith("ssh://"):
                 host = host.partition(":")[0]
-            status_ok, status_detail = effects.status(p.repo, line["commit"], line["gate"],
-                                                      host=host)
+            summary = line.get("gate_push") or PUSH_SUMMARY_UNAVAILABLE
+            status_ok, status_detail = effects.status(p.repo, line["commit"], summary, host=host)
         except Exception as exc:
             status_detail = _short(exc)
     if line["instalacao"] == "pendente":
@@ -1551,7 +1587,9 @@ def phrase(line):
         sha = str(line.get("commit") or "")[:SHA_SHORT]
         version = "" if line.get("repo") else f" v{line.get('versao')}"
         text = f"retrofit-watch: {plugin}{version} publicada sozinha ({sha})"
-        if exit_code(line) == 4:
+        if line.get("instalacao") == "status-falhou":
+            text += " — status local/ci não atualizado"
+        elif exit_code(line) == 4:
             text += f" — cópia instalada não atualizada: {line.get('instalacao')}"
     else:
         text = f"retrofit-watch: {plugin} segurada — {line.get('motivo')} (ramo {line.get('ramo')})"

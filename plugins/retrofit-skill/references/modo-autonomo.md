@@ -96,9 +96,9 @@ comando manda (`mktemp -d -p ~/.wt`): um arquivo novo no worktree deixa a árvor
 | Quando | O que roda | Nome em `--fases` |
 |---|---|---|
 | sempre | o baseline e o gate do script da fase 1, como hoje. ERRO ou AVISO novo segura | — |
-| a lição põe ou muda um número, limite, caminho, flag ou versão (a linha `version:` do frontmatter não conta: o bump é mecânico, e o `validate-versions.py` o confere) | `skill-claim-check`: leia o `SKILL.md` dela no worktree e dê veredito a cada `CLAIM` | `claim-check` |
-| a lição põe um caminho, uma reference ou uma dependência de fora da skill | `skill-self-containment`: leia o `SKILL.md` dela no worktree e siga-o na skill tocada | `self-containment` |
-| o `SKILL.md` cruza ~400 linhas ou ~16 mil caracteres com a mudança (antes no teto ou abaixo, depois acima); um `SKILL.md` que já estava acima não dispara a fase | `skill-refactoring`: leia o `SKILL.md` dela no worktree; a escolha entre extrair e comprimir é dela | `refactoring` |
+| a lição põe ou muda um número, limite, caminho, flag ou versão (a linha `version:` do frontmatter não conta: o bump é mecânico, e o `validate-versions.py` o confere) | `skill-claim-check` em `$Q/skill-claim-check/SKILL.md` orienta o veredito de cada `CLAIM` | `claim-check` |
+| a lição põe um caminho, uma reference ou uma dependência de fora da skill | Siga `skill-self-containment` em `$Q/skill-self-containment/SKILL.md` na skill tocada | `self-containment` |
+| o `SKILL.md` cruza ~400 linhas ou ~16 mil caracteres com a mudança (antes no teto ou abaixo, depois acima); um `SKILL.md` que já estava acima não dispara a fase | `skill-refactoring` em `$Q/skill-refactoring/SKILL.md` orienta a escolha entre extrair e comprimir | `refactoring` |
 
 A porta confere três gatilhos mecânicos e recusa com `fase-de-auditoria` quando a fase exigida não está
 no selo:
