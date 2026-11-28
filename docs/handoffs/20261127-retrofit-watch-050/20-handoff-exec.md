@@ -204,6 +204,7 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
   `/tmp/r17-base.QS2akf/fixtures-final`, respectivamente. O marcador ancestral `/tmp/.git`
   interferiu nas fixtures de colheita. A falha da segunda skill full também ocorreu nas duas
   árvores. Ambas foram registradas no TODO, sem alteração no código de colheita ou atribuição.
+- Depois do EXEC, as três provas nativas de distribuição e a camada 1 de anonimização passaram no host Linux em `7c69dd9`.
 
 ## Artefatos
 
