@@ -1,0 +1,699 @@
+# Notas de execução — Atribuição da retrofit-watch por mensagem
+
+> **Append-only.** Uma linha por evento.
+
+## Notas de execução
+
+- 2026-11-25 22:14 · `I1` · TDD confirmado no Stop. Sonda de `0 0 0 0 0 1` para `1 0 1 0 0 1`. A suíte rodou sem GIT_DIR/GIT_WORK_TREE herdados do Git privado do runner, conforme o handoff.
+- 2026-11-25 22:21 · `F1` · BUG-01 confirmado em dois Stops. Com sourceToolUseID ausente ou vazio, o metadado atrasado reabriu a atribuição. Teste vermelho e correção em pending no checkpoint.
+- 2026-11-25 22:25 ·  · BUG-01 corrigido em . Dois Stops ficaram em silêncio com ID válido, ausente ou vazio. A sonda de I1 manteve  e a suíte passou com 71 testes da retrofit-watch.
+- 2026-11-25 22:25 · `F1` · BUG-01 corrigido em `c704301`. Dois Stops ficaram em silêncio com ID válido, ausente ou vazio. A sonda de I1 manteve `1 0 1 0 0 1` e a suíte passou com 71 testes da retrofit-watch.
+- 2026-11-25 22:29 · `F1` · QA repetiu BUG-01 em `13e2b7a`: dois Stops silenciosos nas três variantes. O sensor falhou com ID ausente e vazio em `bf0dae7`. Sonda `1 0 1 0 0 1`, controles de slash e legado e suíte configurada passaram. Handoff reescrito para REVIEW.
+- 2026-11-25 22:38 · `R1` · r1 com quatro achados de atribuição reproduzidos, reunidos em R1. F1, sonda de I1 e TEST_CMD passaram. Dois achados de prosa foram ao backlog, sem alteração no código.
+- 2026-11-25 22:52 · `R1` · R1 sabotage: parâmetro de preservação ignorado → test_pending_slash_survives_older_external_metadata
+- 2026-11-25 22:52 · `R1` · R1 sabotage: aposentadoria repetida na mesma mensagem → test_reused_consumed_call_id_stops_attribution
+- 2026-11-25 22:52 · `R1` · R1 sabotage: mensagem reconhecida não persistida → test_reused_consumed_call_id_stops_attribution
+- 2026-11-25 22:52 · `R1` · R1 sabotage: mapa anterior mantido → test_late_monitored_metadata_does_not_reopen_attribution
+- 2026-11-25 22:52 · `R1` · R1 sabotage: filtro de aposentadoria não aplicado → test_late_monitored_metadata_does_not_reopen_attribution
+- 2026-11-25 22:52 · `R1` · R1 sabotage: slash preservado inclusive no encerramento explícito → test_pending_slash_survives_older_external_metadata
+- 2026-11-25 22:52 · `R1` · R1 sabotage: limpeza de slash restaurada incondicionalmente → test_pending_slash_survives_older_external_metadata
+- 2026-11-25 22:52 · `R1` · R1 sabotage: sentinela sobrescreve mensagem reconhecida → test_reused_consumed_call_id_stops_attribution
+- 2026-11-25 22:52 · `R1` · R1 sabotage: remoção da sentinela de chamada vista → test_failed_unknown_skill_keeps_pending_monitored_call
+- 2026-11-25 22:52 · `R1` · R1 sabotage: limpeza por tentativa posterior recolocada → test_failed_unknown_skill_keeps_pending_monitored_call, test_same_message_with_two_skill_blocks_before_metadata
+- 2026-11-25 22:52 · `R1` · R1 sabotage: mensagem marcada na tentativa recolocada → test_late_monitored_metadata_does_not_reopen_attribution
+- 2026-11-25 22:52 · `R1` · R1 sabotage: perde distinção de ID ausente → test_pending_slash_survives_older_external_metadata, test_typed_slash_can_start_new_attribution_after_external_skill
+- 2026-11-25 22:52 · `R1` · R1 sabotage: ID desconhecido aceito após tentativa → test_failed_unknown_skill_keeps_pending_monitored_call
+- 2026-11-25 22:52 · `R1` · R1 sabotage: fallback anterior para ID legado recolocado → test_legacy_closed_attribution_ignores_unknown_source
+- 2026-11-25 22:52 · `R1` · R1 sabotage: pop anterior de ID consumido recolocado → test_reused_consumed_call_id_stops_attribution
+- 2026-11-25 22:52 · `R1` · R1 sabotage: chamada anterior sem preservar slash recolocada → test_pending_slash_survives_older_external_metadata
+- 2026-11-25 22:52 · `R1` · R1 sabotage: inserção de marca para origem desconhecida → test_legacy_closed_attribution_ignores_unknown_source
+- 2026-11-25 22:52 · `R1` · R1 sabotage: marca de consumo removida → test_reused_consumed_call_id_stops_attribution
+- 2026-11-25 22:52 · `R1` · Quatro regressões passaram de vermelho a verde em `eb44360`. As 18 degradações foram detectadas com grupo próprio, 20 s e 512 MiB. I1 manteve `1 0 1 0 0 1`, F1 ficou em silêncio nas três variantes e a suíte passou com 75 testes do hook.
+2026-11-25 22:59 · `R2` · r2 confirmou descarte de vínculo posterior e crescimento do estado por tentativas falhas. Sonda em leitura contínua e retomada registrada no checkpoint.
+- 2026-11-25 23:07 · `R2` · TEST_CMD literal herdou o Git privado. A ponta `0aa7b40` e o índice idêntico foram confirmados, o ref de fixture foi removido e a suíte isolada passou antes da edição.
+- 2026-11-25 23:07 · `R2` · R2 sabotage: mapa da confirmação restringido à origem atual → test_newer_skill_metadata_wins_regardless_of_confirmation_order
+- 2026-11-25 23:07 · `R2` · R2 sabotage: ordem de observação trocada pela ordem lexical dos IDs → test_newer_skill_metadata_wins_regardless_of_confirmation_order
+- 2026-11-25 23:07 · `R2` · R2 sabotage: marcas consumidas e chamadas sem mensagem admitidas na ordem → test_new_skill_retires_older_consumed_and_unlinked_calls
+- 2026-11-25 23:07 · `R2` · R2 sabotage: corte de vínculos antigos removido → test_newer_skill_metadata_wins_regardless_of_confirmation_order, test_new_skill_retires_older_consumed_and_unlinked_calls, test_late_monitored_metadata_does_not_reopen_attribution
+- 2026-11-25 23:07 · `R2` · R2 sabotage: corte avançado uma posição, descartando o próprio vínculo → test_new_skill_retires_older_consumed_and_unlinked_calls, test_reused_consumed_call_id_stops_attribution
+- 2026-11-25 23:07 · `R2` · R2 sabotage: filtro anterior, limitado à mensagem confirmada, recolocado → test_newer_skill_metadata_wins_regardless_of_confirmation_order
+- 2026-11-25 23:07 · `R2` · R2 sabotage: filtro do mapa removido → test_newer_skill_metadata_wins_regardless_of_confirmation_order, test_new_skill_retires_older_consumed_and_unlinked_calls, test_late_monitored_metadata_does_not_reopen_attribution
+- 2026-11-25 23:07 · `R2` · R2 sabotage: ID do resultado aceito sem validação → test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-25 23:07 · `R2` · R2 sabotage: resultado remove vínculo só de uma cópia temporária → test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-25 23:07 · `R2` · R2 sabotage: guarda de ID consumido removida → test_reused_consumed_call_id_stops_attribution
+- 2026-11-25 23:07 · `R2` · R2 sabotage: remoção da chamada falha trocada por leitura → test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-25 23:07 · `R2` · R2 sabotage: atalho antigo do Stop recolocado → test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-25 23:07 · `R2` · R2 sabotage: busca de marcadores ignorada no atalho → test_newer_skill_metadata_wins_regardless_of_confirmation_order, test_new_skill_retires_older_consumed_and_unlinked_calls, test_failed_skill_calls_do_not_accumulate_in_saved_state, test_reused_consumed_call_id_stops_attribution, test_failed_unknown_skill_keeps_pending_monitored_call
+- 2026-11-25 23:07 · `R2` · R2 sabotage: consulta direta anterior recolocada com o predicado novo → sem diferença semântica
+- 2026-11-25 23:07 · `R2` · R2 sabotage: comentários, README e CHANGELOG conferidos no contexto e entre si. Não há comportamento executável a degradar nessas linhas.
+- 2026-11-25 23:07 · `R2` · Red reproduziu alvo indevido e crescimento. Em `485e6c0`, 13 degradações detectadas e quatro Checks verdes. R2 emitiu graphify seis vezes e reteve zero vínculos após 10, 100 e 1.000 erros. Suíte verde com 78 testes do hook.
+- 2026-11-25 23:14 · `R3` · r3, achados 1–2: ordem muda após erro ou consumo e ID de falha reaproveitado preserva a monitorada. Check confirmado em Red nas seis variantes em 87b9dc4. I1, F1, R1 e R2 verdes.
+- 2026-11-25 23:22 · `R3` · O TEST_CMD literal herdou o Git privado e terminou com 2 falhas e 146 erros de fixture. A ponta f382fa2 e as referências iniciais foram restauradas no espelho. Sem GIT_DIR e GIT_WORK_TREE, a base passou com 78 testes do hook.
+- 2026-11-25 23:22 · `R3` · R3 sabotage: lista de IDs falhos sem default utilizável → test_failed_call_id_cannot_prove_same_message, test_failed_ids_retire_with_their_active_message, test_failed_skill_calls_do_not_accumulate_in_saved_state, test_failed_unknown_skill_keeps_pending_monitored_call, test_legacy_state_resumes_at_offset_and_keeps_history, test_message_order_survives_consumed_call, test_message_order_survives_failed_call, test_new_skill_retires_older_consumed_and_unlinked_calls, test_newer_skill_metadata_wins_regardless_of_confirmation_order, test_old_state_recovers_order_from_pending_calls, test_reused_consumed_call_id_stops_attribution
+- 2026-11-25 23:22 · `R3` · R3 sabotage: ordem sempre reconstruída a cada Stop → test_message_order_survives_failed_call
+- 2026-11-25 23:22 · `R3` · R3 sabotage: ordem anterior reconstruída sem a mensagem ativa → test_old_state_recovers_order_from_pending_calls
+- 2026-11-25 23:22 · `R3` · R3 sabotage: ordem anterior reconstruída sem as chamadas pendentes → test_old_state_recovers_order_from_pending_calls
+- 2026-11-25 23:22 · `R3` · R3 sabotage: ordem inicial inclui marcadores sem mensagem → test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-25 23:22 · `R3` · R3 sabotage: consulta volta a usar apenas os vínculos restantes → test_failed_ids_retire_with_their_active_message, test_message_order_survives_consumed_call, test_message_order_survives_failed_call, test_old_state_recovers_order_from_pending_calls
+- 2026-11-25 23:22 · `R3` · R3 sabotage: confirmação não aposenta mensagens anteriores → test_failed_ids_retire_with_their_active_message, test_message_order_survives_consumed_call, test_message_order_survives_failed_call, test_new_skill_retires_older_consumed_and_unlinked_calls, test_newer_skill_metadata_wins_regardless_of_confirmation_order, test_old_state_recovers_order_from_pending_calls
+- 2026-11-25 23:22 · `R3` · R3 sabotage: confirmação aposenta também a mensagem que a originou → test_failed_ids_retire_with_their_active_message, test_message_order_survives_consumed_call, test_new_skill_retires_older_consumed_and_unlinked_calls, test_reused_consumed_call_id_stops_attribution
+- 2026-11-25 23:22 · `R3` · R3 sabotage: filtragem usa a ordem anterior ao corte → test_message_order_survives_consumed_call, test_message_order_survives_failed_call, test_new_skill_retires_older_consumed_and_unlinked_calls, test_newer_skill_metadata_wins_regardless_of_confirmation_order, test_old_state_recovers_order_from_pending_calls
+- 2026-11-25 23:22 · `R3` · R3 sabotage: nova carga conserva IDs falhos da anterior → test_failed_ids_retire_with_their_active_message
+- 2026-11-25 23:22 · `R3` · R3 sabotage: encerramento sem vínculo conserva a ordem anterior → test_failed_ids_retire_with_their_active_message
+- 2026-11-25 23:22 · `R3` · R3 sabotage: encerramento sem vínculo conserva os IDs falhos → test_failed_ids_retire_with_their_active_message
+- 2026-11-25 23:22 · `R3` · R3 sabotage: reuso não considera falhas anteriores → test_failed_call_id_cannot_prove_same_message
+- 2026-11-25 23:22 · `R3` · R3 sabotage: reuso não considera IDs em vínculos vivos ou consumidos → test_reused_consumed_call_id_stops_attribution
+- 2026-11-25 23:22 · `R3` · R3 sabotage: marca de falha vale também em mensagem diferente → test_failed_ids_retire_with_their_active_message
+- 2026-11-25 23:22 · `R3` · R3 sabotage: chamada sem mensagem passa pela ordem e pela prova de origem → test_new_skill_retires_older_consumed_and_unlinked_calls
+- 2026-11-25 23:22 · `R3` · R3 sabotage: chamada duplicada volta a fornecer prova de origem → test_failed_call_id_cannot_prove_same_message
+- 2026-11-25 23:22 · `R3` · R3 sabotage: chamada válida não atualiza a ordem persistente → test_failed_call_id_cannot_prove_same_message, test_failed_ids_retire_with_their_active_message, test_failed_skill_calls_do_not_accumulate_in_saved_state, test_failed_unknown_skill_keeps_pending_monitored_call, test_message_order_survives_consumed_call, test_message_order_survives_failed_call, test_new_skill_retires_older_consumed_and_unlinked_calls, test_newer_skill_metadata_wins_regardless_of_confirmation_order, test_old_state_recovers_order_from_pending_calls, test_reused_consumed_call_id_stops_attribution
+- 2026-11-25 23:22 · `R3` · R3 sabotage: nova chamada repete a mensagem na ordem → test_message_order_survives_consumed_call, test_message_order_survives_failed_call, test_new_skill_retires_older_consumed_and_unlinked_calls
+- 2026-11-25 23:22 · `R3` · R3 sabotage: origem usa o ID da chamada como posição → test_failed_call_id_cannot_prove_same_message, test_new_skill_retires_older_consumed_and_unlinked_calls, test_reused_consumed_call_id_stops_attribution
+- 2026-11-25 23:22 · `R3` · R3 sabotage: erro só lê o vínculo em vez de removê-lo → test_failed_ids_retire_with_their_active_message, test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-25 23:22 · `R3` · R3 sabotage: falhas fora da mensagem ativa também ficam registradas → test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-25 23:22 · `R3` · R3 sabotage: erro na mensagem ativa não conserva prova de reuso → test_failed_call_id_cannot_prove_same_message, test_failed_ids_retire_with_their_active_message
+- 2026-11-25 23:22 · `R3` · R3 sabotage: erro remove a posição mesmo havendo outro vínculo → test_message_order_survives_failed_call
+- 2026-11-25 23:22 · `R3` · R3 sabotage: erro não aposenta a ordem sem outro vínculo → test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-25 23:22 · `R3` · R3 sabotage: comentários, README, CHANGELOG e âncoras do backlog conferidos no contexto. As sondas de Red provaram as asserções da fixture, sem comportamento executável nos trechos de prosa.
+- 2026-11-25 23:22 · `R3` · Red reproduziu as seis divergências em f382fa2. Em 43c2d49, 25 degradações detectadas, cinco Checks e TEST_CMD verdes. R2 manteve zero vínculos após 10, 100 e 1.000 falhas. A suíte do hook passou com 83 testes.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-25 23:57 · written by the runner
+- 2026-11-26 00:04 · `R4` · Revisão r4, achados 1–2. Ordem após falha do último vínculo e reuso antes da ativação deram quatro divergências. R3 e os cinco Checks verdes. Platô nos três critérios estritos B.
+- 2026-11-26 00:32 · `R4` · Replanejamento em [plano-r4.md](plano-r4.md). Ordem e IDs falhos passam a ter retenção própria. Red reproduzido em 762f440 e controle de 1.000 falhas concorrentes medido. Execução aguarda aceite.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 10:31 · written by the runner
+- 2026-11-27 10:41 · `R4` · R4 sabotage: limite de mensagens ampliado → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: limite de IDs ampliado → test_correlation_overflow_persists_conservative_fallback, test_oversized_saved_correlation_is_disabled_before_metadata
+- 2026-11-27 10:41 · `R4` · R4 sabotage: estado novo não recebe padrão de precisão → test_intermediate_state_recovers_failed_and_unowned_ids, test_message_order_survives_last_failed_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: histórico é reiniciado em toda retomada → test_failed_call_before_activation_cannot_prove_same_message, test_intermediate_state_recovers_failed_and_unowned_ids
+- 2026-11-27 10:41 · `R4` · R4 sabotage: marcas antigas sem dono são descartadas → test_intermediate_state_recovers_failed_and_unowned_ids
+- 2026-11-27 10:41 · `R4` · R4 sabotage: marca antiga fica também na tabela de pendências → test_intermediate_state_recovers_failed_and_unowned_ids
+- 2026-11-27 10:41 · `R4` · R4 sabotage: mensagem ativa não é recuperada na migração → test_intermediate_state_recovers_failed_and_unowned_ids
+- 2026-11-27 10:41 · `R4` · R4 sabotage: IDs falhos antigos não são migrados → test_intermediate_state_recovers_failed_and_unowned_ids
+- 2026-11-27 10:41 · `R4` · R4 sabotage: marcas migradas não são instaladas → test_intermediate_state_recovers_failed_and_unowned_ids
+- 2026-11-27 10:41 · `R4` · R4 sabotage: não se confere saturação do estado retomado → test_oversized_saved_correlation_is_disabled_before_metadata
+- 2026-11-27 10:41 · `R4` · R4 sabotage: limpeza conserva pendências → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: limpeza conserva posições → test_correlation_overflow_persists_conservative_fallback, test_failed_ids_retire_with_their_active_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: limpeza conserva histórico → test_correlation_overflow_persists_conservative_fallback, test_failed_ids_retire_with_their_active_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: falhas sem avanço são tratadas como confirmação → test_failed_call_before_activation_cannot_prove_same_message, test_message_order_survives_last_failed_call, test_distinct_failed_messages_do_not_accumulate_behind_pending_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: confirmação não aposenta posições anteriores → test_ambiguous_id_survives_retirement_of_one_owner, test_message_order_survives_last_failed_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: mensagem confirmada não se torna ativa → test_reused_consumed_call_id_stops_attribution
+- 2026-11-27 10:41 · `R4` · R4 sabotage: perder vínculo apaga a posição no meio da janela → test_message_order_survives_last_failed_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: não há descarte no fim da janela → test_distinct_failed_messages_do_not_accumulate_behind_pending_call, test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-27 10:41 · `R4` · R4 sabotage: posição da carga ativa sem pendências é descartada → test_reused_consumed_call_id_stops_attribution, test_failed_call_before_activation_cannot_prove_same_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: posição da pendência posterior é descartada → test_message_order_survives_last_failed_call, test_distinct_failed_messages_do_not_accumulate_behind_pending_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: avanço deixa pendentes os vínculos anteriores → test_new_skill_retires_older_consumed_and_unlinked_calls, test_newer_skill_metadata_wins_regardless_of_confirmation_order, test_message_order_survives_last_failed_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: histórico preserva proprietários aposentados → test_ambiguous_id_survives_retirement_of_one_owner, test_failed_ids_retire_with_their_active_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: histórico sem dono cai mesmo sem avanço → test_consumed_unlinked_call_keeps_id_without_inventing_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: a lista de donos retidos não é atualizada → test_ambiguous_id_survives_retirement_of_one_owner
+- 2026-11-27 10:41 · `R4` · R4 sabotage: histórico de mensagens aposentadas nunca é descartado → test_distinct_failed_messages_do_not_accumulate_behind_pending_call, test_failed_skill_calls_do_not_accumulate_in_saved_state, test_failed_ids_retire_with_their_active_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: saturação por mensagens é ignorada → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: saturação por IDs ignora pendências → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: saturação por IDs ignora histórico → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: o teto é negado antes de ser excedido → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: saturação não limpa a janela → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: saturação preserva a origem anterior → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: saturação não persiste a perda de precisão → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: uma carga confirmada não aciona o descarte → test_message_order_survives_last_failed_call, test_reused_consumed_call_id_stops_attribution
+- 2026-11-27 10:41 · `R4` · R4 sabotage: encerramento sem origem não limpa a janela → test_failed_ids_retire_with_their_active_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: chamadas voltam a criar vínculos depois de saturar → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: ID ausente é inserido como vínculo → test_invalid_call_id_cannot_establish_message_position
+- 2026-11-27 10:41 · `R4` · R4 sabotage: a posição de uma mensagem já vista é duplicada → test_message_order_survives_last_failed_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: uma chamada sem mensagem ganha posição → test_consumed_unlinked_call_keeps_id_without_inventing_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: ignora duplicidade no mapa de pendências → test_duplicate_pending_id_does_not_select_either_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: ignora duplicidade no histórico → test_failed_call_before_activation_cannot_prove_same_message, test_reused_consumed_call_id_stops_attribution, test_intermediate_state_recovers_failed_and_unowned_ids
+- 2026-11-27 10:41 · `R4` · R4 sabotage: duplica e preserva a pendência anterior → test_duplicate_pending_id_does_not_select_either_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: o segundo dono do ID duplicado não é registrado → test_ambiguous_id_survives_retirement_of_one_owner
+- 2026-11-27 10:41 · `R4` · R4 sabotage: o primeiro dono do ID duplicado não é registrado → test_duplicate_pending_id_does_not_select_either_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: duplicidade não deixa marca → test_ambiguous_id_survives_retirement_of_one_owner
+- 2026-11-27 10:41 · `R4` · R4 sabotage: duplicidade não aciona descarte → test_ambiguous_calls_without_pending_peer_are_pruned
+- 2026-11-27 10:41 · `R4` · R4 sabotage: duplicidade ainda prova origem pelo nome → test_failed_call_id_cannot_prove_same_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: chamada nova não registra vínculo → test_message_order_survives_last_failed_call
+- 2026-11-27 10:41 · `R4` · R4 sabotage: carga sem mensagem inventa origem pelo nome → test_consumed_unlinked_call_keeps_id_without_inventing_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: metadado sem ID ainda tem crédito após saturação → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: carga por caminho ignora a decisão conservadora → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: confirmação não consome o vínculo → test_reused_consumed_call_id_stops_attribution, test_consumed_unlinked_call_keeps_id_without_inventing_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: consumo sem origem não conserva marca → test_consumed_unlinked_call_keeps_id_without_inventing_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: retirada não conserva o dono do ID → test_reused_consumed_call_id_stops_attribution, test_failed_call_before_activation_cannot_prove_same_message
+- 2026-11-27 10:41 · `R4` · R4 sabotage: retirada deixa o vínculo disponível → test_reused_consumed_call_id_stops_attribution, test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-27 10:41 · `R4` · R4 sabotage: retirada não aciona descarte → test_distinct_failed_messages_do_not_accumulate_behind_pending_call, test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-27 10:41 · `R4` · R4 sabotage: cargas novas não acionam verificação de tamanho → test_correlation_overflow_persists_conservative_fallback
+- 2026-11-27 10:41 · `R4` · R4 sabotage: resultado de erro não retira vínculo → test_distinct_failed_messages_do_not_accumulate_behind_pending_call, test_failed_skill_calls_do_not_accumulate_in_saved_state
+- 2026-11-27 10:41 · `R4` · R4 sabotage: erro atrasado apaga a marca de consumo → test_reused_consumed_call_id_stops_attribution
+- 2026-11-27 10:41 · `R4` · Red em b3e9117: quatro divergências na sonda e oito subcasos em Stop. Green em 893c9c6: seis Checks, 58 degradações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 94 do hook, release 0.4.1. Provas nativas impedidas pelo namespace Bubblewrap.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 10:42 · written by the runner
+- 2026-11-27 10:51 · R5 · Revisão r5, achado 1: a colisão intermediária descarta a marca de ID consumido sem origem. O Stop pede retro de codereview em leitura contínua e retomada. Na base e no controle de reuso direto, fica em silêncio.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 11:13 · written by the runner
+- 2026-11-27 11:18 · `R5` · R5 sabotage: ignorar a guarda da marca sem origem → test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 11:18 · `R5` · R5 sabotage: descartar os donos já registrados → test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 11:18 · `R5` · R5 sabotage: conservar o vínculo pendente depois da colisão → test_duplicate_pending_id_does_not_select_either_message
+- 2026-11-27 11:18 · `R5` · R5 sabotage: omitir a mensagem que colidiu na lista de donos → test_ambiguous_id_survives_retirement_of_one_owner, test_duplicate_pending_id_does_not_select_either_message
+- 2026-11-27 11:18 · `R5` · R5 sabotage: não gravar a colisão quando há donos → test_ambiguous_id_survives_retirement_of_one_owner, test_duplicate_pending_id_does_not_select_either_message
+- 2026-11-27 11:18 · `R5` · Red em c8ddc39: três divergências na sonda e quatro subcasos em Stop. Green em c52f09c: sete Checks, cinco degradações detectadas e TEST_CMD com 154 testes da loja (3 pulados) e 95 do hook. Versão 0.4.1 confirmada.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 11:19 · written by the runner
+- 2026-11-27 11:27 · `R6` · Revisão r6, achado 1: confirmar a mensagem que colidiu apaga a marca do ID ainda ambíguo. O Stop pede retro no HEAD em leitura contínua e retomada. A base fica em silêncio nos dois modos. R5 e os sete Checks passaram.
+- 2026-11-27 13:51 · R6 · O mantenedor autorizou a correção e as rodadas de revisão necessárias. Preserve os dois fatos do ID ambíguo durante a disputa: a marca do consumo sem origem e as mensagens conhecidas que colidiram. Podar uma tentativa não apaga a marca anterior. Confirmar outra mensagem pode aposentar a marca sem origem, mantendo a evidência dos donos ainda retidos. Verifique R5 e R6 juntos nos Stops contínuos e retomados, incluindo a leitura do estado salvo antes do R6.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 13:51 · written by the runner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: ignorar marca vazia na poda → test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 13:56 · `R6` · R6 sabotage: ignorar marca mista na poda → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: manter marca sem origem após confirmação → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: descartar donos ao preservar a marca → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: manter marcador nulo sem donos → test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 13:56 · `R6` · R6 sabotage: manter IDs sem donos após confirmação → test_ambiguous_calls_without_pending_peer_are_pruned, test_new_skill_retires_older_consumed_and_unlinked_calls, test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: repor condição de poda de R5 → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: descartar histórico anterior ao colidir → test_unowned_collision_survives_confirmation_of_live_owner, test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 13:56 · `R6` · R6 sabotage: omitir donos já conhecidos ao colidir → test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 13:56 · `R6` · R6 sabotage: omitir remoção do vínculo pendente → test_duplicate_pending_id_does_not_select_either_message
+- 2026-11-27 13:56 · `R6` · R6 sabotage: omitir mensagem que colidiu → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: contar mais de uma vez o mesmo dono → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: descartar donos ao filtrar origens ausentes → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: ignorar marca vazia ao combinar evidências → test_unowned_collision_survives_confirmation_of_live_owner, test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 13:56 · `R6` · R6 sabotage: ignorar marca mista ao combinar evidências → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: não gravar o marcador nulo no histórico → test_unowned_collision_survives_confirmation_of_live_owner, test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 13:56 · `R6` · R6 sabotage: não gravar a evidência combinada → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · R6 sabotage: repor a guarda de colisão de R5 → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 13:56 · `R6` · Red em 274d877: três divergências na sonda e três subcasos no teste inicial. Green em cd55517: oito Checks, 18 degradações detectadas e TEST_CMD com 154 testes da loja (3 pulados) e 96 do hook. Duas retomadas leram o estado gravado antes de R6. Versão 0.4.1 confirmada.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 13:59 · written by the runner
+- 2026-11-27 14:07 · `R7` · Revisão r7, achados 1–2: retomada da 0.4.0 já encerrada e colisão seguida de poda com ID pendente sem origem. Cinco Reds confirmados, oito Checks concluídos verdes e platô de notas.
+- 2026-11-27 14:09 · R7 · Ao reconstruir a atribuição de um estado 0.4.0, preserve o encerramento que o estado já comprova e cubra o estado inicial sem histórico. Na colisão, distinga uma pendência sem origem de um ID ausente no mapa. Mantenha os controles de R5 e R6 para apurar separadamente a origem conhecida e a marca sem origem.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 14:09 · written by the runner
+- 2026-11-27 14:16 · `R7` · R7 sabotage: repor inicialização antiga de encerramento na lista de defaults → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:16 · `R7` · R7 sabotage: omitir default de slash na lista modificada → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:16 · `R7` · R7 sabotage: omitir migração de encerramento → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:16 · `R7` · R7 sabotage: não considerar o histórico da sessão ao migrar → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:16 · `R7` · R7 sabotage: não considerar a skill ativa ao migrar → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:16 · `R7` · R7 sabotage: sobrescrever encerramento já explícito no estado atual → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:16 · `R7` · R7 sabotage: confundir ausência no mapa com pendência sem origem → test_unowned_consumed_id_survives_intermediate_collision, test_unowned_pending_collision_survives_pruning
+- 2026-11-27 14:16 · `R7` · R7 sabotage: tratar pendência com dono como pendência sem origem → test_unowned_pending_collision_survives_pruning
+- 2026-11-27 14:16 · `R7` · R7 sabotage: repor guarda de colisão sem considerar a pendência sem origem → test_unowned_pending_collision_survives_pruning
+- 2026-11-27 14:16 · `R7` · R7 sabotage: ignorar a marca de consumo sem origem ao combinar evidências → test_unowned_collision_survives_confirmation_of_live_owner, test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 14:16 · `R7` · R7 sabotage: ignorar a marca mista ao combinar evidências → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 14:16 · `R7` · Red em 9081588 com cinco divergências na sonda e nos dois testes. Green em 830629b: nove Checks, sonda com o estado gravado pela 0.4.0, onze degradações detectadas e TEST_CMD isolado com 154 testes da loja (3 pulados) e 98 do hook. Versão 0.4.1 confirmada.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 14:17 · written by the runner
+- 2026-11-27 14:24 · R8 na revisão r8, achados 1–2: o ID já pendente com dono perde a marca ao colidir com chamada sem origem; o legado de fe38d1f com carga externa e histórico vazio reabre o crédito. Sonda em 90837f5 com três falsos pedidos, nove Checks e TEST_CMD verdes. Platô B nos mesmos critérios estritos.
+- 2026-11-27 14:25 · R8 · Na colisão, a evidência sem origem pode vir da chamada pendente, da nova chamada ou da marca anterior. Preserve os donos ainda vivos e a marca sem origem conforme os controles R5 a R8. Para estado 0.4.0 encerrado com histórico vazio, prove no código legado qual classificação nula já encerrava a atribuição e mantenha o controle sem externa. Confira as âncoras do CHANGELOG após as mudanças de documentação da versão.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 14:26 · written by the runner
+- 2026-11-27 14:33 · `R8` · R8 sabotage: ignorar o fechamento explícito já salvo → test_legacy_external_without_history_ignores_delayed_metadata
+- 2026-11-27 14:33 · `R8` · R8 sabotage: inferir encerramento mesmo com skill ativa → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:33 · `R8` · R8 sabotage: ignorar o histórico ao migrar → test_legacy_closed_before_upgrade_ignores_delayed_metadata
+- 2026-11-27 14:33 · `R8` · R8 sabotage: repor a inferência legada sem o cache de caminhos → test_legacy_external_without_history_ignores_delayed_metadata
+- 2026-11-27 14:33 · `R8` · R8 sabotage: considerar a classificação não nula como encerramento → test_legacy_external_without_history_ignores_delayed_metadata
+- 2026-11-27 14:33 · `R8` · R8 sabotage: tratar kit sem dono como caminho de skill → test_legacy_external_without_history_ignores_delayed_metadata
+- 2026-11-27 14:33 · `R8` · R8 sabotage: não consultar as classificações persistidas → test_legacy_external_without_history_ignores_delayed_metadata
+- 2026-11-27 14:33 · `R8` · R8 sabotage: repor a junção que só considera a primeira origem → test_unowned_collision_after_owned_pending_survives_pruning
+- 2026-11-27 14:33 · `R8` · R8 sabotage: ignorar a pendência original sem origem → test_unowned_pending_collision_survives_pruning
+- 2026-11-27 14:33 · `R8` · R8 sabotage: ignorar a marca de consumo sem origem → test_unowned_collision_survives_confirmation_of_live_owner, test_unowned_consumed_id_survives_intermediate_collision
+- 2026-11-27 14:33 · `R8` · R8 sabotage: ignorar a marca mista já retida → test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 14:33 · `R8` · Red em 2166607 com três falsos pedidos na sonda. Green em 8b861d2: dez Checks, sonda R8 e repetição R7 com a 0.4.0 real, onze degradações detectadas e TEST_CMD isolado com 154 testes da loja (3 pulados) e 100 do hook. Versão 0.4.1 confirmada. As duas âncoras do CHANGELOG já fora da tolerância continuam no item aberto do TODO, sem duplicar a origem.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 14:35 · written by the runner
+- 2026-11-27 17:12 · R9 · O mantenedor autorizou consultar uma única vez o trecho anterior ao offset na migração da 0.4.0, apenas para recuperar a ordem e a identidade das cargas. R9 substitui essa restrição do plano do R4 somente para a migração. Preserve offset, atribuição histórica, contadores, pendências e resultados já gravados. Reutilize a correlação do scanner em estado isolado, sem recontar eventos, registrar pedidos antigos ou reprocessar o histórico em Stops seguintes. Leia só até o offset salvo. Se o trecho anterior estiver indisponível ou truncado, mantenha o comportamento conservador conforme a evidência presente. Em TDD, prove as duas ordens com o estado legado igual, a externa sem metadado, a carga nova, a leitura única mesmo com o metadado chegando depois e a integridade dos contadores, offsets e fluxo normal. Após comprovar R9, vincule o registro correspondente no TODO ao commit de correção.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 17:13 · written by the runner
+- 2026-11-27 17:23 · `R9` · R9 sabotage 01: não reconhecer a sessão legada → rc 1, test_legacy_missing_prefix_uses_saved_classification, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 02: reler também estado já migrado → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 03: não proteger contra recuo do offset → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 04: usar o offset inicial para recortar histórico → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 05: não tratar falha de acesso ao prefixo → rc 1, test_legacy_missing_prefix_uses_saved_classification
+- 2026-11-27 17:23 · `R9` · R9 sabotage 06: ler além do offset salvo → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 07: ignorar encurtamento do prefixo → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 08: não persistir a proteção do offset encurtado → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 09: aceitar um corte no meio de uma linha → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 10: compartilhar contadores com a varredura isolada → rc 1, test_legacy_prefix_read_once_without_recounting, test_legacy_replay_does_not_replace_saved_current
+- 2026-11-27 17:23 · `R9` · R9 sabotage 11: compartilhar cache de caminhos com a varredura isolada → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 12: compartilhar resultados de retro com a varredura isolada → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 13: tentar interpretar linhas vazias como eventos → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 14: aceitar prefixo com JSON inválido → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 15: aceitar JSON que não é evento → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 16: omitir a varredura de cada evento → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 17: aceitar atribuição incompatível com a gravada → rc 1, test_legacy_replay_does_not_replace_saved_current
+- 2026-11-27 17:23 · `R9` · R9 sabotage 18: descartar a evidência persistida de encerramento → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 19: não recuperar encerramento pelo nome → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 20: não recuperar a mensagem ativa → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 21: não recuperar chamadas pendentes → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 22: não recuperar a ordem das mensagens → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 23: não recuperar o histórico de consumo → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 24: não aplicar os campos de correlação recuperados → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 25: não acionar a migração no Stop → rc 1, test_legacy_missing_prefix_uses_saved_classification, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 26: repor a leitura que recua no arquivo encurtado → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 27: não limpar proteção depois da retomada do delta → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 28: contar trabalho e atrito no trecho isolado → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 29: não gravar a perda de correlação por limite → rc 1, test_legacy_replay_respects_correlation_ceiling
+- 2026-11-27 17:23 · `R9` · R9 sabotage 30: desproteger o corte depois de confirmar que faltam bytes → rc 0 na primeira sonda, redetectado no caso 33
+- 2026-11-27 17:23 · `R9` · R9 sabotage 31: não recuperar a correlação de nenhuma linha → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_once_without_recounting, test_legacy_replay_respects_correlation_ceiling
+- 2026-11-27 17:23 · `R9` · R9 sabotage 32: herdar a atribuição atual no estado isolado → rc 0 na primeira sonda, redetectado no caso 34
+- 2026-11-27 17:23 · `R9` · R9 sabotage 33: varrer o prefixo incompleto apesar da proteção de offset → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · R9 sabotage 34: herdar a atribuição atual no estado isolado → rc 1, test_legacy_replay_does_not_replace_saved_current
+- 2026-11-27 17:23 · `R9` · R9 sabotage 35: abrir prefixo também em sessão sem offset → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:23 · `R9` · R9 sabotage 36: compartilhar chamadas do estado efetivo → rc 1, test_legacy_pending_call_order, test_legacy_replay_does_not_replace_saved_current
+- 2026-11-27 17:23 · `R9` · R9 sabotage 37: compartilhar ordem do estado efetivo → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 38: compartilhar histórico de consumo do estado efetivo → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 39: iniciar o scanner isolado já encerrado pela inferência legada → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:23 · `R9` · R9 sabotage 40: limpar a proteção mesmo sem avanço do delta → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:23 · `R9` · Red em `adbf954`: duas ordens legadas divergiram da sonda e quatro subcasos falharam no primeiro lote de testes. Green em `8fa5c7d`: onze Checks, a sonda R7 com `fe38d1f` e o TEST_CMD isolado passaram (154 testes da loja, 3 pulados, e 106 do hook). Das 40 execuções mutantes, 38 falharam. As duas primeiras sobreviventes foram detectadas após reforçar as sondas.
+- 2026-11-27 17:27 · R9 · Verificação pré-revisão no hook real da 0.4.0 comprovou perda de atribuição ao confirmar externa da mesma mensagem após a migração. O teste StopTest.test_legacy_migration_recovers_active_message_origin reproduziu a falha da mesma mensagem e preservou o controle da mensagem posterior. Os dois casos ficaram verdes ao gravar a origem recuperada quando a atribuição coincide com o estado salvo.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 17:28 · written by the runner
+- 2026-11-27 17:38 · `R10` · Revisão r10, achados 1–4: slash legado, ID falho sem origem, memória do prefixo e vetor I1/F1 divergente. R1–R9 e TEST_CMD verdes. Performance caiu de A para B.
+- 2026-11-27 17:39 · R10 · Leia o prefixo anterior ao offset de forma incremental, usando memória proporcional à linha e sem aplicar correlação parcial se o prefixo não passar na validação. Preserve o slash pendente comprovado e a marca de um ID falho sem origem até que possa ser aposentada. Em I1 e F1, mantenha o vetor aprovado e retire do caso sem prova os IDs que a migração agora consegue recuperar. Repita R9 e os onze checks anteriores.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 17:40 · written by the runner
+- 2026-11-27 17:48 · `R10` · R10 sabotage 01 (primeira passagem): repor o argumento removido na confirmação → rc 1, test_legacy_prefix_read_once_without_recounting, test_failed_unowned_call_id_cannot_prove_same_message
+- 2026-11-27 17:48 · `R10` · R10 sabotage 02 (primeira passagem): repor a assinatura anterior sem usá-la → rc 0, nenhuma sonda ficou vermelha. Equivalente, pois nenhum chamador passa o parâmetro opcional e o método não o consulta.
+- 2026-11-27 17:48 · `R10` · R10 sabotage 03 (primeira passagem): repor a guarda que só registra falha com origem → rc 1, test_failed_unowned_call_id_cannot_prove_same_message, test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 17:48 · `R10` · R10 sabotage 04 (primeira passagem): trocar a marca sem origem por dono fictício → rc 0, nenhuma sonda ficou vermelha. A poda normalizou a lista com valor nulo para a marca vazia. A passagem final usa um dono válido.
+- 2026-11-27 17:48 · `R10` · R10 sabotage 05 (primeira passagem): zerar os bytes esperados em vez de usar o offset salvo → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_migration_recovers_active_message_origin, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 06 (primeira passagem): usar o offset salvo menos um byte → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 07 (primeira passagem): repor a leitura integral do prefixo antes da validação → rc 1, test_legacy_prefix_read_once_without_recounting, test_legacy_replay_reads_prefix_with_bounded_memory
+- 2026-11-27 17:48 · `R10` · R10 sabotage 08 (primeira passagem): repor a comparação pela quantidade lida sem detectar o tamanho do arquivo → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:48 · `R10` · R10 sabotage 09 (primeira passagem): não proteger o offset quando o arquivo já é menor → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:48 · `R10` · R10 sabotage 10 (primeira passagem): continuar após constatar prefixo menor, removendo o retorno → rc 0, nenhuma sonda ficou vermelha
+- 2026-11-27 17:48 · `R10` · R10 sabotage 11 (primeira passagem): trocar o laço por condição simples → rc 1, erro de sintaxe antes da sonda. A passagem final usa um laço de uma iteração.
+- 2026-11-27 17:48 · `R10` · R10 sabotage 12 (primeira passagem): não limitar a leitura de linha ao offset → rc 0, nenhuma sonda ficou vermelha
+- 2026-11-27 17:48 · `R10` · R10 sabotage 13 (primeira passagem): repor a validação do delimitador depois do replay em vez de respeitar o limite da linha → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 14 (primeira passagem): não detectar truncamento quando a linha termina antes do limite → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 15 (primeira passagem): não marcar truncamento descoberto durante a leitura → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 16 (primeira passagem): importar evidência parcial após linha incompleta → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 17 (primeira passagem): não descontar os bytes da linha → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 18 (primeira passagem): tratar separador branco como JSON → rc 0, nenhuma sonda ficou vermelha
+- 2026-11-27 17:48 · `R10` · R10 sabotage 19 (primeira passagem): importar prefixo após separador branco → rc 0, nenhuma sonda ficou vermelha
+- 2026-11-27 17:48 · `R10` · R10 sabotage 20 (primeira passagem): não decodificar o registro JSON → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_migration_recovers_active_message_origin, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 21 (primeira passagem): propagar JSON inválido em vez de retornar silenciosamente → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 22 (primeira passagem): pular JSON inválido e aplicar os demais vínculos → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 23 (primeira passagem): tratar escalar como se fosse um registro → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 24 (primeira passagem): aplicar os demais vínculos após um escalar → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 25 (primeira passagem): não entregar o registro ao scanner isolado → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_migration_recovers_active_message_origin, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 26 (primeira passagem): ignorar falha de leitura só depois de importar o prefixo parcial → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 27 (primeira passagem): refazer a lista de registros por split, em vez de iterar linha a linha → rc 1, test_legacy_replay_reads_prefix_with_bounded_memory
+- 2026-11-27 17:48 · `R10` · R10 sabotage 28 (primeira passagem): compartilhar o cache em vez de isolá-lo → rc 1, test_legacy_migration_preserves_split_typed_slash
+- 2026-11-27 17:48 · `R10` · R10 sabotage 29 (primeira passagem): compartilhar a atribuição gravada durante a reconstrução → rc 1, test_legacy_replay_does_not_replace_saved_current
+- 2026-11-27 17:48 · `R10` · R10 sabotage 30 (primeira passagem): scanner de migração não silencioso → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 31 (primeira passagem): não preservar o slash pendente → rc 1, test_legacy_migration_preserves_split_typed_slash
+- 2026-11-27 17:48 · `R10` · R10 sabotage 32 (primeira passagem): aceitar slash de reconstrução cujo cache divergiu do salvo → rc 1, test_legacy_migration_preserves_split_typed_slash
+- 2026-11-27 17:48 · `R10` · R10 sabotage 33 (primeira passagem): repor a origem no caso legado sem prova → stdout de I1 divergiu, 1 0 1 0 1 1
+- 2026-11-27 17:48 · `R10` · R10 sabotage 01 (final): repor o argumento removido na confirmação → rc 1, test_legacy_prefix_read_once_without_recounting, test_failed_unowned_call_id_cannot_prove_same_message
+- 2026-11-27 17:48 · `R10` · R10 sabotage 02 (final): repor a assinatura anterior sem usá-la → rc 0, nenhuma sonda ficou vermelha. Equivalente, pois nenhum chamador passa o parâmetro opcional e o método não o consulta.
+- 2026-11-27 17:48 · `R10` · R10 sabotage 03 (final): repor a guarda que só registra falha com origem → rc 1, test_failed_unowned_call_id_cannot_prove_same_message, test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 17:48 · `R10` · R10 sabotage 04 (final): atribuir a falha sem origem à mensagem ativa → rc 1, test_failed_unowned_call_id_cannot_prove_same_message, test_unowned_collision_survives_confirmation_of_live_owner
+- 2026-11-27 17:48 · `R10` · R10 sabotage 05 (final): zerar os bytes esperados em vez de usar o offset salvo → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_migration_recovers_active_message_origin, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 06 (final): usar o offset salvo menos um byte → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 07 (final): repor a leitura integral do prefixo antes da validação → rc 1, test_legacy_prefix_read_once_without_recounting, test_legacy_replay_reads_prefix_with_bounded_memory
+- 2026-11-27 17:48 · `R10` · R10 sabotage 08 (final): repor a comparação pela quantidade lida sem detectar o tamanho do arquivo → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:48 · `R10` · R10 sabotage 09 (final): não proteger o offset quando o arquivo já é menor → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:48 · `R10` · R10 sabotage 10 (final): continuar após constatar prefixo menor, removendo o retorno → rc 1, test_legacy_truncated_transcript_does_not_rewind
+- 2026-11-27 17:48 · `R10` · R10 sabotage 11 (final): parar após a primeira linha em vez de ler toda a janela → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 12 (final): não limitar a leitura de linha ao offset → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 13 (final): repor a validação do delimitador depois do replay em vez de respeitar o limite da linha → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 14 (final): não detectar truncamento quando a linha termina antes do limite → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 15 (final): não marcar truncamento descoberto durante a leitura → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 16 (final): importar evidência parcial após linha incompleta → rc 1, test_legacy_pending_call_order, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 17 (final): não descontar os bytes da linha → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 18 (final): tratar separador branco como JSON → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 19 (final): importar prefixo após separador branco → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 20 (final): não decodificar o registro JSON → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_migration_recovers_active_message_origin, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 21 (final): propagar JSON inválido em vez de retornar silenciosamente → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 22 (final): pular JSON inválido e aplicar os demais vínculos → rc 1, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 23 (final): tratar escalar como se fosse um registro → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 24 (final): aplicar os demais vínculos após um escalar → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_pending_call_order
+- 2026-11-27 17:48 · `R10` · R10 sabotage 25 (final): não entregar o registro ao scanner isolado → rc 1, test_legacy_migration_preserves_split_typed_slash, test_legacy_migration_recovers_active_message_origin, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 26 (final): ignorar falha de leitura só depois de importar o prefixo parcial → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 17:48 · `R10` · R10 sabotage 27 (final): refazer a lista de registros por split, em vez de iterar linha a linha → rc 1, test_legacy_replay_reads_prefix_with_bounded_memory
+- 2026-11-27 17:48 · `R10` · R10 sabotage 28 (final): compartilhar o cache em vez de isolá-lo → rc 1, test_legacy_migration_preserves_split_typed_slash
+- 2026-11-27 17:48 · `R10` · R10 sabotage 29 (final): compartilhar a atribuição gravada durante a reconstrução → rc 1, test_legacy_replay_does_not_replace_saved_current
+- 2026-11-27 17:48 · `R10` · R10 sabotage 30 (final): scanner de migração não silencioso → rc 1, test_legacy_prefix_read_once_without_recounting
+- 2026-11-27 17:48 · `R10` · R10 sabotage 31 (final): não preservar o slash pendente → rc 1, test_legacy_migration_preserves_split_typed_slash
+- 2026-11-27 17:48 · `R10` · R10 sabotage 32 (final): aceitar slash de reconstrução cujo cache divergiu do salvo → rc 1, test_legacy_migration_preserves_split_typed_slash
+- 2026-11-27 17:48 · `R10` · R10 sabotage 33 (final): repor a origem no caso legado sem prova → stdout de I1 divergiu, 1 0 1 0 1 1
+- 2026-11-27 17:48 · `R10` · Red em `df6407a`: quatro achados reproduzidos. Os três testes escritos antes da correção deram quatro falhas e dois erros de marca ausente. A suíte anterior estava verde, com 154 testes da loja (3 pulados) e 107 do hook.
+- 2026-11-27 17:48 · `R10` · Green em `e65902c`: 12 Checks e TEST_CMD isolado verdes, com 154 testes da loja (3 pulados) e 111 do hook. A migração de 160 MiB concluiu sob 256 MiB. A sabotagem final detectou 32 de 33 variações, com uma equivalente.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 17:50 · written by the runner
+- 2026-11-27 17:58 · `R11` · A revisão r11 reuniu os achados 1–2. A primeira atribuição perdia a marca de ID falho sem origem, e um registro de 96 MiB impedia a retomada sob 256 MiB. Os 12 Checks já fechados e o TEST_CMD passaram.
+- 2026-11-27 17:59 · R11 · Diferencie a primeira confirmação, que ainda não prova a aposentadoria da marca sem origem, do avanço entre duas mensagens confirmadas. Limite a leitura de cada registro legado antes de alocar e decodificar a linha. Quando o registro ultrapassar esse limite, aplique o fallback conservador sem importar estado parcial e processe o delta. Preserve os controles de prefixo longo em linhas curtas, leitura única e contadores da migração.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 18:00 · written by the runner
+- 2026-11-27 18:05 · `R11` · Red em 8984d38. A primeira confirmação apagou a marca nos dois casos retomados. O reuso pediu retro indevida e o registro de 96 MiB sob 256 MiB gerou MemoryError sem avançar o offset. As duas regressões duráveis falharam antes da correção.
+- 2026-11-27 18:05 · `R11` · R11 sabotage 1: ampliar o limite por registro para 64 MiB → rc 1, test_legacy_replay_recovers_after_oversized_line
+- 2026-11-27 18:05 · `R11` · R11 sabotage 2: ignorar qual era a mensagem anterior → rc 1, test_failed_unowned_call_id_cannot_prove_same_message
+- 2026-11-27 18:05 · `R11` · R11 sabotage 3: aceitar a primeira confirmação como avanço de mensagem com origem → rc 1, test_failed_unowned_call_id_survives_first_attribution
+- 2026-11-27 18:05 · `R11` · R11 sabotage 4: tratar nova confirmação da mesma mensagem como avanço → rc 1, test_failed_unowned_call_id_cannot_prove_same_message
+- 2026-11-27 18:05 · `R11` · R11 sabotage 5: nunca avançar a ordem das mensagens → rc 1, test_failed_unowned_call_id_cannot_prove_same_message
+- 2026-11-27 18:05 · `R11` · R11 sabotage 6: repor a poda anterior da marca sem origem → rc 1, test_failed_unowned_call_id_survives_first_attribution
+- 2026-11-27 18:05 · `R11` · R11 sabotage 7: aposentar a marca mesmo sem avanço → rc 1, test_failed_unowned_call_id_cannot_prove_same_message
+- 2026-11-27 18:05 · `R11` · R11 sabotage 8: não aposentar nenhuma marca sem origem → rc 1, test_failed_unowned_call_id_cannot_prove_same_message
+- 2026-11-27 18:05 · `R11` · R11 sabotage 9: limitar a leitura ao offset, sem teto por registro → rc 1, test_legacy_replay_recovers_after_oversized_line
+- 2026-11-27 18:05 · `R11` · R11 sabotage 10: ignorar o offset no limite de leitura → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 18:05 · `R11` · R11 sabotage 11: repor a leitura de até todo o prefixo restante → rc 1, test_legacy_replay_recovers_after_oversized_line
+- 2026-11-27 18:05 · `R11` · R11 sabotage 12: ler sem passar limite → rc 1, test_legacy_replay_recovers_after_oversized_line
+- 2026-11-27 18:05 · `R11` · R11 sabotage 13: usar o restante do prefixo como sensor de truncamento → rc 1, test_legacy_replay_recovers_after_oversized_line
+- 2026-11-27 18:05 · `R11` · R11 sabotage 14: marcar como truncado também o registro no limite → rc 1, test_legacy_replay_recovers_after_oversized_line
+- 2026-11-27 18:05 · `R11` · R11 sabotage 15: importar a evidência parcial quando falta quebra → rc 1, test_legacy_replay_recovers_after_oversized_line
+- 2026-11-27 18:05 · `R11` · R11 sabotage 16: não interromper a reconstrução quando falta quebra → rc 1, test_legacy_prefix_read_stops_without_importing_partial_evidence
+- 2026-11-27 18:05 · `R11` · Green em fb5e489. Os 13 Checks igualaram o resultado esperado. TEST_CMD isolado passou com 154 testes da loja (3 pulados) e 113 do hook. A jornada sob 256 MiB retomou os dois tamanhos de registro e avançou o offset. As 16 mutações foram detectadas, com controles verdes sob os mesmos tetos.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:07 · written by the runner
+- 2026-11-27 18:13 · REVIEW r12 · `R12` · Achado 1: acima de 2 MiB, a migração aceita metadado atrasado após externa legada e pede retro indevida. A base ficou em silêncio sob o mesmo teto. Suíte e 13 Checks fechados passaram.\n
+- 2026-11-27 18:14 · R12 · Se a reconstrução não puder comprovar o prefixo, uma sessão legada sem atribuição ativa começa em fallback conservador persistido. Metadado atrasado sem vínculo não confirma carga; falha de leitura não justifica importar estado parcial nem bloquear vínculos novos e slash explícito no delta. Preserve o fluxo quando a leitura completa comprova a ausência de externa. Cubra o limite exato, limite mais um byte e retomada em Stop posterior.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 18:15 · written by the runner
+- 2026-11-27 18:20 · `R12` · Red em 4837f6e. A sonda sob 256 MiB pediu graphify com metadado atrasado acima do limite, com e sem Stop intermediário. A regressão falhou em delayed e resumed.
+- 2026-11-27 18:20 · `R12` · R12 sabotage 1: ignorar encerramento já persistido → rc 1, test_legacy_pending_call_order (cache_only)
+- 2026-11-27 18:20 · `R12` · R12 sabotage 2: remover fallback conservador → rc 1, test_legacy_oversized_replay_does_not_reopen_from_delayed_metadata (delayed e resumed)
+- 2026-11-27 18:20 · `R12` · R12 sabotage 3: encerrar também a atribuição ativa → rc 1, test_legacy_oversized_replay_does_not_reopen_from_delayed_metadata (active)
+- 2026-11-27 18:20 · `R12` · R12 sabotage 4: remover a proteção do encerramento persistido → rc 1, test_legacy_pending_call_order (cache_only)
+- 2026-11-27 18:20 · `R12` · R12 sabotage 5: restaurar a condição anterior → rc 1, test_legacy_oversized_replay_does_not_reopen_from_delayed_metadata (no_external) e test_legacy_pending_call_order (alone)
+- 2026-11-27 18:20 · `R12` · Green em d77e6a1. Os 14 Checks passaram com a saída esperada. TEST_CMD isolado passou com 154 testes da loja (3 pulados) e 114 do hook. Os controles de sabotagem passaram antes e depois sob grupo próprio, 20 s e 256 MiB.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:21 · written by the runner
+- 2026-11-27 18:29 · r13 · R12 verificado em 91a7b7d: sonda vermelha na base e verde no HEAD, 14 Checks, suíte e quatro mutações confirmados. Nota A em todos os critérios, sem novo incremento.
+- intervention: sdd run --phase DOCS (the starting phase was forced from the CLI) — DOCS — 2026-11-27 18:31 · written by the runner
+- 2026-11-27 18:36 · DOCS · Documentação e Kaizen em `e58f9fc`. Suíte, E2E, release e 14 Checks confirmados. Checklist de drift e conferência do backlog em `45-docs.md`.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:37 · written by the runner
+2026-11-27 18:41 · `r14` · Delta documental em 3af42ec. Suíte e 14 Checks confirmados. Fonte histórica imprecisa registrada no backlog, sem R13. Documentation B e demais critérios A.
+- 2026-11-27 18:44 · Revisão após DOCS · A r14 confirmou os 14 Checks e atribuiu B em Documentation pela fonte do incidente. A referência foi precisada em 1b6b72f. As receitas usam o checkout do kit resolvido pelo sdd no PATH. Ao escrever a próxima revisão, use caminhos relativos ou variáveis nos comandos publicados.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:45 · written by the runner
+2026-11-27 18:50 · r15 · Delta verificado em 11ae63baa9d93c2236f04c651fd5900d5ba1151a. Suíte, quatro testes de release e 14 Checks passaram. Fonte da r14 confirmada, um desvio de formato no backlog. Documentation B, demais notas A, sem R13.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:51 · written by the runner
+- 2026-11-27 18:57 · r16 · Delta revisado em 0389ae5. Suíte e 14 Checks verdes. Marcador da r15 confirmado em 42905fc. Receita manual do pré-scan registrada no backlog. Documentation B, demais A, sem incremento pendente.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 18:59 · written by the runner
+- 2026-11-27 19:05 · r17 · Delta revisado em 1b7d883. Suíte e 14 Checks verdes. Cor e prefixos confirmados. Comparador externo e recorte histórico da r16 registrados no backlog. Documentation B, demais A, sem incremento pendente.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 19:07 · written by the runner
+- 2026-11-27 19:13 · r18 · Delta revisado em b466c6c. Suíte e 14 Checks verdes. Comparador externo e recorte histórico confirmados. Falso verde com Markdown binário mantido no backlog. Documentation B, demais A, sem incremento pendente.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 19:20 · written by the runner
+- 2026-11-27 19:24 · r19 · Suíte e 14 Checks verdes em 739d485. Markdown binário corrigido em f41ad63. O bloco da r15 ainda mascara a rejeição do pré-scan, registrada no item existente do backlog. Documentation B, demais A, sem incremento pendente.
+- 2026-11-27 19:46 · Pós-r19 · Reproduzido rc 0 na receita completa com contagem inválida. O commit 26feade põe todas as etapas no mesmo subshell estrito. Bash e Zsh passaram no caso válido e retornaram rc 1 no negativo, sem executar os testes de release. Os controles também forçaram comparador externo, cor, ausência de prefixos e Markdown binário.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 19:46 · written by the runner
+- 2026-11-27 19:51 · r20 · Suíte e 14 Checks verdes em e32b365. Propagação da rejeição confirmada em 26feade. Reprodução documental da r15 falha sem SDD_KIT no shell externo e foi registrada no backlog. Documentation B, demais A, sem incremento pendente.
+- 2026-11-27 19:53 · Pós-r20 · A sonda da r15 localiza o kit no próprio bloco em 41a6ca5. Com SDD_KIT ausente, Bash e Zsh deram 0, 1 e 0 para as amostras de seis, nove e oito linhas. A execução do bloco completo continuou dando rc 1 no controle de contagem divergente. A evidência histórica da r20 está fixada ao blob revisado.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 19:53 · written by the runner
+- 2026-11-27 19:58 · r21 · Delta revisado em 757396c. Suíte e 14 Checks verdes. Conserto de 41a6ca5 confirmado em Bash e Zsh. Amostra implícita da r15 registrada no backlog. Documentation B, demais A, sem incremento pendente.
+- 2026-11-27 20:01 · Pós-r21 · A fonte da amostra foi fixada em a664c98. A verificação extraiu o SHA da receita publicada, construiu as amostras de seis, nove e oito linhas e reproduziu rc 0/1/0 em Bash e Zsh, sem SDD_KIT no ambiente.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 20:01 · written by the runner
+- 2026-11-27 20:05 · r22 · Em a07e588, suíte e 14 Checks verdes. A fonte fixada em a664c98 reproduziu rc 0/1/0 em Bash e Zsh. Todos os critérios em A, sem achado novo ou incremento pendente.
+- 2026-11-27 21:54 · R13 · Achados externos do PR #13 validados em 43e4686. Quatro regressões de Stop reproduzidas em leitura contínua e após retomada. Plano e sonda em plano-r13.md. Baseline TEST_CMD verde com 154 testes da loja, 3 pulados, e 114 do hook.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 21:55 · written by the runner
+- 2026-11-27 22:04 · R13 sabotage: default-aposentados → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: limpeza-correlação → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: limite-da-ordem → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: mensagens-anteriores → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: aposenta-pendentes → test_legacy_prefix_imports_retired_ids_only_after_complete_replay ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: aposenta-consumidos → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: ambiguidade-aposentada → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: teto-de-aposentados → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: poda-da-ordem → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: restaura-limpeza-do-slash → test_irrelevant_skill_attempt_preserves_typed_slash ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: registro-usado-no-reuso → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: guarda-do-reuso → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: retirada-no-reuso → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: guarda-de-metadado-aposentado → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: retorno-de-metadado-aposentado → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: guarda-de-bloco-inválido → test_malformed_metadata_block_keeps_valid_path_in_delta_and_legacy_prefix ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: pula-bloco-inválido → test_malformed_metadata_block_keeps_valid_path_in_delta_and_legacy_prefix ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: leitura-do-texto → test_malformed_metadata_block_keeps_valid_path_in_delta_and_legacy_prefix ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: guarda-de-texto-inválido → test_malformed_metadata_block_keeps_valid_path_in_delta_and_legacy_prefix ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: origem-da-carga-falha → test_failed_active_skill_closes_only_its_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: erro-de-outra-chamada → test_failed_active_skill_closes_only_its_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: encerra-carga-falha → test_failed_active_skill_closes_only_its_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: limpa-origem-falha → test_failed_active_skill_closes_only_its_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: marca-encerramento-falho → test_failed_active_skill_closes_only_its_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: importação-de-aposentados → test_legacy_prefix_imports_retired_ids_only_after_complete_replay ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: F1-trabalho-depois-da-externa → e2e/test_retrofit_watch_stop.py ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: F1-testemunha-do-crédito → e2e/test_retrofit_watch_stop.py ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: F1-testemunha-do-encerramento → e2e/test_retrofit_watch_stop.py ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: registro-de-aposentados → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: replay-isolado → test_legacy_prefix_imports_retired_ids_only_after_complete_replay ficou vermelho
+- 2026-11-27 22:04 · R13 · fcbd6cb: cinco regressões duráveis, 30 mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 119 do hook, 15 Checks e F1 verdes. As três provas nativas pararam na criação do namespace Bubblewrap.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 22:07 · written by the runner
+- 2026-11-27 22:13 · REVIEW r23 · R14 aberto pelos achados 1–3, reproduzidos no Stop contínuo e retomado. Achado 4 de prosa registrado no backlog.
+- 2026-11-27 22:15 · R14 · Use o ID da chamada para invalidar a carga ativa que falha, inclusive se não houver message.id, mantendo isso distinto da prova de mesma mensagem. Preserve a ambiguidade de origem enquanto houver donos retidos e só aposente IDs comprovadamente antigos. Compare a ordem da carga confirmada com o slash para expirar apenas o slash supersedido. Além da sonda R14, feche o changelog e os dois comentários do CodeRabbit em 40-review-r9.md e 40-review-r10.md: os blocos ainda chamam git show antes de remover GIT_DIR e GIT_WORK_TREE. Com um repositório de fixture no ambiente, ambas as receitas falham no HEAD e passam ao isolar antes do primeiro Git. Preserve as medições e os Checks anteriores.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 22:15 · written by the runner
+- 2026-11-27 22:24 · R14 sabotage: valor-padrão-do-ID-ativo → resumed_attribution_recovers_call_identity_from_old_state ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: presença-do-ID-ativo-salvo → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: presença-da-ordem-salva → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ordem-padrão-do-slash-antigo → resumed_slash_keeps_prior_call_order_from_old_state ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: marca-sem-origem-com-dono-retido → retirement_requires_known_origin_after_multiple_advances ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: limpeza-do-ID-no-encerramento-externo → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: limpeza-da-ordem-no-encerramento-externo → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: gravação-do-ID-ativo → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ID-da-chamada-reconhecida-pelo-nome → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ID-reutilizado-deixa-de-ser-anterior-ao-slash → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: limpeza-da-ordem-no-metadado-do-slash → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: fonte-vinculada-para-metadado → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: comprovação-do-ID-da-carga-por-caminho → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ausência-de-vínculo-não-expira-slash → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ordem-da-carga-externa-e-do-slash → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ordem-chega-ao-encerramento → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ID-chega-à-classificação-por-caminho → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ID-chega-à-classificação-por-nome → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ID-chega-à-prova-de-origem → third_party_skill_in_same_message_keeps_attribution ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: cronologia-gravada-quando-o-slash-é-digitado → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ID-de-erro-ausente-não-encerra → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ID-de-erro-diferente-não-encerra → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: retorno-à-verificação-antiga-do-erro → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: limpeza-do-ID-da-chamada-falha → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: recuperação-do-ID-ativo-no-replay → resumed_attribution_recovers_call_identity_from_old_state ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: recuperação-da-ordem-do-slash-no-replay → resumed_slash_keeps_prior_call_order_from_old_state ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: normalização-do-ID-de-chamada-em-um-só-ponto → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: isolamento-da-ordem-do-slash-no-replay-parcial → resumed_slash_keeps_prior_call_order_from_old_state ficou vermelho
+- 2026-11-27 22:24 · R14 · 5459e8c: cinco regressões duráveis, 28 mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 124 do hook, 16 Checks e F1 verdes. As receitas de r9 e r10 passaram com Git de fixture no ambiente. Provas nativas não repetidas.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 22:27 · written by the runner
+- 2026-11-27 22:33 · REVIEW r24 · R15 agrupa os achados 1–2 reproduzidos no Stop: ID em disputa fecha a monitorada e origem persistida inválida impede progresso. R14 e 16 Checks verdes.
+- 2026-11-27 22:34 · R15 · Para invalidar a atribuição pelo resultado de erro, exija que o ID da chamada ativa tenha vínculo não ambíguo, mesmo sem message.id. Não use ausência de origem como prova de unicidade. Na leitura do estado, valide a forma de current_origin antes de usar qualquer índice e descarte apenas a correlação inválida, preservando offset, atribuição e contadores. Cubra a colisão sustentada por outra pendência e as três formas inválidas de estado, com os controles da r24. Preserve o escopo do snapshot intermediário já registrado no backlog e repita todos os Checks anteriores.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 22:35 · written by the runner
+- 2026-11-27 22:39 · R15 sabotage: validação-do-tipo-da-origem → active_call_failure_without_message_origin, ambiguous_call_failure_does_not_close_attribution, malformed_saved_origin_does_not_break_stop ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: validação-do-tamanho-da-origem → malformed_saved_origin_does_not_break_stop ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: validação-dos-IDs-da-origem → malformed_saved_origin_does_not_break_stop ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: remoção-da-origem-inválida-do-estado → malformed_saved_origin_does_not_break_stop ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: descarte-da-origem-inválida-antes-do-índice → malformed_saved_origin_does_not_break_stop ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: confirmação-do-ID-pela-pendência → ambiguous_call_failure_does_not_close_attribution ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: restrição-da-invalidação-ao-ID-atual → ambiguous_call_failure_does_not_close_attribution ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: revogação-do-ID-já-atribuído-ao-reaparecer → ambiguous_call_failure_does_not_close_attribution ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: bloqueio-da-atribuição-de-ID-disputado → ambiguous_call_failure_does_not_close_attribution ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: ausência-de-mensagem-como-falsa-prova-de-unicidade → ambiguous_call_failure_does_not_close_attribution ficou vermelho
+- 2026-11-27 22:40 · R15 · 1dd3224: 13 subcasos vermelhos antes do conserto, duas regressões duráveis, dez mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 126 do hook, 17 Checks e F1 verdes. A suíte literal herdou o Git privado. Restauradas apenas as referências afetadas no espelho e repetida a suíte isolada. Provas nativas não repetidas.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 22:42 · written by the runner
+2026-11-27 22:47 · r25 · achado 1 → R16: falha da carga nova após esgotar a janela pede retro indevida nos dois limites; base silenciosa, TEST_CMD e 17 Checks existentes verdes.
+- 2026-11-27 22:48 · R16 · Mantenha separada a identificação direta da chamada que abriu a atribuição e a prova de mesma mensagem que a janela limitada oferece. Depois da saturação, um erro da própria nova carga explícita ainda encerra o crédito, sem tratar um ID disputado como prova durante a janela ativa. Preserve o controle de sucesso, erro de outra chamada, falta de message.id, tamanho máximo do histórico e ausência de reativação pela correlação desativada. Use a sonda da r25 e repita os Checks anteriores.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 22:49 · written by the runner
+- 2026-11-27 22:55 · R16 sabotage: retorno-da-condicao-anterior → active_skill_failure_after_correlation_overflow
+- 2026-11-27 22:55 · R16 sabotage: remocao-da-consulta-ao-mapa-ativo → ambiguous_call_failure_does_not_close_attribution
+- 2026-11-27 22:55 · R16 sabotage: falsa-validacao-de-id-disputado-na-janela → active_skill_failure_after_correlation_overflow, ambiguous_call_failure_does_not_close_attribution
+- 2026-11-27 22:55 · R16 sabotage: aceitacao-de-id-repetido-apos-esgotar-a-janela → active_skill_failure_after_correlation_overflow
+- 2026-11-27 22:55 · R16 · fcdea17: nove subcasos vermelhos antes do conserto, uma regressão durável, quatro mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 127 do hook, 18 Checks e F1 verdes. Git isolado na suíte inicial e final. Provas nativas não repetidas.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 22:57 · written by the runner
+- 2026-11-27 23:02 · R17 · r26, achado 1 — Após esgotar a janela, um erro de chamada anterior com ID reutilizado encerra indevidamente o crédito da monitorada. Sonda vermelha em seis casos nos dois limites. Preservar o erro próprio de R16 e repetir F1.
+- 2026-11-27 23:04 · R17 · Quando a janela por mensagem estiver desligada, mantenha evidência limitada dos IDs de chamadas observados depois do limite, sem usá-los para religar correlação ou para ignorar metadados externos desconhecidos. Dados de IDs disputados devem impedir que a falha de uma tentativa anterior encerre a nova carga. Reuse as estruturas limitadas onde couber. Confirme conjuntamente os REDs R15, R16 e R17, com erro próprio, alheio, repetido, sucesso e cortes de Stop. Exercite o limite do novo registro e preserve o contrato para histórico sem prova.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 23:04 · written by the runner
+- 2026-11-27 23:11 · R17 sabotage: sem padrão para retomada → prior_reused_call_does_not_close_after_correlation_overflow, direct_call_history_stays_bounded_without_proving_metadata, active_skill_failure_after_correlation_overflow
+- 2026-11-27 23:11 · R17 sabotage: ignorar modo sem janela → direct_call_history_stays_bounded_without_proving_metadata, active_skill_failure_after_correlation_overflow
+- 2026-11-27 23:11 · R17 sabotage: consultar mapa vazio a cada chamada → prior_reused_call_does_not_close_after_correlation_overflow, direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 sabotage: guardar ID ausente → direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 sabotage: aceitar ID já observado → prior_reused_call_does_not_close_after_correlation_overflow
+- 2026-11-27 23:11 · R17 sabotage: ultrapassar a última vaga → direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 sabotage: não registrar IDs novos → prior_reused_call_does_not_close_after_correlation_overflow, direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 sabotage: não gravar o ID observado → prior_reused_call_does_not_close_after_correlation_overflow, direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 sabotage: aceitar repetição da carga ativa anterior à perda → direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 sabotage: aceitar disputa durante janela ativa → ambiguous_call_failure_does_not_close_attribution
+- 2026-11-27 23:11 · R17 sabotage: ignorar invalidação do vínculo → prior_reused_call_does_not_close_after_correlation_overflow, direct_call_history_stays_bounded_without_proving_metadata, active_skill_failure_after_correlation_overflow, ambiguous_call_failure_does_not_close_attribution
+- 2026-11-27 23:11 · R17 sabotage: vazar evidência de reconstrução rejeitada → direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 sabotage: omitir evidência da reconstrução válida → prior_reused_call_does_not_close_after_correlation_overflow
+- 2026-11-27 23:11 · R17 sabotage: restaurar condição de R16 no filtro → prior_reused_call_does_not_close_after_correlation_overflow, direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 · a19e5b5: seis casos vermelhos na sonda, sete na regressão de reuso, duas regressões duráveis, quatorze mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 129 do hook, 19 Checks e F1 verdes. Provas nativas não repetidas.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 23:13 · written by the runner
+- 2026-11-27 23:20 · REVIEW r27, achados 1–2 → R18: ID ainda retido na transição encerra crédito indevidamente (12 casos), e registro direto com tipo inválido deixa Stop sem avanço em duas retomadas. Nota B, com regressão em Type Safety.
+- 2026-11-27 23:21 · R18 · Na transição para a janela desligada, retenha evidência dos IDs ainda conhecidos, inclusive o que acionou o limite, dentro de uma capacidade estabelecida. Não use essa memória para reativar correlação por mensagem. Normalize uncorrelated_skill_calls antes de usá-lo, preservando offset, atribuição e contadores se o campo opcional estiver inválido. Prove a transição nos dois limites, cortes de Stop, histórico retido versus descartado, erro próprio e alheio. Exercite a capacidade e tipo do registro, mantendo verdes R15 a R17.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 23:22 · written by the runner
+- 2026-11-27 23:31 · R18 sabotage: não normalizar o registro direto → test_invalid_direct_call_history_does_not_break_stop, test_reused_call_across_correlation_overflow_does_not_close_attribution, test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:31 · R18 sabotage: não normalizar o registro da transição → test_invalid_direct_call_history_does_not_break_stop
+- 2026-11-27 23:31 · R18 sabotage: zerar registros válidos → test_invalid_direct_call_history_does_not_break_stop, test_reused_call_across_correlation_overflow_does_not_close_attribution, test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:31 · R18 sabotage: manter o valor opcional inválido → test_invalid_direct_call_history_does_not_break_stop, test_reused_call_across_correlation_overflow_does_not_close_attribution, test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:31 · R18 sabotage: omitir IDs pendentes da transição → test_reused_call_across_correlation_overflow_does_not_close_attribution, test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:31 · R18 sabotage: omitir IDs do histórico ativo → test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:31 · R18 sabotage: omitir IDs aposentados da transição → test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:31 · R18 sabotage: não guardar a evidência da transição → test_reused_call_across_correlation_overflow_does_not_close_attribution, test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:31 · R18 sabotage: descartar um ID ainda retido → test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:31 · R18 sabotage: não limitar o registro da transição → test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:31 · R18 sabotage: ignorar o registro da transição no filtro direto → test_reused_call_across_correlation_overflow_does_not_close_attribution, test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:31 · R18 sabotage: restaurar a decisão direta de R17 → test_reused_call_across_correlation_overflow_does_not_close_attribution, test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:31 · R18 sabotage: aceitar só IDs já retidos na transição → test_reused_call_across_correlation_overflow_does_not_close_attribution, test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:31 · R18 sabotage: não importar evidência da reconstrução legada válida → test_reused_call_across_correlation_overflow_does_not_close_attribution
+- 2026-11-27 23:31 · R18 sabotage: restaurar default redundante de R17 → equivalente, a normalização também cobre ausência
+- 2026-11-27 23:31 · R18 · 7b1da02: Red nas duas sondas e nos três testes novos. A suíte intermediária detectou mudança no registro de R17. A versão final conserva a observação e bloqueia só o vínculo. TEST_CMD com 154 testes da loja (3 pulados) e 132 do hook, 20 Checks e F1 verdes, quatro testes de release e 14 mutações detectadas. Provas nativas não repetidas.
+- 2026-11-27 23:31 · R18 · O primeiro TEST_CMD herdou o Git isolado em fixtures que esperavam repositórios próprios. O HEAD foi recomposto pelo reflog com a árvore idêntica e a ref de teste foi removida. O TEST_CMD com GIT_DIR e GIT_WORK_TREE removidos passou antes da primeira edição.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 23:34 · written by the runner
+- 2026-11-27 23:40 · r28, achado 1 → R19 · o snapshot de transição trava com item aposentado inválido; duas variantes reproduzidas no HEAD, ambas passam na base.
+- 2026-11-27 23:41 · R19 · Valide a forma do registro de IDs aposentados e de cada ID antes de usá-lo na união da transição. Preserve o ID válido da mesma lista, o limite de memória, o progresso do offset e a atribuição. Prove lista mista com objetos ou listas, campo opcional ausente ou inválido se atingido pelo mesmo leitor, controle intacto e a transição normalmente suportada. Repita os Checks anteriores sem ampliar a captura de histórico.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 23:42 · written by the runner
+- 2026-11-27 23:45 · R19 sabotage: inverter a validação do tipo da lista → test_invalid_retired_id_does_not_break_correlation_overflow, test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:45 · R19 sabotage: substituir a lista vazia por um mapa → test_invalid_retired_id_does_not_break_correlation_overflow
+- 2026-11-27 23:45 · R19 sabotage: aceitar todos os itens aposentados → test_invalid_retired_id_does_not_break_correlation_overflow
+- 2026-11-27 23:45 · R19 sabotage: descartar também os IDs aposentados válidos → test_invalid_retired_id_does_not_break_correlation_overflow, test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:45 · R19 sabotage: restaurar a união de R18 com os itens brutos → test_invalid_retired_id_does_not_break_correlation_overflow
+- 2026-11-27 23:46 · R19 · bdf75fa: Red na sonda e nas seis variantes inválidas da regressão. No Green, offset, atribuição, contadores e IDs válidos preservados sem ampliar o histórico. TEST_CMD com 154 testes da loja (3 pulados) e 133 do hook, 21 Checks incluindo F1, quatro testes de release e cinco mutações detectadas. Provas nativas não repetidas.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 23:49 · written by the runner
+- 2026-11-27 23:55 · r29 · R19 verificada em bdf75fa. TEST_CMD e 21 Checks passaram. Nota A no delta, sem novo incremento. Achado anterior à transição reproduzido nos dois SHAs e registrado no backlog.
+- 2026-11-28 00:11 · R20 · P2 Codex 4725187745. Retomada com retired_skill_calls contendo null reproduziu três pedidos indevidos em 7ecb60a. A guarda em 41f2952 distinguiu fonte ausente de ID válido. Controles de R19, aposentado válido, F1, 134 testes do hook e as três provas nativas verdes.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 00:12 · written by the runner
+- 2026-11-28 00:17 · r30 · R20 verificada em 41f2952. TEST_CMD isolado e 22 Checks passaram. A nos critérios funcionais e B em Documentation. Uma divergência de prosa registrada no backlog, sem novo incremento.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 00:20 · written by the runner
+2026-11-28 00:24 · r31 · 22 Checks e TEST_CMD verdes em 84ece79. Correção de prosa da r30 confirmada em ac6c96f. Documentation B por condição de merge não explicitada, backlog atualizado, sem R21.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 00:27 · written by the runner
+- 2026-11-28 00:32 · r32 · Delta documental de fd66d07 verificado. TEST_CMD, 22 Checks e quatro testes de release passaram. Achado da r31 fechado no handoff em b6b1d3c. Contradição residual na missão foi para o backlog. Documentation em B, demais critérios em A, sem novo incremento.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 00:35 · written by the runner
+- 2026-11-28 00:40 · r33 · Achado da r32 fechado em 02fe0ac. TEST_CMD, 22 Checks e quatro testes de release passaram. Todos os critérios em A. Nenhum novo incremento.
+- 2026-11-28 00:46 · R21 · Revisão externa do PR #13. Quatro casos reproduzidos em 677b60a com fixture local, incluindo a 0.4.0 real. Plano e sonda em plano-r21.md. R20 mantém corrigido o falso aposentado nulo.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 00:47 · written by the runner
+- 2026-11-28 00:55 · R21 sabotage: regra legado padrão → external_metadata_without_source_preserves_pending_slash
+- 2026-11-28 00:55 · R21 sabotage: guarda de slash_prior_calls → malformed_slash_history_uses_missing_field_fallback
+- 2026-11-28 00:55 · R21 sabotage: guarda da fonte externa → external_metadata_without_source_preserves_pending_slash
+- 2026-11-28 00:55 · R21 sabotage: leitura de text do assistente → malformed_text_keeps_valid_events_in_delta_and_replay
+- 2026-11-28 00:55 · R21 sabotage: guarda de text do assistente → malformed_text_keeps_valid_events_in_delta_and_replay
+- 2026-11-28 00:55 · R21 sabotage: guarda de text do usuário → malformed_text_keeps_valid_events_in_delta_and_replay
+- 2026-11-28 00:55 · R21 sabotage: encaminhamento de text do usuário → malformed_text_keeps_valid_events_in_delta_and_replay
+- 2026-11-28 00:55 · R21 sabotage: candidato inicial → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: ambiguidade inicial → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: herança do scanner de replay → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: regra legada no replay → legacy_migration_preserves_split_typed_slash
+- 2026-11-28 00:55 · R21 sabotage: interceptação do dono → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: escopo do candidato → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: classificação no replay → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: filtro pela atribuição persistida → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: identidade do candidato → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: acúmulo da ambiguidade → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: retenção do candidato → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: scanner usado no replay → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: guarda de importação ambígua → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: retorno antes de importar → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 · e5c249d. Quatro regressões vermelhas antes da correção. Suíte isolada com 154 testes da loja (3 pulados), 138 do hook, 23 Checks, F1 e quatro testes de release verdes. Vinte e uma mutações detectadas com grupo próprio, timeout de 20 s e 512 MiB. Receitas históricas confirmadas com Git roteado para uma fixture. O Bubblewrap bloqueou as três provas nativas antes do CLI. O Git privado contaminado na primeira suíte foi restaurado sem tocar a árvore.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 00:58 · written by the runner
+- 2026-11-28 01:07 · R22 nasce dos achados 1–2 da r34. Com estado real da 0.4.0, o replay perde a prova de metadado antigo e o vínculo de caminho novo confirmado. A sonda saiu com rc 1 e os 23 Checks anteriores passaram.
+- 2026-11-28 01:08 · R22 · Na migração da 0.4.0, recupere fatos comuns aos donos compatíveis sem eleger um dono ambíguo. Se um ID precede todos, preserve a prova limitada de antiguidade válida. Use como evidência de dono único o caminho exclusivo cujo metadado foi comprovadamente registrado no cache legado, preservando o caso de dois caminhos iguais do R21. Mantenha contadores, offset, leitura única e limites. Para as receitas r24–r27 apontadas em 40-review-r34.md, isole Git, propague falhas do diff e confira entrada analisada. Repita R9 a R21 e todos os Checks anteriores.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 01:09 · written by the runner
+- 2026-11-28 01:20 · R22 sabotage: conjunto inicial de IDs → test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_replay_cannot_choose_between_compatible_owners, test_legacy_migration_recovers_active_message_origin
+- 2026-11-28 01:20 · R22 sabotage: caminhos gravados no cache → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: declaração do testemunho → importação do hook falhou sem vínculo nonlocal
+- 2026-11-28 01:20 · R22 sabotage: caminho inicial fora do metadado → test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_migration_recovers_active_message_origin
+- 2026-11-28 01:20 · R22 sabotage: revogação de ID reutilizado → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: origem do scanner-base → test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_replay_cannot_choose_between_compatible_owners, test_legacy_migration_recovers_active_message_origin
+- 2026-11-28 01:20 · R22 sabotage: testemunho compartilhado com skill_path → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: consulta do caminho no cache legado → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: metadado posterior do mesmo alvo → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: revogação por metadado posterior → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: primeiro caminho gravado → test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 01:20 · R22 sabotage: consumo da primeira ocorrência → test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 01:20 · R22 sabotage: leitura do metadado pelo scanner-base → test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 01:20 · R22 sabotage: descarte do caminho ao sair do metadado → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: testemunho compartilhado com _watch → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: exigência de origem para a evidência antiga → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: inicialização de prova pelo primeiro dono → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: IDs anteriores ao primeiro dono → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: comparação entre donos → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: ambiguidade entre donos → test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 01:20 · R22 sabotage: revogação por candidato posterior → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: interseção entre donos → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: exigência de caminho gravado e vínculo → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: retenção da prova de dono → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: comparação com cache legado → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: guarda anterior do R21 → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: guarda de cache na ambiguidade → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: importação dos IDs comuns → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: filtragem pelos IDs comuns → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: filtragem pelos IDs ainda retidos → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: guarda de cache ao importar a origem → test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_replay_cannot_choose_between_compatible_owners, test_legacy_migration_recovers_active_message_origin
+- 2026-11-28 01:20 · R22 · 1863fc2. Duas regressões vermelhas, com quatro falhas antes da correção. A sonda usa a 0.4.0 real. Suíte isolada com 154 testes da loja (3 pulados), 140 do hook, 24 Checks e quatro testes de release verdes. 31 degradações sob grupo próprio, 25 s e 512 MiB. Git de fixture nas quatro receitas, revisão inválida rc 128 e contagem divergente rc 1. Provas de distribuição nativa não repetidas no sandbox.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 01:23 · written by the runner
+- 2026-11-28 01:30 · REVIEW r35 · R23 registra o achado 1, que aposenta indevidamente a chamada externa após uma carga ignorada pelo replay. As duas retomadas reproduzem com a 0.4.0 real.
+- 2026-11-28 01:31 · R23 · Ao reconstruir a origem, se o cache legado identifica uma carga compatível que o replay não conseguiu aceitar, revogue também a prova de antiguidade baseada só nos outros candidatos. Preserve os fatos realmente comuns e a prova de caminho exclusivo nos controles R22. Garanta que o conflito observado não possa repovoar a interseção por uma hipótese posterior. Corrija o comando histórico da r34 para usar o blob que contém a sonda e rejeitar código vazio. Repita R21, R22, R23 e os Checks anteriores.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 01:32 · written by the runner
+- 2026-11-28 01:38 · R23 sabotage: sinal de aceitação → test_legacy_replay_preserves_external_after_ignored_owner, test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:38 · R23 sabotage: estado de ambiguidade compartilhado → test_legacy_replay_preserves_external_after_ignored_owner
+- 2026-11-28 01:38 · R23 sabotage: classificação compatível → test_legacy_replay_preserves_external_after_ignored_owner, test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:38 · R23 sabotage: guarda de tipo → test_legacy_replay_preserves_external_after_ignored_owner, test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:38 · R23 sabotage: guarda do dono salvo → test_legacy_replay_preserves_external_after_ignored_owner
+- 2026-11-28 01:38 · R23 sabotage: revogação de origem prévia → test_legacy_replay_preserves_external_after_ignored_owner, test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:38 · R23 sabotage: aceitação antes de invalidar → test_legacy_replay_preserves_external_after_ignored_owner, test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:38 · R23 sabotage: guarda do metadado compatível rejeitado → test_legacy_replay_preserves_external_after_ignored_owner
+- 2026-11-28 01:38 · R23 sabotage: marca de ambiguidade → test_legacy_replay_preserves_external_after_ignored_owner
+- 2026-11-28 01:38 · R23 sabotage: revogação da interseção → test_legacy_replay_preserves_external_after_ignored_owner
+- 2026-11-28 01:38 · R23 sabotage: não repovoar a interseção → test_legacy_replay_preserves_external_after_ignored_owner
+- 2026-11-28 01:38 · R23 sabotage: chamada antiga sem guarda → test_legacy_replay_preserves_external_after_ignored_owner
+- 2026-11-28 01:38 · R23 · f82e1d5. Red em quatro posições e quatro retomadas reais da 0.4.0. TEST_CMD isolado verde com 154 testes da loja (3 pulados) e 141 do hook. Os 25 Checks, F1 e quatro testes de release passaram. Doze degradações do código com grupo próprio, 25 s e 512 MiB. Receita de r34 leu o blob publicado, recusou blob ausente (rc 128) e código vazio (rc 1). Provas nativas não repetidas.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 01:41 · written by the runner
+
+- 2026-11-28 01:47 · r36, achado 1 → R24. A externa comprovadamente anterior perdeu o ID aposentado e silenciou em quatro retomadas reais da 0.4.0. R23 continua verde para a ordem inversa.
+- 2026-11-28 01:48 · R24 · Trate o metadado rejeitado, mas compatível com a 0.4.0, como candidato na interseção de provas. Quando o prefixo ainda identificar sua posição com prova única e limitada, preserve apenas IDs estritamente anteriores também a esse candidato. Quando faltar prova de posição ou identidade, mantenha a interseção conservadora. Distinga ordem de mensagens de ordem de metadados. Preserve os controles invertidos de R23, os fatos comuns e caminho exclusivo de R22, a leitura única e o limite de memória. Repita os Checks anteriores.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 01:49 · written by the runner
+- 2026-11-28 01:56 · R24 sabotage: inicialização da ordem → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: inicialização da prova por ID → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: inicialização do orçamento → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: escopo do registro → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: validade e teto na entrada → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: identidade da mensagem → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: primeira posição da mensagem → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: orçamento do ID de mensagem → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: ordem das mensagens → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: unicidade da chamada → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: orçamento do ID de chamada → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: vínculo da chamada à posição → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: ramo de ID repetido → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: revogação de ID repetido → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: teto de chamadas → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: teto de mensagens → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: teto de bytes → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: descarte ao exceder o teto → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: escopo da interseção → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: validação da fonte rejeitada → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: fallback com posições esgotadas → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: fallback do dono sem prova → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: revogação sem prova → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: ramo do dono com posição → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: primeiro candidato rejeitado → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: gravação da interseção → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: unicidade do ID aposentado → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: antiguidade estrita → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: restauração da limpeza incondicional → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: posição antiga da marca de ambiguidade → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: interseção dos candidatos → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 · 51a8a73. Red em quatro retomadas da 0.4.0 real com externa anterior. No Green, as quatro pediram retro e as quatro posteriores mantiveram o silêncio. Suíte isolada verde com 154 testes da loja (3 pulados) e 142 do hook. Os 26 Checks, F1 e quatro testes de release passaram. Trinta e uma degradações detectadas com grupo próprio, 25 s e 512 MiB. Provas nativas não repetidas.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 01:59 · written by the runner
+- 2026-11-28 02:06 · r37 achado 1 → R25: a ordem inverte quando o primeiro bloco da mensagem é texto. Quatro retomadas divergiram, com R24 e F1 verdes.
+- 2026-11-28 02:06 · R25 · No replay, registre a ordem na primeira ocorrência de um message.id válido, antes de filtrar o tipo do bloco. Mantenha a associação com o ID da chamada somente quando houver chamada Skill válida. Reuse o registro limitado, preserve a ordem de mensagens fragmentadas e teste a origem ausente ou sem prova. Corrija o inventário e os totais vigentes do handoff para refletir todos os incrementos, preservando resultados históricos. Repita R23 e R24 junto com R25.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 02:08 · written by the runner
+- 2026-11-28 02:15 · R25 · A execução literal da suíte herdou o Git privado. A ponta `9599cad`, a referência e a identidade do espelho foram restauradas após conferir o reflog, a árvore e o índice. O TEST_CMD isolado passou antes da mudança.
+- 2026-11-28 02:15 · R25 sabotage: escopo da soma de bytes de mensagem → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: sobrescrita do ponto de entrada → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: leitura do objeto da mensagem → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: filtro de registros do assistente → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: validação do objeto da mensagem → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: registro desativado após esgotar teto → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: descarte de message.id ausente → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: validação de message.id → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: unicidade da primeira ocorrência → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: inserção da posição da mensagem → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: custo em bytes dos IDs de mensagem → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: ordem ordinal das mensagens → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: método de limites da prova → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: delegação do registro ao Scanner → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: tetos após bloco sem chamada → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: teto de chamadas → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 02:15 · R25 sabotage: escopo compartilhado do descarte → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: teto de mensagens → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: descarte atômico da prova → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: teto de bytes → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: escopo da soma de bytes de chamada → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: tetos após chamada Skill → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 02:15 · R25 sabotage: volta da posição coletada só na chamada → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: reposição da condição antiga de registro → equivalente, a condição nunca é alcançada após registrar a mensagem na entrada
+- 2026-11-28 02:15 · R25 sabotage: reposição da cobrança antiga sob a condição → equivalente, a condição nunca é alcançada após registrar a mensagem na entrada
+- 2026-11-28 02:15 · R25 sabotage: reposição da atribuição antiga sob a condição → equivalente, a condição nunca é alcançada após registrar a mensagem na entrada
+- 2026-11-28 02:15 · R25 sabotage: associação indevida do ID de outra ferramenta → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: reposição do teto antigo inline → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 02:15 · R25 sabotage: reposição da declaração nonlocal antiga → equivalente, declarar as duas tabelas não altera as leituras
+- 2026-11-28 02:15 · R25 · 149086f. A sonda da 0.4.0 real reproduziu quatro vereditos invertidos no Red e todos acertaram no Green. A regressão durável mostrou seis divergências no Red. A suíte isolada passou com 154 testes da loja (3 pulados) e 143 do hook. Os 27 Checks, incluindo R23, R24 e F1, e os quatro testes de release passaram. Foram detectadas 25 degradações sob grupo próprio, 25 s e 512 MiB. A grafia de `skill_externa` foi corrigida na expectativa da célula de R25. Provas nativas não repetidas.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 02:20 · written by the runner
+- 2026-11-28 02:27 · r38, achado 1 → R26. Texto sem carga acima do teto faz perder posições já conhecidas no replay. Dois silêncios indevidos, reproduzidos com a 0.4.0 real.
+- 2026-11-28 02:28 · R26 · Ao chegar ao teto de posições, mantenha os IDs e posições comprovados e deixe as entradas novas sem prova de ordem. Ainda detecte reuso dos IDs já registrados. Não deduza posição para uma mensagem que entrou depois do teto. Preserve o tratamento conservador para dados desconhecidos e os controles de R24 e R25. Corrija também o stdout esperado na cópia histórica de R25 sem mexer na sonda canônica.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 02:29 · written by the runner
+- 2026-11-28 02:35 · R26 sabotage: retirada do teto de novas posições → test_legacy_replay_keeps_proven_order_after_text_limit (unknown_owner)
+- 2026-11-28 02:35 · R26 sabotage: aceitação de uma posição além do teto → test_legacy_replay_keeps_proven_order_after_text_limit (unknown_owner)
+- 2026-11-28 02:35 · R26 sabotage: descarte da última posição permitida → test_legacy_replay_keeps_proven_order_after_text_limit (last_slot)
+- 2026-11-28 02:35 · R26 sabotage: reposição isolada da invalidação antiga → equivalente, pois a admissão limitada impede que o índice de mensagens passe do teto
+- 2026-11-28 02:35 · R26 sabotage: reposição conjunta do limite antigo → test_legacy_replay_keeps_proven_order_after_text_limit (known e last_slot) e controles de R24 e R25
+- 2026-11-28 02:35 · R26 sabotage: remoção da invalidação por reuso no índice → test_legacy_replay_keeps_proven_order_after_text_limit (reused_owner e reused_external)
+- 2026-11-28 02:35 · R26 sabotage: admissão de ID inválido ou já conhecido → test_legacy_replay_orders_messages_from_first_assistant_block (primeira ocorrência) e controles de R24
+- 2026-11-28 02:35 · R26 sabotage: retirada do teto de chamadas → test_legacy_replay_keeps_older_external_with_ignored_owner (MAX_SKILL_CALL_IDS)
+- 2026-11-28 02:35 · R26 · 0bd4efa. A sonda com a 0.4.0 real mostrou dois silêncios indevidos no Red e dois pedidos de retro no Green. A suíte isolada passou com 154 testes da loja (3 pulados) e 144 do hook. Os 28 Checks e os quatro testes de release passaram. Sete degradações detectadas e uma equivalente, sob grupo próprio, 25 s e 512 MiB. Expectativa histórica de R25 alinhada sem mudar a sonda. Provas nativas não repetidas.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 02:39 · written by the runner
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 02:47 · written by the runner
+- 2026-11-28 02:52 · r40 · Delta de prosa. Alvo de R26 confirmado. Proveniência incorreta das provas nativas registrada no backlog. Sem R novo. Suíte e 28 Checks passaram.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 02:54 · written by the runner
+2026-11-28 03:00 · r41 · Delta documental aprovado com A nos oito critérios. Resolução da r40 confirmada. Suíte isolada, 28 Checks e quatro testes de release passaram. Sem R novo.

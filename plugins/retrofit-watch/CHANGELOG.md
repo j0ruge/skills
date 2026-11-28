@@ -1,5 +1,61 @@
 # Changelog — retrofit-watch
 
+## [0.4.1] — 2026-11-25
+
+### Fixed
+
+- A carga de uma skill externa na mesma mensagem do assistente não interrompe a atribuição da
+  monitorada quando os identificadores confirmam o vínculo. A correlação atravessa chamadas de
+  Stop. Cargas externas de mensagem posterior ou sem vínculo continuam encerrando a atribuição
+  futura, sem apagar contadores de sessões iniciadas na 0.4.0. Corrige a issue #12.
+- Após a carga externa encerrar a atribuição, o metadado atrasado da monitorada não a reabre
+  sem vínculo comprovado, inclusive na retomada da 0.4.0 ou com IDs repetidos. Metadado externo
+  atrasado preserva o slash mais novo e tentativa sem carga não invalida outro vínculo.
+- Confirmações fora de ordem preservam as chamadas posteriores que ainda aguardam metadados.
+  Resultados de erro descartam o vínculo da tentativa correspondente, inclusive após a retomada.
+  Se a tentativa falha não tiver origem, a marca do ID permanece na janela de correlação,
+  inclusive após a primeira confirmação.
+- Se o erro estiver ligado sem ambiguidade à chamada que abriu a atribuição ativa, seu crédito
+  futuro termina sem apagar os outros vínculos, mesmo sem ID de mensagem. Após esgotar a janela,
+  uma carga explícita nova ainda pode ter seu crédito encerrado pelo próprio erro, sem reativar
+  a correlação por mensagem. Uma origem salva inválida é descartada sem zerar a atribuição,
+  os contadores ou o offset.
+  Metadados externos atrasados não encerram a atribuição quando remontam à mesma mensagem
+  por vínculo confirmado ou quando há prova de ID aposentado.
+- Tentativas irrelevantes preservam o slash explícito. Blocos inválidos não ocultam caminhos
+  válidos na mesma linha do transcript. Uma carga externa posterior confirmada expira o slash
+  anterior se ela encerrar a atribuição, mas não descarta um slash digitado depois da chamada.
+- A ordem de uma mensagem é mantida se perder o último vínculo enquanto uma mensagem posterior
+  ainda aguarda confirmação. Reusar um ID falho, consumido ou ambíguo na janela retida não
+  comprova a origem, mesmo antes de uma carga daquela mensagem ser reconhecida. Ao exceder
+  64 mensagens ou 1.024 IDs retidos, o hook deixa de correlacionar na sessão, sem apagar contadores.
+  O hook preserva até 2.049 IDs ainda retidos na transição, inclusive o que aciona o limite,
+  e registra à parte até 1.024 IDs distintos observados depois. Reutilizar um ID de qualquer
+  registro ou exceder a capacidade impede o vínculo por erro próprio. Nenhum registro valida metadados.
+  Um registro persistido com tipo inválido volta vazio sem travar Stop nem apagar os contadores.
+  Na lista de aposentados, itens inválidos não travam a transição nem impedem a retenção dos IDs válidos.
+- Enquanto a mensagem ativa não muda, a poda de uma tentativa intermediária que reutilizou um
+  ID consumido sem origem não apaga sua marca. Reusar esse ID numa carga externa não comprova
+  a origem para preservar a atribuição.
+- Se a mensagem que reutilizou o ID continuar na janela e for confirmada, sua colisão continua
+  registrada, inclusive a marca sem origem. Só um ID cujos donos sejam todos conhecidos e
+  tenham saído da janela com o avanço pode provar que o metadado é antigo.
+- Sem skill ativa, a retomada da 0.4.0 respeita o encerramento indicado pelo histórico ou
+  por um caminho de skill não monitorada. A marca de colisão com chamada sem origem
+  sobrevive à poda em ambas as ordens da disputa, enquanto a mensagem ativa não mudar.
+- Na migração da 0.4.0, o primeiro Stop consulta uma vez o trecho até o offset salvo para
+  recuperar a ordem de chamadas pendentes. Uma externa posterior encerra a atribuição até
+  sem metadado de caminho. O trecho antigo não reconta trabalho nem gera pedidos de retro.
+  A leitura linha a linha preserva o slash pendente se o prefixo confirma o estado salvo.
+  Um metadado rejeitado que poderia ser do dono salvo só preserva IDs comprovadamente
+  anteriores à mensagem de sua chamada, além das demais cargas compatíveis.
+  Na comparação, vale a primeira ocorrência de cada mensagem do assistente, mesmo se
+  começar por texto. O vínculo com o ID da chamada ainda exige uma chamada Skill válida.
+  Ao preencher o teto de posições, o replay conserva a ordem já comprovada e não atribui
+  posição a mensagens novas. O reuso de ID de chamada ainda invalida a prova de ordem.
+  Acima de 2 MiB por registro, o hook segue do offset salvo sem importar vínculos parciais.
+  Sem atribuição ativa, esse fallback também ignora metadado atrasado sem vínculo.
+
 ## [0.4.0] — 2026-11-24
 
 ### Added
