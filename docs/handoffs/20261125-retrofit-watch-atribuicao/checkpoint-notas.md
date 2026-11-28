@@ -645,3 +645,4 @@
 - 2026-11-28 01:56 · R24 sabotage: interseção dos candidatos → test_legacy_replay_keeps_older_external_with_ignored_owner
 - 2026-11-28 01:56 · R24 · 51a8a73. Red em quatro retomadas da 0.4.0 real com externa anterior. No Green, as quatro pediram retro e as quatro posteriores mantiveram o silêncio. Suíte isolada verde com 154 testes da loja (3 pulados) e 142 do hook. Os 26 Checks, F1 e quatro testes de release passaram. Trinta e uma degradações detectadas com grupo próprio, 25 s e 512 MiB. Provas nativas não repetidas.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 01:59 · written by the runner
+- 2026-11-28 02:06 · r37 achado 1 → R25: a ordem inverte quando o primeiro bloco da mensagem é texto. Quatro retomadas divergiram, com R24 e F1 verdes.
