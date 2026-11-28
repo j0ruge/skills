@@ -225,6 +225,7 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
 - A r13 confirmou a correção e apontou a releitura de HEAD após a consulta e o diagnóstico da falha de ref. Em `4f64998`, esses dois casos têm regressões permanentes, entraram verdes e preservam o marcador de pendência.
 - Em `4f64998`, passaram 180 testes dirigidos, a jornada de QA em bare local, o TEST_CMD, as três provas de distribuição no Linux e a camada 1 de anonimização.
 - A suíte ampla de R19 em `c4b6192` executou 623 testes e registrou somente a falha preexistente da segunda skill full.
+- A suíte ampla de R20 em `4f64998` executou 625 testes no host isolado e repetiu somente a falha de `test_second_skill_of_the_same_plugin_is_recorded`, já reproduzida na base.
 
 ## Artefatos
 

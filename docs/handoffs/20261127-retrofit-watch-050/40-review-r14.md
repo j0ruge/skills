@@ -19,6 +19,7 @@ reviewed_head: 4f649989c2a3c08cd0cfa79d286dafd990dbd61c
 A consulta permanece local, com transporte bloqueado, e o Stop usa o mesmo prazo para elegibilidade e janela. Passaram os dois Checks dirigidos, 180 regressões, TEST_CMD, QA em bare local, três provas de distribuição no Linux e anonimização. A varredura regex e Gitleaks registrou zero achados e zero erros.
 
 A evidência é de Linux e repositórios de fixture. A validação do mecanismo Windows e a corrida residual no avanço após a prova de ancestralidade permanecem registradas no TODO.
+A suíte ampla encerrou com 625 testes e a única falha preexistente da atribuição da segunda skill full.
 
 ### Overall Grade
 
