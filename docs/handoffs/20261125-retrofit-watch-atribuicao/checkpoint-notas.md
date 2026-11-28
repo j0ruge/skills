@@ -524,3 +524,4 @@
 - 2026-11-28 00:11 · R20 · P2 Codex 4725187745. Retomada com retired_skill_calls contendo null reproduziu três pedidos indevidos em 7ecb60a. A guarda em 41f2952 distinguiu fonte ausente de ID válido. Controles de R19, aposentado válido, F1, 134 testes do hook e as três provas nativas verdes.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 00:12 · written by the runner
 - 2026-11-28 00:17 · r30 · R20 verificada em 41f2952. TEST_CMD isolado e 22 Checks passaram. A nos critérios funcionais e B em Documentation. Uma divergência de prosa registrada no backlog, sem novo incremento.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 00:20 · written by the runner
