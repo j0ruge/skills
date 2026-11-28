@@ -956,13 +956,14 @@ def _live_main_ref(path):
     try:
         try:
             mode = main.lstat().st_mode
+            if stat.S_ISREG(mode):
+                with main.open("rb") as ref:
+                    return re.fullmatch(LIVE_REF_OID, ref.read(66).rstrip(b"\r\n")) is not None
+            if not stat.S_ISDIR(mode):
+                return False
         except FileNotFoundError:
-            mode = 0
-        if stat.S_ISREG(mode):
-            with main.open("rb") as ref:
-                return re.fullmatch(LIVE_REF_OID, ref.read(66).rstrip(b"\r\n")) is not None
-        if mode and not stat.S_ISDIR(mode):
-            return False
+            # A compactação pode retirar a ref solta entre o stat e a abertura.
+            pass
         # Um diretório no caminho solto não encobre a ref empacotada no Git.
         with (gitdir / "packed-refs").open("rb") as refs:
             return any(re.fullmatch(LIVE_REF_OID + rb" refs/heads/main\r?\n", line) for line in refs)
@@ -1051,8 +1052,11 @@ def _live_setup_identity(path):
 
 def _verify_live_setup_finalization(path, marker, identity, origin_id, directory_fd=None):
     current = _live_setup_identity(path)
-    if current == identity and _live_main_ref(path):
-        return
+    if current == identity:
+        on_main = _live_main_ref(path)
+        current = _live_setup_identity(path)
+        if on_main and current == identity:
+            return
     same_clone = current is not None and current[:2] == identity[:2]
     if directory_fd is not None or same_clone:
         # Preserve a pendência sem sobrescrever um marcador criado por outro processo.

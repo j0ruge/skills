@@ -559,6 +559,38 @@ class LiveTest(unittest.TestCase):
         self.assertEqual((record["resultado"], record["antes"], record["depois"]), ("ok", head, new_head))
         self.assertEqual(w.git(w.live, "rev-parse", "HEAD"), new_head)
 
+    def test_live_main_ref_checks_packed_ref_after_loose_file_disappears(self):
+        w = self.w
+        main_ref = w.live / ".git" / "refs" / "heads" / "main"
+        loose_stat = main_ref.lstat()
+        w.git(w.live, "pack-refs", "--all")
+        self.assertFalse(main_ref.exists())
+
+        lstat = type(main_ref).lstat
+
+        def previous_stat(path):
+            if path == main_ref:
+                return loose_stat
+            return lstat(path)
+
+        with mock.patch.object(type(main_ref), "lstat", previous_stat):
+            self.assertTrue(store._live_main_ref(w.live))
+
+    def test_setup_finalization_rechecks_identity_after_reading_main(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        origin_id = pending.read_bytes()
+        identity = store._live_setup_identity(w.live)
+        head = identity[2]
+        changed = (*identity[:2], (*head[:-1], head[-1] + 1))
+
+        with mock.patch.object(store, "_live_setup_identity", side_effect=[identity, changed]), \
+                mock.patch.object(store, "_live_main_ref", return_value=True), \
+                self.assertRaisesRegex(store.StoreError, "ramo.*mudou"):
+            store._verify_live_setup_finalization(w.live, pending, identity, origin_id)
+
+        self.assertEqual(pending.read_bytes(), origin_id)
+
     def test_setup_rejects_missing_main_ref(self):
         w = self.w
         pending = self._leave_pending_setup()
