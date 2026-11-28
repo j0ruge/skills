@@ -525,3 +525,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 00:12 · written by the runner
 - 2026-11-28 00:17 · r30 · R20 verificada em 41f2952. TEST_CMD isolado e 22 Checks passaram. A nos critérios funcionais e B em Documentation. Uma divergência de prosa registrada no backlog, sem novo incremento.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 00:20 · written by the runner
+2026-11-28 00:24 · r31 · 22 Checks e TEST_CMD verdes em 84ece79. Correção de prosa da r30 confirmada em ac6c96f. Documentation B por condição de merge não explicitada, backlog atualizado, sem R21.

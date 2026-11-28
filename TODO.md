@@ -275,6 +275,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r30.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 
+- [ ] **Handoff de EXEC não explicita a condição da delegação de merge** —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:390` (`delegação full`) —
+  a condição de vigência e a fonte da autorização não aparecem no handoff, que antes apontava para o mantenedor.
+  Direção: explicitar a condição e apontar para o registro da decisão, quando aplicável.
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r31.md` —
+  descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
+
 ### Documentação da loja
 
 - [ ] **Separar o histórico de releases da tabela de plugins no README** —
