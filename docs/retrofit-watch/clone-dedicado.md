@@ -8,8 +8,9 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
 - `retrofit_watch.py live-setup <dono/repo> [--url URL]` clona a `main` sem substituir
   o destino, mesmo se um diretório vazio surgir durante a instalação.
   A recusa também vale se o nome do clone já foi usado por outro dono.
-  Se a clonagem, a trava ou a validação da origem efetiva no caminho final falhar,
-  o comando descarta a cópia da própria tentativa. Corrija a causa e repita o setup.
+  Se a clonagem ou a trava falhar, o comando descarta a cópia temporária. A recusa
+  na validação final deixa o clone pendente e preserva seus arquivos. Corrija a
+  causa e repita o setup com a mesma origem para terminar a validação.
   O clone só fica disponível após a validação final. Se a plataforma ou o sistema
   de arquivos não oferecer movimentação sem substituição, o setup recusa a instalação.
   A URL precisa corresponder ao slug. Sem `--url`, usa HTTPS do GitHub.

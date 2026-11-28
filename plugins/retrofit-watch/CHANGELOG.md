@@ -18,7 +18,8 @@
   `dono/repo` se o último avanço falhou ou se o registro estiver inválido, e avisa
   imediatamente se não conseguiu iniciar o processo.
 - `live-setup` preserva até um diretório vazio criado durante a instalação. Se a origem
-  efetiva for recusada no caminho final, descarta a cópia da tentativa para permitir repetir.
+  efetiva for recusada no caminho final, conserva os arquivos do clone pendente e permite
+  retomar a validação com a mesma origem.
 
 ## [0.4.1] — 2026-11-25
 

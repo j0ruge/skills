@@ -968,6 +968,16 @@ def _install_live_clone(checkout, path):
         raise OSError(code, os.strerror(code), path)
 
 
+def _pending_live_setup(path, marker, origin_id):
+    if path.is_symlink() or marker.parent.is_symlink() or marker.is_symlink() or not marker.is_file():
+        return False
+    try:
+        with marker.open("rb") as saved:
+            return saved.read(len(origin_id) + 1) == origin_id
+    except OSError:
+        return False
+
+
 def live_setup(ctx, slug, url=None):
     path = live_path(ctx, slug)
     remote = f"https://github.com/{slug}.git" if url is None else url
@@ -975,31 +985,27 @@ def live_setup(ctx, slug, url=None):
     if not expected or expected[0] != slug:
         raise StoreError(f"URL não corresponde ao repo autorizado: {slug}")
     path.parent.mkdir(parents=True, exist_ok=True)
+    marker = path / ".git" / LIVE_SETUP_PENDING
+    origin_id = rw_auto.rw.origin_id(expected).encode("ascii")
     if os.path.lexists(path):
-        raise StoreError(f"destino já existe: {path}")
-    # Prepara a trava fora do destino e mantém a cópia inelegível até verificar a origem final.
-    with tempfile.TemporaryDirectory(prefix=".retrofit-live-", dir=path.parent) as temp:
-        checkout = Path(temp) / "checkout"
-        checkout.mkdir()
-        _setup_live_clone(ctx, slug, checkout, remote, expected, path)
-        pending = checkout / ".git" / LIVE_SETUP_PENDING
-        pending.touch()
-        installed = checkout.lstat()
-        try:
-            _install_live_clone(checkout, path)
-        except FileExistsError as error:
-            raise StoreError(f"destino já existe: {path}") from error
-        except OSError as error:
-            raise StoreError(f"instalação do clone de {slug} falhou: {error}") from error
-        try:
-            # Uma regra do Git pode reescrever o origin apenas no caminho definitivo.
-            _live_remote(ctx, slug, path, expected)
-            (path / ".git" / LIVE_SETUP_PENDING).unlink()
-        except (StoreError, OSError):
-            with contextlib.suppress(FileNotFoundError):
-                if os.path.samestat(installed, path.lstat()):
-                    path.rename(checkout)
-            raise
+        if not _pending_live_setup(path, marker, origin_id):
+            raise StoreError(f"destino já existe: {path}")
+    else:
+        # Prepara a trava fora do destino e deixa a cópia pendente para validação.
+        with tempfile.TemporaryDirectory(prefix=".retrofit-live-", dir=path.parent) as temp:
+            checkout = Path(temp) / "checkout"
+            checkout.mkdir()
+            _setup_live_clone(ctx, slug, checkout, remote, expected, path)
+            (checkout / ".git" / LIVE_SETUP_PENDING).write_bytes(origin_id)
+            try:
+                _install_live_clone(checkout, path)
+            except FileExistsError as error:
+                raise StoreError(f"destino já existe: {path}") from error
+            except OSError as error:
+                raise StoreError(f"instalação do clone de {slug} falhou: {error}") from error
+    # O caminho final pode ativar uma reescrita de URL. Na recusa, preserve os arquivos para retomar.
+    _live_remote(ctx, slug, path, expected)
+    marker.unlink(missing_ok=True)
     return path
 
 

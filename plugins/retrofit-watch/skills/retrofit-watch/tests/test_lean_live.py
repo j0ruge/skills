@@ -185,6 +185,32 @@ class LiveTest(unittest.TestCase):
         self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
         w.assert_fixture_origin(w.live)
 
+    def test_setup_retry_keeps_files_after_final_origin_rejection(self):
+        w = self.w
+        key = self._final_origin_rewrite()
+        check_remote = store._live_remote
+        note = w.live / "nota-local"
+
+        def add_note_during_validation(ctx, slug, path, expected):
+            if path == w.live:
+                note.write_text("preservar", encoding="utf-8")
+            return check_remote(ctx, slug, path, expected)
+
+        with mock.patch.object(store, "_live_remote", side_effect=add_note_during_validation):
+            with self.assertRaisesRegex(store.StoreError, "origin do clone dedicado"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertTrue(note.is_file(), "a recusa da origem apagou o arquivo criado durante a validação")
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+        installed = w.live.stat()
+        other = w.tmp / "outra-origem" / f"{SLUG}.git"
+        with self.assertRaisesRegex(store.StoreError, "destino já existe"):
+            store.live_setup(self.ctx, SLUG, str(other))
+        w.git(w.tmp, "config", "--global", "--unset", key)
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+        self.assertTrue(os.path.samestat(installed, w.live.stat()))
+        self.assertEqual(note.read_text(encoding="utf-8"), "preservar")
+        self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
+
     def test_setup_preserves_replacement_on_final_validation_failure(self):
         w = self.w
         w.live.rename(w.live.with_name("anterior"))
