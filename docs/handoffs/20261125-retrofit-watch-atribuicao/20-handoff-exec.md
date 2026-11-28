@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a22058-49a5-76e3-b602-0c4b6b449697
-data: 2026-11-28 01:20
-gate: "Em 1863fc2, TEST_CMD de .sdd/config.sh com Git isolado retornou rc 0, 154 testes da loja (3 pulados) e 140 do hook. Adaptadores, catálogo e versão 0.4.1 válidos. Os 24 Checks, incluindo F1, e quatro testes de release passaram."
+sessao: 01a2206d-8944-7422-8b9c-14480dbcedf6
+data: 2026-11-28 01:38
+gate: "Em f82e1d5, TEST_CMD de .sdd/config.sh com Git isolado retornou rc 0. Loja com 154 testes (3 pulados), hook com 141, adaptadores, catálogo e versão 0.4.1 válidos. Os 25 Checks, incluindo F1, e quatro testes de release passaram."
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,15 +14,17 @@ gate: "Em 1863fc2, TEST_CMD de .sdd/config.sh com Git isolado retornou rc 0, 154
 
 ## TL;DR
 
-R22 mantém a prova de ID antigo comum a todos os donos compatíveis sem eleger um dono.
-O replay identifica a carga quando um caminho exclusivo e vinculado foi registrado pela 0.4.0.
-A suíte isolada, os 24 Checks, F1 e o controle de release passaram.
-A QA começa por R22 e pelos controles de R21. As três provas nativas seguem puladas no sandbox.
+R23 impede que a retomada ignore uma externa posterior quando o replay pula um dono possível.
+Os controles de antiguidade comum e do caminho exclusivo de R22 continuam verdes.
+A suíte isolada, os 25 Checks, F1 e os quatro testes de release passaram.
+A QA começa por R23 e repete R21 e R22. As três provas nativas seguem puladas no sandbox.
 
 ## Estado do repo
 
 - **Branch** `fix/retrofit-watch-atribuicao-mesma-mensagem`, ligada ao PR #13.
-- O incremento mais recente é R22 em `1863fc2`. A versão continua 0.4.1.
+- O incremento mais recente é R23 em `f82e1d5`. A versão continua 0.4.1.
+- A suíte isolada de R23 validou 154 testes da loja (3 pulados), 141 do hook, adaptadores,
+  catálogo e versões. Os 25 Checks tiveram rc 0 e stdout esperado.
 - A suíte isolada de R22 validou 154 testes da loja (3 pulados), 140 do hook, adaptadores,
   catálogo e versões. Os 24 Checks tiveram rc 0 e stdout esperado.
 - O `TEST_CMD` isolado em R21 retornou rc 0 com 154 testes da loja (3 pulados) e 138 do hook. Os 23 Checks compararam o stdout completo. F1 confirmou `linked=silêncio missing=silêncio empty=silêncio`.
@@ -322,21 +324,40 @@ A QA começa por R22 e pelos controles de R21. As três provas nativas seguem pu
   grupo próprio, timeout de 25 s e memória virtual de 512 MiB. Consulte as notas
   de execução para o resultado de cada degradação.
 
+### R23 — Retorno da revisão r35
+
+- `f82e1d5` — um metadado compatível rejeitado no replay revoga a prova de
+  antiguidade e mantém vazia a interseção que se basearia só nas outras cargas.
+  Sem prova, a externa posterior encerra o crédito futuro sem apagar o anterior.
+- `f82e1d5` — a receita histórica de r34 lê o relatório de `846925a`.
+  A receita retornou rc 0 no hook corrigido, rc 1 no hook revisado, rc 128 com blob
+  ausente e rc 1 com extração vazia.
+- A regressão durável falhou em quatro posições antes da correção. A sonda de
+  r35 reproduziu quatro pedidos indevidos com estado gravado pela 0.4.0 real.
+  No código corrigido, os quatro casos silenciam e os dois controles de R23
+  ainda emitem o pedido. As 12 degradações do código deixaram testes vermelhos
+  em cópia temporária com grupo próprio, 25 s e memória virtual de 512 MiB.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1, F1 e R1–R22 com as sondas executáveis e os hashes das correções. |
-| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R19, R21 e R22. |
+| `checkpoint.md` | I1, F1 e R1–R23 com as sondas executáveis e os hashes das correções. |
+| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R19 e R21–R23. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
 | `TODO.md` | Issue #12 e ordem legada marcadas `RESOLVED by 682cd3d` e `RESOLVED by 8fa5c7d` até o merge. |
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as 24 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as 25 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
-- Comece pela célula de R22. A sonda de [r34](40-review-r34.md#sonda-de-r22) usa o blob
+- Comece pela célula de R23. A [sonda de r35](40-review-r35.md#sonda-de-r23)
+  grava o estado com a 0.4.0 real. Exija silêncio e crédito preservado com caminho
+  novo ou repetido, tanto no Stop que migra como no Stop seguinte. A externa
+  comprovadamente anterior continua sem fechar a atribuição no controle.
+
+- Em seguida, rode a célula de R22. A sonda de [r34](40-review-r34.md#sonda-de-r22) usa o blob
   da 0.4.0 para gravar o estado em disco. Exija `codereview` para os IDs comprovadamente
   antigos e para o caminho confirmado, e silêncio para a externa intercalada. Repita
   F1 e os controles de R21. Confira as quatro receitas com Git de fixture e os dois
@@ -449,7 +470,7 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 
 ## Riscos e não-feitos
 
-- R22 não repetiu as três provas nativas de distribuição. O comando configurado as pula
+- R22 e R23 não repetiram as três provas nativas de distribuição. O comando configurado as pula
   neste sandbox. As provas de R20 no host são históricas. Não houve smoke manual do Claude Code.
 - A evidência de cache é conservadora. Caminho repetido, cache divergente ou outra carga
   compatível posterior não permitem escolher o dono. O hook segue a regra de encerramento

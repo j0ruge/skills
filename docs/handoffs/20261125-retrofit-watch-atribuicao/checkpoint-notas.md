@@ -594,3 +594,16 @@
 - 2026-11-28 01:30 · REVIEW r35 · R23 registra o achado 1, que aposenta indevidamente a chamada externa após uma carga ignorada pelo replay. As duas retomadas reproduzem com a 0.4.0 real.
 - 2026-11-28 01:31 · R23 · Ao reconstruir a origem, se o cache legado identifica uma carga compatível que o replay não conseguiu aceitar, revogue também a prova de antiguidade baseada só nos outros candidatos. Preserve os fatos realmente comuns e a prova de caminho exclusivo nos controles R22. Garanta que o conflito observado não possa repovoar a interseção por uma hipótese posterior. Corrija o comando histórico da r34 para usar o blob que contém a sonda e rejeitar código vazio. Repita R21, R22, R23 e os Checks anteriores.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 01:32 · written by the runner
+- 2026-11-28 01:38 · R23 sabotage: sinal de aceitação → test_legacy_replay_preserves_external_after_ignored_owner, test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:38 · R23 sabotage: estado de ambiguidade compartilhado → test_legacy_replay_preserves_external_after_ignored_owner
+- 2026-11-28 01:38 · R23 sabotage: classificação compatível → test_legacy_replay_preserves_external_after_ignored_owner, test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:38 · R23 sabotage: guarda de tipo → test_legacy_replay_preserves_external_after_ignored_owner, test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:38 · R23 sabotage: guarda do dono salvo → test_legacy_replay_preserves_external_after_ignored_owner
+- 2026-11-28 01:38 · R23 sabotage: revogação de origem prévia → test_legacy_replay_preserves_external_after_ignored_owner, test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:38 · R23 sabotage: aceitação antes de invalidar → test_legacy_replay_preserves_external_after_ignored_owner, test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:38 · R23 sabotage: guarda do metadado compatível rejeitado → test_legacy_replay_preserves_external_after_ignored_owner
+- 2026-11-28 01:38 · R23 sabotage: marca de ambiguidade → test_legacy_replay_preserves_external_after_ignored_owner
+- 2026-11-28 01:38 · R23 sabotage: revogação da interseção → test_legacy_replay_preserves_external_after_ignored_owner
+- 2026-11-28 01:38 · R23 sabotage: não repovoar a interseção → test_legacy_replay_preserves_external_after_ignored_owner
+- 2026-11-28 01:38 · R23 sabotage: chamada antiga sem guarda → test_legacy_replay_preserves_external_after_ignored_owner
+- 2026-11-28 01:38 · R23 · f82e1d5. Red em quatro posições e quatro retomadas reais da 0.4.0. TEST_CMD isolado verde com 154 testes da loja (3 pulados) e 141 do hook. Os 25 Checks, F1 e quatro testes de release passaram. Doze degradações do código com grupo próprio, 25 s e 512 MiB. Receita de r34 leu o blob publicado, recusou blob ausente (rc 128) e código vazio (rc 1). Provas nativas não repetidas.
