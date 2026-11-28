@@ -33,6 +33,7 @@ atualizado: 2026-11-28 09:20
 | R20 | Reconferir HEAD depois da consulta e preservar o diagnóstico de leitura | `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/var/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_live.LiveTest.test_live_main_confirms_head_after_git_ref_query test_lean_live.LiveTest.test_setup_finalization_distinguishes_unavailable_main_ref >/dev/null); echo $?` → `0` | done | 4f64998 |
 | R21 | Vincular o avanço à main conferida e preservar arquivos e índice em caso de recusa | `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/var/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_live >/dev/null); echo $?` → `0` | done | a5a2302 |
 | R22 | Preservar estado inconclusivo e confirmar o avanço a partir do clone real | `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/var/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_live -k advance >/dev/null); echo $?` → `0` | done | f1bbf79 |
+| R23 | Preservar evidência e SHA observado nas falhas de encerramento ou liberação de trava | `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/var/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_live -k advance >/dev/null); echo $?` → `0` | done | 8df070f |
 
 Atualizar a linha depois do commit do incremento, com SHA curto nu. As notas de execução seguem em `checkpoint-notas.md` quando o relay materializar o layout do kit.
 

@@ -1263,6 +1263,37 @@ class LiveTest(unittest.TestCase):
         self.assertFalse((w.live / "README.md").exists())
         self.assertEqual(w.git(w.live, "status", "--porcelain"), "")
 
+    def test_advance_keeps_primary_failure_when_cleaning_evidence_fails(self):
+        w = self.w
+        head = w.git(w.live, "rev-parse", "HEAD")
+        index = w.live / ".git/index"
+        pending = w.live / ".git/rw-live-advance"
+        w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+        replace = os.replace
+        rmtree = shutil.rmtree
+
+        def refuse_index(source, destination, *args, **kwargs):
+            if destination == index:
+                raise OSError("fixture: índice indisponível")
+            return replace(source, destination, *args, **kwargs)
+
+        def refuse_cleanup(path, *args, **kwargs):
+            if path == pending:
+                raise OSError("fixture: pendência indisponível")
+            return rmtree(path, *args, **kwargs)
+
+        with mock.patch.object(store.os, "replace", side_effect=refuse_index), mock.patch.object(
+            store.shutil, "rmtree", side_effect=refuse_cleanup,
+        ):
+            record = store.live_advance(self.ctx, SLUG)
+
+        self.assertEqual((record["resultado"], record["depois"]), ("erro", head))
+        self.assertIn("índice indisponível", record["detalhe"])
+        self.assertIn("limpar a pasta de evidência", record["detalhe"])
+        self.assertTrue((pending / "index.original").is_file())
+        self.assertFalse(index.with_suffix(".lock").exists())
+        self.assertEqual(w.git(w.live, "status", "--porcelain"), "")
+
     def test_advance_keeps_a_split_index_readable(self):
         w = self.w
         w.git(w.live, "config", "core.splitIndex", "true")

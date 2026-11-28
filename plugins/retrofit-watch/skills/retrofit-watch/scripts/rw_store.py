@@ -1400,22 +1400,21 @@ def _live_fast_forward(path, env, before):
             raise StoreError("HEAD do clone mudou durante o avanço")
     finally:
         primary_error = sys.exc_info()[1]
+        step = "liberar a trava do índice"
         try:
             lock.unlink()
+            if discard:
+                step = "limpar a pasta de evidência"
+                shutil.rmtree(temporary)
         except OSError as error:
-            detail = "não foi possível liberar a trava do índice"
+            detail = f"não foi possível {step}"
+            if primary_error is not None:
+                detail = f"{primary_error}; {detail}"
             if not created:
                 raise StoreError(detail) from error
-            if isinstance(primary_error, LiveAdvanceUncertain):
-                detail = f"{primary_error}; {detail}"
-            else:
+            if not isinstance(primary_error, LiveAdvanceUncertain):
                 detail = f"{detail}; confira .git/{temporary.name}"
             raise LiveAdvanceUncertain(detail, observed) from error
-        if discard:
-            try:
-                shutil.rmtree(temporary)
-            except OSError as error:
-                raise LiveAdvanceUncertain(f"não foi possível limpar .git/{temporary.name}", observed) from error
     if target != before:
         run(["git", "hook", "run", "--ignore-missing", "post-merge", "--", "0"], cwd=path, env=env)
     return target, None
