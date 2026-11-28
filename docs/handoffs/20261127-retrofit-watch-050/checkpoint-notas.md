@@ -275,3 +275,4 @@
 - 2026-11-28 06:21 · `R10` · Red perdeu um arquivo criado durante a validação final no código de R9. Green em `1ca718d` preservou o arquivo e exigiu a mesma origem para retomar. 14 Checks, 146 testes dirigidos, jornada da QA, TEST_CMD, camada 1 e distribuição nativa passaram.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 06:22 · written by the runner
 - 2026-11-28 06:30 · `R11` · REVIEW r5 reproduziu sucesso após sumiço ou troca do destino, origem declarada incompatível, ramo fora da main e trava ineficaz na retomada. TEST_CMD, 146 testes dirigidos e jornada verdes.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 06:32 · written by the runner
