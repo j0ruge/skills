@@ -338,6 +338,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r21.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
+- [ ] **Receitas de pré-scan da r24 à r27 não isolam o Git** —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r24.md:159` (`scan_secrets.sh`) —
+  com o Git da fixture, a revisão é inválida, mas as quatro receitas retornam rc 0 e analisam zero linhas.
+  Direção: isolar a seleção do Git e propagar falha ou contagem divergente nas quatro receitas.
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r34.md` — descoberto por
+  `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
+
 ## Decidido — não reabrir
 <!-- sdd:decided -->
 
