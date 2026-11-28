@@ -119,7 +119,18 @@ Comandos na raiz em `880640757cfd70a1a06aecf75c952aa4e0b184a8`, exceto o control
 
 ### Sonda de R22
 
-`env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -c "$(sed -n '/^~~~python$/,/^~~~$/{ /^~~~/!p; }' docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r34.md)" --expect` → rc 1 no HEAD revisado. O modo de observação, sem `--expect`, imprime as saídas mesmo quando divergentes. A sonda usa o blob real de `7e623fe` para gravar o estado legado. Para comparar o hook de retomada com a base, extraia `git show 4c065758d4d7be1680208e67c3a322aeb86aaac9:plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py` para um arquivo temporário e use `--script` apontando para esse arquivo, sem `--expect`. A sonda verifica o progresso de todos os Stops e os contadores em disco.
+Na árvore a medir, leia a sonda do commit que publicou a r34, mesmo se o relatório
+ainda não existir naquela árvore. A extração precisa ter êxito e produzir código.
+
+~~~bash
+set -o pipefail
+report=846925a:docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r34.md
+probe=$(env -u GIT_DIR -u GIT_WORK_TREE git show "$report" | sed -n '/^~~~python$/,/^~~~$/{ /^~~~/!p; }') &&
+  test -n "$probe" &&
+  env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -c "$probe" --expect
+~~~
+
+Resultado no HEAD revisado: rc 1. O modo de observação, sem `--expect`, imprime as saídas mesmo quando divergentes. A sonda usa o blob real de `7e623fe` para gravar o estado legado. Para comparar o hook de retomada com a base, extraia `git show 4c065758d4d7be1680208e67c3a322aeb86aaac9:plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py` para um arquivo temporário e use `--script` apontando para esse arquivo, sem `--expect`. A sonda verifica o progresso de todos os Stops e os contadores em disco.
 
 | Caso | Base em observação | HEAD revisado | Esperado |
 |---|---|---|---|

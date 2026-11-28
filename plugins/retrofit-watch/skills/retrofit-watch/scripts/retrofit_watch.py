@@ -744,6 +744,7 @@ class Scanner:
         self._watch(info, [message_id, source] if message_id else None, call_id=call_id,
                     preserve_slash=preserve_slash)
         self._retire_skill_call(source)
+        return True
 
     def _retire_skill_call(self, call_id):
         calls = self.st["skill_calls"]
@@ -869,14 +870,18 @@ def recover_legacy_correlation(path, st, ctx):
             return super()._skill_origin(message_id, call_id)
 
         def skill_path(self, path, source):
-            nonlocal proved_owner
+            nonlocal ambiguous, proved_owner
             info = st["classified"].get(path)
+            compatible = isinstance(info, dict) and info.get("key") == st["current"]
             # A 0.4.0 podia aceitar este metadado mesmo se o replay rejeitar seu ID.
-            if isinstance(info, dict) and info.get("key") == st["current"]:
+            if compatible:
                 proved_owner = False
             self.first_cached_path = path in unseen_cached_paths
             unseen_cached_paths.discard(path)
-            super().skill_path(path, source)
+            if not super().skill_path(path, source) and compatible:
+                # Um dono possível sem origem aceita invalida a prova de antiguidade.
+                ambiguous = True
+                common_retired.clear()
             self.first_cached_path = False
 
         def _watch(self, info, origin=None, **kwargs):
@@ -885,7 +890,7 @@ def recover_legacy_correlation(path, st, ctx):
             if info is not None and info["key"] == st["current"]:
                 candidate = (tuple(origin or ()), self.st["current_call"])
                 retired = self.st["retired_skill_calls"] if origin else ()
-                if owner is None:
+                if owner is None and not ambiguous:
                     common_retired.update(retired)
                 elif owner != candidate:
                     ambiguous = True

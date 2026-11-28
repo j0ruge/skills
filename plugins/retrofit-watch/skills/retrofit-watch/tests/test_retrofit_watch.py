@@ -1171,6 +1171,46 @@ class StopTest(HookHarness, unittest.TestCase):
                     self.assertIsNone(out)
                     self.assertEqual(after["skills"]["full:codereview"], credits)
 
+    def test_legacy_replay_preserves_external_after_ignored_owner(self):
+        for case in ("before", "between", "after", "single", "other_owner", "external"):
+            with self.subTest(case=case), self.sub_world() as world:
+                name, path = {
+                    "other_owner": ("ticket", world.ticket),
+                    "external": ("brainstorming", world.other_skill),
+                }.get(case, ("coderabbit-pr", world.mkt_skill))
+                compatible = path == world.mkt_skill
+                ignored = identified_load(name, path, "msg_old", "toolu_ignored")
+                external = identified_load("brainstorming", world.other_skill, "msg_external", "toolu_external")
+                first, _ = self.identified_loads()
+                second = identified_load("codereview:coderabbit-pr", world.mkt_skill, "msg_new", "toolu_new")
+                if case != "before":
+                    self.write(ignored[:2], compact=True)
+                self.write(external[:2], compact=True)
+                if case == "before":
+                    self.write(ignored[2:], compact=True)
+                self.write(first, compact=True)
+                if case in ("between", "single"):
+                    self.write(ignored[2:], compact=True)
+                if case != "single":
+                    self.write(second, compact=True)
+                if case == "after" or not compatible:
+                    self.write(ignored[2:], compact=True)
+                paths = (world.mkt_skill,) if compatible else (world.mkt_skill, path)
+                credits = self.save_legacy_owner(*paths)
+
+                out, migrated = self.checked_stop()
+                self.assertIsNone(out)
+                self.assertIsNone(migrated["current_origin"])
+                self.assertEqual("toolu_external" in migrated["retired_skill_calls"], not compatible)
+                self.write(external[2:], tool(error=True), compact=True)
+                out, after = self.checked_stop()
+                self.assertEqual(after["attribution_closed"], compatible)
+                if compatible:
+                    self.assertIsNone(out)
+                    self.assertEqual(after["skills"]["full:codereview"], credits)
+                else:
+                    self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+
     def save_legacy_owner(self, *paths):
         world = self.w
         cache = {str(path): rw.classify_path(str(path), world.ctx()) for path in paths}

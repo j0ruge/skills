@@ -53,6 +53,12 @@ não reconta trabalho ou atrito, não gera pedidos de retro e não substitui a
 atribuição ativa já salva. Quando o prefixo confirma o estado, o hook pode
 recuperar também a origem ativa e um slash pendente.
 
+Na dúvida sobre qual carga a 0.4.0 observou, o hook só importa IDs comprovadamente
+anteriores a todas as cargas compatíveis. Se o replay descartar um metadado que
+poderia ter ativado a skill salva, as outras cargas não bastam para aposentar
+um ID. Um caminho exclusivo e vinculado, registrado no cache legado, ainda
+pode confirmar uma carga posterior.
+
 Se a origem gravada tiver formato inválido, o Stop descarta essa origem, preserva
 a atribuição e os contadores e continua a partir do offset salvo.
 
