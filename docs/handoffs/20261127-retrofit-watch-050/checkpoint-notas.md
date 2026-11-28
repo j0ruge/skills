@@ -237,3 +237,38 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 05:54 · written by the runner
 - 2026-11-28 06:01 · `R9` · Revisão r4, achados 1–3: o setup substitui diretório vazio no rename e não permite retentativa após recusa final. Falha ao iniciar o avanço não aparece no startup. TEST_CMD, 135 regressões e jornada passaram no HEAD revisado.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 06:05 · written by the runner
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Retira a biblioteca da instalação nativa → LiveTest.test_setup_does_not_replace_concurrent_empty_destination
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Usa rename que sobrepõe no POSIX → LiveTest.test_setup_does_not_replace_concurrent_empty_destination
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Não move o clone no Windows → InstallTest.test_windows_uses_native_rename
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Não encerra após a movimentação do Windows → InstallTest.test_windows_uses_native_rename
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Não preserva errno da biblioteca nativa → InstallTest.test_mac_os_requests_exclusive_rename
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Inverte origem e destino da movimentação → InstallTest.test_mac_os_requests_exclusive_rename
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Ignora a API exclusiva do macOS → InstallTest.test_mac_os_requests_exclusive_rename
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Invoca renamex_np sem conferir disponibilidade → InstallTest.test_missing_exclusive_rename_has_no_overwrite_fallback
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Omite exclusividade no macOS → InstallTest.test_mac_os_requests_exclusive_rename
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Ignora a API exclusiva do Linux → LiveTest.test_setup_does_not_replace_concurrent_empty_destination
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Invoca renameat2 sem conferir disponibilidade → InstallTest.test_missing_exclusive_rename_has_no_overwrite_fallback
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Omite exclusividade no Linux → LiveTest.test_setup_does_not_replace_concurrent_empty_destination
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Oculta a falta de suporte à instalação exclusiva → InstallTest.test_missing_exclusive_rename_has_no_overwrite_fallback
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Inverte a leitura da falha de instalação → LiveTest.test_setup_does_not_replace_concurrent_empty_destination
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Apaga o errno da colisão → LiveTest.test_setup_does_not_replace_concurrent_empty_destination
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Trata erro nativo como sucesso → LiveTest.test_setup_does_not_replace_concurrent_empty_destination
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Registra a identidade de outro diretório → LiveTest.test_setup_retries_after_final_origin_validation_failure
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Restaura a instalação por rename sem exclusividade → LiveTest.test_setup_does_not_replace_concurrent_empty_destination
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Perde o tratamento específico de destino concorrente → LiveTest.test_setup_does_not_replace_concurrent_empty_destination
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Não traduz a colisão em recusa do destino → LiveTest.test_setup_does_not_replace_concurrent_empty_destination
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Perde o diagnóstico de falha de instalação → LiveTest.test_setup_reports_install_error_without_leaving_destination
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Omite a prova da origem no caminho final → LiveTest.test_setup_retries_after_final_origin_validation_failure
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Deixa a instalação válida inelegível → LiveTest.test_setup_clones_main_with_worktree_lock
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Libera a cópia antes de validar a origem final → LiveTest.test_setup_retries_after_final_origin_validation_failure
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Não desfaz a instalação quando a origem é recusada → LiveTest.test_setup_retries_after_final_origin_validation_failure
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Não desfaz a instalação se não puder liberar o marcador → LiveTest.test_setup_retries_after_pending_marker_removal_fails
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Mascara a falha original quando o caminho some → LiveTest.test_setup_keeps_original_error_when_installed_path_disappears
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Recolhe diretório que não pertence à tentativa → LiveTest.test_setup_preserves_replacement_on_final_validation_failure
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Não recolhe a cópia rejeitada → LiveTest.test_setup_retries_after_final_origin_validation_failure
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Oculta a recusa da origem → LiveTest.test_setup_retries_after_final_origin_validation_failure
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Restaura a reinicialização que descarta o aviso de lançamento → StartupTest.test_spawn_failure_warns_even_with_prior_ok
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Não inicia a coleção de avisos antes da tentativa → StartupTest.test_spawn_failure_warns_even_with_prior_ok
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Oculta a falha ao lançar o avanço → StartupTest.test_spawn_failure_warns_even_with_prior_ok
+- 2026-11-28 06:14 · `R9` · R9 sabotage: Apaga os outros avisos ou entrega o texto sem composição → StartupTest.test_spawn_failure_warns_even_with_prior_ok
+- 2026-11-28 06:14 · `R9` · Red em `82b2530` reproduziu troca do diretório vazio, retentativa impedida e ausência de aviso. Green em `c445ff7`: 13 Checks, 145 regressões dirigidas, jornada QA, TEST_CMD (154 da loja, 3 pulados; 144 do Stop), camada 1 e 41 âncoras verdes. As 34 sabotagens foram detectadas em cópia descartável, com controles de 11 provas sem pulos, grupo próprio, 20 s e 512 MiB por processo. Recolocar a consulta de existência antes da movimentação é equivalente para a identidade do destino, que é decidida pela movimentação exclusiva. macOS e Windows verificados com dublês, sem prova nativa. Nenhum incremento pendente.

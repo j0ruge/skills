@@ -2,9 +2,9 @@
 missao: 20261127-retrofit-watch-050
 fase: EXEC
 status: done
-sessao: 01a2214d-5b73-78b3-ad62-9dc2c34de288
-data: 2026-11-28 05:51
-gate: "Em b5512cb0010b33d6fde6db76dfe3aad1b1adc4a2, TEST_CMD rc 0 (154 testes da loja, 3 pulados; 144 do Stop), 12 Checks, 135 testes dirigidos, jornada da QA e regressão de Stop verdes. As três provas nativas passaram no host Linux. Camada 1 limpa contra origin/main."
+sessao: 01a22167-6577-7980-b294-7f3292691515
+data: 2026-11-28 06:14
+gate: "Em c445ff702ac82ddf8fdb76f7d5443dab7e709e3d, env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval \"$TEST_CMD\"' → rc 0 (154 testes da loja, 3 pulados; 144 do Stop; adaptadores, catálogo e versões válidos). Os 13 comandos do checkpoint deram a saída esperada. env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests:plugins/retrofit-skill/tests python3 -B -m unittest test_fixture_private test_lean_auto test_lean_window test_lean_live test_lean_batch test_lean_gate test_auto_docs test_modo_autonomo → 145 testes sem pulos. env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py → rc 0, com retenção, aprovação, janela v2, revert e rota manual em remotos de fixture."
 ---
 
 # Handoff — EXEC — Retrofit de skills locais listadas
@@ -14,16 +14,16 @@ gate: "Em b5512cb0010b33d6fde6db76dfe3aad1b1adc4a2, TEST_CMD rc 0 (154 testes da
 
 ## TL;DR
 
-I1–I4 e R1–R8 concluídos. O clone dedicado só fica disponível depois da trava e da
-verificação da origem no destino final. A jornada em fixture, os 12 Checks e a distribuição
-nativa passaram. A camada 1 está limpa em `b5512cb`.
+I1–I4 e R1–R9 concluídos. O setup preserva o destino concorrente e permite repetir
+após recusa da origem final. O startup avisa quando o avanço não consegue iniciar.
+Suíte, 13 Checks e jornada de fixture verdes em `c445ff7`. QA começa pelo Check R9.
 
 ## Estado do repo
 
 - **Branch:** `feat/retrofit-watch-050-loja` — base de comparação `origin/main` local.
-- **Último commit de produto:** `af9095a` — preserva destinos concorrentes ao preparar o clone.
+- **Último commit de produto:** `c445ff7` — instala o clone sem substituir o destino e avisa falha no lançamento.
 - **Working tree:** limpo após o commit de checkpoint, notas e handoff.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `b5512cb`. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `c445ff7`. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos.
 - **E2E:** sem `E2E_CMD` na config. Jornada automatizada em `sonda-qa.py` com remotos bare de fixture. Nenhum deploy ou repo privado real.
 
 ## O que foi feito
@@ -70,19 +70,34 @@ nativa passaram. A camada 1 está limpa em `b5512cb`.
 - `b5512cb` — o plano liga a revisão exata da Ponytail e as fixtures SSH usam endereços de teste. A camada 1 da branch passou.
 - As receitas citadas na r3 têm aspas de shell nos blobs de `9432d56`. A leitura dos bytes confirmou o argumento do scanner e a receita literal de `40-review-r2.md:98` executou o TEST_CMD com rc 0 em `b5512cb`. Os escapes necessários permanecem nos campos YAML.
 
+### Rodada 4 de revisão
+
+- `c445ff7` — R9 usa movimentação exclusiva para preservar até diretórios concorrentes vazios.
+  Se a validação final recusar a origem, a cópia identificada como da tentativa volta ao
+  temporário e o setup pode ser repetido depois de corrigir a regra. Falha ao lançar o
+  avanço gera aviso imediato, mantém o resultado anterior e não interrompe os demais avisos.
+  O Red reproduziu os três defeitos em `82b2530`. O Green passou nas 145 regressões dirigidas,
+  inclusive no teste offline, e na jornada. Em cópia descartável, 34 mutações foram detectadas
+  com controles verdes antes e depois, grupo próprio, teto de 20 s e 512 MiB por processo.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Doze Checks e seus commits. |
+| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Treze Checks e seus commits. |
 | `docs/retrofit-watch/clone-dedicado.md` | Contrato de clone, selo, ensaio, publicação e avanço. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py` | Cópia de distribuição com contratos dos dois plugins e controles do catálogo. |
 | `KAIZEN_LOG.md` e `TODO.md` | Medida da fixture, limite da adoção e achados fora do escopo. |
 
 ## Boot da próxima fase
 
-Leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Priorize os Checks R6 e R7,
-confira R1–R5 e repita os quatro de I1–I4. Não use um `TMPDIR` com ancestral Git.
+Leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Comece pela célula R9,
+que confere a identidade do diretório vazio concorrente, a retentativa depois de retirar a
+regra Git exclusiva do destino e o aviso de startup mesmo com registro anterior `ok`.
+Rode também `test_lean_live.StartupTest.test_offline_advance_is_in_child_and_reported_on_next_startup`
+com o mesmo ambiente do Check R9. A sonda da célula reproduz a jornada em bare de fixture,
+sem serviço real para iniciar. Depois repita os Checks anteriores. Não use um `TMPDIR` com
+ancestral Git.
 Desarme `GIT_DIR` e `GIT_WORK_TREE` do runner antes de executar testes que criam repos.
 A jornada que muda para o usuário é o Stop de uma skill em repo listado, seguido de pedido, selo, revisão e porta.
 Comece com `PrivateWorld` em `plugins/retrofit-watch/skills/retrofit-watch/tests/fixture_private.py` e
@@ -128,6 +143,10 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
 
 ## Riscos e não-feitos
 
+- A instalação exclusiva foi exercitada no Linux. A seleção das APIs de macOS e Windows
+  foi verificada com dublês, sem execução nativa. O setup recusa a instalação se não houver
+  operação de movimentação sem substituição.
+- As três provas nativas de distribuição ficaram puladas no TEST_CMD deste sandbox.
 - O avanço reconfere o checkout depois do fetch, mas essa conferência e o merge são comandos
   Git separados. O clone é dedicado e não deve ser usado como checkout de desenvolvimento.
 - Registros do caminho anterior não são migrados. O próximo avanço grava no novo caminho.
@@ -144,6 +163,7 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
 
 ## Achados fora de escopo
 
+- A receita de status manual da revisão r4 já consta como resolvida em `TODO.md` pelo commit `84a0b0e`.
 - Aprovação pública da v1 não vinculada ao patch revisto → `TODO.md`, rulings da retrofit-watch 0.4.0.
 - Segunda skill full do mesmo plugin ausente no estado, inclusive na base → `TODO.md`, recorrência I4.
 - Corrida residual após a prova de ancestralidade → `TODO.md`, item sobre mover outro ramo
