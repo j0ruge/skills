@@ -21,6 +21,8 @@ A rodada automática terminou por uma classificação de possível risco cibern�
 
 O R17 cobriu os quatro casos da r11. Passaram o Check R17, as 174 regressões dirigidas, a jornada de QA e as três provas nativas de distribuição no Linux. A suíte ampla de 619 testes repetiu a falha preexistente da segunda skill full. A varredura por regex e Gitleaks teve zero achados e zero erros no diff.
 
+### Overall Grade
+
 | Criterion | Grade | Rationale |
 |---|---|---|
 | Code Quality (Zen) | B | A guarda usa uma identidade anterior à consulta e interpreta refs com regras próprias. |

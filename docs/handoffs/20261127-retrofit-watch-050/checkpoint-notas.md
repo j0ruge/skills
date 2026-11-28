@@ -418,3 +418,5 @@
 - 2026-11-28 09:20 · `R17` · R17 sabotage: exige main mesmo quando o avanço pede só a identidade → test_advance_leaves_wrong_branch_dirty_tree_and_divergence_alone, test_advance_reports_branch_change_before_fetch
 - 2026-11-28 09:20 · `R17` · Quatro Reds em 2905b0c. Em 0321097, Check R17, 174 regressões dirigidas, TEST_CMD, jornada de QA e camada 1 verdes. As 30 sabotagens foram detectadas em cópia descartável, com 12 controles SHA-1 e um em SHA-256, grupo próprio, 20 s e 512 MiB por execução. A antiga guarda de None no fetch ficou inalcançável porque a conferência passou a lançar StoreError. A suíte ampla manteve 5 falhas e 176 erros nos mesmos casos em 614 testes da base e 619 da candidata. As limitações do temporário e da segunda skill full estão no TODO.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 09:24 · written by the runner
+
+- 2026-11-28 11:05 · R18 · Dois Reds confirmados antes do fix. Em `3af4a5d`, passaram 176 regressões dirigidas, TEST_CMD, QA em fixture, distribuição Linux e anonimização. As divergências de leitura de ref continuam na revisão r12.

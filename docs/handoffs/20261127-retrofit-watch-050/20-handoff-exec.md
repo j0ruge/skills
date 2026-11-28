@@ -4,7 +4,7 @@ fase: EXEC
 status: done
 sessao: 01a2220f-19ad-7372-9904-8c9b247e321f
 data: 2026-11-28 09:20
-gate: "Em 0321097be5c1e3c9090238a7c4a4b4c4daa606fa, `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp GIT_CEILING_DIRECTORIES=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c '. .sdd/config.sh && eval \"$TEST_CMD\"'` → rc 0, 154 testes da loja (3 pulos nativos configurados) e 144 do Stop. Adaptadores, catálogo e versões válidos. `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_live.LiveTest.test_setup_keeps_pending_when_main_redirects_during_validation test_lean_live.LiveTest.test_setup_and_advance_accept_packed_main_with_empty_loose_dir test_lean_live.LiveTest.test_setup_rejects_missing_main_ref test_lean_live.LiveTest.test_advance_reports_unreadable_main_ref_separately >/dev/null && env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → 0, com as quatro regressões e a jornada de QA."
+gate: "Em 3af4a5d5724fcfcd44daefd76fec322bd8fb0753, TEST_CMD rc 0, 176 regressões dirigidas, jornada de QA, três provas de distribuição no Linux e anonimização verdes. O Check R18 cobre a releitura da identidade e a transição normal para a ref empacotada."
 ---
 
 # Handoff — EXEC — Retrofit de skills locais listadas
@@ -14,15 +14,14 @@ gate: "Em 0321097be5c1e3c9090238a7c4a4b4c4daa606fa, `env -u GIT_DIR -u GIT_WORK_
 
 ## TL;DR
 
-I1–I4 e R1–R17 concluídos. O setup mantém a pendência se a main deixar de ser direta,
-e aceita a main empacotada válida. O avanço distingue HEAD ilegível de ref da main ilegível.
-Check R17, jornada de QA, 174 regressões dirigidas e TEST_CMD verdes. Comece a QA pelo Check de R17.
-A suíte ampla manteve os mesmos casos vermelhos da base no sandbox.
+I1–I4 e R1–R18 concluídos. O setup reconfere a identidade após ler a ref da main.
+A compactação normal preserva a consulta à main. Passaram 176 regressões dirigidas,
+a jornada de QA, a suíte e as provas de distribuição no Linux.
 
 ## Estado do repo
 
 - **Branch:** `feat/retrofit-watch-050-loja` — base de comparação `origin/main` local.
-- **Último commit de produto:** `0321097` — valida a ref da main na liberação do clone.
+- **Último commit anterior a R18:** `0321097` — valida a ref da main na liberação do clone.
 - **Working tree:** limpo após o commit de checkpoint, notas e handoff.
 - **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp GIT_CEILING_DIRECTORIES=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c '. .sdd/config.sh && eval "$TEST_CMD"'` → rc 0 em `0321097`. 154 testes da loja, 3 pulados, e 144 do Stop. Adaptadores, catálogo e versões válidos.
 - **E2E:** sem `E2E_CMD` na config. Jornada automatizada em `sonda-qa.py` com remotos bare de fixture. Nenhum deploy ou repo privado real.
@@ -212,6 +211,12 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
   Ran 619 tests in 260.969s
   FAILED (failures=1)
   ```
+
+### Revisão estática e correção de R18
+
+- A revisão defensiva em `031bdf8` deu nota geral B. A mensagem da triagem automática foi genérica. A análise das guardas de origem, patch e publicação e a varredura de segredos foram feitas no delta.
+- Em `3af4a5d`, a liberação reconfere a identidade depois de ler a ref da main. Se a compactação remover a ref solta antes da abertura, a consulta passa para `packed-refs`. As duas regressões falharam antes do conserto e passaram depois.
+- Passaram 64 testes do clone, 176 testes dirigidos, a jornada em fixture, o TEST_CMD, as três provas de distribuição no Linux e a anonimização. A conferência estática confirmou os dois consertos. Ainda há divergências entre a leitura manual das refs e a resolução do Git.
 
 ## Artefatos
 
