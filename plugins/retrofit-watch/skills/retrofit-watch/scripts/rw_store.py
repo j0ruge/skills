@@ -982,20 +982,30 @@ def _pending_live_setup(path, marker, origin_id):
         return False
 
 
+def _head_signature(info):
+    return info.st_dev, info.st_ino, info.st_mtime_ns, info.st_ctime_ns, info.st_size
+
+
 def _live_setup_identity(path):
-    """Identifica o checkout e seu .git sem aceitar links no lugar dos diretórios."""
+    """Identifica os diretórios do clone e a versão de HEAD antes de validar a origem."""
+    gitdir = path / ".git"
     try:
-        dirs = (path.lstat(), (path / ".git").lstat())
-        if all(stat.S_ISDIR(info.st_mode) for info in dirs):
-            return tuple((info.st_dev, info.st_ino) for info in dirs)
-    except FileNotFoundError:
+        checkout = path.lstat()
+        metadata = gitdir.lstat()
+        head = (gitdir / "HEAD").lstat()
+        if stat.S_ISDIR(checkout.st_mode) and stat.S_ISDIR(metadata.st_mode) and stat.S_ISREG(head.st_mode):
+            return (checkout.st_dev, checkout.st_ino), (metadata.st_dev, metadata.st_ino), _head_signature(head)
+    except (FileNotFoundError, NotADirectoryError):
         pass
     return None
 
 
 def _finish_live_setup(path, marker, identity):
-    if identity is None or _live_setup_identity(path) != identity:
+    current = _live_setup_identity(path)
+    if identity is None or current is None or current[:2] != identity[:2]:
         raise StoreError(f"destino do setup mudou: {path}")
+    if current[2] != identity[2]:
+        raise StoreError("ramo do clone mudou durante a validação")
     if os.name == "nt":
         marker.unlink()
     else:
@@ -1005,6 +1015,9 @@ def _finish_live_setup(path, marker, identity):
             info = os.fstat(fd)
             if (info.st_dev, info.st_ino) != identity[1]:
                 raise StoreError(f"destino do setup mudou: {path}")
+            head = os.stat("HEAD", dir_fd=fd, follow_symlinks=False)
+            if _head_signature(head) != identity[2]:
+                raise StoreError("ramo do clone mudou durante a validação")
             os.unlink(marker.name, dir_fd=fd)
         finally:
             os.close(fd)
@@ -1016,8 +1029,6 @@ def _check_live_setup(ctx, path, expected):
     if _configured_origin(path, allow_pending=True) != expected:
         raise StoreError(f"origem declarada do clone dedicado não corresponde a {expected[0]}")
     env = git_env(home=ctx.home)
-    if _git(["symbolic-ref", "-q", "HEAD"], path, env, "ramo do clone").strip() != "refs/heads/main":
-        raise StoreError("cópia em uso fora da main")
     hook = path / ".git" / "rw-live-hooks" / "pre-commit"
     hooks = _git(["config", "--show-scope", "--type=path", "--get", "core.hooksPath"],
                  path, env, "trava do clone").removesuffix("\n")
@@ -1025,6 +1036,8 @@ def _check_live_setup(ctx, path, expected):
     if (scope != "worktree" or Path(directory) != hook.parent or not hook.is_file()
             or not os.access(hook, os.X_OK) or hook.read_bytes() != LIVE_SETUP_HOOK):
         raise StoreError("trava de commit do clone dedicado incompleta")
+    if _git(["symbolic-ref", "-q", "HEAD"], path, env, "ramo do clone").strip() != "refs/heads/main":
+        raise StoreError("cópia em uso fora da main")
 
 
 def live_setup(ctx, slug, url=None):
@@ -1056,7 +1069,8 @@ def live_setup(ctx, slug, url=None):
                 raise StoreError(f"instalação do clone de {slug} falhou: {error}") from error
     # O caminho final pode ativar uma reescrita de URL. Na recusa, preserve os arquivos para retomar.
     _live_remote(ctx, slug, path, expected)
-    if identity is None or _live_setup_identity(path) != identity:
+    current = _live_setup_identity(path)
+    if identity is None or current is None or current[:2] != identity[:2]:
         raise StoreError(f"destino do setup mudou: {path}")
     _check_live_setup(ctx, path, expected)
     _finish_live_setup(path, marker, identity)

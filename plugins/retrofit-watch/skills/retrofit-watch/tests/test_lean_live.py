@@ -449,6 +449,45 @@ class LiveTest(unittest.TestCase):
         w.git(w.live, "config", "--worktree", "--unset", "core.hooksPath")
         self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
 
+    def test_setup_does_not_finalize_branch_changed_while_reading_hooks(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        read_git = store._git
+
+        def switch_before_hooks(args, cwd, env, label):
+            if args[0] == "config" and args[-1] == "core.hooksPath":
+                w.git(cwd, "switch", "-qc", "rascunho")
+            return read_git(args, cwd, env, label)
+
+        with mock.patch.object(store, "_git", side_effect=switch_before_hooks):
+            with self.assertRaisesRegex(store.StoreError, "fora da main"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertTrue(pending.is_file())
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+
+    def test_setup_does_not_finalize_origin_verified_on_another_branch(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        w.git(w.live, "switch", "-qc", "rascunho")
+        config = w.home / "main.gitconfig"
+        w.git(w.tmp, "config", "--file", str(config), f"url.{w.origin}.insteadOf", str(w.remote))
+        key = "includeIf.onbranch:main.path"
+        w.git(w.tmp, "config", "--global", key, str(config))
+        check_origin = store._live_remote
+
+        def switch_after_origin_check(ctx, slug, path, expected):
+            env = check_origin(ctx, slug, path, expected)
+            w.git(path, "switch", "-q", "main")
+            return env
+
+        with mock.patch.object(store, "_live_remote", side_effect=switch_after_origin_check):
+            with self.assertRaisesRegex(store.StoreError, "ramo.*mudou"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertTrue(pending.is_file())
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+        w.git(w.tmp, "config", "--global", "--unset", key)
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+
     def test_setup_retry_requires_effective_worktree_lock(self):
         w = self.w
         pending = self._leave_pending_setup()
