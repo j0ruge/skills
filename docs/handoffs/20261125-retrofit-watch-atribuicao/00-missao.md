@@ -29,7 +29,15 @@ O hook reconhece a mensagem que originou cada carga e atribui o trabalho posteri
 
 ## Fora de escopo
 
-A issue #11 e o projeto 0.5.0 seguem em seu próprio fluxo. O L1 exclui mudanças de modo autônomo, publicação, fila, critérios de elegibilidade, catálogo Codex, instalador e refatorações gerais. Aprovação e merge pertencem ao mantenedor. O teto da campanha para L1 é `plan`.
+A issue #11 e o projeto 0.5.0 seguem em seu próprio fluxo. O L1 exclui mudanças de modo autônomo, publicação, fila, critérios de elegibilidade, catálogo Codex, instalador e refatorações gerais.
+
+## Campanha e delegação
+
+No piloto, o teto do L1 era `plan`, com aprovação e merge reservados ao mantenedor.
+Em 27/11, o mantenedor autorizou delegação `full` para a campanha da loja, registrada
+no checkout operacional em `f25cc8f`. Cada ato usa os termos vigentes da campanha.
+Para o merge, o worker confere orçamento, permissão e `pr-ready` no SHA do PR e
+usa esse SHA no merge. [Procedimento do kit](https://github.com/j0ruge/sdd_agents/blob/main/commands/sdd-worker.md#merge)
 
 ## Gate PLAN-AUTO
 

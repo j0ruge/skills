@@ -387,7 +387,9 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 
 ## Pendências / Decisions for a Human
 
-- O merge do PR #13 segue a delegação full e a verificação do SHA pelo worker.
+- Sob a delegação full da loja, o merge do PR #13 exige termos vigentes, orçamento
+  disponível, permissão do ato e `pr-ready` no mesmo SHA que o worker vai integrar.
+  O registro da ampliação está na [missão](00-missao.md#campanha-e-delegação).
 
 ## Riscos e não-feitos
 
