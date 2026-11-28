@@ -463,3 +463,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 22:42 · written by the runner
 2026-11-27 22:47 · r25 · achado 1 → R16: falha da carga nova após esgotar a janela pede retro indevida nos dois limites; base silenciosa, TEST_CMD e 17 Checks existentes verdes.
 - 2026-11-27 22:48 · R16 · Mantenha separada a identificação direta da chamada que abriu a atribuição e a prova de mesma mensagem que a janela limitada oferece. Depois da saturação, um erro da própria nova carga explícita ainda encerra o crédito, sem tratar um ID disputado como prova durante a janela ativa. Preserve o controle de sucesso, erro de outra chamada, falta de message.id, tamanho máximo do histórico e ausência de reativação pela correlação desativada. Use a sonda da r25 e repita os Checks anteriores.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 22:49 · written by the runner
