@@ -186,14 +186,6 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: tratar por arquivo, junto com o item vizinho deste TODO; tirar da lista o que for corrigido.
   Fonte: `docs/retrofit-watch/2026-11-24-pendencias-0.4.0.md` — descoberto por `revisor final` (2026-11-24)
 
-- [ ] **A camada 1 sinaliza evidência sintética da entrega local** —
-  `scripts/anonymity-gate.py:187` (`_segredos`) — a comparação com `origin/main` acusa
-  uma impressão digital pública do plano e duas URLs SSH de fixture, sem credenciais.
-  Direção: tratar as formas públicas comprovadas sem reduzir a detecção de segredos reais. RESOLVED by b5512cb
-  Fonte: `docs/handoffs/20261127-retrofit-watch-050/20-handoff-exec.md` — descoberto por
-  `sdd-executor` na missão `20261127-retrofit-watch-050` (2026-11-28)
-  RECURRED 1: 20261127-retrofit-watch-050/R7 (2026-11-28)
-
 ### Revisão da atribuição da retrofit-watch
 
 - [ ] **ID de chamada reaproveitado entre mensagens passa por vínculo novo** —
@@ -249,35 +241,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/45-docs.md` —
   descoberto por `sdd-docs` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
-- [ ] **O executor privado herda caminhos de auditoria da loja no worktree errado** —
-  `plugins/retrofit-skill/references/modo-autonomo.md:13` (`skill-quality-audit/skills`) —
-  o diretório nominal do worktree não contém o auditor da loja.
-  Direção: declarar a origem de Q, SQA e RS para lote privado e manter o alvo na pasta da skill. RESOLVED by 3162507
-  Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r1.md` —
-  descoberto por `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
-
-- [ ] **As receitas dos handoffs preservam escapes indevidos ao copiar** —
-  `docs/handoffs/20261127-retrofit-watch-050/40-review-r3.md:47` (`--repo`) —
-  o caminho do scanner recebe aspas literais e o comando da suíte falha antes de rodar.
-  Direção: usar aspas de shell nas receitas Markdown e conservar os escapes necessários no YAML. RESOLVED by 2c63f1a
-  Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r3.md` —
-  descoberto por `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
-
-- [ ] **O status manual não preserva a porta HTTPS explícita** —
-  `plugins/retrofit-skill/references/modo-autonomo.md:49` (`--hostname`) —
-  o endpoint relativo usa a porta padrão. O cliente recusa passar a porta no hostname.
-  Direção: descrever a URL absoluta para esse caso e manter o hostname sem porta. RESOLVED by 84a0b0e
-  Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r4.md` —
-  descoberto por `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
-
 ### Clone dedicado da retrofit-watch
-
-- [ ] **O avanço podia mover outro ramo depois da última conferência** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:1266` (`_live_ref_update`) —
-  o merge pelo HEAD podia mover o ramo em uso. O avanço agora usa uma transação em `refs/heads/main`,
-  verifica o SHA anterior e materializa os arquivos em HEAD temporário destacado. RESOLVED by a5a2302
-  Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r2.md` — descoberto por
-  `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
 
 - [ ] **A remoção do marcador do setup no Windows ainda depende do caminho** —
   `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:1112` (`_finish_live_setup`) —
@@ -285,13 +249,6 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: testar a remoção pelo identificador do arquivo numa fixture Windows nativa.
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/20-handoff-exec.md` — descoberto por
   `sdd-executor` na missão `20261127-retrofit-watch-050` (2026-11-28)
-
-- [ ] **O guia do clone não distingue o arquivo HEAD do SHA resolvido** —
-  `docs/retrofit-watch/clone-dedicado.md:16` (`HEAD`) —
-  Um reset na mesma main muda o SHA sem reescrever o arquivo simbólico, e o setup pode concluir.
-  Direção: delimitar a garantia ao arquivo simbólico observado no setup. RESOLVED by bfbb9f8
-  Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r8.md` — descoberto por
-  `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
 
 ## Decidido — não reabrir
 <!-- sdd:decided -->
