@@ -1146,7 +1146,7 @@ IFS= read -r ref
 if IFS= read -r extra; then exit 1; fi
 [ "$(git rev-parse HEAD)" = "$RW_GATE_HEAD" ]
 [ -x "$RW_GATE_HOOK" ]
-if ! "$RW_GATE_PYTHON" -c '
+if ! "$RW_GATE_PYTHON" -I -c '
 import hashlib
 import sys
 from pathlib import Path

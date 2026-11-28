@@ -174,7 +174,7 @@ class GateTest(unittest.TestCase):
 
     def test_private_scan_reports_when_the_store_scanner_rejects_its_interface(self):
         with mock.patch.object(store, "_gate", return_value=(2, "interface da fixture")):
-            with self.assertRaisesRegex(store.StoreError, "origin/main local da loja"):
+            with self.assertRaisesRegex(store.StoreError, "interface da fixture.*origin/main local da loja"):
                 store.layer1(self.ctx, self.rid, self.wt, self.w.store,
                              private=True, base=self.base, head=self.base)
 
@@ -270,12 +270,22 @@ class GateTest(unittest.TestCase):
         self.w.git(self.wt, "config", "core.hooksPath", str(hookpath))
         self.status.side_effect = [(False, "indisponível"), (True, "ok")]
         push = self.effects.push_private
+        run = store.run
+
+        def inspect_wrapper(command, **kwargs):
+            if "push" in command:
+                hooks = next(arg.removeprefix("core.hooksPath=") for arg in command
+                             if isinstance(arg, str) and arg.startswith("core.hooksPath="))
+                wrapper = (Path(hooks) / "pre-push").read_text(encoding="utf-8")
+                self.assertIn('"$RW_GATE_PYTHON" -I -c', wrapper)
+            return run(command, **kwargs)
 
         def real_summary(p, contract):
             with mock.patch.dict(os.environ, RW_SUMMARY="Publicação verificada."):
                 return push(p, contract)
 
         with mock.patch.object(store, "lean_mode", return_value="auto"), \
+                mock.patch.object(store, "run", side_effect=inspect_wrapper), \
                 mock.patch.object(self.effects, "push_private", side_effect=real_summary):
             out = self.publish()
         self.assertEqual((out["instalacao"], out["commit"]), ("status-falhou", head), out)

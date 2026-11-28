@@ -608,8 +608,9 @@ def layer1(ctx, rid, worktree, tools, private=False, *, base=None, head=None):
             raise StoreError("camada 1 privada sem o par de commits")
         rc, out = _gate(tools, worktree, "--camada1", "--private", "--head", head, base=base)
         if rc == 2:
-            raise StoreError("camada 1 privada recusada; confira se o origin/main local da loja suporta "
-                             "--private e --head")
+            detail = " ".join(out.split())[:350]
+            raise StoreError(f"camada 1 privada recusada (rc 2) — {detail}. "
+                             "Confira se o origin/main local da loja suporta --private e --head.")
     else:
         pedido = rw_auto.retro_pedido(ctx, rid)
         extra = _private_harvest(ctx, pedido["cwd"])

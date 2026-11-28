@@ -115,7 +115,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   `plugins/<plugin>/` antes da camada 1 (r1 #10). Direção, opcional: o portão do `seal` do `origin/main`.
   Fonte: codereview r1 #10 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **O estouro do critério apaga o cache dos commits** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:773` (`_startup_git`) — o `criterion`
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:755` (`_startup_git`) — o `criterion`
   grava `{sha, estouro}` por cima dos commits: por 24 h, "desconhecido" parece "não cumprido" (r1 #11).
   Depois do `-c`, a mensagem do `_startup_git` (`args[:2]`) não nomeia o `archive` (r1 #12).
   Direção: o estouro numa chave à parte; o rótulo pula o par `-c k=v`.
