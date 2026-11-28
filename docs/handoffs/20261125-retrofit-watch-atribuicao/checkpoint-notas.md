@@ -610,3 +610,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 01:41 · written by the runner
 
 - 2026-11-28 01:47 · r36, achado 1 → R24. A externa comprovadamente anterior perdeu o ID aposentado e silenciou em quatro retomadas reais da 0.4.0. R23 continua verde para a ordem inversa.
+- 2026-11-28 01:48 · R24 · Trate o metadado rejeitado, mas compatível com a 0.4.0, como candidato na interseção de provas. Quando o prefixo ainda identificar sua posição com prova única e limitada, preserve apenas IDs estritamente anteriores também a esse candidato. Quando faltar prova de posição ou identidade, mantenha a interseção conservadora. Distinga ordem de mensagens de ordem de metadados. Preserve os controles invertidos de R23, os fatos comuns e caminho exclusivo de R22, a leitura única e o limite de memória. Repita os Checks anteriores.
