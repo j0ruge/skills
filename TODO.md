@@ -261,6 +261,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r23.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
+- [ ] **Estado intermediário inverte a precedência do slash** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:430` (`slash_prior_calls`) —
+  um slash anterior volta a valer após a externa no snapshot de c2c0c8c. O estado real da 0.4.0 passa.
+  Direção: decidir se snapshots intermediários precisam recuperar a ordem antes de ampliar a migração.
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r24.md` —
+  descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
+
 ### Documentação da loja
 
 - [ ] **Separar o histórico de releases da tabela de plugins no README** —
