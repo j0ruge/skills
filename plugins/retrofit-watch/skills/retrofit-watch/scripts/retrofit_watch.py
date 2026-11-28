@@ -326,7 +326,7 @@ def origin_identity(url):
         location = os.path.normcase(os.path.realpath(url))
     slug = path.removesuffix("/").lower().removesuffix(".git")
     if host and host.lower() != "github.com":
-        location = path
+        location = url  # O caminho relativo do SCP não equivale ao caminho de uma URI SSH.
     return [slug, host.lower() if host else None, location] if valid_slug(slug) else None
 
 

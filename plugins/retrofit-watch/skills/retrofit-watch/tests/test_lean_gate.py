@@ -280,6 +280,26 @@ class GateTest(unittest.TestCase):
         fetch.assert_not_called()
         self.assertFalse(w.gate_log.exists())
 
+    def test_changed_transport_target_holds_before_fetch(self):
+        self.edit()
+        w = self.w
+        authorized = f"git@localhost:{SLUG}.git"
+        changed = f"ssh://git@localhost/{SLUG}.git"
+        w.git(self.wt, "remote", "set-url", "origin", authorized)
+        lot = json.loads((self.lot / "retrofit.json").read_text())
+        lot["origin_id"] = gate.rw.origin_id(gate.rw.origin_identity(authorized))
+        auto._write_json(self.lot / "retrofit.json", lot)
+        p = gate._Porta(self.ctx, self.rid, SKILL, [])
+        self.assertEqual(gate._private_origin(p)[0], authorized)
+
+        w.git(self.wt, "config", f"url.{changed}.insteadOf", authorized)
+        self.assertEqual(w.git(self.wt, "remote", "get-url", "origin"), changed)
+        self.assertEqual(w.git(self.wt, "remote", "get-url", "--push", "origin"), changed)
+        with mock.patch.object(store, "_live_fetch", side_effect=AssertionError("fetch indevido")) as fetch:
+            self.held("escopo")
+        fetch.assert_not_called()
+        self.assertFalse(w.gate_log.exists())
+
     def test_fetch_rechecks_the_pinned_origin(self):
         w = self.w
         p = gate._Porta(self.ctx, self.rid, SKILL, [])

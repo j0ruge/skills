@@ -1,5 +1,7 @@
 """Elegibilidade e formato do pedido de uma sessão com origens mistas."""
 import json
+import shlex
+import subprocess
 import unittest
 from unittest import mock
 
@@ -84,8 +86,7 @@ class LeanAutoTest(unittest.TestCase):
         w = self.w
         w.git(w.live, "remote", "set-url", "origin", f"https://localhost/{SLUG}.git")
         for url, reason in (
-            (f"git@LOCALHOST:{SLUG}.git", None),
-            (f"ssh://git@localhost:22/{SLUG}.git", None),
+            (f"https://localhost/{SLUG}.git", None),
             (f"https://other.example/{SLUG}.git", "sem-clone"),
             (f"https://localhost:8443/{SLUG}.git", "sem-clone"),
         ):
@@ -99,6 +100,38 @@ class LeanAutoTest(unittest.TestCase):
         w.git(w.dev, "remote", "set-url", "origin", str(other_bare))
         self.assertEqual(self.reason(entry=rw.classify_path(w.skill, w.ctx())), "sem-clone")
         self.assertEqual(self.reason(entry=dict(self.entry, origin_identity=None)), "sem-clone")
+
+    def test_unverified_transport_equivalence_stays_manual(self):
+        w = self.w
+        scp = f"git@localhost:{SLUG}.git"
+        ssh = f"ssh://git@localhost/{SLUG}.git"
+        https = f"https://localhost/{SLUG}.git"
+        probe = w.tmp / "ssh-probe"
+        probe.write_text('#!/bin/sh\nfor arg do last=$arg; done\nprintf "%s\\n" "$last" >&2\nexit 1\n')
+        probe.chmod(0o755)
+        env = dict(w.env, GIT_SSH_COMMAND=shlex.quote(str(probe)), GIT_SSH_VARIANT="ssh")
+        for url, path in ((scp, f"{SLUG}.git"), (ssh, f"/{SLUG}.git")):
+            w.git(w.dev, "remote", "set-url", "origin", url)
+            with self.assertRaises(subprocess.CalledProcessError) as call:
+                w.git(w.dev, "ls-remote", "origin", env=env)
+            self.assertIn(f"git-upload-pack '{path}'", call.exception.stderr.splitlines())
+
+        for authorized, actual, reason in (
+            (scp, scp, None),
+            (scp, ssh, "sem-clone"),
+            (https, scp, "sem-clone"),
+            (https, ssh, "sem-clone"),
+            (ssh, ssh.replace("git@", "other@"), "sem-clone"),
+            (ssh, ssh.replace("localhost/", "localhost:22/"), "sem-clone"),
+            (f"https://github.com/{SLUG}", "git@github.com:Fixture/KB-libs.git", None),
+            (f"https://github.com/{SLUG}", f"ssh://git@github.com/{SLUG}.git", None),
+        ):
+            with self.subTest(authorized=authorized, actual=actual):
+                w.git(w.live, "remote", "set-url", "origin", authorized)
+                w.git(w.dev, "remote", "set-url", "origin", actual)
+                entry = rw.classify_path(w.skill, w.ctx())
+                self.assertEqual(entry["origin"], SLUG)
+                self.assertEqual(self.reason(entry=entry), reason)
 
     def test_same_host_distinct_repo_paths_stay_manual(self):
         w = self.w

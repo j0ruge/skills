@@ -20,8 +20,8 @@ dedicado na `main` sem substituir um destino existente. Se falhar, remove o dest
 tentativa e permite repetir o comando. `retrofit_watch.py live-advance [<dono/repo>]` confere o ramo
 e a árvore antes e depois do fetch e avança só uma cópia limpa na `main`, sem merge de divergência.
 Sem argumento, tenta os repos da lista.
-O servidor e o caminho da origem da sessão precisam corresponder aos do clone dedicado.
-Fora do GitHub público, o caminho deve coincidir exatamente, mesmo quando o slug é o mesmo.
+A origem da sessão precisa corresponder à do clone dedicado.
+Fora do GitHub público nas portas padrão, use a mesma URL Git efetiva, mesmo quando o slug é o mesmo.
 O pedido privado grava a impressão digital `origin_id`, que o lote usa para conferir o destino efetivo.
 
 ## Formatos

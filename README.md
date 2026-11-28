@@ -478,7 +478,7 @@ com `live-setup` e comece em ensaio (`auto-dry`). O checkout de desenvolvimento
 continua livre. A porta roda o pre-push e conserva o remoto até a aprovação do patch,
 que cobre todos os arquivos alterados da skill local.
 A origem do checkout precisa coincidir com a do clone dedicado. Fora do GitHub
-público, a comparação preserva o caminho exato do repositório.
+público nas portas padrão, use a mesma URL Git efetiva nos dois clones.
 Quando a origem usa SSH, o status `local/ci` vai à API do servidor conferido sem a porta de transporte.
 Se a criação do clone falhar, corrija a causa e repita `live-setup`. O startup
 mostra avisos de avanço separados por `dono/repo`.

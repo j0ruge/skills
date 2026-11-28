@@ -9,8 +9,8 @@
   Um revert da loja ou de repo listado reinicia a janela.
 - O selo, a revisão e a aprovação privados cobrem todos os arquivos alterados
   da skill, inclusive caminhos que o fluxo full reserva às listas da loja.
-- O pedido privado vincula o lote ao servidor e ao caminho efetivo da origem.
-  Fora do GitHub público, o mesmo slug não torna caminhos diferentes equivalentes.
+- O pedido privado vincula o lote ao destino Git efetivo. Fora do GitHub público
+  nas portas padrão, o mesmo slug não torna transportes ou caminhos diferentes equivalentes.
   A porta aponta o `local/ci` ao servidor conferido, sem repassar à API a porta do SSH.
 - Após publicar, registra o SHA em `local/ci` e avança o clone com `--ff-only`.
   Confere novamente o ramo e a árvore após o fetch. O startup assistido avisa por

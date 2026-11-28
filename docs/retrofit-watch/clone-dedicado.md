@@ -10,10 +10,10 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
   Uma falha de criação remove apenas o destino reservado pela tentativa.
   Depois de corrigir a causa, repita o comando.
   A URL precisa corresponder ao slug. Sem `--url`, usa HTTPS do GitHub.
-  O clone declara a origem autorizada. O checkout da sessão precisa apontar para
-  o mesmo servidor e caminho, mesmo quando usa outro transporte. Fora de `github.com`
-  na porta padrão, caminhos que diferem em caixa, sufixo `.git` ou barra final
-  não são considerados equivalentes. O slug da lista continua normalizado.
+  O clone declara a origem autorizada. Em `github.com` nas portas padrão,
+  HTTPS e as formas SSH podem representar o mesmo repo. Nos demais servidores,
+  use a mesma URL Git efetiva no checkout e no clone. Um caminho relativo em SCP
+  não equivale ao caminho absoluto de uma URI SSH. O slug da lista continua normalizado.
 - A trava de commit é local ao worktree principal. Os worktrees de lote herdam
   o `core.hooksPath` comum. Se o repo usa um diretório versionado de hooks,
   configure-o na config comum do clone, por exemplo `git config --local core.hooksPath .githooks`.
@@ -49,7 +49,7 @@ após verificar o estado local e concluir a validação da publicação.
 Depois do selo o revisor grava `diff.json` para o patch da skill. `publish` confere a
 revisão e executa o pre-push do repo no worktree, com o mesmo SHA e refs do push.
 Antes de buscar ou publicar, confere o destino efetivo do Git, inclusive reescritas
-de URL e `pushurl`. O slug sozinho não distingue servidores nem caminhos diferentes no mesmo servidor.
+de URL e `pushurl`. O slug sozinho não distingue servidores, transportes ou caminhos.
 Sem prova da janela v2, o gate verde deixa o lote em `auto-dry` e conserva o remoto.
 O dono pode liberar esse motivo com `approve <id> <lote>`. A permissão vale para o
 patch segurado, que inclui todos os arquivos alterados do lote. As exclusões das listas
