@@ -189,7 +189,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 - [ ] **A camada 1 sinaliza evidência sintética da entrega local** —
   `scripts/anonymity-gate.py:187` (`_segredos`) — a comparação com `origin/main` acusa
   uma impressão digital pública do plano e duas URLs SSH de fixture, sem credenciais.
-  Direção: tratar as formas públicas comprovadas sem reduzir a detecção de segredos reais.
+  Direção: tratar as formas públicas comprovadas sem reduzir a detecção de segredos reais. RESOLVED by b5512cb
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/20-handoff-exec.md` — descoberto por
   `sdd-executor` na missão `20261127-retrofit-watch-050` (2026-11-28)
   RECURRED 1: 20261127-retrofit-watch-050/R7 (2026-11-28)
@@ -244,14 +244,14 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 - [ ] **O executor privado herda caminhos de auditoria da loja no worktree errado** —
   `plugins/retrofit-skill/references/modo-autonomo.md:13` (`skill-quality-audit/skills`) —
   o diretório nominal do worktree não contém o auditor da loja.
-  Direção: declarar a origem de Q, SQA e RS para lote privado e manter o alvo na pasta da skill.
+  Direção: declarar a origem de Q, SQA e RS para lote privado e manter o alvo na pasta da skill. RESOLVED by 3162507
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r1.md` —
   descoberto por `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
 
 - [ ] **As receitas dos handoffs preservam escapes indevidos ao copiar** —
-  `docs/handoffs/20261127-retrofit-watch-050/20-handoff-exec.md:99` (`--repo`) —
+  `docs/handoffs/20261127-retrofit-watch-050/40-review-r3.md:47` (`--repo`) —
   o caminho do scanner recebe aspas literais e o comando da suíte falha antes de rodar.
-  Direção: usar aspas de shell nas receitas Markdown e conservar os escapes necessários no YAML.
+  Direção: usar aspas de shell nas receitas Markdown e conservar os escapes necessários no YAML. RESOLVED by 2c63f1a
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r3.md` —
   descoberto por `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
 
