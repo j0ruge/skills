@@ -1,5 +1,15 @@
 # Changelog — retrofit-watch
 
+## [0.5.0] — 2026-11-28
+
+- Repos explicitamente listados em `lean_auto` passam a preparar cada lote num worktree
+  do clone dedicado, sem ocupar o checkout de desenvolvimento.
+- O ensaio roda o pre-push do repo e conserva o remoto. Sem aprovação vinculada ao patch,
+  a publicação exige 10 publicações autônomas da loja, 14 dias e zero vazamentos.
+  Um revert da loja ou de repo listado reinicia a janela.
+- Após publicar, registra o SHA em `local/ci` e avança o clone com `--ff-only`.
+  O startup assistido tenta o avanço e informa a falha anterior quando houver.
+
 ## [0.4.1] — 2026-11-25
 
 ### Fixed

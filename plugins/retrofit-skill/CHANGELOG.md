@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0] — 2026-11-28
+
+- No lote autônomo de uma skill local listada, edita apenas a pasta indicada e seu
+  CHANGELOG, sem bump de versão. O executor sela o patch e deixa a publicação para a porta.
+- A retro manual de repo listado prepara a mudança no clone dedicado. Só publica após
+  confirmação direta do dono, registra o SHA em `local/ci` e avança a cópia em uso.
+
 ## [0.11.0] — 2026-11-24
 
 - **Modo autônomo** (`/retrofit-skill <plugin> --auto <dir do lote>`). O quê: o comando ganha um modo

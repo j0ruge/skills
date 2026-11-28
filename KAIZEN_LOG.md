@@ -6,6 +6,23 @@ para não se perder. Complementa os `CHANGELOG.md` de cada plugin — eles conta
 
 ---
 
+## 2026-11-28 — Retrofit local com ensaio antes da publicação
+
+Missão `20261127-retrofit-watch-050`.
+
+- **Antes:** a skill local elegível terminava em `kit-ou-lean`. O checkout de
+  desenvolvimento não podia servir de cópia estável em uso.
+- **Depois:** em `ff7025b` a jornada de fixture manteve o bare intacto no ensaio.
+  A publicação comparou o SHA no bare, no status `local/ci` e no clone em uso.
+  Os controles cobriram emenda após aprovação e retorno ao ensaio após revert.
+- **Padronizado:** o [checkpoint](docs/handoffs/20261127-retrofit-watch-050/checkpoint.md)
+  aponta para os sensores permanentes. A prova de release troca uma versão do
+  catálogo por vez numa cópia descartável e exige falha para o plugin alterado.
+- **Limite:** a medida é de fixture. A duração do gate privado e a troca de links
+  não foram avaliadas em ambiente real.
+
+---
+
 ## 2026-11-27 — Atribuição da retrofit-watch medida na saída do Stop
 
 Missão `20261125-retrofit-watch-atribuicao`.

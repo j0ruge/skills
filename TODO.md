@@ -67,6 +67,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: reconhecer o prefixo do `is_ntfs_dotgitattributes` do git e cortar o sufixo `:`, com o par.
   Fonte: resíduo R5 da revisão final e codereview r1 #5 — descoberto por `revisor final` (2026-11-24)
 
+- [ ] **A aprovação pública não fica vinculada ao patch revisto** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:30` (`OVERRIDABLE`) —
+  a autorização da loja não identifica o patch que o dono aprovou.
+  Direção: persistir a identidade do patch e conferir no gate público antes de aceitar a aprovação.
+  Fonte: `docs/superpowers/specs/2026-11-25-retrofit-watch-lean-auto-design.md:269` (§9) —
+  descoberto por `sdd-executor` na missão `20261127-retrofit-watch-050` (2026-11-28)
+
 ### Passos do dono antes de ligar o modo auto
 
 - [ ] **O ensaio auto-dry e ligar o auto** —
@@ -162,17 +169,17 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: contar as linhas puladas e avisar.
   Fonte: codereview r1 #18 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **Os sensores do CHANGELOG no test_auto_docs** —
-  `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py:440` (`flat(read(CHANGELOG))`) — a
+  `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py:494` (`flat(read(CHANGELOG))`) — a
   asserção lê o CHANGELOG inteiro, não a entrada `[0.4.0]` (r1 #19). O `assertNotIn` da frase antiga só barra
   o texto exato (r1 #20). Direção: ler só a primeira entrada; manter ou tirar o `assertNotIn`.
   Fonte: codereview r1 #19 e #20 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **Os sensores da referência no test_auto_docs** —
-  `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py:421` (`REASON_CAUSES`) — as
+  `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py:475` (`REASON_CAUSES`) — as
   subcadeias são curtas (r1 #22), e o `--retro` da referência não está ligado ao `CLI_USAGE` (r1 #21).
   Direção: `rows.get` com mensagem; `assertIn("--retro", rw.CLI_USAGE["discard"][0])`.
   Fonte: codereview r1 #21 e #22 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **O CHANGELOG 0.4.0 cita só o fetch e o push** —
-  `plugins/retrofit-watch/CHANGELOG.md:113` (`push`) — o ponto da config de sistema cita só o `fetch` e o
+  `plugins/retrofit-watch/CHANGELOG.md:123` (`push`) — o ponto da config de sistema cita só o `fetch` e o
   `push` da porta, e o `prepare` também usa o `remote_env` (r1 #24).
   Direção: "todo git que fala com o `origin`".
   Fonte: codereview r1 #24 — descoberto por `codereview r1` (2026-11-24)
@@ -190,6 +197,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: tratar por arquivo, junto com o item vizinho deste TODO; tirar da lista o que for corrigido.
   Fonte: `docs/retrofit-watch/2026-11-24-pendencias-0.4.0.md` — descoberto por `revisor final` (2026-11-24)
 
+- [ ] **A camada 1 sinaliza evidência sintética da entrega local** —
+  `scripts/anonymity-gate.py:187` (`_segredos`) — a comparação com `origin/main` acusa
+  uma impressão digital pública do plano e duas URLs SSH de fixture, sem credenciais.
+  Direção: tratar as formas públicas comprovadas sem reduzir a detecção de segredos reais.
+  Fonte: `docs/handoffs/20261127-retrofit-watch-050/20-handoff-exec.md` — descoberto por
+  `sdd-executor` na missão `20261127-retrofit-watch-050` (2026-11-28)
+
 ### Revisão da atribuição da retrofit-watch
 
 - [ ] **O registro da missão mistura a medição histórica com o estado atual** —
@@ -199,7 +213,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r1.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 - [ ] **A publicação do patch desloca uma âncora do backlog da retrofit-watch** —
-  `plugins/retrofit-watch/CHANGELOG.md:113` (`push`) — a entrada 0.4.1 deslocou a âncora original da linha 66.
+  `plugins/retrofit-watch/CHANGELOG.md:123` (`push`) — a entrada 0.4.1 deslocou a âncora original da linha 66.
   O linter sem baseline detecta o desvio. Direção: atualizar a referência do item sobre fetch e push.
   A primeira correção ficou em `9e79cb6`. RESOLVED by 9e79cb6
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r1.md` —
@@ -247,7 +261,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: verificar se os IDs das duas cargas na fixture representam chamadas distintas no Stop da 0.4.1.
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/checkpoint-notas.md` — descoberto por
   `sdd-executor` na missão `20261127-retrofit-watch-050` (2026-11-28)
-  RECURRED 2: 20261127-retrofit-watch-050/I2 (2026-11-28); 20261127-retrofit-watch-050/I3 (2026-11-28)
+  RECURRED 3: 20261127-retrofit-watch-050/I2 (2026-11-28); 20261127-retrofit-watch-050/I3 (2026-11-28); 20261127-retrofit-watch-050/I4 (2026-11-28)
 
 - [ ] **A migração perde a ordem de cargas anteriores ao offset** —
   `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:491` (`attribution_closed`) —
@@ -264,7 +278,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
 - [ ] **A nota de release torna exclusiva a proteção por ID aposentado** —
-  `plugins/retrofit-watch/CHANGELOG.md:21` (`prova de ID aposentado`) —
+  `plugins/retrofit-watch/CHANGELOG.md:31` (`prova de ID aposentado`) —
   a sonda de r23 também preserva a monitorada com metadado externo atrasado e vínculo da mesma mensagem.
   Direção: distinguir as duas provas de preservação. RESOLVED by 5459e8c
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r23.md` —
