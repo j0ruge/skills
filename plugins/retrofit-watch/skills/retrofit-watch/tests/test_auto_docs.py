@@ -1,19 +1,23 @@
 """Testes de contrato do modo autônomo (Tarefa 11): a documentação que a sessão do dono lê presa ao código.
 
 Rodar: python3 plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py
-Só leitura de arquivos do próprio repositório: nenhum teste toca a rede, o git ou o `claude`. O único
-subprocesso é o `retrofit_watch.py --help`, pelo `sys.executable`.
+Os testes leem o repositório ou uma cópia descartável da distribuição, sem tocar a rede, o git ou o
+`claude`. O único subprocesso é o `retrofit_watch.py --help`, pelo `sys.executable`.
 Lidos aqui: a `SKILL.md`, a `references/modo-autonomo.md` (o `rw_auto.REFERENCE`, que o texto do hook
 cita), a `references/criteria.md`, o agente `agents/retrofit-reviewer.md` e, quando existem, a
 `plugins/retrofit-skill/references/modo-autonomo.md` e o `plugins/retrofit-skill/commands/retrofit-skill.md`
 (Tarefa 12). A Tarefa 13 lê também o `plugin.json`, o `CHANGELOG.md`, o `marketplace.json` e o `README.md`.
 """
+import importlib.util
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -165,7 +169,7 @@ class FormatTest(unittest.TestCase):
         for row in rows:
             code = row[0].strip("`")
             self.assertTrue(row[1] and row[3], f"`{code}` sem o que quer dizer ou sem a saída")
-            self.assertEqual(row[2], "sim" if code in rw_gate.OVERRIDABLE else "não", code)
+            self.assertEqual(row[2], "sim" if code in rw_gate.OVERRIDABLE_PRIVATE else "não", code)
 
     def test_scope_exit_for_unreadable_content_is_manual(self):
         # CR-r1 #1: a guarda 5b segura com `escopo` sem saída pelo executor (a docstring do `_g_opaque`). A
@@ -379,6 +383,56 @@ class ReleaseTest(unittest.TestCase):
         self.assertTrue(entries and entries[0] == version, "a primeira entrada do CHANGELOG não é a versão")
         self.assertIn(MODE_VERSION, entries, f"o CHANGELOG não tem a entrada {MODE_VERSION}")
 
+    def test_lean_release_in_fixture(self):
+        executor = STORE_ROOT / "plugins" / "retrofit-skill"
+        spec = importlib.util.spec_from_file_location(
+            "retrofit_skill_release_test", executor / "tests" / "test_modo_autonomo.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        contracts = (
+            (sys.modules[__name__], self.test_the_four_places_agree_at_0_4_0_or_later,
+             "SKILL_MD", "0.5.0"),
+            (module, module.VersionTest().test_the_four_places_agree_at_0_11_0_or_later,
+             "COMMAND", "0.12.0"),
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = Path(tmp)
+            for source in (README, MARKETPLACE, PLUGIN_JSON, SKILL_MD, CHANGELOG,
+                           module.PLUGIN_JSON, module.COMMAND, module.CHANGELOG):
+                target = fixture / source.relative_to(STORE_ROOT)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, target)
+
+            for contract, check, metadata, minimum in contracts:
+                paths = {key: fixture / getattr(contract, key).relative_to(STORE_ROOT)
+                         for key in ("README", "MARKETPLACE", "PLUGIN_JSON", "CHANGELOG", metadata)}
+                with self.subTest(plugin=contract.NAME), patch.multiple(contract, **paths):
+                    check()
+                    version = json.loads(read(paths["PLUGIN_JSON"]))["version"]
+                    self.assertGreaterEqual(as_tuple(version), as_tuple(minimum))
+                    history = read(paths["CHANGELOG"])
+                    self.assertIn(f"## [{minimum}]", history)
+                    if contract.NAME == NAME:
+                        self.assertIn("## [0.4.1]", history)
+                        adoption = flat(readme_section(read(paths["README"]), NAME))
+                        for phrase in ("comece em ensaio", "`auto-dry`", "`lean_auto`",
+                                       f"{rw_store.V2_MIN_PUBLISHED} publicações autônomas",
+                                       f"{rw_store.V2_MIN_DAYS} dias", "zero vazamentos"):
+                            self.assertIn(phrase, adoption)
+
+                    catalog = paths["MARKETPLACE"]
+                    original = read(catalog)
+                    data = json.loads(original)
+                    block = next(p for p in data["plugins"] if p["name"] == contract.NAME)
+                    block["version"] = "0.0.0"
+                    try:
+                        catalog.write_text(json.dumps(data), encoding="utf-8")
+                        with self.assertRaisesRegex(AssertionError, r"a versão do bloco no marketplace\.json"):
+                            check()
+                    finally:
+                        catalog.write_text(original, encoding="utf-8")
+
     def test_help_lists_every_subcommand(self):
         out = subprocess.run([sys.executable, str(SCRIPT), "--help"], capture_output=True, encoding="utf-8",
                              env={**os.environ, "PYTHONIOENCODING": "utf-8"}, stdin=subprocess.DEVNULL,
@@ -447,6 +501,19 @@ class CorrectionTextTest(unittest.TestCase):
             for cause in causes:
                 self.assertIn(cause, rows[code][1], f"a linha `{code}` não cita {cause!r}")
 
+
+class PrivateFlowTest(unittest.TestCase):
+    def test_reviewer_and_watch_contract(self):
+        agent = read(AGENT)
+        for field in ("origin/main:<skill_path>", "diff.json", "patch", "regra_repetida", "fora_das_licoes"):
+            self.assertIn(field, agent)
+        for field in ("lean_auto", "live_dir"):
+            self.assertIn(field, read(SKILL_MD))
+        reference = read(REFERENCE)
+        for reason in ("sem-changelog", "segredo", "caminho", "gate"):
+            self.assertIn(f"| `{reason}` |", reference)
+        for field in ("diff.json", "local/ci", "status-falhou", "clone-atras"):
+            self.assertIn(field, reference)
 
 if __name__ == "__main__":
     unittest.main()

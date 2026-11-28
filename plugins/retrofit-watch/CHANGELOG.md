@@ -1,5 +1,34 @@
 # Changelog — retrofit-watch
 
+## [0.5.0] — 2026-11-28
+
+- Repos explicitamente listados em `lean_auto` passam a preparar cada lote num worktree
+  do clone dedicado, sem ocupar o checkout de desenvolvimento.
+- O ensaio roda o pre-push do repo e conserva o remoto. Sem aprovação vinculada ao patch,
+  a publicação exige 10 publicações autônomas da loja, 14 dias e zero vazamentos.
+  Reverter uma publicação autônoma na loja ou num repo listado reinicia a janela.
+- O selo, a revisão e a aprovação privados cobrem todos os arquivos alterados
+  da skill, inclusive caminhos que o fluxo full reserva às listas da loja.
+- O pedido privado vincula o lote ao destino Git efetivo. Fora do GitHub público
+  nas portas padrão, o mesmo slug não torna transportes ou caminhos diferentes equivalentes.
+  A porta aponta o `local/ci` ao servidor conferido, sem repassar à API a porta do SSH.
+  Em HTTPS com porta não padrão, usa a URL absoluta da API e passa ao `gh` o hostname sem porta.
+- O Stop reconfere a origem da sessão e inclui o caminho rastreado da skill no pedido
+  privado. O preparo e a porta exigem um `SKILL.md` regular nesse mesmo caminho.
+- Após publicar, registra o SHA em `local/ci` e avança o clone com `--ff-only`.
+  Se detectar uma troca de ramo antes do fetch, registra `fora-da-main` sem buscar.
+  Na releitura antes da busca, distingue HEAD ilegível de uma ref da main ilegível.
+  Confere novamente o ramo e a árvore após o fetch. O startup assistido avisa por
+  `dono/repo` se o último avanço falhou ou se o registro estiver inválido, e avisa
+  imediatamente se não conseguiu iniciar o processo.
+- `live-setup` preserva até um diretório vazio criado durante a instalação. Se a origem
+  efetiva for recusada no caminho final, conserva os arquivos do clone pendente. Na
+  retomada ou na instalação inicial, só confirma o clone conferido na `main`, com
+  origem declarada e efetiva compatíveis e trava de commit ativa. Setup e elegibilidade
+  exigem que `HEAD` aponte para uma `refs/heads/main` direta e existente, inclusive
+  empacotada. O setup reconfere a ref na liberação e mantém a pendência se ela deixar
+  de ser direta ou legível.
+
 ## [0.4.1] — 2026-11-25
 
 ### Fixed

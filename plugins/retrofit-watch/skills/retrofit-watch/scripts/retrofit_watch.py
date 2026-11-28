@@ -42,6 +42,7 @@ sem ela, ou com mais de uma, o `queue` sai 1 em vez de responder uma fila vazia.
 Nunca grava texto do assistente. Qualquer erro interno vai para <data>/errors.log e sai com 0.
 Só biblioteca padrão. Roda em Linux, macOS e Windows (lá o `python3` do PATH, sem fcntl).
 """
+import hashlib
 import importlib
 import json
 import os
@@ -126,7 +127,8 @@ class Context:
 
     @property
     def owners(self):
-        return {o.lower() for o in self.config.get("owners", DEFAULT_OWNERS)}
+        owners = self.config.get("owners", DEFAULT_OWNERS)
+        return {o.lower() for o in owners if isinstance(o, str)} if isinstance(owners, (list, tuple)) else set()
 
     @property
     def excluded(self):
@@ -139,7 +141,7 @@ class Context:
     @property
     def deny_roots(self):
         roots = [self.home / ".agents", self.home / ".hermes"]
-        roots += [Path(os.path.expanduser(r)) for r in self.config.get("deny_roots", [])]
+        roots += self._paths("deny_roots", [])
         return [_slashed(os.path.realpath(r)) for r in roots]
 
     # --- modo autônomo (rw_auto.py) ------------------------------------------------------------
@@ -171,6 +173,26 @@ class Context:
         """Plugins ou skills que ficam sempre no modo manual."""
         value = self.config.get("manual", [])
         return {m for m in value if isinstance(m, str)} if isinstance(value, list) else set()
+
+    @property
+    def lean_auto(self):
+        value = self.config.get("lean_auto", [])
+        if not isinstance(value, list):
+            return frozenset()
+        owners = self.owners
+        return frozenset(slug for item in value if isinstance(item, str)
+                         and valid_slug(slug := item.lower()) and slug.split("/")[0] in owners)
+
+    @property
+    def live_dir(self):
+        raw = self.config.get("live_dir", "~/.local/share/skills-live")
+        if not isinstance(raw, str) or not raw or "\0" in raw:
+            return None
+        path = self._home_path(raw)
+        if not path.is_absolute():
+            return None
+        path = Path(os.path.realpath(path))
+        return None if _denied(_slashed(str(path)), self) else path
 
     @property
     def auto_limits(self):
@@ -226,19 +248,42 @@ def _slashed(path):
     return path.replace(os.sep, "/")
 
 
-def _git(args, cwd):
+# As variáveis de localização podem redirecionar o Git para outro checkout.
+GIT_LOCATION = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
+                "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR")
+GIT_OVERRIDES = ("XDG_CONFIG_HOME", "GIT_DIFF_OPTS", "GIT_EXTERNAL_DIFF")
+
+
+def git_env(home=None, nosystem=False, neutral=False):
+    """Prepara o ambiente Git com a localização e configuração definidas pelo chamador."""
+    env = {k: v for k, v in os.environ.items()
+           if k not in GIT_LOCATION and k not in GIT_OVERRIDES and not k.startswith("GIT_CONFIG")}
+    if home is not None:
+        env["HOME"] = str(home)
+    if nosystem or neutral:
+        env["GIT_CONFIG_NOSYSTEM"] = "1"
+    if neutral:
+        env["GIT_CONFIG_GLOBAL"] = os.devnull
+    return env
+
+
+def _git(args, cwd, *, deadline=None):
+    timeout = GIT_TIMEOUT if deadline is None else min(GIT_TIMEOUT, deadline - time.monotonic())
+    if timeout <= 0:
+        return None
+    env = dict(git_env(), GIT_NO_LAZY_FETCH="1", GIT_ALLOW_PROTOCOL="")
     try:
-        proc = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True,
-                              timeout=GIT_TIMEOUT)
+        proc = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True,
+                              encoding="utf-8", errors="surrogateescape", timeout=timeout, env=env)
         return proc.stdout.strip() if proc.returncode == 0 else None
     except (OSError, subprocess.TimeoutExpired):
         return None
 
 
-def _toplevel(cwd):
+def _toplevel(cwd, *, deadline=None):
     """Raiz do repo no formato do SO: o git do Windows responde `C:/x`, e o realpath com que ela é
     comparada (o TODO.md do kit) vem `C:\\x`."""
-    top = _git(["rev-parse", "--show-toplevel"], cwd)
+    top = _git(["rev-parse", "--show-toplevel"], cwd, deadline=deadline)
     return os.path.normpath(top) if top else None
 
 
@@ -268,15 +313,62 @@ def _full(plugin, skill, ctx):
             "skills": [skill] if skill else []}
 
 
-def _lean(name, repo):
-    return {"key": f"lean:{repo}:{name}", "mode": "lean", "arg": name, "label": name, "repo": repo}
+def _lean(name, repo, origin=None, skill_path=None):
+    return {"key": f"lean:{repo}:{name}", "mode": "lean", "arg": name, "label": name, "repo": repo,
+            "origin": origin[0] if origin else None, "origin_identity": origin, "skill_path": skill_path}
 
 
-def _owned(top, ctx):
-    """O `origin` do repo é de um dono nosso?"""
-    origin = _git(["remote", "get-url", "origin"], top) or ""
-    owner = re.search(r"[:/]([^/:]+)/[^/]+?(?:\.git)?/?$", origin)
-    return bool(owner) and owner.group(1).lower() in ctx.owners
+def valid_slug(value):
+    return (isinstance(value, str) and re.fullmatch(r"[a-z0-9][a-z0-9-]*/[a-z0-9_.-]+", value) is not None
+            and value.rsplit("/", 1)[1] not in (".", ".."))
+
+
+def origin_identity(url):
+    """Separa o slug da lista do destino efetivo, sem presumir a política de outras forges."""
+    if not isinstance(url, str):
+        return None
+    host_pattern = r"(?:[^@/:\s?#]+@)?([a-z0-9][a-z0-9.-]*)"
+    remote = re.fullmatch(rf"(?i)(https|ssh)://{host_pattern}(?::([0-9]{{1,5}}))?/([^/]+/[^/]+/?)", url)
+    scp = re.fullmatch(rf"(?i){host_pattern}:([^/]+/[^/]+/?)", url) if not os.path.isabs(url) else None
+    host = location = None
+    if remote:
+        scheme, host, port, path = remote.groups()
+        if port is not None:
+            number = int(port)
+            if not 0 < number <= 65535:
+                return None
+            if number != (443 if scheme.lower() == "https" else 22):
+                host = f"{host}:{number}"
+    elif scp:
+        host, path = scp.groups()
+    else:
+        path = url.replace("\\", "/")
+        if not os.path.isabs(url) or not path.endswith(".git") or {".", ".."} & set(path.split("/")):
+            return None
+        path = "/".join(path.split("/")[-2:])
+        location = os.path.normcase(os.path.realpath(url))
+    slug = path.removesuffix("/").lower().removesuffix(".git")
+    if host and host.lower() != "github.com":
+        location = url  # O caminho relativo do SCP não equivale ao caminho de uma URI SSH.
+    return [slug, host.lower() if host else None, location] if valid_slug(slug) else None
+
+
+def origin_slug(url):
+    origin = origin_identity(url)
+    return origin[0] if origin else None
+
+
+def origin_id(origin):
+    return hashlib.sha256(json.dumps(origin).encode("ascii")).hexdigest()
+
+
+def _owned_origin(top, ctx, *, deadline=None):
+    origin = origin_identity(_git(["remote", "get-url", "origin"], top, deadline=deadline))
+    return origin if origin and origin[0].split("/")[0] in ctx.owners else None
+
+
+def _denied(real, ctx):
+    return any(real == root or real.startswith(root.rstrip("/") + "/") for root in ctx.deny_roots)
 
 
 def kit_of(name, ctx):
@@ -295,7 +387,7 @@ def classify_kit(kit, ctx):
     if not exe:
         return None
     top = _toplevel(os.path.dirname(os.path.realpath(exe)))
-    if not top or not _owned(top, ctx):
+    if not top or not _owned_origin(top, ctx):
         return None
     return {"key": f"kit:{top}", "mode": "kit", "arg": kit, "label": f"kit {kit}", "repo": top}
 
@@ -313,7 +405,10 @@ def classify_path(path, ctx):
     name = os.path.basename(real.rstrip("/"))
     if name in ctx.config.get("include", []):
         top = _toplevel(real)
-        return _lean(name, top)
+        origin, skill_path = (_local_origin(real, name, top, ctx) if top and name not in ctx.excluded
+                              and not _denied(real, ctx) and "/.agents/skills/" not in real + "/"
+                              else (None, None))
+        return _lean(name, top, origin, skill_path)
     if name in ctx.excluded:
         return None
     home = _slashed(str(ctx.home))
@@ -328,7 +423,7 @@ def classify_path(path, ctx):
             found = re.match(r"plugins/([^/]+)/", rest)
             plugin = found.group(1) if found else None
         return _full(plugin, name, ctx) if plugin else None
-    if any(real == root or real.startswith(root + "/") for root in ctx.deny_roots) or "/.agents/skills/" in real + "/":
+    if _denied(real, ctx) or "/.agents/skills/" in real + "/":
         return None
     top = _toplevel(real)
     if not top:
@@ -341,18 +436,26 @@ def classify_path(path, ctx):
                 return _full(in_plugin.group(1), name, ctx)
         except (OSError, ValueError):
             pass
+    origin, skill_path = _local_origin(real, name, top, ctx)
+    return _lean(name, top, origin, skill_path) if origin else None
+
+
+def _local_origin(real, name, top, ctx):
     try:
         locked = json.loads(Path(top, "skills-lock.json").read_text()).get("skills", {})
         if name in locked:
-            return None
+            return None, None
     except (OSError, ValueError, AttributeError):
         pass
-    rel = os.path.relpath(os.path.join(real, "SKILL.md"), top)
-    if _git(["ls-files", "--error-unmatch", "--", rel], top) is None:
-        return None
-    if not _owned(top, ctx):
-        return None
-    return _lean(name, top)
+    rel = _slashed(os.path.relpath(os.path.join(real, "SKILL.md"), top))
+    tracked = _git(["--literal-pathspecs", "ls-files", "--stage", "-z", "--", rel], top)
+    origin = _owned_origin(top, ctx) if tracked else None
+    if not origin:
+        return None, None
+    meta, _, path = tracked.partition("\t")
+    if (path == rel + "\0" and meta.startswith(("100644 ", "100755 ")) and meta.endswith(" 0")):
+        return origin, rel
+    return origin, None
 
 
 # --- estado ------------------------------------------------------------------------------------
@@ -586,6 +689,10 @@ class Scanner:
             return
         key = info["key"]
         entry = self.st["skills"].setdefault(key, dict(info, reviews=0, work=0, friction=0))
+        if info["mode"] == "lean" and (entry.get("skill_path") != info.get("skill_path")
+                                       or entry.get("origin_identity") != info.get("origin_identity")):
+            # A chave da sessão pode agrupar skills homônimas. A evidência mista fica manual.
+            entry["skill_path"] = None
         if "skills" in info:
             # Lista nova, nunca a do cache de classificação. Estado antigo não tem a chave.
             have = list(entry.get("skills") or [])
@@ -1245,9 +1352,12 @@ def cmd_stop(payload, ctx):
             output = None
             if auto is not None:
                 try:
-                    auto_entries, manual, reasons = auto.split(ctx, payload, ready, st.get("entrypoint"))
+                    from rw_store import STARTUP_TIMEOUT
+
+                    deadline = time.monotonic() + STARTUP_TIMEOUT
+                    auto_entries, manual, reasons = auto.split(ctx, payload, ready, st.get("entrypoint"), deadline=deadline)
                     if auto_entries:
-                        pedido = auto.open_request(ctx, payload, auto_entries)
+                        pedido = auto.open_request(ctx, payload, auto_entries, deadline=deadline)
                         output = build_output(manual, auto.auto_text(ctx, pedido, auto_entries), reasons)
                         output["systemMessage"] = "\n".join(
                             m for m in (auto.auto_message(pedido, auto_entries), output.get("systemMessage")) if m)
@@ -1279,7 +1389,8 @@ def queue_notice(ctx):
 
 # Os segmentos do aviso de startup, na ordem da linha: (módulo, função). None é a fila de hoje, daqui.
 NOTICES = ((None, "queue_notice"), ("rw_auto", "held_notice"), ("rw_auto", "orphan_notice"),
-           ("rw_auto", "behind_notice"), ("rw_store", "criterion_notice"))
+           ("rw_auto", "behind_notice"), ("rw_store", "criterion_notice"),
+           ("rw_auto", "live_notice"), ("rw_auto", "lean_mode_notice"))
 
 
 def cmd_pending(payload, ctx):
@@ -1289,6 +1400,12 @@ def cmd_pending(payload, ctx):
     if session_mode(ctx) != "attended":
         return None
     parts = []
+    if ctx.lean_auto:
+        try:
+            importlib.import_module("rw_store").spawn_live_advance(ctx)
+        except OSError as exc:
+            log_error(ctx, exc)
+            parts.append("não foi possível iniciar o avanço dos clones (consulte errors.log)")
     for module, name in NOTICES:
         try:
             source = sys.modules[__name__] if module is None else importlib.import_module(module)
@@ -1352,6 +1469,8 @@ CLI_USAGE = {
     "prepare": ("prepare <id> <lote> [--redo]", None),
     "seal": ("seal <id> <lote> --licoes L1,L2 [--fases a,b]", None),
     "harvest": ("harvest", None),
+    "live-setup": ("live-setup <dono/repo> [--url URL]", None),
+    "live-advance": ("live-advance [<dono/repo>]", None),
     # A porta de publicação (rw_gate.py) também confere os próprios argumentos.
     "publish": ("publish <id> <lote>", None),
 }

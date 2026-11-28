@@ -756,6 +756,8 @@ class StoreTest(unittest.TestCase):
                 fh.write("# linha nova\n")
         self.w.git(wt, "commit", "-q", "-a", "--amend", "--no-edit")
         self.assertEqual(rw_store.patch_id(wt), amended, "os arquivos de lista entraram no patch")
+        with mock.patch.object(rw_store, "layer1", return_value=[]):
+            self.assertEqual(rw_store.seal(self.ctx(), rid, "demo", ["1"], [])["patch"], amended)
         self.w.git(wt, "commit", "-q", "--amend", "-m", "fix(demo): outra mensagem")
         self.assertNotEqual(rw_store.patch_id(wt), amended, "a mensagem do commit ficou fora do patch")
 

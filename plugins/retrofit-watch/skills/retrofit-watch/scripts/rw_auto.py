@@ -1,8 +1,8 @@
 """retrofit-watch, modo autônomo: o pedido do Stop hook e o registro das retros autônomas.
 
 O `cmd_stop` de retrofit_watch.py importa este módulo só com `mode` diferente de `manual` na config;
-o `cmd_pending` (o aviso de startup) o importa sempre. Ele roda dentro do hook (10 s): nenhuma chamada
-de rede, nenhum git, nenhum subagente.
+o `cmd_pending` (o aviso de startup) o importa sempre. Ele roda dentro do hook (10 s). A leitura
+de refs do clone usa Git local com prazo compartilhado. Rede e subagentes ficam fora deste hook.
 
 Arquivos, todos em <dados> (o CLAUDE_PLUGIN_DATA), fora de qualquer repo:
   auto/<id>/pedido.json   o hook grava ao pedir a retro autônoma
@@ -36,12 +36,15 @@ CRITERIA = HERE.parent / "references" / "criteria.md"
 SCRIPT = HERE / "retrofit_watch.py"
 
 # Motivos de uma entrada ficar no modo manual, na ordem em que why_manual os confere.
-REASONS = ("modo", "kit-ou-lean", "lista-manual", "permissao", "entrypoint", "sem-loja", "teto")
+REASONS = ("modo", "kit-ou-lean", "lista-manual", "permissao", "entrypoint", "sem-loja",
+           "origem-da-skill", "sem-clone", "teto")
 # Os motivos que a linha ao dono explica. Os outros não ganham acréscimo: são o modo manual de
 # sempre (o `modo`, a lista `manual`, o kit ou a skill lean) ou uma sessão que não é a interativa.
 REASON_TEXT = {
     "permissao": "o modo autônomo só vale com o modo de permissão bypassPermissions",
     "sem-loja": "falta na config a chave store com o clone de trabalho da loja",
+    "origem-da-skill": "a origem atual ou o caminho rastreado da skill não confere com a sessão",
+    "sem-clone": "a elegibilidade do clone dedicado ficou sem confirmação (retrofit_watch.py live-setup <dono/repo>)",
     "teto": "o teto de retrofits autônomos da sessão (auto_limits) foi atingido",
 }
 # Os motivos de nome da porta (rw_gate): só o dono os resolve, ensinando o portão (O7). Moram aqui porque
@@ -159,11 +162,12 @@ def used(registry, session, plugin=None, skip=None):
 
 # --- decisão -----------------------------------------------------------------------------------
 
-def why_manual(ctx, payload, entry, registry, entrypoint):
+def why_manual(ctx, payload, entry, registry, entrypoint, *, deadline=None):
     """Por que a entrada fica no modo manual, ou None quando o modo autônomo vale para ela."""
     if ctx.mode == "manual":
         return "modo"
-    if entry.get("mode") != "full":
+    lean = _listed_origin(ctx, entry)
+    if entry.get("mode") != "full" and not lean:
         return "kit-ou-lean"
     manual = ctx.manual
     if entry.get("arg") in manual or any(s in manual for s in entry.get("skills") or []):
@@ -176,6 +180,21 @@ def why_manual(ctx, payload, entry, registry, entrypoint):
         return "entrypoint"
     if ctx.store is None:
         return "sem-loja"
+    if lean:
+        from rw_store import STARTUP_TIMEOUT, live_clone
+
+        if deadline is None:
+            deadline = time.monotonic() + STARTUP_TIMEOUT
+        origin = entry.get("origin_identity")
+        checkout = entry.get("repo")
+        if (not isinstance(origin, list) or not origin or origin[0] != lean
+                or not valid_skill_path(entry.get("skill_path"))
+                or not isinstance(checkout, str) or not os.path.isabs(checkout)
+                or rw._toplevel(checkout, deadline=deadline) != checkout
+                or rw._owned_origin(checkout, ctx, deadline=deadline) != origin):
+            return "origem-da-skill"
+        if live_clone(ctx, lean, origin=origin, deadline=deadline) is None:
+            return "sem-clone"
     limits = ctx.auto_limits
     session = payload.get("session_id") or "unknown"
     if (used(registry, session, plugin=entry.get("arg")) >= limits["per_skill"]
@@ -184,16 +203,25 @@ def why_manual(ctx, payload, entry, registry, entrypoint):
     return None
 
 
-def split(ctx, payload, entries, entrypoint):
+def _listed_origin(ctx, entry):
+    slug = entry.get("origin")
+    return slug if entry.get("mode") == "lean" and rw.valid_slug(slug) and slug in ctx.lean_auto else None
+
+
+def split(ctx, payload, entries, entrypoint, *, deadline=None):
     """Separa as entradas prontas: (autônomas, manuais, motivos por extenso das manuais).
 
     As autônomas do mesmo Stop entram no teto umas das outras: cada uma conta como um retrofit
     da sessão para a seguinte, senão quatro entradas prontas de uma vez passariam do teto de 3."""
+    if deadline is None:
+        from rw_store import STARTUP_TIMEOUT
+
+        deadline = time.monotonic() + STARTUP_TIMEOUT
     registry = read_registry(ctx)
     session = payload.get("session_id") or "unknown"
     planned, auto, manual, reasons = [], [], [], []
     for entry in entries:
-        why = why_manual(ctx, payload, entry, registry + planned, entrypoint)
+        why = why_manual(ctx, payload, entry, registry + planned, entrypoint, deadline=deadline)
         if why is None:
             auto.append(entry)
             planned.append({"sessao": session, "id": None, "plugin": entry.get("arg"),
@@ -215,7 +243,7 @@ def _write_json(path, data):
     os.replace(tmp, path)
 
 
-def open_request(ctx, payload, entries):
+def open_request(ctx, payload, entries, *, deadline=None):
     """Grava <dados>/auto/<id>/pedido.json e o devolve. O id não repete: com a pasta já ocupada
     (dois pedidos no mesmo segundo), avança um segundo."""
     session = payload.get("session_id") or "unknown"
@@ -229,6 +257,20 @@ def open_request(ctx, payload, entries):
             break
         except FileExistsError:
             now += 1
+    skills = []
+    effective = None
+    for entry in entries:
+        slug = _listed_origin(ctx, entry)
+        if slug and effective is None:
+            from rw_store import lean_mode
+
+            effective = lean_mode(ctx, deadline=deadline)
+        skills.append({"key": entry["key"], "plugin": entry["arg"], "label": entry["label"],
+                       "skills": [entry["arg"]] if slug else list(entry.get("skills") or []), "repo": slug,
+                       "modo": effective if slug else ctx.mode})
+        if slug:
+            skills[-1]["origin_id"] = rw.origin_id(entry["origin_identity"])
+            skills[-1]["skill_path"] = entry["skill_path"]
     pedido = {
         "id": rid,
         "sessao": session,
@@ -236,8 +278,7 @@ def open_request(ctx, payload, entries):
         "transcript": payload.get("transcript_path"),
         "cwd": payload.get("cwd") or os.getcwd(),
         "modo": ctx.mode,
-        "skills": [{"key": e["key"], "plugin": e["arg"], "label": e["label"], "skills": list(e.get("skills") or [])}
-                   for e in entries],
+        "skills": skills,
     }
     _write_json(folder / "pedido.json", pedido)
     return pedido
@@ -247,7 +288,9 @@ def auto_text(ctx, pedido, entries):
     """O bloco do pedido autônomo para o Claude. Nomeia os caminhos absolutos que o fluxo usa."""
     labels = ", ".join(e["label"] for e in entries)
     label = entries[0]["label"] if len(entries) == 1 else "<skill>"
-    skills = "; ".join(f"`{e['label']}` ({e['work']} chamadas, {e['friction']} sinais de atrito)" for e in entries)
+    skills = "; ".join(f"`{e['label']}` ({e['work']} chamadas, {e['friction']} sinais de atrito)"
+                       + (f" (repo {s['repo']}, modo {s['modo']})" if s.get("repo") else "")
+                       for e, s in zip(entries, pedido["skills"]))
     lessons = retro_dir(ctx, pedido["id"]) / "licoes.json"
     limit = ctx.auto_limits["per_session"]
     before = used(read_registry(ctx), pedido["sessao"], skip=pedido["id"])
@@ -403,6 +446,18 @@ PEDIDO_SKILL_SPEC = {
     "label": _text,
     "skills": _text_list,
 }
+PEDIDO_SKILL_ORIGIN_SPEC = {
+    **PEDIDO_SKILL_SPEC,
+    "repo": lambda value: value is None or rw.valid_slug(value),
+    "modo": _one_of("auto", "auto-dry"),
+}
+
+
+def _origin_id(value):
+    return _text(value) and re.fullmatch(r"[a-f0-9]{64}", value) is not None
+
+
+PEDIDO_SKILL_PRIVATE_SPEC = {**PEDIDO_SKILL_ORIGIN_SPEC, "repo": rw.valid_slug, "origin_id": _origin_id}
 LICOES_SPEC = {
     "id": _safe_text,
     "licoes": _list,
@@ -453,12 +508,29 @@ RETROFIT_SPEC = {
     "versao": _opt_text,
     "patch": _opt_text,
 }
-ANONIMATO_SPEC = {
+
+
+def valid_skill_folder(value):
+    """Só caminhos relativos portáveis, sem segmentos de navegação nem metadados do Git."""
+    return (_text(value) and not any(c in value for c in '\\:\0\r\n')
+            and all(part.rstrip(" .") == part and part.lower() not in ("", ".", "..", ".git")
+                    for part in value.split("/")))
+
+
+def valid_skill_path(value):
+    return (isinstance(value, str) and value.endswith("/SKILL.md")
+            and valid_skill_folder(value.removesuffix("/SKILL.md"))
+            and not re.search(r"[\ud800-\udfff]", value))
+
+
+PRIVATE_RETROFIT_SPEC = {**RETROFIT_SPEC, "repo": rw.valid_slug, "pasta": valid_skill_folder,
+                         "origin_id": _origin_id}
+DIFF_SPEC = {
     "patch": _text,
-    "termos": _list,
     "regra_repetida": _opt_text,
     "fora_das_licoes": _opt_text,
 }
+ANONIMATO_SPEC = {**DIFF_SPEC, "termos": _list}
 TERMO_SPEC = {
     "termo": _text,
     "veredito": _one_of("publico", "privado", "duvida"),
@@ -503,10 +575,13 @@ def _fields(obj, spec, where):
     return obj
 
 
-def _items(obj, key, spec, where):
+def _items(obj, key, spec, where, optional=None):
     """Confere cada objeto da lista `obj[key]` contra `spec`."""
     for i, item in enumerate(obj[key]):
-        _fields(item, spec, f"{where}, `{key}`[{i}]")
+        fields = spec
+        if optional and isinstance(item, dict):
+            fields = spec | {k: check for k, check in optional.items() if k in item}
+        _fields(item, fields, f"{where}, `{key}`[{i}]")
     return obj[key]
 
 
@@ -536,19 +611,30 @@ def _by_number(entries, where):
 
 def load_pedido(path):
     data = _fields(_read_json(path), PEDIDO_SPEC, str(path))
-    _items(data, "skills", PEDIDO_SKILL_SPEC, str(path))
+    for i, entry in enumerate(data["skills"]):
+        spec = (PEDIDO_SKILL_ORIGIN_SPEC if isinstance(entry, dict) and ("repo" in entry or "modo" in entry)
+                else PEDIDO_SKILL_SPEC)
+        if isinstance(entry, dict) and entry.get("repo") is not None:
+            spec = PEDIDO_SKILL_PRIVATE_SPEC
+            if "skill_path" in entry:
+                spec = spec | {"skill_path": valid_skill_path}
+        _fields(entry, spec, f"{path}: `skills`[{i}]")
     return data
 
 
-def _numbered(path, spec, item_spec):
+def _numbered(path, spec, item_spec, optional=None):
     """(`id`, os itens de `licoes` por número) de um arquivo, numa leitura só."""
     data = _fields(_read_json(path), spec, str(path))
-    return data["id"], _by_number(_items(data, "licoes", item_spec, str(path)), str(path))
+    return data["id"], _by_number(_items(data, "licoes", item_spec, str(path), optional), str(path))
+
+
+def _read_licoes(path):
+    return _numbered(path, LICOES_SPEC, LICAO_SPEC, {"repo": PEDIDO_SKILL_ORIGIN_SPEC["repo"]})
 
 
 def load_licoes(path):
     """As lições de licoes.json, por número (`"1"`, `"2"`...), na ordem do arquivo."""
-    return _numbered(path, LICOES_SPEC, LICAO_SPEC)[1]
+    return _read_licoes(path)[1]
 
 
 def load_veredito(path):
@@ -576,7 +662,7 @@ def retro_pedido(ctx, rid):
 def retro_licoes(ctx, rid):
     """As lições do licoes.json da retro `rid`, por número; com outro `id`, Malformed."""
     path = retro_dir(ctx, rid) / "licoes.json"
-    got, licoes = _numbered(path, LICOES_SPEC, LICAO_SPEC)
+    got, licoes = _read_licoes(path)
     _own(path, got, rid)
     return licoes
 
@@ -590,7 +676,9 @@ def retro_veredito(ctx, rid):
 
 
 def load_retrofit(path):
-    return _fields(_read_json(path), RETROFIT_SPEC, str(path))
+    data = _read_json(path)
+    spec = PRIVATE_RETROFIT_SPEC if isinstance(data, dict) and ("repo" in data or "pasta" in data) else RETROFIT_SPEC
+    return _fields(data, spec, str(path))
 
 
 def load_anonimato(path):
@@ -599,8 +687,15 @@ def load_anonimato(path):
     return data
 
 
+def load_diff(path):
+    return _fields(_read_json(path), DIFF_SPEC, str(path))
+
+
 def load_aprovado(path):
-    return _fields(_read_json(path), APROVADO_SPEC, str(path))
+    data = _read_json(path)
+    spec = ({**APROVADO_SPEC, "patch": _opt_text}
+            if isinstance(data, dict) and "patch" in data else APROVADO_SPEC)
+    return _fields(data, spec, str(path))
 
 
 # --- triagem -----------------------------------------------------------------------------------
@@ -609,15 +704,15 @@ def in_request(ctx, pedido, licao):
     """A lição cabe no pedido? O plugin tem de estar nele, e a skill na lista da entrada quando a
     entrada lista skills (spec 5.2). Plugin ou skill no `exclude` ou na lista `manual` da config
     de agora ficam fora, mesmo que a config tenha mudado depois do pedido."""
-    plugin, skill = licao["plugin"], licao["skill"]
-    entries = [e for e in pedido["skills"] if e["plugin"] == plugin]
-    if not entries:
+    plugin, skill, repo = licao["plugin"], licao["skill"], licao.get("repo")
+    if repo is not None and (repo not in ctx.lean_auto or skill != plugin):
         return False
     excluded, manual = ctx.excluded, ctx.manual
     if plugin in excluded or skill in excluded or plugin in manual or skill in manual:
         return False
+    entries = [e for e in pedido["skills"] if e["plugin"] == plugin and e.get("repo") == repo]
     listed = [s for e in entries for s in e["skills"]]
-    return not listed or skill in listed
+    return bool(entries) and (not listed or skill in listed)
 
 
 def classify(licao, parecer):
@@ -668,7 +763,7 @@ def _plan(ctx, rid):
     pedido = retro_pedido(ctx, rid)
     licoes = retro_licoes(ctx, rid)
     veredito = retro_veredito(ctx, rid)
-    lotes, hold, drop = {}, [], []
+    lotes, origins, hold, drop = {}, {}, [], []
     for key, licao in licoes.items():
         plugin, n = licao["plugin"], licao["n"]
         if not in_request(ctx, pedido, licao):
@@ -676,13 +771,29 @@ def _plan(ctx, rid):
         else:
             parecer = veredito.get(key)
             destino, motivo = classify(licao, parecer)
+        detalhe = _detail(motivo, parecer)
         if destino in ("publicar", "ramo-pronto"):
+            repo = licao.get("repo")
             tipo = "auto" if destino == "publicar" else "description"
-            name = plugin if tipo == "auto" else f"{plugin}__description"
-            lotes.setdefault(name, {"lote": name, "plugin": plugin, "tipo": tipo, "licoes": []})["licoes"].append(n)
-            continue
+            name = plugin if repo is not None or tipo == "auto" else f"{plugin}__description"
+            batch = lotes.get(name)
+            if (origins.get(plugin, repo) != repo
+                    or (batch is not None and (batch["plugin"], batch.get("repo")) != (plugin, repo))):
+                destino, motivo, detalhe = "segurar", "fora-do-pedido", "lote duplicado"
+            else:
+                if batch is None:
+                    origins[plugin] = repo
+                    batch = lotes[name] = {"lote": name, "plugin": plugin, "tipo": tipo, "licoes": []}
+                    if repo is not None:
+                        batch["repo"] = repo
+                if tipo == "description":
+                    batch["tipo"] = tipo
+                batch["licoes"].append(n)
+                continue
         entry = {"item": f"{rid}/{plugin}#{n}", "plugin": plugin, "licoes": [n], "motivo": motivo,
-                 "detalhe": _detail(motivo, parecer)}
+                 "detalhe": detalhe}
+        if licao.get("repo"):
+            entry["repo"] = licao["repo"]
         (hold if destino == "segurar" else drop).append(entry)
     ordered = sorted(lotes.values(), key=lambda lote: (lote["tipo"] != "auto", lote["plugin"]))
     return pedido, ordered, hold, drop
@@ -705,6 +816,9 @@ def triage(ctx, rid):
     pedido, lotes, hold, drop = _plan(ctx, rid)
     lines = [_line(pedido["sessao"], rid, e["item"], e["plugin"], e["licoes"], result, e["motivo"], e["detalhe"])
              for result, entries in (("segurado", hold), ("descartado", drop)) for e in entries]
+    for line, entry in zip(lines, hold + drop):
+        if entry.get("repo"):
+            line["repo"] = entry["repo"]
     _append_new(ctx, lines)
     return {"lotes": lotes, "segurar": hold, "descartar": drop}
 
@@ -784,7 +898,7 @@ def orphans(ctx, now=None):
     return out
 
 
-def install_behind(ctx):
+def install_behind(ctx, private=False):
     """A última linha da última publicação de cada plugin, quando ela é `publicado` com `instalacao` em
     BEHIND. A última publicação é o lote cuja primeira linha `publicado` (a do push) tem o maior `ts`; no
     mesmo `ts`, a gravada depois. Uma publicação mais nova do mesmo plugin substitui a anterior: o lote
@@ -794,17 +908,19 @@ def install_behind(ctx):
     last = last_lines(registry)
     pushed = {}  # item -> (ts, posição) da primeira linha `publicado` do lote
     for i, entry in enumerate(registry):
-        if entry.get("resultado") == "publicado" and _is_batch(entry) and entry["item"] not in pushed:
+        if (bool(entry.get("repo")) == private and entry.get("resultado") == "publicado"
+                and _is_batch(entry) and entry["item"] not in pushed):
             ts = entry.get("ts")
             pushed[entry["item"]] = (ts if isinstance(ts, (int, float)) and not isinstance(ts, bool) else 0, i)
     newest = {}  # plugin -> (chave, item)
     for item, key in pushed.items():
-        plugin = str(last[item].get("plugin"))
-        if plugin not in newest or key > newest[plugin][0]:
-            newest[plugin] = (key, item)
+        identity = (last[item].get("repo"), str(last[item].get("plugin")))
+        if identity not in newest or key > newest[identity][0]:
+            newest[identity] = (key, item)
     chosen = sorted(newest.values())
+    statuses = ("pendente", "clone-atras", "status-falhou") if private else BEHIND
     return [last[item] for _, item in chosen
-            if last[item].get("resultado") == "publicado" and last[item].get("instalacao") in BEHIND]
+            if last[item].get("resultado") == "publicado" and last[item].get("instalacao") in statuses]
 
 
 def _amount(n, one, many):
@@ -828,9 +944,67 @@ def held_notice(ctx):
     items = held(ctx)
     if not items:
         return None
-    names = ", ".join(f"{e.get('plugin')}: {_held_branch(ctx, e) or e.get('item')}" for e in items)
+    names = ", ".join(f"{e.get('repo') or e.get('plugin')}: {_held_branch(ctx, e) or e.get('item')}" for e in items)
     return (f"{_amount(len(items), 'retrofit segurado', 'retrofits segurados')} ({names}) — "
             "/retrofit-watch:retrofit-watch segurados")
+
+
+def live_record_path(ctx, repo):
+    return ctx.data_dir / "live" / f"{repo}.json"
+
+
+def live_notice(ctx):
+    """Mostra o resultado gravado pelo último avanço de cada clone autorizado."""
+    parts = []
+    for repo in sorted(ctx.lean_auto):
+        try:
+            data = json.loads(live_record_path(ctx, repo).read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            continue
+        except (OSError, ValueError):
+            data = None
+        if (not isinstance(data, dict) or data.get("repo") != repo
+                or data.get("resultado") not in ("ok", "fora-da-main", "suja", "erro")
+                or not isinstance(data.get("detalhe"), str)):
+            parts.append(f"avanço de {repo} falhou: registro de avanço inválido")
+        elif data["resultado"] != "ok":
+            parts.append(f"avanço de {repo} falhou: {data['detalhe'] or data['resultado']}")
+    for line in install_behind(ctx, private=True) if ctx.lean_auto else ():
+        if line["repo"] in ctx.lean_auto and isinstance(line.get("commit"), str):
+            parts.append(f"{line['repo']}: {line['instalacao']} no SHA {line['commit'][:7]}")
+    return " · ".join(parts) or None
+
+
+def lean_mode_notice(ctx):
+    """O primeiro startup em ensaio registra a referência sem avisar uma transição inexistente."""
+    if not ctx.lean_auto:
+        return None
+    from rw_store import lean_mode_state
+
+    path = ctx.data_dir / "lean-modo.json"
+    ctx.data_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        lock = rw._lock(ctx.data_dir / "lean-modo.lock", timeout=0)
+    except OSError:
+        return None
+    try:
+        mode, revert_day = lean_mode_state(ctx)
+        try:
+            data = _read_json(path)
+            last = data.get("modo") if isinstance(data, dict) else None
+        except Malformed:
+            last = None
+        if last == mode:
+            return None
+        _write_json(path, {"modo": mode})
+        if mode == "auto":
+            return "repos privados fora do ensaio: o push agora é sozinho"
+        if last == "auto" and mode == "auto-dry":
+            detail = f" (revert de {revert_day})" if revert_day else ""
+            return "repos privados de volta ao ensaio" + detail
+    finally:
+        rw._unlock(lock)
+    return None
 
 
 def orphan_notice(ctx):
@@ -879,26 +1053,47 @@ def hold_item(ctx, rid, item, motivo, detalhe=""):
         licoes = lote["licoes"] if lote else None
     if lote is None:
         raise Malformed(f"{item} não é um lote, nem uma lição de um lote, da triagem da retro {rid}")
-    return _hold(ctx, pedido["sessao"], rid, item, lote["plugin"], licoes, "segurado", motivo, detalhe, lote["lote"])
+    return _hold(ctx, pedido["sessao"], rid, item, lote["plugin"], licoes, "segurado", motivo, detalhe,
+                 lote["lote"], repo=lote.get("repo"))
 
 
 def _hold(ctx, session, rid, item, plugin, licoes, resultado, motivo, detalhe, lote, commit=None, ramo=None,
-          worktree=None):
+          worktree=None, repo=None, patch=None):
     """Grava e devolve a linha `segurado` (ou `erro`) de um item. Comum ao hold_item e ao hold da
     porta (rw_gate.hold), que preenche `commit`, `ramo` e `worktree`."""
     line = _line(session, rid, item, plugin, licoes, resultado, motivo, detalhe, lote=lote)
     line.update(commit=commit, ramo=ramo, worktree=worktree)
+    if repo:
+        line.update(repo=repo, patch=patch)
     return append_registry(ctx, line)
 
 
 def approve(ctx, rid, lote):
-    """Acrescenta a aprovado.json o motivo da última linha `segurado` do lote e, quando há uma, o da última
+    """No privado, acrescenta só motivos substituíveis para o patch da última recusa.
+    Na loja, acrescenta o motivo da última linha `segurado` e, quando há uma, o da última
     recusa por nome (NAME_REASONS), sem repetir. Um `publish` entre a palavra do dono e o `approve` segura
     o lote com `escopo`: sem o motivo de nome, a guarda 5 nunca aceitaria a mudança das listas (Final-F1).
     O `detalhe` dessa recusa a porta lê da mesma linha do registro."""
     folder = lote_dir(ctx, rid, lote)
     item = f"{rid}/{lote}"
-    reasons = [e.get("motivo") for e in read_registry(ctx) if e.get("item") == item and e.get("resultado") == "segurado"]
+    registry = read_registry(ctx)
+    last = last_lines(registry).get(item, {})
+    if last.get("repo"):
+        from rw_gate import OVERRIDABLE_PRIVATE
+
+        retrofit = load_retrofit(folder / "retrofit.json")
+        reason, patch = last.get("motivo"), retrofit["patch"]
+        if (last.get("resultado") != "segurado" or last["repo"] != retrofit.get("repo")
+                or not patch or last.get("patch") != patch):
+            raise Malformed(f"o lote {item} não tem recusa do patch selado")
+        path = folder / "aprovado.json"
+        prev = load_aprovado(path) if path.exists() else {}
+        reasons = set(prev["motivos"]) if (prev.get("id"), prev.get("lote"), prev.get("patch")) == (rid, lote, patch) else set()
+        if reason in OVERRIDABLE_PRIVATE:
+            reasons.add(reason)
+        _write_json(path, dict(id=rid, lote=lote, ts=int(time.time()), motivos=sorted(reasons), patch=patch))
+        return path
+    reasons = [e.get("motivo") for e in registry if e.get("item") == item and e.get("resultado") == "segurado"]
     if not reasons:
         raise Malformed(f"o lote {item} não tem linha `segurado` no registro")
     path = folder / "aprovado.json"

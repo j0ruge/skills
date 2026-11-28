@@ -19,6 +19,7 @@ HOME do Context: o `~` resolve pelo ctx.home, nunca pelo HOME real. Os erros sã
 portão fora do formato também, nunca uma lista vazia (falha fechada).
 """
 import contextlib
+import ctypes
 import hashlib
 import importlib.util
 import io
@@ -27,12 +28,13 @@ import os
 import re
 import shutil
 import socket
+import stat
 import subprocess
 import sys
 import tarfile
 import tempfile
 import time
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import rw_auto
 
@@ -47,13 +49,6 @@ BASE_REF = "origin/main"
 # As duas listas do portão: mudam só com a aprovação do dono, e o patch (D20) não as conta.
 LIST_FILES = ("scripts/public-names.txt", "scripts/private-names.sha256")
 REDO_REASON = "rebase"
-# As variáveis que apontam outro repo: com elas, `git -C <dir>` age no repo delas.
-GIT_LOCATION = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
-                "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR")
-# As que trocam a config lida ou a saída do diff. As GIT_CONFIG* saem todas (GIT_CONFIG_GLOBAL,
-# GIT_CONFIG_SYSTEM, GIT_CONFIG_PARAMETERS, GIT_CONFIG_COUNT...); o XDG_CONFIG_HOME também, para o git
-# ler a config global do HOME do Context.
-GIT_OVERRIDES = ("XDG_CONFIG_HOME", "GIT_DIFF_OPTS", "GIT_EXTERNAL_DIFF")
 GATE_FINDING = re.compile(r'.+:[0-9]+: (lista|colheita|email|caminho|segredo) ".*"')
 GATE_CLEAN = "ok: camada 1 limpa"
 TERM_KEYS = frozenset({"termo", "onde", "contexto"})
@@ -61,6 +56,10 @@ TERM_KEYS = frozenset({"termo", "onde", "contexto"})
 
 class StoreError(Exception):
     """A loja, o git ou o portão não deixaram o passo terminar. A mensagem diz por quê."""
+
+
+class LiveBranchError(StoreError):
+    """O clone foi identificado, mas não está na main exigida para a busca."""
 
 
 # --- processos ---------------------------------------------------------------------------------
@@ -92,22 +91,7 @@ def _decode(raw):
     return (raw or b"").decode("utf-8", "replace")
 
 
-def git_env(home=None, nosystem=False, neutral=False):
-    """O ambiente de um git daqui: sem as variáveis de localização e de config herdadas.
-
-    `home` vira o HOME (a config global lida é a do Context). `nosystem` tira a config de sistema.
-    `neutral` não lê config nenhuma: o diff do patch e o portão não podem mudar com a config local."""
-    env = {k: v for k, v in os.environ.items()
-           if k not in GIT_LOCATION and k not in GIT_OVERRIDES and not k.startswith("GIT_CONFIG")}
-    if home is not None:
-        env["HOME"] = str(home)
-    if nosystem or neutral:
-        env["GIT_CONFIG_NOSYSTEM"] = "1"
-    if neutral:
-        env["GIT_CONFIG_GLOBAL"] = os.devnull
-    return env
-
-
+git_env = rw_auto.rw.git_env
 BATCH_SSH = "ssh -o BatchMode=yes"
 
 
@@ -407,14 +391,58 @@ def _last_line(ctx, rid, lote):
     return rw_auto.last_lines(rw_auto.read_registry(ctx)).get(f"{rid}/{lote}")
 
 
+def _private_request(pedido, repo, skill):
+    requested = [entry for entry in pedido["skills"] if entry["plugin"] == skill and entry.get("repo") == repo]
+    origins = {entry["origin_id"] for entry in requested}
+    if len(origins) != 1:
+        raise StoreError("origem ambígua no pedido privado")
+    paths = {entry.get("skill_path") for entry in requested}
+    if None in paths:
+        raise StoreError("pedido privado sem caminho rastreado da skill")
+    if len(paths) != 1:
+        raise StoreError("pasta ambígua no pedido privado")
+    path = paths.pop()
+    if path.rsplit("/", 2)[-2] != skill:
+        raise StoreError("pasta do pedido privado não corresponde à skill do lote")
+    return origins.pop(), path
+
+
+def _skill_folder(clone, base, skill_path, env):
+    """Confere o caminho literal do pedido na árvore buscada."""
+    raw = _git_bytes(["--literal-pathspecs", "ls-tree", "-z", "--full-tree", base, "--", skill_path],
+                     clone, env, "pasta da skill")
+    meta, _, path = raw.partition(b"\t")
+    if meta.startswith((b"100644 blob ", b"100755 blob ")) and path == skill_path.encode("utf-8") + b"\0":
+        return skill_path.removesuffix("/SKILL.md")
+    raise StoreError(f"pasta rastreada da skill ausente ou sem SKILL.md regular: {skill_path}")
+
+
+def _private_clone(ctx, slug, *, require_main=True):
+    clone = live_clone(ctx, slug, require_main=require_main)
+    if clone is None:
+        raise StoreError(f"sem clone dedicado: {slug}")
+    return clone
+
+
+def _prepared(path, rid, lote, repo, requested):
+    current = rw_auto.load_retrofit(path)
+    if (current["id"], current["lote"], current.get("repo")) != (rid, lote, repo):
+        raise StoreError(f"{path}: origem ou identificação não corresponde ao lote")
+    if requested and (current["origin_id"], current["pasta"] + "/SKILL.md") != requested:
+        raise StoreError(f"{path}: origem ou pasta não corresponde ao pedido privado")
+    return current
+
+
 def prepare(ctx, rid, lote, redo=False):
     """O worktree ligado do lote, do `origin/main` recém-buscado, e o retrofit.json dele.
 
     Chamado de novo, devolve o retrofit.json que já existe. `redo` abre a tentativa seguinte só
     quando a última linha do lote é `segurado` por `rebase` (D23); a anterior fica no lugar. Com a
     tentativa atual ainda sem selo, o `redo` devolve a atual: rodar duas vezes não abre duas."""
-    store = store_clone(ctx)
     found = _lote_of_triage(ctx, rid, lote)
+    repo = found.get("repo")
+    requested = _private_request(rw_auto.retro_pedido(ctx, rid), repo, found["plugin"]) if repo else None
+    store = _private_clone(ctx, repo) if repo else store_clone(ctx)
     path = rw_auto.lote_dir(ctx, rid, lote) / "retrofit.json"
     tentativa = 1
     if redo:
@@ -424,25 +452,34 @@ def prepare(ctx, rid, lote, redo=False):
                              f"`{REDO_REASON}`")
         if not path.exists():
             raise StoreError(f"--redo sem retrofit.json de {rid}/{lote}: rode prepare sem --redo")
-        current = rw_auto.load_retrofit(path)
+        current = _prepared(path, rid, lote, repo, requested)
         if current["commit"] is None:
             return current
         tentativa = current["tentativa"] + 1
         # Nada é apagado (D23): o retrofit.json da tentativa anterior fica como retrofit-r<n>.json.
         _atomic_write(path.with_name(f"retrofit-r{current['tentativa']}.json"), path.read_bytes())
     elif path.exists():
-        return rw_auto.load_retrofit(path)
+        return _prepared(path, rid, lote, repo, requested)
     worktree = worktree_path(ctx, rid, lote, tentativa)
     branch = branch_name(rid, lote, tentativa)
     env = git_env(home=ctx.home)
-    _git(["fetch", "origin"], store, remote_env(ctx, store), "fetch")
+    if repo:
+        origin_id, skill_path = requested
+        _live_fetch(ctx, repo, store, expected_id=origin_id)
+        base = _git(["rev-parse", BASE_REF], store, env, "base").strip()
+        pasta = _skill_folder(store, base, skill_path, env)
+    else:
+        _git(["fetch", "origin"], store, remote_env(ctx, store), "fetch")
+        base = BASE_REF
     worktree.parent.mkdir(parents=True, exist_ok=True)
-    _git(["worktree", "add", "-q", "-b", branch, str(worktree), BASE_REF], store, env, "worktree")
+    _git(["worktree", "add", "-q", "-b", branch, str(worktree), base], store, env, "worktree")
     base = _git(["rev-parse", "HEAD"], worktree, env, "base").strip()
     retrofit = {"id": rid, "lote": lote, "plugin": found["plugin"], "tipo": found["tipo"], "tentativa": tentativa,
                 "worktree": str(worktree), "ramo": branch, "base": base, "licoes": list(found["licoes"]),
                 "fases": None, "commit": None, "versao": None, "patch": None}
-    rw_auto._fields(retrofit, rw_auto.RETROFIT_SPEC, "retrofit.json")
+    if repo:
+        retrofit.update(repo=repo, pasta=pasta, origin_id=origin_id)
+    rw_auto._fields(retrofit, rw_auto.PRIVATE_RETROFIT_SPEC if repo else rw_auto.RETROFIT_SPEC, "retrofit.json")
     path.parent.mkdir(parents=True, exist_ok=True)
     rw_auto._write_json(path, retrofit)
     return retrofit
@@ -452,7 +489,7 @@ def prepare(ctx, rid, lote, redo=False):
 
 # As linhas do diff que o patch conta além das `+` e `-`: o cabeçalho que nomeia o arquivo e o modo.
 # Um arquivo vazio novo ou apagado e uma troca só de modo não têm linha `+`/`-`: só estas os nomeiam.
-# O rebase não as muda. Ficam fora os `@@` (números de linha) e o `index ` (os shas dos blobs).
+# O rebase não as muda. Os shas dos blobs (linha `index`) não entram no patch.
 PATCH_HEADERS = (b"diff --git ", b"new file mode ", b"deleted file mode ", b"old mode ", b"new mode ")
 
 
@@ -463,33 +500,36 @@ def _git_bytes(args, cwd, env, what):
     return out
 
 
-def patch_id(worktree, base=BASE_REF, message=None):
+def patch_id(worktree, base=BASE_REF, message=None, *, head="HEAD", private=False):
     """O sha256 do que o ramo muda (D20 e M13), sobre os bytes de `git diff -U0 --no-renames
-    origin/main...HEAD` sem os dois arquivos de lista: as linhas `+` e `-` (os nomes de arquivo vêm nas
-    `+++` e `---`), as de PATCH_HEADERS, e a mensagem de cada commit. O rebase não o muda; mudar
-    conteúdo, nome, modo ou mensagem muda. `base` troca o `origin/main` (a porta mede o commit já
-    publicado contra `HEAD^`); `message`, em bytes, troca a mensagem lida do log."""
+    origin/main...HEAD` (só no full, sem as duas listas da loja): as linhas `+` e `-` (nomes nas
+    `+++` e `---`), as de PATCH_HEADERS, e a mensagem de cada commit. No privado, inclui as
+    coordenadas dos hunks: um rebase que as desloca pede nova revisão. `base` e `head` selecionam
+    os extremos; `message`, em bytes, troca a mensagem lida do log."""
     env = git_env(neutral=True)
-    exclude = [f":(exclude){f}" for f in LIST_FILES]
+    exclude = [] if private else [f":(exclude){f}" for f in LIST_FILES]
+    hunk_options = ["--inter-hunk-context=0"] if private else []
     diff = _git_bytes(["-c", "core.quotePath=false", "diff", "-U0", "--no-renames", "--text", "--no-ext-diff",
                        "--no-textconv", "--src-prefix=a/", "--dst-prefix=b/", "--no-color", "--no-relative",
-                       f"{base}...HEAD", "--", ".", *exclude], worktree, env, "patch")
+                       *hunk_options, f"{base}...{head}", "--", ".", *exclude], worktree, env, "patch")
     if message is None:
-        message = _git_bytes(["log", "--format=%B", f"{base}..HEAD"], worktree, env, "patch")
+        message = _git_bytes(["log", "--format=%B", f"{base}..{head}"], worktree, env, "patch")
     digest = hashlib.sha256()
     for line in diff.split(b"\n"):
         if line.startswith((b"+", b"-")) or line.startswith(PATCH_HEADERS):
             digest.update(line + b"\n")
+        elif private and line.startswith(b"@@ "):
+            digest.update(line.split(b" @@", 1)[0] + b" @@\n")
     digest.update(b"\0" + message)
     return digest.hexdigest()
 
 
-def _gate(tools, worktree, *args):
+def _gate(tools, worktree, *args, base=BASE_REF):
     """O portão de `tools` (a cópia do commit, `clean_tree`) sobre o git de `worktree`, sem gravar bytecode
     na cópia. O portão do disco do worktree nunca roda: um `.pyc` ou um `.py` ignorado ali trocaria um
     módulo dele (item 1)."""
     gate = Path(tools) / GATE
-    return run([sys.executable, gate, *args, "--base", BASE_REF, "--repo", worktree], cwd=worktree,
+    return run([sys.executable, gate, *args, "--base", base, "--repo", worktree], cwd=worktree,
                env=dict(git_env(neutral=True), PYTHONDONTWRITEBYTECODE="1"))
 
 
@@ -558,21 +598,33 @@ def _unlink(path):
         pass
 
 
-def layer1(ctx, rid, worktree, tools):
+def layer1(ctx, rid, worktree, tools, private=False, *, base=None, head=None):
     """Os achados da camada 1 no que o ramo de `worktree` acrescenta, pelo portão de `tools` (a cópia do
     commit), com a colheita feita agora (com o `cwd` do pedido.json), num arquivo só desta chamada. Saída
-    do portão fora do formato é StoreError, nunca "nada achado" (C1)."""
-    pedido = rw_auto.retro_pedido(ctx, rid)
-    extra = _private_harvest(ctx, pedido["cwd"])
-    try:
-        rc, out = _gate(tools, worktree, "--camada1", "--extra", extra)
-    finally:
-        _unlink(extra)
+    do portão fora do formato é StoreError, nunca "nada achado" (C1). No lote privado só importam
+    segredo e caminho com usuário, e não há colheita."""
+    if private:
+        if not base or not head:
+            raise StoreError("camada 1 privada sem o par de commits")
+        rc, out = _gate(tools, worktree, "--camada1", "--private", "--head", head, base=base)
+        if rc == 2:
+            detail = " ".join(out.split())[:350]
+            raise StoreError(f"camada 1 privada recusada (rc 2) — {detail}. "
+                             "Confira se o origin/main local da loja suporta --private e --head.")
+    else:
+        pedido = rw_auto.retro_pedido(ctx, rid)
+        extra = _private_harvest(ctx, pedido["cwd"])
+        try:
+            rc, out = _gate(tools, worktree, "--camada1", "--extra", extra)
+        finally:
+            _unlink(extra)
     lines = [line for line in out.splitlines() if line.strip()]
     findings = [line for line in lines if GATE_FINDING.fullmatch(line)]
     if rc == 0 and lines == [GATE_CLEAN]:
         return []
     if rc == 1 and findings and lines == findings + [f"{len(findings)} achado(s) na camada 1"]:
+        if private:
+            return [line for line in findings if GATE_FINDING.fullmatch(line)[1] in ("caminho", "segredo")]
         return findings
     raise StoreError(f"camada 1 inutilizavel: o portao saiu {rc} com: {out.strip()[:500]}")
 
@@ -634,18 +686,30 @@ def seal(ctx, rid, lote, licoes, fases):
         if phase not in phases:
             phases.append(phase)
     folder = rw_auto.lote_dir(ctx, rid, lote)
-    retrofit = rw_auto.load_retrofit(folder / "retrofit.json")
+    repo = found.get("repo")
+    requested = _private_request(rw_auto.retro_pedido(ctx, rid), repo, found["plugin"]) if repo else None
+    retrofit = _prepared(folder / "retrofit.json", rid, lote, repo, requested)
     worktree = worktree_path(ctx, rid, lote, retrofit["tentativa"])
     env = git_env(neutral=True)
-    count = _git(["rev-list", "--count", f"{BASE_REF}..HEAD"], worktree, env, "selo").strip()
+    base, head = BASE_REF, "HEAD"
+    if repo:
+        clone = _private_clone(ctx, repo)
+        common = _git(["rev-parse", "--path-format=absolute", "--git-common-dir"], worktree, env, "selo")
+        if Path(common.strip()).resolve() != clone / ".git":
+            raise StoreError("selo: worktree não pertence ao clone dedicado")
+        base = _git(["rev-parse", "--verify", f"{base}^{{commit}}"], worktree, env, "selo").strip()
+        head = _git(["rev-parse", "--verify", "HEAD^{commit}"], worktree, env, "selo").strip()
+    count = _git(["rev-list", "--count", f"{base}..{head}"], worktree, env, "selo").strip()
     if count in ("", "0"):
         raise StoreError(f"o ramo de {rid}/{lote} nao tem commit acima do {BASE_REF}")
-    commit = _git(["rev-parse", "HEAD"], worktree, env, "selo").strip()
-    versao = _version(worktree, retrofit["plugin"])
-    patch = patch_id(worktree)
-    with clean_tree(ctx, worktree, commit) as tools:
-        termos = new_terms(worktree, tools)
-        camada1 = layer1(ctx, rid, worktree, tools)
+    commit = head if repo else _git(["rev-parse", "HEAD"], worktree, env, "selo").strip()
+    versao = None if repo else _version(worktree, retrofit["plugin"])
+    patch = patch_id(worktree, base=base, head=head, private=True) if repo else patch_id(worktree)
+    # O lote privado nunca fornece os scripts que examinam o próprio diff.
+    with clean_tree(ctx, store_clone(ctx) if repo else worktree, BASE_REF if repo else commit) as tools:
+        termos = [] if repo else new_terms(worktree, tools)
+        camada1 = (layer1(ctx, rid, worktree, tools, base=base, head=head, private=True)
+                   if repo else layer1(ctx, rid, worktree, tools))
     rw_auto._write_json(folder / "termos-novos.json", {"patch": patch, "termos": termos})
     retrofit.update(licoes=chosen, fases=phases, commit=commit, versao=versao, patch=patch)
     rw_auto._write_json(folder / "retrofit.json", retrofit)
@@ -668,6 +732,11 @@ V2_MIN_DAYS = 14
 DAY = 86400
 STARTUP_TIMEOUT = 3
 CRITERION_FILE = "criterio.json"
+LEAN_WINDOW_FILE = "lean-janela.json"
+LEAK_SCAN_VERSION = 1
+LIVE_SETUP_PENDING = "rw-live-pending"
+LIVE_SETUP_HOOK = (b'#!/bin/sh\necho "retrofit-watch: este clone so segue a main; '
+                   b'commite num worktree do lote" >&2\nexit 1\n')
 # C9: o estouro do teto fica em cache por sha do `origin/main`, por 24 h; depois o critério mede de novo.
 CRITERION_RETRY = 86400
 MARKER = "Retrofit-Mode"
@@ -675,43 +744,45 @@ AUTONOMOUS = "autonomous"
 REVERTS = re.compile(r"This reverts commit ([0-9a-f]{7,40})")
 NAME_CHECK = "scripts/check-private-names.py"
 PRIVATE_LIST = LIST_FILES[1]
-# Um registro por commit (0x1e), os campos separados por 0x1f, os valores do trailer por 0x1d.
-LOG_FORMAT = f"%H%x1f%ct%x1f%cs%x1f%(trailers:key={MARKER},valueonly,separator=%x1d)%x1f%B%x1e"
+# O NUL separa commits sem confundir separadores escritos no corpo da mensagem.
+LOG_FORMAT = f"%H%x1f%ct%x1f%cs%x1f%(trailers:key={MARKER},valueonly,separator=%x1d)%x1f%B"
 
 
 class StartupTimeout(StoreError):
     """O git do critério estourou o teto do startup (rc 124)."""
 
 
-def _startup_git(store, args, what, env=None):
+def _startup_git(store, args, what, env=None, timeout=STARTUP_TIMEOUT):
     """A saída em bytes do git da loja, com o teto do startup, sem config nenhuma (ou com `env`, um ambiente
     também neutro); StartupTimeout com rc 124, StoreError com outro rc != 0."""
-    rc, out = run_bytes(["git", "--literal-pathspecs", "-C", str(store), *args], timeout=STARTUP_TIMEOUT,
-                        env=git_env(neutral=True) if env is None else env)
+    local = dict(git_env(neutral=True) if env is None else env, GIT_NO_LAZY_FETCH="1", GIT_ALLOW_PROTOCOL="")
+    rc, out = run_bytes(["git", "--literal-pathspecs", "-C", str(store), *args], timeout=timeout, env=local)
     if rc == 124:
-        raise StartupTimeout(f"{what}: git {' '.join(args[:2])} passou de {STARTUP_TIMEOUT} s")
+        raise StartupTimeout(f"{what}: git {' '.join(args[:2])} passou de {timeout:.3g} s")
     if rc != 0:
         raise StoreError(f"{what}: git {' '.join(args[:2])} saiu {rc}: {_decode(out).strip()[:500]}")
     return out
 
 
-def _autonomous(store, head):
-    """([[sha, ts, data], ...] dos commits com o trailer exatamente `autonomous`, revertidos): os commits
-    do `head` que trazem `This reverts commit <sha>` de um deles."""
-    out = _decode(_startup_git(store, ["log", f"--format={LOG_FORMAT}", head], "criterio"))
-    records = []
-    for record in out.split("\x1e"):
-        fields = record.lstrip("\n").split("\x1f", 4)
-        if len(fields) == 5:
-            records.append(fields)
+def _marked_history(store, head, git):
+    """Commits autônomos e os reverts que citam seus SHAs."""
+    out = _decode(git(store, ["log", "-z", f"--format={LOG_FORMAT}", head], "criterio"))
+    records = [record.split("\x1f", 4) for record in out.removesuffix("\0").split("\0")]
+    if not out.endswith("\0") or any(len(r) != 5 or not r[1].isdigit() for r in records):
+        raise StoreError("criterio: histórico em formato inválido")
     commits = []
     for sha, ts, date, trailers, _ in records:
         if [v.strip() for v in trailers.split("\x1d") if v.strip()] == [AUTONOMOUS]:
             commits.append([sha, int(ts), date])
-    shas = [c[0] for c in commits]
-    reverted = sum(1 for *_, body in records
-                   if any(s.startswith(m) for m in REVERTS.findall(body) for s in shas))
-    return commits, reverted
+    shas = {c[0] for c in commits}
+    reverts = [[sha, int(ts), date] for sha, ts, date, _, body in records
+               if any(any(s.startswith(m) for s in shas) for m in REVERTS.findall(body))]
+    return commits, reverts, {record[0] for record in records}
+
+
+def _autonomous(store, head):
+    commits, reverts, _ = _marked_history(store, head, _startup_git)
+    return commits, len(reverts)
 
 
 def _load_name_check(folder):
@@ -721,42 +792,66 @@ def _load_name_check(folder):
     return module
 
 
-def _leaks(store, head, shas):
-    """Os achados do sensor de nomes (o `varrer` do check-private-names.py, com a lista de hashes, os dois
-    do `head`) nos arquivos que os commits `shas` tocaram, como estão no `head`. Os arquivos saem do
-    `git archive` para uma pasta temporária, que o `varrer` lê sem o git (ela não tem `.git`). O archive é
-    o do `clean_tree` (ARCHIVE e `archive_env()`): um `export-ignore` nos atributos global ou de sistema
-    tiraria o arquivo do vazamento da contagem (Final-F5)."""
-    names = _decode(_startup_git(store, ["-c", "core.quotePath=false", "show", "--name-only", "--no-renames",
-                                         "--format=", "-z", *shas], "criterio"))
-    touched = sorted({n.lstrip("\n") for n in names.split("\0")} - {""})
-    present = []
-    if touched:
-        listed = _decode(_startup_git(store, ["ls-tree", "-r", "-z", "--name-only", head, "--", *touched],
-                                      "criterio"))
-        present = [n for n in listed.split("\0") if n]
-    raw = _startup_git(store, [*ARCHIVE, head, "--", NAME_CHECK, PRIVATE_LIST, *present], "criterio",
-                       env=archive_env())
-    wanted = set(present)
+def _leaks(store, head, shas, git=None):
+    """Varre os blobs do head tocados pelos commits, após conferir a cobertura do arquivo exportado."""
+    git = _startup_git if git is None else git
+    names = git(store, ["show", "--name-only", "--diff-merges=separate", "--no-renames", "--format=", "-z",
+                        *shas], "criterio").decode("utf-8", "surrogateescape")
+    touched = set(names.split("\0")) - {""}
+    sensor = {NAME_CHECK, PRIVATE_LIST}
+    listed = git(store, ["ls-tree", "-r", "-z", head, "--", *sorted(touched | sensor)], "criterio")
+    blobs = {}
+    for entry in listed.removesuffix(b"\0").split(b"\0"):
+        metadata, _, raw_name = entry.partition(b"\t")
+        name = raw_name.decode("utf-8", "surrogateescape")
+        if name in touched or name in sensor:
+            _, kind, oid = metadata.split()
+            if kind == b"blob":
+                blobs[name] = oid
+    if not sensor <= blobs.keys():
+        raise StoreError("criterio: arquivos do sensor ausentes da árvore")
+
+    raw = git(store, [*ARCHIVE, head, "--", *sorted(blobs)], "criterio", env=archive_env())
+    present = blobs.keys() & touched
+    remaining = dict(blobs)
     with tempfile.TemporaryDirectory(prefix="rw-criterio-") as tmp:
         tree, tool = Path(tmp) / "arvore", Path(tmp) / "sensor"
         tree.mkdir()
         tool.mkdir()
         with tarfile.open(fileobj=io.BytesIO(raw)) as tar:
             for member in tar:
-                if member.name in wanted:
-                    target = tree / member.name
-                elif member.name == NAME_CHECK:
-                    target = tool / Path(NAME_CHECK).name
-                elif member.name == PRIVATE_LIST:
-                    target = tool / Path(PRIVATE_LIST).name
-                else:
+                name = member.name
+                if name not in remaining:
                     continue
-                target.parent.mkdir(parents=True, exist_ok=True)
-                # O blob de um link simbólico é o caminho do alvo: o sensor lê esse texto, como o `git show`.
-                target.write_bytes(member.linkname.encode("utf-8", "surrogateescape") if member.issym()
-                                   else tar.extractfile(member).read())
+                if member.issym():
+                    data = member.linkname.encode("utf-8", "surrogateescape")
+                elif member.isfile():
+                    with tar.extractfile(member) as file:
+                        data = file.read()
+                else:
+                    raise StoreError("criterio: tipo inesperado no arquivo exportado")
+                oid = remaining.pop(name)
+                algorithm = {40: "sha1", 64: "sha256"}.get(len(oid))
+                if algorithm is None:
+                    raise StoreError("criterio: formato de blob desconhecido")
+                digest = hashlib.new(algorithm, f"blob {len(data)}\0".encode("ascii"), usedforsecurity=False)
+                digest.update(data)
+                if digest.hexdigest().encode("ascii") != oid:
+                    raise StoreError("criterio: conteúdo do blob difere da árvore")
+                if name in present:
+                    target = tree / name
+                    if not target.resolve().is_relative_to(tree.resolve()):
+                        raise StoreError("criterio: caminho do blob fora da árvore")
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    with target.open("xb") as file:
+                        file.write(data)
+                if name in sensor:
+                    (tool / Path(name).name).write_bytes(data)
+        if remaining:
+            raise StoreError("criterio: arquivo exportado não contém todos os blobs")
         check = _load_name_check(tool)
+        if set(check.arquivos(tree)) != present:
+            raise StoreError("criterio: sensor não cobre todos os blobs")
         return len(check.varrer(tree, check.carregar(tool / Path(PRIVATE_LIST).name)))
 
 
@@ -766,7 +861,8 @@ def _cached(ctx, head):
         data = json.loads((ctx.data_dir / CRITERION_FILE).read_bytes().decode("utf-8"))
     except (OSError, ValueError):
         return None
-    if not isinstance(data, dict) or set(data) != {"sha", "commits", "revertidos", "vazados"} or data["sha"] != head:
+    if (not isinstance(data, dict) or set(data) != {"sha", "commits", "revertidos", "vazados", "scan_version"}
+            or data["sha"] != head or data["scan_version"] != LEAK_SCAN_VERSION):
         return None
     commits, reverted, leaks = data["commits"], data["revertidos"], data["vazados"]
     if not (isinstance(commits, list) and all(
@@ -813,7 +909,8 @@ def criterion(ctx, now=None):
     try:
         if changed:
             commits, reverted = _autonomous(store, head)
-            data = {"sha": head, "commits": commits, "revertidos": reverted, "vazados": None}
+            data = {"sha": head, "commits": commits, "revertidos": reverted, "vazados": None,
+                    "scan_version": LEAK_SCAN_VERSION}
         commits = data["commits"]
         first = min(commits, key=lambda c: c[1]) if commits else None
         days = max(0, int((now - first[1]) // DAY)) if first else 0
@@ -842,12 +939,660 @@ def criterion_notice(ctx, now=None):
             f"vazados desde {got['desde']} — o kit pode entrar (ver a spec do modo autônomo)")
 
 
+def live_path(ctx, slug):
+    """Resolve só um repo explicitamente autorizado dentro da raiz dedicada."""
+    root = ctx.live_dir
+    if not rw_auto.rw.valid_slug(slug) or slug not in ctx.lean_auto or root is None:
+        raise StoreError(f"repo sem destino autorizado: {slug}")
+    name = slug.split("/")[1]
+    path = root / name
+    if (not rw_auto.valid_skill_folder(name) or PureWindowsPath(name).is_reserved()
+            or rw_auto.rw._denied(rw_auto.rw._slashed(str(path)), ctx)):
+        raise StoreError(f"nome ou destino do clone inválido: {slug}")
+    return path
+
+
+def _configured_origin(path, *, allow_pending=False, deadline=None):
+    """Lê o origin declarado pelo dono, sem aplicar reescritas de URL do Git."""
+    gitdir = path / ".git"
+    try:
+        if (path.is_symlink() or gitdir.is_symlink() or
+                (not allow_pending and (gitdir / LIVE_SETUP_PENDING).exists()) or
+                not (gitdir / "HEAD").is_file()):
+            return None
+    except OSError:
+        return None
+    remaining = STARTUP_TIMEOUT if deadline is None else deadline - time.monotonic()
+    if remaining <= 0:
+        return None
+    env = dict(git_env(neutral=True), GIT_NO_LAZY_FETCH="1", GIT_ALLOW_PROTOCOL="",
+               GIT_NO_REPLACE_OBJECTS="1")
+    rc, raw = run_bytes(["git", "config", "--file", gitdir / "config", "--no-includes",
+                         "--null", "--get-all", "remote.origin.url"],
+                        env=env, timeout=remaining, stderr=subprocess.DEVNULL)
+    values = raw.split(b"\0")
+    if rc or len(values) != 2 or values[-1]:
+        return None
+    return rw_auto.rw.origin_identity(_decode(values[0]))
+
+
+def _live_main_ref(path, *, deadline=None):
+    """Confere a ref direta, distinguindo ausência de falha de leitura."""
+    gitdir = path / ".git"
+    main = gitdir / "refs" / "heads" / "main"
+    try:
+        mode = main.lstat().st_mode
+    except FileNotFoundError:
+        pass
+    except OSError:
+        return None
+    else:
+        if not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
+            return False
+
+    remaining = STARTUP_TIMEOUT if deadline is None else deadline - time.monotonic()
+    if remaining <= 0:
+        return None
+    env = dict(git_env(neutral=True), GIT_NO_LAZY_FETCH="1", GIT_ALLOW_PROTOCOL="",
+               GIT_NO_REPLACE_OBJECTS="1")
+    rc, output = run(["git", "--git-dir", str(gitdir), "for-each-ref", "--count=1",
+                      "--format=%(refname)%00%(symref)%00%(objecttype)", "refs/heads/main"],
+                     env=env, timeout=remaining)
+    lines = output.splitlines()
+    if rc or any(line.count("\0") != 2 for line in lines):
+        return None
+    return "refs/heads/main\0\0commit" in lines
+
+
+def _live_head_is_main(path):
+    try:
+        with (path / ".git" / "HEAD").open("rb") as head:
+            return head.read(64).rstrip(b"\r\n") == b"ref: refs/heads/main"
+    except OSError as error:
+        raise StoreError("HEAD do clone ilegível") from error
+
+
+def _live_main(path, *, deadline=None):
+    if not _live_head_is_main(path):
+        return False
+    on_main = _live_main_ref(path, deadline=deadline)
+    if on_main is None:
+        raise StoreError("refs/heads/main do clone ilegível")
+    return on_main and _live_head_is_main(path)
+
+
+def live_clone(ctx, slug, *, origin=None, require_main=True, deadline=None):
+    """Identifica o checkout dedicado com consulta local e limitada de refs."""
+    try:
+        path = live_path(ctx, slug)
+    except StoreError:
+        return None
+    deadline = time.monotonic() + STARTUP_TIMEOUT if deadline is None else deadline
+    configured = _configured_origin(path, deadline=deadline)
+    if configured and configured[0] == slug and (origin is None or configured == origin):
+        # Leia o ramo depois do marcador, inclusive durante a remoção seguida de recusa.
+        try:
+            if require_main and not _live_main(path, deadline=deadline):
+                return None
+        except StoreError:
+            return None
+        return path
+    return None
+
+
+def _install_live_clone(checkout, path):
+    """Move o clone sem substituir nem um diretório vazio concorrente."""
+    if os.name == "nt":
+        checkout.rename(path)
+        return
+    libc = ctypes.CDLL(None, use_errno=True)
+    src, dst = os.fsencode(checkout), os.fsencode(path)
+    if sys.platform == "darwin" and hasattr(libc, "renamex_np"):
+        rc = libc.renamex_np(src, dst, 4)  # RENAME_EXCL
+    elif sys.platform == "linux" and hasattr(libc, "renameat2"):
+        rc = libc.renameat2(-100, src, -100, dst, 1)  # AT_FDCWD, RENAME_NOREPLACE
+    else:
+        raise StoreError("instalação sem substituição não suportada nesta plataforma")
+    if rc != 0:
+        code = ctypes.get_errno()
+        raise OSError(code, os.strerror(code), path)
+
+
+def _pending_live_setup(path, marker, origin_id):
+    if path.is_symlink() or marker.parent.is_symlink() or marker.is_symlink() or not marker.is_file():
+        return False
+    try:
+        with marker.open("rb") as saved:
+            return saved.read(len(origin_id) + 1) == origin_id
+    except OSError:
+        return False
+
+
+def _head_signature(info):
+    return info.st_dev, info.st_ino, info.st_mtime_ns, info.st_ctime_ns, info.st_size
+
+
+def _live_setup_identity(path):
+    """Identifica os diretórios do clone e a versão de HEAD antes de validar a origem."""
+    gitdir = path / ".git"
+    try:
+        checkout = path.lstat()
+        metadata = gitdir.lstat()
+        head = (gitdir / "HEAD").lstat()
+        if stat.S_ISDIR(checkout.st_mode) and stat.S_ISDIR(metadata.st_mode) and stat.S_ISREG(head.st_mode):
+            return (checkout.st_dev, checkout.st_ino), (metadata.st_dev, metadata.st_ino), _head_signature(head)
+    except (FileNotFoundError, NotADirectoryError):
+        pass
+    return None
+
+
+def _verify_live_setup_finalization(path, marker, identity, origin_id, directory_fd=None):
+    current = _live_setup_identity(path)
+    on_main = False
+    if current == identity:
+        on_main = _live_main_ref(path)
+        current = _live_setup_identity(path)
+        if on_main and current == identity:
+            return
+    same_clone = current is not None and current[:2] == identity[:2]
+    if directory_fd is not None or same_clone:
+        # Preserve a pendência sem sobrescrever um marcador criado por outro processo.
+        name = marker if directory_fd is None else marker.name
+        with contextlib.suppress(FileExistsError):
+            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+            fd = os.open(name, flags, 0o600, dir_fd=directory_fd)
+            with os.fdopen(fd, "wb") as pending:
+                pending.write(origin_id)
+    if same_clone:
+        if on_main is None:
+            raise StoreError("refs/heads/main do clone ilegível")
+        raise StoreError("ramo do clone mudou durante a validação")
+    raise StoreError(f"destino do setup mudou: {path}")
+
+
+def _finish_live_setup(path, marker, identity, origin_id):
+    current = _live_setup_identity(path)
+    if identity is None or current is None or current[:2] != identity[:2]:
+        raise StoreError(f"destino do setup mudou: {path}")
+    if current[2] != identity[2]:
+        raise StoreError("ramo do clone mudou durante a validação")
+    on_main = _live_main_ref(path)
+    if on_main is None:
+        raise StoreError("refs/heads/main do clone ilegível")
+    if not on_main:
+        raise StoreError("ramo do clone mudou durante a validação")
+    if os.name == "nt":
+        marker.unlink()
+        _verify_live_setup_finalization(path, marker, identity, origin_id)
+    else:
+        # Ancore a remoção no .git conferido, mesmo se o caminho for trocado depois do stat.
+        fd = os.open(marker.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            info = os.fstat(fd)
+            if (info.st_dev, info.st_ino) != identity[1]:
+                raise StoreError(f"destino do setup mudou: {path}")
+            head = os.stat("HEAD", dir_fd=fd, follow_symlinks=False)
+            if _head_signature(head) != identity[2]:
+                raise StoreError("ramo do clone mudou durante a validação")
+            os.unlink(marker.name, dir_fd=fd)
+            _verify_live_setup_finalization(path, marker, identity, origin_id, directory_fd=fd)
+        finally:
+            os.close(fd)
+
+
+def _check_live_setup(ctx, path, expected):
+    if _configured_origin(path, allow_pending=True) != expected:
+        raise StoreError(f"origem declarada do clone dedicado não corresponde a {expected[0]}")
+    env = git_env(home=ctx.home)
+    if not _live_main(path):
+        raise StoreError("cópia em uso fora da main: HEAD deve apontar diretamente para refs/heads/main")
+    hook = path / ".git" / "rw-live-hooks" / "pre-commit"
+    hooks = _git(["config", "--show-scope", "--type=path", "--get", "core.hooksPath"],
+                 path, env, "trava do clone").removesuffix("\n")
+    scope, _, directory = hooks.partition("\t")
+    if (scope != "worktree" or Path(directory) != hook.parent or not hook.is_file()
+            or not os.access(hook, os.X_OK) or hook.read_bytes() != LIVE_SETUP_HOOK):
+        raise StoreError("trava de commit do clone dedicado incompleta")
+
+
+def live_setup(ctx, slug, url=None):
+    path = live_path(ctx, slug)
+    remote = f"https://github.com/{slug}.git" if url is None else url
+    expected = rw_auto.rw.origin_identity(remote)
+    if not expected or expected[0] != slug:
+        raise StoreError(f"URL não corresponde ao repo autorizado: {slug}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    marker = path / ".git" / LIVE_SETUP_PENDING
+    origin_id = rw_auto.rw.origin_id(expected).encode("ascii")
+    if os.path.lexists(path):
+        identity = _live_setup_identity(path)
+        if identity is None or not _pending_live_setup(path, marker, origin_id):
+            raise StoreError(f"destino já existe: {path}")
+    else:
+        # Prepara a trava fora do destino e deixa a cópia pendente para validação.
+        with tempfile.TemporaryDirectory(prefix=".retrofit-live-", dir=path.parent) as temp:
+            checkout = Path(temp) / "checkout"
+            checkout.mkdir()
+            _setup_live_clone(ctx, slug, checkout, remote, expected, path)
+            (checkout / ".git" / LIVE_SETUP_PENDING).write_bytes(origin_id)
+            identity = _live_setup_identity(checkout)
+            try:
+                _install_live_clone(checkout, path)
+            except FileExistsError as error:
+                raise StoreError(f"destino já existe: {path}") from error
+            except OSError as error:
+                raise StoreError(f"instalação do clone de {slug} falhou: {error}") from error
+    # O caminho final pode ativar uma reescrita de URL. Na recusa, preserve os arquivos para retomar.
+    _live_remote(ctx, slug, path, expected)
+    current = _live_setup_identity(path)
+    if identity is None or current is None or current[:2] != identity[:2]:
+        raise StoreError(f"destino do setup mudou: {path}")
+    _check_live_setup(ctx, path, expected)
+    _finish_live_setup(path, marker, identity, origin_id)
+    return path
+
+
+def _setup_live_clone(ctx, slug, path, remote, expected, destination):
+    # Sem a config de um repo vizinho, mas com a configuração de credenciais do dono.
+    env = remote_env(ctx, path)
+    effective = _git(["ls-remote", "--get-url", "--", remote], path, env, "URL efetiva")
+    if rw_auto.rw.origin_identity(effective.strip()) != expected:
+        raise StoreError(f"URL efetiva não corresponde à origem declarada de {slug}")
+    rc, _ = run(["git", "clone", "--branch", "main", "--", remote, str(path)], cwd=path, env=env)
+    if rc:
+        raise StoreError(f"clone de {slug} falhou (git saiu {rc})")
+    _live_remote(ctx, slug, path, expected)
+    gitdir = path / ".git"
+    hooks = gitdir / "rw-live-hooks"
+    hooks.mkdir()
+    hook = hooks / "pre-commit"
+    hook.write_bytes(LIVE_SETUP_HOOK)
+    hook.chmod(0o755)
+    _git(["config", "extensions.worktreeConfig", "true"], path, env, "trava do clone")
+    # A condição usa o destino definitivo e não acompanha o worktree de lote.
+    destination_gitdir = destination / ".git"
+    lock_config = gitdir / "rw-live.config"
+    _git(["config", "--file", str(lock_config), "core.hooksPath", str(destination_gitdir / hooks.name)],
+         path, env, "trava do clone")
+    git_pattern = re.sub(r"([*?\[\]\\])", r"\\\1", destination_gitdir.as_posix())
+    condition = "gitdir/i" if os.name == "nt" else "gitdir"
+    _git(["config", "--worktree", f"includeIf.{condition}:{git_pattern}.path",
+          str(destination_gitdir / lock_config.name)],
+         path, env, "trava do clone")
+
+
+def _live_remote(ctx, slug, path, expected):
+    env = remote_env(ctx, path)
+    urls = _git(["remote", "get-url", "--all", "origin"], path, env, "origem do clone").splitlines()
+    if not expected or expected[0] != slug or len(urls) != 1 or rw_auto.rw.origin_identity(urls[0]) != expected:
+        raise StoreError(f"origin do clone dedicado não corresponde a {slug}")
+    return env
+
+
+def _live_fetch(ctx, slug, path, *, expected_id=None):
+    clone = _private_clone(ctx, slug, require_main=False)
+    if not _live_main(clone):
+        raise LiveBranchError("cópia em uso fora da main")
+    expected = _configured_origin(clone)
+    if expected_id is not None and rw_auto.rw.origin_id(expected) != expected_id:
+        raise StoreError(f"origin do clone dedicado mudou desde o pedido de {slug}")
+    env = _live_remote(ctx, slug, path, expected)
+    _git(["fetch", "origin", "+refs/heads/main:refs/remotes/origin/main"], path, env, "fetch")
+
+
+def _live_obstruction(path, env):
+    rc, branch = run(["git", "symbolic-ref", "-q", "HEAD"], cwd=path, env=env)
+    if rc not in (0, 1):
+        raise StoreError(f"branch do clone ilegível (git saiu {rc})")
+    if rc or branch.strip() != "refs/heads/main":
+        return "fora-da-main", "cópia em uso fora da main"
+    if _git(["status", "--porcelain", "-unormal", "--ignore-submodules=none"], path, env, "status").strip():
+        return "suja", "cópia em uso suja"
+    return None
+
+
+LIVE_REF_TIMEOUT = 10
+LIVE_ADVANCE_PENDING = "rw-live-advance"
+
+
+class LiveAdvanceUncertain(StoreError):
+    """O avanço deixou evidências para conferência antes de nova tentativa."""
+
+    def __init__(self, message, after):
+        super().__init__(message)
+        self.after = after
+
+
+@contextlib.contextmanager
+def _live_ref_update(path, env, temporary, before, target, *, commit=True):
+    """Prepara a ref nomeada e deixa o commit para depois de instalar o índice."""
+    output = temporary / ("transaction" if commit else "transaction-recovery")
+    with output.open("wb") as log, output.with_suffix(".stderr").open("wb") as diagnostic, subprocess.Popen(
+        ["git", "-C", str(path), "update-ref", "--stdin", "-m", "retrofit-watch: avanço da main"],
+        env=env, stdin=subprocess.PIPE, stdout=log, stderr=diagnostic,
+    ) as transaction:
+        try:
+            transaction.stdin.write(
+                f"start\noption no-deref\nupdate refs/heads/main {target} {before}\nprepare\n".encode("ascii")
+            )
+            transaction.stdin.flush()
+            deadline = time.monotonic() + LIVE_REF_TIMEOUT
+            while b"prepare: ok" not in output.read_bytes().splitlines():
+                status = transaction.poll()
+                if status is not None:
+                    raise StoreError(f"Git recusou preparar a atualização da main (rc {status})")
+                if time.monotonic() >= deadline:
+                    raise StoreError("tempo esgotado ao preparar a atualização da main")
+                time.sleep(0.02)
+            yield
+            if not commit:
+                return
+            transaction.stdin.write(b"commit\n")
+            transaction.stdin.close()
+            status = transaction.wait(timeout=LIVE_REF_TIMEOUT)
+            if status or b"commit: ok" not in output.read_bytes().splitlines():
+                raise StoreError(f"Git não confirmou a atualização da main (rc {status})")
+        except subprocess.TimeoutExpired as error:
+            raise StoreError("tempo esgotado na atualização da main") from error
+        finally:
+            # O EOF sem commit aborta a transação preparada e libera as travas das refs.
+            with contextlib.suppress(BrokenPipeError):
+                transaction.stdin.close()
+            if transaction.poll() is None:
+                try:
+                    transaction.wait(timeout=LIVE_REF_TIMEOUT)
+                except subprocess.TimeoutExpired as error:
+                    transaction.kill()
+                    transaction.wait()
+                    raise LiveAdvanceUncertain(
+                        f"transação Git encerrada à força; confira .git/{temporary.name}", None,
+                    ) from error
+
+
+def _live_checkout_settings(path, env):
+    rc, raw = run_bytes(["git", "config", "--null", "--list"], cwd=path, env=env,
+                        stderr=subprocess.DEVNULL)
+    if rc:
+        raise StoreError(f"configuração do checkout ilegível (git saiu {rc})")
+    return [entry for entry in raw.split(b"\0") if entry.partition(b"\n")[0] != b"core.hookspath"]
+
+
+def _live_require_locked_main(path):
+    if not _live_main(path):
+        raise LiveBranchError("cópia em uso fora da main")
+    if not (path / ".git" / "HEAD.lock").is_file():
+        raise StoreError("Git não travou o HEAD do clone dedicado")
+
+
+def _live_install_fast_forward(path, env, before, target, index, temporary):
+    gitdir = path / ".git"
+    (temporary / "revisions").write_text(f"antes {before}\nalvo {target}\n", encoding="ascii")
+    stage = temporary / "git"
+    stage.mkdir()
+    (stage / "HEAD").write_bytes(f"{before}\n".encode("ascii"))
+    config = gitdir / "config.worktree"
+    if config.is_file():
+        shutil.copyfile(config, stage / config.name)
+    sparse = Path("info", "sparse-checkout")
+    if (gitdir / sparse).is_file():
+        (stage / sparse.parent).mkdir()
+        shutil.copyfile(gitdir / sparse, stage / sparse)
+    saved = temporary / "index.original"
+    staged = stage / "index"
+    shutil.copy2(index, saved)
+    shutil.copy2(saved, staged)
+    staged_env = dict(env, GIT_DIR=str(stage), GIT_COMMON_DIR=str(gitdir),
+                      GIT_WORK_TREE=str(path), GIT_INDEX_FILE=str(staged))
+    if _live_checkout_settings(path, env) != _live_checkout_settings(path, staged_env):
+        raise StoreError("configuração condicional do Git difere no checkout temporário")
+    # Só o checkout real executa hooks. O índice temporário precisa ser autocontido.
+    stage_options = ["-c", f"core.hooksPath={stage / 'no-hooks'}", "-c", "core.splitIndex=false"]
+    shared = _git(["rev-parse", "--path-format=absolute", "--shared-index-path"],
+                  path, env, "índice compartilhado").removesuffix("\n")
+    if shared:
+        shared_index = Path(shared)
+        shutil.copy2(shared_index, stage / shared_index.name)
+        _git([*stage_options, "update-index", "--no-split-index"], path, staged_env, "preparo do índice")
+    writing = installed = False
+    try:
+        with _live_ref_update(path, env, temporary, before, target):
+            _live_require_locked_main(path)
+            # O merge lê um HEAD destacado. Só a transação acima pode avançar a main.
+            writing = True
+            _git([*stage_options, "merge", "--ff-only", "--no-overwrite-ignore", "--no-autostash", target],
+                 path, staged_env, "avanço da main")
+            candidate = temporary / "index.candidate"
+            shutil.copy2(staged, candidate)
+            os.replace(candidate, index)
+            installed = True
+    except (OSError, StoreError) as error:
+        if not writing:
+            raise
+        current = None
+        status_args = ["status", "--porcelain", "-unormal", "--ignore-submodules=none"]
+        try:
+            current = _git(["rev-parse", "--verify", "refs/heads/main"], path, env, "main").strip()
+            if not _live_main(path):
+                raise StoreError("main do clone mudou")
+            if current == target and installed and _live_obstruction(path, env) is None:
+                return
+            staged_head = (stage / "HEAD").read_bytes().strip()
+            if (current != before or staged_head != target.encode("ascii")
+                    or _git([*stage_options, *status_args], path, staged_env, "status temporário").strip()):
+                raise StoreError("o estado dos arquivos não permite restaurar o checkout")
+            with _live_ref_update(path, env, temporary, before, target, commit=False):
+                _live_require_locked_main(path)
+                _git([*stage_options, "checkout", "--detach", "--no-overwrite-ignore", before],
+                     path, staged_env, "restauração do checkout")
+                if installed:
+                    os.replace(saved, index)
+                if _live_obstruction(path, env) is not None:
+                    raise StoreError("checkout não voltou ao estado inicial")
+        except (OSError, StoreError) as recovery_error:
+            raise LiveAdvanceUncertain(f"avanço interrompido; confira .git/{temporary.name}: {error}; "
+                                       f"{recovery_error}", current) from recovery_error
+        raise
+
+
+def _live_fast_forward(path, env, before):
+    index = path / ".git" / "index"
+    lock = index.with_suffix(".lock")
+    temporary = index.parent / LIVE_ADVANCE_PENDING
+    try:
+        lock.touch(exist_ok=False)
+    except FileExistsError as error:
+        raise StoreError("índice do clone em uso") from error
+    created = discard = False
+    observed = before
+    try:
+        env = dict(env, GIT_OPTIONAL_LOCKS="0")
+        if os.path.lexists(temporary):
+            raise StoreError(f"avanço anterior inconclusivo; confira .git/{temporary.name}")
+        obstruction = _live_obstruction(path, env)
+        if obstruction:
+            return before, obstruction
+        target = _git(["rev-parse", "--verify", "refs/remotes/origin/main^{commit}"],
+                      path, env, "main remota").strip()
+        if target != before:
+            _git(["merge-base", "--is-ancestor", before, target], path, env, "avanço rápido indisponível")
+            temporary.mkdir(mode=0o700)
+            created = True
+            try:
+                _live_install_fast_forward(path, env, before, target, index, temporary)
+            except LiveAdvanceUncertain as error:
+                observed = error.after
+                raise
+            except (OSError, StoreError):
+                discard = True
+                raise
+            else:
+                observed, discard = target, True
+        elif not _live_main(path) or _git(["rev-parse", "HEAD"], path, env, "HEAD").strip() != before:
+            raise StoreError("HEAD do clone mudou durante o avanço")
+    finally:
+        primary_error = sys.exc_info()[1]
+        step = "liberar a trava do índice"
+        try:
+            lock.unlink()
+            if discard:
+                step = "limpar a pasta de evidência"
+                shutil.rmtree(temporary)
+        except OSError as error:
+            detail = f"não foi possível {step}"
+            if primary_error is not None:
+                detail = f"{primary_error}; {detail}"
+            if not created:
+                raise StoreError(detail) from error
+            if not isinstance(primary_error, LiveAdvanceUncertain):
+                detail = f"{detail}; confira .git/{temporary.name}"
+            raise LiveAdvanceUncertain(detail, observed) from error
+    if target != before:
+        run(["git", "hook", "run", "--ignore-missing", "post-merge", "--", "0"], cwd=path, env=env)
+    return target, None
+
+
+def live_advance(ctx, slug, *, expected_id=None):
+    """Avança o checkout dedicado sem sobrescrever estado local e registra o resultado."""
+    if not rw_auto.rw.valid_slug(slug) or slug not in ctx.lean_auto:
+        raise StoreError(f"repo sem destino autorizado: {slug}")
+    env = git_env(home=ctx.home)
+    before = after = None
+    result, detail = "ok", ""
+    try:
+        path = live_path(ctx, slug)
+        # O diagnóstico de avanço ainda precisa identificar o clone fora da main.
+        _private_clone(ctx, slug, require_main=False)
+        before = after = _git(["rev-parse", "HEAD"], path, env, "HEAD").strip()
+        if os.path.lexists(path / ".git" / LIVE_ADVANCE_PENDING):
+            raise StoreError(f"avanço anterior inconclusivo; confira .git/{LIVE_ADVANCE_PENDING}")
+        obstruction = _live_obstruction(path, env)
+        if obstruction is None:
+            _live_fetch(ctx, slug, path, expected_id=expected_id)
+            after, obstruction = _live_fast_forward(path, env, before)
+        if obstruction is not None:
+            result, detail = obstruction
+    except LiveBranchError as exc:
+        result, detail = "fora-da-main", str(exc)
+    except LiveAdvanceUncertain as exc:
+        result, detail, after = "erro", str(exc), exc.after
+    except (OSError, StoreError) as exc:
+        result, detail = "erro", str(exc)
+    record = dict(repo=slug, resultado=result, antes=before, depois=after, detalhe=detail, ts=int(time.time()))
+    record_path = rw_auto.live_record_path(ctx, slug)
+    record_path.parent.mkdir(parents=True, exist_ok=True)
+    rw_auto._write_json(record_path, record)
+    return record
+
+
+def spawn_live_advance(ctx):
+    """Dispara o fetch fora do hook, sem esperar por ele nem herdar o stdio."""
+    if not ctx.lean_auto:
+        return False
+    detach = (dict(creationflags=subprocess.DETACHED_PROCESS) if os.name == "nt"
+              else dict(start_new_session=True))
+    env = dict(git_env(home=ctx.home), CLAUDE_PLUGIN_DATA=str(ctx.data_dir))
+    subprocess.Popen([sys.executable, rw_auto.rw.__file__, "live-advance"], env=env,
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **detach)
+    return True
+
+
+def _lean_leaks(ctx, heads, store, head, commits, git):
+    path = ctx.data_dir / LEAN_WINDOW_FILE
+    try:
+        cached = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        cached = None
+    selected = [sha for sha, *_ in commits]
+    proof = {"heads": heads, "commits": selected, "scan_version": LEAK_SCAN_VERSION}
+    if (isinstance(cached, dict) and all(cached.get(key) == value for key, value in proof.items())
+            and rw_auto._int(cached.get("vazados"))):
+        return cached["vazados"]
+    leaks = _leaks(store, head, selected, git=git)
+    ctx.data_dir.mkdir(parents=True, exist_ok=True)
+    rw_auto._write_json(path, dict(proof, vazados=leaks))
+    return leaks
+
+
+def lean_window(ctx, now=None, *, deadline=None):
+    """Conta só publicações da loja e reinicia no último revert marcado de qualquer origem listada."""
+    store = ctx.store
+    if store is None:
+        return None
+    now = time.time() if now is None else now
+    if deadline is None:
+        deadline = time.monotonic() + STARTUP_TIMEOUT
+
+    def git(repo, args, what, env=None):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise StartupTimeout("janela lean: tempo de leitura esgotado")
+        local = dict(git_env(neutral=True) if env is None else env,
+                     GIT_NO_REPLACE_OBJECTS="1", GIT_GRAFT_FILE=os.devnull)
+        return _startup_git(repo, ["-c", "advice.graftFileDeprecated=false", *args], what,
+                            env=local, timeout=remaining)
+
+    try:
+        repos = {"store": store, **{slug: live_clone(ctx, slug, deadline=deadline) for slug in sorted(ctx.lean_auto)}}
+        heads, reverts, commits = {}, [], []
+        for key, repo in repos.items():
+            if repo is None:
+                return None
+            ref = "refs/remotes/origin/main"
+            proof = _decode(git(repo, ["rev-parse", "--is-shallow-repository", "--verify",
+                                       f"{ref}^{{commit}}"], "janela lean")).splitlines()
+            if len(proof) != 2 or proof[0] != "false":
+                return None
+            heads[key] = proof[1]
+            # O ref pode continuar intacto depois de perder um ancestral, inclusive com cache positivo.
+            marked, reverted, history = _marked_history(repo, heads[key], git)
+            reverts.extend(reverted)
+            if key == "store":
+                commits, store_history = marked, history
+        last = max(reverts, key=lambda c: c[1], default=None)
+        boundaries = {sha for sha, *_ in reverts}
+        # Um revert em outro repo só ordena publicações da loja se houver ancestria em comum.
+        if not boundaries <= store_history:
+            published = []
+        else:
+            published = commits
+            for sha in sorted(boundaries):
+                after = set(git(store, ["rev-list", "--ancestry-path", f"{sha}..{heads['store']}"],
+                                "janela lean").decode("ascii").splitlines())
+                published = [c for c in published if c[0] in after]
+        start = last or min(published, key=lambda c: c[1], default=None)
+        days = max(0, int((now - start[1]) // DAY)) if start else 0
+        floors = len(published) >= V2_MIN_PUBLISHED and days >= V2_MIN_DAYS
+        leaks = _lean_leaks(ctx, heads, store, heads["store"], published, git) if floors else None
+        if time.monotonic() >= deadline:
+            return None
+        return {"publicados": len(published), "dias": days, "desde": start[2] if start else None,
+                "ultimo_revert": last[1] if last else None, "vazados": leaks, "cumprido": floors and leaks == 0}
+    except (StoreError, OSError, ValueError, ImportError, AttributeError, SyntaxError, tarfile.TarError):
+        return None
+
+
+def lean_mode_state(ctx, now=None, *, deadline=None):
+    if ctx.mode != "auto":
+        return ctx.mode, None
+    window = lean_window(ctx, now, deadline=deadline)
+    if not window:
+        return "auto-dry", None
+    return ("auto" if window["cumprido"] else "auto-dry",
+            window["desde"] if window["ultimo_revert"] is not None else None)
+
+
+def lean_mode(ctx, now=None, *, deadline=None):
+    return lean_mode_state(ctx, now, deadline=deadline)[0]
+
+
 # --- linha de comando --------------------------------------------------------------------------
 
 USAGE = {
     "prepare": "prepare <id> <lote> [--redo]",
     "seal": "seal <id> <lote> --licoes L1,L2 [--fases a,b]",
     "harvest": "harvest",
+    "live-setup": "live-setup <dono/repo> [--url URL]",
+    "live-advance": "live-advance [<dono/repo>]",
 }
 
 
@@ -861,7 +1606,8 @@ def _split(value):
 
 def _parse(verb, args):
     """(posicionais, opções) ou None quando o uso está errado."""
-    flags = {"prepare": {"--redo": False}, "seal": {"--licoes": True, "--fases": True}, "harvest": {}}[verb]
+    flags = {"prepare": {"--redo": False}, "seal": {"--licoes": True, "--fases": True},
+             "live-setup": {"--url": True}}.get(verb, {})
     positional, options, i = [], {}, 0
     while i < len(args):
         arg = args[i]
@@ -880,15 +1626,16 @@ def _parse(verb, args):
         else:
             positional.append(arg)
         i += 1
-    wanted = 0 if verb == "harvest" else 2
-    if len(positional) != wanted or (verb == "seal" and "--licoes" not in options):
+    wanted = {"harvest": (0,), "live-setup": (1,), "live-advance": (0, 1)}.get(verb, (2,))
+    if len(positional) not in wanted or (verb == "seal" and "--licoes" not in options):
         return None
     return positional, options
 
 
 def cli(verb, args, ctx):
     """rc 0 certo; 1 recusado (achado da camada 1 no `seal`); 2 uso, StoreError, arquivo do fluxo fora
-    do formato ou OSError, com a mensagem em ASCII no stderr e sem traceback."""
+    do formato ou OSError, com a mensagem em ASCII no stderr e sem traceback. Os verbos `live-*`
+    saem com 1 na recusa ou erro de operação."""
     parsed = _parse(verb, args)
     if parsed is None:
         sys.stderr.write(f"retrofit-watch: uso: retrofit_watch.py {USAGE[verb]}\n")
@@ -899,11 +1646,26 @@ def cli(verb, args, ctx):
             result = prepare(ctx, *positional, redo=bool(options.get("--redo")))
         elif verb == "seal":
             result = seal(ctx, *positional, _split(options["--licoes"]), _split(options.get("--fases", "")))
+        elif verb == "live-setup":
+            result = {"clone": str(live_setup(ctx, *positional, url=options.get("--url")))}
+        elif verb == "live-advance":
+            result = []
+            for slug in positional or sorted(ctx.lean_auto):
+                try:
+                    result.append(live_advance(ctx, slug))
+                except (StoreError, rw_auto.Malformed, OSError) as exc:
+                    error = StoreError(f"avanço de {slug}: {exc}")
+                    rw_auto.rw.log_error(ctx, error)
+                    sys.stderr.write(_ascii(f"retrofit-watch: {error}") + "\n")
+                    result.append(dict(repo=slug, resultado="erro", antes=None, depois=None,
+                                       detalhe=str(exc), ts=int(time.time())))
         else:
             path = write_harvest(ctx)
             result = {"termos": len(path.read_text(encoding="utf-8").splitlines()), "arquivo": str(path)}
     except (StoreError, rw_auto.Malformed, OSError) as exc:
         sys.stderr.write(_ascii(f"retrofit-watch: {exc}") + "\n")
-        return 2
+        return 1 if verb.startswith("live-") else 2
     sys.stdout.write(json.dumps(result, indent=2) + "\n")
+    if verb == "live-advance":
+        return 0 if all(r["resultado"] == "ok" for r in result) else 1
     return 1 if verb == "seal" and result["camada1"] else 0

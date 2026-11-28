@@ -1,5 +1,10 @@
 # Modo autônomo: o fluxo da sessão
 
+[Formatos](#formatos) · [Lições](#1-as-lições) · [Primeira revisão](#2-o-revisor-primeira-passada) ·
+[Triagem](#3-a-triagem) · [Lote](#4-por-lote) · [Resposta ao dono](#5-a-linha-ao-dono) ·
+[Retenções](#6-o-verbo-segurados) · [Falha do executor](#7-o-executor-que-falha) ·
+[Motivos](#8-a-tabela-de-motivos) · [Limites](#9-o-que-nunca-fazer) · [Startup](#o-aviso-de-startup)
+
 Esta página é para o agente da sessão do dono. Leia-a inteira ao receber o pedido autônomo do Stop hook
 (`[modo autônomo: …]`) ou o verbo `/retrofit-watch:retrofit-watch segurados`.
 
@@ -15,6 +20,29 @@ Dois nomes valem em toda a página:
 A loja é o clone da chave `store` do `~/.claude/retrofit-watch.json`. Esse clone é o checkout
 compartilhado: ninguém escreve nele. Cada lote tem o seu worktree.
 
+Para os repos de `lean_auto`, `retrofit_watch.py live-setup <dono/repo> [--url URL]` cria o clone
+dedicado na `main` sem substituir um destino existente, mesmo vazio e criado durante o setup.
+Se a validação final falhar, conserva o clone pendente e seus arquivos. Corrija a causa
+e repita o setup com a mesma origem. Para concluir, o clone conferido precisa continuar
+no destino, na `main`, com a origem declarada e efetiva corretas e a trava de commit ativa.
+A ref `refs/heads/main` precisa existir, solta ou empacotada, e não pode redirecionar
+para outro ramo. O setup reconfere essa condição ao liberar o clone.
+`retrofit_watch.py live-advance [<dono/repo>]` confere o ramo
+e a árvore antes e depois do fetch e avança só uma cópia limpa na `main`, sem merge de divergência.
+O avanço prepara a atualização de `refs/heads/main` com o SHA local esperado e protege o índice
+durante a atualização dos arquivos. Se o Git já tiver travado o índice, o avanço registra `erro` e
+preserva a trava existente. Arquivos ignorados que colidam com o conteúdo novo impedem o avanço.
+Se o avanço terminar com resultado incerto, preserva os SHAs, o diagnóstico do Git e o índice
+anterior em `.git/rw-live-advance` e suspende novas tentativas. Confira a ref, as travas, o índice e
+os arquivos do clone antes de remover essa pendência e repetir o avanço.
+Se a releitura de HEAD ou da ref da main antes do fetch falhar, registra `erro` com a
+leitura que falhou, sem buscar nem alterar refs.
+Sem argumento, tenta os repos da lista.
+A origem da sessão precisa corresponder à do clone dedicado.
+Fora do GitHub público nas portas padrão, use a mesma URL Git efetiva, mesmo quando o slug é o mesmo.
+O pedido privado grava a impressão digital `origin_id` e o caminho rastreado `skill_path`, relativo
+à raiz do checkout da sessão. O Stop confere a origem atual do checkout antes de abrir o pedido.
+
 ## Formatos
 
 | Arquivo | Diretório | Quem grava | Chaves |
@@ -27,8 +55,10 @@ compartilhado: ninguém escreve nele. Cada lote tem o seu worktree.
 | `anonimato.json` | `<dados>/auto/<id>/<lote>/` | o revisor, segunda passada | `patch`, `termos`, `regra_repetida`, `fora_das_licoes` |
 | `aprovado.json` | `<dados>/auto/<id>/<lote>/` | o `approve` | `id`, `lote`, `ts`, `motivos` |
 | `colheita.txt` | `<dados>/` | o `harvest` | um nome privado por linha; nunca vai a repo |
+| `diff.json` | diretório do lote privado | o revisor (segunda passada) | patch e respostas sobre o diff |
 | `autonomo.jsonl` | `<dados>/` | a triagem, a porta e os verbos | uma linha por lote ou por lição sem ramo |
 
+No lote privado, `retrofit.json` também inclui `repo`, `pasta` e `origin_id`.
 Os arquivos de lote ficam no diretório do lote. Com dois lotes, um arquivo no diretório da retro seria
 sobrescrito.
 
@@ -62,6 +92,8 @@ Com lição, grave o `licoes.json` no caminho que o pedido dá, com a ferramenta
 ```
 
 - `n` começa em 1 e não se repete. `tipo` é `pitfall` ou `melhoria`.
+- Para skill local de repo listado, use o nome da skill em `plugin` e `skill`, e copie `repo` da
+  entrada correspondente no pedido. Para a loja, omita `repo` ou grave `null`.
 - `resolveu: null` quer dizer "sem correção verificada". A lição fica, e a triagem a segura.
 - `muda_description: true` quando a correção muda a `description` da skill.
 - Nunca cite valor de segredo, nem na evidência.
@@ -88,6 +120,8 @@ Rode `retrofit_watch.py triage <id>`. A saída é um JSON com três listas:
 - `lotes`: o que vai ao passo 4. Cada lote tem `lote`, `plugin`, `tipo` e `licoes`. O lote `<plugin>` é do
   tipo `auto`. O lote `<plugin>__description` leva as lições que mudam a `description`: ele vira um ramo
   pronto, e a porta o segura com `muda-description`.
+- O lote privado tem o nome da skill e leva `repo`. Quando duas origens disputam o mesmo nome,
+  a segunda fica `segurado` por `fora-do-pedido`, com detalhe `lote duplicado`.
 - `segurar`: a triagem já gravou a linha `segurado` de cada lição. Não faça nada agora: elas entram na
   linha ao dono e no verbo `segurados`.
 - `descartar`: a triagem já gravou a linha `descartado`. Não faça nada: elas ficam fora do aviso de
@@ -100,8 +134,11 @@ Rodar a triagem de novo não repete linha. Com rc 2 e a mensagem sobre o `veredi
 Para cada lote, nesta ordem:
 
 1. `retrofit_watch.py prepare <id> <lote>`. Ele faz `git fetch origin` na loja e cria o worktree do lote
-   e o ramo `retrofit-auto/<lote>-<id>`. A saída é o `retrofit.json`.
-2. Antes da primeira segunda passada da retro, rode `retrofit_watch.py harvest` uma vez. Ele grava
+   e o ramo `retrofit-auto/<lote>-<id>`. A saída é o `retrofit.json`. Para o lote privado, busca no
+   clone dedicado, exige um `SKILL.md` regular no caminho exato do pedido e grava também `repo` e
+   `pasta` no worktree do lote. Um pedido privado antigo sem `skill_path` precisa de nova sessão ou
+   resolução manual.
+2. Se houver lote da loja, antes da primeira segunda passada rode `retrofit_watch.py harvest` uma vez. Ele grava
    `<dados>/colheita.txt`, que o revisor usa como referência.
 3. Despache o executor com a ferramenta `Agent`:
    `subagent_type: "general-purpose"`, `model: "opus"`, `effort: "medium"`. Use este prompt-modelo:
@@ -116,11 +153,18 @@ Para cada lote, nesta ordem:
    > até 5 linhas: o commit, a versão, as lições incluídas e as deixadas de fora, as fases e o
    > resultado do `seal`.
 
+   Se `retrofit.json` tiver `repo`, passe ao executor o mesmo comando `seal` e o contrato
+   enxuto. Ele usa só as lições aprovadas do lote, trabalha em `<worktree>/<pasta>` e atualiza
+   o `CHANGELOG.md` dessa skill com uma entrada datada. Faz um commit com
+   `Retrofit-Mode: autonomous`, sem coautoria, sem bump e sem tocar no catálogo. Não procura o
+   comando da loja no worktree privado, não faz push e termina no selo.
+
    Não chame `hold` para as lições que o selo deixou de fora: o `seal` já as segurou. Sem selo (o
    `commit` do `retrofit.json` continua `null`), vá ao passo 7.
 4. Despache o revisor na segunda passada, com os mesmos `subagent_type`, `model` e `effort` do passo 2.
    O prompt leva o diretório da retro, o caminho da loja, "segunda passada", o diretório do lote e o
-   worktree. Confira que `<dados>/auto/<id>/<lote>/anonimato.json` existe. Sem ele, despache o revisor
+   worktree. Confira que `<dados>/auto/<id>/<lote>/anonimato.json` existe (no privado, `diff.json`).
+   Sem o arquivo esperado, despache o revisor
    de novo, uma vez, com o mesmo prompt. Se ele ainda faltar, pare este lote e deixe o pedido aberto.
 
    Uma lista grande de termos novos é normal: mais de cem, quase todos identificadores de código. O
@@ -131,6 +175,19 @@ Para cada lote, nesta ordem:
 5. Rode `retrofit_watch.py publish <id> <lote>` com `run_in_background: true`. A porta espera a trava por
    até 900 s, e o Bash em primeiro plano corta em 600 s. Espere a notificação. Leia o rc e a última
    linha do stdout, e siga a seção 5 desta página.
+
+**Porta do lote privado.** O revisor copia o `patch` do selo para `diff.json`, com
+`regra_repetida` e `fora_das_licoes`. A porta confere a pasta, o CHANGELOG datado, a revisão
+e a auditoria. Roda `npm ci` se houver `package-lock.json`, depois ensaia o pre-push do repo
+com os argumentos, as refs e os SHAs do push real. A janela v2 incompleta mantém o lote em
+ensaio. Com o gate verde, o motivo é `auto-dry`, acompanhado do resumo. O SHA remoto não muda.
+Com a janela cumprida ou a aprovação do patch para esse motivo, o Git executa novamente o
+pre-push e pode recusar. A porta rejeita mudanças de origem e direciona `local/ci` ao servidor
+validado sem repassar a porta do transporte SSH à API. Uma porta HTTPS não padrão fica
+na URL absoluta da API, não em `--hostname`. O lote publicado leva `repo` e o SHA
+correspondente. A porta avança o clone dedicado. Sem status ou avanço, a publicação
+continua registrada com rc 4 e `status-falhou` ou `clone-atras`. Repetir `publish`
+não refaz o push.
 
 Lotes de plugins diferentes podem correr em paralelo, cada um no seu worktree: a trava da porta
 serializa os pushes. Lotes do mesmo plugin correm em sequência, o `auto` antes do `description`, na
@@ -154,9 +211,12 @@ A última linha do stdout do `publish` é a frase ao dono. Ela tem uma destas du
 - `retrofit-watch: <plugin> vX.Y.Z publicada sozinha (<sha>)`
 - `retrofit-watch: <plugin> segurada — <motivo> (ramo <ramo>)`
 
+A frase privada inclui o slug do `repo` entre parênteses, sem versão.
+
 Copie a frase que a porta imprimiu, uma linha por lote, no fim do turno. Para a lição que a triagem
-segurou sem ramo, use a segunda forma com `(sem ramo)` no lugar do ramo. Depois de uma publicação, peça
-ao dono `/reload-plugins`: até lá, a sessão roda a cópia velha.
+segurou sem ramo, use a segunda forma com `(sem ramo)` no lugar do ramo. Depois de uma publicação
+da loja, peça ao dono `/reload-plugins`: até lá, a sessão roda a cópia velha. Para o lote privado,
+confirme o clone em uso e informe a publicação do `local/ci`.
 
 Todo `publish`, também o que a tabela manda rodar de novo, vai com `run_in_background: true`.
 
@@ -166,19 +226,20 @@ Todo `publish`, também o que a tabela manda rodar de novo, vai com `run_in_back
 | 1 | segurado | a frase; o item entra no verbo `segurados` (passo 6) |
 | 2 | erro de uso, ou a pasta de dados ausente: nada foi gravado | o comando saiu errado; confira o `<id>` e o `<lote>` e rode de novo |
 | 3 | erro: `fetch`, `push`, `trava` ou `interno` | tire a causa (o `detalhe` da linha) e rode `publish` de novo; a porta retoma de onde parou |
-| 4 | publicado, com a cópia instalada atrás | a frase, que diz o estado da instalação; rode `publish` de novo, que refaz só a instalação |
+| 4 | publicado, com cópia instalada atrás, ou, no privado, sem status ou avanço | mostre o motivo e rode `publish` de novo para retomar os efeitos sem repetir o push |
 
 ## 6. O verbo `segurados`
 
 Nunca rode `approve`, `--publico-add` nem `--add` sem a palavra do dono nesta conversa.
 
 Rode `retrofit_watch.py held`. Ele lista os itens em aberto (a última linha é `segurado` ou `erro`), com o
-motivo, o ramo e o worktree. Mostre cada item ao dono, com o motivo da tabela do passo 8, e espere a
+motivo, o ramo e o worktree. Mostre a origem (`repo` no privado, loja nos demais) e cada item ao dono, com o motivo da tabela do passo 8, e espere a
 palavra dele:
 
 - **liberar:** `retrofit_watch.py approve <id> <lote>`, depois `retrofit_watch.py publish <id> <lote>`. A
   aprovação substitui só o motivo da última recusa, e só se ele é substituível. A porta roda todas as
-  outras guardas de novo. Se ela segurar de novo por outro motivo, leve esse motivo ao dono.
+  outras guardas de novo. No privado, `approve` registra o `patch` do lote segurado, que cobre todos os arquivos
+  alterados da skill. Emenda que altere o patch invalida as aprovações anteriores. Se segurar por outro motivo, leve-o ao dono.
 - **descartar:** `retrofit_watch.py discard <id> <item>`. O motivo padrão é `descartado-pelo-dono`. O
   ramo e o worktree ficam.
 
@@ -194,7 +255,7 @@ Os casos que pedem mais do que isso:
     segunda passada.
   - "público": rode `python3 "<worktree>"/scripts/anonymity-gate.py --publico-add <termo>`. Depois,
     `git -C "<worktree>" commit -a --amend --no-edit`. A mudança da lista entra no commit emendado, e a
-    mensagem fica a mesma. O `patch` não conta as listas e conta a mensagem: assim ele não muda, e a
+    mensagem fica a mesma. No full, o `patch` não conta as listas e conta a mensagem: assim ele não muda, e a
     segunda passada continua valendo.
   - Os dois scripts gravam a lista ao lado deles: a do worktree, nunca a do checkout compartilhado. Uma
     lista mudada fora do commit segura o lote com `arvore-suja`.
@@ -243,12 +304,16 @@ despacho do executor fora do passo 4, descrito no fim dele.
 | `rebase` | o rebase sobre o `origin/main` deu conflito | não | `prepare --redo` e o passo 4 |
 | `coautoria` | o commit tem `Co-Authored-By` ou a linha `Generated with` do Claude Code | não | o executor emenda a mensagem sem o trailer e sela de novo; o revisor refaz a segunda passada; `publish` |
 | `sem-marca` | falta o trailer `Retrofit-Mode: autonomous` | não | o executor emenda a mensagem com o trailer e sela de novo; o revisor refaz a segunda passada; `publish` |
+| `sem-changelog` | falta a entrada nova com a data do commit no CHANGELOG da skill privada | não | corrigir, selar de novo e revisar |
+| `segredo` | a camada 1 identificou um segredo no lote privado | não | remover do commit e da mensagem, selar e revisar de novo |
+| `caminho` | a camada 1 identificou caminho com usuário no lote privado | sim | corrigir ou, com autorização do dono para esse patch, `approve` e `publish` |
+| `gate` | a preparação ou o pre-push não passou no ensaio, inclusive sem pre-push executável | não | corrigir a causa, depois `publish` |
 | `sem-bump` | a versão do `plugin.json` no commit não é maior que a do `origin/main` (comparada por número, `X.Y.Z`) | não | o executor sobe a versão nos quatro lugares, emenda e sela de novo; o revisor refaz a segunda passada; `publish` |
 | `nao-publicavel` | uma lição do commit não sai como publicável no veredito | sim | `approve` e `publish` |
 | `muda-description` | o lote `description` tem o ramo pronto, ou um lote `auto` muda a `description` (no `plugin.json`, no bloco do `marketplace.json` ou num `SKILL.md` do plugin, contra o `origin/main`, com ou sem a flag `muda_description`) | sim | `approve` e `publish` |
 | `nome-privado` | a camada 1 achou um nome, um e-mail, um caminho com usuário ou um segredo | não | o dono diz "privado" ou "público" (passo 6); um segredo sai do commit |
 | `sem-anonimato` | falta o `anonimato.json`, ou ele é inválido | não | o revisor refaz a segunda passada; `publish` |
-| `revisao-desatualizada` | o `patch` do `anonimato.json` não é o do commit | não | selar de novo, a segunda passada e `publish` |
+| `revisao-desatualizada` | o `patch` do `anonimato.json` (ou do `diff.json` e do selo privado) não é o do commit | não | selar de novo, a segunda passada e `publish` |
 | `termo-nao-publico` | um termo novo não é `publico` na segunda passada | não | o dono diz "privado" ou "público" (passo 6) |
 | `regra-repetida` | o revisor diz que a mudança repete ou contradiz uma regra já escrita | sim | `approve` e `publish`, ou o executor corrige a frase que errou e o lote volta à segunda passada |
 | `diff-alem-das-licoes` | o revisor diz que o diff faz mais do que as lições | sim | `approve` e `publish`, ou o executor tira o excesso e o lote volta à segunda passada |
@@ -271,6 +336,7 @@ despacho do executor fora do passo 4, descrito no fim dele.
   o "sim" do dono.
 - Nunca grave nem corrija `veredito.json` ou `anonimato.json`: só o revisor os grava. A porta não sabe quem
   gravou esses arquivos, e um arquivo gravado pela sessão passaria por cima do revisor independente.
+  A mesma regra vale para o `diff.json` privado.
 
 ## O aviso de startup
 
@@ -278,7 +344,7 @@ O aviso de startup junta numa linha ao dono um segmento por assunto:
 
 - `N retrofits segurados (…) — /retrofit-watch:retrofit-watch segurados`: o verbo `segurados` (passo 6).
 - `N retrofits autônomos sem registro de fim (…)`: uma sessão fechou no meio do fluxo. Num lote com
-  `retrofit.json` e sem linha, confira o selo e o `anonimato.json` e rode `publish`; sem selo, rode
+  `retrofit.json` e sem linha, confira o selo e a revisão (`anonimato.json` ou `diff.json`) e rode `publish`; sem selo, rode
   `hold` com o motivo do executor (passo 7). Numa retro com lição sem linha, rode `triage <id>` de novo
   e leve cada lote dela ao passo 4. Se o `triage` sair 2 por causa do `veredito.json`, volte ao passo 2.
   Quando o fluxo não tem conserto, por exemplo o revisor falha de novo, o fecho é
@@ -291,3 +357,10 @@ O aviso de startup junta numa linha ao dono um segmento por assunto:
   nomeia os plugins. O `<id>` e o `<lote>` estão na linha `publicado` do lote mais recente de cada plugin
   em `<dados>/autonomo.jsonl` (chaves `id` e `lote`). Rode `publish <id> <lote>` desse lote de novo.
 - `… — o kit pode entrar (…)`: o critério da v2 se cumpriu. Só informa.
+
+Com `lean_auto` não vazia, o startup dispara `live-advance` em processo destacado e não
+espera pela rede. Se o processo não iniciar, o aviso sai na mesma sessão junto dos demais,
+com o erro em `errors.log`. O startup seguinte lê `<dados>/live/<dono>/<repo>.json` por slug completo e
+mostra problemas como ramo errado, sujeira, falha do fetch ou registro inválido. A falta de
+registro não gera aviso. O aviso da janela muda uma vez por transição entre o ensaio e o modo
+que pode publicar sozinho.

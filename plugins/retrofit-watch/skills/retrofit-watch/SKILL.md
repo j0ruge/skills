@@ -5,7 +5,7 @@ license: MIT
 compatibility: Claude Code 2.1.163+ (Stop additionalContext); testado na 2.1.283 em 2026-09-30. Hook em Python 3, só biblioteca padrão, e git no PATH.
 metadata:
   author: JorUge
-  version: "0.4.1"
+  version: "0.5.0"
 ---
 
 # retrofit-watch
@@ -110,7 +110,9 @@ despachos do revisor e do executor, os verbos do script, a tabela de motivos e o
 Em resumo: você grava as lições; o revisor (`retrofit-watch:retrofit-reviewer`) as confere sem o
 contexto da sessão; a triagem separa os lotes; um executor por lote roda o `/retrofit-skill` no modo
 `--auto`, num worktree próprio; o revisor confere o diff; e a porta (`publish`) publica ou segura.
-Ninguém dá push fora da porta.
+Ninguém dá push fora da porta no fluxo autônomo. Para skills locais rastreadas de repos em
+`lean_auto`, o worktree sai do clone dedicado. O pre-push roda em ensaio até a janela v2
+permitir publicação sozinha, ou até o dono aprovar o patch ensaiado.
 
 Nunca rode `approve`, `--publico-add` nem `--add` sem a palavra do dono nesta conversa.
 
@@ -137,6 +139,8 @@ atrás.
 | mudar onde a colheita procura repos git | `"harvest_roots"`, padrão `["~/repos"]`, profundidade 2 |
 | mudar os tetos do modo autônomo | `"auto_limits": {"per_skill": 2, "per_session": 3}` (o padrão) |
 | apontar o clone de trabalho da loja | `"store": "~/repos/<loja>"`; sem ela, o `auto` não vale (motivo `sem-loja`) |
+| autorizar repos locais pelo slug do origin | `"lean_auto": ["dono/repo"]` (padrão `[]`), com o dono em `owners` |
+| mudar a raiz dos clones em uso | `"live_dir": "~/.local/share/skills-live"` (padrão); use `live-setup <dono/repo>` |
 | ver o que aconteceu | `${CLAUDE_PLUGIN_DATA}/metrics.jsonl` (resultado de cada retro: `none`/`lessons`) e `errors.log` |
 
 O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado depois de
@@ -197,7 +201,7 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
   o retrofit lean commita no repo da skill. Versione a skill, ou ponha no `include`, sabendo
   que o retrofit não terá onde commitar.
 - **O modo autônomo só vale com o modo de permissão `bypassPermissions` e com `"entrypoint":"cli"`
-  no transcript.** Fora do bypass, o fluxo pediria permissão para gravar fora do projeto, criar o
+  no transcript.** Vale para a loja e para uma skill rastreada de repo listado em `lean_auto`. Fora do bypass, o fluxo pediria permissão para gravar fora do projeto, criar o
   worktree e fazer o push, e um subagente pode não conseguir pedir. Em outro modo, ou com outro
   `entrypoint` (as fases headless do `sdd run` dizem `sdk-cli`), o hook manda o texto do modo manual.
 - **A retro sob demanda continua manual.** `/retrofit-watch:retrofit-watch <skill>` nunca abre um

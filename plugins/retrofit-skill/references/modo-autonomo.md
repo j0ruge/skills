@@ -14,8 +14,44 @@ Estes nomes valem em toda a página e no comando:
 - `SQA=$Q/skill-quality-audit/scripts/audit_skill_quality.py`, o auditor que a porta roda.
 - `RS=<worktree>/plugins/retrofit-skill`, a pasta deste comando no worktree.
 
-O modo autônomo é o modo completo do comando, com as diferenças desta página. O modo enxuto não tem
-modo autônomo.
+O modo autônomo da loja segue as seções 1–8. Quando `retrofit.json` traz `repo`, siga a
+variante privada abaixo no lugar dos passos exclusivos da loja.
+
+## Lote privado com `--auto`
+
+Trabalhe no `worktree` preparado e edite só a `pasta` do lote. Para o baseline e o gate
+da seção 4, `<loja>` é o caminho `store` de `~/.claude/retrofit-watch.json`. Use
+`Q=<loja>/plugins/skill-quality-audit/skills`, `SQA=$Q/skill-quality-audit/scripts/audit_skill_quality.py`
+e `RS=<loja>/plugins/retrofit-skill`. O alvo da auditoria continua sendo `<worktree>/<pasta>`.
+Confira o veredito e as lições como na seção 1. Se o lote muda a descrição, mude somente a
+`description` do próprio SKILL.md. Faça os testes da mudança e acrescente uma entrada sob
+um título com a data do commit em `<pasta>/CHANGELOG.md`, sem bump e sem mudar catálogo
+ou README da loja. Faça um commit com `Retrofit-Mode: autonomous`, sem coautoria, e use
+o `seal` da seção 6. Nunca commite no clone dedicado. Não faça push, nem publique status:
+a publicação autônoma é da porta.
+
+## Retro manual de repo listado
+
+1. Confirme `origin`, a inscrição em `lean_auto`, o clone dedicado e a pasta rastreada.
+   O servidor e o caminho efetivo de fetch e push precisam corresponder aos do clone.
+   Fora do GitHub público, confira o caminho exato, não só o slug normalizado.
+   Use `live_dir` da config ou `~/.local/share/skills-live` e nunca commite no clone dedicado.
+   Busque `origin/main` nesse clone e crie um worktree num ramo próprio a partir dessa ref.
+   Não mude o checkout de desenvolvimento.
+2. Edite só a skill e seu CHANGELOG. Rode a auditoria e apresente o diff e o destino.
+   Sem o sim do dono, não faça commit, push, status ou avanço.
+3. Com o sim, faça o commit no worktree. Se houver `package-lock.json`, rode `npm ci` ali.
+   Confirme que o Git resolve um pre-push executável (`git rev-parse --git-path hooks/pre-push`).
+   Se faltar ou não executar, pare. Confira o SHA do commit e publique com
+   `git -C <worktree> push --no-follow-tags origin HEAD:main`. Se o pre-push ou o remoto recusar,
+   não publique status nem faça avanço. Mostre o resultado e conserve o worktree.
+4. Confirme o SHA recebido na main. Registre o resultado do gate com
+   `gh api --hostname <host-sem-porta> -X POST <endpoint> -f state=success -f context=local/ci -f description=<resumo>`.
+   Use `repos/<dono/repo>/statuses/<sha>` quando a API atende na porta padrão.
+   Para uma origem HTTPS com porta própria, use `https://<host>:<porta>/api/v3/repos/<dono/repo>/statuses/<sha>`.
+   A porta do transporte SSH fica fora da chamada da API.
+   Rode `retrofit_watch.py live-advance <dono/repo>` e confira o HEAD do clone dedicado.
+   Se um desses dois passos falhar, diga qual e preserve o SHA já publicado.
 
 ## 1. Antes de editar
 
@@ -54,15 +90,15 @@ A porta roda os testes do plugin e a suíte `tests/` da raiz. Rode os dois antes
 
 ## 4. A auditoria
 
-A família da auditoria é a do worktree, em `$Q`. O baseline vai para uma pasta fora do worktree, como o
+A família da auditoria fica em `$Q`. O baseline vai para uma pasta fora do worktree, como o
 comando manda (`mktemp -d -p ~/.wt`): um arquivo novo no worktree deixa a árvore suja.
 
 | Quando | O que roda | Nome em `--fases` |
 |---|---|---|
 | sempre | o baseline e o gate do script da fase 1, como hoje. ERRO ou AVISO novo segura | — |
-| a lição põe ou muda um número, limite, caminho, flag ou versão (a linha `version:` do frontmatter não conta: o bump é mecânico, e o `validate-versions.py` o confere) | `skill-claim-check`: leia o `SKILL.md` dela no worktree e dê veredito a cada `CLAIM` | `claim-check` |
-| a lição põe um caminho, uma reference ou uma dependência de fora da skill | `skill-self-containment`: leia o `SKILL.md` dela no worktree e siga-o na skill tocada | `self-containment` |
-| o `SKILL.md` cruza ~400 linhas ou ~16 mil caracteres com a mudança (antes no teto ou abaixo, depois acima); um `SKILL.md` que já estava acima não dispara a fase | `skill-refactoring`: leia o `SKILL.md` dela no worktree; a escolha entre extrair e comprimir é dela | `refactoring` |
+| a lição põe ou muda um número, limite, caminho, flag ou versão (a linha `version:` do frontmatter não conta: o bump é mecânico, e o `validate-versions.py` o confere) | `skill-claim-check` em `$Q/skill-claim-check/SKILL.md` orienta o veredito de cada `CLAIM` | `claim-check` |
+| a lição põe um caminho, uma reference ou uma dependência de fora da skill | Siga `skill-self-containment` em `$Q/skill-self-containment/SKILL.md` na skill tocada | `self-containment` |
+| o `SKILL.md` cruza ~400 linhas ou ~16 mil caracteres com a mudança (antes no teto ou abaixo, depois acima); um `SKILL.md` que já estava acima não dispara a fase | `skill-refactoring` em `$Q/skill-refactoring/SKILL.md` orienta a escolha entre extrair e comprimir | `refactoring` |
 
 A porta confere três gatilhos mecânicos e recusa com `fase-de-auditoria` quando a fase exigida não está
 no selo:

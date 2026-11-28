@@ -1,7 +1,7 @@
 ---
 description: Apply non-obvious session lessons to a target skill in two modes — full (marketplace skill: bumps version, updates CHANGELOG/marketplace.json/README, commits and pushes) or lean (local skill in another repo: edits files + CHANGELOG and commits there, no bump or marketplace changes). Triggers — retrofit, skill-maintenance, session-lessons, lean-retrofit, local-skill.
 metadata:
-  version: 0.11.0
+  version: 0.12.0
 ---
 
 A régua deste retrofit é a família `skill-quality-audit`: um baseline antes de
@@ -51,7 +51,7 @@ skill; diferem em **quais artefatos são tocados**:
   `<outro-repo>/.claude/skills/$ARGUMENTS/`), fora deste marketplace. Edita
   os arquivos da skill e registra a lição num CHANGELOG dentro da própria
   pasta da skill, commitando NO REPO onde ela vive. NÃO mexe em
-  `marketplace.json`, no README do marketplace, nem faz bump/push aqui.
+  `marketplace.json` ou no README do marketplace e não faz bump. Por padrão não faz push.
 
 Critério para não confundir: a skill está versionada/publicada no
 marketplace? → **completo**. É local, normalmente uma correção de
@@ -84,19 +84,29 @@ Se for symlink: **não existe cópia para sincronizar**, e editar a fonte já
 atualiza a instalação. Pule qualquer passo de "ressincronizar" — ele só pode
 causar dano.
 
+### Modo enxuto em repo listado
+
+Se o `origin` da skill estiver em `lean_auto`, siga o roteiro de retro manual em
+`references/modo-autonomo.md`. Edite no worktree do clone dedicado, nunca commite no
+clone dedicado e não toque no checkout de desenvolvimento. Só com o sim do dono, publique
+`HEAD:main` pelo pre-push do repo, registre `local/ci` no SHA e rode `live-advance`.
+Se não houver clone correspondente ou o gate não passar, pare e informe o motivo.
+
 ## Modo autônomo
 
 `/retrofit-skill <plugin> --auto <dir do lote>` é o modo do executor que a `retrofit-watch` despacha.
 O dono não está na conversa.
 
-- Só vale no modo completo, no worktree do lote.
+- Na loja vale no modo completo, sempre no worktree do lote. O lote privado usa o roteiro próprio.
 - Exige o `<dir do lote>/retrofit.json` e o `veredito.json` da retro, na pasta-mãe. Sem um deles,
   pare antes de editar.
 - O `veredito.json` faz o papel da confirmação do passo 3.
-- O fluxo para antes do push. O push e a atualização da loja são da porta da `retrofit-watch`.
+- O fluxo para antes do push, no `seal`, inclusive no lote privado com `repo` e `pasta`.
+  O push e a atualização da loja são da porta da `retrofit-watch`.
 - `<REPO>` é o `worktree` do `retrofit.json`: o PASSO 0 não procura o repo nem pergunta.
 - Leia `<worktree>/plugins/retrofit-skill/references/modo-autonomo.md` antes de editar. Ela diz o
   escopo, os nomes `SQA` e `RS`, as fases da auditoria, o commit, o `seal` e o relatório.
+  No lote privado, leia essa referência na loja configurada e use os scripts dela para a auditoria.
 
 ## Localizar o auditor e os scripts deste comando
 
