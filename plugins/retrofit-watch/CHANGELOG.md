@@ -47,6 +47,8 @@
   recuperar a ordem de chamadas pendentes. Uma externa posterior encerra a atribuição até
   sem metadado de caminho. O trecho antigo não reconta trabalho nem gera pedidos de retro.
   A leitura linha a linha preserva o slash pendente se o prefixo confirma o estado salvo.
+  Um metadado rejeitado que poderia ser do dono salvo só preserva IDs comprovadamente
+  anteriores à mensagem de sua chamada, além das demais cargas compatíveis.
   Acima de 2 MiB por registro, o hook segue do offset salvo sem importar vínculos parciais.
   Sem atribuição ativa, esse fallback também ignora metadado atrasado sem vínculo.
 

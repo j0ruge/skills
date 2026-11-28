@@ -55,9 +55,13 @@ recuperar também a origem ativa e um slash pendente.
 
 Na dúvida sobre qual carga a 0.4.0 observou, o hook só importa IDs comprovadamente
 anteriores a todas as cargas compatíveis. Se o replay descartar um metadado que
-poderia ter ativado a skill salva, as outras cargas não bastam para aposentar
-um ID. Um caminho exclusivo e vinculado, registrado no cache legado, ainda
-pode confirmar uma carga posterior.
+poderia ter ativado a skill salva, ele também entra na comparação. A prova
+exige uma chamada única para o metadado e usa a ordem das mensagens, não a
+chegada dos metadados. Sem essa prova, a aposentadoria não é importada.
+Para essa comparação, a leitura guarda temporariamente até 64 mensagens e
+1.024 IDs de chamada, com teto de 2 MiB para as strings dos IDs. Um caminho
+exclusivo e vinculado, registrado no cache legado, ainda pode confirmar
+uma carga posterior.
 
 Se a origem gravada tiver formato inválido, o Stop descarta essa origem, preserva
 a atribuição e os contadores e continua a partir do offset salvo.
@@ -70,4 +74,4 @@ salva, e cargas novas com vínculo ou slash explícito continuam funcionando.
 
 Os critérios de elegibilidade, os modos de retro e a fila não mudaram.
 Veja as [notas da versão](../../plugins/retrofit-watch/CHANGELOG.md#041--2026-11-25)
-e os [Checks de I1, F1 e R12](../handoffs/20261125-retrofit-watch-atribuicao/checkpoint.md).
+e os [Checks da missão](../handoffs/20261125-retrofit-watch-atribuicao/checkpoint.md).

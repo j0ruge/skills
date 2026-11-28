@@ -1211,6 +1211,79 @@ class StopTest(HookHarness, unittest.TestCase):
                 else:
                     self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
 
+    def test_legacy_replay_keeps_older_external_with_ignored_owner(self):
+        for case in ("older", "later", "same_message", "message_order", "reused_marker",
+                     "reused_owner", "reused_external", "unknown_source", "invalid_source", "missing_origin",
+                     "first_candidate", "between_candidates"):
+            with self.subTest(case=case), self.sub_world() as world:
+                owner = identified_load("coderabbit-pr", world.mkt_skill,
+                                        "owner", "toolu_owner")
+                external = identified_load("brainstorming", world.other_skill,
+                                           "owner" if case == "same_message" else "external",
+                                           "toolu_external")
+                if case in ("message_order", "reused_marker"):
+                    marker = identified_load("brainstorming", world.other_skill, "external", "toolu_marker")
+                    if case == "reused_marker":
+                        other_marker = identified_load("brainstorming", world.other_skill,
+                                                       "marker", "toolu_marker")
+                        self.write(other_marker[:2], compact=True)
+                    self.write(marker[:2], compact=True)
+                if case == "missing_origin":
+                    del owner[0]["message"]["id"]
+                if case == "unknown_source":
+                    owner[2]["sourceToolUseID"] = "toolu_unknown"
+                if case == "invalid_source":
+                    owner[2]["sourceToolUseID"] = ["toolu_owner"]
+                if case == "between_candidates":
+                    first, _ = self.identified_loads()
+                    self.write(first, compact=True)
+                owner_first = case in ("later", "message_order", "reused_marker")
+                loads = (owner, external) if owner_first else (external, owner)
+                for load in loads:
+                    self.write(load[:2], compact=True)
+                if case == "reused_owner":
+                    self.write(owner[:2], compact=True)
+                if case == "reused_external":
+                    self.write(external[:2], compact=True)
+                if case == "first_candidate":
+                    self.write(identified_load("ticket", world.ticket, "ticket", "toolu_ticket"),
+                               owner[2:], compact=True)
+                for index in range(2):
+                    newer = identified_load("codereview:coderabbit-pr", world.mkt_skill,
+                                            f"new_{index}", f"toolu_new_{index}")
+                    self.write(newer, compact=True)
+                if case == "invalid_source":
+                    unwatch = identified_load("superpowers:brainstorming", world.other_skill,
+                                              "unwatch", "toolu_unwatch")
+                    self.write(unwatch[:2], compact=True)
+                if case != "first_candidate":
+                    self.write(owner[2:], compact=True)
+                credits = self.save_legacy_owner(world.mkt_skill)
+
+                if case == "older":
+                    record_size = max(map(len, world.transcript.read_bytes().splitlines(keepends=True)))
+                    for cap, value in (("MAX_SKILL_CALL_IDS", 3), ("MAX_SKILL_MESSAGES", 3),
+                                       ("MAX_LEGACY_RECORD_BYTES", max(330, record_size))):
+                        with self.subTest(cap=cap), mock.patch.object(rw, cap, value):
+                            ctx = world.ctx()
+                            with rw.State(ctx, "s1") as state:
+                                rw.recover_legacy_correlation(world.transcript, state.data, ctx)
+                                self.assertEqual(state.data["retired_skill_calls"], [])
+
+                out, migrated = self.checked_stop()
+                older = case in ("older", "message_order", "reused_marker", "first_candidate")
+                self.assertIsNone(out)
+                self.assertIsNone(migrated["current_origin"])
+                self.assertEqual("toolu_external" in migrated["retired_skill_calls"], older)
+                self.write(external[2:], tool(error=True), compact=True)
+                out, after = self.checked_stop()
+                self.assertEqual(after["attribution_closed"], not older)
+                if older:
+                    self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                else:
+                    self.assertIsNone(out)
+                    self.assertEqual(after["skills"]["full:codereview"], credits)
+
     def save_legacy_owner(self, *paths):
         world = self.w
         cache = {str(path): rw.classify_path(str(path), world.ctx()) for path in paths}

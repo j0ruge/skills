@@ -857,6 +857,9 @@ def recover_legacy_correlation(path, st, ctx):
     owner = None
     ambiguous = False
     common_retired = set()
+    message_positions = {}
+    call_positions = {}
+    position_bytes = 0
     unseen_cached_paths = set(st["classified"])
     proved_owner = False
 
@@ -865,12 +868,27 @@ def recover_legacy_correlation(path, st, ctx):
         first_cached_path = False
 
         def _skill_origin(self, message_id, call_id):
+            nonlocal call_positions, message_positions, position_bytes
             # Reuso no prefixo invalida a prova antiga, mesmo se o replay aposentar o ID de novo.
             common_retired.discard(call_id)
+            if call_positions is not None and call_id is not None:
+                message = self._transcript_id(message_id)
+                if message is not None and message not in message_positions:
+                    position_bytes += sys.getsizeof(message)
+                    message_positions[message] = len(message_positions)
+                if call_id not in call_positions:
+                    position_bytes += sys.getsizeof(call_id)
+                    call_positions[call_id] = message_positions.get(message)
+                else:
+                    call_positions[call_id] = None
+                # A poda normal pode esquecer o dono antes de seu metadado chegar.
+                if (len(call_positions) > MAX_SKILL_CALL_IDS or len(message_positions) > MAX_SKILL_MESSAGES
+                        or position_bytes > MAX_LEGACY_RECORD_BYTES):
+                    call_positions = message_positions = None
             return super()._skill_origin(message_id, call_id)
 
         def skill_path(self, path, source):
-            nonlocal ambiguous, proved_owner
+            nonlocal ambiguous, common_retired, proved_owner
             info = st["classified"].get(path)
             compatible = isinstance(info, dict) and info.get("key") == st["current"]
             # A 0.4.0 podia aceitar este metadado mesmo se o replay rejeitar seu ID.
@@ -879,9 +897,18 @@ def recover_legacy_correlation(path, st, ctx):
             self.first_cached_path = path in unseen_cached_paths
             unseen_cached_paths.discard(path)
             if not super().skill_path(path, source) and compatible:
-                # Um dono possível sem origem aceita invalida a prova de antiguidade.
+                # A ordem de chegada dos metadados não prova a ordem de suas mensagens.
+                candidate_position = (call_positions.get(self._transcript_id(source))
+                                      if call_positions is not None else None)
+                if candidate_position is None:
+                    common_retired.clear()
+                else:
+                    candidates = (self.st["retired_skill_calls"] if owner is None and not ambiguous
+                                  else common_retired)
+                    common_retired = {call for call in candidates
+                                      if (position := call_positions.get(call)) is not None
+                                      and position < candidate_position}
                 ambiguous = True
-                common_retired.clear()
             self.first_cached_path = False
 
         def _watch(self, info, origin=None, **kwargs):
