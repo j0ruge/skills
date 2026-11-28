@@ -29,6 +29,7 @@ import os
 import re
 import shutil
 import socket
+import stat
 import subprocess
 import sys
 import tarfile
@@ -732,6 +733,8 @@ STARTUP_TIMEOUT = 3
 CRITERION_FILE = "criterio.json"
 LEAN_WINDOW_FILE = "lean-janela.json"
 LIVE_SETUP_PENDING = "rw-live-pending"
+LIVE_SETUP_HOOK = (b'#!/bin/sh\necho "retrofit-watch: este clone so segue a main; '
+                   b'commite num worktree do lote" >&2\nexit 1\n')
 # C9: o estouro do teto fica em cache por sha do `origin/main`, por 24 h; depois o critério mede de novo.
 CRITERION_RETRY = 86400
 MARKER = "Retrofit-Mode"
@@ -922,13 +925,14 @@ def live_path(ctx, slug):
     return path
 
 
-def _configured_origin(path):
+def _configured_origin(path, *, allow_pending=False):
     """Lê o origin declarado pelo dono, sem aplicar reescritas de URL do Git."""
     gitdir = path / ".git"
     config = configparser.ConfigParser(interpolation=None, allow_no_value=True)
     try:
         if (path.is_symlink() or gitdir.is_symlink() or
-                (gitdir / LIVE_SETUP_PENDING).exists() or not (gitdir / "HEAD").is_file()):
+                (not allow_pending and (gitdir / LIVE_SETUP_PENDING).exists()) or
+                not (gitdir / "HEAD").is_file()):
             return None
         with (gitdir / "config").open(encoding="utf-8") as fh:
             config.read_file(fh)
@@ -978,6 +982,51 @@ def _pending_live_setup(path, marker, origin_id):
         return False
 
 
+def _live_setup_identity(path):
+    """Identifica o checkout e seu .git sem aceitar links no lugar dos diretórios."""
+    try:
+        dirs = (path.lstat(), (path / ".git").lstat())
+        if all(stat.S_ISDIR(info.st_mode) for info in dirs):
+            return tuple((info.st_dev, info.st_ino) for info in dirs)
+    except FileNotFoundError:
+        pass
+    return None
+
+
+def _finish_live_setup(path, marker, identity):
+    if identity is None or _live_setup_identity(path) != identity:
+        raise StoreError(f"destino do setup mudou: {path}")
+    if os.name == "nt":
+        marker.unlink()
+    else:
+        # Ancore a remoção no .git conferido, mesmo se o caminho for trocado depois do stat.
+        fd = os.open(marker.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            info = os.fstat(fd)
+            if (info.st_dev, info.st_ino) != identity[1]:
+                raise StoreError(f"destino do setup mudou: {path}")
+            os.unlink(marker.name, dir_fd=fd)
+        finally:
+            os.close(fd)
+    if _live_setup_identity(path) != identity:
+        raise StoreError(f"destino do setup mudou: {path}")
+
+
+def _check_live_setup(ctx, path, expected):
+    if _configured_origin(path, allow_pending=True) != expected:
+        raise StoreError(f"origem declarada do clone dedicado não corresponde a {expected[0]}")
+    env = git_env(home=ctx.home)
+    if _git(["symbolic-ref", "-q", "HEAD"], path, env, "ramo do clone").strip() != "refs/heads/main":
+        raise StoreError("cópia em uso fora da main")
+    hook = path / ".git" / "rw-live-hooks" / "pre-commit"
+    hooks = _git(["config", "--show-scope", "--type=path", "--get", "core.hooksPath"],
+                 path, env, "trava do clone").strip()
+    scope, _, directory = hooks.partition("\t")
+    if (scope != "worktree" or Path(directory) != hook.parent or not hook.is_file()
+            or not os.access(hook, os.X_OK) or hook.read_bytes() != LIVE_SETUP_HOOK):
+        raise StoreError("trava de commit do clone dedicado incompleta")
+
+
 def live_setup(ctx, slug, url=None):
     path = live_path(ctx, slug)
     remote = f"https://github.com/{slug}.git" if url is None else url
@@ -988,7 +1037,8 @@ def live_setup(ctx, slug, url=None):
     marker = path / ".git" / LIVE_SETUP_PENDING
     origin_id = rw_auto.rw.origin_id(expected).encode("ascii")
     if os.path.lexists(path):
-        if not _pending_live_setup(path, marker, origin_id):
+        identity = _live_setup_identity(path)
+        if identity is None or not _pending_live_setup(path, marker, origin_id):
             raise StoreError(f"destino já existe: {path}")
     else:
         # Prepara a trava fora do destino e deixa a cópia pendente para validação.
@@ -997,6 +1047,7 @@ def live_setup(ctx, slug, url=None):
             checkout.mkdir()
             _setup_live_clone(ctx, slug, checkout, remote, expected, path)
             (checkout / ".git" / LIVE_SETUP_PENDING).write_bytes(origin_id)
+            identity = _live_setup_identity(checkout)
             try:
                 _install_live_clone(checkout, path)
             except FileExistsError as error:
@@ -1004,8 +1055,9 @@ def live_setup(ctx, slug, url=None):
             except OSError as error:
                 raise StoreError(f"instalação do clone de {slug} falhou: {error}") from error
     # O caminho final pode ativar uma reescrita de URL. Na recusa, preserve os arquivos para retomar.
+    _check_live_setup(ctx, path, expected)
     _live_remote(ctx, slug, path, expected)
-    marker.unlink(missing_ok=True)
+    _finish_live_setup(path, marker, identity)
     return path
 
 
@@ -1023,8 +1075,7 @@ def _setup_live_clone(ctx, slug, path, remote, expected, destination):
     hooks = gitdir / "rw-live-hooks"
     hooks.mkdir()
     hook = hooks / "pre-commit"
-    hook.write_bytes(b'#!/bin/sh\necho "retrofit-watch: este clone so segue a main; '
-                     b'commite num worktree do lote" >&2\nexit 1\n')
+    hook.write_bytes(LIVE_SETUP_HOOK)
     hook.chmod(0o755)
     _git(["config", "extensions.worktreeConfig", "true"], path, env, "trava do clone")
     # A condição usa o destino definitivo e não acompanha o worktree de lote.

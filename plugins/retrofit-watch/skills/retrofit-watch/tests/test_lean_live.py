@@ -211,6 +211,289 @@ class LiveTest(unittest.TestCase):
         self.assertEqual(note.read_text(encoding="utf-8"), "preservar")
         self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
 
+    def test_setup_does_not_finalize_missing_or_replaced_destination(self):
+        w = self.w
+        w.live.rename(w.live.with_name("anterior"))
+        live_remote = store._live_remote
+        pending = w.live / ".git" / store.LIVE_SETUP_PENDING
+
+        for change in ("ausente", "outro-clone", "outro-gitdir"):
+            moved = w.live.with_name(change)
+            seen = []
+
+            def move_after_validation(ctx, slug, path, expected):
+                env = live_remote(ctx, slug, path, expected)
+                if path == w.live:
+                    source = path / ".git" if change == "outro-gitdir" else path
+                    seen.append((source.stat(), pending.read_bytes()))
+                    source.rename(moved)
+                    if change != "ausente":
+                        replacement = path / ".git" if change == "outro-gitdir" else path
+                        shutil.copytree(moved, replacement)
+                return env
+
+            with self.subTest(change=change):
+                with mock.patch.object(store, "_live_remote", side_effect=move_after_validation):
+                    with self.assertRaisesRegex(store.StoreError, "destino.*mudou"):
+                        store.live_setup(self.ctx, SLUG, str(w.remote))
+                original_marker = moved / ("" if change == "outro-gitdir" else ".git") / pending.name
+                original, contents = seen[0]
+                self.assertTrue(os.path.samestat(original, moved.stat()))
+                self.assertEqual(original_marker.read_bytes(), contents)
+                self.assertIsNone(store.live_clone(self.ctx, SLUG))
+                if change == "ausente":
+                    self.assertFalse(w.live.exists())
+                else:
+                    replaced = w.live / ".git" if change == "outro-gitdir" else w.live
+                    self.assertFalse(os.path.samestat(original, replaced.stat()))
+                    self.assertEqual(pending.read_bytes(), contents)
+            if w.live.exists():
+                w.live.rename(w.live.with_name(change + "-substituto"))
+
+    def _leave_pending_setup(self):
+        w = self.w
+        key = self._final_origin_rewrite()
+        with self.assertRaisesRegex(store.StoreError, "origin do clone dedicado"):
+            store.live_setup(self.ctx, SLUG, str(w.remote))
+        w.git(w.tmp, "config", "--global", "--unset", key)
+        return w.live / ".git" / store.LIVE_SETUP_PENDING
+
+    def test_setup_retry_refuses_clone_replaced_after_pending_check(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        moved = w.live.with_name("deslocado")
+        contents = pending.read_bytes()
+        check = store._pending_live_setup
+
+        def replace_after_check(*args):
+            matches = check(*args)
+            self.assertTrue(matches)
+            w.live.rename(moved)
+            shutil.copytree(moved, w.live)
+            return matches
+
+        with mock.patch.object(store, "_pending_live_setup", side_effect=replace_after_check):
+            with self.assertRaisesRegex(store.StoreError, "destino.*mudou"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertEqual(pending.read_bytes(), contents)
+        self.assertFalse(os.path.samestat(w.live.stat(), moved.stat()))
+
+    def test_setup_refuses_clone_replaced_just_after_install(self):
+        w = self.w
+        w.live.rename(w.live.with_name("anterior"))
+        moved = w.live.with_name("deslocado")
+        install = store._install_live_clone
+
+        def replace_after_install(checkout, path):
+            install(checkout, path)
+            path.rename(moved)
+            shutil.copytree(moved, path, ignore=shutil.ignore_patterns(".git"))
+            (moved / ".git").rename(path / ".git")
+
+        with mock.patch.object(store, "_install_live_clone", side_effect=replace_after_install):
+            with self.assertRaisesRegex(store.StoreError, "destino.*mudou"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        marker = ".git/" + store.LIVE_SETUP_PENDING
+        self.assertTrue((w.live / marker).is_file())
+        self.assertFalse(os.path.samestat(w.live.stat(), moved.stat()))
+
+    def test_setup_does_not_accept_disappearing_marker(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        live_remote = store._live_remote
+
+        def remove_after_validation(*args):
+            env = live_remote(*args)
+            pending.unlink()
+            return env
+
+        with mock.patch.object(store, "_live_remote", side_effect=remove_after_validation):
+            with self.assertRaises(FileNotFoundError):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+
+    @unittest.skipIf(os.name == "nt", "Remoção por descritor de diretório no POSIX")
+    def test_setup_leaves_replacement_pending_at_marker_removal(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        contents = pending.read_bytes()
+        open_dir, unlink = os.open, os.unlink
+
+        for boundary in ("abertura", "remoção"):
+            moved = w.live.with_name(boundary)
+            descriptors = []
+
+            def replace():
+                w.live.rename(moved)
+                shutil.copytree(moved, w.live)
+
+            def open_after_swap(path, *args, **kwargs):
+                if boundary == "abertura" and path == pending.parent:
+                    replace()
+                fd = open_dir(path, *args, **kwargs)
+                if path == pending.parent:
+                    descriptors.append(fd)
+                return fd
+
+            def unlink_after_swap(path, *args, **kwargs):
+                if boundary == "remoção" and path in (pending, pending.name):
+                    replace()
+                return unlink(path, *args, **kwargs)
+
+            with self.subTest(boundary=boundary), \
+                    mock.patch.object(os, "open", side_effect=open_after_swap), \
+                    mock.patch.object(os, "unlink", side_effect=unlink_after_swap):
+                with self.assertRaisesRegex(store.StoreError, "destino.*mudou"):
+                    store.live_setup(self.ctx, SLUG, str(w.remote))
+                self.assertFalse(os.path.samestat(w.live.stat(), moved.stat()))
+                self.assertEqual(pending.read_bytes(), contents)
+                if boundary == "abertura":
+                    self.assertEqual((moved / ".git" / pending.name).read_bytes(), contents)
+                self.assertEqual(len(descriptors), 1)
+                with self.assertRaises(OSError):
+                    os.fstat(descriptors[0])
+
+    def test_setup_path_removal_fallback_requires_marker(self):
+        pending = self._leave_pending_setup()
+        path = self.w.live
+        identity = store._live_setup_identity(path)
+        with mock.patch.object(store.os, "name", "nt"):
+            store._finish_live_setup(path, pending, identity)
+            with self.assertRaises(FileNotFoundError):
+                store._finish_live_setup(path, pending, identity)
+        self.assertEqual(store.live_clone(self.ctx, SLUG), path)
+
+    @unittest.skipIf(os.name == "nt", "Abertura de diretório sem seguir links no POSIX")
+    def test_setup_does_not_follow_gitdir_link_at_marker_removal(self):
+        pending = self._leave_pending_setup()
+        moved = self.w.live.with_name("gitdir-deslocado")
+        contents = pending.read_bytes()
+        open_dir = os.open
+
+        def open_after_link(path, *args, **kwargs):
+            if path == pending.parent:
+                pending.parent.rename(moved)
+                pending.parent.symlink_to(moved, target_is_directory=True)
+            return open_dir(path, *args, **kwargs)
+
+        with mock.patch.object(os, "open", side_effect=open_after_link):
+            with self.assertRaises(OSError):
+                store.live_setup(self.ctx, SLUG, str(self.w.remote))
+        self.assertEqual((moved / pending.name).read_bytes(), contents)
+
+    def test_setup_retry_requires_declared_and_effective_origin(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        previous = pending.read_bytes()
+        alias = f"https://alias.example/{SLUG}.git"
+        w.git(w.live, "remote", "set-url", "origin", alias)
+        w.git(w.tmp, "config", "--global", f"url.{w.remote}.insteadOf", alias)
+        self.assertEqual(w.git(w.live, "remote", "get-url", "origin"), str(w.remote))
+
+        refused = self.cli("live-setup", SLUG, "--url", str(w.remote))
+        self.assertEqual(refused.returncode, 1, refused.stdout)
+        self.assertIn("origem declarada", refused.stderr)
+        self.assertEqual(pending.read_bytes(), previous)
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+        w.git(w.live, "remote", "set-url", "origin", str(w.remote))
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+        self.assertEqual(store.live_clone(self.ctx, SLUG, origin=store.rw_auto.rw.origin_identity(str(w.remote))),
+                         w.live)
+
+    def test_setup_retry_does_not_finalize_wrong_branch(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        w.git(w.live, "switch", "-qc", "rascunho")
+        note = w.live / "nota-local"
+        note.write_text("preservar", encoding="utf-8")
+        head = w.git(w.live, "rev-parse", "HEAD")
+
+        refused = self.cli("live-setup", SLUG, "--url", str(w.remote))
+        self.assertEqual(refused.returncode, 1, refused.stdout)
+        self.assertIn("main", refused.stderr)
+        self.assertEqual(w.git(w.live, "branch", "--show-current"), "rascunho")
+        self.assertEqual(w.git(w.live, "rev-parse", "HEAD"), head)
+        self.assertEqual(note.read_text(encoding="utf-8"), "preservar")
+        self.assertTrue(pending.is_file())
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+        w.git(w.live, "switch", "-q", "main")
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+
+    def test_setup_retry_requires_effective_worktree_lock(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        config = pending.with_name("rw-live.config")
+        hidden = config.with_suffix(".oculta")
+        hook = pending.parent / "rw-live-hooks" / "pre-commit"
+        original = hook.read_bytes()
+        contents = pending.read_bytes()
+        note = w.live / "nota-local"
+        note.write_text("preservar", encoding="utf-8")
+
+        def assert_refused():
+            refused = self.cli("live-setup", SLUG, "--url", str(w.remote))
+            try:
+                self.assertEqual(refused.returncode, 1, refused.stdout)
+                self.assertIn("trava", refused.stderr)
+                self.assertEqual(pending.read_bytes(), contents)
+                self.assertIsNone(store.live_clone(self.ctx, SLUG))
+                self.assertEqual(note.read_text(encoding="utf-8"), "preservar")
+            finally:
+                if not pending.is_file():
+                    pending.write_bytes(contents)
+
+        with self.subTest(lock="inclusão ausente"):
+            config.rename(hidden)
+            try:
+                assert_refused()
+            finally:
+                hidden.rename(config)
+        with self.subTest(lock="caminho incorreto"):
+            w.git(w.live, "config", "--worktree", "core.hooksPath", ".githooks")
+            try:
+                assert_refused()
+            finally:
+                w.git(w.live, "config", "--worktree", "--unset", "core.hooksPath")
+        with self.subTest(lock="escopo comum"):
+            config.rename(hidden)
+            w.git(w.live, "config", "--local", "core.hooksPath", str(hook.parent))
+            try:
+                assert_refused()
+            finally:
+                w.git(w.live, "config", "--local", "--unset", "core.hooksPath")
+                hidden.rename(config)
+        with self.subTest(lock="hook permissivo"):
+            hook.write_bytes(b"#!/bin/sh\nexit 0\n")
+            try:
+                assert_refused()
+            finally:
+                hook.write_bytes(original)
+        with self.subTest(lock="hook ausente"):
+            hook.rename(hidden)
+            try:
+                assert_refused()
+            finally:
+                hidden.rename(hook)
+        with self.subTest(lock="diretório no lugar do hook"):
+            hook.rename(hidden)
+            hook.mkdir()
+            try:
+                assert_refused()
+            finally:
+                hook.rmdir()
+                hidden.rename(hook)
+        if os.name != "nt":
+            with self.subTest(lock="hook sem execução"):
+                hook.chmod(0o644)
+                try:
+                    assert_refused()
+                finally:
+                    hook.chmod(0o755)
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+        with self.assertRaises(subprocess.CalledProcessError) as denied:
+            w.git(w.live, "commit", "--allow-empty", "-m", "Bloqueado")
+        self.assertIn("worktree do lote", denied.exception.stderr)
+        self.assertEqual(note.read_text(encoding="utf-8"), "preservar")
+
     def test_setup_preserves_replacement_on_final_validation_failure(self):
         w = self.w
         w.live.rename(w.live.with_name("anterior"))
@@ -243,15 +526,16 @@ class LiveTest(unittest.TestCase):
     def test_setup_retries_after_pending_marker_removal_fails(self):
         w = self.w
         w.live.rename(w.live.with_name("anterior"))
-        unlink = type(w.live).unlink
+        marker = w.live / ".git" / store.LIVE_SETUP_PENDING
+        unlink = os.unlink
 
         def fail_final_unlink(path, *args, **kwargs):
-            if path == w.live / ".git" / store.LIVE_SETUP_PENDING:
+            if path in (marker, marker.name):
                 self.assertIsNone(store.live_clone(self.ctx, SLUG))
                 raise PermissionError("marcador ocupado")
             return unlink(path, *args, **kwargs)
 
-        with mock.patch.object(type(w.live), "unlink", new=fail_final_unlink):
+        with mock.patch.object(os, "unlink", new=fail_final_unlink):
             with self.assertRaisesRegex(PermissionError, "marcador ocupado"):
                 store.live_setup(self.ctx, SLUG, str(w.remote))
         self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)

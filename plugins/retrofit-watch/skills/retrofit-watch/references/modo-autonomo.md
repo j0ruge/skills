@@ -17,8 +17,10 @@ compartilhado: ninguém escreve nele. Cada lote tem o seu worktree.
 
 Para os repos de `lean_auto`, `retrofit_watch.py live-setup <dono/repo> [--url URL]` cria o clone
 dedicado na `main` sem substituir um destino existente, mesmo vazio e criado durante o setup.
-Se a origem for recusada no caminho final, conserva o clone pendente e seus arquivos. Corrija a causa
-e repita o setup com a mesma origem para terminar a validação. `retrofit_watch.py live-advance [<dono/repo>]` confere o ramo
+Se a validação final falhar, conserva o clone pendente e seus arquivos. Corrija a causa
+e repita o setup com a mesma origem. Para concluir, o clone conferido precisa continuar
+no destino, na `main`, com a origem declarada e efetiva corretas e a trava de commit ativa.
+`retrofit_watch.py live-advance [<dono/repo>]` confere o ramo
 e a árvore antes e depois do fetch e avança só uma cópia limpa na `main`, sem merge de divergência.
 Sem argumento, tenta os repos da lista.
 A origem da sessão precisa corresponder à do clone dedicado.

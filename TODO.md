@@ -217,7 +217,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: na triagem da prosa histórica, apontar para a receita isolada e manter a evidência da execução.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r7.md` — descoberto por
   `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
-  RECURRED 1: 20261127-retrofit-watch-050 (2026-11-28)
+  RECURRED 2: 20261127-retrofit-watch-050 (2026-11-28); 20261127-retrofit-watch-050/R11 (2026-11-28)
 
 - [ ] **A fixture de duas skills full do mesmo plugin já falha na base** —
   `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_mode.py:203`
@@ -266,11 +266,18 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 ### Clone dedicado da retrofit-watch
 
 - [ ] **O avanço pode mover outro ramo depois da última conferência** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:1085` (`merge-base`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:1136` (`merge-base`) —
   uma troca de ramo limpo após a prova de ancestralidade move esse ramo, deixa a main parada e grava sucesso.
   Direção: vincular a atualização da cópia ao ramo conferido, sem depender só de uma checagem separada.
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r2.md` — descoberto por
   `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
+
+- [ ] **A remoção do marcador do setup no Windows ainda depende do caminho** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:996` (`_finish_live_setup`) —
+  As duas checagens de identidade sinalizam a troca, mas não ancoram a remoção entre elas.
+  Direção: testar a remoção pelo identificador do arquivo numa fixture Windows nativa.
+  Fonte: `docs/handoffs/20261127-retrofit-watch-050/20-handoff-exec.md` — descoberto por
+  `sdd-executor` na missão `20261127-retrofit-watch-050` (2026-11-28)
 
 ## Decidido — não reabrir
 <!-- sdd:decided -->
