@@ -34,7 +34,7 @@ O SHA `685ede3801b802d80a4c3ba72d3df113c7376979` foi confirmado no checkout e é
 
 ### Overall Grade
 
-| Critério | Nota | Evidência |
+| Criterion | Grade | Rationale |
 |---|---|---|
 | Code Quality (Zen) | A | A mudança se limita à remoção de 23 registros já integrados e da subseção que ficou vazia. |
 | Type Safety | A | Nenhum código, tipo, esquema ou configuração mudou. |
