@@ -554,3 +554,4 @@
 - 2026-11-28 00:55 · R21 sabotage: guarda de importação ambígua → legacy_replay_cannot_choose_between_compatible_owners
 - 2026-11-28 00:55 · R21 sabotage: retorno antes de importar → legacy_replay_cannot_choose_between_compatible_owners
 - 2026-11-28 00:55 · R21 · e5c249d. Quatro regressões vermelhas antes da correção. Suíte isolada com 154 testes da loja (3 pulados), 138 do hook, 23 Checks, F1 e quatro testes de release verdes. Vinte e uma mutações detectadas com grupo próprio, timeout de 20 s e 512 MiB. Receitas históricas confirmadas com Git roteado para uma fixture. O Bubblewrap bloqueou as três provas nativas antes do CLI. O Git privado contaminado na primeira suíte foi restaurado sem tocar a árvore.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 00:58 · written by the runner
