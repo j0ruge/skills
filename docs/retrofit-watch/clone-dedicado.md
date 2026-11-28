@@ -11,7 +11,9 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
   Depois de corrigir a causa, repita o comando.
   A URL precisa corresponder ao slug. Sem `--url`, usa HTTPS do GitHub.
   O clone declara a origem autorizada. O checkout da sessão precisa apontar para
-  o mesmo servidor e repositório, mesmo quando usa outro transporte.
+  o mesmo servidor e caminho, mesmo quando usa outro transporte. Fora de `github.com`
+  na porta padrão, caminhos que diferem em caixa, sufixo `.git` ou barra final
+  não são considerados equivalentes. O slug da lista continua normalizado.
 - A trava de commit é local ao worktree principal. Os worktrees de lote herdam
   o `core.hooksPath` comum. Se o repo usa um diretório versionado de hooks,
   configure-o na config comum do clone, por exemplo `git config --local core.hooksPath .githooks`.
@@ -28,7 +30,7 @@ A lição local leva o mesmo `repo` do pedido e o nome da skill em `plugin` e
 mesmo nome, a lição posterior fica segurada. O `prepare` busca a `main`
 no clone dedicado, localiza a pasta rastreada da skill e grava `repo`, `pasta` e
 `origin_id` em `retrofit.json`. A impressão digital vem do pedido e vincula o
-lote à origem da sessão. Uma troca de servidor exige um novo pedido.
+lote à origem da sessão. Uma troca de destino exige um novo pedido.
 O ramo e o worktree pertencem a esse clone.
 
 No lote privado, o executor usa apenas as lições do lote e o veredito.
@@ -47,7 +49,7 @@ após verificar o estado local e concluir a validação da publicação.
 Depois do selo o revisor grava `diff.json` para o patch da skill. `publish` confere a
 revisão e executa o pre-push do repo no worktree, com o mesmo SHA e refs do push.
 Antes de buscar ou publicar, confere o destino efetivo do Git, inclusive reescritas
-de URL e `pushurl`. Um slug homônimo em outro servidor não basta.
+de URL e `pushurl`. O slug sozinho não distingue servidores nem caminhos diferentes no mesmo servidor.
 Sem prova da janela v2, o gate verde deixa o lote em `auto-dry` e conserva o remoto.
 O dono pode liberar esse motivo com `approve <id> <lote>`. A permissão vale para o
 patch segurado, que inclui todos os arquivos alterados do lote. As exclusões das listas

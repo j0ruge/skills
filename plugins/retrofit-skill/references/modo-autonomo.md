@@ -31,7 +31,8 @@ a publicação autônoma é da porta.
 ## Retro manual de repo listado
 
 1. Confirme `origin`, a inscrição em `lean_auto`, o clone dedicado e a pasta rastreada.
-   O servidor e o slug da origem efetiva de fetch e push precisam corresponder aos do clone.
+   O servidor e o caminho efetivo de fetch e push precisam corresponder aos do clone.
+   Fora do GitHub público, confira o caminho exato, não só o slug normalizado.
    Use `live_dir` da config ou `~/.local/share/skills-live` e nunca commite no clone dedicado.
    Busque `origin/main` nesse clone e crie um worktree num ramo próprio a partir dessa ref.
    Não mude o checkout de desenvolvimento.

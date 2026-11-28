@@ -477,7 +477,8 @@ Para adotar uma skill local, liste a origem em `lean_auto`, crie o clone dedicad
 com `live-setup` e comece em ensaio (`auto-dry`). O checkout de desenvolvimento
 continua livre. A porta roda o pre-push e conserva o remoto até a aprovação do patch,
 que cobre todos os arquivos alterados da skill local.
-O servidor do checkout precisa coincidir com o do clone dedicado, assim como o slug.
+A origem do checkout precisa coincidir com a do clone dedicado. Fora do GitHub
+público, a comparação preserva o caminho exato do repositório.
 Se a criação do clone falhar, corrija a causa e repita `live-setup`. O startup
 mostra avisos de avanço separados por `dono/repo`.
 Em `auto`, a publicação sem aprovação exige 10 publicações autônomas da loja,

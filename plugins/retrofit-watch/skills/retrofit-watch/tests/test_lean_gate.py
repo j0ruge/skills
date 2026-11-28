@@ -232,6 +232,27 @@ class GateTest(unittest.TestCase):
             self.held("auto-dry")
         self.assertEqual(len(self.logs()), 2)
 
+    def test_distinct_repo_paths_have_distinct_origin_ids(self):
+        rw = gate.rw
+
+        def identity(url):
+            origin = rw.origin_identity(url)
+            self.assertIsNotNone(origin)
+            self.assertEqual(origin[0], SLUG)
+            return rw.origin_id(origin)
+
+        base = "https://localhost"
+        expected = identity(f"{base}/{SLUG}.git")
+        for path in ("fixture/KB-libs.git", "Fixture/kb-libs.git", SLUG, f"{SLUG}.git/"):
+            with self.subTest(path=path):
+                self.assertNotEqual(identity(f"{base}/{path}"), expected)
+        self.assertNotEqual(identity(f"localhost:{SLUG}.git/"), expected)
+        self.assertNotEqual(identity(f"https://github.com:8443/{SLUG}.git"),
+                            identity("https://github.com:8443/Fixture/KB-libs.git"))
+        self.assertEqual(rw.origin_identity(f"https://github.com/{SLUG}"), [SLUG, "github.com", None])
+        self.assertEqual(identity("https://GITHUB.com/Fixture/KB-libs.git/"),
+                         identity(f"https://github.com/{SLUG}"))
+
     def test_origin_mismatch_holds_without_gate(self):
         self.edit()
         self.w.git(self.wt, "remote", "set-url", "--push", "origin", str(self.w.origin))

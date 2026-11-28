@@ -301,13 +301,13 @@ def valid_slug(value):
 
 
 def origin_identity(url):
-    """Identifica o repo pelo slug e pelo servidor ou pelo caminho absoluto do bare."""
+    """Separa o slug da lista do destino efetivo, sem presumir a política de outras forges."""
     if not isinstance(url, str):
         return None
     host_pattern = r"(?:[^@/:\s?#]+@)?([a-z0-9][a-z0-9.-]*)"
-    remote = re.fullmatch(rf"(?i)(https|ssh)://{host_pattern}(?::([0-9]{{1,5}}))?/([^/]+/[^/]+)/?", url)
-    scp = re.fullmatch(rf"(?i){host_pattern}:([^/]+/[^/]+)/?", url) if not os.path.isabs(url) else None
-    host = bare = None
+    remote = re.fullmatch(rf"(?i)(https|ssh)://{host_pattern}(?::([0-9]{{1,5}}))?/([^/]+/[^/]+/?)", url)
+    scp = re.fullmatch(rf"(?i){host_pattern}:([^/]+/[^/]+/?)", url) if not os.path.isabs(url) else None
+    host = location = None
     if remote:
         scheme, host, port, path = remote.groups()
         if port is not None:
@@ -323,9 +323,11 @@ def origin_identity(url):
         if not os.path.isabs(url) or not path.endswith(".git") or {".", ".."} & set(path.split("/")):
             return None
         path = "/".join(path.split("/")[-2:])
-        bare = os.path.normcase(os.path.realpath(url))
-    slug = path.lower().removesuffix(".git")
-    return [slug, host.lower() if host else None, bare] if valid_slug(slug) else None
+        location = os.path.normcase(os.path.realpath(url))
+    slug = path.removesuffix("/").lower().removesuffix(".git")
+    if host and host.lower() != "github.com":
+        location = path
+    return [slug, host.lower() if host else None, location] if valid_slug(slug) else None
 
 
 def origin_slug(url):

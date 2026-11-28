@@ -85,7 +85,7 @@ class LeanAutoTest(unittest.TestCase):
         w.git(w.live, "remote", "set-url", "origin", f"https://forge.example/{SLUG}.git")
         for url, reason in (
             (f"git@FORGE.example:{SLUG}.git", None),
-            (f"ssh://git@forge.example:22/{SLUG}", None),
+            (f"ssh://git@forge.example:22/{SLUG}.git", None),
             (f"https://other.example/{SLUG}.git", "sem-clone"),
             (f"https://forge.example:8443/{SLUG}.git", "sem-clone"),
         ):
@@ -99,6 +99,19 @@ class LeanAutoTest(unittest.TestCase):
         w.git(w.dev, "remote", "set-url", "origin", str(other_bare))
         self.assertEqual(self.reason(entry=rw.classify_path(w.skill, w.ctx())), "sem-clone")
         self.assertEqual(self.reason(entry=dict(self.entry, origin_identity=None)), "sem-clone")
+
+    def test_same_host_distinct_repo_paths_stay_manual(self):
+        w = self.w
+        base = "https://localhost"
+        w.git(w.live, "remote", "set-url", "origin", f"{base}/{SLUG}.git")
+        for path, reason in ((f"{SLUG}.git", None), ("fixture/KB-libs.git", "sem-clone"),
+                             ("Fixture/kb-libs.git", "sem-clone"), (SLUG, "sem-clone"),
+                             (f"{SLUG}.git/", "sem-clone")):
+            with self.subTest(path=path):
+                w.git(w.dev, "remote", "set-url", "origin", f"{base}/{path}")
+                entry = rw.classify_path(w.skill, w.ctx())
+                self.assertEqual(entry["origin"], SLUG)
+                self.assertEqual(self.reason(entry=entry), reason)
 
     def test_mixed_request_and_legacy_full(self):
         ctx = self.w.ctx()
