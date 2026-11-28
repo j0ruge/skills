@@ -283,9 +283,9 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 
 - [ ] **Missão registra duas autoridades para o merge** —
-  `docs/handoffs/20261125-retrofit-watch-atribuicao/00-missao.md:84` (`decisão pendente do mantenedor`) —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/00-missao.md:85` (`pr-ready`) —
   a pendência preserva a regra do piloto, mas a seção de campanha descreve o merge delegado.
-  Direção: separar a decisão histórica das condições do merge delegado.
+  Direção: centralizar as condições vigentes na missão. RESOLVED by 02fe0ac
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r32.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 
