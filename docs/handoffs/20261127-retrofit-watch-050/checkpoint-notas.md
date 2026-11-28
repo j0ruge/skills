@@ -75,3 +75,72 @@
 - 2026-11-28 04:41 · `R1` · R1 sabotage: Conferência final com digest full → test_private_patch_includes_store_list_paths
 - 2026-11-28 04:41 · `R1` · R1 sabotage: Linha anterior da conferência final recolocada → test_private_patch_includes_store_list_paths
 - 2026-11-28 04:41 · `R1` · Em `fe68792`, o Red na base `8a70707` não detectava a emenda em caminho de lista. O Check passou e conservou o bare. A sonda repetiu ensaio, nova aprovação, publicação, avanço e revert. Passaram 45 testes direcionados, o contrato documental e o TEST_CMD (154 da loja, 3 pulados, 144 do Stop, adaptadores, catálogo e versões). Controle íntegro e 9 mutações de código em cópia descartável, sob grupo próprio, 25 s e 512 MiB por processo. A montagem da fixture e suas asserções são os próprios sensores, sem sensor funcional separado para cada linha. A prosa foi conferida no contexto e nas referências ao patch. A camada 1 do incremento passou e o TODO tem 61 âncoras válidas.
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Importação do digest removida → test_mixed_request_and_legacy_full
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Entrada lean volta a guardar só o slug → test_mixed_request_and_legacy_full
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Slug por sessão volta a carregar a identidade inteira → test_mixed_request_and_legacy_full
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Autoridade aceita escapes na URL → test_only_supported_origin_shapes
+- 2026-11-28 04:53 · `R2` · R2 sabotage: URL HTTPS e SSH deixa de ser reconhecida → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Forma SCP deixa de ser reconhecida → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Inicialização do bare removida → test_only_supported_origin_shapes
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Autoridade HTTPS e SSH descartada → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Porta explícita desconsiderada → test_only_supported_origin_shapes
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Porta interpretada como padrão → test_only_supported_origin_shapes
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Portas fora do intervalo aceitas → test_only_supported_origin_shapes
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Porta padrão tratada como alternativa → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Porta não padrão removida da identidade → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Ramo SCP desabilitado → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Autoridade SCP descartada → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Bare volta a ser identificado pelo slug → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Servidor diferencia maiúsculas → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Validação do slug omitida no retorno → test_only_supported_origin_shapes
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Projeção de slug retorna a identidade inteira → test_only_supported_origin_shapes
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Digest não varia com a origem → test_prepare_rejects_same_slug_changed_after_request
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Origem do checkout volta a ser reduzida na leitura → test_mixed_request_and_legacy_full
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Filtro de dono removido → test_only_owned_tracked_local_skills_can_enter
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Origem diferente aceita na elegibilidade → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Entrada sem identidade aceita como legada → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Leitura da identidade volta a ler o slug → test_only_owned_tracked_local_skills_can_enter
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Origem gravada também em pedido full → test_mixed_request_and_legacy_full
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Origem não gravada no pedido → test_mixed_request_and_legacy_full
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Esquema privado não exige o digest no pedido → test_mixed_request_and_legacy_full
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Leitor não distingue pedido privado → test_mixed_request_and_legacy_full
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Leitor usa esquema pleno para pedido privado → test_mixed_request_and_legacy_full
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Esquema do lote volta a recusar origem → test_prepare_uses_only_live_clone_and_latest_remote_base
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Preparação ignora o pedido durante seleção da origem → test_prepare_rejects_same_slug_changed_after_request
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Seleção do pedido usa outro plugin → test_prepare_uses_only_live_clone_and_latest_remote_base
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Origens ambíguas aceitas na preparação → test_prepare_rejects_same_slug_changed_after_request
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Digest do pedido não é copiado ao lote → test_prepare_uses_only_live_clone_and_latest_remote_base
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Fetch de preparação volta a ignorar o vínculo → test_prepare_rejects_same_slug_changed_after_request
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Lote não registra a origem do pedido → test_prepare_uses_only_live_clone_and_latest_remote_base
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Identidade configurada reduzida ao slug → test_only_owned_tracked_local_skills_can_enter
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Clone de outro dono aceito → test_prepare_rejects_swapped_clone_missing_skill_and_symlink
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Clone com slug homônimo aceito → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 04:53 · `R2` · R2 sabotage: URL inválida aceita no setup → test_setup_preserves_existing_destination_and_rejects_wrong_slug_or_url
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Setup não resolve a URL de clone antes de chamar o Git → test_setup_refuses_same_slug_rewrite_before_clone
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Setup aceita a URL reescrita → test_setup_refuses_same_slug_rewrite_before_clone
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Setup não recusa reescrita → test_setup_refuses_same_slug_rewrite_before_clone
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Reserva vazia retida após recusar URL → test_setup_refuses_same_slug_rewrite_before_clone
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Validação pós-clone perde a referência declarada → test_setup_clones_main_with_worktree_lock
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Fetch confere apenas o slug efetivo → test_advance_rejects_effective_origin_rewritten_to_another_repo
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Remoto de fetch deixa de ser conferido → test_advance_rejects_effective_origin_rewritten_to_another_repo
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Fetch ignora a origem declarada no clone → test_fetch_rechecks_the_pinned_origin
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Fetch depois do pedido ignora origem trocada → test_prepare_rejects_same_slug_changed_after_request
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Fetch não interrompe em origem configurada trocada → test_prepare_rejects_same_slug_changed_after_request
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Avanço não repassa o digest → test_origin_change_after_push_cannot_redirect_status_or_advance
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Fetch privado volta a projetar apenas o slug → test_push_runs_hook_again_and_keeps_failure
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Selo de origem substituído por comparação de slug → test_same_slug_effective_origin_mismatch_holds_before_fetch
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Diferença de pushurl não bloqueia → test_origin_mismatch_holds_without_gate
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Origem validada não é retornada → test_push_runs_hook_again_and_keeps_failure
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Fetch da porta perde o digest do lote → test_fetch_rechecks_the_pinned_origin
+- 2026-11-28 04:53 · `R2` · R2 sabotage: URL capturada antes do npm volta a valer para o ensaio → test_npm_precedes_the_effective_hook
+- 2026-11-28 04:53 · `R2` · R2 sabotage: npm executa sem validar o destino → test_npm_precedes_the_effective_hook
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Destino depois do npm não é verificado → test_npm_precedes_the_effective_hook
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Push privado não desestrutura a origem validada → test_push_runs_hook_again_and_keeps_failure
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Status volta a receber só o slug → test_status_selects_the_host_even_with_another_gh_default
+- 2026-11-28 04:53 · `R2` · R2 sabotage: gh volta a escolher o servidor por padrão → test_status_selects_the_host_even_with_another_gh_default
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Status não reconfere o servidor antes de postar → test_origin_change_after_push_cannot_redirect_status_or_advance
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Status usa servidor fixo em vez do servidor validado → test_dry_then_approval_and_idempotent_retry
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Avanço pós-publicação perde o digest do lote → test_origin_change_after_push_cannot_redirect_status_or_advance
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Tipo e formato do digest não são validados → test_private_formats_reject_invalid_slug_and_paths
+- 2026-11-28 04:53 · `R2` · R2 sabotage: Guarda de slug volta a aceitar o primeiro fetch entre vários → test_advance_rejects_effective_origin_rewritten_to_another_repo
+- 2026-11-28 04:53 · `R2` · Em `bc8a164`, o Red na base `2b30962` aceitou servidores homônimos na classificação e chegou ao fetch na porta com origin reescrito. O Check passou e a sonda repetiu ensaio, aprovação, publicação, status e avanço em dois bares locais; nenhum repo real foi acionado. Passaram 78 testes direcionados com o contrato documental e o TEST_CMD (154 da loja, 3 pulados, 144 do Stop, adaptadores, catálogo e versões). Controle íntegro e 68 mutações em cópias descartáveis, com grupo próprio, 30 s e 512 MiB por processo. Linhas estruturais de declaração, formatação e transposição foram cobertas pelo comportamento do bloco, sem sensor independente por linha. Prosa conferida nas referências e no contrato do clone. Camada 1 limpa e 61 âncoras válidas. R3 permanece pendente.
