@@ -855,16 +855,45 @@ def recover_legacy_correlation(path, st, ctx):
                   skill_calls={}, skill_message_order=[], skill_call_history={}, attribution_closed=False)
     owner = None
     ambiguous = False
+    common_retired = set()
+    unseen_cached_paths = set(st["classified"])
+    proved_owner = False
 
     class ReplayScanner(Scanner):
         _legacy_replay = True
+        first_cached_path = False
+
+        def _skill_origin(self, message_id, call_id):
+            # Reuso no prefixo invalida a prova antiga, mesmo se o replay aposentar o ID de novo.
+            common_retired.discard(call_id)
+            return super()._skill_origin(message_id, call_id)
+
+        def skill_path(self, path, source):
+            nonlocal proved_owner
+            info = st["classified"].get(path)
+            # A 0.4.0 podia aceitar este metadado mesmo se o replay rejeitar seu ID.
+            if isinstance(info, dict) and info.get("key") == st["current"]:
+                proved_owner = False
+            self.first_cached_path = path in unseen_cached_paths
+            unseen_cached_paths.discard(path)
+            super().skill_path(path, source)
+            self.first_cached_path = False
 
         def _watch(self, info, origin=None, **kwargs):
-            nonlocal owner, ambiguous
+            nonlocal owner, ambiguous, proved_owner
             super()._watch(info, origin, **kwargs)
             if info is not None and info["key"] == st["current"]:
                 candidate = (tuple(origin or ()), self.st["current_call"])
-                ambiguous |= owner is not None and owner != candidate
+                retired = self.st["retired_skill_calls"] if origin else ()
+                if owner is None:
+                    common_retired.update(retired)
+                elif owner != candidate:
+                    ambiguous = True
+                    proved_owner = False
+                    common_retired.intersection_update(retired)
+                # Um caminho exclusivo e já salvo comprova que este metadado foi lido.
+                if self.first_cached_path and origin:
+                    proved_owner = True
                 owner = candidate
 
     scanner = ReplayScanner(replay, ctx)
@@ -894,14 +923,16 @@ def recover_legacy_correlation(path, st, ctx):
                 scanner.entry(entry)
     except OSError:
         return
+    cache_matches = replay["classified"] == st["classified"]
     # Um Stop ativo na 0.4.0 podia avançar o offset sem observar a carga mais recente.
-    if ambiguous:
+    if ambiguous and not (proved_owner and cache_matches):
+        st["retired_skill_calls"] = [call for call in replay["retired_skill_calls"] if call in common_retired]
         return
     # A leitura serve para recuperar vínculos, sem substituir a atribuição gravada pela 0.4.0.
     if replay["current"] != st["current"] or (was_closed and not replay["attribution_closed"]):
         return
     # O cache legado confirma se a origem reconstruída corresponde à carga que foi observada.
-    if replay["classified"] == st["classified"]:
+    if cache_matches:
         for key in ("current_origin", "current_call", "pending_slash", "slash_prior_calls"):
             st[key] = replay[key]
     for key in ("attribution_closed", "skill_message", "skill_calls", "skill_message_order",

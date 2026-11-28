@@ -96,7 +96,18 @@ R17 fechou com um commit funcional, mas Code Quality (Zen), Error Handling e Tes
 - No mesmo HEAD, executei em Bash cada célula concluída (I1, F1 e R1–R17), com `GIT_DIR` e `GIT_WORK_TREE` removidos. RC 0 e stdout esperado nos 19 Checks, normalizando apenas espaços entre os tokens. I1 voltou `1 0 1 0 0 1` e F1, `linked=silêncio missing=silêncio empty=silêncio`.
 - Os primeiros dois comandos de R18 usam as opções `--group window` e `--group state`. Cada um retornou rc 1 no HEAD. Compare com a base extraindo `git show c883c7b35b0192f7b532265807dcc4e485883778:plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py` para um arquivo Python temporário e substituindo `--expect --group ...` por `--script "$arquivo"` na primeira chamada da sonda. A base em modo de observação retornou rc 0, que não significa que o comportamento seja o esperado.
 - Na sonda de janela, a ordem da saída é leitura contínua, corte antes do estouro e corte entre o estouro e a monitorada. Cada campo mede alvo, encerramento e revisões. Na sonda de estado, cada campo mede alvo, offset no fim e número de `TypeError` em até dois Stops.
-- Para repetir o pré-scan, use `git -P diff c883c7b35b0192f7b532265807dcc4e485883778...5260a1a69942652c432adbc30e47ae9e8a8741bc --unified=0 -- . ':(exclude)**/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh"`.
+- Para repetir o pré-scan na raiz, execute o bloco em Bash. O diff precisa ter sucesso e o
+  scanner deve confirmar as 428 linhas, sem achados nem erros.
+
+~~~bash
+(
+  set -euo pipefail
+  unset GIT_DIR GIT_WORK_TREE
+  scan=$(git -c diff.noprefix=false -P diff --text --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ c883c7b35b0192f7b532265807dcc4e485883778...5260a1a69942652c432adbc30e47ae9e8a8741bc --unified=0 -- . ':(exclude)**/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh")
+  jq -e '.scanned.added_lines == 428 and .errors == [] and .findings == []' <<< "$scan" >/dev/null
+  printf '%s\n' "$scan"
+)
+~~~
 
 **HEAD observado**
 

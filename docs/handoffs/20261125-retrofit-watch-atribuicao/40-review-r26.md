@@ -166,8 +166,18 @@ distinto=codereview:0:1,codereview:0:1,codereview:0:1
 proprio=silêncio:1:0,silêncio:1:0,silêncio:1:0
 ~~~
 
-- Para repetir o pré-scan, use
-  `git -P diff 4794fd4d63d95bb1911540da725720f58ac5ef9e...c883c7b35b0192f7b532265807dcc4e485883778 --unified=0 -- . ':(exclude)**/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh"`.
+- Para repetir o pré-scan na raiz, execute o bloco em Bash. O diff precisa ter sucesso e o
+  scanner deve confirmar as 327 linhas, sem achados nem erros.
+
+~~~bash
+(
+  set -euo pipefail
+  unset GIT_DIR GIT_WORK_TREE
+  scan=$(git -c diff.noprefix=false -P diff --text --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ 4794fd4d63d95bb1911540da725720f58ac5ef9e...c883c7b35b0192f7b532265807dcc4e485883778 --unified=0 -- . ':(exclude)**/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh")
+  jq -e '.scanned.added_lines == 327 and .errors == [] and .findings == []' <<< "$scan" >/dev/null
+  printf '%s\n' "$scan"
+)
+~~~
 
 ### Sonda de R17
 

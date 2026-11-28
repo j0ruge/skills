@@ -131,7 +131,18 @@ o mantenedor.
   em pasta temporária. Rode o mesmo comando da sonda com `--script "$arquivo"` no lugar de
   `--expect`. A base imprime `silêncio:1:0,silêncio:1:0` nos três casos. Também silencia
   indevidamente em `reused`, o controle que não pode regredir com a correção.
-- Para repetir o pré-scan, use `git -c diff.noprefix=false -P diff 9ddaaab25ab27f0e7f6b0230738e1c5cb517b903...4794fd4d63d95bb1911540da725720f58ac5ef9e --unified=0 -- . ':(exclude)**/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh"`.
+- Para repetir o pré-scan na raiz, execute o bloco em Bash. O diff precisa ter sucesso e o
+  scanner deve confirmar as 452 linhas, sem achados nem erros.
+
+~~~bash
+(
+  set -euo pipefail
+  unset GIT_DIR GIT_WORK_TREE
+  scan=$(git -c diff.noprefix=false -P diff --text --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ 9ddaaab25ab27f0e7f6b0230738e1c5cb517b903...4794fd4d63d95bb1911540da725720f58ac5ef9e --unified=0 -- . ':(exclude)**/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh")
+  jq -e '.scanned.added_lines == 452 and .errors == [] and .findings == []' <<< "$scan" >/dev/null
+  printf '%s\n' "$scan"
+)
+~~~
 
 ### Sonda de R16
 

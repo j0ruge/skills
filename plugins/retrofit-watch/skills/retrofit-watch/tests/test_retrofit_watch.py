@@ -1082,6 +1082,108 @@ class StopTest(HookHarness, unittest.TestCase):
                     self.assertIsNone(out)
                     self.assertIsNone(saved["current"])
 
+    def test_legacy_replay_preserves_provably_older_metadata(self):
+        for case in ("same", "later", "monitored", "between", "reused", "unlinked_owner", "cleared"):
+            with self.subTest(case=case), self.sub_world() as world:
+                first, _ = self.identified_loads()
+                message = "msg_1" if case == "same" else "msg_new"
+                second = identified_load("codereview:coderabbit-pr", world.mkt_skill, message, "toolu_new")
+                name, path = ("ticket", world.ticket) if case == "monitored" else ("brainstorming", world.other_skill)
+                late = identified_load(name, path, "msg_old", "toolu_late")
+                if case != "between":
+                    self.write(late[:2], compact=True)
+                self.write(first, tool(), compact=True)
+                if case in ("between", "reused"):
+                    # O ID agora pode apontar para uma chamada posterior ao primeiro dono.
+                    late[0]["message"]["id"] = "msg_between"
+                    self.write(late[:2], compact=True)
+                if case == "unlinked_owner":
+                    second[2].pop("sourceToolUseID")
+                self.write(second, compact=True)
+                if case == "cleared":
+                    external = skill_via_tool("brainstorming", world.other_skill)
+                    self.write([external[2]], compact=True)
+                credits = self.save_legacy_owner(world.mkt_skill)
+
+                out, migrated = self.checked_stop()
+                self.assertIsNone(out)
+                self.assertIsNone(migrated["current_origin"])
+                self.assertIsNone(migrated["current_call"])
+                self.assertEqual(migrated["skill_calls"], {})
+                older = case in ("same", "later", "monitored")
+                self.assertEqual(migrated["retired_skill_calls"], ["toolu_late"] if older else [])
+                self.assertEqual(migrated["skills"]["full:codereview"], credits)
+                self.write(late[2:], tool(error=True), compact=True)
+                out, after = self.checked_stop()
+                if older:
+                    self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                    self.assertNotIn("`/retrofit-skill:retrofit-skill ticket`", self.context_of(out))
+                    self.assertFalse(after["attribution_closed"])
+                else:
+                    self.assertIsNone(out)
+                    self.assertTrue(after["attribution_closed"])
+
+    def test_legacy_replay_recovers_owner_proven_by_new_path(self):
+        for case in ("confirmed", "not_cached", "seen_before", "seen_again", "later_candidate",
+                     "unlinked", "cache_mismatch", "later_cached_metadata"):
+            with self.subTest(case=case), self.sub_world() as world:
+                first, _ = self.identified_loads()
+                new_path = make_skill(world.mkt_skill.parent, "codereview")
+                second = identified_load("codereview:codereview", new_path, "msg_new", "toolu_new")
+                external = identified_load("brainstorming", world.other_skill, "msg_new", "toolu_external")
+                if case == "seen_before":
+                    self.write(skill_typed("codereview:codereview", new_path), compact=True)
+                if case == "cache_mismatch":
+                    stale = identified_load("brainstorming", world.other_skill, "msg_old", "toolu_old")
+                    self.write(stale[:2], compact=True)
+                self.write(first, tool(), compact=True)
+                if case == "unlinked":
+                    second[2].pop("sourceToolUseID")
+                self.write(second, compact=True)
+                if case == "seen_again":
+                    self.write([second[2]], compact=True)
+                if case == "later_cached_metadata":
+                    self.write([first[2]], compact=True)
+                if case == "cache_mismatch":
+                    self.write(stale[2:], compact=True)
+                if case == "later_candidate":
+                    skipped = identified_load("codereview:coderabbit-pr", world.mkt_skill, "msg_last", "toolu_last")
+                    self.write(skipped[:1], compact=True)
+                paths = (world.mkt_skill,) if case == "not_cached" else (world.mkt_skill, new_path)
+                credits = self.save_legacy_owner(*paths)
+
+                out, migrated = self.checked_stop()
+                self.assertIsNone(out)
+                self.assertEqual(migrated["skills"]["full:codereview"], credits)
+                if case != "confirmed":
+                    self.assertIsNone(migrated["current_origin"])
+                    self.assertIsNone(migrated["current_call"])
+                    self.assertEqual(migrated["skill_message_order"], [])
+                self.write(external, tool(error=True), compact=True)
+                out, after = self.checked_stop()
+                if case == "confirmed":
+                    self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                    self.assertEqual(after["current_origin"], ["msg_new", "toolu_new"])
+                    self.assertEqual(after["current_call"], "toolu_new")
+                    self.assertEqual(after["skills"]["full:codereview"],
+                                     dict(credits, work=0, reviews=1))
+                else:
+                    self.assertIsNone(out)
+                    self.assertEqual(after["skills"]["full:codereview"], credits)
+
+    def save_legacy_owner(self, *paths):
+        world = self.w
+        cache = {str(path): rw.classify_path(str(path), world.ctx()) for path in paths}
+        info = cache[str(paths[0])]
+        credits = dict(info, work=1, reviews=0, friction=0)
+        credits["skills"] = [path.name for path in paths]
+        state = dict(offset=world.transcript.stat().st_size, current=info["key"],
+                     skills={info["key"]: credits}, classified=cache)
+        path = world.data / "sessions/s1.json"
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps(state), encoding="utf-8")
+        return credits
+
     def test_invalid_retired_entry_cannot_hide_external_without_source(self):
         for source in (None, "", "id inválido"):
             with self.subTest(source=source), self.sub_world() as world:
