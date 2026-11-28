@@ -423,6 +423,7 @@ class State:
         for key, default in (("offset", 0), ("skills", {}), ("current", None), ("classified", {}),
                              ("pending", []), ("done", []), ("current_origin", None),
                              ("skill_message", None), ("skill_calls", {}), ("retired_skill_calls", []),
+                             ("uncorrelated_skill_calls", {}),
                              ("skill_correlation_lost", False), ("pending_slash", None)):
             self.data.setdefault(key, default)
         origin = self.data["current_origin"]
@@ -764,9 +765,17 @@ class Scanner:
                 if name == "Skill":
                     call_id = self._transcript_id(block.get("id"))
                     origin = self._skill_origin(msg.get("id"), call_id)
-                    # Sem janela, o ID direto ainda vale se não repetir o da carga ativa.
-                    if (call_id not in self.st["skill_calls"]
-                            and (call_id == self.st["current_call"] or not self.st["skill_correlation_lost"])):
+                    if self.st["skill_correlation_lost"]:
+                        # Sem janela, o registro serve só para o ID direto, sem expulsar IDs já vistos.
+                        seen = self.st["uncorrelated_skill_calls"]
+                        new_id = (call_id is not None and call_id not in seen
+                                  and len(seen) < MAX_SKILL_CALL_IDS)
+                        if new_id:
+                            seen[call_id] = True
+                        unique = new_id and call_id != self.st["current_call"]
+                    else:
+                        unique = call_id in self.st["skill_calls"]
+                    if not unique:
                         if call_id == self.st["current_call"]:
                             self.st["current_call"] = None
                         call_id = None
@@ -829,7 +838,7 @@ def recover_legacy_correlation(path, st, ctx):
     was_closed = st["attribution_closed"]
     st["attribution_closed"] = was_closed or st["current"] is None
     replay = dict(st, skills={}, current=None, classified=st["classified"].copy(), done=[],
-                  retired_skill_calls=[], slash_prior_calls=[],
+                  retired_skill_calls=[], slash_prior_calls=[], uncorrelated_skill_calls={},
                   skill_calls={}, skill_message_order=[], skill_call_history={}, attribution_closed=False)
     scanner = Scanner(replay, ctx)
     scanner.silent = True
@@ -866,7 +875,7 @@ def recover_legacy_correlation(path, st, ctx):
         for key in ("current_origin", "current_call", "pending_slash", "slash_prior_calls"):
             st[key] = replay[key]
     for key in ("attribution_closed", "skill_message", "skill_calls", "skill_message_order",
-                "skill_call_history", "retired_skill_calls", "skill_correlation_lost"):
+                "skill_call_history", "retired_skill_calls", "skill_correlation_lost", "uncorrelated_skill_calls"):
         st[key] = replay[key]
 
 

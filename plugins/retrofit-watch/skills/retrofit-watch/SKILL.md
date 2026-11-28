@@ -162,8 +162,10 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
   não inicia uma atribuição, mas cargas novas no trecho novo continuam válidas.
   IDs falhos ou repetidos não comprovam origem. A primeira confirmação não descarta
   uma marca sem origem. Acima de 64 mensagens ou 1.024 IDs retidos, o hook deixa de correlacionar
-  mensagens até outra sessão. O resultado da própria chamada explícita nova ainda pode encerrar
-  o crédito quando vier com erro. Os contadores são preservados e um slash explícito ainda pode iniciar
+  mensagens até outra sessão. O erro de uma chamada explícita ainda pode encerrar seu crédito
+  pelo ID direto. Após o limite, o hook registra até 1.024 IDs distintos sem usá-los para validar
+  metadados. IDs reutilizados não provam erro próprio e IDs novos também deixam de prová-lo
+  quando esse registro enche. Os contadores são preservados e um slash explícito ainda pode iniciar
   a atribuição da skill que ele nomeia. Medido em 2026-10-02 (376 sessões, 14 dias): 41% do atrito atribuído
   vem depois de um prompt novo seu. Encerrar no prompt novo foi refutado: a continuação chega como
   "sim", "roda", "pode empurrar", sem "?" antes. Por isso a retro filtra por evidência ligada à
