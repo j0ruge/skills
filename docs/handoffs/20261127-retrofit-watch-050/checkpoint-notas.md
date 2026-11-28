@@ -339,3 +339,4 @@
 - 2026-11-28 08:11 · `R14` · Dois Reds reproduzidos em `a14ae29` com o controle de R13 verde. Em `680d355`, 18 Checks, 164 regressões dirigidas, TEST_CMD e jornada de QA verdes. As 16 sabotagens acusaram a mudança em cópia descartável, com controle de 10 provas, 20 s e 512 MiB por grupo. Os três testes nativos pararam antes do registro da loja, pois o sandbox não permite criar o namespace do Bubblewrap.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 08:15 · written by the runner
 - 2026-11-28 08:20 · `R15` · Achados 1 e 2 da revisão r9. Setup libera referência simbólica que a elegibilidade não reconhece, e o avanço perde o diagnóstico de troca de ramo antes da busca. Dois Reds confirmados no delta.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 08:23 · written by the runner
