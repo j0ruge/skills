@@ -101,7 +101,7 @@ na remoção de ordem e na retenção de IDs, ambas modificadas em R3. O caso de
 ### Sonda de R4
 
 Execute o comando da célula de R4 no checkpoint. Para comparar com a base, exporte
-`git show 87b9dc48b263695ed13aab32a400d748373c32a2:plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py` para um script temporário e acrescente seu caminho como argumento.
+`env -u GIT_DIR -u GIT_WORK_TREE git show 87b9dc48b263695ed13aab32a400d748373c32a2:plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py` para um script temporário e acrescente seu caminho como argumento.
 O controle e a variante reportam os alvos nesta ordem. Os dois scripts devolveram o mesmo vetor.
 O validador `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash /home/joruge/repos/sdd_agents/tests/check-checkpoint.sh --red docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint.md --only R4` confirmou o Red em `e405af1` com rc 0 e um Check pendente executado.
 

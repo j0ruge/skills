@@ -80,7 +80,7 @@ O hook alterado tem testes atualizados (1 de 1 arquivo de produção). A trava e
 
 ### Sonda da rodada
 
-Da raiz, rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -c "$(sed -n '/^~~~python$/,/^~~~$/{ /^~~~/!p; }' docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r1.md)"` em `08f09a1`. A saída reproduzida está abaixo. Para conferir a origem do estado legado com a versão anterior real, extraia `git show main:plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py` para um arquivo temporário e passe o caminho como argumento ao Python após o código. O Red também se reproduz com as chaves legadas preparadas pela própria sonda, sem depender do Git histórico.
+Da raiz, rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -c "$(sed -n '/^~~~python$/,/^~~~$/{ /^~~~/!p; }' docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r1.md)"` em `08f09a1`. A saída reproduzida está abaixo. Para conferir a origem do estado legado com a versão anterior real, extraia `env -u GIT_DIR -u GIT_WORK_TREE git show e45db9ecd846af4ddf7ae8003c190ea07e078b3e:plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py` para um arquivo temporário e passe o caminho como argumento ao Python após o código. O Red também se reproduz com as chaves legadas preparadas pela própria sonda, sem depender do Git histórico.
 
 ~~~text
 atual linked silêncio reviews=0

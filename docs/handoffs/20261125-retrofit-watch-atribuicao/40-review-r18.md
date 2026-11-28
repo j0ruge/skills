@@ -111,13 +111,15 @@ A base do PR é `main`, conforme `.sdd/config.sh`. O merge cabe ao mantenedor.
 ## Evidências reproduzíveis
 
 Execute da raiz. A suíte e os Checks foram executados em `b466c6c111a3093da6aa033f84d75428ab0a206a`.
-O comando da suíte está no campo `gate`. Para os Checks, rode cada comando de
-`checkpoint.md` com `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c "$check"`
+O comando da suíte está no campo `gate`. Para cada linha da tabela de `checkpoint.md`,
+copie para `check` o comando entre crases, à esquerda de `→` na célula `Check (comando → esperado)`.
+Execute-o com `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c "$check"`
 e compare todo o stdout após normalizar espaços, exigindo rc 0.
 
 ~~~bash
 (
   set -euo pipefail
+  unset GIT_DIR GIT_WORK_TREE
   mission=docs/handoffs/20261125-retrofit-watch-atribuicao
   base=1b7d8831271e9d4e7f818060abd228beb21e8413
   reviewed=b466c6c111a3093da6aa033f84d75428ab0a206a
@@ -136,6 +138,7 @@ O primeiro JSON de cada par traz zero linhas sem erro. O segundo usa
 ~~~bash
 (
   set -euo pipefail
+  unset GIT_DIR GIT_WORK_TREE
   mission=docs/handoffs/20261125-retrofit-watch-atribuicao
   reviewed=b466c6c111a3093da6aa033f84d75428ab0a206a
   fixture=$(mktemp -d)

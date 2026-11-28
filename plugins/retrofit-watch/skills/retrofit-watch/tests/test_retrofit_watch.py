@@ -418,6 +418,138 @@ class StopTest(HookHarness, unittest.TestCase):
     def assert_codereview_retro(self):
         self.assertIn("/retrofit-skill:retrofit-skill codereview", self.context_of(self.run_hook()))
 
+    def test_failed_active_skill_closes_only_its_attribution(self):
+        for outcome in ("failed", "loaded", "independent"):
+            for resumed in (False, True):
+                with self.subTest(outcome=outcome, resumed=resumed), self.sub_world() as world:
+                    ours, other = self.identified_loads()
+                    if outcome != "loaded":
+                        ours[1]["message"]["content"][0]["is_error"] = True
+                    first = ours[:2] if outcome == "failed" else ours
+                    if outcome == "independent":
+                        pending = identified_load("graphify", world.graphify, "msg_1", "toolu_pending")
+                        first = ours[:1] + pending[:2] + ours[1:2]
+                        other = pending[2:]
+                    self.write(first, compact=True)
+                    if resumed:
+                        out, saved = self.checked_stop()
+                        self.assertIsNone(out)
+                        self.assertEqual(saved["current"], "full:codereview" if outcome == "loaded" else None)
+                        self.assertEqual(saved["attribution_closed"], outcome != "loaded")
+                        if outcome != "loaded":
+                            self.assertIsNone(saved["current_origin"])
+                            self.assertEqual(saved["skill_call_history"]["toolu_1"], ["msg_1"])
+                        if outcome == "independent":
+                            self.assertEqual(saved["skill_calls"], {"toolu_pending": "msg_1"})
+                    self.write(other, tool(error=True), compact=True)
+                    out, saved = self.checked_stop()
+                    if outcome == "failed":
+                        self.assertIsNone(out)
+                        credits = saved["skills"]["full:codereview"]
+                        self.assertEqual((credits["reviews"], credits["work"], credits["friction"]), (0, 0, 0))
+                    else:
+                        target = "graphify" if outcome == "independent" else "codereview"
+                        self.assertIn(f"/retrofit-skill:retrofit-skill {target}", self.context_of(out))
+
+    def test_only_proven_retired_external_metadata_keeps_later_attribution(self):
+        for case in ("pending", "consumed", "stacked", "unknown", "reused", "unowned", "ambiguous", "evicted", "reset"):
+            for resumed in (False, True):
+                with self.subTest(case=case, resumed=resumed), self.sub_world() as world:
+                    ours, external = self.identified_loads("msg_old")
+                    if case == "unowned":
+                        external[0]["message"].pop("id")
+                    self.write(external if case == "consumed" else external[:2])
+                    if case == "stacked":
+                        self.write(identified_load("codereview:coderabbit-pr", world.mkt_skill,
+                                                   "msg_middle", "toolu_middle"))
+                    if case == "ambiguous":
+                        unowned = identified_load("irrelevante", world.other_skill, None, "toolu_2")
+                        self.write(unowned[:2])
+                    if case == "evicted":
+                        for i in range(rw.MAX_SKILL_CALL_IDS + 1):
+                            self.write(identified_load("codereview:coderabbit-pr", world.mkt_skill,
+                                                       f"msg_old_{i}", f"toolu_old_{i}"), compact=True)
+                    self.write(ours)
+                    if case == "reset":
+                        self.write(skill_typed("brainstorming", world.other_skill), ours)
+                    if resumed:
+                        out, saved = self.checked_stop()
+                        self.assertIsNone(out)
+                        self.assertEqual(saved["current"], "full:codereview")
+                        self.assertNotIn("toolu_2", saved["skill_calls"])
+                        self.assertLessEqual(len(saved.get("retired_skill_calls", [])), rw.MAX_SKILL_CALL_IDS)
+                    if case == "unknown":
+                        external[2]["sourceToolUseID"] = "toolu_unknown"
+                    elif case == "reused":
+                        fresh = identified_load("brainstorming", world.other_skill, "msg_new", "toolu_2")
+                        self.write(fresh[:2])
+                    self.write(external[2:], tool(error=True))
+                    if case in ("pending", "consumed", "stacked"):
+                        self.assert_codereview_retro()
+                    else:
+                        self.assertIsNone(self.run_hook())
+
+    def test_legacy_prefix_imports_retired_ids_only_after_complete_replay(self):
+        for complete in (False, True):
+            with self.subTest(complete=complete), self.sub_world() as world:
+                ours, external = self.identified_loads("msg_old")
+                self.write(external[:2], ours, compact=True)
+                if not complete:
+                    with world.transcript.open("ab") as fh:
+                        fh.write(b"null\n")
+                info = rw.classify_plugin("codereview", world.ctx())
+                state = dict(offset=world.transcript.stat().st_size, current=info["key"],
+                             classified={str(world.mkt_skill): info}, retired_skill_calls=["toolu_saved"],
+                             skills={info["key"]: dict(info, reviews=0, work=0, friction=0)})
+                path = world.data / "sessions/s1.json"
+                path.parent.mkdir(parents=True)
+                path.write_text(json.dumps(state), encoding="utf-8")
+                out, saved = self.checked_stop()
+                self.assertIsNone(out)
+                self.assertEqual(saved["retired_skill_calls"], ["toolu_2"] if complete else ["toolu_saved"])
+                self.write(external[2:], tool(error=True))
+                if complete:
+                    self.assert_codereview_retro()
+                else:
+                    self.assertIsNone(self.run_hook())
+
+    def test_irrelevant_skill_attempt_preserves_typed_slash(self):
+        for resumed in (False, True):
+            with self.subTest(resumed=resumed), self.sub_world() as world:
+                _, external = self.identified_loads("msg_old")
+                direct = skill_typed("graphify", world.graphify)
+                attempted = identified_load("irrelevante", world.other_skill, "msg_other", "toolu_unused")
+                attempted[1]["message"]["content"][0]["is_error"] = True
+                self.write(external, direct[:1], attempted[:2], compact=True)
+                if resumed:
+                    out, saved = self.checked_stop()
+                    self.assertIsNone(out)
+                    self.assertEqual(saved["pending_slash"], "graphify")
+                self.write(direct[1:], tool(error=True))
+                self.assert_graphify_retro()
+
+    def test_malformed_metadata_block_keeps_valid_path_in_delta_and_legacy_prefix(self):
+        for legacy in (False, True):
+            with self.subTest(legacy=legacy), self.sub_world() as world:
+                ours, other = self.identified_loads()
+                ours[2]["message"]["content"][:0] = [None, {"type": "text", "text": None}]
+                self.write(ours if legacy else ours[:2], compact=True)
+                if legacy:
+                    info = rw.classify_plugin("codereview", world.ctx())
+                    state = dict(offset=world.transcript.stat().st_size, current=info["key"],
+                                 classified={str(world.mkt_skill): info},
+                                 skills={info["key"]: dict(info, reviews=0, work=0, friction=0)})
+                    path = world.data / "sessions/s1.json"
+                    path.parent.mkdir(parents=True)
+                    path.write_text(json.dumps(state), encoding="utf-8")
+                else:
+                    self.write(ours[2:])
+                self.write(other, tool(error=True))
+                out, saved = self.checked_stop()
+                self.assertIn("/retrofit-skill:retrofit-skill codereview", self.context_of(out))
+                self.assertEqual(saved["current_origin"], ["msg_1", "toolu_1"])
+                self.assertNotIn("toolu_1", saved["skill_calls"])
+
     def test_third_party_skill_in_same_message_keeps_attribution(self):
         self.write(*self.identified_loads(), tool(error=True))
         self.assert_codereview_retro()

@@ -15,6 +15,10 @@
   Resultados de erro descartam o vínculo da tentativa correspondente, inclusive após a retomada.
   Se a tentativa falha não tiver origem, a marca do ID permanece na janela de correlação,
   inclusive após a primeira confirmação.
+- Se falhar a chamada que abriu a atribuição ativa, seu crédito futuro termina sem apagar os
+  outros vínculos. Metadados externos atrasados só deixam de encerrá-la com prova de ID aposentado.
+- Tentativas irrelevantes preservam o slash explícito. Blocos inválidos não ocultam caminhos
+  válidos na mesma linha do transcript.
 - A ordem de uma mensagem é mantida se perder o último vínculo enquanto uma mensagem posterior
   ainda aguarda confirmação. Reusar um ID falho, consumido ou ambíguo na janela retida não
   comprova a origem, mesmo antes de uma carga daquela mensagem ser reconhecida. Ao exceder

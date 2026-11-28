@@ -20,12 +20,14 @@ class StopAttributionJourney(fixture.HookHarness, unittest.TestCase):
                     elif source == "empty":
                         ours[2]["sourceToolUseID"] = ""
 
-                    self.write(ours[:2], external)
+                    self.write(ours[:2], fixture.tool(error=False), external)
                     self.assertIsNone(self.run_hook())
                     state_path = self.w.data / "sessions/s1.json"
                     before = json.loads(state_path.read_text(encoding="utf-8"))
                     self.assertEqual(before["offset"], self.w.transcript.stat().st_size)
+                    self.assertEqual(before["skills"]["full:codereview"]["work"], 1)
                     self.assertIsNone(before["current"])
+                    self.assertTrue(before["attribution_closed"])
 
                     self.write(ours[2:], fixture.tool(error=True))
                     result = self.run_hook()

@@ -37,7 +37,19 @@ A suíte, o E2E e os 14 Checks passaram. A próxima fase começa pelo checklist 
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md`, este checklist e o TL;DR de `40-review-r13.md` em `docs/handoffs/20261125-retrofit-watch-atribuicao`. Use o Check de R12 para a migração interrompida e o Check de F1 para a jornada de QA. Para repetir a validação de backlog, rode `bash /home/joruge/.wt/sdd-kit-8a56249/tests/check-todo.sh --check TODO.md --allow-empty` da raiz. A base do PR é `main`, conforme `.sdd/config.sh`.
+Leia `checkpoint.md`, este checklist e o TL;DR de `40-review-r13.md` em `docs/handoffs/20261125-retrofit-watch-atribuicao`. Use o Check de R12 para a migração interrompida e o Check de F1 para a jornada de QA. Para repetir a validação de backlog, rode da raiz:
+
+~~~bash
+(
+  set -e
+  sdd_bin=$(command -v sdd)
+  test -n "$sdd_bin"
+  SDD_KIT=$(dirname "$(dirname "$(readlink -f "$sdd_bin")")")
+  bash "$SDD_KIT/tests/check-todo.sh" --check TODO.md --allow-empty
+)
+~~~
+
+A base do PR é `main`, conforme `.sdd/config.sh`.
 
 ## Pendências e decisões do mantenedor
 
@@ -72,6 +84,6 @@ atualização de `html-presentation` já contida em `origin/main` (`7e623fe`).
 
 - Issue #12, medição histórica da missão, deslocamento da âncora do CHANGELOG, especificidade do relato de R3 e perda de ordem na migração. Os itens corrigidos preservam `RESOLVED by` até o merge.
 - Âncoras de `_watch`, `_skill_origin` e `unlinked = False`. Corrigidas em `e58f9fc` e mantidas no item original até o merge.
-- Reuso de ID depois de sair da janela e metadado externo obsoleto. Permanecem abertos com referência aos achados de r2 e r3, sem duplicata.
+- À época de DOCS, o reuso de ID depois de sair da janela e o metadado externo obsoleto ainda estavam abertos. R13 trata o segundo sem ampliar a janela de reuso do primeiro.
 - Saídas históricas não preservadas e receita histórica que herda o Git do runner. Permanecem no backlog. O comando atual isolado está neste handoff e no de QA.
 - Catálogo do README. A proposta de divisão foi registrada sem alterar seções não relacionadas do catálogo.

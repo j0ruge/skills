@@ -149,7 +149,9 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
   tarefa da mesma sessão. Uma skill externa não encerra a atribuição da monitorada quando o hook
   consegue ligar as duas cargas à mesma mensagem do assistente. Se a externa veio depois ou o vínculo
   não pôde ser confirmado, ela encerra a atribuição para trabalho futuro. Metadado atrasado sem
-  vínculo não reabre a atribuição. Ao retomar a 0.4.0, o primeiro Stop consulta uma vez o trecho
+  vínculo não reabre a atribuição. A falha da carga ativa encerra seu crédito futuro sem apagar
+  outros vínculos. Metadado externo com ID comprovadamente aposentado por uma mensagem posterior
+  não encerra a atribuição atual. Ao retomar a 0.4.0, o primeiro Stop consulta uma vez o trecho
   até o offset salvo para recuperar vínculos e distinguir uma chamada pendente anterior à externa
   de uma posterior. O hook não reconta trabalho antigo. Se um registro ultrapassar 2 MiB ou o
   prefixo não for utilizável, o hook processa o trecho novo a partir do estado já gravado,

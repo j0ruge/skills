@@ -422,7 +422,7 @@ class State:
         self.legacy = "skill_calls" not in self.data and self.data.get("offset", 0) > 0
         for key, default in (("offset", 0), ("skills", {}), ("current", None), ("classified", {}),
                              ("pending", []), ("done", []), ("current_origin", None),
-                             ("skill_message", None), ("skill_calls", {}),
+                             ("skill_message", None), ("skill_calls", {}), ("retired_skill_calls", []),
                              ("skill_correlation_lost", False), ("pending_slash", None)):
             self.data.setdefault(key, default)
         if "attribution_closed" not in self.data:
@@ -505,6 +505,7 @@ class Scanner:
         self.st["skill_calls"].clear()
         self.st["skill_message_order"].clear()
         self.st["skill_call_history"].clear()
+        self.st["retired_skill_calls"].clear()
 
     def _prune_skill_correlation(self, confirmed=None):
         calls = self.st["skill_calls"]
@@ -513,7 +514,14 @@ class Scanner:
         previous = self.st["skill_message"]
         advanced = confirmed is not None and confirmed != previous
         if advanced:
-            del order[:order.index(confirmed)]
+            cutoff = order.index(confirmed)
+            older = set(order[:cutoff])
+            retired = self.st["retired_skill_calls"]
+            retired.extend(call for call, message in calls.items() if message in older)
+            retired.extend(call for call, owners in history.items()
+                           if owners and all(owner in older for owner in owners))
+            self.st["retired_skill_calls"] = retired[-MAX_SKILL_CALL_IDS:]
+            del order[:cutoff]
             self.st["skill_message"] = confirmed
         # Uma posição sem vínculo só interessa à carga ativa ou a uma disputa com pendência posterior.
         pending = set(calls.values())
@@ -651,7 +659,6 @@ class Scanner:
         return None
 
     def _skill_origin(self, message_id, call_id):
-        self.st["pending_slash"] = None
         if self.st["skill_correlation_lost"]:
             return None
         message_id = self._transcript_id(message_id)
@@ -661,6 +668,9 @@ class Scanner:
             self.st["skill_message"] = ""
         if call_id is None:
             return None
+        retired = self.st["retired_skill_calls"]
+        if call_id in retired:
+            retired.remove(call_id)
         messages = self.st["skill_message_order"]
         if message_id and message_id not in messages:
             messages.append(message_id)
@@ -686,6 +696,8 @@ class Scanner:
             cache[path] = classify_path(path, self.ctx)
         info = cache[path]
         source = self._transcript_id(source)
+        if source in self.st["retired_skill_calls"]:
+            return
         # Um metadado de chamada descartada ou ambígua não pode reabrir a atribuição.
         # Uma externa sem vínculo continua encerrando-a, inclusive no estado legado.
         conservative = self.st["attribution_closed"] or self.st["skill_correlation_lost"]
@@ -743,8 +755,10 @@ class Scanner:
             if d.get("isMeta"):
                 if isinstance(content, list):
                     for block in content:
-                        text = block.get("text", "") if isinstance(block, dict) else ""
-                        if block.get("type") == "text" and text.startswith(BASE_PREFIX):
+                        if not isinstance(block, dict):
+                            continue
+                        text = block.get("text")
+                        if block.get("type") == "text" and isinstance(text, str) and text.startswith(BASE_PREFIX):
                             self.skill_path(text[len(BASE_PREFIX):].split("\n", 1)[0].strip(),
                                             d.get("sourceToolUseID"))
                 return
@@ -763,6 +777,11 @@ class Scanner:
                     if block.get("type") == "tool_result" and block.get("is_error"):
                         call_id = self._transcript_id(block.get("tool_use_id"))
                         self._retire_skill_call(call_id)
+                        origin = self.st["current_origin"]
+                        if origin and call_id == origin[1]:
+                            self.st["current"] = None
+                            self.st["current_origin"] = None
+                            self.st["attribution_closed"] = True
                         self._bump("friction")
                     elif block.get("type") == "text":
                         self.user_text(block.get("text", ""))
@@ -784,6 +803,7 @@ def recover_legacy_correlation(path, st, ctx):
     was_closed = st["attribution_closed"]
     st["attribution_closed"] = was_closed or st["current"] is None
     replay = dict(st, skills={}, current=None, classified=st["classified"].copy(), done=[],
+                  retired_skill_calls=[],
                   skill_calls={}, skill_message_order=[], skill_call_history={}, attribution_closed=False)
     scanner = Scanner(replay, ctx)
     scanner.silent = True
@@ -820,7 +840,7 @@ def recover_legacy_correlation(path, st, ctx):
         st["current_origin"] = replay["current_origin"]
         st["pending_slash"] = replay["pending_slash"]
     for key in ("attribution_closed", "skill_message", "skill_calls", "skill_message_order",
-                "skill_call_history", "skill_correlation_lost"):
+                "skill_call_history", "retired_skill_calls", "skill_correlation_lost"):
         st[key] = replay[key]
 
 

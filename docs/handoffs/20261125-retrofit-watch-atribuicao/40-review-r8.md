@@ -248,11 +248,11 @@ def legacy(legacy_script, current_format, external, new):
 
 
 
-# Leia o histórico no Git da revisão antes de isolar o Git usado pelas fixtures.
-old_path = "plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py"
-old_source = subprocess.check_output(["git", "-P", "show", "fe38d1f:" + old_path])
+# Isole o Git do runner antes de ler o blob e de executar as fixtures.
 for key in ("GIT_DIR", "GIT_WORK_TREE"):
     os.environ.pop(key, None)
+old_path = "plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py"
+old_source = subprocess.check_output(["git", "-P", "show", "fe38d1f:" + old_path])
 for resume in (False, True):
     for reused in (False, True):
         collision(resume, "msg_2", None, reused)

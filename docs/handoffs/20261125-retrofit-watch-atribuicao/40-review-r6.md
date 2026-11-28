@@ -97,7 +97,7 @@ que ficou ativa, portanto não é o caso de reuso após descartar todos os donos
 
 A primeira parte do Check executa o bloco Python abaixo com `--expect`. Sem essa opção, a sonda
 imprime o observado. Para comparar com a base, exporte
-`git show 669d93d795411275d6608cf5ccc56f975663e152:plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py`
+`env -u GIT_DIR -u GIT_WORK_TREE git show 669d93d795411275d6608cf5ccc56f975663e152:plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py`
 para um arquivo temporário e passe seu caminho como argumento da sonda.
 O mesmo transcript foi executado com o hook real, em processo separado e com estado em disco.
 

@@ -105,7 +105,7 @@ reuso_apos_erro_continua=codereview,codereview
 reuso_apos_erro_retomada=codereview,codereview
 ~~~
 
-Para comparar, exporte o script com `git show b020b425ed8a967c4cc9c40a542a54968006dd7f:plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py`
+Para comparar, exporte o script com `env -u GIT_DIR -u GIT_WORK_TREE git show b020b425ed8a967c4cc9c40a542a54968006dd7f:plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py`
 para um arquivo temporário e passe esse caminho como argumento adicional ao comando da célula. A opção
 `--backlog` executa apenas a reprodução fora do escopo, com o script indicado ou com o HEAD por padrão.
 

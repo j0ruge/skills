@@ -84,7 +84,7 @@ retomada=graphify,codereview,graphify
 falhas=cresce
 ~~~
 
-Para repetir a comparação com `08f09a1`, extraia o script daquele commit com `git show 08f09a14c68b54b05cfe9f1d5c2f988eee32e8af:plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py` para um arquivo em um diretório temporário. Passe o caminho como argumento ao Python depois do código da sonda e acrescente `--medir` para ver as contagens e os bytes. Para também repetir o controle do achado 3, acrescente `--reuso`.
+Para repetir a comparação com `08f09a1`, extraia o script daquele commit com `env -u GIT_DIR -u GIT_WORK_TREE git show 08f09a14c68b54b05cfe9f1d5c2f988eee32e8af:plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py` para um arquivo em um diretório temporário. Passe o caminho como argumento ao Python depois do código da sonda e acrescente `--medir` para ver as contagens e os bytes. Para também repetir o controle do achado 3, acrescente `--reuso`.
 
 ~~~python
 import json
