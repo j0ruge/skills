@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a2208d-c723-73b3-8d89-6342e0168105
-data: 2026-11-28 02:15
-gate: "Em 149086f, `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval \"$TEST_CMD\"'` retornou rc 0. Loja com 154 testes (3 pulados), hook com 143, adaptadores, catálogo e versão 0.4.1 válidos. As 27 células Check de checkpoint.md executadas com Bash tiveram rc 0 e stdout esperado, incluindo R23, R24, R25 e F1. Passaram também os quatro testes de test_auto_docs.ReleaseTest."
+sessao: 01a220a1-44a3-7a93-940a-1f737c7d8d97
+data: 2026-11-28 02:35
+gate: "Em 0bd4efa, `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval \"$TEST_CMD\"'` retornou rc 0. Loja com 154 testes (3 pulados), hook com 144, adaptadores, catálogo e versão 0.4.1 válidos. As 28 células de Check de checkpoint.md executadas com Bash tiveram rc 0 e stdout esperado, incluindo R23, R24, R25, R26 e F1. Os quatro testes de test_auto_docs.ReleaseTest passaram."
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,15 +14,17 @@ gate: "Em 149086f, `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 ba
 
 ## TL;DR
 
-R25 recupera a ordem pela primeira ocorrência de cada mensagem do assistente, mesmo se ela começa por texto.
-Com a 0.4.0 real, as quatro retomadas que invertiam a atribuição agora distinguem externa anterior de posterior.
-Passaram a suíte isolada, os 27 Checks, F1 e quatro testes de release.
-A QA começa por R25 e repete R24 e R23. As três provas nativas não foram repetidas no sandbox.
+R26 preserva a ordem já comprovada na retomada da 0.4.0 quando texto sem carga preenche o registro.
+Os dois cortes agora pedem retro para a externa antiga. A externa posterior continua em silêncio.
+Passaram a suíte isolada, os 28 Checks, F1 e quatro testes de release.
+A QA começa por R26 e repete R25, R24 e R23. As três provas nativas não foram repetidas no sandbox.
 
 ## Estado do repo
 
 - **Branch** `fix/retrofit-watch-atribuicao-mesma-mensagem`, ligada ao PR #13.
-- O incremento mais recente é R25 em `149086f`. A versão continua 0.4.1.
+- O incremento mais recente é R26 em `0bd4efa`. A versão continua 0.4.1.
+- A suíte isolada de R26 passou com 154 testes da loja (3 pulados) e 144 do hook.
+  As 28 células de Check tiveram rc 0 e stdout esperado. Os quatro testes de release passaram.
 - A suíte isolada de R25 passou com 154 testes da loja (3 pulados) e 143 do hook.
   As 27 células de Check tiveram rc 0 e stdout esperado. Os quatro testes de release passaram.
 - A suíte isolada de R24 passou com 154 testes da loja (3 pulados) e 142 do hook.
@@ -367,11 +369,25 @@ A QA começa por R25 e repete R24 e R23. As três provas nativas não foram repe
   e teto de memória virtual de 512 MiB. Quatro reposições equivalentes não mudaram o resultado.
   A célula R25 usa a grafia `codereview` nos resultados positivos, conforme a sonda.
 
+### R26 — Retorno da revisão r38
+
+- `0bd4efa` — mantém as 64 posições já comprovadas no replay, sem atribuir ordem a mensagens
+  novas depois do teto. O reuso de ID ainda invalida sua prova de ordem. Os tetos de
+  chamadas e bytes e o estado persistido não mudam.
+- `0bd4efa` — acrescenta uma regressão em dois cortes para a última posição, origem
+  desconhecida, externa posterior e reuso de ID. Na [sonda com a 0.4.0 real](40-review-r38.md#sonda-de-r26),
+  o Red silenciou os dois cortes acima do teto. No Green, ambos pediram retro e a externa
+  posterior ficou em silêncio. A cópia histórica da expectativa de R25 foi alinhada ao stdout.
+- Sete degradações foram detectadas em cópias temporárias com grupo próprio, timeout
+  de 25 s e 512 MiB de memória virtual. Uma reposição isolada foi equivalente, pois o
+  índice de mensagens já não passa do teto.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
 | `checkpoint.md` | Tabela canônica dos incrementos, com as sondas executáveis e os hashes das correções. |
+| `40-review-r38.md` | Sonda de R26 com a 0.4.0 real. |
 | `40-review-r37.md` | Sonda de R25 com a 0.4.0 real. |
 | `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
@@ -380,9 +396,14 @@ A QA começa por R25 e repete R24 e R23. As três provas nativas não foram repe
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as 27 células de Check da raiz, comparando o stdout completo de cada célula com o esperado. Para cada comando da tabela, use `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c "$check"`. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as 28 células de Check da raiz, comparando o stdout completo de cada célula com o esperado. Para cada comando da tabela, use `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c "$check"`. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
-- Comece pela célula de R25 e pela [sonda de r37](40-review-r37.md#sonda-de-r25).
+- Comece pela célula de R26 e pela [sonda de r38](40-review-r38.md#sonda-de-r26).
+  Confira os dois cortes usando o estado gravado pela 0.4.0. Uma externa comprovadamente
+  anterior deve pedir retro mesmo com texto acima do teto. Com externa posterior ou ordem
+  não comprovada, o Stop deve ficar em silêncio. A célula inclui a regressão durável e F1.
+
+- Em seguida, rode a célula de R25 com a [sonda de r37](40-review-r37.md#sonda-de-r25).
   Compare os dois cortes. Se o primeiro registro for texto da mensagem do dono, a externa
   posterior encerra a atribuição. Se o texto for da mensagem externa, a retro é preservada.
   Repita os três grupos de controle, a regressão durável e F1, todos cobertos pela célula.
@@ -511,10 +532,11 @@ Para repetir os quatro testes de release, rode `env -u GIT_DIR -u GIT_WORK_TREE 
 
 ## Riscos e não-feitos
 
-- R22 a R25 não repetiram as três provas nativas de distribuição. O comando configurado as pula
+- R22 a R26 não repetiram as três provas nativas de distribuição. O comando configurado as pula
   neste sandbox. As provas de R20 no host são históricas. Não houve smoke manual do Claude Code.
-- Se um teto do registro de ordem do replay for excedido, a posição deixa de servir de
-  prova para aposentar um ID. Blocos de texto de mensagens distintas também ocupam o registro.
+- Blocos de texto de mensagens distintas ocupam o registro de posições do replay. Ao preencher
+  o teto de mensagens, só as posições já registradas podem servir de prova. Se exceder
+  o teto de chamadas ou de bytes do registro, a prova de ordem é descartada.
 - A evidência de cache é conservadora. Caminho repetido, cache divergente ou outra carga
   compatível posterior não permitem escolher o dono. O hook segue a regra de encerramento
   quando falta prova diante de uma externa.
