@@ -21,8 +21,9 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
   de arquivos não oferecer movimentação sem substituição, o setup recusa a instalação.
   O setup e a elegibilidade exigem que `.git/HEAD` aponte diretamente para
   `refs/heads/main`, sem passar por outra referência simbólica. A própria
-  `refs/heads/main` não pode apontar para outro ramo. Isso também vale durante
-  a remoção do marcador de pendência.
+  `refs/heads/main` precisa existir e ser direta. Pode estar em `packed-refs`,
+  mesmo com um diretório vazio no caminho da ref solta. O setup reconfere a ref
+  ao liberar a cópia e mantém a pendência se ela deixar de ser direta ou legível.
   A URL precisa corresponder ao slug. Sem `--url`, usa HTTPS do GitHub.
   O clone declara a origem autorizada. Em `github.com` nas portas padrão,
   HTTPS e as formas SSH podem representar o mesmo repo. Nos demais servidores,
@@ -36,8 +37,9 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
   depois do fetch. Ramo errado, árvore suja ou divergência conservam o HEAD.
   Se a nova conferência antes da busca encontrar outro ramo, grava
   `fora-da-main` sem buscar nem alterar refs.
-  Se não conseguir ler o HEAD nessa conferência, grava `erro` com o detalhe
-  `HEAD do clone ilegível`, também sem buscar nem alterar refs.
+  Se não conseguir ler HEAD ou a ref da main nessa conferência, grava `erro`
+  com o detalhe `HEAD do clone ilegível` ou `refs/heads/main do clone ilegível`,
+  respectivamente, também sem buscar nem alterar refs.
   Um arquivo apenas ignorado não impede o avanço se não precisar ser sobrescrito.
   O resultado fica em `<dados>/live/<dono>/<repo>.json`.
 

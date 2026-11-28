@@ -946,24 +946,43 @@ def _configured_origin(path, *, allow_pending=False):
     return None
 
 
-def _live_main(path):
-    """Distingue ramo errado (False) de falha de leitura (None)."""
+LIVE_REF_OID = rb"[0-9a-fA-F]{40}(?:[0-9a-fA-F]{24})?"
+
+
+def _live_main_ref(path):
+    """Confere a ref direta, distinguindo ausência de falha de leitura."""
     gitdir = path / ".git"
+    main = gitdir / "refs" / "heads" / "main"
     try:
-        with (gitdir / "HEAD").open("rb") as head:
-            if head.read(64).rstrip(b"\r\n") != b"ref: refs/heads/main":
-                return False
-        main = gitdir / "refs" / "heads" / "main"
-        # Só a ref solta pode ser simbólica. Se não existir, a main pode estar empacotada.
         try:
-            if not stat.S_ISREG(main.lstat().st_mode):
-                return False
-            with main.open("rb") as ref:
-                return ref.read(4) != b"ref:"
+            mode = main.lstat().st_mode
         except FileNotFoundError:
-            return True
+            mode = 0
+        if stat.S_ISREG(mode):
+            with main.open("rb") as ref:
+                return re.fullmatch(LIVE_REF_OID, ref.read(66).rstrip(b"\r\n")) is not None
+        if mode and not stat.S_ISDIR(mode):
+            return False
+        # Um diretório no caminho solto não encobre a ref empacotada no Git.
+        with (gitdir / "packed-refs").open("rb") as refs:
+            return any(re.fullmatch(LIVE_REF_OID + rb" refs/heads/main\r?\n", line) for line in refs)
+    except FileNotFoundError:
+        return False
     except OSError:
         return None
+
+
+def _live_main(path):
+    try:
+        with (path / ".git" / "HEAD").open("rb") as head:
+            if head.read(64).rstrip(b"\r\n") != b"ref: refs/heads/main":
+                return False
+    except OSError as error:
+        raise StoreError("HEAD do clone ilegível") from error
+    on_main = _live_main_ref(path)
+    if on_main is None:
+        raise StoreError("refs/heads/main do clone ilegível")
+    return on_main
 
 
 def live_clone(ctx, slug, *, origin=None, require_main=True):
@@ -975,7 +994,10 @@ def live_clone(ctx, slug, *, origin=None, require_main=True):
     configured = _configured_origin(path)
     if configured and configured[0] == slug and (origin is None or configured == origin):
         # Leia o ramo depois do marcador, inclusive durante a remoção seguida de recusa.
-        if require_main and not _live_main(path):
+        try:
+            if require_main and not _live_main(path):
+                return None
+        except StoreError:
             return None
         return path
     return None
@@ -1029,7 +1051,7 @@ def _live_setup_identity(path):
 
 def _verify_live_setup_finalization(path, marker, identity, origin_id, directory_fd=None):
     current = _live_setup_identity(path)
-    if current == identity:
+    if current == identity and _live_main_ref(path):
         return
     same_clone = current is not None and current[:2] == identity[:2]
     if directory_fd is not None or same_clone:
@@ -1049,7 +1071,7 @@ def _finish_live_setup(path, marker, identity, origin_id):
     current = _live_setup_identity(path)
     if identity is None or current is None or current[:2] != identity[:2]:
         raise StoreError(f"destino do setup mudou: {path}")
-    if current[2] != identity[2]:
+    if current[2] != identity[2] or not _live_main_ref(path):
         raise StoreError("ramo do clone mudou durante a validação")
     if os.name == "nt":
         marker.unlink()
@@ -1161,10 +1183,7 @@ def _live_remote(ctx, slug, path, expected):
 
 def _live_fetch(ctx, slug, path, *, expected_id=None):
     clone = _private_clone(ctx, slug, require_main=False)
-    on_main = _live_main(clone)
-    if on_main is None:
-        raise StoreError("HEAD do clone ilegível")
-    if not on_main:
+    if not _live_main(clone):
         raise LiveBranchError("cópia em uso fora da main")
     expected = _configured_origin(clone)
     if expected_id is not None and rw_auto.rw.origin_id(expected) != expected_id:

@@ -481,6 +481,130 @@ class LiveTest(unittest.TestCase):
         self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
         self.assertEqual(store.live_advance(self.ctx, SLUG)["resultado"], "ok")
 
+    def test_setup_keeps_pending_when_main_redirects_during_validation(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        marker = pending.read_bytes()
+        head_file = pending.with_name("HEAD")
+        head_bytes = head_file.read_bytes()
+        main_ref = pending.parent / "refs/heads/main"
+        direct_ref = main_ref.read_bytes()
+        local = w.live / "estado-local.txt"
+        local.write_bytes(b"preservar")
+        w.git(w.live, "branch", "rascunho")
+        read_git = store._git
+        unlink = os.unlink
+
+        def redirect():
+            w.git(w.live, "symbolic-ref", "refs/heads/main", "refs/heads/rascunho")
+
+        def redirect_during_hooks(args, cwd, env, label):
+            if args[-1] == "core.hooksPath":
+                redirect()
+            return read_git(args, cwd, env, label)
+
+        observed = []
+
+        def redirect_at_removal(name, *args, **kwargs):
+            if name in (pending, pending.name):
+                if moment == "remoção":
+                    redirect()
+                unlink(name, *args, **kwargs)
+                observed.append(store.live_clone(self.ctx, SLUG))
+                return
+            return unlink(name, *args, **kwargs)
+
+        for moment in ("trava", "remoção"):
+            with self.subTest(moment=moment):
+                git = redirect_during_hooks if moment == "trava" else read_git
+                try:
+                    with mock.patch.object(store, "_git", side_effect=git), \
+                            mock.patch.object(os, "unlink", side_effect=redirect_at_removal), \
+                            self.assertRaisesRegex(store.StoreError, "ramo.*mudou"):
+                        store.live_setup(self.ctx, SLUG, str(w.remote))
+                    self.assertEqual(pending.read_bytes(), marker)
+                    self.assertEqual(local.read_bytes(), b"preservar")
+                    self.assertEqual(head_file.read_bytes(), head_bytes)
+                    self.assertEqual(w.git(w.live, "symbolic-ref", "HEAD"), "refs/heads/rascunho")
+                    self.assertIsNone(store.live_clone(self.ctx, SLUG))
+                finally:
+                    main_ref.write_bytes(direct_ref)
+                    if not pending.exists():
+                        pending.write_bytes(marker)
+        self.assertEqual(observed, [None])
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+        self.assertFalse(pending.exists())
+        self.assertEqual(local.read_bytes(), b"preservar")
+
+    def test_setup_and_advance_accept_packed_main_with_empty_loose_dir(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        head = w.git(w.live, "rev-parse", "--verify", "HEAD")
+        w.git(w.live, "pack-refs", "--all")
+        main_ref = pending.parent / "refs/heads/main"
+        if os.name != "nt":
+            main_ref.symlink_to("refs/heads/rascunho")
+            with self.assertRaisesRegex(store.StoreError, "fora da main"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+            self.assertTrue(pending.exists())
+            main_ref.unlink()
+        main_ref.mkdir()
+        self.assertEqual(w.git(w.live, "rev-parse", "--verify", "HEAD"), head)
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+        self.assertFalse(pending.exists())
+        with mock.patch.object(store, "run", side_effect=AssertionError("consulta Git na elegibilidade")):
+            self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
+        new_head = w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+        record = store.live_advance(self.ctx, SLUG)
+        self.assertEqual((record["resultado"], record["antes"], record["depois"]), ("ok", head, new_head))
+        self.assertEqual(w.git(w.live, "rev-parse", "HEAD"), new_head)
+
+    def test_setup_rejects_missing_main_ref(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        marker = pending.read_bytes()
+        w.git(w.live, "branch", "main-extra")
+        w.git(w.live, "pack-refs", "--all")
+        w.git(w.live, "update-ref", "-d", "refs/heads/main")
+        packed = pending.parent / "packed-refs"
+        self.assertIn(b" refs/heads/main-extra\n", packed.read_bytes())
+        self.assertEqual(w.git(w.live, "symbolic-ref", "HEAD"), "refs/heads/main")
+        self.assertNotEqual(subprocess.run(
+            ["git", "rev-parse", "--verify", "HEAD"], cwd=w.live, env=w.env,
+            capture_output=True).returncode, 0)
+        for state in ("outras refs empacotadas", "ref solta sem SHA",
+                      "ref empacotada sem SHA", "sem tabela empacotada"):
+            with self.subTest(state=state):
+                main_ref = pending.parent / "refs/heads/main"
+                if state == "ref solta sem SHA":
+                    main_ref.write_bytes(b"sem-sha\n")
+                elif state == "ref empacotada sem SHA":
+                    with packed.open("ab") as refs:
+                        refs.write(b"sem-sha refs/heads/main\n")
+                elif state == "sem tabela empacotada":
+                    packed.unlink()
+                try:
+                    if state != "ref empacotada sem SHA":
+                        with self.assertRaisesRegex(store.StoreError, "fora da main"):
+                            store.live_setup(self.ctx, SLUG, str(w.remote))
+                    self.assertEqual(pending.read_bytes(), marker)
+                    pending.unlink()
+                    self.assertIsNone(store.live_clone(self.ctx, SLUG))
+                finally:
+                    pending.write_bytes(marker)
+                    main_ref.unlink(missing_ok=True)
+
+    def test_live_main_accepts_sha256_loose_and_packed_refs(self):
+        w = self.w
+        repo = w.tmp / "sha256"
+        w.git(w.tmp, "init", "-q", "--object-format=sha256", "-b", "main", str(repo))
+        w.git(repo, "commit", "--allow-empty", "-qm", "Cria a main em SHA-256")
+        self.assertEqual(w.git(repo, "rev-parse", "--show-object-format"), "sha256")
+        self.assertTrue(store._live_main(repo))
+        w.git(repo, "pack-refs", "--all")
+        self.assertFalse((repo / ".git" / "refs/heads/main").exists())
+        self.assertTrue(store._live_main(repo))
+
     def test_setup_retry_does_not_finalize_branch_changed_during_validation(self):
         w = self.w
         pending = self._leave_pending_setup()
@@ -944,6 +1068,57 @@ class LiveTest(unittest.TestCase):
         self.assertEqual(head_file.read_bytes(), head_bytes)
         self.assertEqual(w.git(w.live, "symbolic-ref", "HEAD"), "refs/heads/main")
         self.assertEqual(w.git(w.live, "rev-parse", "origin/main"), remote_head)
+
+    def test_advance_reports_unreadable_main_ref_separately(self):
+        w = self.w
+        head = w.git(w.live, "rev-parse", "HEAD")
+        remote_head = w.git(w.live, "rev-parse", "origin/main")
+        w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+        head_file = w.live / ".git" / "HEAD"
+        head_bytes = head_file.read_bytes()
+        obstruction = store._live_obstruction
+        inspected = False
+        read_failed = False
+
+        def after_inspection(path, env):
+            nonlocal inspected
+            result = obstruction(path, env)
+            inspected = result is None
+            return result
+
+        main_ref = head_file.parent / "refs/heads/main"
+        for operation in ("open", "lstat", "packed-refs"):
+            with self.subTest(operation=operation):
+                if operation == "packed-refs":
+                    w.git(w.live, "pack-refs", "--all")
+                    target = head_file.parent / "packed-refs"
+                else:
+                    target = main_ref
+                method = operation if operation != "packed-refs" else "open"
+                read_path = getattr(type(target), method)
+                inspected = read_failed = False
+
+                def unreadable(path, *args, **kwargs):
+                    nonlocal read_failed
+                    if inspected and path == target:
+                        read_failed = True
+                        self.assertEqual(head_file.read_bytes(), head_bytes)
+                        raise PermissionError("falha de leitura simulada na ref")
+                    return read_path(path, *args, **kwargs)
+
+                with mock.patch.object(store, "_live_obstruction", side_effect=after_inspection), \
+                        mock.patch.object(type(target), method, unreadable), \
+                        mock.patch.object(store, "run", wraps=store.run) as commands:
+                    record = store.live_advance(self.ctx, SLUG)
+
+                self.assertTrue(read_failed)
+                self.assertFalse(any("fetch" in call.args[0] for call in commands.call_args_list))
+                self.assertEqual((record["resultado"], record["detalhe"]),
+                                 ("erro", "refs/heads/main do clone ilegível"))
+                self.assertEqual((record["antes"], record["depois"]), (head, head))
+                self.assertEqual(json.loads((w.data / f"live/{SLUG}.json").read_text()), record)
+                self.assertEqual(w.git(w.live, "rev-parse", "HEAD"), head)
+                self.assertEqual(w.git(w.live, "rev-parse", "origin/main"), remote_head)
 
     def test_advance_revalidates_clone_identity_before_fetch(self):
         w = self.w

@@ -15,6 +15,7 @@
   Em HTTPS com porta não padrão, usa a URL absoluta da API e passa ao `gh` o hostname sem porta.
 - Após publicar, registra o SHA em `local/ci` e avança o clone com `--ff-only`.
   Se detectar uma troca de ramo antes do fetch, registra `fora-da-main` sem buscar.
+  Na releitura antes da busca, distingue HEAD ilegível de uma ref da main ilegível.
   Confere novamente o ramo e a árvore após o fetch. O startup assistido avisa por
   `dono/repo` se o último avanço falhou ou se o registro estiver inválido, e avisa
   imediatamente se não conseguiu iniciar o processo.
@@ -22,7 +23,9 @@
   efetiva for recusada no caminho final, conserva os arquivos do clone pendente. Na
   retomada ou na instalação inicial, só confirma o clone conferido na `main`, com
   origem declarada e efetiva compatíveis e trava de commit ativa. Setup e elegibilidade
-  exigem que `HEAD` aponte diretamente para `refs/heads/main`.
+  exigem que `HEAD` aponte para uma `refs/heads/main` direta e existente, inclusive
+  empacotada. O setup reconfere a ref na liberação e mantém a pendência se ela deixar
+  de ser direta ou legível.
 
 ## [0.4.1] — 2026-11-25
 
