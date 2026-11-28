@@ -271,7 +271,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 - [ ] **O resumo de EXEC mantém o estado de R19 após a validação de R20** —
   `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:7` (`TEST_CMD`) —
   o gate aponta 41f2952 e 134 testes do hook, mas o resumo e o estado do repo ainda orientam por R19.
-  Direção: separar os dois SHAs e distinguir a suíte configurada das provas nativas.
+  Direção: identificar os SHAs e as provas no host. RESOLVED by ac6c96f
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r30.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 
