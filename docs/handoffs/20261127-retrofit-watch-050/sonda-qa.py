@@ -46,6 +46,7 @@ def journey(w):
     def assert_status(sha):
         args = json.loads(status.read_text().splitlines()[-1])
         assert args[:4] == ["api", "-X", "POST", f"repos/{SLUG}/statuses/{sha}"], args
+        assert args[4:6] == ["--hostname", "localhost"], args
         assert "state=success" in args and "context=local/ci" in args, args
     def snapshot():
         return tuple(w.git(w.dev, *args) for args in [
@@ -191,6 +192,7 @@ def journey(w):
     gate = json.loads(w.gate_log.read_text().splitlines()[-1])
     assert (gate["head"], gate["rc"]) == (manual, 0), gate
     subprocess.run(["gh", "api", "-X", "POST", f"repos/{SLUG}/statuses/{manual}",
+                    "--hostname", "localhost",
                     "-f", "state=success", "-f", "context=local/ci", "-f", "description=gate verde"],
                    env=env, check=True, timeout=10)
     assert_status(manual)

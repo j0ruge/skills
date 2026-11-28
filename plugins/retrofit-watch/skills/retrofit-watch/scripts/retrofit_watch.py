@@ -42,6 +42,7 @@ sem ela, ou com mais de uma, o `queue` sai 1 em vez de responder uma fila vazia.
 Nunca grava texto do assistente. Qualquer erro interno vai para <data>/errors.log e sai com 0.
 Só biblioteca padrão. Roda em Linux, macOS e Windows (lá o `python3` do PATH, sem fcntl).
 """
+import hashlib
 import importlib
 import json
 import os
@@ -291,7 +292,7 @@ def _full(plugin, skill, ctx):
 
 def _lean(name, repo, origin=None):
     return {"key": f"lean:{repo}:{name}", "mode": "lean", "arg": name, "label": name, "repo": repo,
-            "origin": origin}
+            "origin": origin[0] if origin else None, "origin_identity": origin}
 
 
 def valid_slug(value):
@@ -299,25 +300,46 @@ def valid_slug(value):
             and value.rsplit("/", 1)[1] not in (".", ".."))
 
 
-def origin_slug(url):
-    """Normaliza HTTPS, SSH e o caminho absoluto do bare, sem aceitar segmentos ambíguos."""
+def origin_identity(url):
+    """Identifica o repo pelo slug e pelo servidor ou pelo caminho absoluto do bare."""
     if not isinstance(url, str):
         return None
-    remote = re.fullmatch(r"(?i)(?:(?:https|ssh)://[^/\s?#]+/|(?:[^@/:\s]+@)?[^/:\s]+:)([^/]+/[^/]+)/?", url)
+    host_pattern = r"(?:[^@/:\s?#]+@)?([a-z0-9][a-z0-9.-]*)"
+    remote = re.fullmatch(rf"(?i)(https|ssh)://{host_pattern}(?::([0-9]{{1,5}}))?/([^/]+/[^/]+)/?", url)
+    scp = re.fullmatch(rf"(?i){host_pattern}:([^/]+/[^/]+)/?", url) if not os.path.isabs(url) else None
+    host = bare = None
     if remote:
-        path = remote[1]
+        scheme, host, port, path = remote.groups()
+        if port is not None:
+            number = int(port)
+            if not 0 < number <= 65535:
+                return None
+            if number != (443 if scheme.lower() == "https" else 22):
+                host = f"{host}:{number}"
+    elif scp:
+        host, path = scp.groups()
     else:
         path = url.replace("\\", "/")
         if not os.path.isabs(url) or not path.endswith(".git") or {".", ".."} & set(path.split("/")):
             return None
         path = "/".join(path.split("/")[-2:])
+        bare = os.path.normcase(os.path.realpath(url))
     slug = path.lower().removesuffix(".git")
-    return slug if valid_slug(slug) else None
+    return [slug, host.lower() if host else None, bare] if valid_slug(slug) else None
+
+
+def origin_slug(url):
+    origin = origin_identity(url)
+    return origin[0] if origin else None
+
+
+def origin_id(origin):
+    return hashlib.sha256(json.dumps(origin).encode("ascii")).hexdigest()
 
 
 def _owned_origin(top, ctx):
-    slug = origin_slug(_git(["remote", "get-url", "origin"], top))
-    return slug if slug and slug.split("/")[0] in ctx.owners else None
+    origin = origin_identity(_git(["remote", "get-url", "origin"], top))
+    return origin if origin and origin[0].split("/")[0] in ctx.owners else None
 
 
 def _denied(real, ctx):

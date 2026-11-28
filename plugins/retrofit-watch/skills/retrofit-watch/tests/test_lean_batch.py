@@ -24,7 +24,8 @@ class BatchTest(unittest.TestCase):
         path = auto.retro_dir(self.ctx, rid) / "pedido.json"
         data = json.loads(path.read_text())
         data["skills"] = [{"key": "lean:fixture", "plugin": SKILL, "label": SKILL,
-                           "skills": [SKILL], "repo": SLUG, "modo": "auto-dry"}]
+                           "skills": [SKILL], "repo": SLUG, "modo": "auto-dry",
+                           "origin_id": auto.rw.origin_id(auto.rw.origin_identity(str(w.remote)))}]
         if collision:
             data["skills"].insert(0, {"key": f"full:{SKILL}", "plugin": SKILL, "label": SKILL,
                                       "skills": [SKILL]})
@@ -77,6 +78,7 @@ class BatchTest(unittest.TestCase):
         live_before = w.git(w.live, "rev-parse", "HEAD")
         lot = store.prepare(self.ctx, rid, SKILL)
         self.assertEqual((lot["repo"], lot["pasta"], lot["base"]), (SLUG, PASTA, base))
+        self.assertEqual(lot["origin_id"], auto.retro_pedido(self.ctx, rid)["skills"][0]["origin_id"])
         self.assertEqual(Path(w.git(lot["worktree"], "rev-parse", "--git-common-dir")), w.live / ".git")
         self.assertEqual([w.git(w.dev, *args) for args in commands], dev_before)
         self.assertEqual(w.git(w.live, "rev-parse", "HEAD"), live_before)
@@ -85,7 +87,8 @@ class BatchTest(unittest.TestCase):
     def test_prepare_rejects_swapped_clone_missing_skill_and_symlink(self):
         w = self.w
         rid = self.request(self.private())
-        w.git(w.live, "remote", "set-url", "origin", str(w.origin))
+        w.git(w.live, "remote", "set-url", "origin", "https://forge.example/other/kb-libs.git")
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
         with self.assertRaisesRegex(store.StoreError, "clone dedicado"):
             store.prepare(self.ctx, rid, SKILL)
         w.git(w.live, "remote", "set-url", "origin", str(w.remote))
@@ -102,6 +105,27 @@ class BatchTest(unittest.TestCase):
             store.prepare(self.ctx, rid, SKILL)
         self.assertFalse(auto.lote_dir(self.ctx, rid, SKILL).exists())
 
+    def test_prepare_rejects_same_slug_changed_after_request(self):
+        w = self.w
+        rid = self.request(self.private())
+        url = f"https://other.example/{SLUG}.git"
+        w.git(w.live, "remote", "set-url", "origin", url)
+        run = store.run
+
+        def no_fetch(command, **kw):
+            self.assertNotIn("fetch", command)
+            return run(command, **kw)
+
+        with mock.patch.object(store, "run", side_effect=no_fetch):
+            with self.assertRaisesRegex(store.StoreError, "desde o pedido"):
+                store.prepare(self.ctx, rid, SKILL)
+            w.git(w.live, "remote", "set-url", "origin", str(w.remote))
+            pedido = auto.retro_pedido(self.ctx, rid)
+            pedido["skills"].append(dict(pedido["skills"][0], origin_id="0" * 64))
+            auto._write_json(auto.retro_dir(self.ctx, rid) / "pedido.json", pedido)
+            with self.assertRaisesRegex(store.StoreError, "origem ambígua"):
+                store.prepare(self.ctx, rid, SKILL)
+
     def test_prepare_rejects_ambiguous_tracked_folder(self):
         w = self.w
         rid = self.request(self.private())
@@ -116,7 +140,7 @@ class BatchTest(unittest.TestCase):
         rid = self.request(self.private())
         lot = store.prepare(self.ctx, rid, SKILL)
         path = auto.lote_dir(self.ctx, rid, SKILL) / "retrofit.json"
-        for fields in ({"repo": None}, {"repo": "fixture/.."}, {"pasta": "../fora"},
+        for fields in ({"repo": None}, {"repo": "fixture/.."}, {"origin_id": "z" * 64}, {"pasta": "../fora"},
                        {"pasta": "/fora"}, {"pasta": "C:/fora"}, {"pasta": "a\\SKILL.md"}):
             with self.subTest(fields=fields):
                 auto._write_json(path, lot | fields)

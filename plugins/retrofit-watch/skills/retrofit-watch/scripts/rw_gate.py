@@ -851,15 +851,16 @@ def _private_origin(p):
                              p.worktree, env, "origem do lote").splitlines()
 
     fetch, push = urls(), urls("--push")
-    if len(fetch) != 1 or push != fetch or rw.origin_slug(fetch[0]) != p.repo:
+    origin = rw.origin_identity(fetch[0]) if len(fetch) == 1 else None
+    if push != fetch or not origin or rw.origin_id(origin) != p.retrofit["origin_id"]:
         raise rw_store.StoreError("origin de fetch e push nao correspondem ao mesmo repo listado")
-    return fetch[0], env
+    return fetch[0], env, origin
 
 
 def _private_fetch(p):
     try:
         _private_origin(p)
-        rw_store._live_fetch(p.ctx, p.repo, p.worktree)
+        rw_store._live_fetch(p.ctx, p.repo, p.worktree, expected_id=p.retrofit["origin_id"])
     except rw_store.StoreError as exc:
         return "fetch", _short(exc)
     return None
@@ -961,11 +962,12 @@ def _prepush_line(p):
 
 
 def _rehearse(p):
-    url, env = _private_origin(p)
     if (p.worktree / "package-lock.json").is_file():
+        _, env, _ = _private_origin(p)
         rc, out = rw_store.run(["npm", "ci"], cwd=p.worktree, env=env)
         if rc:
             raise rw_store.StoreError(f"npm ci saiu {rc}: {_short(out)}")
+    url, env, _ = _private_origin(p)
     path = _prepush_path(p, env)
     # A ref que o hook vê é a do remoto de destino, não uma tracking ref presumida.
     remote = rw_store._git(["ls-remote", "--exit-code", "origin", "refs/heads/main"],
@@ -1104,7 +1106,7 @@ class Effects:
 
     def push_private(self, p, contract):
         url, hook, _ = contract
-        current, env = _private_origin(p)
+        current, env, _ = _private_origin(p)
         if current != url or _prepush_path(p, env) != hook:
             return False, "origem ou pre-push mudou depois do ensaio"
         # O próprio Git resolve HEAD. Seu pre-push rejeita qualquer ref que não seja a ensaiada
@@ -1132,10 +1134,11 @@ printf '%s\n' "$ref" | "$hook" "$@"
                                     "push", "--no-follow-tags", "origin", "HEAD:main"], env=env)
         return rc == 0, _short(f"git push saiu {rc}: {out}")
 
-    def status(self, slug, sha, description):
+    def status(self, slug, sha, description, *, host):
         if not rw.valid_slug(slug):
             return False, "repo inválido para status"
         rc, out = rw_store.run(["gh", "api", "-X", "POST", f"repos/{slug}/statuses/{sha}",
+                                "--hostname", host,
                                 "-f", "state=success", "-f", "context=local/ci",
                                 "-f", f"description={description[:140]}"],
                                env=rw_store.git_env(home=self.ctx.home))
@@ -1408,14 +1411,16 @@ def _publish_private(ctx, rid, lote, effects, done):
     status_detail = line.get("status_detalhe", "")
     if not status_ok:
         try:
-            status_ok, status_detail = effects.status(p.repo, line["commit"], line["gate"])
+            _, _, origin = _private_origin(p)
+            status_ok, status_detail = effects.status(p.repo, line["commit"], line["gate"],
+                                                      host=origin[1] or "localhost")
         except Exception as exc:
             status_detail = _short(exc)
     if line["instalacao"] == "pendente":
         line = rw_auto.append_registry(ctx, dict(line, status_ok=status_ok, status_detalhe=status_detail))
         done["line"] = line
     try:
-        advance = rw_store.live_advance(ctx, p.repo)
+        advance = rw_store.live_advance(ctx, p.repo, expected_id=p.retrofit["origin_id"])
         clone_ok = advance["resultado"] == "ok"
         if clone_ok:
             clone = rw_store._private_clone(ctx, p.repo)

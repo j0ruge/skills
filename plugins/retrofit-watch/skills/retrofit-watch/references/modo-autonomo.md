@@ -18,6 +18,8 @@ compartilhado: ninguém escreve nele. Cada lote tem o seu worktree.
 Para os repos de `lean_auto`, `retrofit_watch.py live-setup <dono/repo> [--url URL]` cria o clone
 dedicado na `main` sem substituir um destino existente. `retrofit_watch.py live-advance [<dono/repo>]`
 avança só uma cópia limpa na `main`, sem merge de divergência. Sem argumento, tenta os repos da lista.
+O servidor e o slug da sessão precisam corresponder à origem do clone dedicado. O pedido privado
+grava a impressão digital `origin_id`, que o lote usa para conferir o destino efetivo.
 
 ## Formatos
 
@@ -34,6 +36,7 @@ avança só uma cópia limpa na `main`, sem merge de divergência. Sem argumento
 | `diff.json` | diretório do lote privado | o revisor (segunda passada) | patch e respostas sobre o diff |
 | `autonomo.jsonl` | `<dados>/` | a triagem, a porta e os verbos | uma linha por lote ou por lição sem ramo |
 
+No lote privado, `retrofit.json` também inclui `repo`, `pasta` e `origin_id`.
 Os arquivos de lote ficam no diretório do lote. Com dois lotes, um arquivo no diretório da retro seria
 sobrescrito.
 
@@ -155,7 +158,8 @@ e a auditoria. Roda `npm ci` se houver `package-lock.json`, depois ensaia o pre-
 com os argumentos, as refs e os SHAs do push real. A janela v2 incompleta mantém o lote em
 ensaio. Com o gate verde, o motivo é `auto-dry`, acompanhado do resumo. O SHA remoto não muda.
 Com a janela cumprida ou a aprovação do patch para esse motivo, o Git executa novamente o
-pre-push e pode recusar. O lote publicado leva `repo` e o SHA que recebeu `local/ci`. A porta
+pre-push e pode recusar. A porta rejeita mudanças de origem e direciona `local/ci` ao servidor
+validado. O lote publicado leva `repo` e o SHA correspondente. A porta
 avança o clone dedicado. Sem status ou avanço, a publicação continua registrada com rc 4 e
 `status-falhou` ou `clone-atras`. Repetir `publish` não refaz o push.
 

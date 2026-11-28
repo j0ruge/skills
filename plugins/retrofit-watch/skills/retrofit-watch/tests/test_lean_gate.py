@@ -39,7 +39,8 @@ class GateTest(unittest.TestCase):
         self.folder = auto.retro_dir(self.ctx, rid)
         pedido = auto.retro_pedido(self.ctx, rid)
         pedido["skills"] = [{"key": "lean:fixture", "plugin": SKILL, "label": SKILL, "skills": [SKILL],
-                            "repo": SLUG, "modo": "auto-dry"}]
+                            "repo": SLUG, "modo": "auto-dry",
+                            "origin_id": gate.rw.origin_id(gate.rw.origin_identity(str(w.remote)))}]
         auto._write_json(self.folder / "pedido.json", pedido)
         lot = store.prepare(self.ctx, rid, SKILL)
         self.wt = Path(lot["worktree"])
@@ -106,7 +107,7 @@ class GateTest(unittest.TestCase):
         self.assertEqual((out["resultado"], out["commit"], out.get("repo")), ("publicado", sha, SLUG), out)
         self.assertEqual(gate.exit_code(out), 0)
         self.assertEqual(sha, self.w.git(self.w.live, "rev-parse", "HEAD"))
-        self.status.assert_called_once_with(SLUG, sha, mock.ANY)
+        self.status.assert_called_once_with(SLUG, sha, mock.ANY, host="localhost")
         rehearsed, pushed = self.logs()[-2:]
         self.assertEqual(rehearsed, pushed)
         self.assertEqual(pushed["args"], ["origin", str(self.w.remote)])
@@ -237,6 +238,77 @@ class GateTest(unittest.TestCase):
         self.held("escopo")
         self.assertFalse(self.w.gate_log.exists())
 
+    def test_same_slug_effective_origin_mismatch_holds_before_fetch(self):
+        self.edit()
+        w = self.w
+        url = f"https://other.example/{SLUG}.git"
+        w.git(self.wt, "config", f"url.{url}.insteadOf", str(w.remote))
+        self.assertEqual(w.git(self.wt, "remote", "get-url", "origin"), url)
+        self.assertEqual(w.git(self.wt, "remote", "get-url", "--push", "origin"), url)
+        with mock.patch.object(store, "_live_fetch", side_effect=AssertionError("fetch indevido")) as fetch:
+            self.held("escopo")
+        fetch.assert_not_called()
+        self.assertFalse(w.gate_log.exists())
+
+    def test_same_slug_replacement_of_configured_origin_holds_before_fetch(self):
+        self.edit()
+        w = self.w
+        w.git(self.wt, "remote", "set-url", "origin", f"https://other.example/{SLUG}.git")
+        with mock.patch.object(store, "_live_fetch", side_effect=AssertionError("fetch indevido")) as fetch:
+            self.held("escopo")
+        fetch.assert_not_called()
+        self.assertFalse(w.gate_log.exists())
+
+    def test_fetch_rechecks_the_pinned_origin(self):
+        w = self.w
+        p = gate._Porta(self.ctx, self.rid, SKILL, [])
+        origin = gate._private_origin(p)
+        w.git(self.wt, "remote", "set-url", "origin", f"https://other.example/{SLUG}.git")
+        run = store.run
+
+        def no_fetch(command, **kw):
+            self.assertNotIn("fetch", command)
+            return run(command, **kw)
+
+        with mock.patch.object(gate, "_private_origin", return_value=origin), \
+                mock.patch.object(store, "run", side_effect=no_fetch):
+            self.assertEqual(gate._private_fetch(p)[0], "fetch")
+
+    def test_status_selects_the_host_even_with_another_gh_default(self):
+        with mock.patch.dict(os.environ, GH_HOST="other.example"), \
+                mock.patch.object(store, "run", return_value=(0, "")) as run:
+            self.assertEqual(REAL_STATUS(self.effects, SLUG, self.base, "gate verde",
+                                         host="forge.example"), (True, "local/ci"))
+        self.assertEqual(run.call_args.args[0][:7],
+                         ["gh", "api", "-X", "POST", f"repos/{SLUG}/statuses/{self.base}",
+                          "--hostname", "forge.example"])
+
+    def test_origin_change_after_push_cannot_redirect_status_or_advance(self):
+        head = self.edit()
+        push = self.effects.push_private
+        w = self.w
+
+        def replace(p, contract):
+            result = push(p, contract)
+            w.git(self.wt, "remote", "set-url", "origin", f"https://other.example/{SLUG}.git")
+            return result
+
+        run = store.run
+
+        def no_wrong_fetch(command, **kw):
+            if "fetch" in command:
+                self.assertEqual(w.git(command[2], "remote", "get-url", "origin"), str(w.remote))
+            return run(command, **kw)
+
+        with mock.patch.object(store, "lean_mode", return_value="auto"), \
+                mock.patch.object(self.effects, "push_private", side_effect=replace), \
+                mock.patch.object(store, "run", side_effect=no_wrong_fetch):
+            out = self.publish()
+        self.assertEqual((out["resultado"], out["instalacao"], out["commit"], self.remote_head()),
+                         ("publicado", "status-falhou", head, head), out)
+        self.status.assert_not_called()
+        self.assertEqual(w.git(w.live, "rev-parse", "HEAD"), self.base)
+
     def test_attributes_in_scope_still_hold(self):
         self.edit(path=f"{PASTA}/.gitattributes", text="SKILL.md -diff")
         self.assertIn(".gitattributes", self.held("escopo"))
@@ -312,6 +384,22 @@ class GateTest(unittest.TestCase):
         with mock.patch.object(store, "run", side_effect=npm):
             self.held("auto-dry")
         self.assertEqual(len(self.logs()), 1)
+        self.w.gate_log.unlink()
+
+        def npm_changes_origin(command, *args, **kwargs):
+            if list(command[:2]) == ["npm", "ci"]:
+                self.w.git(self.wt, "remote", "set-url", "origin", f"https://other.example/{SLUG}.git")
+                return 0, "preparado"
+            self.assertNotIn("ls-remote", command)
+            return run(command, *args, **kwargs)
+
+        with mock.patch.object(store, "run", side_effect=npm_changes_origin):
+            self.assertIn("origin de fetch e push", self.held("gate"))
+        self.assertFalse(self.w.gate_log.exists())
+        with mock.patch.object(store, "run", side_effect=npm_changes_origin) as calls:
+            with self.assertRaisesRegex(store.StoreError, "origin de fetch e push"):
+                gate._rehearse(gate._Porta(self.ctx, self.rid, SKILL, []))
+        self.assertFalse(any(call.args[0][:2] == ["npm", "ci"] for call in calls.call_args_list))
 
     def test_manual_declined_leaves_bare_and_clone_untouched(self):
         self.manual_retro(False)
@@ -326,7 +414,7 @@ class GateTest(unittest.TestCase):
         self.assertNotEqual(sha, self.base)
         self.assertEqual(self.w.git(self.w.live, "rev-parse", "HEAD"), sha)
         self.assertEqual(self.logs()[0]["stdin"], f"HEAD {sha} refs/heads/main {self.base}\n")
-        self.status.assert_called_once_with(SLUG, sha, mock.ANY)
+        self.status.assert_called_once_with(SLUG, sha, mock.ANY, host="localhost")
 
     def manual_retro(self, confirmed):
         w = self.w
@@ -340,7 +428,7 @@ class GateTest(unittest.TestCase):
         w.git(wt, "commit", "-qam", "Registra lição manual")
         self.assertTrue(os.access(wt / w.git(wt, "rev-parse", "--git-path", "hooks/pre-push"), os.X_OK))
         w.git(wt, "push", "--no-follow-tags", "origin", "HEAD:main")
-        self.effects.status(SLUG, w.git(wt, "rev-parse", "HEAD"), "gate verde")
+        self.effects.status(SLUG, w.git(wt, "rev-parse", "HEAD"), "gate verde", host="localhost")
         self.assertEqual(store.live_advance(self.ctx, SLUG)["resultado"], "ok")
 
     def test_retry_recovers_the_receipt_if_the_effect_did_not_return(self):
@@ -358,7 +446,7 @@ class GateTest(unittest.TestCase):
         self.status.assert_not_called()
         out = self.publish()
         self.assertEqual((gate.exit_code(out), out["commit"]), (0, head), out)
-        self.status.assert_called_once_with(SLUG, head, mock.ANY)
+        self.status.assert_called_once_with(SLUG, head, mock.ANY, host="localhost")
         self.assertEqual(len(self.logs()), 2)
 
     def test_window_and_revert_rehearse_again_without_publishing(self):
@@ -380,11 +468,12 @@ class GateTest(unittest.TestCase):
         gh.chmod(0o755)
         run = store.run
         with mock.patch.dict(os.environ, PATH=f"{bindir}{os.pathsep}{os.environ['PATH']}", RW_STATUS_LOG=str(log)), \
-                mock.patch.object(self.effects, "status", lambda *args: REAL_STATUS(self.effects, *args)), \
+                mock.patch.object(self.effects, "status", lambda *args, **kw: REAL_STATUS(self.effects, *args, **kw)), \
                 mock.patch.object(store, "run", wraps=run) as called:
             out = self.publish()
         args = json.loads(log.read_text())
         self.assertEqual(args[:4], ["api", "-X", "POST", f"repos/{SLUG}/statuses/{sha}"])
+        self.assertEqual(args[4:6], ["--hostname", "localhost"])
         self.assertIn("context=local/ci", args)
         self.assertIn("state=success", args)
         self.assertIn("gate: 0 passo(s)", args[-1])

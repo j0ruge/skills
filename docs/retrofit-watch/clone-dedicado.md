@@ -8,6 +8,8 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
 - `retrofit_watch.py live-setup <dono/repo> [--url URL]` clona a `main` e recusa
   um destino existente, inclusive se o nome já foi usado por outro dono.
   A URL precisa corresponder ao slug. Sem `--url`, usa HTTPS do GitHub.
+  O clone declara a origem autorizada. O checkout da sessão precisa apontar para
+  o mesmo servidor e repositório, mesmo quando usa outro transporte.
 - A trava de commit é local ao worktree principal. Os worktrees de lote herdam
   o `core.hooksPath` comum. Se o repo usa um diretório versionado de hooks,
   configure-o na config comum do clone, por exemplo `git config --local core.hooksPath .githooks`.
@@ -21,8 +23,10 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
 A lição local leva o mesmo `repo` do pedido e o nome da skill em `plugin` e
 `skill`. A triagem não mistura origens. Se outro repo ou a loja disputar o
 mesmo nome, a lição posterior fica segurada. O `prepare` busca a `main`
-no clone dedicado, localiza a pasta rastreada da skill e grava `repo` e
-`pasta` em `retrofit.json`. O ramo e o worktree pertencem a esse clone.
+no clone dedicado, localiza a pasta rastreada da skill e grava `repo`, `pasta` e
+`origin_id` em `retrofit.json`. A impressão digital vem do pedido e vincula o
+lote à origem da sessão. Uma troca de servidor exige um novo pedido.
+O ramo e o worktree pertencem a esse clone.
 
 No lote privado, o executor usa apenas as lições do lote e o veredito.
 Trabalha no `worktree` indicado e altera somente `pasta`. Registra uma entrada
@@ -39,6 +43,8 @@ após verificar o estado local e concluir a validação da publicação.
 
 Depois do selo o revisor grava `diff.json` para o patch da skill. `publish` confere a
 revisão e executa o pre-push do repo no worktree, com o mesmo SHA e refs do push.
+Antes de buscar ou publicar, confere o destino efetivo do Git, inclusive reescritas
+de URL e `pushurl`. Um slug homônimo em outro servidor não basta.
 Sem prova da janela v2, o gate verde deixa o lote em `auto-dry` e conserva o remoto.
 O dono pode liberar esse motivo com `approve <id> <lote>`. A permissão vale para o
 patch segurado, que inclui todos os arquivos alterados do lote. As exclusões das listas
@@ -46,7 +52,8 @@ da loja valem apenas no fluxo full. Emenda que altera o patch exige nova revisã
 aprovação quando aplicável.
 
 Depois do push, o registro preserva o SHA mesmo quando `local/ci` ou o avanço do clone
-falham. Rode `publish` novamente para concluir esses efeitos sem repetir o push.
+falham. A porta indica explicitamente ao `gh` o servidor associado à origem publicada.
+Rode `publish` novamente para concluir esses efeitos sem repetir o push.
 Em sessões assistidas, o startup lança o avanço em segundo plano e mostra o último
 erro registrado, quando houver.
 

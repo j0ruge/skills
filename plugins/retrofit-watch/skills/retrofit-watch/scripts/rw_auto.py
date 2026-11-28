@@ -181,7 +181,8 @@ def why_manual(ctx, payload, entry, registry, entrypoint):
     if lean:
         from rw_store import live_clone
 
-        if live_clone(ctx, lean) is None:
+        origin = entry.get("origin_identity")
+        if not origin or live_clone(ctx, lean, origin=origin) is None:
             return "sem-clone"
     limits = ctx.auto_limits
     session = payload.get("session_id") or "unknown"
@@ -252,6 +253,8 @@ def open_request(ctx, payload, entries):
         skills.append({"key": entry["key"], "plugin": entry["arg"], "label": entry["label"],
                        "skills": [entry["arg"]] if slug else list(entry.get("skills") or []), "repo": slug,
                        "modo": effective if slug else ctx.mode})
+        if slug:
+            skills[-1]["origin_id"] = rw.origin_id(entry["origin_identity"])
     pedido = {
         "id": rid,
         "sessao": session,
@@ -432,6 +435,13 @@ PEDIDO_SKILL_ORIGIN_SPEC = {
     "repo": lambda value: value is None or rw.valid_slug(value),
     "modo": _one_of("auto", "auto-dry"),
 }
+
+
+def _origin_id(value):
+    return _text(value) and re.fullmatch(r"[a-f0-9]{64}", value) is not None
+
+
+PEDIDO_SKILL_PRIVATE_SPEC = {**PEDIDO_SKILL_ORIGIN_SPEC, "repo": rw.valid_slug, "origin_id": _origin_id}
 LICOES_SPEC = {
     "id": _safe_text,
     "licoes": _list,
@@ -491,7 +501,8 @@ def valid_skill_folder(value):
                     for part in value.split("/")))
 
 
-PRIVATE_RETROFIT_SPEC = {**RETROFIT_SPEC, "repo": rw.valid_slug, "pasta": valid_skill_folder}
+PRIVATE_RETROFIT_SPEC = {**RETROFIT_SPEC, "repo": rw.valid_slug, "pasta": valid_skill_folder,
+                         "origin_id": _origin_id}
 DIFF_SPEC = {
     "patch": _text,
     "regra_repetida": _opt_text,
@@ -581,6 +592,8 @@ def load_pedido(path):
     for i, entry in enumerate(data["skills"]):
         spec = (PEDIDO_SKILL_ORIGIN_SPEC if isinstance(entry, dict) and ("repo" in entry or "modo" in entry)
                 else PEDIDO_SKILL_SPEC)
+        if isinstance(entry, dict) and entry.get("repo") is not None:
+            spec = PEDIDO_SKILL_PRIVATE_SPEC
         _fields(entry, spec, f"{path}: `skills`[{i}]")
     return data
 

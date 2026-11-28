@@ -20,6 +20,8 @@ class OriginTest(unittest.TestCase):
                 self.assertEqual(rw.origin_slug(url), SLUG)
         for url in ("kb-libs", "https://github.com/kb-libs", "https://github.com/a/b/c",
                     "http://github.com/a/b", "https://github.com/../kb-libs",
+                    "https://github.com:0/a/b", "ssh://github.com:65536/a/b",
+                    "https://github.com%2Fother.example/a/b", None,
                     "https://github.com/a/b?x=y", "/tmp/a/../b.git", "file:///tmp/a/b.git"):
             with self.subTest(url=url):
                 self.assertIsNone(rw.origin_slug(url))
@@ -78,6 +80,26 @@ class LeanAutoTest(unittest.TestCase):
         w.config(live_dir=str(w.tmp / "ausente"))
         self.assertEqual(self.reason(), "sem-clone")
 
+    def test_same_slug_on_another_host_stays_manual(self):
+        w = self.w
+        w.git(w.live, "remote", "set-url", "origin", f"https://forge.example/{SLUG}.git")
+        for url, reason in (
+            (f"git@FORGE.example:{SLUG}.git", None),
+            (f"ssh://git@forge.example:22/{SLUG}", None),
+            (f"https://other.example/{SLUG}.git", "sem-clone"),
+            (f"https://forge.example:8443/{SLUG}.git", "sem-clone"),
+        ):
+            with self.subTest(url=url):
+                w.git(w.dev, "remote", "set-url", "origin", url)
+                entry = rw.classify_path(w.skill, w.ctx())
+                self.assertEqual(entry["origin"], SLUG)
+                self.assertEqual(self.reason(entry=entry), reason)
+        w.git(w.live, "remote", "set-url", "origin", str(w.remote))
+        other_bare = w.tmp / "outro" / f"{SLUG}.git"
+        w.git(w.dev, "remote", "set-url", "origin", str(other_bare))
+        self.assertEqual(self.reason(entry=rw.classify_path(w.skill, w.ctx())), "sem-clone")
+        self.assertEqual(self.reason(entry=dict(self.entry, origin_identity=None)), "sem-clone")
+
     def test_mixed_request_and_legacy_full(self):
         ctx = self.w.ctx()
         pedido = auto.open_request(ctx, PAYLOAD, [self.full, self.entry])
@@ -92,6 +114,12 @@ class LeanAutoTest(unittest.TestCase):
         self.assertTrue(auto.in_request(ctx, with_collision, lesson))
         path = auto.retro_dir(ctx, pedido["id"]) / "pedido.json"
         self.assertEqual(auto.load_pedido(path), pedido)
+        self.assertEqual(lean["origin_id"], rw.origin_id(self.entry["origin_identity"]))
+        saved = lean.pop("origin_id")
+        path.write_text(json.dumps(pedido))
+        with self.assertRaises(auto.Malformed):
+            auto.load_pedido(path)
+        lean["origin_id"] = saved
         lean["repo"] = "fixture/../kb-libs"
         path.write_text(json.dumps(pedido))
         with self.assertRaises(auto.Malformed):

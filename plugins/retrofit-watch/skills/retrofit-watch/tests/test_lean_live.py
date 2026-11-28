@@ -80,6 +80,23 @@ class LiveTest(unittest.TestCase):
         self.assertEqual(w.live.readlink(), outside)
         self.assertFalse(outside.exists())
 
+    def test_setup_refuses_same_slug_rewrite_before_clone(self):
+        w = self.w
+        w.live.rename(w.live.with_name("anterior"))
+        url = f"https://other.example/{SLUG}.git"
+        w.git(w.live.parent, "config", "--file", str(w.home / ".gitconfig"),
+              f"url.{url}.insteadOf", str(w.remote))
+        run = store.run
+
+        def no_clone(command, **kw):
+            self.assertNotIn("clone", command)
+            return run(command, **kw)
+
+        with mock.patch.object(store, "run", side_effect=no_clone):
+            with self.assertRaisesRegex(store.StoreError, "URL efetiva"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertFalse(w.live.exists())
+
     def test_advance_fast_forwards_ignoring_only_ignored_files_and_records_result(self):
         w = self.w
         head = w.git(w.live, "rev-parse", "HEAD")
@@ -142,12 +159,33 @@ class LiveTest(unittest.TestCase):
     def test_advance_rejects_effective_origin_rewritten_to_another_repo(self):
         w = self.w
         before = w.git(w.live, "rev-parse", "origin/main")
-        w.git(w.live, "config", f"url.{w.origin}.insteadOf", str(w.remote))
-        self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
-        record = store.live_advance(self.ctx, SLUG)
+        run = store.run
+
+        def no_fetch(command, **kw):
+            self.assertNotIn("fetch", command)
+            return run(command, **kw)
+
+        for url in (str(w.origin), f"https://other.example/{SLUG}.git"):
+            with self.subTest(url=url), mock.patch.object(store, "run", side_effect=no_fetch):
+                key = f"url.{url}.insteadOf"
+                w.git(w.live, "config", key, str(w.remote))
+                try:
+                    self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
+                    record = store.live_advance(self.ctx, SLUG)
+                    self.assertEqual(record["resultado"], "erro")
+                    self.assertIn("origin do clone dedicado", record["detalhe"])
+                    self.assertEqual(w.git(w.live, "rev-parse", "origin/main"), before)
+                finally:
+                    w.git(w.live, "config", "--unset", key)
+        extra = w.tmp / "include-origin"
+        w.git(w.live, "config", "--file", str(extra), "remote.origin.url", str(w.origin))
+        w.git(w.live, "config", "include.path", str(extra))
+        self.assertEqual(w.git(w.live, "remote", "get-url", "--all", "origin").splitlines(),
+                         [str(w.remote), str(w.origin)])
+        with mock.patch.object(store, "run", side_effect=no_fetch):
+            record = store.live_advance(self.ctx, SLUG)
         self.assertEqual(record["resultado"], "erro")
         self.assertIn("origin do clone dedicado", record["detalhe"])
-        self.assertEqual(w.git(w.live, "rev-parse", "origin/main"), before)
 
 
 class StartupTest(unittest.TestCase):

@@ -9,6 +9,8 @@
   Um revert da loja ou de repo listado reinicia a janela.
 - O selo, a revisão e a aprovação privados cobrem todos os arquivos alterados
   da skill, inclusive caminhos que o fluxo full reserva às listas da loja.
+- O pedido privado vincula o lote ao servidor e ao slug da origem. A porta
+  recusa destinos efetivos de outro servidor e aponta o `local/ci` à origem conferida.
 - Após publicar, registra o SHA em `local/ci` e avança o clone com `--ff-only`.
   O startup assistido tenta o avanço e informa a falha anterior quando houver.
 

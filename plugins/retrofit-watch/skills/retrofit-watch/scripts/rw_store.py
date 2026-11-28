@@ -471,7 +471,12 @@ def prepare(ctx, rid, lote, redo=False):
     branch = branch_name(rid, lote, tentativa)
     env = git_env(home=ctx.home)
     if repo:
-        _live_fetch(ctx, repo, store)
+        requested = {entry["origin_id"] for entry in rw_auto.retro_pedido(ctx, rid)["skills"]
+                     if entry["plugin"] == found["plugin"] and entry.get("repo") == repo}
+        if len(requested) != 1:
+            raise StoreError("origem ambígua no pedido privado")
+        origin_id = requested.pop()
+        _live_fetch(ctx, repo, store, expected_id=origin_id)
         base = _git(["rev-parse", BASE_REF], store, env, "base").strip()
         pasta = _skill_folder(store, base, found["plugin"], env)
     else:
@@ -484,7 +489,7 @@ def prepare(ctx, rid, lote, redo=False):
                 "worktree": str(worktree), "ramo": branch, "base": base, "licoes": list(found["licoes"]),
                 "fases": None, "commit": None, "versao": None, "patch": None}
     if repo:
-        retrofit.update(repo=repo, pasta=pasta)
+        retrofit.update(repo=repo, pasta=pasta, origin_id=origin_id)
     rw_auto._fields(retrofit, rw_auto.PRIVATE_RETROFIT_SPEC if repo else rw_auto.RETROFIT_SPEC, "retrofit.json")
     path.parent.mkdir(parents=True, exist_ok=True)
     rw_auto._write_json(path, retrofit)
@@ -915,12 +920,8 @@ def live_path(ctx, slug):
     return path
 
 
-def live_clone(ctx, slug):
-    """Identifica o checkout dedicado pela config local, sem git no caminho da elegibilidade."""
-    try:
-        path = live_path(ctx, slug)
-    except StoreError:
-        return None
+def _configured_origin(path):
+    """Lê o origin declarado pelo dono, sem aplicar reescritas de URL do Git."""
     gitdir = path / ".git"
     config = configparser.ConfigParser(interpolation=None, allow_no_value=True)
     try:
@@ -928,18 +929,29 @@ def live_clone(ctx, slug):
             return None
         with (gitdir / "config").open(encoding="utf-8") as fh:
             config.read_file(fh)
-        remote = config['remote "origin"']
-        if rw_auto.rw.origin_slug(remote.get("url")) == slug:
-            return path
+        return rw_auto.rw.origin_identity(config['remote "origin"'].get("url"))
     except (OSError, ValueError, KeyError, configparser.Error):
         pass
+    return None
+
+
+def live_clone(ctx, slug, *, origin=None):
+    """Identifica o checkout dedicado sem git no caminho da elegibilidade."""
+    try:
+        path = live_path(ctx, slug)
+    except StoreError:
+        return None
+    configured = _configured_origin(path)
+    if configured and configured[0] == slug and (origin is None or configured == origin):
+        return path
     return None
 
 
 def live_setup(ctx, slug, url=None):
     path = live_path(ctx, slug)
     remote = f"https://github.com/{slug}.git" if url is None else url
-    if rw_auto.rw.origin_slug(remote) != slug:
+    expected = rw_auto.rw.origin_identity(remote)
+    if not expected or expected[0] != slug:
         raise StoreError(f"URL não corresponde ao repo autorizado: {slug}")
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -948,10 +960,17 @@ def live_setup(ctx, slug, url=None):
         raise StoreError(f"destino já existe: {path}") from None
     # Sem a config de um repo vizinho, mas com a configuração de credenciais do dono.
     env = remote_env(ctx, path)
+    try:
+        effective = _git(["ls-remote", "--get-url", "--", remote], path, env, "URL efetiva")
+        if rw_auto.rw.origin_identity(effective.strip()) != expected:
+            raise StoreError(f"URL efetiva não corresponde à origem declarada de {slug}")
+    except StoreError:
+        path.rmdir()
+        raise
     rc, _ = run(["git", "clone", "--branch", "main", "--", remote, str(path)], cwd=path, env=env)
     if rc:
         raise StoreError(f"clone de {slug} falhou (git saiu {rc})")
-    _live_remote(ctx, slug, path)
+    _live_remote(ctx, slug, path, expected)
     gitdir = path / ".git"
     hooks = gitdir / "rw-live-hooks"
     hooks.mkdir()
@@ -970,20 +989,23 @@ def live_setup(ctx, slug, url=None):
     return path
 
 
-def _live_remote(ctx, slug, path):
+def _live_remote(ctx, slug, path, expected):
     env = remote_env(ctx, path)
-    url = _git(["remote", "get-url", "origin"], path, env, "origem do clone")
-    if rw_auto.rw.origin_slug(url.strip()) != slug:
+    urls = _git(["remote", "get-url", "--all", "origin"], path, env, "origem do clone").splitlines()
+    if not expected or expected[0] != slug or len(urls) != 1 or rw_auto.rw.origin_identity(urls[0]) != expected:
         raise StoreError(f"origin do clone dedicado não corresponde a {slug}")
     return env
 
 
-def _live_fetch(ctx, slug, path):
-    env = _live_remote(ctx, slug, path)
+def _live_fetch(ctx, slug, path, *, expected_id=None):
+    expected = _configured_origin(_private_clone(ctx, slug))
+    if expected_id is not None and rw_auto.rw.origin_id(expected) != expected_id:
+        raise StoreError(f"origin do clone dedicado mudou desde o pedido de {slug}")
+    env = _live_remote(ctx, slug, path, expected)
     _git(["fetch", "origin", "+refs/heads/main:refs/remotes/origin/main"], path, env, "fetch")
 
 
-def live_advance(ctx, slug):
+def live_advance(ctx, slug, *, expected_id=None):
     """Avança o checkout dedicado sem sobrescrever estado local e registra o resultado."""
     path = live_path(ctx, slug)
     env = git_env(home=ctx.home)
@@ -1000,7 +1022,7 @@ def live_advance(ctx, slug):
         elif _git(["status", "--porcelain", "-unormal", "--ignore-submodules=none"], path, env, "status").strip():
             result, detail = "suja", "cópia em uso suja"
         else:
-            _live_fetch(ctx, slug, path)
+            _live_fetch(ctx, slug, path, expected_id=expected_id)
             _git(["merge-base", "--is-ancestor", "HEAD", BASE_REF], path, env, "avanço rápido indisponível")
             _git(["merge", "--ff-only", "--no-overwrite-ignore", BASE_REF], path, env, "avanço da main")
             after = _git(["rev-parse", "HEAD"], path, env, "HEAD").strip()
