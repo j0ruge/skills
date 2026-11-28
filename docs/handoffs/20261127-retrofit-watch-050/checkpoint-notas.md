@@ -193,3 +193,15 @@
 - 2026-11-28 05:11 ·  · Achados 2 e 4 da r2: a porta SSH chegou ao status e duas URLs sintéticas reprovaram a camada 1; o Check inclui status, camada 1 e jornada.
 - 2026-11-28 05:11 · `R4` · Rótulo da nota anterior de r2: o achado 1 exige separar a identidade de caminhos diferentes e preservar a jornada autorizada.
 - 2026-11-28 05:11 · `R5` · Rótulo da nota anterior de r2: os achados 2 e 4 exigem o host correto do status, camada 1 verde e repetição da jornada.
+- 2026-11-28 05:16 · `R4` · R4 sabotage: HTTPS e SSH descartam a barra final → test_distinct_repo_paths_have_distinct_origin_ids, test_same_host_distinct_repo_paths_stay_manual
+- 2026-11-28 05:16 · `R4` · R4 sabotage: SCP descarta a barra final → test_distinct_repo_paths_have_distinct_origin_ids
+- 2026-11-28 05:16 · `R4` · R4 sabotage: Terceiro campo inicial deixa de ser nulo → test_distinct_repo_paths_have_distinct_origin_ids
+- 2026-11-28 05:16 · `R4` · R4 sabotage: Bare perde o caminho absoluto na identidade → test_same_slug_on_another_host_stays_manual
+- 2026-11-28 05:16 · `R4` · R4 sabotage: Slug deixa de remover a barra final → test_distinct_repo_paths_have_distinct_origin_ids, test_same_host_distinct_repo_paths_stay_manual
+- 2026-11-28 05:16 · `R4` · R4 sabotage: Compara caixa do host do GitHub → test_distinct_repo_paths_have_distinct_origin_ids
+- 2026-11-28 05:16 · `R4` · R4 sabotage: Estende a exceção do GitHub a portas não padrão → test_distinct_repo_paths_have_distinct_origin_ids
+- 2026-11-28 05:16 · `R4` · R4 sabotage: Identidade guarda apenas o slug como caminho → test_distinct_repo_paths_have_distinct_origin_ids, test_same_host_distinct_repo_paths_stay_manual
+- 2026-11-28 05:16 · `R4` · R4 sabotage: Identidade perde a caixa do caminho → test_distinct_repo_paths_have_distinct_origin_ids, test_same_host_distinct_repo_paths_stay_manual
+- 2026-11-28 05:16 · `R4` · R4 sabotage: Identidade remove o sufixo do caminho → test_distinct_repo_paths_have_distinct_origin_ids, test_same_host_distinct_repo_paths_stay_manual
+- 2026-11-28 05:16 · `R4` · R4 sabotage: Retorno descarta o caminho fora do GitHub → test_distinct_repo_paths_have_distinct_origin_ids, test_same_host_distinct_repo_paths_stay_manual
+- 2026-11-28 05:16 · `R4` · Em `4f9d3cb`, o Red mostrou colisão de identidade e elegibilidade incorreta em quatro variações do caminho. Check R4 e sonda local verdes. TEST_CMD passou com 154 testes da loja (3 pulados), 144 do Stop, adaptadores, catálogo e versões. Passaram também 82 regressões lean, 11 testes do retrofit-skill e 44 checagens de documentação. Controle íntegro com quatro testes sem skip e 11 mutações detectadas em cópias descartáveis, sob grupo próprio, 20 s e 512 MiB por processo. As renomeações equivalentes foram cobertas pelo comportamento do bloco e as duas regressões foram conferidas no Red. Texto conferido no README, CHANGELOG, contrato e referências dos dois plugins. Camada 1 limpa no delta de R4 e 62 âncoras válidas. Nenhum repo real acionado. R5 continua pending.
