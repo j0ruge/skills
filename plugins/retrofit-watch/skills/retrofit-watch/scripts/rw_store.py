@@ -66,6 +66,10 @@ class StoreError(Exception):
     """A loja, o git ou o portão não deixaram o passo terminar. A mensagem diz por quê."""
 
 
+class LiveBranchError(StoreError):
+    """O clone foi identificado, mas não está na main exigida para a busca."""
+
+
 # --- processos ---------------------------------------------------------------------------------
 
 def run(cmd, cwd=None, timeout=RUN_TIMEOUT, env=None, stderr=subprocess.STDOUT):
@@ -942,6 +946,14 @@ def _configured_origin(path, *, allow_pending=False):
     return None
 
 
+def _live_main(path):
+    try:
+        with (path / ".git" / "HEAD").open("rb") as head:
+            return head.read(64).rstrip(b"\r\n") == b"ref: refs/heads/main"
+    except OSError:
+        return False
+
+
 def live_clone(ctx, slug, *, origin=None, require_main=True):
     """Identifica o checkout dedicado sem git no caminho da elegibilidade."""
     try:
@@ -950,14 +962,9 @@ def live_clone(ctx, slug, *, origin=None, require_main=True):
         return None
     configured = _configured_origin(path)
     if configured and configured[0] == slug and (origin is None or configured == origin):
-        if require_main:
-            # Leia o ramo depois do marcador, inclusive durante a remoção seguida de recusa.
-            try:
-                with (path / ".git" / "HEAD").open("rb") as head:
-                    if head.read(64).rstrip(b"\r\n") != b"ref: refs/heads/main":
-                        return None
-            except OSError:
-                return None
+        # Leia o ramo depois do marcador, inclusive durante a remoção seguida de recusa.
+        if require_main and not _live_main(path):
+            return None
         return path
     return None
 
@@ -1055,8 +1062,8 @@ def _check_live_setup(ctx, path, expected):
     if _configured_origin(path, allow_pending=True) != expected:
         raise StoreError(f"origem declarada do clone dedicado não corresponde a {expected[0]}")
     env = git_env(home=ctx.home)
-    if _git(["symbolic-ref", "-q", "HEAD"], path, env, "ramo do clone").strip() != "refs/heads/main":
-        raise StoreError("cópia em uso fora da main")
+    if not _live_main(path):
+        raise StoreError("cópia em uso fora da main: HEAD deve apontar diretamente para refs/heads/main")
     hook = path / ".git" / "rw-live-hooks" / "pre-commit"
     hooks = _git(["config", "--show-scope", "--type=path", "--get", "core.hooksPath"],
                  path, env, "trava do clone").removesuffix("\n")
@@ -1141,7 +1148,10 @@ def _live_remote(ctx, slug, path, expected):
 
 
 def _live_fetch(ctx, slug, path, *, expected_id=None):
-    expected = _configured_origin(_private_clone(ctx, slug))
+    clone = _private_clone(ctx, slug, require_main=False)
+    if not _live_main(clone):
+        raise LiveBranchError("cópia em uso fora da main")
+    expected = _configured_origin(clone)
     if expected_id is not None and rw_auto.rw.origin_id(expected) != expected_id:
         raise StoreError(f"origin do clone dedicado mudou desde o pedido de {slug}")
     env = _live_remote(ctx, slug, path, expected)
@@ -1179,6 +1189,8 @@ def live_advance(ctx, slug, *, expected_id=None):
             _git(["merge-base", "--is-ancestor", "HEAD", BASE_REF], path, env, "avanço rápido indisponível")
             _git(["merge", "--ff-only", "--no-overwrite-ignore", BASE_REF], path, env, "avanço da main")
             after = _git(["rev-parse", "HEAD"], path, env, "HEAD").strip()
+    except LiveBranchError as exc:
+        result, detail = "fora-da-main", str(exc)
     except StoreError as exc:
         result, detail = "erro", str(exc)
     record = dict(repo=slug, resultado=result, antes=before, depois=after, detalhe=detail, ts=int(time.time()))

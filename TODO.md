@@ -168,7 +168,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: `rows.get` com mensagem; `assertIn("--retro", rw.CLI_USAGE["discard"][0])`.
   Fonte: codereview r1 #21 e #22 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **O CHANGELOG 0.4.0 cita só o fetch e o push** —
-  `plugins/retrofit-watch/CHANGELOG.md:134` (`push`) — o ponto da config de sistema cita só o `fetch` e o
+  `plugins/retrofit-watch/CHANGELOG.md:146` (`push`) — o ponto da config de sistema cita só o `fetch` e o
   `push` da porta, e o `prepare` também usa o `remote_env` (r1 #24).
   Direção: "todo git que fala com o `origin`".
   Fonte: codereview r1 #24 — descoberto por `codereview r1` (2026-11-24)
@@ -266,14 +266,14 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 ### Clone dedicado da retrofit-watch
 
 - [ ] **O avanço pode mover outro ramo depois da última conferência** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:1179` (`merge-base`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:1189` (`merge-base`) —
   uma troca de ramo limpo após a prova de ancestralidade move esse ramo, deixa a main parada e grava sucesso.
   Direção: vincular a atualização da cópia ao ramo conferido, sem depender só de uma checagem separada.
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r2.md` — descoberto por
   `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
 
 - [ ] **A remoção do marcador do setup no Windows ainda depende do caminho** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:1029` (`_finish_live_setup`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:1036` (`_finish_live_setup`) —
   As duas checagens de identidade sinalizam a troca, mas não ancoram a remoção entre elas.
   Direção: testar a remoção pelo identificador do arquivo numa fixture Windows nativa.
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/20-handoff-exec.md` — descoberto por

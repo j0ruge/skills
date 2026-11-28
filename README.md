@@ -483,9 +483,10 @@ Quando a origem usa SSH, o status `local/ci` vai à API do servidor conferido se
 Em HTTPS com porta não padrão, a URL da API de status preserva essa porta.
 Se a criação do clone ou a validação final falhar, corrija a causa e repita
 `live-setup` com a mesma origem. A validação confere o destino, o ramo `main`,
-a origem declarada e efetiva e a trava de commit. A elegibilidade exige a `main`,
-inclusive durante a liberação do clone. O setup preserva destinos
-concorrentes, mesmo vazios. O startup avisa
+a origem declarada e efetiva e a trava de commit. Setup e elegibilidade exigem
+que `HEAD` aponte diretamente para `refs/heads/main`. O setup preserva destinos
+concorrentes, mesmo vazios. Se detectar outro ramo antes do fetch, o avanço
+registra `fora-da-main` sem buscar. O startup avisa
 se não conseguir iniciar o avanço e mostra os resultados por `dono/repo`.
 Em `auto`, a publicação sem aprovação exige 10 publicações autônomas da loja,
 14 dias e zero vazamentos na janela v2. Um revert da loja ou de repo listado

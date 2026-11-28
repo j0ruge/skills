@@ -19,8 +19,9 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
   preservar esse arquivo. O comando não troca o ramo
   nem remove arquivos para concluir a validação. Se a plataforma ou o sistema
   de arquivos não oferecer movimentação sem substituição, o setup recusa a instalação.
-  A leitura de elegibilidade só aceita a cópia na `main`, mesmo durante a
-  remoção do marcador de pendência.
+  O setup e a elegibilidade exigem que `.git/HEAD` aponte diretamente para
+  `refs/heads/main`, sem passar por outra referência simbólica. Isso também vale
+  durante a remoção do marcador de pendência.
   A URL precisa corresponder ao slug. Sem `--url`, usa HTTPS do GitHub.
   O clone declara a origem autorizada. Em `github.com` nas portas padrão,
   HTTPS e as formas SSH podem representar o mesmo repo. Nos demais servidores,
@@ -32,6 +33,8 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
 - `retrofit_watch.py live-advance [<dono/repo>]` busca e avança com `--ff-only`.
   Sem argumento, tenta os repos listados. Confere o ramo e a árvore antes e
   depois do fetch. Ramo errado, árvore suja ou divergência conservam o HEAD.
+  Se a nova conferência antes da busca encontrar outro ramo, grava
+  `fora-da-main` sem buscar nem alterar refs.
   Um arquivo apenas ignorado não impede o avanço se não precisar ser sobrescrito.
   O resultado fica em `<dados>/live/<dono>/<repo>.json`.
 

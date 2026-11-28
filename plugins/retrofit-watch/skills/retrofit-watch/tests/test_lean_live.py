@@ -419,6 +419,29 @@ class LiveTest(unittest.TestCase):
         w.git(w.live, "switch", "-q", "main")
         self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
 
+    def test_setup_and_eligibility_agree_on_symbolic_main(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        marker = pending.read_bytes()
+        head = w.git(w.live, "rev-parse", "HEAD")
+        w.git(w.live, "symbolic-ref", "refs/heads/atalho", "refs/heads/main")
+        w.git(w.live, "symbolic-ref", "HEAD", "refs/heads/atalho")
+        self.assertEqual(w.git(w.live, "symbolic-ref", "HEAD"), "refs/heads/main")
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+
+        with self.assertRaisesRegex(store.StoreError, "HEAD.*diretamente.*main"):
+            store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertEqual(pending.read_bytes(), marker)
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+        self.assertEqual(w.git(w.live, "rev-parse", "HEAD"), head)
+        self.assertEqual(w.git(w.live, "symbolic-ref", "--no-recurse", "HEAD"), "refs/heads/atalho")
+
+        w.git(w.live, "symbolic-ref", "HEAD", "refs/heads/main")
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+        self.assertFalse(pending.exists())
+        self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
+        self.assertEqual(store.live_advance(self.ctx, SLUG)["resultado"], "ok")
+
     def test_setup_retry_does_not_finalize_branch_changed_during_validation(self):
         w = self.w
         pending = self._leave_pending_setup()
@@ -539,14 +562,14 @@ class LiveTest(unittest.TestCase):
         expected = pending.read_bytes()
         empty_hooks = w.tmp / "hooks-vazios"
         empty_hooks.mkdir()
+        read_main = store._live_main
         read_git = store._git
 
-        def change_hook_on_branch_query(args, cwd, env, label):
-            if args == ["symbolic-ref", "-q", "HEAD"]:
-                w.git(cwd, "config", "--worktree", "core.hooksPath", str(empty_hooks))
-            return read_git(args, cwd, env, label)
+        def change_hook_on_branch_query(path):
+            w.git(path, "config", "--worktree", "core.hooksPath", str(empty_hooks))
+            return read_main(path)
 
-        with mock.patch.object(store, "_git", side_effect=change_hook_on_branch_query):
+        with mock.patch.object(store, "_live_main", side_effect=change_hook_on_branch_query):
             with self.assertRaisesRegex(store.StoreError, "trava de commit"):
                 store.live_setup(self.ctx, SLUG, str(w.remote))
         self.assertEqual(w.git(w.live, "config", "--get", "core.hooksPath"), str(empty_hooks))
@@ -555,16 +578,20 @@ class LiveTest(unittest.TestCase):
         w.git(w.live, "config", "--worktree", "--unset", "core.hooksPath")
         checked_hooks = False
 
-        def change_hook_only_after_verification(args, cwd, env, label):
+        def track_hook_verification(args, cwd, env, label):
             nonlocal checked_hooks
-            if args == ["symbolic-ref", "-q", "HEAD"] and checked_hooks:
-                w.git(cwd, "config", "--worktree", "core.hooksPath", str(empty_hooks))
             result = read_git(args, cwd, env, label)
             if args[-1] == "core.hooksPath":
                 checked_hooks = True
             return result
 
-        with mock.patch.object(store, "_git", side_effect=change_hook_only_after_verification):
+        def change_hook_only_after_verification(path):
+            if checked_hooks:
+                w.git(path, "config", "--worktree", "core.hooksPath", str(empty_hooks))
+            return read_main(path)
+
+        with mock.patch.object(store, "_git", side_effect=track_hook_verification), \
+                mock.patch.object(store, "_live_main", side_effect=change_hook_only_after_verification):
             self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
         hook_dir = pending.parent / "rw-live-hooks"
         self.assertEqual(w.git(w.live, "config", "--get", "core.hooksPath"), str(hook_dir))
@@ -803,6 +830,57 @@ class LiveTest(unittest.TestCase):
         self.assertEqual(store.live_advance(self.ctx, SLUG)["resultado"], "erro")
         self.assertEqual((w.live / "estado").read_text(), "preservar")
         self.assertEqual(w.git(w.live, "rev-parse", "HEAD"), head)
+
+    def test_advance_reports_branch_change_before_fetch(self):
+        w = self.w
+        head = w.git(w.live, "rev-parse", "HEAD")
+        remote_head = w.git(w.live, "rev-parse", "origin/main")
+        w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+        obstruction = store._live_obstruction
+        run = store.run
+        switched = False
+
+        def switch_after_inspection(path, env):
+            nonlocal switched
+            result = obstruction(path, env)
+            if not switched and result is None:
+                w.git(path, "switch", "-qc", "rascunho")
+                switched = True
+            return result
+
+        with mock.patch.object(store, "_live_obstruction", side_effect=switch_after_inspection), \
+                mock.patch.object(store, "run", wraps=run) as commands:
+            record = store.live_advance(self.ctx, SLUG)
+
+        self.assertTrue(switched)
+        self.assertFalse(any("fetch" in call.args[0] for call in commands.call_args_list))
+        self.assertEqual((record["resultado"], record["detalhe"]),
+                         ("fora-da-main", "cópia em uso fora da main"))
+        self.assertEqual((record["antes"], record["depois"]), (head, head))
+        self.assertEqual(json.loads((w.data / f"live/{SLUG}.json").read_text()), record)
+        self.assertEqual(w.git(w.live, "branch", "--show-current"), "rascunho")
+        for ref in ("HEAD", "main", "rascunho"):
+            self.assertEqual(w.git(w.live, "rev-parse", ref), head)
+        self.assertEqual(w.git(w.live, "rev-parse", "origin/main"), remote_head)
+
+        # Os outros chamadores tratam a recusa da busca como StoreError.
+        with self.assertRaisesRegex(store.StoreError, "fora da main"):
+            store._live_fetch(self.ctx, SLUG, w.live)
+
+    def test_advance_revalidates_clone_identity_before_fetch(self):
+        w = self.w
+        obstruction = store._live_obstruction
+
+        def replace_origin_after_inspection(path, env):
+            result = obstruction(path, env)
+            if result is None:
+                w.git(path, "remote", "set-url", "origin", str(w.origin))
+            return result
+
+        with mock.patch.object(store, "_live_obstruction", side_effect=replace_origin_after_inspection):
+            record = store.live_advance(self.ctx, SLUG)
+        self.assertEqual((record["resultado"], record["detalhe"]),
+                         ("erro", f"sem clone dedicado: {SLUG}"))
 
     def test_advance_does_not_merge_after_branch_switch_during_fetch(self):
         w = self.w

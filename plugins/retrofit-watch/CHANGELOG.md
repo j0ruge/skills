@@ -14,13 +14,15 @@
   A porta aponta o `local/ci` ao servidor conferido, sem repassar à API a porta do SSH.
   Em HTTPS com porta não padrão, usa a URL absoluta da API e passa ao `gh` o hostname sem porta.
 - Após publicar, registra o SHA em `local/ci` e avança o clone com `--ff-only`.
+  Se detectar uma troca de ramo antes do fetch, registra `fora-da-main` sem buscar.
   Confere novamente o ramo e a árvore após o fetch. O startup assistido avisa por
   `dono/repo` se o último avanço falhou ou se o registro estiver inválido, e avisa
   imediatamente se não conseguiu iniciar o processo.
 - `live-setup` preserva até um diretório vazio criado durante a instalação. Se a origem
   efetiva for recusada no caminho final, conserva os arquivos do clone pendente. Na
   retomada ou na instalação inicial, só confirma o clone conferido na `main`, com
-  origem declarada e efetiva compatíveis e trava de commit ativa.
+  origem declarada e efetiva compatíveis e trava de commit ativa. Setup e elegibilidade
+  exigem que `HEAD` aponte diretamente para `refs/heads/main`.
 
 ## [0.4.1] — 2026-11-25
 
