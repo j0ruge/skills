@@ -379,3 +379,4 @@
 - 2026-11-27 20:01 · Pós-r21 · A fonte da amostra foi fixada em a664c98. A verificação extraiu o SHA da receita publicada, construiu as amostras de seis, nove e oito linhas e reproduziu rc 0/1/0 em Bash e Zsh, sem SDD_KIT no ambiente.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 20:01 · written by the runner
 - 2026-11-27 20:05 · r22 · Em a07e588, suíte e 14 Checks verdes. A fonte fixada em a664c98 reproduziu rc 0/1/0 em Bash e Zsh. Todos os critérios em A, sem achado novo ou incremento pendente.
+- 2026-11-27 21:54 · R13 · Achados externos do PR #13 validados em 43e4686. Quatro regressões de Stop reproduzidas em leitura contínua e após retomada. Plano e sonda em plano-r13.md. Baseline TEST_CMD verde com 154 testes da loja, 3 pulados, e 114 do hook.
