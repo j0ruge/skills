@@ -162,7 +162,8 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
 - `d0edd66` — a leitura compartilhada recusa uma main que redireciona para outro ramo, mesmo com HEAD direto. O setup conserva o marcador e retoma com uma main direta, inclusive empacotada. Antes do fetch, HEAD ilegível produz `erro` sem busca nem alteração de refs, ao passo que ramo errado continua como `fora-da-main`.
 - Em `37c2274`, os dois Reds falharam pela causa esperada. Em `d0edd66`, passaram o Check R16, 169 regressões dirigidas sem pulos, a jornada de QA, o TEST_CMD e a camada 1 sobre a cópia Git do runner (`python3 scripts/anonymity-gate.py --camada1 --base origin/main --repo "$GIT_DIR"`).
 - As 19 sabotagens foram detectadas em cópia descartável, com oito controles sem pulos antes e depois, grupo próprio, 20 s e 512 MiB por execução. A extração do caminho de `.git`, quando reescrita com o mesmo caminho anterior, não muda o comportamento. A leitura do arquivo errado foi detectada.
-- A suíte ampla da retrofit-watch em temporários isolados rodou 614 testes, com 5 falhas e 176 erros na candidata. Em `37c2274` rodou 612, com 5 falhas e 176 erros nos mesmos casos. As fixtures de colheita sob /tmp ainda encontram o marcador /tmp/.git. A falha da segunda skill full ganhou a recorrência R16 no TODO.
+- No sandbox do EXEC, a suíte ampla rodou 614 testes na candidata, com 5 falhas e 176 erros. Em `37c2274` rodou 612, com 5 falhas e 176 erros nos mesmos casos. As fixtures de colheita sob `/tmp` encontraram o marcador `/tmp/.git`. A falha da segunda skill full ganhou a recorrência R16 no TODO.
+- Depois do EXEC, as três provas nativas de distribuição e a camada 1 de anonimização passaram no host Linux em `c83293c`.
 
 ## Artefatos
 
@@ -224,7 +225,7 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
 
 ## Riscos e não-feitos
 
-- R16 foi verificado no Linux com remotos bare de fixture. As três provas nativas de distribuição não foram repetidas, e não houve execução em Windows nativo.
+- R16 foi verificado no Linux com remotos bare de fixture. A cobertura de Windows permanece nos dublês Linux.
 
 - No sandbox da fase EXEC de R15, a suíte ampla da retrofit-watch em TMPDIR=/tmp terminou com 612 testes, 5 falhas e 176 erros. O marcador /tmp/.git interferiu nas fixtures de colheita e a segunda skill full ficou ausente. Ambos foram reproduzidos na base e184101. A falha da segunda skill ganhou a recorrência R15 no TODO.
 
