@@ -512,3 +512,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 23:34 · written by the runner
 - 2026-11-27 23:40 · r28, achado 1 → R19 · o snapshot de transição trava com item aposentado inválido; duas variantes reproduzidas no HEAD, ambas passam na base.
 - 2026-11-27 23:41 · R19 · Valide a forma do registro de IDs aposentados e de cada ID antes de usá-lo na união da transição. Preserve o ID válido da mesma lista, o limite de memória, o progresso do offset e a atribuição. Prove lista mista com objetos ou listas, campo opcional ausente ou inválido se atingido pelo mesmo leitor, controle intacto e a transição normalmente suportada. Repita os Checks anteriores sem ampliar a captura de histórico.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 23:42 · written by the runner
