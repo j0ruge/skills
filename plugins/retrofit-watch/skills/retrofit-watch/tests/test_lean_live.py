@@ -1,4 +1,5 @@
 """O clone em uso segue a main sem tocar o checkout de desenvolvimento."""
+import contextlib
 import errno
 import io
 import json
@@ -1107,6 +1108,88 @@ class LiveTest(unittest.TestCase):
         self.assertEqual(w.git(w.live, "status", "--porcelain"), "")
         self.assertFalse((w.live / ".git/index.lock").exists())
 
+    def test_advance_checks_real_main_with_reference_hook(self):
+        w = self.w
+        hook = w.live / ".git/hooks/reference-transaction"
+        hook.write_text('#!/bin/sh\nif [ "$1" = prepared ]; then\n'
+                        '  while read -r old new ref; do\n'
+                        '    case "$ref" in HEAD) head=1;; refs/heads/main) main=1;; esac\n'
+                        '  done\n  if [ "$head" = 1 ] && [ "$main" != 1 ]; then exit 1; fi\nfi\nexit 0\n')
+        hook.chmod(0o755)
+        post_merge = hook.with_name("post-merge")
+        post_merge.write_text('#!/bin/sh\ngit rev-parse HEAD > .git/post-merge-head\n')
+        post_merge.chmod(0o755)
+        w.git(w.live, "config", "--local", "core.hooksPath", str(hook.parent))
+        new = w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+
+        record = store.live_advance(self.ctx, SLUG)
+
+        self.assertEqual(record["resultado"], "ok", record["detalhe"])
+        self.assertEqual(w.git(w.live, "rev-parse", "refs/heads/main"), new)
+        self.assertEqual(w.git(w.live, "status", "--porcelain"), "")
+        self.assertEqual((w.live / ".git/post-merge-head").read_text().strip(), new)
+
+    def test_advance_recovers_confirmed_main_after_lost_confirmation(self):
+        w = self.w
+        new = w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+        update = store._live_ref_update
+
+        @contextlib.contextmanager
+        def missing_confirmation(*args):
+            with update(*args):
+                yield
+            raise store.StoreError("fixture: confirmação indisponível")
+
+        with mock.patch.object(store, "_live_ref_update", missing_confirmation):
+            record = store.live_advance(self.ctx, SLUG)
+
+        self.assertEqual((record["resultado"], record["depois"]), ("ok", new))
+        self.assertEqual(w.git(w.live, "rev-parse", "refs/heads/main"), new)
+        self.assertEqual(w.git(w.live, "status", "--porcelain"), "")
+        self.assertFalse((w.live / ".git/rw-live-advance").exists())
+
+    def test_advance_preserves_files_and_holds_when_materialization_is_uncertain(self):
+        w = self.w
+        head = w.git(w.live, "rev-parse", "HEAD")
+        new = w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+        git = store._git
+
+        def interrupted_merge(args, cwd, env, what):
+            if "merge" in args and "GIT_DIR" in env:
+                (cwd / "README.md").write_text("escrita parcial")
+                raise store.StoreError("fixture: erro ao gravar arquivos")
+            return git(args, cwd, env, what)
+
+        with mock.patch.object(store, "_git", side_effect=interrupted_merge):
+            record = store.live_advance(self.ctx, SLUG)
+
+        self.assertEqual((record["resultado"], record["depois"]), ("erro", head))
+        self.assertIn("avanço interrompido", record["detalhe"])
+        pending = w.live / ".git/rw-live-advance"
+        self.assertEqual((pending / "revisions").read_text().splitlines(), [f"antes {head}", f"alvo {new}"])
+        self.assertTrue((pending / "index.original").is_file())
+        self.assertEqual(w.git(w.live, "rev-parse", "refs/heads/main"), head)
+        with mock.patch.object(store, "_live_fetch") as fetch:
+            retry = store.live_advance(self.ctx, SLUG)
+        fetch.assert_not_called()
+        self.assertIn("avanço anterior inconclusivo", retry["detalhe"])
+        self.assertEqual((w.live / "README.md").read_text(), "escrita parcial")
+
+    def test_advance_refuses_different_effective_stage_settings(self):
+        w = self.w
+        head = w.git(w.live, "rev-parse", "HEAD")
+        config = w.live / ".git/on-main.config"
+        config.write_text("[core]\n\tautocrlf = input\n")
+        w.git(w.live, "config", "--local", "includeIf.onbranch:main.path", str(config))
+        w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+
+        record = store.live_advance(self.ctx, SLUG)
+
+        self.assertEqual((record["resultado"], record["depois"]), ("erro", head))
+        self.assertIn("configuração condicional", record["detalhe"])
+        self.assertFalse((w.live / "README.md").exists())
+        self.assertFalse((w.live / ".git/rw-live-advance").exists())
+
     def test_advance_rolls_back_if_installing_index_fails(self):
         w = self.w
         head = w.git(w.live, "rev-parse", "HEAD")
@@ -1140,6 +1223,18 @@ class LiveTest(unittest.TestCase):
 
         self.assertEqual(record["resultado"], "ok", record["detalhe"])
         self.assertEqual(w.git(w.live, "rev-parse", "refs/heads/main"), new)
+        self.assertEqual(w.git(w.live, "status", "--porcelain"), "")
+
+    def test_advance_preserves_sparse_checkout_paths(self):
+        w = self.w
+        w.git(w.live, "sparse-checkout", "set", "--no-cone", "/.claude/skills/")
+        new = w.commit_on_origin({"scripts/adicao.py": "conteúdo fora da seleção"}, "Avança o bare")
+
+        record = store.live_advance(self.ctx, SLUG)
+
+        self.assertEqual(record["resultado"], "ok", record["detalhe"])
+        self.assertEqual(w.git(w.live, "rev-parse", "refs/heads/main"), new)
+        self.assertFalse((w.live / "scripts/adicao.py").exists())
         self.assertEqual(w.git(w.live, "status", "--porcelain"), "")
 
     def test_advance_reports_branch_change_before_fetch(self):

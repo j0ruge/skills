@@ -27,6 +27,9 @@ e a árvore antes e depois do fetch e avança só uma cópia limpa na `main`, se
 O avanço prepara a atualização de `refs/heads/main` com o SHA local esperado e protege o índice
 durante a atualização dos arquivos. Se o Git já tiver travado o índice, o avanço registra `erro` e
 preserva a trava existente. Arquivos ignorados que colidam com o conteúdo novo impedem o avanço.
+Se um erro durante a atualização deixar o estado dos arquivos incerto, o avanço preserva os SHAs e
+o índice anterior em `.git/rw-live-advance` e suspende novas tentativas. Confira a ref, o índice e
+os arquivos do clone antes de remover essa pendência e repetir o avanço.
 Se a releitura de HEAD ou da ref da main antes do fetch falhar, registra `erro` com a
 leitura que falhou, sem buscar nem alterar refs.
 Sem argumento, tenta os repos da lista.
