@@ -144,3 +144,48 @@
 - 2026-11-28 04:53 · `R2` · R2 sabotage: Tipo e formato do digest não são validados → test_private_formats_reject_invalid_slug_and_paths
 - 2026-11-28 04:53 · `R2` · R2 sabotage: Guarda de slug volta a aceitar o primeiro fetch entre vários → test_advance_rejects_effective_origin_rewritten_to_another_repo
 - 2026-11-28 04:53 · `R2` · Em `bc8a164`, o Red na base `2b30962` aceitou servidores homônimos na classificação e chegou ao fetch na porta com origin reescrito. O Check passou e a sonda repetiu ensaio, aprovação, publicação, status e avanço em dois bares locais; nenhum repo real foi acionado. Passaram 78 testes direcionados com o contrato documental e o TEST_CMD (154 da loja, 3 pulados, 144 do Stop, adaptadores, catálogo e versões). Controle íntegro e 68 mutações em cópias descartáveis, com grupo próprio, 30 s e 512 MiB por processo. Linhas estruturais de declaração, formatação e transposição foram cobertas pelo comportamento do bloco, sem sensor independente por linha. Prosa conferida nas referências e no contrato do clone. Camada 1 limpa e 61 âncoras válidas. R3 permanece pendente.
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Setup pula a criação do clone → test_setup_clones_main_with_worktree_lock
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Setup oculta a falha depois da limpeza → test_setup_retry_after_clone_failure
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Setup não compara a origem efetiva → test_setup_refuses_same_slug_rewrite_before_clone
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Detalhe de ramo ilegível se perde → test_advance_reports_unreadable_branch_without_fetch
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Árvore suja recebe resultado de ramo errado → test_advance_does_not_merge_when_tree_becomes_dirty_during_fetch
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Avanço não reconfere o ramo após o fetch → test_advance_does_not_merge_after_branch_switch_during_fetch
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Avanço limpo deixa de entrar no bloco do merge → test_advance_fast_forwards_ignoring_only_ignored_files_and_records_result
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Leitor e escritor perdem o dono no caminho → test_advance_records_same_basename_without_losing_notice
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Startup não capta JSON inválido → test_present_invalid_advance_record_reports_error
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Leitor aceita resultado fora do contrato → test_present_invalid_advance_record_reports_error
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Registro com falha deixa de produzir aviso → test_advance_records_same_basename_without_losing_notice
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Setup volta a limpar só falhas do Git → test_setup_retry_after_lock_failure
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Setup não devolve o caminho que criou → test_setup_retry_after_clone_failure
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Setup não recusa a URL efetiva divergente → test_setup_refuses_same_slug_rewrite_before_clone
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Ramo errado passa pela guarda → test_advance_does_not_merge_after_branch_switch_during_fetch
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Árvore limpa sempre parece obstruída → test_advance_fast_forwards_ignoring_only_ignored_files_and_records_result
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Avanço não reconfere a árvore após o fetch → test_advance_does_not_merge_when_tree_becomes_dirty_during_fetch
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Escrita volta a usar apenas o nome do clone → test_advance_records_same_basename_without_losing_notice
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Startup volta a ler os registros por basename → test_advance_records_same_basename_without_losing_notice
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Startup volta a silenciar registro ilegível → test_present_invalid_advance_record_reports_error
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Leitor aceita detalhe de tipo incorreto → test_present_invalid_advance_record_reports_error
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Aviso válido perde o detalhe específico → test_advance_records_same_basename_without_losing_notice
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Setup volta a deixar o destino reservado → test_setup_retry_after_clone_failure
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Validação da URL ignora o HOME autorizado → test_setup_refuses_same_slug_rewrite_before_clone
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Avanço volta a usar referência abreviada → test_advance_fast_forwards_ignoring_only_ignored_files_and_records_result
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Ramo errado recebe resultado de árvore suja → test_advance_does_not_merge_after_branch_switch_during_fetch
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Avanço não checa a cópia antes de buscar → test_advance_leaves_wrong_branch_dirty_tree_and_divergence_alone
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Merge deixa de respeitar obstrução → test_advance_does_not_merge_after_branch_switch_during_fetch
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Escrita não cria a pasta do dono → test_advance_fast_forwards_ignoring_only_ignored_files_and_records_result
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Startup trata ausência como registro inválido → test_present_invalid_advance_record_reports_error
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Leitor não exige objeto JSON → test_present_invalid_advance_record_reports_error
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Registro inválido não produz aviso → test_present_invalid_advance_record_reports_error
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Aviso de falha perde alternativa para detalhe vazio → test_present_invalid_advance_record_reports_error
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Setup volta a limpar só diretórios vazios → test_setup_retry_after_lock_failure
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Validação da URL deixa de consultar o Git → test_setup_refuses_same_slug_rewrite_before_clone
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Falha ao ler ramo não vira erro → test_advance_reports_unreadable_branch_without_fetch
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Árvore suja passa pela guarda → test_advance_does_not_merge_when_tree_becomes_dirty_during_fetch
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Fetch ignora obstrução inicial → test_advance_leaves_wrong_branch_dirty_tree_and_divergence_alone
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Registro perde a condição que impediu o merge → test_advance_does_not_merge_after_branch_switch_during_fetch
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Avanço não grava o resultado → test_advance_fast_forwards_ignoring_only_ignored_files_and_records_result
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Startup não capta arquivo ilegível → test_present_invalid_advance_record_reports_error
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Leitor aceita registro que pertence a outro repo → test_present_invalid_advance_record_reports_error
+- 2026-11-28 05:02 · `R3` · R3 sabotage: Registro com sucesso produz aviso → test_present_invalid_advance_record_reports_error
+- 2026-11-28 05:02 · `R3` · Em `30d619b`, Red em `5c6c947` reproduziu destino abandonado, ramo movido, colisão de avisos e registro inválido silencioso. Check R3 e sonda local verdes. O TEST_CMD passou com 154 testes da loja (3 pulados), 144 do Stop, adaptadores, catálogo e versões. Controle íntegro com 20 testes e 43 mutações detectadas em cópias descartáveis, sob grupo próprio, 30 s e 512 MiB por processo. Declarações, formatação e o retorno sem efeito no fim da função extraída foram cobertos pelo comportamento do bloco, sem sensor independente. Texto conferido no README, no CHANGELOG e nas referências do clone. Camada 1 limpa para R3 e 61 âncoras válidas. Nenhum repo real acionado.
+- 2026-11-28 05:02 · `R3` · O primeiro TEST_CMD herdou o diretório Git do runner. A comparação de árvores confirmou que os 139 commits base eram vazios. O ramo foi recomposto sobre `5c6c947` com a mesma árvore de produto, e só a referência base criada pela fixture foi removida. A repetição desarmou as variáveis Git. A camada 1 da branch ainda sinaliza a impressão digital pública e quatro URLs de fixture anteriores a R3, já cobertas pelo item aberto da mesma missão.

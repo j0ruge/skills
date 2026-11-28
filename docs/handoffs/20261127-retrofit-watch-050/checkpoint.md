@@ -1,6 +1,6 @@
 ---
 missao: 20261127-retrofit-watch-050
-atualizado: 2026-11-28 04:53
+atualizado: 2026-11-28 05:02
 ---
 
 # Checkpoint — Skills locais da lista
@@ -13,7 +13,7 @@ atualizado: 2026-11-28 04:53
 | I4 | Versões e distribuição | `export TMPDIR=/var/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests:plugins/retrofit-skill/tests; if python3 -B -m unittest test_auto_docs.ReleaseTest.test_lean_release_in_fixture >/dev/null; then python3 -Bc 'import json; print(*(json.load(open(f"plugins/{p}/.claude-plugin/plugin.json"))["version"] for p in ("retrofit-watch","retrofit-skill")))'; else echo falhou; fi` → `0.5.0 0.12.0` | done | 04a1a77 |
 | R1 | Vincular revisão e aprovação a todo arquivo da skill privada | `(unset GIT_DIR GIT_WORK_TREE; export TMPDIR=/var/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests; python3 -B -m unittest test_lean_gate.GateTest.test_private_patch_includes_store_list_paths >/dev/null && python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → `0` | done | fe68792 |
 | R2 | Vincular a rota privada à origem autorizada, incluindo o servidor | `(unset GIT_DIR GIT_WORK_TREE; export TMPDIR=/var/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests; python3 -B -m unittest test_lean_auto.LeanAutoTest.test_same_slug_on_another_host_stays_manual test_lean_gate.GateTest.test_same_slug_effective_origin_mismatch_holds_before_fetch >/dev/null && python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → `0` | done | bc8a164 |
-| R3 | Tornar o setup repetível, preservar o ramo no avanço e isolar seus avisos | `(unset GIT_DIR GIT_WORK_TREE; export TMPDIR=/var/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests; python3 -B -m unittest test_lean_live.LiveTest.test_setup_retry_after_clone_failure test_lean_live.LiveTest.test_advance_does_not_merge_after_branch_switch_during_fetch test_lean_live.StartupTest.test_advance_records_same_basename_without_losing_notice test_lean_live.StartupTest.test_present_invalid_advance_record_reports_error >/dev/null && python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → `0` | pending | — |
+| R3 | Tornar o setup repetível, preservar o ramo no avanço e isolar seus avisos | `(unset GIT_DIR GIT_WORK_TREE; export TMPDIR=/var/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests; python3 -B -m unittest test_lean_live.LiveTest.test_setup_retry_after_clone_failure test_lean_live.LiveTest.test_advance_does_not_merge_after_branch_switch_during_fetch test_lean_live.StartupTest.test_advance_records_same_basename_without_losing_notice test_lean_live.StartupTest.test_present_invalid_advance_record_reports_error >/dev/null && python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → `0` | done | 30d619b |
 
 Atualizar a linha depois do commit do incremento, com SHA curto nu. As notas de execução seguem em `checkpoint-notas.md` quando o relay materializar o layout do kit.
 
