@@ -157,6 +157,14 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
 - Depois do EXEC, as três provas nativas de distribuição e a camada 1 de anonimização passaram no host Linux em `42042d1`.
 - A suíte ampla no mesmo host, com diretório temporário isolado, executou 612 testes. A única falha foi `test_second_skill_of_the_same_plugin_is_recorded`, reproduzida na base.
 
+  Saída do host em `42042d1`, com `TMPDIR` isolado em `/var/tmp` e `GIT_DIR` e `GIT_WORK_TREE` desarmados.
+
+  ```text
+  FAIL: test_second_skill_of_the_same_plugin_is_recorded (test_auto_mode.AutoStopTest.test_second_skill_of_the_same_plugin_is_recorded)
+  Ran 612 tests in 267.302s
+  FAILED (failures=1)
+  ```
+
 ### Revisão r10 e correção de R16
 
 - `d0edd66` — a leitura compartilhada recusa uma main que redireciona para outro ramo, mesmo com HEAD direto. O setup conserva o marcador e retoma com uma main direta, inclusive empacotada. Antes do fetch, HEAD ilegível produz `erro` sem busca nem alteração de refs, ao passo que ramo errado continua como `fora-da-main`.
@@ -164,6 +172,13 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
 - As 19 sabotagens foram detectadas em cópia descartável, com oito controles sem pulos antes e depois, grupo próprio, 20 s e 512 MiB por execução. A extração do caminho de `.git`, quando reescrita com o mesmo caminho anterior, não muda o comportamento. A leitura do arquivo errado foi detectada.
 - No sandbox do EXEC, a suíte ampla rodou 614 testes na candidata, com 5 falhas e 176 erros. Em `37c2274` rodou 612, com 5 falhas e 176 erros nos mesmos casos. As fixtures de colheita sob `/tmp` encontraram o marcador `/tmp/.git`. A falha da segunda skill full ganhou a recorrência R16 no TODO.
 - Depois do EXEC, as três provas nativas de distribuição e a camada 1 de anonimização passaram no host Linux em `c83293c`.
+- O host Linux repetiu a suíte ampla em `e7691a4`, com os mesmos parâmetros de isolamento de R15.
+
+  ```text
+  FAIL: test_second_skill_of_the_same_plugin_is_recorded (test_auto_mode.AutoStopTest.test_second_skill_of_the_same_plugin_is_recorded)
+  Ran 614 tests in 263.281s
+  FAILED (failures=1)
+  ```
 
 ## Artefatos
 
