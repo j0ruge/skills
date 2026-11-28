@@ -33,6 +33,7 @@
   e registra à parte até 1.024 IDs distintos observados depois. Reutilizar um ID de qualquer
   registro ou exceder a capacidade impede o vínculo por erro próprio. Nenhum registro valida metadados.
   Um registro persistido com tipo inválido volta vazio sem travar Stop nem apagar os contadores.
+  Na lista de aposentados, itens inválidos não travam a transição nem impedem a retenção dos IDs válidos.
 - Enquanto a mensagem ativa não muda, a poda de uma tentativa intermediária que reutilizou um
   ID consumido sem origem não apaga sua marca. Reusar esse ID numa carga externa não comprova
   a origem para preservar a atribuição.

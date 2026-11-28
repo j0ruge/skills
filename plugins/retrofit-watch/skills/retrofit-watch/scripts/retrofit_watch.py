@@ -425,6 +425,8 @@ class State:
                              ("skill_message", None), ("skill_calls", {}), ("retired_skill_calls", []),
                              ("skill_correlation_lost", False), ("pending_slash", None)):
             self.data.setdefault(key, default)
+        if not isinstance(self.data["retired_skill_calls"], list):
+            self.data["retired_skill_calls"] = []
         for key in ("uncorrelated_skill_calls", "overflow_skill_calls"):
             if not isinstance(self.data.get(key), dict):
                 self.data[key] = {}
@@ -555,7 +557,8 @@ class Scanner:
         if (len(self.st["skill_message_order"]) > MAX_SKILL_MESSAGES
                 or len(self.st["skill_calls"]) + len(self.st["skill_call_history"]) > MAX_SKILL_CALL_IDS):
             # Preservar a prova de reuso sem consumir a capacidade reservada às chamadas novas.
-            retained = (*self.st["skill_calls"], *self.st["skill_call_history"], *self.st["retired_skill_calls"])
+            retired = filter(self._transcript_id, self.st["retired_skill_calls"])
+            retained = (*self.st["skill_calls"], *self.st["skill_call_history"], *retired)
             self.st["overflow_skill_calls"] = dict.fromkeys(retained[:2 * MAX_SKILL_CALL_IDS + 1])
             self._clear_skill_correlation()
             self.st["current_origin"] = None

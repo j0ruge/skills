@@ -653,6 +653,55 @@ class StopTest(HookHarness, unittest.TestCase):
                     self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
                     self.assertFalse(saved["attribution_closed"])
 
+    def test_invalid_retired_id_does_not_break_correlation_overflow(self):
+        for case in ("intact", "object_item", "list_item", "invalid_scalars", "missing",
+                     "object_field", "string_field", "null_field"):
+            with self.subTest(case=case), self.sub_world() as world:
+                old = identified_load("irrelevante", world.other_skill, "msg_old", "toolu_old")
+                active = identified_load("codereview:coderabbit-pr", world.mkt_skill,
+                                         "msg_active", "toolu_active")
+                pending = [
+                    identified_load("irrelevante", world.other_skill, f"msg_{i}", f"toolu_{i}")[0]
+                    for i in range(rw.MAX_SKILL_MESSAGES - 1)
+                ]
+                self.write(old[:1], active, tool(), pending, compact=True)
+                out, saved = self.checked_stop(mode="plan")
+                self.assertIsNone(out)
+                self.assertFalse(saved["skill_correlation_lost"])
+                self.assertEqual(saved["retired_skill_calls"], ["toolu_old"])
+                expected = set(saved["skill_calls"]) | set(saved["skill_call_history"]) | {"toolu_trigger"}
+                variants = {
+                    "object_item": [{"id": "toolu_bad"}, "toolu_old"],
+                    "list_item": [["toolu_bad"], "toolu_old"],
+                    "invalid_scalars": [7, None, "", "bad id", "toolu_old"],
+                    "object_field": {"toolu_old": True},
+                    "string_field": "toolu_old",
+                    "null_field": None,
+                }
+                if case == "missing":
+                    del saved["retired_skill_calls"]
+                elif case in variants:
+                    saved["retired_skill_calls"] = variants[case]
+                if isinstance(saved.get("retired_skill_calls"), list):
+                    expected.add("toolu_old")
+                path = world.data / "sessions/s1.json"
+                path.write_text(json.dumps(saved), encoding="utf-8")
+                trigger = identified_load("irrelevante", world.other_skill, "msg_trigger", "toolu_trigger")
+                self.write(trigger[:1], tool(error=True), compact=True)
+                out, final = self.checked_stop(mode="plan")
+                self.assertIsNone(out)
+                self.assertEqual(final["current"], saved["current"])
+                self.assertFalse(final["attribution_closed"])
+                self.assertTrue(final["skill_correlation_lost"])
+                self.assertEqual(final["retired_skill_calls"], [])
+                self.assertEqual(set(final["overflow_skill_calls"]), expected)
+                entry = final["skills"]["full:codereview"]
+                self.assertEqual((entry["work"], entry["friction"], entry["reviews"]), (2, 1, 0))
+                out, final = self.checked_stop()
+                self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                self.assertEqual(final["skills"]["full:codereview"]["reviews"], 1)
+                self.assertIsNone(self.checked_stop()[0])
+
     def test_invalid_direct_call_history_does_not_break_stop(self):
         for invalid, bad_snapshot in ((None, False), ([], False), (7, True), ("toolu_old", False)):
             with self.subTest(invalid=invalid, bad_snapshot=bad_snapshot), self.sub_world() as world:

@@ -38,6 +38,8 @@ inválido volta vazio, sem zerar o offset, a atribuição ou os contadores.
 O hook guarda à parte até 1.024 IDs aposentados dentro da janela.
 Só entram nessa lista IDs com donos conhecidos e comprovadamente antigos. Ao
 reaparecer numa chamada nova, um ID deixa de provar que o metadado é antigo.
+Se o campo salvo não for uma lista, o Stop o trata como vazio. Na transição,
+ignora itens que não são IDs válidos e conserva os demais dentro do teto.
 Uma tentativa irrelevante não descarta o slash explícito enquanto aguarda o
 caminho da skill. Uma carga externa que encerra a atribuição expira o slash
 se a chamada externa for comprovadamente posterior. Um slash digitado depois
