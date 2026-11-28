@@ -282,6 +282,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r31.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 
+- [ ] **Missão registra duas autoridades para o merge** —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/00-missao.md:84` (`decisão pendente do mantenedor`) —
+  a pendência preserva a regra do piloto, mas a seção de campanha descreve o merge delegado.
+  Direção: separar a decisão histórica das condições do merge delegado.
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r32.md` —
+  descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
+
 ### Documentação da loja
 
 - [ ] **Separar o histórico de releases da tabela de plugins no README** —
