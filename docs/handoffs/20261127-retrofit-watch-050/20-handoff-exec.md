@@ -147,12 +147,10 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
 
 ## Boot da próxima fase
 
-Para QA, leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Comece pela célula R11.
-As regressões mudam o destino depois de validar a origem, comparam o checkout e o `.git`, e tentam retomar com origem declarada divergente, ramo incorreto ou trava incompleta.
+Para QA, leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Comece pelos Checks R12 e R13, que conferem o caminho da trava, a origem sob mudança de ramo e a preservação do marcador. Depois repita os Checks anteriores e a jornada da QA em fixture.
 Para reproduzir a jornada de bare local com HOME isolado, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py`.
 Não é preciso preparar remotos reais nem iniciar serviços. Para as regressões dirigidas, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests:plugins/retrofit-skill/tests python3 -B -m unittest test_fixture_private test_lean_auto test_lean_window test_lean_live test_lean_batch test_lean_gate test_auto_docs test_modo_autonomo`.
 
-Leia `00-missao.md`, `01-plano.md` e `checkpoint.md`. Comece pelos Checks R12 e R13, que conferem o caminho da trava, a origem sob mudança de ramo e a preservação do marcador. Depois repita os Checks anteriores e a jornada da QA em fixture.
 Desarme `GIT_DIR` e `GIT_WORK_TREE` do runner antes de executar testes que criam repos.
 A jornada que muda para o usuário é o Stop de uma skill em repo listado, seguido de pedido, selo, revisão e porta.
 Comece com `PrivateWorld` em `plugins/retrofit-watch/skills/retrofit-watch/tests/fixture_private.py` e
