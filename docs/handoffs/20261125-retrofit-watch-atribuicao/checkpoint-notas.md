@@ -445,3 +445,4 @@
 - 2026-11-27 22:24 · R14 sabotage: normalização-do-ID-de-chamada-em-um-só-ponto → active_call_failure_without_message_origin ficou vermelho
 - 2026-11-27 22:24 · R14 sabotage: isolamento-da-ordem-do-slash-no-replay-parcial → resumed_slash_keeps_prior_call_order_from_old_state ficou vermelho
 - 2026-11-27 22:24 · R14 · 5459e8c: cinco regressões duráveis, 28 mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 124 do hook, 16 Checks e F1 verdes. As receitas de r9 e r10 passaram com Git de fixture no ambiente. Provas nativas não repetidas.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 22:27 · written by the runner
