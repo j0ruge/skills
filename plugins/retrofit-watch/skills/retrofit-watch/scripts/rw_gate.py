@@ -891,7 +891,7 @@ def _private_changelog(p):
 
 
 def _private_approval(p):
-    p.patch = rw_store.patch_id(p.worktree)
+    p.patch = rw_store.patch_id(p.worktree, private=True)
     approval = p.private_approval
     if approval is not None:
         if (approval["id"], approval["lote"], approval.get("patch")) == (p.rid, p.lote, p.patch):
@@ -925,7 +925,8 @@ def _private_still(p):
     found = _g_still(p) or _g_clean(p) or _g_place(p)
     if found:
         return found
-    if p.git("rev-parse", rw_store.BASE_REF).strip() != p.base or rw_store.patch_id(p.worktree) != p.patch:
+    if (p.git("rev-parse", rw_store.BASE_REF).strip() != p.base
+            or rw_store.patch_id(p.worktree, private=True) != p.patch):
         return "revisao-desatualizada", "a base ou o patch mudou durante a porta"
     return None
 

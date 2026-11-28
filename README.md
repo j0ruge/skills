@@ -475,7 +475,8 @@ A Stop hook notices when one of **our** skills did real work in the session and 
 
 Para adotar uma skill local, liste a origem em `lean_auto`, crie o clone dedicado
 com `live-setup` e comece em ensaio (`auto-dry`). O checkout de desenvolvimento
-continua livre. A porta roda o pre-push e conserva o remoto até a aprovação do patch.
+continua livre. A porta roda o pre-push e conserva o remoto até a aprovação do patch,
+que cobre todos os arquivos alterados da skill local.
 Em `auto`, a publicação sem aprovação exige 10 publicações autônomas da loja,
 14 dias e zero vazamentos na janela v2. Um revert da loja ou de repo listado
 reinicia a janela. Veja o [contrato do clone, do selo e da publicação](docs/retrofit-watch/clone-dedicado.md).

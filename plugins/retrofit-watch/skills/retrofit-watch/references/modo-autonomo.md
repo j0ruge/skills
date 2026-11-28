@@ -208,8 +208,8 @@ palavra dele:
 
 - **liberar:** `retrofit_watch.py approve <id> <lote>`, depois `retrofit_watch.py publish <id> <lote>`. A
   aprovação substitui só o motivo da última recusa, e só se ele é substituível. A porta roda todas as
-  outras guardas de novo. No privado, `approve` registra o `patch` do lote segurado. Uma
-  emenda que altere o patch invalida as aprovações anteriores. Se ela segurar de novo por outro motivo, leve esse motivo ao dono.
+  outras guardas de novo. No privado, `approve` registra o `patch` do lote segurado, que cobre todos os arquivos
+  alterados da skill. Emenda que altere o patch invalida as aprovações anteriores. Se segurar por outro motivo, leve-o ao dono.
 - **descartar:** `retrofit_watch.py discard <id> <item>`. O motivo padrão é `descartado-pelo-dono`. O
   ramo e o worktree ficam.
 
@@ -225,7 +225,7 @@ Os casos que pedem mais do que isso:
     segunda passada.
   - "público": rode `python3 "<worktree>"/scripts/anonymity-gate.py --publico-add <termo>`. Depois,
     `git -C "<worktree>" commit -a --amend --no-edit`. A mudança da lista entra no commit emendado, e a
-    mensagem fica a mesma. O `patch` não conta as listas e conta a mensagem: assim ele não muda, e a
+    mensagem fica a mesma. No full, o `patch` não conta as listas e conta a mensagem: assim ele não muda, e a
     segunda passada continua valendo.
   - Os dois scripts gravam a lista ao lado deles: a do worktree, nunca a do checkout compartilhado. Uma
     lista mudada fora do commit segura o lote com `arvore-suja`.

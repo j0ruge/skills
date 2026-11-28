@@ -506,14 +506,14 @@ def _git_bytes(args, cwd, env, what):
     return out
 
 
-def patch_id(worktree, base=BASE_REF, message=None):
+def patch_id(worktree, base=BASE_REF, message=None, *, private=False):
     """O sha256 do que o ramo muda (D20 e M13), sobre os bytes de `git diff -U0 --no-renames
-    origin/main...HEAD` sem os dois arquivos de lista: as linhas `+` e `-` (os nomes de arquivo vêm nas
+    origin/main...HEAD` (só no full, sem as duas listas da loja): as linhas `+` e `-` (nomes nas
     `+++` e `---`), as de PATCH_HEADERS, e a mensagem de cada commit. O rebase não o muda; mudar
     conteúdo, nome, modo ou mensagem muda. `base` troca o `origin/main` (a porta mede o commit já
     publicado contra `HEAD^`); `message`, em bytes, troca a mensagem lida do log."""
     env = git_env(neutral=True)
-    exclude = [f":(exclude){f}" for f in LIST_FILES]
+    exclude = [] if private else [f":(exclude){f}" for f in LIST_FILES]
     diff = _git_bytes(["-c", "core.quotePath=false", "diff", "-U0", "--no-renames", "--text", "--no-ext-diff",
                        "--no-textconv", "--src-prefix=a/", "--dst-prefix=b/", "--no-color", "--no-relative",
                        f"{base}...HEAD", "--", ".", *exclude], worktree, env, "patch")
@@ -697,7 +697,7 @@ def seal(ctx, rid, lote, licoes, fases):
         raise StoreError(f"o ramo de {rid}/{lote} nao tem commit acima do {BASE_REF}")
     commit = _git(["rev-parse", "HEAD"], worktree, env, "selo").strip()
     versao = None if repo else _version(worktree, retrofit["plugin"])
-    patch = patch_id(worktree)
+    patch = patch_id(worktree, private=bool(repo))
     # O lote privado nunca fornece os scripts que examinam o próprio diff.
     with clean_tree(ctx, store_clone(ctx) if repo else worktree, BASE_REF if repo else commit) as tools:
         termos = [] if repo else new_terms(worktree, tools)

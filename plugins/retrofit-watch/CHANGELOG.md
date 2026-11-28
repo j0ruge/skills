@@ -7,6 +7,8 @@
 - O ensaio roda o pre-push do repo e conserva o remoto. Sem aprovação vinculada ao patch,
   a publicação exige 10 publicações autônomas da loja, 14 dias e zero vazamentos.
   Um revert da loja ou de repo listado reinicia a janela.
+- O selo, a revisão e a aprovação privados cobrem todos os arquivos alterados
+  da skill, inclusive caminhos que o fluxo full reserva às listas da loja.
 - Após publicar, registra o SHA em `local/ci` e avança o clone com `--ff-only`.
   O startup assistido tenta o avanço e informa a falha anterior quando houver.
 

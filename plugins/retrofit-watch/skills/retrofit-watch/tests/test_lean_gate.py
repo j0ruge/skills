@@ -139,6 +139,28 @@ class GateTest(unittest.TestCase):
         self.edit(changelog=False)
         self.held("sem-changelog")
 
+    def test_private_patch_includes_store_list_paths(self):
+        paths = ("scripts/public-names.txt", "scripts/private-names.sha256")
+        self.w.commit_on_origin({
+            "scripts/SKILL.md": (self.w.skill / "SKILL.md").read_text(),
+            "scripts/CHANGELOG.md": "# Histórico\n",
+            **dict.fromkeys(paths, "Conteúdo inicial da fixture.\n"),
+        }, "Semeia uma skill em scripts")
+        with (mock.patch.multiple(sys.modules[__name__], SKILL="scripts", PASTA="scripts"),
+              mock.patch.object(self.effects, "push_private", side_effect=AssertionError("a prova não publica"))):
+            self.open_batch()
+            self.edit(path=paths[0])
+            for path in paths:
+                self.held("auto-dry")
+                auto.approve(self.ctx, self.rid, SKILL)
+                with (self.wt / path).open("a", encoding="utf-8") as fh:
+                    fh.write("Nova linha da fixture.\n")
+                self.w.git(self.wt, "commit", "-qa", "--amend", "--no-edit")
+                refusal = gate.refuse(self.ctx, self.rid, SKILL, [])
+                self.assertEqual(refusal and refusal[0], "revisao-desatualizada", (path, refusal))
+                self.assertEqual(self.remote_head(), self.base)
+                self.review()
+
     def test_out_of_scope(self):
         self.edit(path="scripts/gate_stub.py", text="# fora da pasta")
         self.held("escopo")

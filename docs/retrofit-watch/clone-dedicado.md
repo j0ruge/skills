@@ -41,7 +41,9 @@ Depois do selo o revisor grava `diff.json` para o patch da skill. `publish` conf
 revisão e executa o pre-push do repo no worktree, com o mesmo SHA e refs do push.
 Sem prova da janela v2, o gate verde deixa o lote em `auto-dry` e conserva o remoto.
 O dono pode liberar esse motivo com `approve <id> <lote>`. A permissão vale para o
-patch segurado. Emenda que o altera exige nova revisão e aprovação quando aplicável.
+patch segurado, que inclui todos os arquivos alterados do lote. As exclusões das listas
+da loja valem apenas no fluxo full. Emenda que altera o patch exige nova revisão e
+aprovação quando aplicável.
 
 Depois do push, o registro preserva o SHA mesmo quando `local/ci` ou o avanço do clone
 falham. Rode `publish` novamente para concluir esses efeitos sem repetir o push.

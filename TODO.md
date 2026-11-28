@@ -28,13 +28,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 ### Rulings do merge da retrofit-watch 0.4.0
 
 - [ ] **O commit autônomo sem guarda de autor** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:1276` (`_mark_approved`) — nenhuma guarda
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:1277` (`_mark_approved`) — nenhuma guarda
   lê o autor nem o committer, e o `--amend` mantém autor e data do HEAD, não os do `reviewed`. Um `includeIf`
   com outro e-mail passa. Anterior ao plano: a spec 5.6 só nomeia o diff e a mensagem (Ruling FR-1).
   Direção: uma guarda que confere autor e committer, ou o `commit-tree` com o autor explícito.
   Fonte: `docs/retrofit-watch/2026-11-24-pendencias-0.4.0.md` (T8-1) — descoberto por `revisor final` (2026-11-24)
 - [ ] **Os hooks globais no amend da aprovação** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:1294` (`--amend`) — o `commit --amend` do
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:1295` (`--amend`) — o `commit --amend` do
   `_mark_approved` roda os hooks do `core.hooksPath` global. Um `commit-msg` global mudaria a mensagem depois
   da camada 1. Nesta máquina nenhuma config global ou de sistema tem a chave (Ruling FR-2).
   Direção: `-c core.hooksPath=<devnull>` no amend, ou o `commit-tree`, com o par.
@@ -179,7 +179,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: `rows.get` com mensagem; `assertIn("--retro", rw.CLI_USAGE["discard"][0])`.
   Fonte: codereview r1 #21 e #22 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **O CHANGELOG 0.4.0 cita só o fetch e o push** —
-  `plugins/retrofit-watch/CHANGELOG.md:123` (`push`) — o ponto da config de sistema cita só o `fetch` e o
+  `plugins/retrofit-watch/CHANGELOG.md:134` (`push`) — o ponto da config de sistema cita só o `fetch` e o
   `push` da porta, e o `prepare` também usa o `remote_env` (r1 #24).
   Direção: "todo git que fala com o `origin`".
   Fonte: codereview r1 #24 — descoberto por `codereview r1` (2026-11-24)
@@ -213,7 +213,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r1.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 - [ ] **A publicação do patch desloca uma âncora do backlog da retrofit-watch** —
-  `plugins/retrofit-watch/CHANGELOG.md:123` (`push`) — a entrada 0.4.1 deslocou a âncora original da linha 66.
+  `plugins/retrofit-watch/CHANGELOG.md:134` (`push`) — a entrada 0.4.1 deslocou a âncora original da linha 66.
   O linter sem baseline detecta o desvio. Direção: atualizar a referência do item sobre fetch e push.
   A primeira correção ficou em `9e79cb6`. RESOLVED by 9e79cb6
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r1.md` —
@@ -278,7 +278,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
 - [ ] **A nota de release torna exclusiva a proteção por ID aposentado** —
-  `plugins/retrofit-watch/CHANGELOG.md:31` (`prova de ID aposentado`) —
+  `plugins/retrofit-watch/CHANGELOG.md:36` (`prova de ID aposentado`) —
   a sonda de r23 também preserva a monitorada com metadado externo atrasado e vínculo da mesma mensagem.
   Direção: distinguir as duas provas de preservação. RESOLVED by 5459e8c
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r23.md` —
