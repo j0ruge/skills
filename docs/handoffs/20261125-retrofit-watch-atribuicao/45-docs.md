@@ -53,7 +53,7 @@ A base do PR é `main`, conforme `.sdd/config.sh`.
 
 ## Pendências e decisões do mantenedor
 
-A aprovação do merge continua com o mantenedor, conforme `00-missao.md` e `aceite-do-plano.md`. Não há decisão técnica pendente desta fase.
+O checklist de DOCS está completo. O merge segue as condições vigentes em [Campanha e delegação](00-missao.md#campanha-e-delegação).
 
 ## Riscos e não-feitos
 

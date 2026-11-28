@@ -59,4 +59,4 @@ reuso_pre_ativacao_continua=codereview,silêncio
 reuso_pre_ativacao_retomada=codereview,silêncio
 ```
 
-No Red de `762f440`, os dois pares de ordem imprimiram `graphify,codereview` e os dois pares de reuso imprimiram `codereview,codereview`. O mesmo resultado foi confirmado em `02e0331` pelo `check-checkpoint.sh --red` antes da retomada. O merge cabe ao mantenedor.
+No Red de `762f440`, os dois pares de ordem imprimiram `graphify,codereview` e os dois pares de reuso imprimiram `codereview,codereview`. O mesmo resultado foi confirmado em `02e0331` pelo `check-checkpoint.sh --red` antes da retomada. As condições de merge estão na [missão](00-missao.md#campanha-e-delegação).
