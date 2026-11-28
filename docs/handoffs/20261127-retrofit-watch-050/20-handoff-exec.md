@@ -3,8 +3,8 @@ missao: 20261127-retrofit-watch-050
 fase: EXEC
 status: done
 sessao: 01a2214d-5b73-78b3-ad62-9dc2c34de288
-data: 2026-11-28 05:42
-gate: "Em 38c46e3, env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval \"$TEST_CMD\"' → rc 0. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos. A célula R7 do checkpoint imprimiu 0, com as regressões HTTPS e SSH e a sonda de QA."
+data: 2026-11-28 05:51
+gate: "Em b5512cb0010b33d6fde6db76dfe3aad1b1adc4a2, TEST_CMD rc 0 (154 testes da loja, 3 pulados; 144 do Stop), 12 Checks, 135 testes dirigidos, jornada da QA e regressão de Stop verdes. As três provas nativas passaram no host Linux. Camada 1 limpa contra origin/main."
 ---
 
 # Handoff — EXEC — Retrofit de skills locais listadas
@@ -14,16 +14,16 @@ gate: "Em 38c46e3, env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBY
 
 ## TL;DR
 
-I1–I4 e R1–R7 concluídos. O status privado preserva a porta HTTPS na URL da API e usa hostname sem porta.
-A regressão e a sonda confirmaram o mesmo SHA no bare, no status capturado e no clone.
-TEST_CMD e Check R7 passaram. QA deve repetir as provas da rodada e validar a distribuição nativa no host.
+I1–I4 e R1–R8 concluídos. O clone dedicado só fica disponível depois da trava e da
+verificação da origem no destino final. A jornada em fixture, os 12 Checks e a distribuição
+nativa passaram. A camada 1 está limpa em `b5512cb`.
 
 ## Estado do repo
 
 - **Branch:** `feat/retrofit-watch-050-loja` — base de comparação `origin/main` local.
-- **Último commit de produto:** `38c46e3` — preserva a porta HTTPS no status privado.
+- **Último commit de produto:** `af9095a` — preserva destinos concorrentes ao preparar o clone.
 - **Working tree:** limpo após o commit de checkpoint, notas e handoff.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `38c46e3`. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `b5512cb`. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos.
 - **E2E:** sem `E2E_CMD` na config. Jornada automatizada em `sonda-qa.py` com remotos bare de fixture. Nenhum deploy ou repo privado real.
 
 ## O que foi feito
@@ -63,11 +63,18 @@ TEST_CMD e Check R7 passaram. QA deve repetir as provas da rodada e validar a di
   implementação falharam nas regressões, com controles íntegros antes e depois, grupo próprio,
   teto de 20 s e 512 MiB por processo. README, CHANGELOG, contrato do clone e referência acompanham R7.
 
+### Correções anteriores à próxima revisão
+
+- `af9095a` — R8 prepara o clone e a trava em diretório temporário. O Red reproduziu o clone visível antes da trava e a perda de um arquivo criado no destino. O Green preservou a retentativa, o arquivo local e a validação da origem efetiva.
+- `3162507` — a referência da retro privada define a auditoria a partir da loja configurada e mantém o alvo na pasta da skill.
+- `b5512cb` — o plano liga a revisão exata da Ponytail e as fixtures SSH usam endereços de teste. A camada 1 da branch passou.
+- As receitas citadas na r3 têm aspas de shell nos blobs de `9432d56`. A leitura dos bytes confirmou o argumento do scanner e a receita literal de `40-review-r2.md:98` executou o TEST_CMD com rc 0 em `b5512cb`. Os escapes necessários permanecem nos campos YAML.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Onze Checks e seus commits. |
+| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Doze Checks e seus commits. |
 | `docs/retrofit-watch/clone-dedicado.md` | Contrato de clone, selo, ensaio, publicação e avanço. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py` | Cópia de distribuição com contratos dos dois plugins e controles do catálogo. |
 | `KAIZEN_LOG.md` e `TODO.md` | Medida da fixture, limite da adoção e achados fora do escopo. |
@@ -131,25 +138,14 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
   do Stop verdes no TEST_CMD de cada revisão, foram cobertos 555 testes da candidata e 554 da base
   `d28e095`, com as mesmas 7 falhas e 2 erros. Os subprocessos ainda veem o marcador.
   O Check de release não precisa de Git no temporário.
-- As três provas nativas falharam antes de iniciar o cliente isolado. O Bubblewrap não pôde criar
-  o namespace. Falta repetir no host da QA.
-- Em `def54f4`, a camada 1 desde a base da r2 está limpa. A comparação da branch inteira com
-  `origin/main` ainda retorna rc 1 por três sinalizações preexistentes. QA deve reavaliar
-  esse gate antes de encaminhar a entrega.
-- No Git delegado, `python3 scripts/anonymity-gate.py --camada1 --base 62e7e8f --repo "$GIT_DIR"`
-  retornou rc 0 em `38c46e3`. Com base `1f1b008`, o scanner retorna os mesmos dois alertas
-  nas URLs SSH públicas de fixture em `test_lean_auto.py:126–127` no estado de entrada
-  `62e7e8f` e no produto R7. A medição com o Git delegado corrige o registro anterior de R6.
+- As três provas nativas passaram no host Linux em `b5512cb`, fora do sandbox de EXEC.
+- A camada 1 sobre `origin/main` passou em `b5512cb`. As sinalizações sintéticas anteriores foram resolvidas com mudanças nas referências e nos testes.
+- A suíte ampla no host teve a mesma falha preexistente de atribuição no teste da segunda skill full tanto na base (487 testes) quanto no candidato da QA (555 testes).
 
 ## Achados fora de escopo
 
-- Caminhos de auditoria do executor privado (achado 7 da revisão) → `TODO.md`, item sobre
-  os caminhos da loja no worktree errado. Não integra R3.
 - Aprovação pública da v1 não vinculada ao patch revisto → `TODO.md`, rulings da retrofit-watch 0.4.0.
 - Segunda skill full do mesmo plugin ausente no estado, inclusive na base → `TODO.md`, recorrência I4.
-- Camada 1 sobre `origin/main` ainda sinaliza a impressão digital pública do plano e duas URLs
-  SSH de fixture anteriores à rodada → `TODO.md`, minors adiados. R5 removeu os dois alertas
-  novos da r2 sem mudar o scanner. A recorrência das duas URLs de R6 foi registrada no mesmo item.
 - Corrida residual após a prova de ancestralidade → `TODO.md`, item sobre mover outro ramo
   após a última conferência. Não integra R5.
 - kit: o EXEC recebeu as variáveis `GIT_DIR` e `GIT_WORK_TREE` da cópia privada do runner
