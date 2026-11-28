@@ -510,3 +510,4 @@
 - 2026-11-27 23:31 · R18 · 7b1da02: Red nas duas sondas e nos três testes novos. A suíte intermediária detectou mudança no registro de R17. A versão final conserva a observação e bloqueia só o vínculo. TEST_CMD com 154 testes da loja (3 pulados) e 132 do hook, 20 Checks e F1 verdes, quatro testes de release e 14 mutações detectadas. Provas nativas não repetidas.
 - 2026-11-27 23:31 · R18 · O primeiro TEST_CMD herdou o Git isolado em fixtures que esperavam repositórios próprios. O HEAD foi recomposto pelo reflog com a árvore idêntica e a ref de teste foi removida. O TEST_CMD com GIT_DIR e GIT_WORK_TREE removidos passou antes da primeira edição.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 23:34 · written by the runner
+- 2026-11-27 23:40 · r28, achado 1 → R19 · o snapshot de transição trava com item aposentado inválido; duas variantes reproduzidas no HEAD, ambas passam na base.
