@@ -12,6 +12,7 @@
 - O pedido privado vincula o lote ao destino Git efetivo. Fora do GitHub público
   nas portas padrão, o mesmo slug não torna transportes ou caminhos diferentes equivalentes.
   A porta aponta o `local/ci` ao servidor conferido, sem repassar à API a porta do SSH.
+  Em HTTPS com porta não padrão, usa a URL absoluta da API e passa ao `gh` o hostname sem porta.
 - Após publicar, registra o SHA em `local/ci` e avança o clone com `--ff-only`.
   Confere novamente o ramo e a árvore após o fetch. O startup assistido avisa por
   `dono/repo` se o último avanço falhou ou se o registro estiver inválido.

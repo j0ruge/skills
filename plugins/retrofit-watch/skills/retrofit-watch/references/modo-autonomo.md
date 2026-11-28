@@ -162,7 +162,8 @@ com os argumentos, as refs e os SHAs do push real. A janela v2 incompleta manté
 ensaio. Com o gate verde, o motivo é `auto-dry`, acompanhado do resumo. O SHA remoto não muda.
 Com a janela cumprida ou a aprovação do patch para esse motivo, o Git executa novamente o
 pre-push e pode recusar. A porta rejeita mudanças de origem e direciona `local/ci` ao servidor
-validado sem repassar a porta do transporte SSH à API. O lote publicado leva `repo` e o SHA
+validado sem repassar a porta do transporte SSH à API. Uma porta HTTPS não padrão fica
+na URL absoluta da API, não em `--hostname`. O lote publicado leva `repo` e o SHA
 correspondente. A porta avança o clone dedicado. Sem status ou avanço, a publicação
 continua registrada com rc 4 e `status-falhou` ou `clone-atras`. Repetir `publish`
 não refaz o push.

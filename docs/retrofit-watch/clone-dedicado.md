@@ -59,7 +59,8 @@ aprovação quando aplicável.
 Depois do push, o registro preserva o SHA mesmo quando `local/ci` ou o avanço do clone
 falham. A porta indica ao `gh` o servidor da origem conferida. Uma porta explícita de
 SSH continua valendo para o Git, mas não é repassada à API de status. Uma porta
-HTTPS explícita não padrão é preservada.
+HTTPS explícita não padrão fica na URL absoluta da API (`/api/v3/repos/…/statuses/…`).
+O argumento `--hostname` do `gh` identifica o servidor sem porta.
 Rode `publish` novamente para concluir esses efeitos sem repetir o push.
 Em sessões assistidas, o startup lança o avanço em segundo plano. Os avisos são
 separados por slug completo, mesmo que dois repos impliquem o mesmo destino de clone.

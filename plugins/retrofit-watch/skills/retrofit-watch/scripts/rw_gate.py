@@ -1137,8 +1137,12 @@ printf '%s\n' "$ref" | "$hook" "$@"
     def status(self, slug, sha, description, *, host):
         if not rw.valid_slug(slug):
             return False, "repo inválido para status"
-        rc, out = rw_store.run(["gh", "api", "-X", "POST", f"repos/{slug}/statuses/{sha}",
-                                "--hostname", host,
+        endpoint = f"repos/{slug}/statuses/{sha}"
+        hostname, _, port = host.partition(":")
+        if port:
+            endpoint = f"https://{host}/api/v3/{endpoint}"
+        rc, out = rw_store.run(["gh", "api", "-X", "POST", endpoint,
+                                "--hostname", hostname,
                                 "-f", "state=success", "-f", "context=local/ci",
                                 "-f", f"description={description[:140]}"],
                                env=rw_store.git_env(home=self.ctx.home))
