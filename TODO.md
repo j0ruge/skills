@@ -209,6 +209,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: guardar os resultados junto do commit e do comando que os produziu.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r5.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
+  RECURRED 1: chewiesoft-marketplace/20261127-retrofit-watch-050 (2026-11-28)
 
 - [ ] **A receita histórica de suíte do plano herda o Git privado do runner** —
   `docs/handoffs/20261125-retrofit-watch-atribuicao/01-plano.md:121` (`TEST_CMD`)
