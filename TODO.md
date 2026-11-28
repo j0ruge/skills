@@ -411,6 +411,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r1.md` —
   descoberto por `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
 
+- [ ] **As receitas dos handoffs preservam escapes indevidos ao copiar** —
+  `docs/handoffs/20261127-retrofit-watch-050/20-handoff-exec.md:87` (`--repo`) —
+  o caminho do scanner recebe aspas literais e o comando da suíte falha antes de rodar.
+  Direção: usar aspas de shell nas receitas Markdown e conservar os escapes necessários no YAML.
+  Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r3.md` —
+  descoberto por `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
+
 ### Clone dedicado da retrofit-watch
 
 - [ ] **O avanço pode mover outro ramo depois da última conferência** —
