@@ -59,9 +59,11 @@ poderia ter ativado a skill salva, ele também entra na comparação. A prova
 exige uma chamada única para o metadado e usa a ordem das mensagens, não a
 chegada dos metadados. Sem essa prova, a aposentadoria não é importada.
 Para essa comparação, a leitura guarda temporariamente até 64 mensagens e
-1.024 IDs de chamada, com teto de 2 MiB para as strings dos IDs. Um caminho
-exclusivo e vinculado, registrado no cache legado, ainda pode confirmar
-uma carga posterior.
+1.024 IDs de chamada, com teto de 2 MiB para as strings dos IDs. Ao preencher
+as 64 posições, novas mensagens ficam sem prova de ordem, mas as posições
+já registradas continuam disponíveis. Reutilizar um ID de chamada invalida
+sua prova de ordem mesmo depois desse limite. Um caminho exclusivo e
+vinculado, registrado no cache legado, ainda pode confirmar uma carga posterior.
 
 Se a origem gravada tiver formato inválido, o Stop descarta essa origem, preserva
 a atribuição e os contadores e continua a partir do offset salvo.

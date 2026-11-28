@@ -51,6 +51,8 @@
   anteriores à mensagem de sua chamada, além das demais cargas compatíveis.
   Na comparação, vale a primeira ocorrência de cada mensagem do assistente, mesmo se
   começar por texto. O vínculo com o ID da chamada ainda exige uma chamada Skill válida.
+  Ao preencher o teto de posições, o replay conserva a ordem já comprovada e não atribui
+  posição a mensagens novas. O reuso de ID de chamada ainda invalida a prova de ordem.
   Acima de 2 MiB por registro, o hook segue do offset salvo sem importar vínculos parciais.
   Sem atribuição ativa, esse fallback também ignora metadado atrasado sem vínculo.
 

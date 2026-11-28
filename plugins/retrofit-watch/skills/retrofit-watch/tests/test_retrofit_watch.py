@@ -1268,7 +1268,8 @@ class StopTest(HookHarness, unittest.TestCase):
                             ctx = world.ctx()
                             with rw.State(ctx, "s1") as state:
                                 rw.recover_legacy_correlation(world.transcript, state.data, ctx)
-                                self.assertEqual(state.data["retired_skill_calls"], [])
+                                expected = ["toolu_external"] if cap == "MAX_SKILL_MESSAGES" else []
+                                self.assertEqual(state.data["retired_skill_calls"], expected)
 
                 out, migrated = self.checked_stop()
                 older = case in ("older", "message_order", "reused_marker", "first_candidate")
@@ -1345,7 +1346,8 @@ class StopTest(HookHarness, unittest.TestCase):
                         ctx = world.ctx()
                         with mock.patch.object(rw, cap, limit), rw.State(ctx, "s1") as state:
                             rw.recover_legacy_correlation(world.transcript, state.data, ctx)
-                            self.assertNotIn("toolu_external", state.data["retired_skill_calls"])
+                            self.assertEqual("toolu_external" in state.data["retired_skill_calls"],
+                                             case == "message_limit")
                         continue
                     if split:
                         out, migrated = self.checked_stop()
@@ -1356,6 +1358,53 @@ class StopTest(HookHarness, unittest.TestCase):
                     self.assertEqual("toolu_external" in after["retired_skill_calls"], older)
                     self.assertEqual(after["attribution_closed"], not older)
                     if older:
+                        self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                    else:
+                        self.assertIsNone(out)
+                        self.assertEqual(after["skills"]["full:codereview"], credits)
+
+    def test_legacy_replay_keeps_proven_order_after_text_limit(self):
+        for case in ("known", "last_slot", "unknown_owner", "later_external",
+                     "reused_owner", "reused_external"):
+            for split in (False, True):
+                with self.subTest(case=case, split=split), self.sub_world() as world:
+                    owner = identified_load("coderabbit-pr", world.mkt_skill, "owner", "toolu_owner")
+                    external = identified_load("brainstorming", world.other_skill, "external", "toolu_external")
+                    if case == "later_external":
+                        self.write(owner[:2], external[:2], compact=True)
+                    else:
+                        self.write(external[:2], compact=True)
+                    if case in ("known", "reused_owner", "reused_external"):
+                        self.write(owner[:2], compact=True)
+                    text_count = rw.MAX_SKILL_MESSAGES - (2 if case == "last_slot" else 1)
+                    for index in range(text_count):
+                        row, = assistant_text("Bloco sem carga.")
+                        row["message"]["id"] = f"text_{index}"
+                        self.write([row], compact=True)
+                    if case in ("last_slot", "unknown_owner"):
+                        self.write(owner[:2], compact=True)
+                    row, = assistant_text("Mais um bloco sem carga.")
+                    row["message"]["id"] = "extra"
+                    self.write([row], compact=True)
+                    if case in ("reused_owner", "reused_external"):
+                        repeated = owner if case == "reused_owner" else external
+                        self.write(repeated[:2], compact=True)
+                    for index in range(2):
+                        self.write(identified_load("codereview:coderabbit-pr", world.mkt_skill,
+                                                   f"new_{index}", f"toolu_new_{index}"), compact=True)
+                    self.write(owner[2:], compact=True)
+                    credits = self.save_legacy_owner(world.mkt_skill)
+                    preserves = case in ("known", "last_slot")
+
+                    if split:
+                        out, migrated = self.checked_stop()
+                        self.assertIsNone(out)
+                        self.assertEqual(migrated["skills"]["full:codereview"], credits)
+                    self.write(external[2:], tool(error=True), compact=True)
+                    out, after = self.checked_stop()
+                    self.assertEqual("toolu_external" in after["retired_skill_calls"], preserves)
+                    self.assertEqual(after["attribution_closed"], not preserves)
+                    if preserves:
                         self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
                     else:
                         self.assertIsNone(out)

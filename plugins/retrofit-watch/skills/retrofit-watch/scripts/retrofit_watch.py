@@ -872,7 +872,8 @@ def recover_legacy_correlation(path, st, ctx):
             msg = entry.get("message")
             if entry.get("type") == "assistant" and isinstance(msg, dict) and message_positions is not None:
                 message = self._transcript_id(msg.get("id"))
-                if message is not None and message not in message_positions:
+                if (message is not None and message not in message_positions
+                        and len(message_positions) < MAX_SKILL_MESSAGES):
                     position_bytes += sys.getsizeof(message)
                     message_positions[message] = len(message_positions)
                     self._bound_positions()
@@ -881,7 +882,7 @@ def recover_legacy_correlation(path, st, ctx):
         def _bound_positions(self):
             nonlocal call_positions, message_positions
             # A poda normal pode esquecer o dono antes de seu metadado chegar.
-            if (len(call_positions) > MAX_SKILL_CALL_IDS or len(message_positions) > MAX_SKILL_MESSAGES
+            if (len(call_positions) > MAX_SKILL_CALL_IDS
                     or position_bytes > MAX_LEGACY_RECORD_BYTES):
                 call_positions = message_positions = None
 
