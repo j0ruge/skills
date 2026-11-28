@@ -303,6 +303,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r38.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 
+- [ ] **Resumo de EXEC confunde o alvo da retro na retomada legada** —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:18` (`pedem retro para a externa antiga`) —
+  o metadado externo antigo é ignorado, mas o resumo diz que a retro vai para a externa.
+  Direção: distinguir a carga externa ignorada da monitorada `codereview`, que recebe a retro.
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r39.md` —
+  descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
+
 ### Documentação da loja
 
 - [ ] **Separar o histórico de releases da tabela de plugins no README** —
