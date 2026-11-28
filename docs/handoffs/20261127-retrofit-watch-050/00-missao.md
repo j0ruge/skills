@@ -5,7 +5,7 @@ data: 2026-11-27
 versao: 0.5.0
 branch: feat/retrofit-watch-050-loja
 aprovacao:
-adr: TBD
+adr: docs/adr/0001-retrofit-lean-publicacao.md
 ddd: aplicado
 qa:
 kaizen_log:
@@ -44,7 +44,7 @@ A `retrofit-watch` 0.5.0 reconhece o repo pelo `origin`, prepara um lote por ski
 | c | Autocontenção | ✅ | I1 identifica arquivos, fixture de origem, ambiente, contratos, casos, comando e resultado. |
 | d | Checks vermelhos na base de aprovação | ✗ | Em `7e623fe`, as quatro células executadas individualmente deram `1`, `1`, `1`, `falhou`. O `--check` do kit leu quatro linhas em memória, rc 0. O `--red` deu rc 95 porque o checkpoint em memória fica fora do worktree. Exigir rc 0 no arquivo materializado sobre a base integrada. |
 | e | Versões | ✅ | Pedido do mantenedor fixa `retrofit-watch` 0.5.0 e `retrofit-skill` 0.12.0. `JIRA_ENABLED=false`. |
-| f | ADR alocado | ✗ | Decisão proposta no plano. O relay aloca e vincula o ADR antes da aprovação. |
+| f | ADR alocado | ✅ | A decisão proposta está vinculada em `docs/adr/0001-retrofit-lean-publicacao.md`. |
 
 ## Checklist kaizen (`kaizen-software`)
 
