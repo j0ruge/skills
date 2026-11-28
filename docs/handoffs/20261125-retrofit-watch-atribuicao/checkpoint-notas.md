@@ -607,3 +607,4 @@
 - 2026-11-28 01:38 · R23 sabotage: não repovoar a interseção → test_legacy_replay_preserves_external_after_ignored_owner
 - 2026-11-28 01:38 · R23 sabotage: chamada antiga sem guarda → test_legacy_replay_preserves_external_after_ignored_owner
 - 2026-11-28 01:38 · R23 · f82e1d5. Red em quatro posições e quatro retomadas reais da 0.4.0. TEST_CMD isolado verde com 154 testes da loja (3 pulados) e 141 do hook. Os 25 Checks, F1 e quatro testes de release passaram. Doze degradações do código com grupo próprio, 25 s e 512 MiB. Receita de r34 leu o blob publicado, recusou blob ausente (rc 128) e código vazio (rc 1). Provas nativas não repetidas.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 01:41 · written by the runner
