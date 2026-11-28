@@ -276,7 +276,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 
 - [ ] **Handoff de EXEC não explicita a condição da delegação de merge** —
-  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:421` (`delegação full`) —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:446` (`delegação full`) —
   a condição de vigência e a fonte da autorização não aparecem no handoff, que antes apontava para o mantenedor.
   Direção: explicitar a vigência e vincular a decisão. RESOLVED by b6b1d3c
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r31.md` —
@@ -341,7 +341,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 - [ ] **Receitas de pré-scan da r24 à r27 não isolam o Git** —
   `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r24.md:159` (`scan_secrets.sh`) —
   com o Git da fixture, a revisão é inválida, mas as quatro receitas retornam rc 0 e analisam zero linhas.
-  Direção: isolar a seleção do Git e propagar falha ou contagem divergente nas quatro receitas.
+  Direção: isolar a seleção do Git e propagar falha ou contagem divergente nas quatro receitas. RESOLVED by 1863fc2
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r34.md` — descoberto por
   `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 

@@ -558,3 +558,35 @@
 - 2026-11-28 01:07 · R22 nasce dos achados 1–2 da r34. Com estado real da 0.4.0, o replay perde a prova de metadado antigo e o vínculo de caminho novo confirmado. A sonda saiu com rc 1 e os 23 Checks anteriores passaram.
 - 2026-11-28 01:08 · R22 · Na migração da 0.4.0, recupere fatos comuns aos donos compatíveis sem eleger um dono ambíguo. Se um ID precede todos, preserve a prova limitada de antiguidade válida. Use como evidência de dono único o caminho exclusivo cujo metadado foi comprovadamente registrado no cache legado, preservando o caso de dois caminhos iguais do R21. Mantenha contadores, offset, leitura única e limites. Para as receitas r24–r27 apontadas em 40-review-r34.md, isole Git, propague falhas do diff e confira entrada analisada. Repita R9 a R21 e todos os Checks anteriores.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 01:09 · written by the runner
+- 2026-11-28 01:20 · R22 sabotage: conjunto inicial de IDs → test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_replay_cannot_choose_between_compatible_owners, test_legacy_migration_recovers_active_message_origin
+- 2026-11-28 01:20 · R22 sabotage: caminhos gravados no cache → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: declaração do testemunho → importação do hook falhou sem vínculo nonlocal
+- 2026-11-28 01:20 · R22 sabotage: caminho inicial fora do metadado → test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_migration_recovers_active_message_origin
+- 2026-11-28 01:20 · R22 sabotage: revogação de ID reutilizado → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: origem do scanner-base → test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_replay_cannot_choose_between_compatible_owners, test_legacy_migration_recovers_active_message_origin
+- 2026-11-28 01:20 · R22 sabotage: testemunho compartilhado com skill_path → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: consulta do caminho no cache legado → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: metadado posterior do mesmo alvo → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: revogação por metadado posterior → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: primeiro caminho gravado → test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 01:20 · R22 sabotage: consumo da primeira ocorrência → test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 01:20 · R22 sabotage: leitura do metadado pelo scanner-base → test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 01:20 · R22 sabotage: descarte do caminho ao sair do metadado → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: testemunho compartilhado com _watch → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: exigência de origem para a evidência antiga → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: inicialização de prova pelo primeiro dono → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: IDs anteriores ao primeiro dono → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: comparação entre donos → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: ambiguidade entre donos → test_legacy_replay_preserves_provably_older_metadata, test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 01:20 · R22 sabotage: revogação por candidato posterior → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: interseção entre donos → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: exigência de caminho gravado e vínculo → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: retenção da prova de dono → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: comparação com cache legado → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: guarda anterior do R21 → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: guarda de cache na ambiguidade → test_legacy_replay_recovers_owner_proven_by_new_path
+- 2026-11-28 01:20 · R22 sabotage: importação dos IDs comuns → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: filtragem pelos IDs comuns → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: filtragem pelos IDs ainda retidos → test_legacy_replay_preserves_provably_older_metadata
+- 2026-11-28 01:20 · R22 sabotage: guarda de cache ao importar a origem → test_legacy_replay_recovers_owner_proven_by_new_path, test_legacy_replay_cannot_choose_between_compatible_owners, test_legacy_migration_recovers_active_message_origin
+- 2026-11-28 01:20 · R22 · 1863fc2. Duas regressões vermelhas, com quatro falhas antes da correção. A sonda usa a 0.4.0 real. Suíte isolada com 154 testes da loja (3 pulados), 140 do hook, 24 Checks e quatro testes de release verdes. 31 degradações sob grupo próprio, 25 s e 512 MiB. Git de fixture nas quatro receitas, revisão inválida rc 128 e contagem divergente rc 1. Provas de distribuição nativa não repetidas no sandbox.

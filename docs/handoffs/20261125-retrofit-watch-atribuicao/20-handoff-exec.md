@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a22043-cca8-7b91-9af0-fae225be0b96
-data: 2026-11-28 00:55
-gate: 'TEST_CMD de .sdd/config.sh com Git isolado em e5c249d: rc 0, 154 testes da loja (3 pulados), 138 do hook e validação da 0.4.1. Os 23 Checks e quatro testes de release passaram.'
+sessao: 01a22058-49a5-76e3-b602-0c4b6b449697
+data: 2026-11-28 01:20
+gate: "Em 1863fc2, TEST_CMD de .sdd/config.sh com Git isolado retornou rc 0, 154 testes da loja (3 pulados) e 140 do hook. Adaptadores, catálogo e versão 0.4.1 válidos. Os 24 Checks, incluindo F1, e quatro testes de release passaram."
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,15 +14,17 @@ gate: 'TEST_CMD de .sdd/config.sh com Git isolado em e5c249d: rc 0, 154 testes d
 
 ## TL;DR
 
-R21 preserva o slash no delta sem vínculo e o crédito legado quando o dono reconstruído é ambíguo.
-O Stop ignora texto malformado e retoma com o histórico de slash inválido.
-A suíte isolada, os 23 Checks e F1 passaram. As provas nativas aguardam execução fora do sandbox.
-A QA começa por R21, R14, R20 e F1.
+R22 mantém a prova de ID antigo comum a todos os donos compatíveis sem eleger um dono.
+O replay identifica a carga quando um caminho exclusivo e vinculado foi registrado pela 0.4.0.
+A suíte isolada, os 24 Checks, F1 e o controle de release passaram.
+A QA começa por R22 e pelos controles de R21. As três provas nativas seguem puladas no sandbox.
 
 ## Estado do repo
 
 - **Branch** `fix/retrofit-watch-atribuicao-mesma-mensagem`, ligada ao PR #13.
-- O incremento mais recente é R21 em `e5c249d`. A versão continua 0.4.1.
+- O incremento mais recente é R22 em `1863fc2`. A versão continua 0.4.1.
+- A suíte isolada de R22 validou 154 testes da loja (3 pulados), 140 do hook, adaptadores,
+  catálogo e versões. Os 24 Checks tiveram rc 0 e stdout esperado.
 - O `TEST_CMD` isolado em R21 retornou rc 0 com 154 testes da loja (3 pulados) e 138 do hook. Os 23 Checks compararam o stdout completo. F1 confirmou `linked=silêncio missing=silêncio empty=silêncio`.
 - R20 em `41f2952` mediu 134 testes do hook. R19 em `bdf75fa` mediu 133.
 - O `TEST_CMD` de `.sdd/config.sh` foi executado para R20 com `GIT_DIR` e `GIT_WORK_TREE` removidos. Retornou rc 0 com 154 testes da loja (3 pulados) e 134 do hook. Adaptadores, catálogo e versão 0.4.1 foram validados.
@@ -303,28 +305,51 @@ A QA começa por R21, R14, R20 e F1.
   timeout de 20 s e memória virtual de 512 MiB. Os resultados individuais estão
   nas notas de execução.
 
+### R22 — Retorno da revisão r34
+
+- `1863fc2` — na migração da 0.4.0, conserva apenas os IDs que o replay comprova
+  anteriores a todos os donos compatíveis. Não importa origem ou janela ambíguas.
+  Reuso, evidência anterior perdida e dono sem origem não autorizam suprimir metadados.
+- `1863fc2` — aceita o metadado vinculado de um caminho exclusivo registrado no cache
+  legado. Outra carga compatível ou metadado posterior que a 0.4.0 poderia aceitar
+  revoga essa prova. Não muda os contadores, o offset nem os limites da leitura.
+- `1863fc2` — as receitas de r24–r27 isolam o Git, propagam erro do diff e exigem
+  530, 452, 327 e 428 linhas, respectivamente. Com Git de fixture, as contagens
+  passaram. Com revisão inválida deram rc 128 e com contagem divergente, rc 1.
+- Antes da mudança, as duas regressões deram quatro falhas. Um controle adicional
+  ficou vermelho antes da revogação por metadado posterior. As 31 degradações
+  do código final foram testadas em cópia temporária após controle verde, com
+  grupo próprio, timeout de 25 s e memória virtual de 512 MiB. Consulte as notas
+  de execução para o resultado de cada degradação.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1, F1 e R1–R21 com as sondas executáveis e os hashes das correções. |
-| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R19 e R21. |
+| `checkpoint.md` | I1, F1 e R1–R22 com as sondas executáveis e os hashes das correções. |
+| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R19, R21 e R22. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
 | `TODO.md` | Issue #12 e ordem legada marcadas `RESOLVED by 682cd3d` e `RESOLVED by 8fa5c7d` até o merge. |
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as 23 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as 24 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
-- Comece pela célula de R21. A sonda usa a 0.4.0 do Git e deve retornar
+- Comece pela célula de R22. A sonda de [r34](40-review-r34.md#sonda-de-r22) usa o blob
+  da 0.4.0 para gravar o estado em disco. Exija `codereview` para os IDs comprovadamente
+  antigos e para o caminho confirmado, e silêncio para a externa intercalada. Repita
+  F1 e os controles de R21. Confira as quatro receitas com Git de fixture e os dois
+  controles negativos antes de reutilizar resultados de pré-scan.
+
+- Depois, rode a célula de R21. A sonda usa a 0.4.0 do Git e deve retornar
   `slash_list=graphify slash_unlinked=graphify null_replay=codereview skipped_owner=codereview`.
   Confirme também o silêncio no controle de erro próprio com dono único. Repita
   R14 para slash posterior comprovado, R20 para externo sem fonte válida e F1 para
   metadado atrasado. Execute a suíte da raiz com:
 
   ~~~bash
-  env -u GIT_DIR -u GIT_WORK_TREE bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'
+  env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'
   ~~~
 
 - Repita R20, R19 e F1. R20 exercita fonte ausente, vazia e inválida. A célula R19 extrai a sonda de `40-review-r28.md` com
@@ -423,6 +448,12 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
   O registro da ampliação está na [missão](00-missao.md#campanha-e-delegação).
 
 ## Riscos e não-feitos
+
+- R22 não repetiu as três provas nativas de distribuição. O comando configurado as pula
+  neste sandbox. As provas de R20 no host são históricas. Não houve smoke manual do Claude Code.
+- A evidência de cache é conservadora. Caminho repetido, cache divergente ou outra carga
+  compatível posterior não permitem escolher o dono. O hook segue a regra de encerramento
+  quando falta prova diante de uma externa.
 
 - As três provas nativas de R21 retornaram rc 1 antes de executar o CLI, pois o
   Bubblewrap não pôde criar um namespace no sandbox. Para repetir no host Linux
