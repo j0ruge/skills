@@ -272,10 +272,10 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 
 ### Clone dedicado da retrofit-watch
 
-- [ ] **O avanço pode mover outro ramo depois da última conferência** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:1379` (`merge-base`) —
-  uma troca de ramo limpo após a prova de ancestralidade move esse ramo, deixa a main parada e grava sucesso.
-  Direção: vincular a atualização da cópia ao ramo conferido, sem depender só de uma checagem separada.
+- [ ] **O avanço podia mover outro ramo depois da última conferência** —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:1236` (`_live_ref_update`) —
+  o merge pelo HEAD podia mover o ramo em uso. O avanço agora usa uma transação em `refs/heads/main`,
+  verifica o SHA anterior e materializa os arquivos em HEAD temporário destacado. RESOLVED by a5a2302
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r2.md` — descoberto por
   `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
 

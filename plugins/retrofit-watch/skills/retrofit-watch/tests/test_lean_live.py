@@ -1108,6 +1108,57 @@ class LiveTest(unittest.TestCase):
         self.assertEqual(w.git(w.live, "status", "--porcelain"), "")
         self.assertFalse((w.live / ".git/index.lock").exists())
 
+    def test_advance_holds_after_forced_stop_during_ref_preparation(self):
+        w = self.w
+        head = w.git(w.live, "rev-parse", "HEAD")
+        w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+        popen = subprocess.Popen
+        stalled = mock.MagicMock()
+        stalled.__enter__.return_value = stalled
+        stalled.poll.return_value = None
+        stalled.wait.side_effect = [subprocess.TimeoutExpired("git update-ref", 0), -1]
+
+        def stalled_update(command, **kwargs):
+            if "update-ref" in command and "--stdin" in command:
+                return stalled
+            return popen(command, **kwargs)
+
+        with mock.patch.object(store, "LIVE_REF_TIMEOUT", 0), mock.patch.object(
+            store.subprocess, "Popen", side_effect=stalled_update,
+        ):
+            record = store.live_advance(self.ctx, SLUG)
+
+        stalled.kill.assert_called_once_with()
+        self.assertEqual(record["resultado"], "erro")
+        self.assertIn("encerrada à força", record["detalhe"])
+        pending = w.live / ".git/rw-live-advance"
+        self.assertTrue((pending / "revisions").is_file())
+        self.assertTrue((pending / "transaction.stderr").is_file())
+        self.assertEqual(w.git(w.live, "rev-parse", "refs/heads/main"), head)
+        self.assertFalse((w.live / "README.md").exists())
+        self.assertIn("avanço anterior inconclusivo", store.live_advance(self.ctx, SLUG)["detalhe"])
+
+    def test_advance_keeps_observed_main_if_releasing_index_lock_fails(self):
+        w = self.w
+        lock = w.live / ".git/index.lock"
+        new = w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+        unlink = os.unlink
+
+        def locked_index(path, *args, **kwargs):
+            if path == lock:
+                raise PermissionError("fixture: trava indisponível")
+            return unlink(path, *args, **kwargs)
+
+        with mock.patch.object(store.os, "unlink", side_effect=locked_index):
+            record = store.live_advance(self.ctx, SLUG)
+
+        self.assertEqual((record["resultado"], record["depois"]), ("erro", new))
+        self.assertIn("trava do índice", record["detalhe"])
+        self.assertTrue(lock.is_file())
+        self.assertTrue((w.live / ".git/rw-live-advance/index.original").is_file())
+        self.assertEqual(w.git(w.live, "rev-parse", "refs/heads/main"), new)
+        self.assertIn("avanço anterior inconclusivo", store.live_advance(self.ctx, SLUG)["detalhe"])
+
     def test_advance_checks_real_main_with_reference_hook(self):
         w = self.w
         hook = w.live / ".git/hooks/reference-transaction"

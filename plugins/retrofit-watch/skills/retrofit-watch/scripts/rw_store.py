@@ -1236,9 +1236,9 @@ class LiveAdvanceUncertain(StoreError):
 def _live_ref_update(path, env, temporary, before, target, *, commit=True):
     """Prepara a ref nomeada e deixa o commit para depois de instalar o índice."""
     output = temporary / ("transaction" if commit else "transaction-recovery")
-    with output.open("wb") as log, subprocess.Popen(
+    with output.open("wb") as log, output.with_suffix(".stderr").open("wb") as diagnostic, subprocess.Popen(
         ["git", "-C", str(path), "update-ref", "--stdin", "-m", "retrofit-watch: avanço da main"],
-        env=env, stdin=subprocess.PIPE, stdout=log, stderr=subprocess.DEVNULL,
+        env=env, stdin=subprocess.PIPE, stdout=log, stderr=diagnostic,
     ) as transaction:
         try:
             transaction.stdin.write(
@@ -1270,9 +1270,12 @@ def _live_ref_update(path, env, temporary, before, target, *, commit=True):
             if transaction.poll() is None:
                 try:
                     transaction.wait(timeout=LIVE_REF_TIMEOUT)
-                except subprocess.TimeoutExpired:
+                except subprocess.TimeoutExpired as error:
                     transaction.kill()
                     transaction.wait()
+                    raise LiveAdvanceUncertain(
+                        f"transação Git encerrada à força; confira .git/{temporary.name}", None,
+                    ) from error
 
 
 def _live_checkout_settings(path, env):
@@ -1368,6 +1371,8 @@ def _live_fast_forward(path, env, before):
         lock.touch(exist_ok=False)
     except FileExistsError as error:
         raise StoreError("índice do clone em uso") from error
+    created = discard = False
+    observed = before
     try:
         env = dict(env, GIT_OPTIONAL_LOCKS="0")
         if os.path.lexists(temporary):
@@ -1380,26 +1385,37 @@ def _live_fast_forward(path, env, before):
         if target != before:
             _git(["merge-base", "--is-ancestor", before, target], path, env, "avanço rápido indisponível")
             temporary.mkdir(mode=0o700)
-            discard_after = None
+            created = True
             try:
                 _live_install_fast_forward(path, env, before, target, index, temporary)
-                discard_after = target
-            except LiveAdvanceUncertain:
+            except LiveAdvanceUncertain as error:
+                observed = error.after
                 raise
             except (OSError, StoreError):
-                discard_after = before
+                discard = True
                 raise
-            finally:
-                if discard_after is not None:
-                    try:
-                        shutil.rmtree(temporary)
-                    except OSError as error:
-                        raise LiveAdvanceUncertain(f"não foi possível limpar .git/{temporary.name}",
-                                                   discard_after) from error
+            else:
+                observed, discard = target, True
         elif not _live_main(path) or _git(["rev-parse", "HEAD"], path, env, "HEAD").strip() != before:
             raise StoreError("HEAD do clone mudou durante o avanço")
     finally:
-        lock.unlink()
+        primary_error = sys.exc_info()[1]
+        try:
+            lock.unlink()
+        except OSError as error:
+            detail = "não foi possível liberar a trava do índice"
+            if not created:
+                raise StoreError(detail) from error
+            if isinstance(primary_error, LiveAdvanceUncertain):
+                detail = f"{primary_error}; {detail}"
+            else:
+                detail = f"{detail}; confira .git/{temporary.name}"
+            raise LiveAdvanceUncertain(detail, observed) from error
+        if discard:
+            try:
+                shutil.rmtree(temporary)
+            except OSError as error:
+                raise LiveAdvanceUncertain(f"não foi possível limpar .git/{temporary.name}", observed) from error
     if target != before:
         run(["git", "hook", "run", "--ignore-missing", "post-merge", "--", "0"], cwd=path, env=env)
     return target, None
