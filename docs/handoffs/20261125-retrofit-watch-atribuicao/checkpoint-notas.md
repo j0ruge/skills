@@ -682,3 +682,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 02:20 · written by the runner
 - 2026-11-28 02:27 · r38, achado 1 → R26. Texto sem carga acima do teto faz perder posições já conhecidas no replay. Dois silêncios indevidos, reproduzidos com a 0.4.0 real.
 - 2026-11-28 02:28 · R26 · Ao chegar ao teto de posições, mantenha os IDs e posições comprovados e deixe as entradas novas sem prova de ordem. Ainda detecte reuso dos IDs já registrados. Não deduza posição para uma mensagem que entrou depois do teto. Preserve o tratamento conservador para dados desconhecidos e os controles de R24 e R25. Corrija também o stdout esperado na cópia histórica de R25 sem mexer na sonda canônica.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 02:29 · written by the runner
