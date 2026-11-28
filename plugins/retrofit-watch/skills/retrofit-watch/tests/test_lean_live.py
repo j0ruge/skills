@@ -418,6 +418,37 @@ class LiveTest(unittest.TestCase):
         w.git(w.live, "switch", "-q", "main")
         self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
 
+    def test_setup_retry_does_not_finalize_branch_changed_during_validation(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        content = pending.read_bytes()
+        check_origin = store._live_remote
+
+        def switch_after_origin_check(ctx, slug, path, expected):
+            env = check_origin(ctx, slug, path, expected)
+            w.git(path, "switch", "-qc", "rascunho")
+            return env
+
+        with mock.patch.object(store, "_live_remote", side_effect=switch_after_origin_check):
+            with self.assertRaisesRegex(store.StoreError, "fora da main"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertEqual(pending.read_bytes(), content)
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+        w.git(w.live, "switch", "-q", "main")
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+
+    def test_setup_retry_rejects_hooks_path_with_trailing_space(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        hooks_path = str(pending.parent / "rw-live-hooks")
+        w.git(w.live, "config", "--worktree", "core.hooksPath", hooks_path + " ")
+        with self.assertRaisesRegex(store.StoreError, "trava de commit"):
+            store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertTrue(pending.is_file())
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+        w.git(w.live, "config", "--worktree", "--unset", "core.hooksPath")
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+
     def test_setup_retry_requires_effective_worktree_lock(self):
         w = self.w
         pending = self._leave_pending_setup()

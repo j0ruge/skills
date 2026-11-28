@@ -1020,7 +1020,7 @@ def _check_live_setup(ctx, path, expected):
         raise StoreError("cópia em uso fora da main")
     hook = path / ".git" / "rw-live-hooks" / "pre-commit"
     hooks = _git(["config", "--show-scope", "--type=path", "--get", "core.hooksPath"],
-                 path, env, "trava do clone").strip()
+                 path, env, "trava do clone").removesuffix("\n")
     scope, _, directory = hooks.partition("\t")
     if (scope != "worktree" or Path(directory) != hook.parent or not hook.is_file()
             or not os.access(hook, os.X_OK) or hook.read_bytes() != LIVE_SETUP_HOOK):
@@ -1055,8 +1055,10 @@ def live_setup(ctx, slug, url=None):
             except OSError as error:
                 raise StoreError(f"instalação do clone de {slug} falhou: {error}") from error
     # O caminho final pode ativar uma reescrita de URL. Na recusa, preserve os arquivos para retomar.
-    _check_live_setup(ctx, path, expected)
     _live_remote(ctx, slug, path, expected)
+    if identity is None or _live_setup_identity(path) != identity:
+        raise StoreError(f"destino do setup mudou: {path}")
+    _check_live_setup(ctx, path, expected)
     _finish_live_setup(path, marker, identity)
     return path
 
