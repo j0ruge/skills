@@ -290,9 +290,9 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 
 - [ ] **Inventário de EXEC não inclui o Check de R24** —
-  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:358` (`R1–R23`) —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:374` (`sondas executáveis`) —
   a tabela termina em R23, mas o checkpoint inclui R24 e o boot manda repetir 26 Checks.
-  Direção: incluir R24 no inventário ou apontar à tabela de incrementos sem repetir o intervalo.
+  O inventário remete à tabela canônica sem repetir o intervalo. RESOLVED by 149086f
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r37.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 

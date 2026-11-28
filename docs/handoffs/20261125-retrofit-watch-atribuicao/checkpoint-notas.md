@@ -648,3 +648,34 @@
 - 2026-11-28 02:06 · r37 achado 1 → R25: a ordem inverte quando o primeiro bloco da mensagem é texto. Quatro retomadas divergiram, com R24 e F1 verdes.
 - 2026-11-28 02:06 · R25 · No replay, registre a ordem na primeira ocorrência de um message.id válido, antes de filtrar o tipo do bloco. Mantenha a associação com o ID da chamada somente quando houver chamada Skill válida. Reuse o registro limitado, preserve a ordem de mensagens fragmentadas e teste a origem ausente ou sem prova. Corrija o inventário e os totais vigentes do handoff para refletir todos os incrementos, preservando resultados históricos. Repita R23 e R24 junto com R25.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 02:08 · written by the runner
+- 2026-11-28 02:15 · R25 · A execução literal da suíte herdou o Git privado. A ponta `9599cad`, a referência e a identidade do espelho foram restauradas após conferir o reflog, a árvore e o índice. O TEST_CMD isolado passou antes da mudança.
+- 2026-11-28 02:15 · R25 sabotage: escopo da soma de bytes de mensagem → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: sobrescrita do ponto de entrada → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: leitura do objeto da mensagem → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: filtro de registros do assistente → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: validação do objeto da mensagem → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: registro desativado após esgotar teto → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: descarte de message.id ausente → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: validação de message.id → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: unicidade da primeira ocorrência → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: inserção da posição da mensagem → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: custo em bytes dos IDs de mensagem → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: ordem ordinal das mensagens → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: método de limites da prova → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: delegação do registro ao Scanner → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: tetos após bloco sem chamada → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: teto de chamadas → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 02:15 · R25 sabotage: escopo compartilhado do descarte → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: teto de mensagens → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: descarte atômico da prova → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: teto de bytes → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: escopo da soma de bytes de chamada → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: tetos após chamada Skill → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 02:15 · R25 sabotage: volta da posição coletada só na chamada → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: reposição da condição antiga de registro → equivalente, a condição nunca é alcançada após registrar a mensagem na entrada
+- 2026-11-28 02:15 · R25 sabotage: reposição da cobrança antiga sob a condição → equivalente, a condição nunca é alcançada após registrar a mensagem na entrada
+- 2026-11-28 02:15 · R25 sabotage: reposição da atribuição antiga sob a condição → equivalente, a condição nunca é alcançada após registrar a mensagem na entrada
+- 2026-11-28 02:15 · R25 sabotage: associação indevida do ID de outra ferramenta → test_legacy_replay_orders_messages_from_first_assistant_block
+- 2026-11-28 02:15 · R25 sabotage: reposição do teto antigo inline → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 02:15 · R25 sabotage: reposição da declaração nonlocal antiga → equivalente, declarar as duas tabelas não altera as leituras
+- 2026-11-28 02:15 · R25 · 149086f. A sonda da 0.4.0 real reproduziu quatro vereditos invertidos no Red e todos acertaram no Green. A regressão durável mostrou seis divergências no Red. A suíte isolada passou com 154 testes da loja (3 pulados) e 143 do hook. Os 27 Checks, incluindo R23, R24 e F1, e os quatro testes de release passaram. Foram detectadas 25 degradações sob grupo próprio, 25 s e 512 MiB. A grafia de `skill_externa` foi corrigida na expectativa da célula de R25. Provas nativas não repetidas.

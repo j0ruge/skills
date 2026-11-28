@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a2207c-b0f1-7261-8aa3-06125fb835f5
-data: 2026-11-28 01:56
-gate: "Em 51a8a73, TEST_CMD de .sdd/config.sh com Git isolado retornou rc 0. Loja com 154 testes (3 pulados), hook com 142, adaptadores, catálogo e versão 0.4.1 válidos. Os 26 Checks, incluindo F1, e quatro testes de release passaram."
+sessao: 01a2208d-c723-73b3-8d89-6342e0168105
+data: 2026-11-28 02:15
+gate: "Em 149086f, `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval \"$TEST_CMD\"'` retornou rc 0. Loja com 154 testes (3 pulados), hook com 143, adaptadores, catálogo e versão 0.4.1 válidos. As 27 células Check de checkpoint.md executadas com Bash tiveram rc 0 e stdout esperado, incluindo R23, R24, R25 e F1. Passaram também os quatro testes de test_auto_docs.ReleaseTest."
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,15 +14,17 @@ gate: "Em 51a8a73, TEST_CMD de .sdd/config.sh com Git isolado retornou rc 0. Loj
 
 ## TL;DR
 
-R24 mantém a retro quando a externa é comprovadamente anterior a todos os possíveis donos.
-Nas oito retomadas com a 0.4.0 real, as quatro anteriores pediram retro e as quatro posteriores ficaram em silêncio.
-Passaram a suíte isolada, os 26 Checks, F1 e quatro testes de release.
-A QA começa por R24 e repete R23 e R22. As três provas nativas não foram repetidas no sandbox.
+R25 recupera a ordem pela primeira ocorrência de cada mensagem do assistente, mesmo se ela começa por texto.
+Com a 0.4.0 real, as quatro retomadas que invertiam a atribuição agora distinguem externa anterior de posterior.
+Passaram a suíte isolada, os 27 Checks, F1 e quatro testes de release.
+A QA começa por R25 e repete R24 e R23. As três provas nativas não foram repetidas no sandbox.
 
 ## Estado do repo
 
 - **Branch** `fix/retrofit-watch-atribuicao-mesma-mensagem`, ligada ao PR #13.
-- O incremento mais recente é R24 em `51a8a73`. A versão continua 0.4.1.
+- O incremento mais recente é R25 em `149086f`. A versão continua 0.4.1.
+- A suíte isolada de R25 passou com 154 testes da loja (3 pulados) e 143 do hook.
+  As 27 células de Check tiveram rc 0 e stdout esperado. Os quatro testes de release passaram.
 - A suíte isolada de R24 passou com 154 testes da loja (3 pulados) e 142 do hook.
   Os 26 Checks tiveram rc 0 e stdout esperado. Os quatro testes de release passaram.
 - A suíte isolada de R23 validou 154 testes da loja (3 pulados), 141 do hook, adaptadores,
@@ -351,21 +353,41 @@ A QA começa por R24 e repete R23 e R22. As três provas nativas não foram repe
   controles posteriores ficaram em silêncio. Foram detectadas 31 degradações em cópias
   temporárias com grupo próprio, timeout de 25 s e 512 MiB de memória virtual.
 
+### R25 — Retorno da revisão r37
+
+- `149086f` — registra a primeira ocorrência de um `message.id` válido do assistente antes
+  de filtrar blocos. Só uma chamada Skill com ID válido ganha vínculo com a posição.
+  O replay mantém os limites de mensagens, chamadas e bytes, sem alterar o estado persistido.
+- `149086f` — acrescenta a regressão durável nos dois cortes. Ela verifica primeira linha de
+  texto ou vazia, registros sem origem válida, ID atrelado a outra ferramenta e os casos em
+  que mensagens sem carga esgotam o registro. A [sonda de r37](40-review-r37.md#sonda-de-r25)
+  reproduziu quatro vereditos invertidos no Red com a 0.4.0 real. No Green, os quatro foram
+  corrigidos e os controles sem texto inicial passaram. R23, R24 e F1 permaneceram verdes.
+- Foram detectadas 25 degradações em cópias temporárias com grupo próprio, timeout de 25 s
+  e teto de memória virtual de 512 MiB. Quatro reposições equivalentes não mudaram o resultado.
+  A célula R25 usa a grafia `codereview` nos resultados positivos, conforme a sonda.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
 | `checkpoint.md` | Tabela canônica dos incrementos, com as sondas executáveis e os hashes das correções. |
+| `40-review-r37.md` | Sonda de R25 com a 0.4.0 real. |
 | `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
-| `TODO.md` | Issue #12 e ordem legada marcadas `RESOLVED by 682cd3d` e `RESOLVED by 8fa5c7d` até o merge. |
+| `TODO.md` | Registra as correções da issue #12, da ordem legada e do inventário de EXEC até o merge. |
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as 26 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as 27 células de Check da raiz, comparando o stdout completo de cada célula com o esperado. Para cada comando da tabela, use `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c "$check"`. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
-- Comece pela célula de R24 e pela [sonda de r36](40-review-r36.md#sonda-de-r24).
+- Comece pela célula de R25 e pela [sonda de r37](40-review-r37.md#sonda-de-r25).
+  Compare os dois cortes. Se o primeiro registro for texto da mensagem do dono, a externa
+  posterior encerra a atribuição. Se o texto for da mensagem externa, a retro é preservada.
+  Repita os três grupos de controle, a regressão durável e F1, todos cobertos pela célula.
+
+- Em seguida, rode a célula de R24 com a [sonda de r36](40-review-r36.md#sonda-de-r24).
   A 0.4.0 real grava o estado no fixture. O Stop deve pedir retro quando a externa for
   comprovadamente anterior a todos os candidatos, e ficar em silêncio na ordem inversa.
   Confira caminho repetido ou distinto e metadado no Stop de migração ou no seguinte.
@@ -479,6 +501,7 @@ Leia `checkpoint.md` e rode as 26 células de Check da raiz, comparando o stdout
   metadado no Stop seguinte, ausência de evidência, carga nova e preservação do estado.
 
 Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` e registre a repetição em `30-handoff-qa.md`.
+Para repetir os quatro testes de release, rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest -q test_auto_docs.ReleaseTest`.
 
 ## Pendências / Decisions for a Human
 
@@ -488,8 +511,10 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 
 ## Riscos e não-feitos
 
-- R22 e R23 não repetiram as três provas nativas de distribuição. O comando configurado as pula
+- R22 a R25 não repetiram as três provas nativas de distribuição. O comando configurado as pula
   neste sandbox. As provas de R20 no host são históricas. Não houve smoke manual do Claude Code.
+- Se um teto do registro de ordem do replay for excedido, a posição deixa de servir de
+  prova para aposentar um ID. Blocos de texto de mensagens distintas também ocupam o registro.
 - A evidência de cache é conservadora. Caminho repetido, cache divergente ou outra carga
   compatível posterior não permitem escolher o dono. O hook segue a regra de encerramento
   quando falta prova diante de uma externa.
@@ -529,6 +554,12 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
   dentro do namespace. O R20 confirmou as três no host.
 
 ## Achados fora de escopo
+
+- kit: em R25, `bin/sdd-codex:468` voltou a expor `GIT_DIR` e `GIT_WORK_TREE` às fixtures da loja
+  na primeira execução literal de TEST_CMD. A suíte foi interrompida. O reflog e o checkout
+  confirmaram a ponta inicial `9599cad` e a árvore e o índice intactos. Só a ponta, a
+  referência das fixtures e a identidade Git contaminada foram restauradas no espelho
+  privado. A suíte isolada passou antes e depois da correção. Nenhuma alteração foi feita no kit.
 
 - kit: em R21, `bin/sdd-codex:468` voltou a deixar o Git privado chegar às
   fixtures de TEST_CMD. O reflog e a árvore idêntica confirmaram a ponta inicial
