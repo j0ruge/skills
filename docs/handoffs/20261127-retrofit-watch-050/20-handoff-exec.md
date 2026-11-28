@@ -3,8 +3,8 @@ missao: 20261127-retrofit-watch-050
 fase: EXEC
 status: done
 sessao: 01a22167-6577-7980-b294-7f3292691515
-data: 2026-11-28 06:14
-gate: "Em c445ff702ac82ddf8fdb76f7d5443dab7e709e3d, env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval \"$TEST_CMD\"' → rc 0 (154 testes da loja, 3 pulados; 144 do Stop; adaptadores, catálogo e versões válidos). Os 13 comandos do checkpoint deram a saída esperada. env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests:plugins/retrofit-skill/tests python3 -B -m unittest test_fixture_private test_lean_auto test_lean_window test_lean_live test_lean_batch test_lean_gate test_auto_docs test_modo_autonomo → 145 testes sem pulos. env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py → rc 0, com retenção, aprovação, janela v2, revert e rota manual em remotos de fixture."
+data: 2026-11-28 06:21
+gate: "Em 1ca718dd666bb0f4d98ed6bf4540ea97fa49934a, TEST_CMD rc 0 (154 testes da loja, 3 pulados; 144 do Stop), 14 Checks, 146 testes dirigidos, jornada da QA e regressão de Stop verdes. As três provas nativas passaram no host Linux. Camada 1 limpa contra origin/main."
 ---
 
 # Handoff — EXEC — Retrofit de skills locais listadas
@@ -14,16 +14,16 @@ gate: "Em c445ff702ac82ddf8fdb76f7d5443dab7e709e3d, env -u GIT_DIR -u GIT_WORK_T
 
 ## TL;DR
 
-I1–I4 e R1–R9 concluídos. O setup preserva o destino concorrente e permite repetir
-após recusa da origem final. O startup avisa quando o avanço não consegue iniciar.
-Suíte, 13 Checks e jornada de fixture verdes em `c445ff7`. QA começa pelo Check R9.
+I1–I4 e R1–R10 concluídos. O setup preserva destinos concorrentes e retoma a
+validação da mesma origem sem apagar arquivos. O startup avisa quando o avanço não
+consegue iniciar. Suíte, 14 Checks, jornada e distribuição em host verdes em `1ca718d`.
 
 ## Estado do repo
 
 - **Branch:** `feat/retrofit-watch-050-loja` — base de comparação `origin/main` local.
-- **Último commit de produto:** `c445ff7` — instala o clone sem substituir o destino e avisa falha no lançamento.
+- **Último commit de produto:** `1ca718d` — retoma a validação final sem apagar arquivos.
 - **Working tree:** limpo após o commit de checkpoint, notas e handoff.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `c445ff7`. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `1ca718d`. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos.
 - **E2E:** sem `E2E_CMD` na config. Jornada automatizada em `sonda-qa.py` com remotos bare de fixture. Nenhum deploy ou repo privado real.
 
 ## O que foi feito
@@ -80,20 +80,21 @@ Suíte, 13 Checks e jornada de fixture verdes em `c445ff7`. QA começa pelo Chec
   inclusive no teste offline, e na jornada. Em cópia descartável, 34 mutações foram detectadas
   com controles verdes antes e depois, grupo próprio, teto de 20 s e 512 MiB por processo.
 
+- `1ca718d` — R10 substitui a limpeza da cópia após uma recusa final por uma retentativa vinculada à origem original. O Red reproduziu a perda de um arquivo local. O Green preservou o arquivo e o diretório, recusou origem diferente e validou a mesma origem após corrigir a regra Git. Passaram 34 testes de clone e 146 regressões dirigidas.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Treze Checks e seus commits. |
+| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Quatorze Checks e seus commits. |
 | `docs/retrofit-watch/clone-dedicado.md` | Contrato de clone, selo, ensaio, publicação e avanço. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py` | Cópia de distribuição com contratos dos dois plugins e controles do catálogo. |
 | `KAIZEN_LOG.md` e `TODO.md` | Medida da fixture, limite da adoção e achados fora do escopo. |
 
 ## Boot da próxima fase
 
-Leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Comece pela célula R9,
-que confere a identidade do diretório vazio concorrente, a retentativa depois de retirar a
-regra Git exclusiva do destino e o aviso de startup mesmo com registro anterior `ok`.
+Leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Comece pelas células R9 e R10. A primeira confere a identidade do diretório vazio concorrente, a retentativa depois de retirar a
+regra Git exclusiva do destino e o aviso de startup mesmo com registro anterior `ok`. R10 mede a preservação de arquivos durante a retentativa.
 Rode também `test_lean_live.StartupTest.test_offline_advance_is_in_child_and_reported_on_next_startup`
 com o mesmo ambiente do Check R9. A sonda da célula reproduz a jornada em bare de fixture,
 sem serviço real para iniciar. Depois repita os Checks anteriores. Não use um `TMPDIR` com
@@ -157,8 +158,8 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
   do Stop verdes no TEST_CMD de cada revisão, foram cobertos 555 testes da candidata e 554 da base
   `d28e095`, com as mesmas 7 falhas e 2 erros. Os subprocessos ainda veem o marcador.
   O Check de release não precisa de Git no temporário.
-- As três provas nativas passaram no host Linux em `b5512cb`, fora do sandbox de EXEC.
-- A camada 1 sobre `origin/main` passou em `b5512cb`. As sinalizações sintéticas anteriores foram resolvidas com mudanças nas referências e nos testes.
+- As três provas nativas passaram no host Linux em `1ca718d`, fora do sandbox de EXEC.
+- A camada 1 sobre `origin/main` passou em `1ca718d`. As sinalizações sintéticas anteriores foram resolvidas com mudanças nas referências e nos testes.
 - A suíte ampla no host teve a mesma falha preexistente de atribuição no teste da segunda skill full tanto na base (487 testes) quanto no candidato da QA (555 testes).
 
 ## Achados fora de escopo
