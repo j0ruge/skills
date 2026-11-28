@@ -337,3 +337,4 @@
 - 2026-11-28 08:11 · `R14` · R14 sabotage: consulta tardia restaurada além da consulta adiantada → `test_setup_does_not_finalize_branch_changed_while_reading_hooks`
 - 2026-11-28 08:11 · `R14` · R14 sabotage: avanço não consegue diagnosticar ramo errado → `test_advance_leaves_wrong_branch_dirty_tree_and_divergence_alone`
 - 2026-11-28 08:11 · `R14` · Dois Reds reproduzidos em `a14ae29` com o controle de R13 verde. Em `680d355`, 18 Checks, 164 regressões dirigidas, TEST_CMD e jornada de QA verdes. As 16 sabotagens acusaram a mudança em cópia descartável, com controle de 10 provas, 20 s e 512 MiB por grupo. Os três testes nativos pararam antes do registro da loja, pois o sandbox não permite criar o namespace do Bubblewrap.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 08:15 · written by the runner
