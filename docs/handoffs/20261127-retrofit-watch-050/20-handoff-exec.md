@@ -87,6 +87,45 @@ preserva arquivos locais. Check de R11, TEST_CMD e jornada verdes em `fb134ce`.
 - `fb134ce` — R11 vincula a instalação e a retomada à identidade do checkout e de `.git`. Confere a origem declarada e efetiva, a `main` e a trava de commit no worktree principal antes de remover o marcador. No POSIX, a remoção é relativa ao descritor do diretório validado. Não troca o ramo nem apaga arquivos de trabalho para completar o setup. O Red reproduziu os achados com Git real em bares locais e manteve verde a prova de R10.
   Em `fb134ce`, `PYTHONDONTWRITEBYTECODE=1 python3 scripts/anonymity-gate.py --camada1 --base origin/main --repo "$GIT_DIR"` confirmou a camada 1 limpa. A base local era `e14062c`.
 
+### Saídas preservadas
+
+O Red do plano sobre `6329df5` foi medido por `check-checkpoint.sh --red` antes da aprovação.
+
+```text
+  ok    checkpoint.md: I1 is red at HEAD (prints '1', wants '0')
+  ok    checkpoint.md: I2 is red at HEAD (prints '1', wants '0')
+  ok    checkpoint.md: I3 is red at HEAD (prints '1', wants '0')
+  ok    checkpoint.md: I4 is red at HEAD (prints 'falhou', wants '0.5.0 0.12.0')
+  ok    checkpoint.md: 4 pending Check(s), every one red at HEAD
+```
+
+Na sessão de EXEC de R9, o evento 66 de `EXEC-20261128-060553-1106da0e.stream.jsonl` registrou os controles e o resultado das mutações.
+
+```text
+Controle: 11 provas verdes, sem pulos.
+Controle: 11 provas verdes, sem pulos.
+34 mutações detectadas.
+```
+
+Na revisão r4 de `eaf78b0`, o evento 22 de `REVIEW-20261128-055449-1327db7a.stream.jsonl` registrou a jornada de QA. Os SHAs abaixo são de remotos de fixture.
+
+```text
+Ensaio verde, retenção auto-dry, bare preservado 05f7df0e9fcd
+Emenda reteve o bare, nova aprovação publicou 6f219e3586d0 no bare, local/ci, registro e clone
+Janela cumprida, sem approve, bare, local/ci, registro e clone em fa80c40b0f02
+Revert reiniciou janela, ensaio reteve bare em c10946779f0f
+```
+
+Na sessão de EXEC de R11, o evento 111 de `EXEC-20261128-063256-e4d3042e.stream.jsonl` preserva exemplos da contraprova. A sessão verificou a contagem de 33 mutações detectadas.
+
+```text
+Não verifica invariantes no caminho definitivo → LiveTest.test_setup_retry_does_not_finalize_wrong_branch
+Ignora origem efetiva na etapa final → LiveTest.test_setup_checks_effective_origin_at_the_final_path
+Entrega o clone sem finalizar o marcador → LiveTest.test_setup_clones_main_with_worktree_lock
+Recoloca a finalização pelo caminho tolerante que R11 removeu → LiveTest.test_setup_does_not_finalize_missing_or_replaced_destination
+Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree_lock
+```
+
 ## Artefatos
 
 | Arquivo | O que contém |
