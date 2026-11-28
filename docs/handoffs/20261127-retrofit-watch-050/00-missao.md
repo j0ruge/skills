@@ -4,7 +4,7 @@ titulo: Permitir retrofit de skills locais com ensaio antes do push autônomo
 data: 2026-11-27
 versao: 0.5.0
 branch: feat/retrofit-watch-050-loja
-aprovacao:
+aprovacao: humano-2026-11-28
 adr: docs/adr/0001-retrofit-lean-publicacao.md
 ddd: aplicado
 qa:

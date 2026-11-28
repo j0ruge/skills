@@ -1,6 +1,6 @@
 # ADR 0001 — Publicação de retrofits de skills locais
 
-- **Status**: proposed (—, 2026-11-27)
+- **Status**: accepted (—, 2026-11-27)
 - **Spec**: docs/handoffs/20261127-retrofit-watch-050/00-missao.md
 
 ## Contexto
