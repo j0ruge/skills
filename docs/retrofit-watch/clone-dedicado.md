@@ -7,6 +7,8 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
 
 - `retrofit_watch.py live-setup <dono/repo> [--url URL]` clona a `main` e recusa
   um destino existente, inclusive se o nome já foi usado por outro dono.
+  Uma falha de criação remove apenas o destino reservado pela tentativa.
+  Depois de corrigir a causa, repita o comando.
   A URL precisa corresponder ao slug. Sem `--url`, usa HTTPS do GitHub.
   O clone declara a origem autorizada. O checkout da sessão precisa apontar para
   o mesmo servidor e repositório, mesmo quando usa outro transporte.
@@ -14,9 +16,10 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
   o `core.hooksPath` comum. Se o repo usa um diretório versionado de hooks,
   configure-o na config comum do clone, por exemplo `git config --local core.hooksPath .githooks`.
 - `retrofit_watch.py live-advance [<dono/repo>]` busca e avança com `--ff-only`.
-  Sem argumento, tenta os repos listados. Ramo errado, árvore suja ou
-  divergência conservam o HEAD. Um arquivo apenas ignorado não impede o avanço
-  se não precisar ser sobrescrito. O resultado fica em `<dados>/live/<repo>.json`.
+  Sem argumento, tenta os repos listados. Confere o ramo e a árvore antes e
+  depois do fetch. Ramo errado, árvore suja ou divergência conservam o HEAD.
+  Um arquivo apenas ignorado não impede o avanço se não precisar ser sobrescrito.
+  O resultado fica em `<dados>/live/<dono>/<repo>.json`.
 
 ## Preparação e selo
 
@@ -54,8 +57,10 @@ aprovação quando aplicável.
 Depois do push, o registro preserva o SHA mesmo quando `local/ci` ou o avanço do clone
 falham. A porta indica explicitamente ao `gh` o servidor associado à origem publicada.
 Rode `publish` novamente para concluir esses efeitos sem repetir o push.
-Em sessões assistidas, o startup lança o avanço em segundo plano e mostra o último
-erro registrado, quando houver.
+Em sessões assistidas, o startup lança o avanço em segundo plano. Os avisos são
+separados por slug completo, mesmo que dois repos impliquem o mesmo destino de clone.
+Registro ausente não gera aviso. Um registro presente que o startup não consegue
+ler ou interpretar gera aviso de registro inválido para aquele repo.
 
 Na retro manual de repo listado, a edição também fica no worktree do clone dedicado.
 O push pelo pre-push exige confirmação direta do dono. Após o push, o executor

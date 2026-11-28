@@ -478,6 +478,8 @@ com `live-setup` e comece em ensaio (`auto-dry`). O checkout de desenvolvimento
 continua livre. A porta roda o pre-push e conserva o remoto até a aprovação do patch,
 que cobre todos os arquivos alterados da skill local.
 O servidor do checkout precisa coincidir com o do clone dedicado, assim como o slug.
+Se a criação do clone falhar, corrija a causa e repita `live-setup`. O startup
+mostra avisos de avanço separados por `dono/repo`.
 Em `auto`, a publicação sem aprovação exige 10 publicações autônomas da loja,
 14 dias e zero vazamentos na janela v2. Um revert da loja ou de repo listado
 reinicia a janela. Veja o [contrato do clone, do selo e da publicação](docs/retrofit-watch/clone-dedicado.md).

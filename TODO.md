@@ -153,7 +153,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: duas frases, uma por saída, com o sensor do `test_auto_docs.py` verde.
   Fonte: codereview r2, forma — descoberto por `codereview r2` (2026-11-24)
 - [ ] **O discard_retro conta no teto da sessão** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_auto.py:1108` (`discard_retro`) — as linhas
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_auto.py:1114` (`discard_retro`) — as linhas
   `descartado` dele contam no `used` e no teto da sessão (r1 #15). A função é longa, o `_own` não tem
   docstring e o acento é desigual nas mensagens (r1 #17).
   Direção: dizer na docstring, ou marcar as linhas; extrair dois helpers.

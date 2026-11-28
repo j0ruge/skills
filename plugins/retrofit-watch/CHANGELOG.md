@@ -12,7 +12,10 @@
 - O pedido privado vincula o lote ao servidor e ao slug da origem. A porta
   recusa destinos efetivos de outro servidor e aponta o `local/ci` à origem conferida.
 - Após publicar, registra o SHA em `local/ci` e avança o clone com `--ff-only`.
-  O startup assistido tenta o avanço e informa a falha anterior quando houver.
+  Confere novamente o ramo e a árvore após o fetch. O startup assistido avisa por
+  `dono/repo` se o último avanço falhou ou se o registro estiver inválido.
+- Se a criação do clone falhar, `live-setup` limpa o destino da tentativa. Um clone
+  que já existia não é substituído.
 
 ## [0.4.1] — 2026-11-25
 

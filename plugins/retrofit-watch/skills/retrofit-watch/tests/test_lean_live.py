@@ -70,6 +70,35 @@ class LiveTest(unittest.TestCase):
             store.live_setup(w.ctx(), SLUG, str(w.origin))
         self.assertFalse(w.live.exists())
 
+    def test_setup_retry_after_clone_failure(self):
+        w = self.w
+        previous = w.live.with_name("anterior")
+        w.live.rename(previous)
+        (previous / "estado").write_text("preservar")
+        w.git(w.remote, "branch", "-m", "main", "outro")
+        with self.assertRaisesRegex(store.StoreError, "clone .* falhou"):
+            store.live_setup(self.ctx, SLUG, str(w.remote))
+        w.git(w.remote, "branch", "-m", "outro", "main")
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+        self.assertEqual((previous / "estado").read_text(), "preservar")
+
+    def test_setup_retry_after_lock_failure(self):
+        w = self.w
+        w.live.rename(w.live.with_name("anterior"))
+        git = store._git
+
+        for error in (store.StoreError, OSError):
+            def fail_lock(args, *rest):
+                if "extensions.worktreeConfig" in args:
+                    raise error("trava falhou")
+                return git(args, *rest)
+
+            with self.subTest(error=error), mock.patch.object(store, "_git", side_effect=fail_lock):
+                with self.assertRaisesRegex(error, "trava falhou"):
+                    store.live_setup(self.ctx, SLUG, str(w.remote))
+                self.assertFalse(w.live.exists())
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+
     def test_setup_refuses_target_symlink_even_if_dangling(self):
         w = self.w
         w.live.rename(w.live.with_name("anterior"))
@@ -100,12 +129,13 @@ class LiveTest(unittest.TestCase):
     def test_advance_fast_forwards_ignoring_only_ignored_files_and_records_result(self):
         w = self.w
         head = w.git(w.live, "rev-parse", "HEAD")
+        w.git(w.live, "tag", "main")
         (w.live / ".git/info/exclude").write_text("estado\n")
         (w.live / "estado").write_text("preservar")
         new = w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
         result = self.cli("live-advance")
         self.assertEqual(result.returncode, 0, result.stderr)
-        record = json.loads((w.data / "live/kb-libs.json").read_text())
+        record = json.loads((w.data / f"live/{SLUG}.json").read_text())
         self.assertEqual(set(record), {"repo", "resultado", "antes", "depois", "detalhe", "ts"})
         self.assertEqual((record["repo"], record["resultado"], record["antes"], record["depois"]),
                          (SLUG, "ok", head, new))
@@ -147,6 +177,57 @@ class LiveTest(unittest.TestCase):
         self.assertEqual(store.live_advance(self.ctx, SLUG)["resultado"], "erro")
         self.assertEqual((w.live / "estado").read_text(), "preservar")
         self.assertEqual(w.git(w.live, "rev-parse", "HEAD"), head)
+
+    def test_advance_does_not_merge_after_branch_switch_during_fetch(self):
+        w = self.w
+        head = w.git(w.live, "rev-parse", "HEAD")
+        new = w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+        fetch = store._live_fetch
+
+        def fetch_then_switch(*args, **kwargs):
+            fetch(*args, **kwargs)
+            w.git(w.live, "switch", "-qc", "ramo-do-dono")
+
+        with mock.patch.object(store, "_live_fetch", side_effect=fetch_then_switch):
+            record = store.live_advance(self.ctx, SLUG)
+        self.assertEqual(record["resultado"], "fora-da-main")
+        self.assertEqual((record["antes"], record["depois"]), (head, head))
+        self.assertEqual(w.git(w.live, "rev-parse", "origin/main"), new)
+        self.assertEqual(w.git(w.live, "branch", "--show-current"), "ramo-do-dono")
+        for branch in ("main", "ramo-do-dono"):
+            self.assertEqual(w.git(w.live, "rev-parse", branch), head)
+
+    def test_advance_does_not_merge_when_tree_becomes_dirty_during_fetch(self):
+        w = self.w
+        head = w.git(w.live, "rev-parse", "HEAD")
+        new = w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+        fetch = store._live_fetch
+
+        def fetch_then_edit(*args, **kwargs):
+            fetch(*args, **kwargs)
+            (w.live / "estado").write_text("preservar")
+
+        with mock.patch.object(store, "_live_fetch", side_effect=fetch_then_edit):
+            record = store.live_advance(self.ctx, SLUG)
+        self.assertEqual(record["resultado"], "suja")
+        self.assertEqual(w.git(w.live, "rev-parse", "origin/main"), new)
+        self.assertEqual(w.git(w.live, "rev-parse", "HEAD"), head)
+        self.assertEqual((w.live / "estado").read_text(), "preservar")
+
+    def test_advance_reports_unreadable_branch_without_fetch(self):
+        run = store.run
+
+        def branch_error(command, **kw):
+            if "symbolic-ref" in command:
+                return 128, ""
+            return run(command, **kw)
+
+        with mock.patch.object(store, "run", side_effect=branch_error), \
+                mock.patch.object(store, "_live_fetch") as fetch:
+            record = store.live_advance(self.ctx, SLUG)
+        fetch.assert_not_called()
+        self.assertEqual((record["resultado"], record["detalhe"]),
+                         ("erro", "branch do clone ilegível (git saiu 128)"))
 
     def test_advance_rejects_swapped_origin_before_fetch(self):
         w = self.w
@@ -270,3 +351,38 @@ class StartupTest(unittest.TestCase):
             self.assertIsNone(notice(self.ctx))
             self.assertIn("de volta ao ensaio (revert de 2026-11-27)", notice(self.ctx))
             self.assertIsNone(notice(self.ctx))
+
+    def test_advance_records_same_basename_without_losing_notice(self):
+        w = self.w
+        other = "other/kb-libs"
+        w.config(owners=["fixture", "other"], lean_auto=[SLUG, other])
+        ctx = w.ctx()
+        w.git(w.live, "switch", "-qc", "outro")
+        for repo, expected in ((SLUG, "fora-da-main"), (other, "erro")):
+            self.assertEqual(store.live_advance(ctx, repo)["resultado"], expected)
+        notice = store.rw_auto.live_notice(ctx)
+        self.assertIn(f"avanço de {SLUG} falhou: cópia em uso fora da main", notice)
+        self.assertIn(f"avanço de {other} falhou:", notice)
+        for repo in (SLUG, other):
+            path = w.data / f"live/{repo}.json"
+            self.assertEqual(json.loads(path.read_text())["repo"], repo)
+
+    def test_present_invalid_advance_record_reports_error(self):
+        notice = store.rw_auto.live_notice
+        self.assertIsNone(notice(self.ctx))
+        path = self.w.data / f"live/{SLUG}.json"
+        path.parent.mkdir(parents=True)
+        for invalid in (b"{", b"\xff", b"[]", b"{}",
+                        b'{"repo":"other/kb-libs","resultado":"ok","detalhe":""}',
+                        json.dumps(dict(repo=SLUG, resultado="invalido", detalhe="")).encode(),
+                        json.dumps(dict(repo=SLUG, resultado="erro", detalhe=42)).encode()):
+            with self.subTest(invalid=invalid):
+                path.write_bytes(invalid)
+                self.assertEqual(notice(self.ctx), f"avanço de {SLUG} falhou: registro de avanço inválido")
+        path.write_text(json.dumps(dict(repo=SLUG, resultado="ok", detalhe="")))
+        self.assertIsNone(notice(self.ctx))
+        path.write_text(json.dumps(dict(repo=SLUG, resultado="erro", detalhe="")))
+        self.assertEqual(notice(self.ctx), f"avanço de {SLUG} falhou: erro")
+        path.unlink()
+        path.mkdir()
+        self.assertEqual(notice(self.ctx), f"avanço de {SLUG} falhou: registro de avanço inválido")

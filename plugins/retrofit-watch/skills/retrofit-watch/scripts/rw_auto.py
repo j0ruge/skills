@@ -925,20 +925,26 @@ def held_notice(ctx):
             "/retrofit-watch:retrofit-watch segurados")
 
 
+def live_record_path(ctx, repo):
+    return ctx.data_dir / "live" / f"{repo}.json"
+
+
 def live_notice(ctx):
     """Mostra o resultado gravado pelo último avanço de cada clone autorizado."""
     parts = []
     for repo in sorted(ctx.lean_auto):
         try:
-            data = _read_json(ctx.data_dir / "live" / f"{repo.split('/')[1]}.json")
-        except Malformed:
+            data = json.loads(live_record_path(ctx, repo).read_text(encoding="utf-8"))
+        except FileNotFoundError:
             continue
-        if not isinstance(data, dict) or data.get("repo") != repo:
-            continue
-        result = data.get("resultado")
-        if result in ("fora-da-main", "suja", "erro"):
-            detail = data.get("detalhe") or result
-            parts.append(f"avanço de {repo} falhou: {detail}")
+        except (OSError, ValueError):
+            data = None
+        if (not isinstance(data, dict) or data.get("repo") != repo
+                or data.get("resultado") not in ("ok", "fora-da-main", "suja", "erro")
+                or not isinstance(data.get("detalhe"), str)):
+            parts.append(f"avanço de {repo} falhou: registro de avanço inválido")
+        elif data["resultado"] != "ok":
+            parts.append(f"avanço de {repo} falhou: {data['detalhe'] or data['resultado']}")
     for line in install_behind(ctx, private=True) if ctx.lean_auto else ():
         if line["repo"] in ctx.lean_auto and isinstance(line.get("commit"), str):
             parts.append(f"{line['repo']}: {line['instalacao']} no SHA {line['commit'][:7]}")

@@ -958,15 +958,20 @@ def live_setup(ctx, slug, url=None):
         path.mkdir()
     except FileExistsError:
         raise StoreError(f"destino já existe: {path}") from None
+    try:
+        _setup_live_clone(ctx, slug, path, remote, expected)
+    except (StoreError, OSError):
+        shutil.rmtree(path)
+        raise
+    return path
+
+
+def _setup_live_clone(ctx, slug, path, remote, expected):
     # Sem a config de um repo vizinho, mas com a configuração de credenciais do dono.
     env = remote_env(ctx, path)
-    try:
-        effective = _git(["ls-remote", "--get-url", "--", remote], path, env, "URL efetiva")
-        if rw_auto.rw.origin_identity(effective.strip()) != expected:
-            raise StoreError(f"URL efetiva não corresponde à origem declarada de {slug}")
-    except StoreError:
-        path.rmdir()
-        raise
+    effective = _git(["ls-remote", "--get-url", "--", remote], path, env, "URL efetiva")
+    if rw_auto.rw.origin_identity(effective.strip()) != expected:
+        raise StoreError(f"URL efetiva não corresponde à origem declarada de {slug}")
     rc, _ = run(["git", "clone", "--branch", "main", "--", remote, str(path)], cwd=path, env=env)
     if rc:
         raise StoreError(f"clone de {slug} falhou (git saiu {rc})")
@@ -986,7 +991,6 @@ def live_setup(ctx, slug, url=None):
     condition = "gitdir/i" if os.name == "nt" else "gitdir"
     _git(["config", "--worktree", f"includeIf.{condition}:{git_pattern}.path", str(lock_config)],
          path, env, "trava do clone")
-    return path
 
 
 def _live_remote(ctx, slug, path, expected):
@@ -1005,6 +1009,17 @@ def _live_fetch(ctx, slug, path, *, expected_id=None):
     _git(["fetch", "origin", "+refs/heads/main:refs/remotes/origin/main"], path, env, "fetch")
 
 
+def _live_obstruction(path, env):
+    rc, branch = run(["git", "symbolic-ref", "-q", "HEAD"], cwd=path, env=env)
+    if rc not in (0, 1):
+        raise StoreError(f"branch do clone ilegível (git saiu {rc})")
+    if rc or branch.strip() != "refs/heads/main":
+        return "fora-da-main", "cópia em uso fora da main"
+    if _git(["status", "--porcelain", "-unormal", "--ignore-submodules=none"], path, env, "status").strip():
+        return "suja", "cópia em uso suja"
+    return None
+
+
 def live_advance(ctx, slug, *, expected_id=None):
     """Avança o checkout dedicado sem sobrescrever estado local e registra o resultado."""
     path = live_path(ctx, slug)
@@ -1014,24 +1029,22 @@ def live_advance(ctx, slug, *, expected_id=None):
     try:
         _private_clone(ctx, slug)
         before = after = _git(["rev-parse", "HEAD"], path, env, "HEAD").strip()
-        rc, branch = run(["git", "symbolic-ref", "-q", "--short", "HEAD"], cwd=path, env=env)
-        if rc not in (0, 1):
-            raise StoreError(f"branch do clone ilegível (git saiu {rc})")
-        if rc or branch.strip() != "main":
-            result, detail = "fora-da-main", "cópia em uso fora da main"
-        elif _git(["status", "--porcelain", "-unormal", "--ignore-submodules=none"], path, env, "status").strip():
-            result, detail = "suja", "cópia em uso suja"
-        else:
+        obstruction = _live_obstruction(path, env)
+        if obstruction is None:
             _live_fetch(ctx, slug, path, expected_id=expected_id)
+            obstruction = _live_obstruction(path, env)
+        if obstruction is not None:
+            result, detail = obstruction
+        else:
             _git(["merge-base", "--is-ancestor", "HEAD", BASE_REF], path, env, "avanço rápido indisponível")
             _git(["merge", "--ff-only", "--no-overwrite-ignore", BASE_REF], path, env, "avanço da main")
             after = _git(["rev-parse", "HEAD"], path, env, "HEAD").strip()
     except StoreError as exc:
         result, detail = "erro", str(exc)
     record = dict(repo=slug, resultado=result, antes=before, depois=after, detalhe=detail, ts=int(time.time()))
-    folder = ctx.data_dir / "live"
-    folder.mkdir(parents=True, exist_ok=True)
-    rw_auto._write_json(folder / f"{path.name}.json", record)
+    record_path = rw_auto.live_record_path(ctx, slug)
+    record_path.parent.mkdir(parents=True, exist_ok=True)
+    rw_auto._write_json(record_path, record)
     return record
 
 
