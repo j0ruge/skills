@@ -18,7 +18,7 @@ R26 preserva a ordem já comprovada na retomada da 0.4.0 quando texto sem carga 
 Nos dois cortes, o metadado externo comprovadamente antigo fica sem efeito e a retro continua atribuída a `codereview`.
 Quando a externa é posterior, o Stop fica em silêncio.
 Passaram a suíte isolada, os 28 Checks, F1 e quatro testes de release.
-A QA começa por R26 e repete R25, R24 e R23. As três provas nativas passaram no host Linux em `5c54699`.
+A QA começa por R26 e repete R25, R24 e R23.
 
 ## Estado do repo
 
