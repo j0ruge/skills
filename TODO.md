@@ -50,7 +50,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: normalizar em NFC na `chave` e no `candidatos`, com o par; abrir antes de usar o `auto` num macOS.
   Fonte: `docs/retrofit-watch/2026-11-24-pendencias-0.4.0.md` (T12-4) — descoberto por `revisor final` (2026-11-24)
 - [ ] **A busca do .git do projeto da sessão ignora o teto do git** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:275` (`_session_project`) — ignora o
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:276` (`_session_project`) — ignora o
   `GIT_CEILING_DIRECTORIES` e o `GIT_DISCOVERY_ACROSS_FILESYSTEM`. Falha fechada: um `~/.git` de dotfiles com
   o teto no `$HOME` seguraria as sessões fora de repo (R3, codereview r1 #14).
   Direção: respeitar as duas variáveis na subida pelos pais.
@@ -70,17 +70,17 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 ### Passos do dono antes de ligar o modo auto
 
 - [ ] **O ensaio auto-dry e ligar o auto** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:96` (`AUTO_MODES`) — os passos 2
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:99` (`AUTO_MODES`) — os passos 2
   e 3: `"mode": "auto-dry"` e `"store"` na config, uma sessão com `bypassPermissions` e uma skill da loja
   com atrito. Esperado: o ramo pronto e a linha `segurado — auto-dry`. Depois, `"mode": "auto"`.
   Fonte: `docs/superpowers/plans/2026-11-23-retrofit-watch-modo-autonomo.md` — descoberto por `plano` (2026-11-24)
 - [ ] **A suíte do plugin no Windows** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:39` (`RUN_TIMEOUT`) — o passo 4: rodar a
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:40` (`RUN_TIMEOUT`) — o passo 4: rodar a
   suíte com o `python3` do PATH antes de ligar o `auto` lá. O Git Credential Manager pode abrir uma janela, e
   o `RUN_TIMEOUT` de 900 s dá `erro` (falha fechada). Aceito: 15 min por lote numa máquina assim (FR-5).
   Fonte: Ruling FR-5 da revisão final — descoberto por `revisor final` (2026-11-24)
 - [ ] **O MAX_PATH da cópia do commit no Windows** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:504` (`TREE_PREFIX`) — a cópia
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:505` (`TREE_PREFIX`) — a cópia
   `.porta-*` sob a pasta de dados tem cerca de 60 caracteres de margem no `MAX_PATH`, não medida. Passar dá
   `interno` (falha fechada) (Ruling FR-6). Direção: o passo 4 do dono mede a margem.
   Fonte: Ruling FR-6 da revisão final — descoberto por `revisor final` (2026-11-24)
@@ -88,7 +88,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 ### O que o uso da retrofit-watch 0.4.0 mostrou
 
 - [ ] **A skill de fora carregada na mesma mensagem apaga a atribuição da vigiada** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:567` (`_watch`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:619` (`_watch`) —
   uma mensagem carregou `zitadel-idp` e uma externa juntas. A monitorada ficou com `work: 0` e sem pedido de retro.
   Direção: preservar o par no mesmo `message.id` e testar que a externa posterior ainda encerra a atribuição.
   Corrigido no patch 0.4.1. RESOLVED by 682cd3d
@@ -114,29 +114,29 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: o teste chama o `rw_store.network_env`, e o alias sai; ou o comentário diz para quê.
   Fonte: codereview r1 #8 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **O seal roda o portão do próprio ramo** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:623` (`seal`) — o portão do `seal` sai
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:624` (`seal`) — o portão do `seal` sai
   do commit do ramo. Rebaixado de MEDIUM: a porta segura com `escopo` todo caminho fora de
   `plugins/<plugin>/` antes da camada 1 (r1 #10). Direção, opcional: o portão do `seal` do `origin/main`.
   Fonte: codereview r1 #10 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **O estouro do critério apaga o cache dos commits** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:686` (`_startup_git`) — o `criterion`
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:688` (`_startup_git`) — o `criterion`
   grava `{sha, estouro}` por cima dos commits: por 24 h, "desconhecido" parece "não cumprido" (r1 #11).
   Depois do `-c`, a mensagem do `_startup_git` (`args[:2]`) não nomeia o `archive` (r1 #12).
   Direção: o estouro numa chave à parte; o rótulo pula o par `-c k=v`.
   Fonte: codereview r1 #11 e #12 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **As pastas .porta- que sobram** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:534` (`ignore_errors=True`) — um SIGKILL
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:535` (`ignore_errors=True`) — um SIGKILL
   deixa `.porta-*` na pasta de dados (r1 #13), e o `rmtree` falha em silêncio: no Windows sobram cerca de
   7,6 MB por porta (minor T10-4). Direção: limpar as pastas velhas no início, ou avisar.
   Fonte: codereview r1 #13 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **As mensagens de erro do projeto da sessão** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:300` (`run(command, env=env)`) — o rc da
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:303` (`run(command, env=env)`) — o rc da
   1ª chamada sai com a saída da 2ª (r2 #3). Um `PermissionError` no `isdir` dá "nao deu uma pasta" (r2 #4).
   Nenhum teste confere que o texto da 2ª chamada chega à mensagem (r3).
   Direção: o rc da chamada que deu o texto; o `os.stat` no lugar do `isdir`; o subteste do texto.
   Fonte: codereview r2 #3, #4 e r3 — descoberto por `codereview r2` (2026-11-24)
 - [ ] **As docstrings do _session_project e do run_bytes** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:77` (`run_bytes`) — a do `run_bytes`
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:78` (`run_bytes`) — a do `run_bytes`
   não cita o `stderr=`, e a do `_session_project` não cita o caminho físico nem o caminho só do stdout.
   Direção: uma frase em cada uma.
   Fonte: codereview r2, forma — descoberto por `codereview r2` (2026-11-24)
@@ -146,7 +146,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: duas frases, uma por saída, com o sensor do `test_auto_docs.py` verde.
   Fonte: codereview r2, forma — descoberto por `codereview r2` (2026-11-24)
 - [ ] **O discard_retro conta no teto da sessão** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_auto.py:942` (`discard_retro`) — as linhas
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_auto.py:975` (`discard_retro`) — as linhas
   `descartado` dele contam no `used` e no teto da sessão (r1 #15). A função é longa, o `_own` não tem
   docstring e o acento é desigual nas mensagens (r1 #17).
   Direção: dizer na docstring, ou marcar as linhas; extrair dois helpers.
@@ -157,7 +157,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: pôr o `discard` na regra.
   Fonte: codereview r1 #16 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **A linha corrompida do registro some em silêncio** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_auto.py:80` (`read_registry`) — a linha ilegível é
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_auto.py:81` (`read_registry`) — a linha ilegível é
   pulada sem aviso e pode reabrir um fluxo fechado. Anterior ao plano (r1 #18).
   Direção: contar as linhas puladas e avisar.
   Fonte: codereview r1 #18 — descoberto por `codereview r1` (2026-11-24)
@@ -177,7 +177,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: "todo git que fala com o `origin`".
   Fonte: codereview r1 #24 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **A cópia da porta não confere o info/attributes** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:508` (`info/attributes`) — a C2 do plano
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:509` (`info/attributes`) — a C2 do plano
   deixa fora o `info/attributes` do `.git` comum, e um `export-ignore` ali tiraria um arquivo da cópia
   (r1 #25). Direção, opcional: comparar a lista da cópia com o `ls-tree` do commit.
   Fonte: codereview r1 #25 — descoberto por `codereview r1` (2026-11-24)
@@ -206,14 +206,14 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 
 - [ ] **ID de chamada reaproveitado entre mensagens passa por vínculo novo** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:681` (`_skill_origin`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:733` (`_skill_origin`) —
   após trocar a mensagem ativa, o ID consumido antes ainda pode preservar a monitorada diante de uma carga externa.
   Direção: medir a janela de ambiguidade antes de ampliar a detecção além da mensagem ativa.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r2.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 
 - [ ] **Metadado externo antigo encerra a atribuição de uma carga posterior** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:725` (`unlinked = False`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:777` (`unlinked = False`) —
   após confirmar a carga posterior, o metadado externo antigo encerra o crédito futuro. O caso já falha na base.
   Direção: diferenciar ID comprovadamente obsoleto de metadado sem origem conhecida. RESOLVED by fcbd6cb
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r3.md` — descoberto por
@@ -239,9 +239,17 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: na triagem da prosa histórica, apontar para a receita isolada e manter a evidência da execução.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r7.md` — descoberto por
   `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
+  RECURRED 1: 20261127-retrofit-watch-050 (2026-11-28)
+
+- [ ] **A fixture de duas skills full do mesmo plugin já falha na base** —
+  `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_mode.py:203`
+  (`test_second_skill_of_the_same_plugin_is_recorded`) — a segunda skill não entra no estado em `6d72029`.
+  Direção: verificar se os IDs das duas cargas na fixture representam chamadas distintas no Stop da 0.4.1.
+  Fonte: `docs/handoffs/20261127-retrofit-watch-050/checkpoint-notas.md` — descoberto por
+  `sdd-executor` na missão `20261127-retrofit-watch-050` (2026-11-28)
 
 - [ ] **A migração perde a ordem de cargas anteriores ao offset** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:433` (`attribution_closed`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:491` (`attribution_closed`) —
   a 0.4.0 não distingue os dois cortes, com perda de retro nova e falso pedido quando só houve nome externo.
   Direção: recuperar só a ordem sem recontar trabalho. RESOLVED by 8fa5c7d
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r9.md` — descoberto por
@@ -262,7 +270,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
 - [ ] **Estado intermediário inverte a precedência do slash** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:430` (`slash_prior_calls`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:488` (`slash_prior_calls`) —
   um slash anterior volta a valer após a externa no snapshot de c2c0c8c. O estado real da 0.4.0 passa.
   Direção: decidir se snapshots intermediários precisam recuperar a ordem antes de ampliar a migração.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r24.md` —

@@ -36,12 +36,13 @@ CRITERIA = HERE.parent / "references" / "criteria.md"
 SCRIPT = HERE / "retrofit_watch.py"
 
 # Motivos de uma entrada ficar no modo manual, na ordem em que why_manual os confere.
-REASONS = ("modo", "kit-ou-lean", "lista-manual", "permissao", "entrypoint", "sem-loja", "teto")
+REASONS = ("modo", "kit-ou-lean", "lista-manual", "permissao", "entrypoint", "sem-loja", "sem-clone", "teto")
 # Os motivos que a linha ao dono explica. Os outros não ganham acréscimo: são o modo manual de
 # sempre (o `modo`, a lista `manual`, o kit ou a skill lean) ou uma sessão que não é a interativa.
 REASON_TEXT = {
     "permissao": "o modo autônomo só vale com o modo de permissão bypassPermissions",
     "sem-loja": "falta na config a chave store com o clone de trabalho da loja",
+    "sem-clone": "falta o clone dedicado do repo (retrofit_watch.py live-setup <dono/repo>)",
     "teto": "o teto de retrofits autônomos da sessão (auto_limits) foi atingido",
 }
 # Os motivos de nome da porta (rw_gate): só o dono os resolve, ensinando o portão (O7). Moram aqui porque
@@ -163,7 +164,8 @@ def why_manual(ctx, payload, entry, registry, entrypoint):
     """Por que a entrada fica no modo manual, ou None quando o modo autônomo vale para ela."""
     if ctx.mode == "manual":
         return "modo"
-    if entry.get("mode") != "full":
+    lean = _listed_origin(ctx, entry)
+    if entry.get("mode") != "full" and not lean:
         return "kit-ou-lean"
     manual = ctx.manual
     if entry.get("arg") in manual or any(s in manual for s in entry.get("skills") or []):
@@ -176,12 +178,22 @@ def why_manual(ctx, payload, entry, registry, entrypoint):
         return "entrypoint"
     if ctx.store is None:
         return "sem-loja"
+    if lean:
+        from rw_store import live_clone
+
+        if live_clone(ctx, lean) is None:
+            return "sem-clone"
     limits = ctx.auto_limits
     session = payload.get("session_id") or "unknown"
     if (used(registry, session, plugin=entry.get("arg")) >= limits["per_skill"]
             or used(registry, session) >= limits["per_session"]):
         return "teto"
     return None
+
+
+def _listed_origin(ctx, entry):
+    slug = entry.get("origin")
+    return slug if entry.get("mode") == "lean" and rw.valid_slug(slug) and slug in ctx.lean_auto else None
 
 
 def split(ctx, payload, entries, entrypoint):
@@ -229,6 +241,17 @@ def open_request(ctx, payload, entries):
             break
         except FileExistsError:
             now += 1
+    skills = []
+    effective = None
+    for entry in entries:
+        slug = _listed_origin(ctx, entry)
+        if slug and effective is None:
+            from rw_store import lean_mode
+
+            effective = lean_mode(ctx)
+        skills.append({"key": entry["key"], "plugin": entry["arg"], "label": entry["label"],
+                       "skills": list(entry.get("skills") or []), "repo": slug,
+                       "modo": effective if slug else ctx.mode})
     pedido = {
         "id": rid,
         "sessao": session,
@@ -236,8 +259,7 @@ def open_request(ctx, payload, entries):
         "transcript": payload.get("transcript_path"),
         "cwd": payload.get("cwd") or os.getcwd(),
         "modo": ctx.mode,
-        "skills": [{"key": e["key"], "plugin": e["arg"], "label": e["label"], "skills": list(e.get("skills") or [])}
-                   for e in entries],
+        "skills": skills,
     }
     _write_json(folder / "pedido.json", pedido)
     return pedido
@@ -247,7 +269,9 @@ def auto_text(ctx, pedido, entries):
     """O bloco do pedido autônomo para o Claude. Nomeia os caminhos absolutos que o fluxo usa."""
     labels = ", ".join(e["label"] for e in entries)
     label = entries[0]["label"] if len(entries) == 1 else "<skill>"
-    skills = "; ".join(f"`{e['label']}` ({e['work']} chamadas, {e['friction']} sinais de atrito)" for e in entries)
+    skills = "; ".join(f"`{e['label']}` ({e['work']} chamadas, {e['friction']} sinais de atrito)"
+                       + (f" (repo {s['repo']}, modo {s['modo']})" if s.get("repo") else "")
+                       for e, s in zip(entries, pedido["skills"]))
     lessons = retro_dir(ctx, pedido["id"]) / "licoes.json"
     limit = ctx.auto_limits["per_session"]
     before = used(read_registry(ctx), pedido["sessao"], skip=pedido["id"])
@@ -403,6 +427,11 @@ PEDIDO_SKILL_SPEC = {
     "label": _text,
     "skills": _text_list,
 }
+PEDIDO_SKILL_ORIGIN_SPEC = {
+    **PEDIDO_SKILL_SPEC,
+    "repo": lambda value: value is None or rw.valid_slug(value),
+    "modo": _one_of("auto", "auto-dry"),
+}
 LICOES_SPEC = {
     "id": _safe_text,
     "licoes": _list,
@@ -536,7 +565,10 @@ def _by_number(entries, where):
 
 def load_pedido(path):
     data = _fields(_read_json(path), PEDIDO_SPEC, str(path))
-    _items(data, "skills", PEDIDO_SKILL_SPEC, str(path))
+    for i, entry in enumerate(data["skills"]):
+        spec = (PEDIDO_SKILL_ORIGIN_SPEC if isinstance(entry, dict) and ("repo" in entry or "modo" in entry)
+                else PEDIDO_SKILL_SPEC)
+        _fields(entry, spec, f"{path}: `skills`[{i}]")
     return data
 
 
@@ -611,7 +643,8 @@ def in_request(ctx, pedido, licao):
     de agora ficam fora, mesmo que a config tenha mudado depois do pedido."""
     plugin, skill = licao["plugin"], licao["skill"]
     entries = [e for e in pedido["skills"] if e["plugin"] == plugin]
-    if not entries:
+    # O fluxo full não pode receber uma lição sem origem de um nome reservado por um repo privado.
+    if not entries or any(e.get("repo") is not None for e in entries):
         return False
     excluded, manual = ctx.excluded, ctx.manual
     if plugin in excluded or skill in excluded or plugin in manual or skill in manual:

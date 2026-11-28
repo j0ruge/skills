@@ -18,6 +18,7 @@ Todo git daqui roda sem as variáveis de localização herdadas (um hook do git 
 HOME do Context: o `~` resolve pelo ctx.home, nunca pelo HOME real. Os erros são StoreError; a saída do
 portão fora do formato também, nunca uma lista vazia (falha fechada).
 """
+import configparser
 import contextlib
 import hashlib
 import importlib.util
@@ -668,6 +669,7 @@ V2_MIN_DAYS = 14
 DAY = 86400
 STARTUP_TIMEOUT = 3
 CRITERION_FILE = "criterio.json"
+LEAN_WINDOW_FILE = "lean-janela.json"
 # C9: o estouro do teto fica em cache por sha do `origin/main`, por 24 h; depois o critério mede de novo.
 CRITERION_RETRY = 86400
 MARKER = "Retrofit-Mode"
@@ -675,43 +677,45 @@ AUTONOMOUS = "autonomous"
 REVERTS = re.compile(r"This reverts commit ([0-9a-f]{7,40})")
 NAME_CHECK = "scripts/check-private-names.py"
 PRIVATE_LIST = LIST_FILES[1]
-# Um registro por commit (0x1e), os campos separados por 0x1f, os valores do trailer por 0x1d.
-LOG_FORMAT = f"%H%x1f%ct%x1f%cs%x1f%(trailers:key={MARKER},valueonly,separator=%x1d)%x1f%B%x1e"
+# O NUL separa commits sem confundir separadores escritos no corpo da mensagem.
+LOG_FORMAT = f"%H%x1f%ct%x1f%cs%x1f%(trailers:key={MARKER},valueonly,separator=%x1d)%x1f%B"
 
 
 class StartupTimeout(StoreError):
     """O git do critério estourou o teto do startup (rc 124)."""
 
 
-def _startup_git(store, args, what, env=None):
+def _startup_git(store, args, what, env=None, timeout=STARTUP_TIMEOUT):
     """A saída em bytes do git da loja, com o teto do startup, sem config nenhuma (ou com `env`, um ambiente
     também neutro); StartupTimeout com rc 124, StoreError com outro rc != 0."""
-    rc, out = run_bytes(["git", "--literal-pathspecs", "-C", str(store), *args], timeout=STARTUP_TIMEOUT,
+    rc, out = run_bytes(["git", "--literal-pathspecs", "-C", str(store), *args], timeout=timeout,
                         env=git_env(neutral=True) if env is None else env)
     if rc == 124:
-        raise StartupTimeout(f"{what}: git {' '.join(args[:2])} passou de {STARTUP_TIMEOUT} s")
+        raise StartupTimeout(f"{what}: git {' '.join(args[:2])} passou de {timeout:.3g} s")
     if rc != 0:
         raise StoreError(f"{what}: git {' '.join(args[:2])} saiu {rc}: {_decode(out).strip()[:500]}")
     return out
 
 
-def _autonomous(store, head):
-    """([[sha, ts, data], ...] dos commits com o trailer exatamente `autonomous`, revertidos): os commits
-    do `head` que trazem `This reverts commit <sha>` de um deles."""
-    out = _decode(_startup_git(store, ["log", f"--format={LOG_FORMAT}", head], "criterio"))
-    records = []
-    for record in out.split("\x1e"):
-        fields = record.lstrip("\n").split("\x1f", 4)
-        if len(fields) == 5:
-            records.append(fields)
+def _marked_history(store, head, git):
+    """Commits autônomos e os reverts que citam seus SHAs."""
+    out = _decode(git(store, ["log", "-z", f"--format={LOG_FORMAT}", head], "criterio"))
+    records = [record.split("\x1f", 4) for record in out.removesuffix("\0").split("\0")]
+    if not out.endswith("\0") or any(len(r) != 5 or not r[1].isdigit() for r in records):
+        raise StoreError("criterio: histórico em formato inválido")
     commits = []
     for sha, ts, date, trailers, _ in records:
         if [v.strip() for v in trailers.split("\x1d") if v.strip()] == [AUTONOMOUS]:
             commits.append([sha, int(ts), date])
-    shas = [c[0] for c in commits]
-    reverted = sum(1 for *_, body in records
-                   if any(s.startswith(m) for m in REVERTS.findall(body) for s in shas))
-    return commits, reverted
+    shas = {c[0] for c in commits}
+    reverts = [[sha, int(ts), date] for sha, ts, date, _, body in records
+               if any(any(s.startswith(m) for s in shas) for m in REVERTS.findall(body))]
+    return commits, reverts
+
+
+def _autonomous(store, head):
+    commits, reverts = _marked_history(store, head, _startup_git)
+    return commits, len(reverts)
 
 
 def _load_name_check(folder):
@@ -721,21 +725,22 @@ def _load_name_check(folder):
     return module
 
 
-def _leaks(store, head, shas):
+def _leaks(store, head, shas, git=None):
     """Os achados do sensor de nomes (o `varrer` do check-private-names.py, com a lista de hashes, os dois
     do `head`) nos arquivos que os commits `shas` tocaram, como estão no `head`. Os arquivos saem do
     `git archive` para uma pasta temporária, que o `varrer` lê sem o git (ela não tem `.git`). O archive é
     o do `clean_tree` (ARCHIVE e `archive_env()`): um `export-ignore` nos atributos global ou de sistema
     tiraria o arquivo do vazamento da contagem (Final-F5)."""
-    names = _decode(_startup_git(store, ["-c", "core.quotePath=false", "show", "--name-only", "--no-renames",
+    git = _startup_git if git is None else git
+    names = _decode(git(store, ["-c", "core.quotePath=false", "show", "--name-only", "--no-renames",
                                          "--format=", "-z", *shas], "criterio"))
     touched = sorted({n.lstrip("\n") for n in names.split("\0")} - {""})
     present = []
     if touched:
-        listed = _decode(_startup_git(store, ["ls-tree", "-r", "-z", "--name-only", head, "--", *touched],
+        listed = _decode(git(store, ["ls-tree", "-r", "-z", "--name-only", head, "--", *touched],
                                       "criterio"))
         present = [n for n in listed.split("\0") if n]
-    raw = _startup_git(store, [*ARCHIVE, head, "--", NAME_CHECK, PRIVATE_LIST, *present], "criterio",
+    raw = git(store, [*ARCHIVE, head, "--", NAME_CHECK, PRIVATE_LIST, *present], "criterio",
                        env=archive_env())
     wanted = set(present)
     with tempfile.TemporaryDirectory(prefix="rw-criterio-") as tmp:
@@ -840,6 +845,93 @@ def criterion_notice(ctx, now=None):
         return None
     return (f"{got['publicados']} retrofits autônomos, {got['revertidos']} revertidos, {got['vazados']} nomes "
             f"vazados desde {got['desde']} — o kit pode entrar (ver a spec do modo autônomo)")
+
+
+def live_clone(ctx, slug):
+    """Identifica o checkout dedicado pela config local, sem git no caminho da elegibilidade."""
+    root = ctx.live_dir
+    if not rw_auto.rw.valid_slug(slug) or slug not in ctx.lean_auto or root is None:
+        return None
+    path = root / slug.split("/")[1]
+    gitdir = path / ".git"
+    config = configparser.ConfigParser(interpolation=None, allow_no_value=True)
+    try:
+        if path.is_symlink() or gitdir.is_symlink() or not (gitdir / "HEAD").is_file():
+            return None
+        with (gitdir / "config").open(encoding="utf-8") as fh:
+            config.read_file(fh)
+        remote = config['remote "origin"']
+        if rw_auto.rw.origin_slug(remote.get("url")) == slug:
+            return path
+    except (OSError, ValueError, KeyError, configparser.Error):
+        pass
+    return None
+
+
+def _lean_leaks(ctx, heads, store, head, commits, git):
+    path = ctx.data_dir / LEAN_WINDOW_FILE
+    try:
+        cached = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        cached = None
+    if isinstance(cached, dict) and cached.get("heads") == heads and rw_auto._int(cached.get("vazados")):
+        return cached["vazados"]
+    leaks = _leaks(store, head, [sha for sha, *_ in commits], git=git)
+    ctx.data_dir.mkdir(parents=True, exist_ok=True)
+    rw_auto._write_json(path, {"heads": heads, "vazados": leaks})
+    return leaks
+
+
+def lean_window(ctx, now=None):
+    """Conta só publicações da loja e reinicia no último revert marcado de qualquer origem listada."""
+    store = ctx.store
+    if store is None:
+        return None
+    now = time.time() if now is None else now
+    deadline = time.monotonic() + STARTUP_TIMEOUT
+
+    def git(repo, args, what, env=None):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise StartupTimeout("janela lean: tempo de leitura esgotado")
+        local = dict(git_env(neutral=True) if env is None else env,
+                     GIT_NO_LAZY_FETCH="1", GIT_ALLOW_PROTOCOL="", GIT_NO_REPLACE_OBJECTS="1")
+        return _startup_git(repo, args, what, env=local, timeout=remaining)
+
+    try:
+        repos = {"store": store, **{slug: live_clone(ctx, slug) for slug in sorted(ctx.lean_auto)}}
+        heads, reverts, commits = {}, [], []
+        for key, repo in repos.items():
+            if repo is None:
+                return None
+            ref = "refs/remotes/origin/main"
+            proof = _decode(git(repo, ["rev-parse", "--is-shallow-repository", "--verify",
+                                       f"{ref}^{{commit}}"], "janela lean")).splitlines()
+            if len(proof) != 2 or proof[0] != "false":
+                return None
+            heads[key] = proof[1]
+            # O ref pode continuar intacto depois de perder um ancestral, inclusive com cache positivo.
+            marked, reverted = _marked_history(repo, heads[key], git)
+            reverts.extend(reverted)
+            if key == "store":
+                commits = marked
+        last = max(reverts, key=lambda c: c[1], default=None)
+        published = [c for c in commits if last is None or c[1] > last[1]]
+        start = last or min(published, key=lambda c: c[1], default=None)
+        days = max(0, int((now - start[1]) // DAY)) if start else 0
+        floors = len(published) >= V2_MIN_PUBLISHED and days >= V2_MIN_DAYS
+        leaks = _lean_leaks(ctx, heads, store, heads["store"], published, git) if floors else None
+        return {"publicados": len(published), "dias": days, "desde": start[2] if start else None,
+                "ultimo_revert": last[1] if last else None, "vazados": leaks, "cumprido": floors and leaks == 0}
+    except (StoreError, OSError, ValueError, ImportError, AttributeError, SyntaxError, tarfile.TarError):
+        return None
+
+
+def lean_mode(ctx, now=None):
+    if ctx.mode != "auto":
+        return ctx.mode
+    window = lean_window(ctx, now)
+    return "auto" if window and window["cumprido"] else "auto-dry"
 
 
 # --- linha de comando --------------------------------------------------------------------------

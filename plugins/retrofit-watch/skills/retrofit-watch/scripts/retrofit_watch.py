@@ -126,7 +126,8 @@ class Context:
 
     @property
     def owners(self):
-        return {o.lower() for o in self.config.get("owners", DEFAULT_OWNERS)}
+        owners = self.config.get("owners", DEFAULT_OWNERS)
+        return {o.lower() for o in owners if isinstance(o, str)} if isinstance(owners, (list, tuple)) else set()
 
     @property
     def excluded(self):
@@ -139,7 +140,7 @@ class Context:
     @property
     def deny_roots(self):
         roots = [self.home / ".agents", self.home / ".hermes"]
-        roots += [Path(os.path.expanduser(r)) for r in self.config.get("deny_roots", [])]
+        roots += self._paths("deny_roots", [])
         return [_slashed(os.path.realpath(r)) for r in roots]
 
     # --- modo autônomo (rw_auto.py) ------------------------------------------------------------
@@ -171,6 +172,26 @@ class Context:
         """Plugins ou skills que ficam sempre no modo manual."""
         value = self.config.get("manual", [])
         return {m for m in value if isinstance(m, str)} if isinstance(value, list) else set()
+
+    @property
+    def lean_auto(self):
+        value = self.config.get("lean_auto", [])
+        if not isinstance(value, list):
+            return frozenset()
+        owners = self.owners
+        return frozenset(slug for item in value if isinstance(item, str)
+                         and valid_slug(slug := item.lower()) and slug.split("/")[0] in owners)
+
+    @property
+    def live_dir(self):
+        raw = self.config.get("live_dir", "~/.local/share/skills-live")
+        if not isinstance(raw, str) or not raw or "\0" in raw:
+            return None
+        path = self._home_path(raw)
+        if not path.is_absolute():
+            return None
+        path = Path(os.path.realpath(path))
+        return None if _denied(_slashed(str(path)), self) else path
 
     @property
     def auto_limits(self):
@@ -268,15 +289,39 @@ def _full(plugin, skill, ctx):
             "skills": [skill] if skill else []}
 
 
-def _lean(name, repo):
-    return {"key": f"lean:{repo}:{name}", "mode": "lean", "arg": name, "label": name, "repo": repo}
+def _lean(name, repo, origin=None):
+    return {"key": f"lean:{repo}:{name}", "mode": "lean", "arg": name, "label": name, "repo": repo,
+            "origin": origin}
 
 
-def _owned(top, ctx):
-    """O `origin` do repo é de um dono nosso?"""
-    origin = _git(["remote", "get-url", "origin"], top) or ""
-    owner = re.search(r"[:/]([^/:]+)/[^/]+?(?:\.git)?/?$", origin)
-    return bool(owner) and owner.group(1).lower() in ctx.owners
+def valid_slug(value):
+    return (isinstance(value, str) and re.fullmatch(r"[a-z0-9][a-z0-9-]*/[a-z0-9_.-]+", value) is not None
+            and value.rsplit("/", 1)[1] not in (".", ".."))
+
+
+def origin_slug(url):
+    """Normaliza HTTPS, SSH e o caminho absoluto do bare, sem aceitar segmentos ambíguos."""
+    if not isinstance(url, str):
+        return None
+    remote = re.fullmatch(r"(?i)(?:(?:https|ssh)://[^/\s?#]+/|(?:[^@/:\s]+@)?[^/:\s]+:)([^/]+/[^/]+)/?", url)
+    if remote:
+        path = remote[1]
+    else:
+        path = url.replace("\\", "/")
+        if not os.path.isabs(url) or not path.endswith(".git") or {".", ".."} & set(path.split("/")):
+            return None
+        path = "/".join(path.split("/")[-2:])
+    slug = path.lower().removesuffix(".git")
+    return slug if valid_slug(slug) else None
+
+
+def _owned_origin(top, ctx):
+    slug = origin_slug(_git(["remote", "get-url", "origin"], top))
+    return slug if slug and slug.split("/")[0] in ctx.owners else None
+
+
+def _denied(real, ctx):
+    return any(real == root or real.startswith(root.rstrip("/") + "/") for root in ctx.deny_roots)
 
 
 def kit_of(name, ctx):
@@ -295,7 +340,7 @@ def classify_kit(kit, ctx):
     if not exe:
         return None
     top = _toplevel(os.path.dirname(os.path.realpath(exe)))
-    if not top or not _owned(top, ctx):
+    if not top or not _owned_origin(top, ctx):
         return None
     return {"key": f"kit:{top}", "mode": "kit", "arg": kit, "label": f"kit {kit}", "repo": top}
 
@@ -313,7 +358,9 @@ def classify_path(path, ctx):
     name = os.path.basename(real.rstrip("/"))
     if name in ctx.config.get("include", []):
         top = _toplevel(real)
-        return _lean(name, top)
+        origin = (_local_origin(real, name, top, ctx) if top and name not in ctx.excluded
+                  and not _denied(real, ctx) and "/.agents/skills/" not in real + "/" else None)
+        return _lean(name, top, origin)
     if name in ctx.excluded:
         return None
     home = _slashed(str(ctx.home))
@@ -328,7 +375,7 @@ def classify_path(path, ctx):
             found = re.match(r"plugins/([^/]+)/", rest)
             plugin = found.group(1) if found else None
         return _full(plugin, name, ctx) if plugin else None
-    if any(real == root or real.startswith(root + "/") for root in ctx.deny_roots) or "/.agents/skills/" in real + "/":
+    if _denied(real, ctx) or "/.agents/skills/" in real + "/":
         return None
     top = _toplevel(real)
     if not top:
@@ -341,6 +388,11 @@ def classify_path(path, ctx):
                 return _full(in_plugin.group(1), name, ctx)
         except (OSError, ValueError):
             pass
+    origin = _local_origin(real, name, top, ctx)
+    return _lean(name, top, origin) if origin else None
+
+
+def _local_origin(real, name, top, ctx):
     try:
         locked = json.loads(Path(top, "skills-lock.json").read_text()).get("skills", {})
         if name in locked:
@@ -350,9 +402,7 @@ def classify_path(path, ctx):
     rel = os.path.relpath(os.path.join(real, "SKILL.md"), top)
     if _git(["ls-files", "--error-unmatch", "--", rel], top) is None:
         return None
-    if not _owned(top, ctx):
-        return None
-    return _lean(name, top)
+    return _owned_origin(top, ctx)
 
 
 # --- estado ------------------------------------------------------------------------------------
