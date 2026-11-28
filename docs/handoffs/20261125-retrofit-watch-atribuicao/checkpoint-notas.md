@@ -461,3 +461,4 @@
 - 2026-11-27 22:39 · R15 sabotage: ausência-de-mensagem-como-falsa-prova-de-unicidade → ambiguous_call_failure_does_not_close_attribution ficou vermelho
 - 2026-11-27 22:40 · R15 · 1dd3224: 13 subcasos vermelhos antes do conserto, duas regressões duráveis, dez mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 126 do hook, 17 Checks e F1 verdes. A suíte literal herdou o Git privado. Restauradas apenas as referências afetadas no espelho e repetida a suíte isolada. Provas nativas não repetidas.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 22:42 · written by the runner
+2026-11-27 22:47 · r25 · achado 1 → R16: falha da carga nova após esgotar a janela pede retro indevida nos dois limites; base silenciosa, TEST_CMD e 17 Checks existentes verdes.
