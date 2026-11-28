@@ -320,3 +320,20 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 07:56 · written by the runner
 - 2026-11-28 08:01 · `R14` · REVIEW r8, achados 1 e 2: elegibilidade observável durante a liberação recusada e alteração do caminho efetivo da trava durante a consulta de ramo. Check exige os dois Reds, o controle de R13 e a jornada de QA.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 08:04 · written by the runner
+- 2026-11-28 08:11 · `R14` · R14 sabotage: _private_clone deixa a main de ser padrão → `test_live_clone_requires_readable_main`
+- 2026-11-28 08:11 · `R14` · R14 sabotage: _private_clone ignora a exceção do diagnóstico → `test_advance_leaves_wrong_branch_dirty_tree_and_divergence_alone`
+- 2026-11-28 08:11 · `R14` · R14 sabotage: live_clone dispensa a main por padrão → `test_setup_stays_ineligible_during_branch_change_at_marker_removal`
+- 2026-11-28 08:11 · `R14` · R14 sabotage: leitura do ramo sempre desabilitada → `test_setup_stays_ineligible_during_branch_change_at_marker_removal`
+- 2026-11-28 08:11 · `R14` · R14 sabotage: leitura do ramo sempre obrigatória → `test_advance_leaves_wrong_branch_dirty_tree_and_divergence_alone`
+- 2026-11-28 08:11 · `R14` · R14 sabotage: arquivo do ramo resolvido fora de .git → `test_setup_clones_main_with_worktree_lock`
+- 2026-11-28 08:11 · `R14` · R14 sabotage: comparação do ramo aceita qualquer valor → `test_setup_stays_ineligible_during_branch_change_at_marker_removal`
+- 2026-11-28 08:11 · `R14` · R14 sabotage: comparação do ramo ignora CRLF → `test_live_clone_requires_readable_main`
+- 2026-11-28 08:11 · `R14` · R14 sabotage: checkout fora da main aceito pela leitura → `test_setup_stays_ineligible_during_branch_change_at_marker_removal`
+- 2026-11-28 08:11 · `R14` · R14 sabotage: erro de leitura do HEAD deixa escapar exceção → `test_live_clone_requires_readable_main`
+- 2026-11-28 08:11 · `R14` · R14 sabotage: erro de leitura do HEAD aceita o checkout → `test_live_clone_requires_readable_main`
+- 2026-11-28 08:11 · `R14` · R14 sabotage: consulta de ramo eliminada → `test_setup_retry_does_not_finalize_wrong_branch`
+- 2026-11-28 08:11 · `R14` · R14 sabotage: recusa do ramo substituída por sucesso → `test_setup_retry_does_not_finalize_wrong_branch`
+- 2026-11-28 08:11 · `R14` · R14 sabotage: consulta de ramo retorna à posição posterior à trava → `test_setup_does_not_finalize_branch_changed_while_reading_hooks`
+- 2026-11-28 08:11 · `R14` · R14 sabotage: consulta tardia restaurada além da consulta adiantada → `test_setup_does_not_finalize_branch_changed_while_reading_hooks`
+- 2026-11-28 08:11 · `R14` · R14 sabotage: avanço não consegue diagnosticar ramo errado → `test_advance_leaves_wrong_branch_dirty_tree_and_divergence_alone`
+- 2026-11-28 08:11 · `R14` · Dois Reds reproduzidos em `a14ae29` com o controle de R13 verde. Em `680d355`, 18 Checks, 164 regressões dirigidas, TEST_CMD e jornada de QA verdes. As 16 sabotagens acusaram a mudança em cópia descartável, com controle de 10 provas, 20 s e 512 MiB por grupo. Os três testes nativos pararam antes do registro da loja, pois o sandbox não permite criar o namespace do Bubblewrap.

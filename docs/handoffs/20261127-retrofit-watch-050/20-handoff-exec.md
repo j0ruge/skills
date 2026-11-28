@@ -2,9 +2,9 @@
 missao: 20261127-retrofit-watch-050
 fase: EXEC
 status: done
-sessao: 01a22180-2764-7272-9863-f4f98a202c53
-data: 2026-11-28 07:45
-gate: "Em ea373158c7b4d50b31b766807a813515121bcf88, TEST_CMD rc 0 (154 testes da loja, 3 pulados; 144 do Stop), 17 Checks, 161 testes dirigidos, jornada da QA e regressão de Stop verdes. Três provas de distribuição no host Linux e camada 1 contra origin/main passaram."
+sessao: 01a221d4-26b6-7e93-a666-406df12e71fe
+data: 2026-11-28 08:11
+gate: "Em 680d355484f393aebefc72ffd66a62862c363c0b, execute `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval \"$TEST_CMD\"'` → rc 0, 154 testes da loja (3 pulados) e 144 do Stop, adaptadores, catálogo e versões válidos. Os 18 comandos do checkpoint retornaram o esperado. A jornada `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py` retornou rc 0. Distribuição nativa não medida nesta sessão por restrição do sandbox."
 ---
 
 # Handoff — EXEC — Retrofit de skills locais listadas
@@ -14,16 +14,16 @@ gate: "Em ea373158c7b4d50b31b766807a813515121bcf88, TEST_CMD rc 0 (154 testes da
 
 ## TL;DR
 
-I1–I4 e R1–R13 concluídos. O setup detecta mudanças de `HEAD` durante a validação
-e preserva a pendência se o ramo muda na liberação. Os 17 Checks, a jornada, a suíte
-e os testes de distribuição no Linux passaram em `ea37315`.
+I1–I4 e R1–R14 concluídos. A elegibilidade exige a `main` também durante a remoção
+do marcador, e o setup valida a trava depois de consultar o ramo. Os 18 Checks,
+a jornada da QA e o TEST_CMD passaram. Comece a QA pelo Check de R14.
 
 ## Estado do repo
 
 - **Branch:** `feat/retrofit-watch-050-loja` — base de comparação `origin/main` local.
-- **Último commit de produto:** `ea37315` — preserva o marcador durante uma troca de ramo.
+- **Último commit de produto:** `680d355` — mantém a cópia inelegível fora da main e valida a trava após a consulta de ramo.
 - **Working tree:** limpo após o commit de checkpoint, notas e handoff.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `ea37315`. 154 testes da loja, 3 pulados, e 144 do Stop. Adaptadores, catálogo e versões válidos.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `680d355`. 154 testes da loja, 3 pulados, e 144 do Stop. Adaptadores, catálogo e versões válidos.
 - **E2E:** sem `E2E_CMD` na config. Jornada automatizada em `sonda-qa.py` com remotos bare de fixture. Nenhum deploy ou repo privado real.
 
 ## O que foi feito
@@ -136,18 +136,31 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
 - A r7 reproduziu a troca de ramo durante a leitura do hook e a validação da origem no ramo anterior. Em `ea37315`, a versão de `HEAD` acompanha a identidade do clone. A liberação reconfere essa versão e preserva o marcador caso a troca ocorra durante sua remoção.
 - Os três Reds reproduziram as falhas. Em `ea37315`, passaram os 49 testes do clone, 17 Checks, 161 regressões dirigidas, a jornada em fixture, a suíte e a distribuição no host.
 
+### Revisão r8 e correção de R14
+
+- `680d355` — o setup avalia o hook efetivo depois da consulta de ramo. A leitura de elegibilidade
+  recusa a cópia fora da `main` mesmo se o marcador já foi removido durante uma tentativa recusada.
+  O avanço ainda identifica o clone para diagnosticar `fora-da-main`, sem torná-lo elegível.
+- Os dois Reds falharam em `a14ae29`, enquanto o controle de R13 passou. Na candidata `680d355`,
+  passaram o Check de R14, os 18 Checks, 164 testes dirigidos, o TEST_CMD e a camada 1.
+  As 16 sabotagens
+  de comportamento foram detectadas em cópia descartável, com controle de 10 provas sem pulos,
+  grupo de processos próprio, 20 s e 512 MiB por execução. Comentários, documentação e
+  asserções não têm comportamento de produção para sabotar. A duplicação tardia da consulta
+  de ramo também foi detectada após restaurar a trava no teste de retomada.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Dezessete Checks e seus commits. |
+| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Dezoito Checks e seus commits. |
 | `docs/retrofit-watch/clone-dedicado.md` | Contrato de clone, selo, ensaio, publicação e avanço. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py` | Cópia de distribuição com contratos dos dois plugins e controles do catálogo. |
 | `KAIZEN_LOG.md` e `TODO.md` | Medida da fixture, limite da adoção e achados fora do escopo. |
 
 ## Boot da próxima fase
 
-Para QA, leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Comece pelos Checks R12 e R13, que conferem o caminho da trava, a origem sob mudança de ramo e a preservação do marcador. Depois repita os Checks anteriores e a jornada da QA em fixture.
+Para QA, leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Comece pelo Check de R14. Observe a inelegibilidade no instante em que a cópia está fora da `main` e o marcador já não existe. Confirme também que uma troca de `core.hooksPath` durante a consulta do ramo recusa a liberação, preserva a pendência e permite a retomada após restaurar a trava. Repita os Checks anteriores e a jornada da QA em fixture.
 Para reproduzir a jornada de bare local com HOME isolado, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py`.
 Não é preciso preparar remotos reais nem iniciar serviços. Para as regressões dirigidas, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests:plugins/retrofit-skill/tests python3 -B -m unittest test_fixture_private test_lean_auto test_lean_window test_lean_live test_lean_batch test_lean_gate test_auto_docs test_modo_autonomo`.
 
@@ -196,6 +209,7 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
 
 ## Riscos e não-feitos
 
+- R14 não mediu a distribuição nativa. A execução sem os três pulos do TEST_CMD parou no Bubblewrap, antes do registro da loja, porque o sandbox não permite criar o namespace. Repita em um host que permita esse isolamento. Não houve validação em Windows nativo.
 - R11 foi exercitado no Linux. No Windows, a remoção ainda usa o caminho entre duas conferências de identidade. O caminho alternativo foi testado com dublê no Linux, não em Windows nativo. Uma troca estritamente entre a última conferência e a remoção pode retirar o marcador do substituto antes de ser detectada. Há um item no TODO para a prova e a remoção ancorada no Windows. O macOS não foi exercitado nativamente nesta rodada.
 - A instalação exclusiva foi exercitada no Linux. A seleção das APIs de macOS e Windows
   foi verificada com dublês, sem execução nativa. O setup recusa a instalação se não houver
