@@ -150,7 +150,7 @@ class CommandTest(unittest.TestCase):
         lines = [line for line in body.splitlines() if line.strip()]
         self.assertLessEqual(len(lines), 20, "a seção *Modo autônomo* passa de 20 linhas")
         said = sentences(body)
-        for anchors, what in ((("Só vale no modo completo",), "só vale no modo completo"),
+        for anchors, what in ((("Na loja vale no modo completo",), "na loja vale no modo completo"),
                               (("Exige", "retrofit.json", "veredito.json"), "exige os dois arquivos"),
                               (("veredito.json", "confirmação do passo 3"), "o veredito confirma"),
                               (("para antes do push",), "o fluxo para antes do push"),
@@ -212,7 +212,9 @@ class ReferenceTest(unittest.TestCase):
                          source_constant(WATCH_SCRIPTS / "rw_gate.py", "SKILL_MAX_CHARS"))
 
     def test_reference_never_says_publish(self):
-        self.assertEqual(publish_offenders(read(REFERENCE)), [], "publicação fora de uma proibição")
+        text = read(REFERENCE)
+        manual = section(text, "Retro manual de repo listado")
+        self.assertEqual(publish_offenders(text.replace(manual, "", 1)), [], "publicação no fluxo autônomo")
 
     def test_publish_check_catches_the_sabotaged_lines(self):
         target = "origin HEAD:" + "main"
@@ -264,6 +266,19 @@ class VersionTest(unittest.TestCase):
         self.assertTrue(entries and entries[0] == version, "a primeira entrada do CHANGELOG não é a versão")
         self.assertIn(MODE_VERSION, entries, f"o CHANGELOG não tem a entrada {MODE_VERSION}")
 
+
+class PrivateFlowTest(unittest.TestCase):
+    def test_auto_uses_private_folder_and_seals(self):
+        text = read(REFERENCE)
+        for field in ("`pasta`", "`<pasta>/CHANGELOG.md`", "sem bump", "Retrofit-Mode: autonomous", "seal"):
+            self.assertIn(field, text)
+
+    def test_manual_confirmation_and_publish_contract(self):
+        for path in (COMMAND, REFERENCE):
+            text = read(path)
+            for field in ("clone dedicado", "sim do dono", "HEAD:main", "pre-push", "local/ci", "live-advance"):
+                self.assertIn(field, text)
+            self.assertNotIn("--no-verify", text)
 
 if __name__ == "__main__":
     unittest.main()

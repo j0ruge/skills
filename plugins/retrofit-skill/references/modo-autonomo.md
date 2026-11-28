@@ -14,8 +14,37 @@ Estes nomes valem em toda a página e no comando:
 - `SQA=$Q/skill-quality-audit/scripts/audit_skill_quality.py`, o auditor que a porta roda.
 - `RS=<worktree>/plugins/retrofit-skill`, a pasta deste comando no worktree.
 
-O modo autônomo é o modo completo do comando, com as diferenças desta página. O modo enxuto não tem
-modo autônomo.
+O modo autônomo da loja segue as seções 1–8. Quando `retrofit.json` traz `repo`, siga a
+variante privada abaixo no lugar dos passos exclusivos da loja.
+
+## Lote privado com `--auto`
+
+Trabalhe no `worktree` preparado e edite só a `pasta` do lote. Use os scripts de auditoria
+da loja para o baseline e o gate da seção 4, apontando o alvo para `<worktree>/<pasta>`.
+Confira o veredito e as lições como na seção 1. Se o lote muda a descrição, mude somente a
+`description` do próprio SKILL.md. Faça os testes da mudança e acrescente uma entrada sob
+um título com a data do commit em `<pasta>/CHANGELOG.md`, sem bump e sem mudar catálogo
+ou README da loja. Faça um commit com `Retrofit-Mode: autonomous`, sem coautoria, e use
+o `seal` da seção 6. Nunca commite no clone dedicado. Não faça push, nem publique status:
+a publicação autônoma é da porta.
+
+## Retro manual de repo listado
+
+1. Confirme `origin`, a inscrição em `lean_auto`, o clone dedicado e a pasta rastreada.
+   Use `live_dir` da config ou `~/.local/share/skills-live` e nunca commite no clone dedicado.
+   Busque `origin/main` nesse clone e crie um worktree num ramo próprio a partir dessa ref.
+   Não mude o checkout de desenvolvimento.
+2. Edite só a skill e seu CHANGELOG. Rode a auditoria e apresente o diff e o destino.
+   Sem o sim do dono, não faça commit, push, status ou avanço.
+3. Com o sim, faça o commit no worktree. Se houver `package-lock.json`, rode `npm ci` ali.
+   Confirme que o Git resolve um pre-push executável (`git rev-parse --git-path hooks/pre-push`).
+   Se faltar ou não executar, pare. Confira o SHA do commit e publique com
+   `git -C <worktree> push --no-follow-tags origin HEAD:main`. Se o pre-push ou o remoto recusar,
+   não publique status nem faça avanço. Mostre o resultado e conserve o worktree.
+4. Confirme o SHA recebido na main. Registre o resultado do gate com
+   `gh api -X POST repos/<dono/repo>/statuses/<sha> -f state=success -f context=local/ci -f description=<resumo>`.
+   Rode `retrofit_watch.py live-advance <dono/repo>` e confira o HEAD do clone dedicado.
+   Se um desses dois passos falhar, diga qual e preserve o SHA já publicado.
 
 ## 1. Antes de editar
 

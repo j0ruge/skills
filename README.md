@@ -474,8 +474,9 @@ A Stop hook notices when one of **our** skills did real work in the session and 
 **New config keys** (all optional): `mode` (`manual`, `auto` or `auto-dry`); `manual` (plugins or skills that always stay manual); `store` (the working clone of this marketplace; without it, `auto` does not apply); `auto_limits` (default `{"per_skill": 2, "per_session": 3}`); `harvest_roots` (where the name harvest looks for git repos, default `["~/repos"]`); `private_sources` (local denylists the harvest reads and never copies into a repo). The gate extracts a tar with the `tarfile` `data` filter, so the autonomous mode needs Python 3.12, or a version with the `tarfile` data filter (PEP 706). The full flow is in `plugins/retrofit-watch/skills/retrofit-watch/references/modo-autonomo.md`.
 
 Na branch de desenvolvimento da 0.5.0, a preparação de lotes de skills locais usa um clone
-dedicado e deixa o checkout de desenvolvimento livre. Veja o
-[contrato do clone e do selo](docs/retrofit-watch/clone-dedicado.md).
+dedicado e deixa o checkout de desenvolvimento livre. A porta roda o pre-push em ensaio
+e só publica com a janela v2 cumprida ou a aprovação do patch. Veja o
+[contrato do clone, do selo e da publicação](docs/retrofit-watch/clone-dedicado.md).
 
 **Ours** = the `chewiesoft-marketplace` cache or clone (full mode; the retrofit argument is the **plugin** name) or a skill tracked in git in a repo owned by `j0ruge`, `chewiesoft` or an owner set in `~/.claude/retrofit-watch.json` (lean mode). Third-party skills, `skills-lock.json` entries, `.agents/skills`, `~/.hermes` and untracked skills are ignored.
 It defers while the turn waits for you, asks at most twice per skill per session, never talks back to a `claude -p` session (it queues the retro outside the repo instead, for `/retrofit-watch:retrofit-watch pendentes`) and never stores assistant text. `RETROFIT_WATCH=off` disables it; `~/.claude/retrofit-watch.json` tunes owners/include/exclude and the keys above.

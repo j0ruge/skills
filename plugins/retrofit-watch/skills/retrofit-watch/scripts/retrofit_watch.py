@@ -1329,7 +1329,8 @@ def queue_notice(ctx):
 
 # Os segmentos do aviso de startup, na ordem da linha: (módulo, função). None é a fila de hoje, daqui.
 NOTICES = ((None, "queue_notice"), ("rw_auto", "held_notice"), ("rw_auto", "orphan_notice"),
-           ("rw_auto", "behind_notice"), ("rw_store", "criterion_notice"))
+           ("rw_auto", "behind_notice"), ("rw_store", "criterion_notice"),
+           ("rw_auto", "live_notice"), ("rw_auto", "lean_mode_notice"))
 
 
 def cmd_pending(payload, ctx):
@@ -1338,6 +1339,11 @@ def cmd_pending(payload, ctx):
     v2. Cada segmento roda no seu `try` (M11): a exceção vai ao errors.log, e os outros saem."""
     if session_mode(ctx) != "attended":
         return None
+    if ctx.lean_auto:
+        try:
+            importlib.import_module("rw_store").spawn_live_advance(ctx)
+        except OSError as exc:
+            log_error(ctx, exc)
     parts = []
     for module, name in NOTICES:
         try:

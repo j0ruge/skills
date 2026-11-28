@@ -1,8 +1,13 @@
 """O clone em uso segue a main sem tocar o checkout de desenvolvimento."""
 import json
+import os
+import shlex
+import shutil
+import time
 import subprocess
 import sys
 import unittest
+from unittest import mock
 
 from fixture_private import PrivateWorld, SLUG
 import rw_store as store
@@ -143,3 +148,87 @@ class LiveTest(unittest.TestCase):
         self.assertEqual(record["resultado"], "erro")
         self.assertIn("origin do clone dedicado", record["detalhe"])
         self.assertEqual(w.git(w.live, "rev-parse", "origin/main"), before)
+
+
+class StartupTest(unittest.TestCase):
+    def setUp(self):
+        self.w = PrivateWorld()
+        self.addCleanup(self.w.cleanup)
+        self.ctx = self.w.ctx()
+        attended = mock.patch.dict("os.environ", RETROFIT_WATCH="force")
+        attended.start()
+        self.addCleanup(attended.stop)
+
+    def test_spawn_is_detached_and_does_not_wait(self):
+        with mock.patch.object(subprocess, "Popen") as launch, mock.patch.object(store, "lean_window"):
+            start = time.monotonic()
+            store.rw_auto.rw.cmd_pending({}, self.ctx)
+            self.assertLess(time.monotonic() - start, 1)
+        calls = [call for call in launch.call_args_list if call.args[0][-1] == "live-advance"]
+        self.assertEqual(len(calls), 1)
+        opts = calls[0].kwargs
+        for key in ("stdin", "stdout", "stderr"):
+            self.assertEqual(opts[key], subprocess.DEVNULL)
+        self.assertEqual(opts["env"]["CLAUDE_PLUGIN_DATA"], str(self.ctx.data_dir))
+        self.assertTrue(opts["creationflags"] & subprocess.DETACHED_PROCESS if os.name == "nt"
+                        else opts["start_new_session"])
+        launch.return_value.wait.assert_not_called()
+
+    def test_no_list_does_not_spawn(self):
+        self.w.config(lean_auto=[])
+        with mock.patch.object(subprocess, "Popen") as launch:
+            self.assertFalse(store.spawn_live_advance(self.w.ctx()))
+        launch.assert_not_called()
+
+    def test_offline_advance_is_in_child_and_reported_on_next_startup(self):
+        w = self.w
+        guard = w.tmp / "liberar"
+        wrapper = w.bindir / "git"
+        real = shlex.quote(shutil.which("git"))
+        wrapper.write_text('#!/bin/sh\n'
+                           'for arg in "$@"; do\n'
+                           '  if [ "$arg" = fetch ]; then\n'
+                           f'    for i in 1 2 3 4 5 6 7 8 9 10; do\n'
+                           f'      [ -f {shlex.quote(str(guard))} ] && break\n'
+                           '      sleep 0.2\n'
+                           '    done\n'
+                           '    exit 1\n'
+                           '  fi\n'
+                           'done\n'
+                           f'exec {real} "$@"\n')
+        wrapper.chmod(0o755)
+        rw = store.rw_auto.rw
+        original = subprocess.Popen
+        child = []
+
+        def track(cmd, *args, **kwargs):
+            proc = original(cmd, *args, **kwargs)
+            if cmd[-1] == "live-advance":
+                child.append(proc)
+                self.addCleanup(proc.wait, timeout=5)
+            return proc
+
+        with mock.patch.dict(os.environ, PATH=f"{w.bindir}{os.pathsep}{os.environ['PATH']}"), \
+                mock.patch.object(subprocess, "Popen", side_effect=track):
+            start = time.monotonic()
+            rw.cmd_pending({}, self.ctx)
+            self.assertLess(time.monotonic() - start, 1)
+        self.assertEqual(len(child), 1)
+        self.assertIsNone(child[0].poll())
+        guard.touch()
+        self.assertEqual(child[0].wait(timeout=5), 1)
+        with mock.patch.object(store, "spawn_live_advance", return_value=True):
+            notice = rw.cmd_pending({}, self.ctx)
+        self.assertIsNotNone(notice, "o startup precisa mostrar a falha gravada no avanço")
+        self.assertIn(f"avanço de {SLUG} falhou:", notice["systemMessage"])
+
+    def test_notice_once_per_transition(self):
+        modes = [("auto-dry", None), ("auto", None), ("auto", None),
+                 ("auto-dry", "2026-11-27"), ("auto-dry", "2026-11-27")]
+        with mock.patch.object(store, "lean_mode_state", side_effect=modes):
+            notice = store.rw_auto.lean_mode_notice
+            self.assertIsNone(notice(self.ctx))
+            self.assertIn("fora do ensaio", notice(self.ctx))
+            self.assertIsNone(notice(self.ctx))
+            self.assertIn("de volta ao ensaio (revert de 2026-11-27)", notice(self.ctx))
+            self.assertIsNone(notice(self.ctx))

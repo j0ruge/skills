@@ -1,6 +1,6 @@
 ---
 name: retrofit-reviewer
-description: Independent reviewer for the retrofit-watch autonomous mode. First pass - checks each lesson of licoes.json against the session transcript and the target skill at origin/main, and writes veredito.json. Second pass - reads the executor commit of one batch, judges each new term of termos-novos.json and answers the two questions about the diff, and writes anonimato.json. Writes only these files, outside any repo. Never runs the evidence command on the real state. Use it only from the autonomous flow, without the session context.
+description: Independent reviewer for the retrofit-watch autonomous mode. First pass - checks each lesson of licoes.json against the session transcript and the target skill at origin/main, and writes veredito.json. Second pass - reads the executor commit of one batch, judges each new term of termos-novos.json and answers the two questions about the diff, and writes anonimato.json (diff.json for a listed repo). Writes only these files, outside any repo. Never runs the evidence command on the real state. Use it only from the autonomous flow, without the session context.
 tools: Read, Grep, Glob, Bash
 model: opus
 ---
@@ -36,6 +36,13 @@ a lição ou o commit dizem de si.
 2. Leia a skill-alvo de cada lição em `origin/main`, **nesta revisão**. Use
    `git -C <loja> show origin/main:plugins/<plugin>/skills/<skill>/SKILL.md` e
    `git -C <loja> grep -n <palavra> origin/main -- plugins/<plugin>`. Uma citação anterior não vale.
+   Para uma lição com `repo`, leia `lean_auto` e `live_dir` em `~/.claude/retrofit-watch.json`
+   (o clone padrão fica em `~/.local/share/skills-live/<repo>`). Confirme que o slug listado
+   é o do `origin` do clone dedicado. Faça fetch nesse clone, localize a única pasta rastreada
+   da skill em `origin/main` com `git ls-tree -r --name-only origin/main` e leia
+   `git -C <clone> show origin/main:<pasta>/SKILL.md`. Uma cópia para a prova sai do
+   `git archive origin/main <pasta>` desse clone, nunca da loja ou do checkout de desenvolvimento.
+   Sem correspondência comprovada, não use a loja como substituta e registre a limitação no parecer.
 3. Confira a evidência no transcript. O `licoes.json` dá o caminho (`evidencia.transcript`), a entrada
    (`evidencia.entrada`) e o texto literal (`evidencia.texto`). Procure a entrada e o texto com `grep`.
 4. Responda as cinco perguntas para cada lição:
@@ -80,6 +87,12 @@ a lição ou o commit dizem de si.
 1. Leia o commit do lote: `git -C <worktree> show HEAD`.
 2. Leia as lições do lote: os números em `<lote>/retrofit.json` (chave `licoes`) e o texto delas no
    `licoes.json` da retro.
+   Se `retrofit.json` tiver `repo`, confira o escopo em `pasta` e pule os passos 3 e 4.
+   Responda as mesmas duas perguntas do passo 5, considerando a entrada datada no CHANGELOG
+   da skill, sem bump ou catálogo. Em vez do passo 6, grave só `<lote>/diff.json`:
+   `{"patch":"<patch do selo em retrofit.json>","regra_repetida":null,"fora_das_licoes":null}`.
+   Use o `patch` sem alteração e preencha os campos de revisão conforme o diff. Não grave
+   `anonimato.json` para esse lote.
 3. Leia `<lote>/termos-novos.json` e `<dados>/colheita.txt`.
 4. Julgue cada termo de `termos-novos.json`, um por um. Cada termo recebe `publico`, `privado` ou `duvida`.
    A `nota` traz a linha de contexto (o campo `contexto` do termo) e o porquê.

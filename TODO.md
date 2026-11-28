@@ -28,13 +28,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 ### Rulings do merge da retrofit-watch 0.4.0
 
 - [ ] **O commit autônomo sem guarda de autor** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:1015` (`_mark_approved`) — nenhuma guarda
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:1276` (`_mark_approved`) — nenhuma guarda
   lê o autor nem o committer, e o `--amend` mantém autor e data do HEAD, não os do `reviewed`. Um `includeIf`
   com outro e-mail passa. Anterior ao plano: a spec 5.6 só nomeia o diff e a mensagem (Ruling FR-1).
   Direção: uma guarda que confere autor e committer, ou o `commit-tree` com o autor explícito.
   Fonte: `docs/retrofit-watch/2026-11-24-pendencias-0.4.0.md` (T8-1) — descoberto por `revisor final` (2026-11-24)
 - [ ] **Os hooks globais no amend da aprovação** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:1033` (`--amend`) — o `commit --amend` do
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:1294` (`--amend`) — o `commit --amend` do
   `_mark_approved` roda os hooks do `core.hooksPath` global. Um `commit-msg` global mudaria a mensagem depois
   da camada 1. Nesta máquina nenhuma config global ou de sistema tem a chave (Ruling FR-2).
   Direção: `-c core.hooksPath=<devnull>` no amend, ou o `commit-tree`, com o par.
@@ -61,7 +61,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: ler sem `--system`, como o código.
   Fonte: resíduo R4 da revisão final — descoberto por `revisor final` (2026-11-24)
 - [ ] **Os nomes NTFS do .gitattributes** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:310` (`_attributes_name`) — o nome curto
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:342` (`_attributes_name`) — o nome curto
   `gi7d29~N` não é reconhecido. Exige o 8.3 ligado e os `~1` a `~4` ocupados (R5, codereview r1 #6). O
   fluxo `.gitattributes::$DATA` também não é (falta reproduzir no NTFS; r1 #5).
   Direção: reconhecer o prefixo do `is_ntfs_dotgitattributes` do git e cortar o sufixo `:`, com o par.
@@ -99,17 +99,17 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 ### LOW da codereview da retrofit-watch 0.4.0
 
 - [ ] **A guarda 5b lista a árvore inteira** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:318` (`_g_opaque`) — o `ls-tree` lista a
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:350` (`_g_opaque`) — o `ls-tree` lista a
   árvore inteira para conferir poucos caminhos (r1 #9).
   Direção: `ls-tree -z -- <paths>`.
   Fonte: codereview r1 #9 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **O _extract_base deixa passar TarError e OSError** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:667` (`_extract_base`) — o `clean_tree`
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:709` (`_extract_base`) — o `clean_tree`
   embrulha os dois em StoreError, e o `_extract_base` não. O `publish` os pega (D25) (r1 #7).
   Direção: embrulhar dentro do `untar`.
   Fonte: codereview r1 #7 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **O alias network_env só serve a um teste** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:225` (`network_env`) — o alias não tem uso
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:257` (`network_env`) — o alias não tem uso
   no `rw_gate.py`, só no `test_network_env_keeps_the_owner_ssh` (r1 #8; também o minor T7-2).
   Direção: o teste chama o `rw_store.network_env`, e o alias sai; ou o comentário diz para quê.
   Fonte: codereview r1 #8 — descoberto por `codereview r1` (2026-11-24)
@@ -141,12 +141,12 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: uma frase em cada uma.
   Fonte: codereview r2, forma — descoberto por `codereview r2` (2026-11-24)
 - [ ] **A saída do escopo ambígua na referência** —
-  `plugins/retrofit-watch/skills/retrofit-watch/references/modo-autonomo.md:256` (`escopo`) — a "Saída" junta
+  `plugins/retrofit-watch/skills/retrofit-watch/references/modo-autonomo.md:269` (`escopo`) — a "Saída" junta
   a do executor e a do dono numa célula, e a frase "também o que o ramo tira" não diz de quem é a saída.
   Direção: duas frases, uma por saída, com o sensor do `test_auto_docs.py` verde.
   Fonte: codereview r2, forma — descoberto por `codereview r2` (2026-11-24)
 - [ ] **O discard_retro conta no teto da sessão** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_auto.py:1007` (`discard_retro`) — as linhas
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_auto.py:1095` (`discard_retro`) — as linhas
   `descartado` dele contam no `used` e no teto da sessão (r1 #15). A função é longa, o `_own` não tem
   docstring e o acento é desigual nas mensagens (r1 #17).
   Direção: dizer na docstring, ou marcar as linhas; extrair dois helpers.
@@ -247,7 +247,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: verificar se os IDs das duas cargas na fixture representam chamadas distintas no Stop da 0.4.1.
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/checkpoint-notas.md` — descoberto por
   `sdd-executor` na missão `20261127-retrofit-watch-050` (2026-11-28)
-  RECURRED 1: 20261127-retrofit-watch-050/I2 (2026-11-28)
+  RECURRED 2: 20261127-retrofit-watch-050/I2 (2026-11-28); 20261127-retrofit-watch-050/I3 (2026-11-28)
 
 - [ ] **A migração perde a ordem de cargas anteriores ao offset** —
   `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:491` (`attribution_closed`) —

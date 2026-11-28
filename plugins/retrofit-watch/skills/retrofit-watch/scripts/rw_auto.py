@@ -492,12 +492,12 @@ def valid_skill_folder(value):
 
 
 PRIVATE_RETROFIT_SPEC = {**RETROFIT_SPEC, "repo": rw.valid_slug, "pasta": valid_skill_folder}
-ANONIMATO_SPEC = {
+DIFF_SPEC = {
     "patch": _text,
-    "termos": _list,
     "regra_repetida": _opt_text,
     "fora_das_licoes": _opt_text,
 }
+ANONIMATO_SPEC = {**DIFF_SPEC, "termos": _list}
 TERMO_SPEC = {
     "termo": _text,
     "veredito": _one_of("publico", "privado", "duvida"),
@@ -650,8 +650,15 @@ def load_anonimato(path):
     return data
 
 
+def load_diff(path):
+    return _fields(_read_json(path), DIFF_SPEC, str(path))
+
+
 def load_aprovado(path):
-    return _fields(_read_json(path), APROVADO_SPEC, str(path))
+    data = _read_json(path)
+    spec = ({**APROVADO_SPEC, "patch": _opt_text}
+            if isinstance(data, dict) and "patch" in data else APROVADO_SPEC)
+    return _fields(data, spec, str(path))
 
 
 # --- triagem -----------------------------------------------------------------------------------
@@ -748,6 +755,8 @@ def _plan(ctx, rid):
                 continue
         entry = {"item": f"{rid}/{plugin}#{n}", "plugin": plugin, "licoes": [n], "motivo": motivo,
                  "detalhe": detalhe}
+        if licao.get("repo"):
+            entry["repo"] = licao["repo"]
         (hold if destino == "segurar" else drop).append(entry)
     ordered = sorted(lotes.values(), key=lambda lote: (lote["tipo"] != "auto", lote["plugin"]))
     return pedido, ordered, hold, drop
@@ -770,6 +779,9 @@ def triage(ctx, rid):
     pedido, lotes, hold, drop = _plan(ctx, rid)
     lines = [_line(pedido["sessao"], rid, e["item"], e["plugin"], e["licoes"], result, e["motivo"], e["detalhe"])
              for result, entries in (("segurado", hold), ("descartado", drop)) for e in entries]
+    for line, entry in zip(lines, hold + drop):
+        if entry.get("repo"):
+            line["repo"] = entry["repo"]
     _append_new(ctx, lines)
     return {"lotes": lotes, "segurar": hold, "descartar": drop}
 
@@ -849,7 +861,7 @@ def orphans(ctx, now=None):
     return out
 
 
-def install_behind(ctx):
+def install_behind(ctx, private=False):
     """A última linha da última publicação de cada plugin, quando ela é `publicado` com `instalacao` em
     BEHIND. A última publicação é o lote cuja primeira linha `publicado` (a do push) tem o maior `ts`; no
     mesmo `ts`, a gravada depois. Uma publicação mais nova do mesmo plugin substitui a anterior: o lote
@@ -859,17 +871,19 @@ def install_behind(ctx):
     last = last_lines(registry)
     pushed = {}  # item -> (ts, posição) da primeira linha `publicado` do lote
     for i, entry in enumerate(registry):
-        if entry.get("resultado") == "publicado" and _is_batch(entry) and entry["item"] not in pushed:
+        if (bool(entry.get("repo")) == private and entry.get("resultado") == "publicado"
+                and _is_batch(entry) and entry["item"] not in pushed):
             ts = entry.get("ts")
             pushed[entry["item"]] = (ts if isinstance(ts, (int, float)) and not isinstance(ts, bool) else 0, i)
     newest = {}  # plugin -> (chave, item)
     for item, key in pushed.items():
-        plugin = str(last[item].get("plugin"))
-        if plugin not in newest or key > newest[plugin][0]:
-            newest[plugin] = (key, item)
+        identity = (last[item].get("repo"), str(last[item].get("plugin")))
+        if identity not in newest or key > newest[identity][0]:
+            newest[identity] = (key, item)
     chosen = sorted(newest.values())
+    statuses = ("pendente", "clone-atras", "status-falhou") if private else BEHIND
     return [last[item] for _, item in chosen
-            if last[item].get("resultado") == "publicado" and last[item].get("instalacao") in BEHIND]
+            if last[item].get("resultado") == "publicado" and last[item].get("instalacao") in statuses]
 
 
 def _amount(n, one, many):
@@ -893,9 +907,61 @@ def held_notice(ctx):
     items = held(ctx)
     if not items:
         return None
-    names = ", ".join(f"{e.get('plugin')}: {_held_branch(ctx, e) or e.get('item')}" for e in items)
+    names = ", ".join(f"{e.get('repo') or e.get('plugin')}: {_held_branch(ctx, e) or e.get('item')}" for e in items)
     return (f"{_amount(len(items), 'retrofit segurado', 'retrofits segurados')} ({names}) — "
             "/retrofit-watch:retrofit-watch segurados")
+
+
+def live_notice(ctx):
+    """Mostra o resultado gravado pelo último avanço de cada clone autorizado."""
+    parts = []
+    for repo in sorted(ctx.lean_auto):
+        try:
+            data = _read_json(ctx.data_dir / "live" / f"{repo.split('/')[1]}.json")
+        except Malformed:
+            continue
+        if not isinstance(data, dict) or data.get("repo") != repo:
+            continue
+        result = data.get("resultado")
+        if result in ("fora-da-main", "suja", "erro"):
+            detail = data.get("detalhe") or result
+            parts.append(f"avanço de {repo} falhou: {detail}")
+    for line in install_behind(ctx, private=True) if ctx.lean_auto else ():
+        if line["repo"] in ctx.lean_auto and isinstance(line.get("commit"), str):
+            parts.append(f"{line['repo']}: {line['instalacao']} no SHA {line['commit'][:7]}")
+    return " · ".join(parts) or None
+
+
+def lean_mode_notice(ctx):
+    """O primeiro startup em ensaio registra a referência sem avisar uma transição inexistente."""
+    if not ctx.lean_auto:
+        return None
+    from rw_store import lean_mode_state
+
+    mode, revert_day = lean_mode_state(ctx)
+    path = ctx.data_dir / "lean-modo.json"
+    ctx.data_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        lock = rw._lock(ctx.data_dir / "lean-modo.lock", timeout=0)
+    except OSError:
+        return None
+    try:
+        try:
+            data = _read_json(path)
+            last = data.get("modo") if isinstance(data, dict) else None
+        except Malformed:
+            last = None
+        if last == mode:
+            return None
+        _write_json(path, {"modo": mode})
+        if mode == "auto":
+            return "repos privados fora do ensaio: o push agora é sozinho"
+        if last == "auto" and mode == "auto-dry":
+            detail = f" (revert de {revert_day})" if revert_day else ""
+            return "repos privados de volta ao ensaio" + detail
+    finally:
+        rw._unlock(lock)
+    return None
 
 
 def orphan_notice(ctx):
@@ -944,26 +1010,48 @@ def hold_item(ctx, rid, item, motivo, detalhe=""):
         licoes = lote["licoes"] if lote else None
     if lote is None:
         raise Malformed(f"{item} não é um lote, nem uma lição de um lote, da triagem da retro {rid}")
-    return _hold(ctx, pedido["sessao"], rid, item, lote["plugin"], licoes, "segurado", motivo, detalhe, lote["lote"])
+    return _hold(ctx, pedido["sessao"], rid, item, lote["plugin"], licoes, "segurado", motivo, detalhe,
+                 lote["lote"], repo=lote.get("repo"))
 
 
 def _hold(ctx, session, rid, item, plugin, licoes, resultado, motivo, detalhe, lote, commit=None, ramo=None,
-          worktree=None):
+          worktree=None, repo=None, patch=None):
     """Grava e devolve a linha `segurado` (ou `erro`) de um item. Comum ao hold_item e ao hold da
     porta (rw_gate.hold), que preenche `commit`, `ramo` e `worktree`."""
     line = _line(session, rid, item, plugin, licoes, resultado, motivo, detalhe, lote=lote)
     line.update(commit=commit, ramo=ramo, worktree=worktree)
+    if repo:
+        line.update(repo=repo, patch=patch)
     return append_registry(ctx, line)
 
 
 def approve(ctx, rid, lote):
-    """Acrescenta a aprovado.json o motivo da última linha `segurado` do lote e, quando há uma, o da última
+    """No privado, acrescenta só motivos substituíveis para o patch da última recusa.
+    Na loja, acrescenta o motivo da última linha `segurado` e, quando há uma, o da última
     recusa por nome (NAME_REASONS), sem repetir. Um `publish` entre a palavra do dono e o `approve` segura
     o lote com `escopo`: sem o motivo de nome, a guarda 5 nunca aceitaria a mudança das listas (Final-F1).
     O `detalhe` dessa recusa a porta lê da mesma linha do registro."""
     folder = lote_dir(ctx, rid, lote)
     item = f"{rid}/{lote}"
-    reasons = [e.get("motivo") for e in read_registry(ctx) if e.get("item") == item and e.get("resultado") == "segurado"]
+    registry = read_registry(ctx)
+    prepared = folder / "retrofit.json"
+    retrofit = load_retrofit(prepared) if prepared.exists() else {}
+    if retrofit.get("repo"):
+        from rw_gate import OVERRIDABLE_PRIVATE
+
+        last = last_lines(registry).get(item, {})
+        reason, patch = last.get("motivo"), retrofit["patch"]
+        if (last.get("resultado") != "segurado" or last.get("repo") != retrofit["repo"]
+                or not patch or last.get("patch") != patch):
+            raise Malformed(f"o lote {item} não tem recusa do patch selado")
+        path = folder / "aprovado.json"
+        prev = load_aprovado(path) if path.exists() else {}
+        reasons = set(prev["motivos"]) if (prev.get("id"), prev.get("lote"), prev.get("patch")) == (rid, lote, patch) else set()
+        if reason in OVERRIDABLE_PRIVATE:
+            reasons.add(reason)
+        _write_json(path, dict(id=rid, lote=lote, ts=int(time.time()), motivos=sorted(reasons), patch=patch))
+        return path
+    reasons = [e.get("motivo") for e in registry if e.get("item") == item and e.get("resultado") == "segurado"]
     if not reasons:
         raise Malformed(f"o lote {item} não tem linha `segurado` no registro")
     path = folder / "aprovado.json"

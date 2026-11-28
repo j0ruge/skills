@@ -34,3 +34,20 @@ legítimos do repo privado não reprovam essa verificação. O executor não pub
 
 A preparação não troca os links existentes. A adoção fica com o dono do repo,
 após verificar o estado local e concluir a validação da publicação.
+
+## Ensaio, publicação e aviso de startup
+
+Depois do selo o revisor grava `diff.json` para o patch da skill. `publish` confere a
+revisão e executa o pre-push do repo no worktree, com o mesmo SHA e refs do push.
+Sem prova da janela v2, o gate verde deixa o lote em `auto-dry` e conserva o remoto.
+O dono pode liberar esse motivo com `approve <id> <lote>`. A permissão vale para o
+patch segurado. Emenda que o altera exige nova revisão e aprovação quando aplicável.
+
+Depois do push, o registro preserva o SHA mesmo quando `local/ci` ou o avanço do clone
+falham. Rode `publish` novamente para concluir esses efeitos sem repetir o push.
+Em sessões assistidas, o startup lança o avanço em segundo plano e mostra o último
+erro registrado, quando houver.
+
+Na retro manual de repo listado, a edição também fica no worktree do clone dedicado.
+O push pelo pre-push exige confirmação direta do dono. Após o push, o executor
+registra `local/ci` no SHA confirmado e avança o clone.

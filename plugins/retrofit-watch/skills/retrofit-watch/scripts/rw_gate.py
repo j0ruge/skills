@@ -30,11 +30,13 @@ import rw_store
 OVERRIDABLE = ("sem-veredito", "nao-publicavel", "muda-description", "regra-repetida", "diff-alem-das-licoes",
                "teto", "auto-dry")
 # Os que viram linha `erro`, não `segurado`: a porta não chegou a decidir.
+OVERRIDABLE_PRIVATE = OVERRIDABLE + ("caminho",)
 ERRORS = ("fetch", "push", "trava", "interno")
 GATE_REASONS = ("escopo", "arvore-suja", "rebase", "coautoria", "sem-marca", "sem-bump", "sem-veredito",
                 "fora-do-pedido", "nao-publicavel", "muda-description", "nome-privado", "sem-anonimato", "revisao-desatualizada",
                 "termo-nao-publico", "regra-repetida", "diff-alem-das-licoes", "testes", "validate-versions",
-                "auditoria", "fase-de-auditoria", "teto", "auto-dry") + ERRORS
+                "auditoria", "fase-de-auditoria", "teto", "auto-dry",
+                "sem-changelog", "segredo", "caminho", "gate") + ERRORS
 # Os motivos de nome: só o dono os resolve, ensinando o portão (O7). A aprovação com um deles libera a
 # mudança das listas na guarda 5 (C2), nunca a recusa por nome.
 NAME_REASONS = rw_auto.NAME_REASONS
@@ -95,6 +97,9 @@ def _retrofit(ctx, rid, lote):
     path = rw_auto.lote_dir(ctx, rid, lote) / "retrofit.json"
     retrofit = rw_auto.load_retrofit(path)
     got = (retrofit["id"], retrofit["lote"], retrofit["plugin"], retrofit["tipo"])
+    if retrofit.get("repo"):
+        tipo = retrofit["tipo"]
+        plugin = lote
     if got != (rid, lote, plugin, tipo):
         raise rw_auto.Malformed(f"{path}: e de {got}, nao de {(rid, lote, plugin, tipo)}")
     return retrofit
@@ -113,6 +118,10 @@ class _Porta:
         self.plugin, self.tipo = _lote_kind(lote)
         self.folder = rw_auto.lote_dir(ctx, rid, lote)
         self.retrofit = _retrofit(ctx, rid, lote)
+        self.repo = self.retrofit.get("repo")
+        self.pasta = self.retrofit.get("pasta")
+        if self.repo:
+            self.plugin, self.tipo = self.retrofit["plugin"], self.retrofit["tipo"]
         tentativa = self.retrofit["tentativa"]
         self.worktree = rw_store.worktree_path(ctx, rid, lote, tentativa)
         self.branch = rw_store.branch_name(rid, lote, tentativa)
@@ -120,13 +129,26 @@ class _Porta:
         self.neutral = rw_store.git_env(neutral=True)
         path = self.folder / "aprovado.json"
         self.approval = None
+        self.private_approval = None
         if path.exists():
-            self.approval = list(rw_auto.load_aprovado(path)["motivos"])
+            loaded = rw_auto.load_aprovado(path)
+            if self.repo:
+                self.private_approval = loaded
+            else:
+                self.approval = list(loaded["motivos"])
         self.skipped = set(self.approval or ()) & set(OVERRIDABLE)
         # O sha que as guardas conferem: a guarda do rebase o grava; antes dela, None (item 10).
-        self.head = None
+        self.head = self.base = self.patch = None
         self._stack = contextlib.ExitStack()
-        self._tree = None
+        self._tree = self._tools = None
+
+    def tools(self):
+        if not self.repo:
+            return self.tree()
+        if self._tools is None:
+            self._tools = self._stack.enter_context(
+                rw_store.clean_tree(self.ctx, rw_store.store_clone(self.ctx), rw_store.BASE_REF))
+        return self._tools
 
     def git(self, *args, what="porta"):
         return rw_store._git(list(args), self.worktree, self.env, what)
@@ -134,7 +156,8 @@ class _Porta:
     def names(self, *extra):
         """Os caminhos que o ramo muda, sem renomeação (o nome velho e o novo aparecem os dois)."""
         out = rw_store._git(["-c", "core.quotePath=false", "diff", "--name-only", "-z", "--no-renames", *extra,
-                             f"{rw_store.BASE_REF}...HEAD"], self.worktree, self.neutral, "porta")
+                             f"{self.base or rw_store.BASE_REF}...{self.head if self.repo else 'HEAD'}"],
+                            self.worktree, self.neutral, "porta")
         return [p for p in out.split("\0") if p]
 
     def diff(self, *paths):
@@ -142,7 +165,7 @@ class _Porta:
         neutro. Um `.gitattributes` do ramo com `binary` não esconde linha nova (T8-r1-text), e um nome com
         acento sai sem aspas, como o `+++ b/` que o `linhas_do_diff` lê (N1)."""
         return rw_store._git(["-c", "core.quotePath=false", "diff", "-U0", "--text", "--no-color", "--no-ext-diff", "--no-textconv", "--src-prefix=a/",
-                              "--dst-prefix=b/", f"{rw_store.BASE_REF}...HEAD", "--", *paths],
+                              "--dst-prefix=b/", f"{self.base or rw_store.BASE_REF}...{self.head if self.repo else 'HEAD'}", "--", *paths],
                              self.worktree, self.neutral, "porta")
 
     def pedido(self):
@@ -193,6 +216,15 @@ def _g_place(p):
         return "escopo", "o ramo do lote e o main"
     if current != p.branch:
         return "escopo", f"o worktree esta no ramo {current!r}, nao em {p.branch!r}"
+    if p.repo:
+        try:
+            clone = rw_store._private_clone(p.ctx, p.repo)
+            common = p.git("rev-parse", "--path-format=absolute", "--git-common-dir").strip()
+            if Path(common).resolve() != clone / ".git":
+                return "escopo", "worktree nao pertence ao clone dedicado"
+            _private_origin(p)
+        except rw_store.StoreError as exc:
+            return "escopo", _short(exc)
     return None
 
 
@@ -348,7 +380,7 @@ def _g_opaque(p):
 
 
 def _message(p):
-    return p.git("log", "-1", "--format=%B")
+    return p.git("log", "-1", "--format=%B", p.head) if p.repo else p.git("log", "-1", "--format=%B")
 
 
 def _g_coauthor(p):
@@ -363,7 +395,8 @@ def _g_coauthor(p):
 
 def _g_marker(p):
     """7. O trailer `Retrofit-Mode` é `autonomous`; com aprovado.json, também `autonomous-approved`."""
-    out = p.git("log", "-1", f"--format=%(trailers:key={MARKER},valueonly)")
+    ref = (p.head,) if p.repo else ()
+    out = p.git("log", "-1", f"--format=%(trailers:key={MARKER},valueonly)", *ref)
     values = [v.strip() for v in out.splitlines() if v.strip()]
     allowed = {"autonomous"} | ({"autonomous-approved"} if p.approval is not None else set())
     if len(values) != 1 or values[0] not in allowed:
@@ -442,7 +475,7 @@ def _g_request(p):
     for n, licao in _lessons(p):
         if licao is None:
             return "fora-do-pedido", f"a licao {n} nao esta no licoes.json"
-        if licao["plugin"] != p.plugin:
+        if licao.get("repo") != p.repo or licao["plugin"] != p.plugin:
             return "fora-do-pedido", f"a licao {n} e do plugin {licao['plugin']}, nao do lote {p.lote}"
         if not rw_auto.in_request(p.ctx, pedido, licao):
             return "fora-do-pedido", f"a licao {n} ({licao['plugin']}/{licao['skill']}) nao cabe no pedido"
@@ -462,7 +495,7 @@ def _g_publishable(p):
     wanted = "publicar" if p.tipo == "auto" else "ramo-pronto"
     for n, licao in _lessons(p):
         destino, motivo = rw_auto.classify(licao, veredito.get(str(n)))
-        if destino != wanted:
+        if destino != wanted and not (p.repo and p.tipo == "description" and destino == "publicar"):
             return "nao-publicavel", f"a licao {n} classifica como {destino} ({motivo})"
     return None
 
@@ -510,6 +543,13 @@ def _g_description(p):
     lições (Final-F6)."""
     if p.tipo == "description":
         return "muda-description", f"ramo pronto: {p.branch}"
+    if p.repo:
+        path = f"{p.pasta}/SKILL.md"
+        before, after = (SKILL_DESCRIPTION.search(_show(p, ref, path) or "")
+                         for ref in (p.base, p.head))
+        if not before or not after or before[1].strip() != after[1].strip():
+            return "muda-description", f"o lote muda a description em {path}"
+        return None
     before, after = _descriptions(p, rw_store.BASE_REF), _descriptions(p, "HEAD")
     changed = sorted(k for k in set(before) | set(after) if before.get(k) != after.get(k))
     if changed:
@@ -528,6 +568,8 @@ def _g_layer1(p):
 
 
 def _anonimato(p):
+    if p.repo:
+        return rw_auto.load_diff(p.folder / "diff.json")
     return rw_auto.load_anonimato(p.folder / "anonimato.json")
 
 
@@ -651,7 +693,7 @@ def _crosses(before, after):
 def _audit_json(p, skill):
     """A saída JSON do auditor da cópia do commit para `skill`, ou (motivo, detalhe) quando ele não deu
     resultado."""
-    tree = p.tree()
+    tree = p.tools()
     rc, out = rw_store.run([sys.executable, tree / AUDITOR, skill, *AUDIT_FLAGS], cwd=tree,
                            env=dict(p.env, PYTHONDONTWRITEBYTECODE="1"))
     if rc not in (0, 1):
@@ -665,7 +707,7 @@ def _audit_json(p, skill):
 
 
 def _extract_base(p, dest):
-    raw = rw_store._git_bytes([*rw_store.ARCHIVE, rw_store.BASE_REF, f"plugins/{p.plugin}"], p.worktree,
+    raw = rw_store._git_bytes([*rw_store.ARCHIVE, p.base or rw_store.BASE_REF, p.pasta or f"plugins/{p.plugin}"], p.worktree,
                               rw_store.archive_env(), "auditoria")
     # O filtro `data` recusa link, caminho absoluto e `..`; o Python sem ele levanta TypeError (D25).
     return rw_store.untar(raw, dest / "base")
@@ -676,11 +718,17 @@ def _g_audit(p):
     exige no selo (D21). Os scripts, a lista de SKILL.md e o texto de cada um saem da cópia do commit
     (item 1); o diff e os nomes do ramo, do git do worktree."""
     tree = p.tree()
-    skills = sorted(md.parent for md in (tree / "plugins" / p.plugin).glob("skills/*/SKILL.md"))
+    tools = p.tools()
+    if p.repo:
+        skills = [tree / p.pasta]
+        if not (skills[0] / "SKILL.md").is_file():
+            return "auditoria", "SKILL.md ausente na copia do commit"
+    else:
+        skills = sorted(md.parent for md in (tree / "plugins" / p.plugin).glob("skills/*/SKILL.md"))
     if not skills:
         p.notes.append("auditoria: plugin sem SKILL.md")
         return None
-    missing = [str(x) for x in (AUDITOR, AUDIT_GATE) if not (tree / x).is_file()]
+    missing = [str(x) for x in (AUDITOR, AUDIT_GATE) if not (tools / x).is_file()]
     if missing:
         return "auditoria", "ausente no commit: " + ", ".join(missing)
     touched, added = set(p.names()), p.names("--diff-filter=A")
@@ -706,7 +754,7 @@ def _g_audit(p):
             (box / "antes.json").write_text(json.dumps(antes), encoding="utf-8")
             (box / "depois.json").write_text(json.dumps(depois), encoding="utf-8")
             (box / "diff.txt").write_text(p.diff(rel), encoding="utf-8")
-            rc, out = rw_store.run([sys.executable, tree / AUDIT_GATE, box], cwd=tree,
+            rc, out = rw_store.run([sys.executable, tools / AUDIT_GATE, box], cwd=tools,
                                    env=dict(p.env, PYTHONDONTWRITEBYTECODE="1"))
             if rc != 0:
                 return "auditoria", _short(f"o audit_gate.py saiu {rc} em {rel}: {out[-500:]}")
@@ -727,7 +775,8 @@ def _g_audit(p):
                 claims.append(f"{rel}: {line}")
             if f"{rel}/SKILL.md" in touched and _crosses(_read_text(before_md), after_text):
                 grows.append(f"{rel}/SKILL.md")
-    asset = re.compile(rf"plugins/{re.escape(p.plugin)}/skills/[^/]+/(references|scripts|assets)/.+")
+    root = re.escape(p.pasta) if p.repo else rf"plugins/{re.escape(p.plugin)}/skills/[^/]+"
+    asset = re.compile(rf"{root}/(references|scripts|assets)/.+")
     created = [x for x in added if asset.fullmatch(x)]
     phases = set(p.retrofit["fases"] or ())
     for phase, why in (("claim-check", claims), ("self-containment", created), ("refactoring", grows)):
@@ -793,6 +842,177 @@ GUARDS = (
 )
 
 
+def _private_origin(p):
+    """Confere a origem efetiva, inclusive quando o Git tem pushurl ou regras insteadOf."""
+    env = rw_store.remote_env(p.ctx, p.worktree)
+
+    def urls(*args):
+        return rw_store._git(["remote", "get-url", "--all", *args, "origin"],
+                             p.worktree, env, "origem do lote").splitlines()
+
+    fetch, push = urls(), urls("--push")
+    if len(fetch) != 1 or push != fetch or rw.origin_slug(fetch[0]) != p.repo:
+        raise rw_store.StoreError("origin de fetch e push nao correspondem ao mesmo repo listado")
+    return fetch[0], env
+
+
+def _private_fetch(p):
+    try:
+        _private_origin(p)
+        rw_store._live_fetch(p.ctx, p.repo, p.worktree)
+    except rw_store.StoreError as exc:
+        return "fetch", _short(exc)
+    return None
+
+
+def _private_scope(p):
+    p.base = p.git("rev-parse", rw_store.BASE_REF).strip()
+    if p.git("rev-list", "--count", f"{p.base}..{p.head}").strip() != "1":
+        return "escopo", "a porta privada publica um so commit acima do origin/main"
+    paths = p.names()
+    if not paths or any(not path.startswith(p.pasta + "/") for path in paths):
+        return "escopo", "o diff do lote sai da pasta da skill"
+    try:
+        expected = rw_store._skill_folder(p.worktree, p.base, p.plugin, p.env)
+    except rw_store.StoreError as exc:
+        return "escopo", _short(exc)
+    if expected != p.pasta:
+        return "escopo", "a pasta nao corresponde a skill rastreada na origem"
+    return None
+
+
+def _private_changelog(p):
+    day = p.git("show", "-s", "--format=%as", p.head).strip()
+    path = f"{p.pasta}/CHANGELOG.md"
+    if not any(re.match(rf"^#+\s+.*\b{re.escape(day)}\b", line)
+               for line in _added_lines(p.diff(path))):
+        return "sem-changelog", f"falta uma entrada nova de {day} em {path}"
+    return None
+
+
+def _private_approval(p):
+    p.patch = rw_store.patch_id(p.worktree)
+    approval = p.private_approval
+    if approval is not None:
+        if (approval["id"], approval["lote"], approval.get("patch")) == (p.rid, p.lote, p.patch):
+            p.skipped = set(approval["motivos"]) & set(OVERRIDABLE_PRIVATE)
+        else:
+            p.notes.append("aprovacao anulada: o patch mudou")
+
+
+def _private_layer1(p):
+    findings = rw_store.layer1(p.ctx, p.rid, p.worktree, p.tools(), private=True)
+    for reason in ("segredo", "caminho"):
+        hits = [f for f in findings if rw_store.GATE_FINDING.fullmatch(f)[1] == reason]
+        if hits:
+            if reason not in p.skipped:
+                # O resumo não precisa gravar o material que disparou o detector.
+                return reason, f"camada 1: {len(hits)} achado(s) de {reason}"
+            p.notes.append("caminho: substituido pela aprovacao do dono")
+    return None
+
+
+def _private_patch(p):
+    try:
+        reviewed = _anonimato(p)
+    except rw_auto.Malformed as exc:
+        return "revisao-desatualizada", _short(exc)
+    if p.patch != reviewed["patch"] or p.patch != p.retrofit["patch"]:
+        return "revisao-desatualizada", "diff.json ou selo de outro patch"
+
+
+def _private_still(p):
+    found = _g_still(p) or _g_clean(p) or _g_place(p)
+    if found:
+        return found
+    if p.git("rev-parse", rw_store.BASE_REF).strip() != p.base or rw_store.patch_id(p.worktree) != p.patch:
+        return "revisao-desatualizada", "a base ou o patch mudou durante a porta"
+    return None
+
+
+PRIVATE_BEFORE_APPROVAL = (_g_place, _g_clean, _private_fetch, _g_rebase, _private_scope, _g_opaque,
+                           _g_coauthor, _g_marker, _private_changelog)
+GUARDS_PRIVATE = (
+    ("sem-veredito", _g_verdict),
+    ("fora-do-pedido", _g_request),
+    ("nao-publicavel", _g_publishable),
+    ("muda-description", _g_description),
+    ("segredo", _private_layer1),
+    ("revisao-desatualizada", _private_patch),
+    ("regra-repetida", _g_rule),
+    ("diff-alem-das-licoes", _g_beyond),
+    ("auditoria", _g_audit),
+    ("teto", _g_caps),
+    ("arvore-suja", _private_still),
+)
+
+
+def _prepush_path(p, env):
+    path = Path(rw_store._git(["rev-parse", "--path-format=absolute", "--git-path", "hooks/pre-push"],
+                             p.worktree, env, "pre-push").strip())
+    if not path.is_file() or not os.access(path, os.X_OK):
+        raise rw_store.StoreError("sem pre-push executavel")
+    return path
+
+
+def _prepush_line(p):
+    return f"HEAD {p.head} refs/heads/main {p.base}"
+
+
+def _rehearse(p):
+    url, env = _private_origin(p)
+    if (p.worktree / "package-lock.json").is_file():
+        rc, out = rw_store.run(["npm", "ci"], cwd=p.worktree, env=env)
+        if rc:
+            raise rw_store.StoreError(f"npm ci saiu {rc}: {_short(out)}")
+    path = _prepush_path(p, env)
+    # A ref que o hook vê é a do remoto de destino, não uma tracking ref presumida.
+    remote = rw_store._git(["ls-remote", "--exit-code", "origin", "refs/heads/main"],
+                           p.worktree, env, "pre-push").split()
+    if remote != [p.base, "refs/heads/main"]:
+        raise rw_store.StoreError("main remota mudou depois do fetch")
+    with tempfile.TemporaryDirectory(dir=p.ctx.data_dir, prefix=".pre-push-") as tmp:
+        stdin = Path(tmp) / "stdin"
+        stdin.write_bytes((_prepush_line(p) + "\n").encode("ascii"))
+        rc, out = rw_store.run(["git", "-C", p.worktree, "hook", "run", f"--to-stdin={stdin}", "pre-push",
+                                "--", "origin", url], env=env)
+    summary = _short(f"pre-push saiu {rc}: {out}")
+    if rc:
+        raise rw_store.StoreError(summary)
+    return url, path, summary
+
+
+def _check_private(p):
+    try:
+        for guard in PRIVATE_BEFORE_APPROVAL:
+            found = guard(p)
+            if found:
+                return found, None
+        _private_approval(p)
+        for reason, guard in GUARDS_PRIVATE:
+            if reason in p.skipped:
+                p.notes.append(f"{reason}: substituido pela aprovacao do dono")
+                continue
+            found = guard(p)
+            if found:
+                return found, None
+        try:
+            contract = _rehearse(p)
+        except rw_store.StoreError as exc:
+            return ("gate", _short(exc)), None
+        found = _private_still(p)
+        if found:
+            return found, None
+        mode = rw_store.lean_mode(p.ctx)
+        if mode == "manual" or (mode != "auto" and "auto-dry" not in p.skipped):
+            return ("auto-dry", _short("; ".join([contract[2], *p.notes]))), None
+        return None, contract
+    except rw_store.StoreError as exc:
+        return ("interno", _short(exc)), None
+    finally:
+        p.close()
+
+
 def refuse(ctx, rid, lote, notes):
     """(motivo, detalhe) da primeira guarda que reprova, ou None quando o lote pode subir (o `_check`)."""
     return _check(ctx, rid, lote, notes)[0]
@@ -807,6 +1027,8 @@ def _check(ctx, rid, lote, notes):
     guarda é `interno` (a 3 e a 4 dão `fetch` e `rebase` por conta própria): erro de git nunca passa
     por aprovação. Outra exceção sobe (D25)."""
     p = _Porta(ctx, rid, lote, notes)
+    if p.repo:
+        return _check_private(p)[0], p.head
     try:
         for motivo, guard in GUARDS:
             if motivo in p.skipped:
@@ -829,20 +1051,20 @@ def _head(worktree):
     return out.strip() if rc == 0 else None
 
 
-def hold(ctx, rid, lote, motivo, detalhe):
+def hold(ctx, rid, lote, motivo, detalhe, patch=None):
     """Grava a linha `segurado` do lote, ou `erro` quando o motivo está em ERRORS, e a devolve. A linha
     leva o ramo, o worktree e o commit derivados (o lote `description` registra o ramo pronto)."""
     if motivo not in GATE_REASONS:
         raise rw_auto.Malformed(f"motivo fora dos da porta: {motivo!r}")
-    plugin, _ = _lote_kind(lote)
     retrofit = _retrofit(ctx, rid, lote)
     worktree = rw_store.worktree_path(ctx, rid, lote, retrofit["tentativa"])
     branch = rw_store.branch_name(rid, lote, retrofit["tentativa"])
+    plugin = retrofit["plugin"]
     session = rw_auto.retro_pedido(ctx, rid)["sessao"]
     resultado = "erro" if motivo in ERRORS else "segurado"
     return rw_auto._hold(ctx, session, rid, f"{rid}/{lote}", plugin, list(retrofit["licoes"]), resultado, motivo,
                          detalhe, lote, commit=_head(worktree) or retrofit["commit"], ramo=branch,
-                         worktree=str(worktree))
+                         worktree=str(worktree), repo=retrofit.get("repo"), patch=patch)
 
 
 # --- a porta que publica (D22, D25) -------------------------------------------------------------
@@ -878,6 +1100,45 @@ class Effects:
         if rc != 0:
             return False, _short(f"git push origin {ref} saiu {rc}: {out}")
         return True, _short(out)
+
+    def push_private(self, p, contract):
+        url, hook, _ = contract
+        current, env = _private_origin(p)
+        if current != url or _prepush_path(p, env) != hook:
+            return False, "origem ou pre-push mudou depois do ensaio"
+        # O próprio Git resolve HEAD. Seu pre-push rejeita qualquer ref que não seja a ensaiada
+        # e só então delega ao hook original, no worktree do lote e com a entrada intacta.
+        with tempfile.TemporaryDirectory(dir=p.ctx.data_dir, prefix=".pre-push-real-") as tmp:
+            wrapper = Path(tmp) / "pre-push"
+            wrapper.write_bytes(br'''#!/bin/sh
+set -eu
+[ "$#" = 2 ]
+[ "$1" = origin ]
+[ "$2" = "$RW_GATE_URL" ]
+IFS= read -r ref
+[ "$ref" = "$RW_GATE_REF" ]
+if IFS= read -r extra; then exit 1; fi
+[ "$(git rev-parse HEAD)" = "$RW_GATE_HEAD" ]
+[ -x "$RW_GATE_HOOK" ]
+hook=$RW_GATE_HOOK
+unset GIT_CONFIG_PARAMETERS RW_GATE_URL RW_GATE_REF RW_GATE_HEAD RW_GATE_HOOK
+printf '%s\n' "$ref" | "$hook" "$@"
+''')
+            wrapper.chmod(0o755)
+            env = dict(env, RW_GATE_URL=url, RW_GATE_REF=_prepush_line(p), RW_GATE_HEAD=p.head,
+                       RW_GATE_HOOK=hook.as_posix())
+            rc, out = rw_store.run(["git", "-C", p.worktree, "-c", f"core.hooksPath={Path(tmp).as_posix()}",
+                                    "push", "--no-follow-tags", "origin", "HEAD:main"], env=env)
+        return rc == 0, _short(f"git push saiu {rc}: {out}")
+
+    def status(self, slug, sha, description):
+        if not rw.valid_slug(slug):
+            return False, "repo inválido para status"
+        rc, out = rw_store.run(["gh", "api", "-X", "POST", f"repos/{slug}/statuses/{sha}",
+                                "-f", "state=success", "-f", "context=local/ci",
+                                "-f", f"description={description[:140]}"],
+                               env=rw_store.git_env(home=self.ctx.home))
+        return rc == 0, _short(out) if rc else "local/ci"
 
     def _user_install(self, plugin):
         """O plugin da loja está instalado no escopo `user` (D18)? Malformed com o arquivo ilegível."""
@@ -1097,11 +1358,87 @@ def _approved_marker(worktree, env):
     return [v.strip() for v in out.splitlines() if v.strip()] == [APPROVED]
 
 
+def _recover_private(p, receipt):
+    """Se o push não retornou, só recupera o recibo se o SHA ensaiado chegou à origem."""
+    if not receipt.exists() or _g_place(p):
+        return None
+    line = rw_auto._read_json(receipt)
+    if not isinstance(line, dict) or (line.get("id"), line.get("lote"), line.get("repo")) != (p.rid, p.lote, p.repo):
+        raise rw_auto.Malformed("recibo de push não corresponde ao lote")
+    head = line.get("commit")
+    if not isinstance(head, str) or not re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", head):
+        raise rw_auto.Malformed("SHA inválido no recibo de push")
+    if _private_fetch(p):
+        return None
+    rc, _ = rw_store.run(["git", "-C", p.worktree, "merge-base", "--is-ancestor", head, rw_store.BASE_REF],
+                         env=p.env)
+    return line if rc == 0 else None
+
+
+def _publish_private(ctx, rid, lote, effects, done):
+    p = _Porta(ctx, rid, lote, [])
+    pedido = p.pedido()
+    keys = [e["key"] for e in pedido["skills"] if e["plugin"] == p.plugin and e.get("repo") == p.repo]
+    previous = rw_auto.last_lines(rw_auto.read_registry(ctx)).get(f"{rid}/{lote}")
+    if previous and previous.get("repo") == p.repo and previous["resultado"] == "publicado":
+        line = previous
+        done["line"] = line
+        if line["instalacao"] == "ok":
+            _finish(ctx, line, keys)
+            return line
+    else:
+        receipt = p.folder / "push.json"
+        line = _recover_private(p, receipt)
+        if line is None:
+            found, contract = _check_private(p)
+            if found:
+                return hold(ctx, rid, lote, *found, patch=p.patch)
+            line = rw_auto._line(pedido["sessao"], rid, f"{rid}/{lote}", p.plugin, list(p.retrofit["licoes"]),
+                                 "publicado", None, contract[2], lote=lote)
+            line.update(commit=p.head, ramo=p.branch, worktree=str(p.worktree), repo=p.repo,
+                        aprovado=bool(p.skipped), instalacao="pendente", gate=contract[2])
+            # O recibo ainda não é publicação: na retomada, a ref remota confirma o SHA.
+            rw_auto._write_json(receipt, line)
+            ok, detail = effects.push_private(p, contract)
+            if not ok:
+                return hold(ctx, rid, lote, "push", detail, patch=p.patch)
+        done["line"] = line
+    status_ok = line.get("status_ok", False)
+    status_detail = line.get("status_detalhe", "")
+    if not status_ok:
+        try:
+            status_ok, status_detail = effects.status(p.repo, line["commit"], line["gate"])
+        except Exception as exc:
+            status_detail = _short(exc)
+    if line["instalacao"] == "pendente":
+        line = rw_auto.append_registry(ctx, dict(line, status_ok=status_ok, status_detalhe=status_detail))
+        done["line"] = line
+    try:
+        advance = rw_store.live_advance(ctx, p.repo)
+        clone_ok = advance["resultado"] == "ok"
+        if clone_ok:
+            clone = rw_store._private_clone(ctx, p.repo)
+            rc, _ = rw_store.run(["git", "-C", clone, "merge-base", "--is-ancestor", line["commit"], "HEAD"],
+                                 env=p.env)
+            clone_ok = rc == 0
+        clone_detail = advance["detalhe"] or ("" if clone_ok else "o clone nao recebeu o commit")
+    except (OSError, rw_store.StoreError) as exc:
+        clone_ok, clone_detail = False, _short(exc)
+    install = "status-falhou" if not status_ok else "clone-atras" if not clone_ok else "ok"
+    detail = _short("; ".join(x for x in (line["gate"], status_detail, clone_detail) if x))
+    updated = dict(line, instalacao=install, detalhe=detail, status_ok=status_ok, status_detalhe=status_detail)
+    done["line"] = updated
+    _finish(ctx, updated, keys)
+    return rw_auto.append_registry(ctx, updated) if updated != line else line
+
+
 def _publish(ctx, rid, lote, effects, done):
     plugin, _ = _lote_kind(lote)
     retrofit = _retrofit(ctx, rid, lote)
     worktree = rw_store.worktree_path(ctx, rid, lote, retrofit["tentativa"])
     env = rw_store.git_env(home=ctx.home, nosystem=True)
+    if retrofit.get("repo"):
+        return _publish_private(ctx, rid, lote, effects, done)
     if worktree.is_dir():
         # 2. Uma falha deste fetch não se registra aqui: a guarda 3 busca de novo e a grava como `fetch`.
         rw_store.run(["git", "-C", worktree, "fetch", "origin"], env=rw_store.remote_env(ctx, worktree))
@@ -1178,7 +1515,8 @@ def publish(ctx, rid, lote, effects):
     except Exception as exc:  # noqa: BLE001 — D25: toda exceção vira linha
         detail = _short(f"{type(exc).__name__}: {exc}")
         if "line" in done:
-            return _record(ctx, dict(done["line"], instalacao="update", detalhe=detail))
+            return _record(ctx, dict(done["line"], instalacao="clone-atras" if done["line"].get("repo")
+                                      else "update", detalhe=detail))
         return _error(ctx, rid, lote, "interno", detail)
 
 
@@ -1194,9 +1532,12 @@ def exit_code(line):
 def phrase(line):
     """A linha ao dono (spec 5.1), em ASCII com escape."""
     plugin = line.get("plugin")
+    if line.get("repo"):
+        plugin = f"{plugin} ({line['repo']})"
     if line.get("resultado") == "publicado":
         sha = str(line.get("commit") or "")[:SHA_SHORT]
-        text = f"retrofit-watch: {plugin} v{line.get('versao')} publicada sozinha ({sha})"
+        version = "" if line.get("repo") else f" v{line.get('versao')}"
+        text = f"retrofit-watch: {plugin}{version} publicada sozinha ({sha})"
         if exit_code(line) == 4:
             text += f" — cópia instalada não atualizada: {line.get('instalacao')}"
     else:

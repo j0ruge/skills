@@ -1013,6 +1013,18 @@ def live_advance(ctx, slug):
     return record
 
 
+def spawn_live_advance(ctx):
+    """Dispara o fetch fora do hook, sem esperar por ele nem herdar o stdio."""
+    if not ctx.lean_auto:
+        return False
+    detach = (dict(creationflags=subprocess.DETACHED_PROCESS) if os.name == "nt"
+              else dict(start_new_session=True))
+    env = dict(git_env(home=ctx.home), CLAUDE_PLUGIN_DATA=str(ctx.data_dir))
+    subprocess.Popen([sys.executable, rw_auto.rw.__file__, "live-advance"], env=env,
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **detach)
+    return True
+
+
 def _lean_leaks(ctx, heads, store, head, commits, git):
     path = ctx.data_dir / LEAN_WINDOW_FILE
     try:
@@ -1072,11 +1084,18 @@ def lean_window(ctx, now=None):
         return None
 
 
-def lean_mode(ctx, now=None):
+def lean_mode_state(ctx, now=None):
     if ctx.mode != "auto":
-        return ctx.mode
+        return ctx.mode, None
     window = lean_window(ctx, now)
-    return "auto" if window and window["cumprido"] else "auto-dry"
+    if not window:
+        return "auto-dry", None
+    return ("auto" if window["cumprido"] else "auto-dry",
+            window["desde"] if window["ultimo_revert"] is not None else None)
+
+
+def lean_mode(ctx, now=None):
+    return lean_mode_state(ctx, now)[0]
 
 
 # --- linha de comando --------------------------------------------------------------------------

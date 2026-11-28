@@ -165,7 +165,7 @@ class FormatTest(unittest.TestCase):
         for row in rows:
             code = row[0].strip("`")
             self.assertTrue(row[1] and row[3], f"`{code}` sem o que quer dizer ou sem a saída")
-            self.assertEqual(row[2], "sim" if code in rw_gate.OVERRIDABLE else "não", code)
+            self.assertEqual(row[2], "sim" if code in rw_gate.OVERRIDABLE_PRIVATE else "não", code)
 
     def test_scope_exit_for_unreadable_content_is_manual(self):
         # CR-r1 #1: a guarda 5b segura com `escopo` sem saída pelo executor (a docstring do `_g_opaque`). A
@@ -447,6 +447,19 @@ class CorrectionTextTest(unittest.TestCase):
             for cause in causes:
                 self.assertIn(cause, rows[code][1], f"a linha `{code}` não cita {cause!r}")
 
+
+class PrivateFlowTest(unittest.TestCase):
+    def test_reviewer_and_watch_contract(self):
+        agent = read(AGENT)
+        for field in ("origin/main:<pasta>/SKILL.md", "diff.json", "patch", "regra_repetida", "fora_das_licoes"):
+            self.assertIn(field, agent)
+        for field in ("lean_auto", "live_dir"):
+            self.assertIn(field, read(SKILL_MD))
+        reference = read(REFERENCE)
+        for reason in ("sem-changelog", "segredo", "caminho", "gate"):
+            self.assertIn(f"| `{reason}` |", reference)
+        for field in ("diff.json", "local/ci", "status-falhou", "clone-atras"):
+            self.assertIn(field, reference)
 
 if __name__ == "__main__":
     unittest.main()
