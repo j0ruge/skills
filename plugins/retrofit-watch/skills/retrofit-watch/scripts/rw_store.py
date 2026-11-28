@@ -730,6 +730,7 @@ DAY = 86400
 STARTUP_TIMEOUT = 3
 CRITERION_FILE = "criterio.json"
 LEAN_WINDOW_FILE = "lean-janela.json"
+LIVE_SETUP_PENDING = "rw-live-pending"
 # C9: o estouro do teto fica em cache por sha do `origin/main`, por 24 h; depois o critério mede de novo.
 CRITERION_RETRY = 86400
 MARKER = "Retrofit-Mode"
@@ -925,7 +926,8 @@ def _configured_origin(path):
     gitdir = path / ".git"
     config = configparser.ConfigParser(interpolation=None, allow_no_value=True)
     try:
-        if path.is_symlink() or gitdir.is_symlink() or not (gitdir / "HEAD").is_file():
+        if (path.is_symlink() or gitdir.is_symlink() or
+                (gitdir / LIVE_SETUP_PENDING).exists() or not (gitdir / "HEAD").is_file()):
             return None
         with (gitdir / "config").open(encoding="utf-8") as fh:
             config.read_file(fh)
@@ -954,19 +956,28 @@ def live_setup(ctx, slug, url=None):
     if not expected or expected[0] != slug:
         raise StoreError(f"URL não corresponde ao repo autorizado: {slug}")
     path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        path.mkdir()
-    except FileExistsError:
-        raise StoreError(f"destino já existe: {path}") from None
-    try:
-        _setup_live_clone(ctx, slug, path, remote, expected)
-    except (StoreError, OSError):
-        shutil.rmtree(path)
-        raise
+    if os.path.lexists(path):
+        raise StoreError(f"destino já existe: {path}")
+    # Só a cópia temporária pode ser descartada se o clone ou a trava falhar.
+    with tempfile.TemporaryDirectory(prefix=".retrofit-live-", dir=path.parent) as temp:
+        checkout = Path(temp) / "checkout"
+        checkout.mkdir()
+        _setup_live_clone(ctx, slug, checkout, remote, expected, path)
+        pending = checkout / ".git" / LIVE_SETUP_PENDING
+        pending.touch()
+        if os.path.lexists(path):
+            raise StoreError(f"destino já existe: {path}")
+        try:
+            checkout.rename(path)
+        except OSError as error:
+            raise StoreError(f"instalação do clone de {slug} falhou: {error}") from error
+        # Uma regra do Git pode reescrever o origin apenas no caminho definitivo.
+        _live_remote(ctx, slug, path, expected)
+        (path / ".git" / LIVE_SETUP_PENDING).unlink()
     return path
 
 
-def _setup_live_clone(ctx, slug, path, remote, expected):
+def _setup_live_clone(ctx, slug, path, remote, expected, destination):
     # Sem a config de um repo vizinho, mas com a configuração de credenciais do dono.
     env = remote_env(ctx, path)
     effective = _git(["ls-remote", "--get-url", "--", remote], path, env, "URL efetiva")
@@ -984,12 +995,15 @@ def _setup_live_clone(ctx, slug, path, remote, expected):
                      b'commite num worktree do lote" >&2\nexit 1\n')
     hook.chmod(0o755)
     _git(["config", "extensions.worktreeConfig", "true"], path, env, "trava do clone")
-    # O Git pode copiar config.worktree no worktree add. A condição não acompanha a cópia.
+    # A condição usa o destino definitivo e não acompanha o worktree de lote.
+    destination_gitdir = destination / ".git"
     lock_config = gitdir / "rw-live.config"
-    _git(["config", "--file", str(lock_config), "core.hooksPath", str(hooks)], path, env, "trava do clone")
-    git_pattern = re.sub(r"([*?\[\]\\])", r"\\\1", gitdir.as_posix())
+    _git(["config", "--file", str(lock_config), "core.hooksPath", str(destination_gitdir / hooks.name)],
+         path, env, "trava do clone")
+    git_pattern = re.sub(r"([*?\[\]\\])", r"\\\1", destination_gitdir.as_posix())
     condition = "gitdir/i" if os.name == "nt" else "gitdir"
-    _git(["config", "--worktree", f"includeIf.{condition}:{git_pattern}.path", str(lock_config)],
+    _git(["config", "--worktree", f"includeIf.{condition}:{git_pattern}.path",
+          str(destination_gitdir / lock_config.name)],
          path, env, "trava do clone")
 
 

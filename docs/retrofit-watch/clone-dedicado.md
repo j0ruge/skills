@@ -7,8 +7,9 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
 
 - `retrofit_watch.py live-setup <dono/repo> [--url URL]` clona a `main` e recusa
   um destino existente, inclusive se o nome já foi usado por outro dono.
-  Uma falha de criação remove apenas o destino reservado pela tentativa.
-  Depois de corrigir a causa, repita o comando.
+  Se a clonagem ou a configuração da trava falhar, o comando descarta a cópia
+  temporária e pode ser repetido. O clone fica disponível após verificar a
+  origem efetiva no caminho final.
   A URL precisa corresponder ao slug. Sem `--url`, usa HTTPS do GitHub.
   O clone declara a origem autorizada. Em `github.com` nas portas padrão,
   HTTPS e as formas SSH podem representar o mesmo repo. Nos demais servidores,

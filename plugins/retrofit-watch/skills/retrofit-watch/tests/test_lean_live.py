@@ -99,6 +99,49 @@ class LiveTest(unittest.TestCase):
                 self.assertFalse(w.live.exists())
         self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
 
+    def test_setup_waits_for_the_lock_before_exposing_the_clone(self):
+        w = self.w
+        w.live.rename(w.live.with_name("anterior"))
+        git = store._git
+
+        def observe_lock(args, *rest):
+            if "extensions.worktreeConfig" in args:
+                self.assertIsNone(store.live_clone(self.ctx, SLUG))
+            return git(args, *rest)
+
+        with mock.patch.object(store, "_git", side_effect=observe_lock):
+            self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+        self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
+
+    def test_setup_preserves_a_destination_created_while_cloning(self):
+        w = self.w
+        w.live.rename(w.live.with_name("anterior"))
+        git = store._git
+        note = w.live / "nota-local"
+
+        def interrupt_lock(args, *rest):
+            if "extensions.worktreeConfig" in args:
+                w.live.mkdir(exist_ok=True)
+                note.write_text("preservar", encoding="utf-8")
+                raise store.StoreError("trava interrompida")
+            return git(args, *rest)
+
+        with mock.patch.object(store, "_git", side_effect=interrupt_lock):
+            with self.assertRaisesRegex(store.StoreError, "trava interrompida"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertTrue(note.is_file())
+        self.assertEqual(note.read_text(encoding="utf-8"), "preservar")
+
+    def test_setup_checks_effective_origin_at_the_final_path(self):
+        w = self.w
+        w.live.rename(w.live.with_name("anterior"))
+        config = w.home / "destino.gitconfig"
+        w.git(w.tmp, "config", "--file", str(config), f"url.{w.origin}.insteadOf", str(w.remote))
+        w.git(w.tmp, "config", "--global", f'includeIf.gitdir:{w.live / ".git"}.path', str(config))
+        with self.assertRaisesRegex(store.StoreError, "origin do clone dedicado"):
+            store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+
     def test_setup_refuses_target_symlink_even_if_dangling(self):
         w = self.w
         w.live.rename(w.live.with_name("anterior"))
