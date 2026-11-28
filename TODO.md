@@ -345,6 +345,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r34.md` — descoberto por
   `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 
+- [ ] **Sonda de r34 não existe no commit revisado** —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r34.md:122` (`--expect`) —
+  a extração falha no SHA indicado, mas o Python recebe código vazio e retorna rc 0.
+  Direção: indicar o SHA que contém a sonda e exigir extração bem-sucedida antes de rodá-la.
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r35.md` —
+  descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
+
 ## Decidido — não reabrir
 <!-- sdd:decided -->
 
