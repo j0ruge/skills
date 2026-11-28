@@ -1018,6 +1018,7 @@ class LiveTest(unittest.TestCase):
         w = self.w
         head = w.git(w.live, "rev-parse", "HEAD")
         w.git(w.live, "tag", "main")
+        w.git(w.live, "branch", "ramo-do-dono", head)
         (w.live / ".git/info/exclude").write_text("estado\n")
         (w.live / "estado").write_text("preservar")
         new = w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
@@ -1029,6 +1030,8 @@ class LiveTest(unittest.TestCase):
                          (SLUG, "ok", head, new))
         self.assertIsInstance(record["ts"], int)
         self.assertEqual(w.git(w.live, "rev-parse", "HEAD"), new)
+        self.assertEqual(w.git(w.live, "symbolic-ref", "HEAD"), "refs/heads/main")
+        self.assertEqual(w.git(w.live, "rev-parse", "refs/heads/ramo-do-dono"), head)
         self.assertEqual((w.live / "estado").read_text(), "preservar")
 
     def test_advance_leaves_wrong_branch_dirty_tree_and_divergence_alone(self):
@@ -1065,6 +1068,79 @@ class LiveTest(unittest.TestCase):
         self.assertEqual(store.live_advance(self.ctx, SLUG)["resultado"], "erro")
         self.assertEqual((w.live / "estado").read_text(), "preservar")
         self.assertEqual(w.git(w.live, "rev-parse", "HEAD"), head)
+
+    def test_advance_preserves_an_index_lock_held_by_git(self):
+        w = self.w
+        head = w.git(w.live, "rev-parse", "HEAD")
+        index = w.live / ".git/index"
+        original = index.read_bytes()
+        lock = index.with_suffix(".lock")
+        lock.write_bytes(b"operacao em curso")
+        new = w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+
+        record = store.live_advance(self.ctx, SLUG)
+
+        self.assertEqual(record["resultado"], "erro")
+        self.assertEqual(w.git(w.live, "rev-parse", "refs/remotes/origin/main"), new)
+        self.assertEqual(w.git(w.live, "rev-parse", "refs/heads/main"), head)
+        self.assertEqual(index.read_bytes(), original)
+        self.assertEqual(lock.read_bytes(), b"operacao em curso")
+
+    def test_advance_keeps_checkout_clean_if_ref_preparation_is_refused(self):
+        w = self.w
+        head = w.git(w.live, "rev-parse", "HEAD")
+        readme = w.live / "README.md"
+        w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+        hook = w.live / ".git/hooks/reference-transaction"
+        hook.write_text('#!/bin/sh\nif [ "$1" = prepared ]; then\n'
+                        '  while read -r old new ref; do\n'
+                        '    if [ "$ref" = refs/heads/main ]; then exit 1; fi\n'
+                        '  done\nfi\nexit 0\n')
+        hook.chmod(0o755)
+        w.git(w.live, "config", "--local", "core.hooksPath", str(hook.parent))
+
+        record = store.live_advance(self.ctx, SLUG)
+
+        self.assertEqual(record["resultado"], "erro")
+        self.assertEqual(w.git(w.live, "rev-parse", "refs/heads/main"), head)
+        self.assertFalse(readme.exists())
+        self.assertEqual(w.git(w.live, "status", "--porcelain"), "")
+        self.assertFalse((w.live / ".git/index.lock").exists())
+
+    def test_advance_rolls_back_if_installing_index_fails(self):
+        w = self.w
+        head = w.git(w.live, "rev-parse", "HEAD")
+        index = w.live / ".git/index"
+        original = index.read_bytes()
+        w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+        replace = os.replace
+
+        def refuse_index(source, destination, *args, **kwargs):
+            if destination == index:
+                raise OSError("fixture: índice indisponível")
+            return replace(source, destination, *args, **kwargs)
+
+        with mock.patch.object(store.os, "replace", side_effect=refuse_index):
+            record = store.live_advance(self.ctx, SLUG)
+
+        self.assertEqual(record["resultado"], "erro")
+        self.assertEqual(w.git(w.live, "rev-parse", "refs/heads/main"), head)
+        self.assertEqual(index.read_bytes(), original)
+        self.assertFalse((w.live / "README.md").exists())
+        self.assertEqual(w.git(w.live, "status", "--porcelain"), "")
+
+    def test_advance_keeps_a_split_index_readable(self):
+        w = self.w
+        w.git(w.live, "config", "core.splitIndex", "true")
+        w.git(w.live, "update-index", "--split-index")
+        self.assertTrue(w.git(w.live, "rev-parse", "--shared-index-path"))
+        new = w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+
+        record = store.live_advance(self.ctx, SLUG)
+
+        self.assertEqual(record["resultado"], "ok", record["detalhe"])
+        self.assertEqual(w.git(w.live, "rev-parse", "refs/heads/main"), new)
+        self.assertEqual(w.git(w.live, "status", "--porcelain"), "")
 
     def test_advance_reports_branch_change_before_fetch(self):
         w = self.w

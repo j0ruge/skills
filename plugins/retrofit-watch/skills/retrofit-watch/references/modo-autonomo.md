@@ -24,6 +24,9 @@ A ref `refs/heads/main` precisa existir, solta ou empacotada, e não pode redire
 para outro ramo. O setup reconfere essa condição ao liberar o clone.
 `retrofit_watch.py live-advance [<dono/repo>]` confere o ramo
 e a árvore antes e depois do fetch e avança só uma cópia limpa na `main`, sem merge de divergência.
+O avanço prepara a atualização de `refs/heads/main` com o SHA local esperado e protege o índice
+durante a atualização dos arquivos. Se o Git já tiver travado o índice, o avanço registra `erro` e
+preserva a trava existente. Arquivos ignorados que colidam com o conteúdo novo impedem o avanço.
 Se a releitura de HEAD ou da ref da main antes do fetch falhar, registra `erro` com a
 leitura que falhou, sem buscar nem alterar refs.
 Sem argumento, tenta os repos da lista.

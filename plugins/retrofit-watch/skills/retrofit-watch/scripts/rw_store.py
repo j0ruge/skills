@@ -40,6 +40,7 @@ from pathlib import Path, PureWindowsPath
 import rw_auto
 
 RUN_TIMEOUT = 900
+LIVE_REF_TIMEOUT = 10
 MIN_WORD = 4
 PHASES = {"claim-check", "self-containment", "refactoring"}
 
@@ -1220,6 +1221,118 @@ def _live_obstruction(path, env):
     return None
 
 
+@contextlib.contextmanager
+def _live_ref_update(path, env, temporary, before, target):
+    """Prepara a ref nomeada e deixa o commit para depois de instalar o índice."""
+    output = temporary / "transaction"
+    with output.open("wb") as log, subprocess.Popen(
+        ["git", "-C", str(path), "update-ref", "--stdin", "-m", "retrofit-watch: avanço da main"],
+        env=env, stdin=subprocess.PIPE, stdout=log, stderr=subprocess.DEVNULL,
+    ) as transaction:
+        try:
+            transaction.stdin.write(
+                f"start\noption no-deref\nupdate refs/heads/main {target} {before}\nprepare\n".encode("ascii")
+            )
+            transaction.stdin.flush()
+            deadline = time.monotonic() + LIVE_REF_TIMEOUT
+            while b"prepare: ok" not in output.read_bytes().splitlines():
+                if transaction.poll() is not None or time.monotonic() >= deadline:
+                    raise StoreError("Git não conseguiu preparar a atualização da main")
+                time.sleep(0.02)
+            yield
+            transaction.stdin.write(b"commit\n")
+            transaction.stdin.close()
+            if (transaction.wait(timeout=LIVE_REF_TIMEOUT)
+                    or b"commit: ok" not in output.read_bytes().splitlines()):
+                raise StoreError("Git não confirmou a atualização da main")
+        except subprocess.TimeoutExpired as error:
+            raise StoreError("tempo esgotado na atualização da main") from error
+        finally:
+            # O EOF sem commit aborta a transação preparada e libera as travas das refs.
+            with contextlib.suppress(BrokenPipeError):
+                transaction.stdin.close()
+            if transaction.poll() is None:
+                try:
+                    transaction.wait(timeout=LIVE_REF_TIMEOUT)
+                except subprocess.TimeoutExpired:
+                    transaction.kill()
+                    transaction.wait()
+
+
+def _live_install_fast_forward(path, env, before, target, index, temporary):
+    gitdir = path / ".git"
+    stage = temporary / "git"
+    stage.mkdir()
+    (stage / "HEAD").write_bytes(f"{before}\n".encode("ascii"))
+    config = gitdir / "config.worktree"
+    if config.is_file():
+        shutil.copyfile(config, stage / config.name)
+    saved = temporary / "index.original"
+    staged = stage / "index"
+    shutil.copy2(index, saved)
+    shutil.copy2(saved, staged)
+    staged_env = dict(env, GIT_DIR=str(stage), GIT_COMMON_DIR=str(gitdir),
+                      GIT_WORK_TREE=str(path), GIT_INDEX_FILE=str(staged))
+    no_split = ["-c", "core.splitIndex=false"]
+    shared = _git(["rev-parse", "--path-format=absolute", "--shared-index-path"],
+                  path, env, "índice compartilhado").removesuffix("\n")
+    if shared:
+        shared_index = Path(shared)
+        shutil.copy2(shared_index, stage / shared_index.name)
+        _git([*no_split, "update-index", "--no-split-index"], path, staged_env, "preparo do índice")
+    applied = installed = False
+    try:
+        with _live_ref_update(path, env, temporary, before, target):
+            if not _live_main(path):
+                raise LiveBranchError("cópia em uso fora da main")
+            if not (gitdir / "HEAD.lock").is_file():
+                raise StoreError("Git não travou o HEAD do clone dedicado")
+            # O merge lê um HEAD destacado. Só a transação acima pode avançar a main.
+            _git([*no_split, "merge", "--ff-only", "--no-overwrite-ignore", "--no-autostash", target],
+                 path, staged_env, "avanço da main")
+            applied = True
+            candidate = temporary / "index.candidate"
+            shutil.copy2(staged, candidate)
+            os.replace(candidate, index)
+            installed = True
+    except (OSError, StoreError):
+        if applied:
+            current = _git(["rev-parse", "--verify", "refs/heads/main"], path, env, "main").strip()
+            if current == before and _live_head_is_main(path):
+                _git([*no_split, "checkout", "--detach", "--no-overwrite-ignore", before],
+                     path, staged_env, "restauração do checkout")
+                if installed:
+                    os.replace(saved, index)
+            elif current != target or not installed:
+                raise StoreError("main mudou durante o avanço; confira o estado do clone dedicado")
+        raise
+
+
+def _live_fast_forward(path, env, before):
+    index = path / ".git" / "index"
+    lock = index.with_suffix(".lock")
+    try:
+        lock.touch(exist_ok=False)
+    except FileExistsError as error:
+        raise StoreError("índice do clone em uso") from error
+    try:
+        env = dict(env, GIT_OPTIONAL_LOCKS="0")
+        obstruction = _live_obstruction(path, env)
+        if obstruction:
+            return before, obstruction
+        target = _git(["rev-parse", "--verify", "refs/remotes/origin/main^{commit}"],
+                      path, env, "main remota").strip()
+        if target != before:
+            _git(["merge-base", "--is-ancestor", before, target], path, env, "avanço rápido indisponível")
+            with tempfile.TemporaryDirectory(prefix="rw-advance-", dir=index.parent) as directory:
+                _live_install_fast_forward(path, env, before, target, index, Path(directory))
+        elif not _live_main(path) or _git(["rev-parse", "HEAD"], path, env, "HEAD").strip() != before:
+            raise StoreError("HEAD do clone mudou durante o avanço")
+        return target, None
+    finally:
+        lock.unlink()
+
+
 def live_advance(ctx, slug, *, expected_id=None):
     """Avança o checkout dedicado sem sobrescrever estado local e registra o resultado."""
     path = live_path(ctx, slug)
@@ -1233,16 +1346,12 @@ def live_advance(ctx, slug, *, expected_id=None):
         obstruction = _live_obstruction(path, env)
         if obstruction is None:
             _live_fetch(ctx, slug, path, expected_id=expected_id)
-            obstruction = _live_obstruction(path, env)
+            after, obstruction = _live_fast_forward(path, env, before)
         if obstruction is not None:
             result, detail = obstruction
-        else:
-            _git(["merge-base", "--is-ancestor", "HEAD", BASE_REF], path, env, "avanço rápido indisponível")
-            _git(["merge", "--ff-only", "--no-overwrite-ignore", BASE_REF], path, env, "avanço da main")
-            after = _git(["rev-parse", "HEAD"], path, env, "HEAD").strip()
     except LiveBranchError as exc:
         result, detail = "fora-da-main", str(exc)
-    except StoreError as exc:
+    except (OSError, StoreError) as exc:
         result, detail = "erro", str(exc)
     record = dict(repo=slug, resultado=result, antes=before, depois=after, detalhe=detail, ts=int(time.time()))
     record_path = rw_auto.live_record_path(ctx, slug)
