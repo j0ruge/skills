@@ -612,3 +612,35 @@
 - 2026-11-28 01:47 · r36, achado 1 → R24. A externa comprovadamente anterior perdeu o ID aposentado e silenciou em quatro retomadas reais da 0.4.0. R23 continua verde para a ordem inversa.
 - 2026-11-28 01:48 · R24 · Trate o metadado rejeitado, mas compatível com a 0.4.0, como candidato na interseção de provas. Quando o prefixo ainda identificar sua posição com prova única e limitada, preserve apenas IDs estritamente anteriores também a esse candidato. Quando faltar prova de posição ou identidade, mantenha a interseção conservadora. Distinga ordem de mensagens de ordem de metadados. Preserve os controles invertidos de R23, os fatos comuns e caminho exclusivo de R22, a leitura única e o limite de memória. Repita os Checks anteriores.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 01:49 · written by the runner
+- 2026-11-28 01:56 · R24 sabotage: inicialização da ordem → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: inicialização da prova por ID → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: inicialização do orçamento → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: escopo do registro → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: validade e teto na entrada → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: identidade da mensagem → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: primeira posição da mensagem → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: orçamento do ID de mensagem → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: ordem das mensagens → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: unicidade da chamada → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: orçamento do ID de chamada → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: vínculo da chamada à posição → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: ramo de ID repetido → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: revogação de ID repetido → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: teto de chamadas → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: teto de mensagens → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: teto de bytes → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: descarte ao exceder o teto → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: escopo da interseção → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: validação da fonte rejeitada → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: fallback com posições esgotadas → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: fallback do dono sem prova → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: revogação sem prova → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: ramo do dono com posição → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: primeiro candidato rejeitado → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: gravação da interseção → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: unicidade do ID aposentado → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: antiguidade estrita → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: restauração da limpeza incondicional → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: posição antiga da marca de ambiguidade → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 sabotage: interseção dos candidatos → test_legacy_replay_keeps_older_external_with_ignored_owner
+- 2026-11-28 01:56 · R24 · 51a8a73. Red em quatro retomadas da 0.4.0 real com externa anterior. No Green, as quatro pediram retro e as quatro posteriores mantiveram o silêncio. Suíte isolada verde com 154 testes da loja (3 pulados) e 142 do hook. Os 26 Checks, F1 e quatro testes de release passaram. Trinta e uma degradações detectadas com grupo próprio, 25 s e 512 MiB. Provas nativas não repetidas.

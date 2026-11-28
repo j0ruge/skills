@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a2206d-8944-7422-8b9c-14480dbcedf6
-data: 2026-11-28 01:38
-gate: "Em f82e1d5, TEST_CMD de .sdd/config.sh com Git isolado retornou rc 0. Loja com 154 testes (3 pulados), hook com 141, adaptadores, catálogo e versão 0.4.1 válidos. Os 25 Checks, incluindo F1, e quatro testes de release passaram."
+sessao: 01a2207c-b0f1-7261-8aa3-06125fb835f5
+data: 2026-11-28 01:56
+gate: "Em 51a8a73, TEST_CMD de .sdd/config.sh com Git isolado retornou rc 0. Loja com 154 testes (3 pulados), hook com 142, adaptadores, catálogo e versão 0.4.1 válidos. Os 26 Checks, incluindo F1, e quatro testes de release passaram."
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,15 +14,17 @@ gate: "Em f82e1d5, TEST_CMD de .sdd/config.sh com Git isolado retornou rc 0. Loj
 
 ## TL;DR
 
-R23 impede que a retomada ignore uma externa posterior quando o replay pula um dono possível.
-Os controles de antiguidade comum e do caminho exclusivo de R22 continuam verdes.
-A suíte isolada, os 25 Checks, F1 e os quatro testes de release passaram.
-A QA começa por R23 e repete R21 e R22. As três provas nativas seguem puladas no sandbox.
+R24 mantém a retro quando a externa é comprovadamente anterior a todos os possíveis donos.
+Nas oito retomadas com a 0.4.0 real, as quatro anteriores pediram retro e as quatro posteriores ficaram em silêncio.
+Passaram a suíte isolada, os 26 Checks, F1 e quatro testes de release.
+A QA começa por R24 e repete R23 e R22. As três provas nativas não foram repetidas no sandbox.
 
 ## Estado do repo
 
 - **Branch** `fix/retrofit-watch-atribuicao-mesma-mensagem`, ligada ao PR #13.
-- O incremento mais recente é R23 em `f82e1d5`. A versão continua 0.4.1.
+- O incremento mais recente é R24 em `51a8a73`. A versão continua 0.4.1.
+- A suíte isolada de R24 passou com 154 testes da loja (3 pulados) e 142 do hook.
+  Os 26 Checks tiveram rc 0 e stdout esperado. Os quatro testes de release passaram.
 - A suíte isolada de R23 validou 154 testes da loja (3 pulados), 141 do hook, adaptadores,
   catálogo e versões. Os 25 Checks tiveram rc 0 e stdout esperado.
 - A suíte isolada de R22 validou 154 testes da loja (3 pulados), 140 do hook, adaptadores,
@@ -338,6 +340,17 @@ A QA começa por R23 e repete R21 e R22. As três provas nativas seguem puladas 
   ainda emitem o pedido. As 12 degradações do código deixaram testes vermelhos
   em cópia temporária com grupo próprio, 25 s e memória virtual de 512 MiB.
 
+### Retorno da revisão — rodada r36
+
+- `51a8a73` — trata o metadado rejeitado compatível com a 0.4.0 como candidato na interseção.
+  Recupera sua posição por ID único e pela ordem das mensagens na mesma leitura do prefixo.
+  Sem posição comprovada dentro dos limites, não importa a aposentadoria desses IDs.
+- `51a8a73` — adiciona a regressão durável, incluindo ID reutilizado ou inválido, mesma mensagem,
+  mensagens intercaladas e os três tetos do registro temporário. No Red, a sonda real mostrou
+  silêncio nas quatro variantes anteriores. Em Green, todas pediram retro e os quatro
+  controles posteriores ficaram em silêncio. Foram detectadas 31 degradações em cópias
+  temporárias com grupo próprio, timeout de 25 s e 512 MiB de memória virtual.
+
 ## Artefatos
 
 | Arquivo | O que contém |
@@ -350,9 +363,14 @@ A QA começa por R23 e repete R21 e R22. As três provas nativas seguem puladas 
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as 25 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as 26 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
-- Comece pela célula de R23. A [sonda de r35](40-review-r35.md#sonda-de-r23)
+- Comece pela célula de R24 e pela [sonda de r36](40-review-r36.md#sonda-de-r24).
+  A 0.4.0 real grava o estado no fixture. O Stop deve pedir retro quando a externa for
+  comprovadamente anterior a todos os candidatos, e ficar em silêncio na ordem inversa.
+  Confira caminho repetido ou distinto e metadado no Stop de migração ou no seguinte.
+
+- Em seguida, rode a célula de R23. A [sonda de r35](40-review-r35.md#sonda-de-r23)
   grava o estado com a 0.4.0 real. Exija silêncio e crédito preservado com caminho
   novo ou repetido, tanto no Stop que migra como no Stop seguinte. A externa
   comprovadamente anterior continua sem fechar a atribuição no controle.
