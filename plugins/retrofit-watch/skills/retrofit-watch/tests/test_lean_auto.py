@@ -16,8 +16,8 @@ PAYLOAD = {"permission_mode": "bypassPermissions", "session_id": "fixture"}
 
 class OriginTest(unittest.TestCase):
     def test_only_supported_origin_shapes(self):
-        for url in ("https://github.com/Fixture/KB-libs.git", "git@github.com:Fixture/KB-libs.git",
-                    "ssh://git@github.com/fixture/kb-libs", "/tmp/remotes/fixture/kb-libs.git"):
+        for url in ("https://github.com/Fixture/KB-libs.git", "git@localhost:Fixture/KB-libs.git",
+                    "ssh://git@localhost/fixture/kb-libs", "/tmp/remotes/fixture/kb-libs.git"):
             with self.subTest(url=url):
                 self.assertEqual(rw.origin_slug(url), SLUG)
         for url in ("kb-libs", "https://github.com/kb-libs", "https://github.com/a/b/c",
@@ -123,8 +123,8 @@ class LeanAutoTest(unittest.TestCase):
             (https, ssh, "sem-clone"),
             (ssh, ssh.replace("git@", "other@"), "sem-clone"),
             (ssh, ssh.replace("localhost/", "localhost:22/"), "sem-clone"),
-            (f"https://github.com/{SLUG}", "git@github.com:Fixture/KB-libs.git", None),
-            (f"https://github.com/{SLUG}", f"ssh://git@github.com/{SLUG}.git", None),
+            (f"https://github.com/{SLUG}", "github.com:Fixture/KB-libs.git", None),
+            (f"https://github.com/{SLUG}", f"ssh://github.com/{SLUG}.git", None),
         ):
             with self.subTest(authorized=authorized, actual=actual):
                 w.git(w.live, "remote", "set-url", "origin", authorized)
