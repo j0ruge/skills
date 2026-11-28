@@ -442,6 +442,45 @@ class LiveTest(unittest.TestCase):
         self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
         self.assertEqual(store.live_advance(self.ctx, SLUG)["resultado"], "ok")
 
+    def test_setup_rejects_main_resolving_to_other_branch(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        marker = pending.read_bytes()
+        head_file = pending.with_name("HEAD")
+        head_bytes = head_file.read_bytes()
+        head = w.git(w.live, "rev-parse", "HEAD")
+        w.git(w.live, "branch", "rascunho")
+        main_ref = pending.parent / "refs/heads/main"
+
+        def assert_refused():
+            self.assertEqual(head_file.read_bytes(), head_bytes)
+            self.assertEqual(w.git(w.live, "symbolic-ref", "HEAD"), "refs/heads/rascunho")
+            with self.assertRaisesRegex(store.StoreError, "fora da main"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+            self.assertEqual(pending.read_bytes(), marker)
+            self.assertIsNone(store.live_clone(self.ctx, SLUG))
+            # O ramo também impede a elegibilidade quando o marcador deixa de estar visível.
+            pending.unlink()
+            try:
+                self.assertIsNone(store.live_clone(self.ctx, SLUG))
+            finally:
+                pending.write_bytes(marker)
+
+        w.git(w.live, "symbolic-ref", "refs/heads/main", "refs/heads/rascunho")
+        assert_refused()
+        if os.name != "nt":
+            main_ref.unlink()
+            main_ref.symlink_to("refs/heads/rascunho")
+            assert_refused()
+        main_ref.unlink()
+        w.git(w.live, "update-ref", "refs/heads/main", head)
+        w.git(w.live, "pack-refs", "--all")
+        self.assertFalse(main_ref.exists())
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+        self.assertFalse(pending.exists())
+        self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
+        self.assertEqual(store.live_advance(self.ctx, SLUG)["resultado"], "ok")
+
     def test_setup_retry_does_not_finalize_branch_changed_during_validation(self):
         w = self.w
         pending = self._leave_pending_setup()
@@ -866,6 +905,45 @@ class LiveTest(unittest.TestCase):
         # Os outros chamadores tratam a recusa da busca como StoreError.
         with self.assertRaisesRegex(store.StoreError, "fora da main"):
             store._live_fetch(self.ctx, SLUG, w.live)
+
+    def test_advance_reports_unreadable_head_before_fetch(self):
+        w = self.w
+        head = w.git(w.live, "rev-parse", "HEAD")
+        remote_head = w.git(w.live, "rev-parse", "origin/main")
+        w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
+        head_file = w.live / ".git" / "HEAD"
+        head_bytes = head_file.read_bytes()
+        open_path = type(head_file).open
+        obstruction = store._live_obstruction
+        read_failed = False
+        inspected = False
+
+        def after_inspection(path, env):
+            nonlocal inspected
+            result = obstruction(path, env)
+            inspected = result is None
+            return result
+
+        def unreadable(path, *args, **kwargs):
+            nonlocal read_failed
+            if inspected and path == head_file:
+                read_failed = True
+                raise PermissionError("falha de leitura simulada")
+            return open_path(path, *args, **kwargs)
+
+        with mock.patch.object(store, "_live_obstruction", side_effect=after_inspection), \
+                mock.patch.object(type(head_file), "open", unreadable), \
+                mock.patch.object(store, "run", wraps=store.run) as commands:
+            record = store.live_advance(self.ctx, SLUG)
+
+        self.assertTrue(read_failed)
+        self.assertFalse(any("fetch" in call.args[0] for call in commands.call_args_list))
+        self.assertEqual((record["resultado"], record["detalhe"]), ("erro", "HEAD do clone ilegível"))
+        self.assertEqual((record["antes"], record["depois"]), (head, head))
+        self.assertEqual(json.loads((w.data / f"live/{SLUG}.json").read_text()), record)
+        self.assertEqual(head_file.read_bytes(), head_bytes)
+        self.assertEqual(w.git(w.live, "symbolic-ref", "HEAD"), "refs/heads/main")
+        self.assertEqual(w.git(w.live, "rev-parse", "origin/main"), remote_head)
 
     def test_advance_revalidates_clone_identity_before_fetch(self):
         w = self.w

@@ -20,8 +20,10 @@ dedicado na `main` sem substituir um destino existente, mesmo vazio e criado dur
 Se a validação final falhar, conserva o clone pendente e seus arquivos. Corrija a causa
 e repita o setup com a mesma origem. Para concluir, o clone conferido precisa continuar
 no destino, na `main`, com a origem declarada e efetiva corretas e a trava de commit ativa.
+A ref `refs/heads/main` não pode redirecionar para outro ramo.
 `retrofit_watch.py live-advance [<dono/repo>]` confere o ramo
 e a árvore antes e depois do fetch e avança só uma cópia limpa na `main`, sem merge de divergência.
+Se a releitura do HEAD antes do fetch falhar, registra `erro` sem buscar nem alterar refs.
 Sem argumento, tenta os repos da lista.
 A origem da sessão precisa corresponder à do clone dedicado.
 Fora do GitHub público nas portas padrão, use a mesma URL Git efetiva, mesmo quando o slug é o mesmo.

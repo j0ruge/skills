@@ -947,11 +947,23 @@ def _configured_origin(path, *, allow_pending=False):
 
 
 def _live_main(path):
+    """Distingue ramo errado (False) de falha de leitura (None)."""
+    gitdir = path / ".git"
     try:
-        with (path / ".git" / "HEAD").open("rb") as head:
-            return head.read(64).rstrip(b"\r\n") == b"ref: refs/heads/main"
+        with (gitdir / "HEAD").open("rb") as head:
+            if head.read(64).rstrip(b"\r\n") != b"ref: refs/heads/main":
+                return False
+        main = gitdir / "refs" / "heads" / "main"
+        # Só a ref solta pode ser simbólica. Se não existir, a main pode estar empacotada.
+        try:
+            if not stat.S_ISREG(main.lstat().st_mode):
+                return False
+            with main.open("rb") as ref:
+                return ref.read(4) != b"ref:"
+        except FileNotFoundError:
+            return True
     except OSError:
-        return False
+        return None
 
 
 def live_clone(ctx, slug, *, origin=None, require_main=True):
@@ -1149,7 +1161,10 @@ def _live_remote(ctx, slug, path, expected):
 
 def _live_fetch(ctx, slug, path, *, expected_id=None):
     clone = _private_clone(ctx, slug, require_main=False)
-    if not _live_main(clone):
+    on_main = _live_main(clone)
+    if on_main is None:
+        raise StoreError("HEAD do clone ilegível")
+    if not on_main:
         raise LiveBranchError("cópia em uso fora da main")
     expected = _configured_origin(clone)
     if expected_id is not None and rw_auto.rw.origin_id(expected) != expected_id:
