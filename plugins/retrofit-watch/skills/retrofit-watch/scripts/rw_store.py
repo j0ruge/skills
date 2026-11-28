@@ -20,6 +20,7 @@ portão fora do formato também, nunca uma lista vazia (falha fechada).
 """
 import configparser
 import contextlib
+import ctypes
 import hashlib
 import importlib.util
 import io
@@ -949,6 +950,24 @@ def live_clone(ctx, slug, *, origin=None):
     return None
 
 
+def _install_live_clone(checkout, path):
+    """Move o clone sem substituir nem um diretório vazio concorrente."""
+    if os.name == "nt":
+        checkout.rename(path)
+        return
+    libc = ctypes.CDLL(None, use_errno=True)
+    src, dst = os.fsencode(checkout), os.fsencode(path)
+    if sys.platform == "darwin" and hasattr(libc, "renamex_np"):
+        rc = libc.renamex_np(src, dst, 4)  # RENAME_EXCL
+    elif sys.platform == "linux" and hasattr(libc, "renameat2"):
+        rc = libc.renameat2(-100, src, -100, dst, 1)  # AT_FDCWD, RENAME_NOREPLACE
+    else:
+        raise StoreError("instalação sem substituição não suportada nesta plataforma")
+    if rc != 0:
+        code = ctypes.get_errno()
+        raise OSError(code, os.strerror(code), path)
+
+
 def live_setup(ctx, slug, url=None):
     path = live_path(ctx, slug)
     remote = f"https://github.com/{slug}.git" if url is None else url
@@ -958,22 +977,29 @@ def live_setup(ctx, slug, url=None):
     path.parent.mkdir(parents=True, exist_ok=True)
     if os.path.lexists(path):
         raise StoreError(f"destino já existe: {path}")
-    # Só a cópia temporária pode ser descartada se o clone ou a trava falhar.
+    # Prepara a trava fora do destino e mantém a cópia inelegível até verificar a origem final.
     with tempfile.TemporaryDirectory(prefix=".retrofit-live-", dir=path.parent) as temp:
         checkout = Path(temp) / "checkout"
         checkout.mkdir()
         _setup_live_clone(ctx, slug, checkout, remote, expected, path)
         pending = checkout / ".git" / LIVE_SETUP_PENDING
         pending.touch()
-        if os.path.lexists(path):
-            raise StoreError(f"destino já existe: {path}")
+        installed = checkout.lstat()
         try:
-            checkout.rename(path)
+            _install_live_clone(checkout, path)
+        except FileExistsError as error:
+            raise StoreError(f"destino já existe: {path}") from error
         except OSError as error:
             raise StoreError(f"instalação do clone de {slug} falhou: {error}") from error
-        # Uma regra do Git pode reescrever o origin apenas no caminho definitivo.
-        _live_remote(ctx, slug, path, expected)
-        (path / ".git" / LIVE_SETUP_PENDING).unlink()
+        try:
+            # Uma regra do Git pode reescrever o origin apenas no caminho definitivo.
+            _live_remote(ctx, slug, path, expected)
+            (path / ".git" / LIVE_SETUP_PENDING).unlink()
+        except (StoreError, OSError):
+            with contextlib.suppress(FileNotFoundError):
+                if os.path.samestat(installed, path.lstat()):
+                    path.rename(checkout)
+            raise
     return path
 
 

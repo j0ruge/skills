@@ -1363,12 +1363,13 @@ def cmd_pending(payload, ctx):
     v2. Cada segmento roda no seu `try` (M11): a exceção vai ao errors.log, e os outros saem."""
     if session_mode(ctx) != "attended":
         return None
+    parts = []
     if ctx.lean_auto:
         try:
             importlib.import_module("rw_store").spawn_live_advance(ctx)
         except OSError as exc:
             log_error(ctx, exc)
-    parts = []
+            parts.append("não foi possível iniciar o avanço dos clones (consulte errors.log)")
     for module, name in NOTICES:
         try:
             source = sys.modules[__name__] if module is None else importlib.import_module(module)

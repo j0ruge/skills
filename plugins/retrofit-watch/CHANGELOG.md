@@ -15,9 +15,10 @@
   Em HTTPS com porta não padrão, usa a URL absoluta da API e passa ao `gh` o hostname sem porta.
 - Após publicar, registra o SHA em `local/ci` e avança o clone com `--ff-only`.
   Confere novamente o ramo e a árvore após o fetch. O startup assistido avisa por
-  `dono/repo` se o último avanço falhou ou se o registro estiver inválido.
-- Se a criação do clone falhar, `live-setup` limpa o destino da tentativa. Um clone
-  que já existia não é substituído.
+  `dono/repo` se o último avanço falhou ou se o registro estiver inválido, e avisa
+  imediatamente se não conseguiu iniciar o processo.
+- `live-setup` preserva até um diretório vazio criado durante a instalação. Se a origem
+  efetiva for recusada no caminho final, descarta a cópia da tentativa para permitir repetir.
 
 ## [0.4.1] — 2026-11-25
 

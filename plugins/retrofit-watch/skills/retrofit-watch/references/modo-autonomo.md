@@ -16,8 +16,9 @@ A loja é o clone da chave `store` do `~/.claude/retrofit-watch.json`. Esse clon
 compartilhado: ninguém escreve nele. Cada lote tem o seu worktree.
 
 Para os repos de `lean_auto`, `retrofit_watch.py live-setup <dono/repo> [--url URL]` cria o clone
-dedicado na `main` sem substituir um destino existente. Se falhar, remove o destino reservado pela
-tentativa e permite repetir o comando. `retrofit_watch.py live-advance [<dono/repo>]` confere o ramo
+dedicado na `main` sem substituir um destino existente, mesmo vazio e criado durante o setup.
+Se a origem for recusada no caminho final, descarta a própria cópia e permite repetir após corrigir
+a causa. `retrofit_watch.py live-advance [<dono/repo>]` confere o ramo
 e a árvore antes e depois do fetch e avança só uma cópia limpa na `main`, sem merge de divergência.
 Sem argumento, tenta os repos da lista.
 A origem da sessão precisa corresponder à do clone dedicado.
@@ -338,7 +339,8 @@ O aviso de startup junta numa linha ao dono um segmento por assunto:
 - `… — o kit pode entrar (…)`: o critério da v2 se cumpriu. Só informa.
 
 Com `lean_auto` não vazia, o startup dispara `live-advance` em processo destacado e não
-espera pela rede. O startup seguinte lê `<dados>/live/<dono>/<repo>.json` por slug completo e
+espera pela rede. Se o processo não iniciar, o aviso sai na mesma sessão junto dos demais,
+com o erro em `errors.log`. O startup seguinte lê `<dados>/live/<dono>/<repo>.json` por slug completo e
 mostra problemas como ramo errado, sujeira, falha do fetch ou registro inválido. A falta de
 registro não gera aviso. O aviso da janela muda uma vez por transição entre o ensaio e o modo
 que pode publicar sozinho.

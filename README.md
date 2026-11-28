@@ -481,8 +481,9 @@ A origem do checkout precisa coincidir com a do clone dedicado. Fora do GitHub
 público nas portas padrão, use a mesma URL Git efetiva nos dois clones.
 Quando a origem usa SSH, o status `local/ci` vai à API do servidor conferido sem a porta de transporte.
 Em HTTPS com porta não padrão, a URL da API de status preserva essa porta.
-Se a criação do clone falhar, corrija a causa e repita `live-setup`. O startup
-mostra avisos de avanço separados por `dono/repo`.
+Se a criação do clone ou a validação final da origem falhar, corrija a causa e repita
+`live-setup`. O setup preserva destinos concorrentes, mesmo vazios. O startup avisa
+se não conseguir iniciar o avanço e mostra os resultados por `dono/repo`.
 Em `auto`, a publicação sem aprovação exige 10 publicações autônomas da loja,
 14 dias e zero vazamentos na janela v2. Um revert da loja ou de repo listado
 reinicia a janela. Veja o [contrato do clone, do selo e da publicação](docs/retrofit-watch/clone-dedicado.md).

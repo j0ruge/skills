@@ -1,4 +1,5 @@
 """O clone em uso segue a main sem tocar o checkout de desenvolvimento."""
+import errno
 import json
 import os
 import shlex
@@ -132,15 +133,119 @@ class LiveTest(unittest.TestCase):
         self.assertTrue(note.is_file())
         self.assertEqual(note.read_text(encoding="utf-8"), "preservar")
 
-    def test_setup_checks_effective_origin_at_the_final_path(self):
+    def test_setup_does_not_replace_concurrent_empty_destination(self):
+        w = self.w
+        w.live.rename(w.live.with_name("anterior"))
+        install = store._install_live_clone
+        created = []
+
+        def create_before_install(checkout, path):
+            path.mkdir()
+            created.append(path.stat())
+            return install(checkout, path)
+
+        with mock.patch.object(store, "_install_live_clone", side_effect=create_before_install):
+            with self.assertRaisesRegex(store.StoreError, "destino já existe"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertEqual(len(created), 1)
+        self.assertTrue(os.path.samestat(created[0], w.live.stat()))
+        self.assertEqual(list(w.live.iterdir()), [])
+
+    def _final_origin_rewrite(self):
         w = self.w
         w.live.rename(w.live.with_name("anterior"))
         config = w.home / "destino.gitconfig"
         w.git(w.tmp, "config", "--file", str(config), f"url.{w.origin}.insteadOf", str(w.remote))
-        w.git(w.tmp, "config", "--global", f'includeIf.gitdir:{w.live / ".git"}.path', str(config))
+        key = f'includeIf.gitdir:{w.live / ".git"}.path'
+        w.git(w.tmp, "config", "--global", key, str(config))
+        return key
+
+    def test_setup_checks_effective_origin_at_the_final_path(self):
+        self._final_origin_rewrite()
         with self.assertRaisesRegex(store.StoreError, "origin do clone dedicado"):
-            store.live_setup(self.ctx, SLUG, str(w.remote))
+            store.live_setup(self.ctx, SLUG, str(self.w.remote))
         self.assertIsNone(store.live_clone(self.ctx, SLUG))
+
+    def test_setup_retries_after_final_origin_validation_failure(self):
+        w = self.w
+        key = self._final_origin_rewrite()
+        live_remote = store._live_remote
+
+        def observe_pending(ctx, slug, path, expected):
+            if path == w.live:
+                self.assertIsNone(store.live_clone(ctx, slug))
+            return live_remote(ctx, slug, path, expected)
+
+        with mock.patch.object(store, "_live_remote", side_effect=observe_pending):
+            with self.assertRaisesRegex(store.StoreError, "origin do clone dedicado"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+        w.git(w.tmp, "config", "--global", "--unset", key)
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+        self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
+        w.assert_fixture_origin(w.live)
+
+    def test_setup_preserves_replacement_on_final_validation_failure(self):
+        w = self.w
+        w.live.rename(w.live.with_name("anterior"))
+        live_remote = store._live_remote
+        note = w.live / "nota-local"
+
+        def replace_before_failure(ctx, slug, path, expected):
+            if path == w.live:
+                path.rename(path.with_name("deslocado"))
+                path.mkdir()
+                note.write_text("preservar", encoding="utf-8")
+                raise store.StoreError("origem recusada após a troca")
+            return live_remote(ctx, slug, path, expected)
+
+        with mock.patch.object(store, "_live_remote", side_effect=replace_before_failure):
+            with self.assertRaisesRegex(store.StoreError, "origem recusada após a troca"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertEqual(note.read_text(encoding="utf-8"), "preservar")
+
+    def test_setup_reports_install_error_without_leaving_destination(self):
+        w = self.w
+        w.live.rename(w.live.with_name("anterior"))
+        error = OSError(errno.EOPNOTSUPP, "sem suporte no sistema de arquivos")
+        with mock.patch.object(store, "_install_live_clone", side_effect=error):
+            with self.assertRaisesRegex(store.StoreError, "instalação do clone.*sem suporte"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertFalse(w.live.exists())
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+
+    def test_setup_retries_after_pending_marker_removal_fails(self):
+        w = self.w
+        w.live.rename(w.live.with_name("anterior"))
+        unlink = type(w.live).unlink
+
+        def fail_final_unlink(path, *args, **kwargs):
+            if path == w.live / ".git" / store.LIVE_SETUP_PENDING:
+                self.assertIsNone(store.live_clone(self.ctx, SLUG))
+                raise PermissionError("marcador ocupado")
+            return unlink(path, *args, **kwargs)
+
+        with mock.patch.object(type(w.live), "unlink", new=fail_final_unlink):
+            with self.assertRaisesRegex(PermissionError, "marcador ocupado"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+        self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
+
+    def test_setup_keeps_original_error_when_installed_path_disappears(self):
+        w = self.w
+        w.live.rename(w.live.with_name("anterior"))
+        live_remote = store._live_remote
+
+        def move_before_failure(ctx, slug, path, expected):
+            if path == w.live:
+                path.rename(path.with_name("deslocado"))
+                raise store.StoreError("origem recusada após a mudança")
+            return live_remote(ctx, slug, path, expected)
+
+        with mock.patch.object(store, "_live_remote", side_effect=move_before_failure):
+            with self.assertRaisesRegex(store.StoreError, "origem recusada após a mudança"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertFalse(w.live.exists())
 
     def test_setup_refuses_target_symlink_even_if_dangling(self):
         w = self.w
@@ -312,6 +417,32 @@ class LiveTest(unittest.TestCase):
         self.assertIn("origin do clone dedicado", record["detalhe"])
 
 
+class InstallTest(unittest.TestCase):
+    def test_windows_uses_native_rename(self):
+        checkout = mock.Mock()
+        with mock.patch.object(os, "name", "nt"), mock.patch.object(store.ctypes, "CDLL") as libc:
+            store._install_live_clone(checkout, "destino")
+        checkout.rename.assert_called_once_with("destino")
+        libc.assert_not_called()
+
+    def test_mac_os_requests_exclusive_rename(self):
+        libc = mock.Mock(spec=["renamex_np"])
+        libc.renamex_np.return_value = 0
+        with mock.patch.object(os, "name", "posix"), mock.patch.object(sys, "platform", "darwin"), \
+                mock.patch.object(store.ctypes, "CDLL", return_value=libc) as load:
+            store._install_live_clone("cópia", "destino")
+        load.assert_called_once_with(None, use_errno=True)
+        libc.renamex_np.assert_called_once_with(os.fsencode("cópia"), os.fsencode("destino"), 4)
+
+    def test_missing_exclusive_rename_has_no_overwrite_fallback(self):
+        for platform in ("linux", "darwin", "outro"):
+            with self.subTest(platform=platform), mock.patch.object(os, "name", "posix"), \
+                    mock.patch.object(sys, "platform", platform), \
+                    mock.patch.object(store.ctypes, "CDLL", return_value=object()):
+                with self.assertRaisesRegex(store.StoreError, "não suportada"):
+                    store._install_live_clone("cópia", "destino")
+
+
 class StartupTest(unittest.TestCase):
     def setUp(self):
         self.w = PrivateWorld()
@@ -341,6 +472,25 @@ class StartupTest(unittest.TestCase):
         with mock.patch.object(subprocess, "Popen") as launch:
             self.assertFalse(store.spawn_live_advance(self.w.ctx()))
         launch.assert_not_called()
+
+    def test_spawn_failure_warns_even_with_prior_ok(self):
+        rw = store.rw_auto.rw
+        record = store.live_advance(self.ctx, SLUG)
+        self.assertEqual(record["resultado"], "ok")
+        path = self.w.data / f"live/{SLUG}.json"
+        prior = path.read_bytes()
+        segments = ((None, "queue_notice"), ("rw_auto", "live_notice"))
+        for other in (None, "fila de sessões headless"):
+            with self.subTest(queue=other), mock.patch.object(rw, "NOTICES", segments), \
+                    mock.patch.object(rw, "queue_notice", return_value=other), \
+                    mock.patch.object(subprocess, "Popen", side_effect=OSError("falha no lançamento")):
+                notice = rw.cmd_pending({}, self.ctx)
+                self.assertIsNotNone(notice)
+                self.assertIn("não foi possível iniciar o avanço dos clones", notice["systemMessage"])
+                if other:
+                    self.assertIn(other, notice["systemMessage"])
+        self.assertEqual(path.read_bytes(), prior)
+        self.assertIn("falha no lançamento", (self.w.data / "errors.log").read_text(encoding="utf-8"))
 
     def test_offline_advance_is_in_child_and_reported_on_next_startup(self):
         w = self.w

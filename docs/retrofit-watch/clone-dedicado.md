@@ -5,11 +5,13 @@ desenvolvimento continua separado. `lean_auto` lista os slugs `dono/repo`
 autorizados. O dono precisa estar em `owners` e o diretório padrão é
 `~/.local/share/skills-live`.
 
-- `retrofit_watch.py live-setup <dono/repo> [--url URL]` clona a `main` e recusa
-  um destino existente, inclusive se o nome já foi usado por outro dono.
-  Se a clonagem ou a configuração da trava falhar, o comando descarta a cópia
-  temporária e pode ser repetido. O clone fica disponível após verificar a
-  origem efetiva no caminho final.
+- `retrofit_watch.py live-setup <dono/repo> [--url URL]` clona a `main` sem substituir
+  o destino, mesmo se um diretório vazio surgir durante a instalação.
+  A recusa também vale se o nome do clone já foi usado por outro dono.
+  Se a clonagem, a trava ou a validação da origem efetiva no caminho final falhar,
+  o comando descarta a cópia da própria tentativa. Corrija a causa e repita o setup.
+  O clone só fica disponível após a validação final. Se a plataforma ou o sistema
+  de arquivos não oferecer movimentação sem substituição, o setup recusa a instalação.
   A URL precisa corresponder ao slug. Sem `--url`, usa HTTPS do GitHub.
   O clone declara a origem autorizada. Em `github.com` nas portas padrão,
   HTTPS e as formas SSH podem representar o mesmo repo. Nos demais servidores,
@@ -63,7 +65,9 @@ SSH continua valendo para o Git, mas não é repassada à API de status. Uma por
 HTTPS explícita não padrão fica na URL absoluta da API (`/api/v3/repos/…/statuses/…`).
 O argumento `--hostname` do `gh` identifica o servidor sem porta.
 Rode `publish` novamente para concluir esses efeitos sem repetir o push.
-Em sessões assistidas, o startup lança o avanço em segundo plano. Os avisos são
+Em sessões assistidas, o startup lança o avanço em segundo plano. Se não conseguir
+iniciar o processo, avisa na mesma sessão e registra o erro em `errors.log`,
+mesmo se o avanço anterior tiver sido bem-sucedido. Os avisos de resultado são
 separados por slug completo, mesmo que dois repos impliquem o mesmo destino de clone.
 Registro ausente não gera aviso. Um registro presente que o startup não consegue
 ler ou interpretar gera aviso de registro inválido para aquele repo.
