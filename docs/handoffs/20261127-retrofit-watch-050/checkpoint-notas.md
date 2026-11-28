@@ -276,3 +276,39 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 06:22 · written by the runner
 - 2026-11-28 06:30 · `R11` · REVIEW r5 reproduziu sucesso após sumiço ou troca do destino, origem declarada incompatível, ramo fora da main e trava ineficaz na retomada. TEST_CMD, 146 testes dirigidos e jornada verdes.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 06:32 · written by the runner
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Torna permissivo o hook emitido e reconhecido → LiveTest.test_setup_clones_main_with_worktree_lock
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Expõe a origem antes do término do setup → LiveTest.test_setup_retries_after_final_origin_validation_failure
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Bloqueia a leitura da origem mesmo no setup → LiveTest.test_setup_clones_main_with_worktree_lock
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Retira a permissão explícita para ler origem pendente → LiveTest.test_setup_retry_requires_declared_and_effective_origin
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Ignora a identidade do checkout e do .git antes da remoção → LiveTest.test_setup_does_not_finalize_missing_or_replaced_destination
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Esquece a identidade do checkout na comparação → LiveTest.test_setup_refuses_clone_replaced_just_after_install
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Troca diretório ausente por erro do sistema → LiveTest.test_setup_does_not_finalize_missing_or_replaced_destination
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Considera o inode como constante → LiveTest.test_setup_refuses_clone_replaced_just_after_install
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Usa a identidade do destino só depois da troca na instalação → LiveTest.test_setup_refuses_clone_replaced_just_after_install
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Obtém a identidade só depois de ler o marcador de retomada → LiveTest.test_setup_retry_refuses_clone_replaced_after_pending_check
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Volta à remoção por caminho sem ancoragem no POSIX → LiveTest.test_setup_leaves_replacement_pending_at_marker_removal
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Não remove o marcador no caminho usado pelo Windows → LiveTest.test_setup_path_removal_fallback_requires_marker
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Tolera marcador já ausente no caminho do Windows → LiveTest.test_setup_path_removal_fallback_requires_marker
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Segue um link no lugar do .git na abertura final → LiveTest.test_setup_does_not_follow_gitdir_link_at_marker_removal
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Deixa de comparar a identidade do descritor aberto → LiveTest.test_setup_leaves_replacement_pending_at_marker_removal
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Reintroduz a remoção pelo caminho do marcador no POSIX → LiveTest.test_setup_leaves_replacement_pending_at_marker_removal
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Não remove o marcador no POSIX → LiveTest.test_setup_clones_main_with_worktree_lock
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Ignora o marcador ausente no POSIX → LiveTest.test_setup_does_not_accept_disappearing_marker
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Não fecha o descritor após a remoção ou recusa → LiveTest.test_setup_leaves_replacement_pending_at_marker_removal
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Fecha o descritor apenas se a remoção for bem-sucedida → LiveTest.test_setup_leaves_replacement_pending_at_marker_removal
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Retira a conferência depois da remoção → LiveTest.test_setup_leaves_replacement_pending_at_marker_removal
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Oculta a incompatibilidade da origem declarada → LiveTest.test_setup_retry_requires_declared_and_effective_origin
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Aceita o ramo encontrado sem comparar com a main → LiveTest.test_setup_retry_does_not_finalize_wrong_branch
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Aceita configuração de hook fora do worktree → LiveTest.test_setup_retry_requires_effective_worktree_lock
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Aceita outro caminho de hooks com a trava presente no disco → LiveTest.test_setup_retry_requires_effective_worktree_lock
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Aceita hook ausente sem diagnóstico da trava → LiveTest.test_setup_retry_requires_effective_worktree_lock
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Aceita o hook sem execução → LiveTest.test_setup_retry_requires_effective_worktree_lock
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Aceita hook alterado e permissivo → LiveTest.test_setup_retry_requires_effective_worktree_lock
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Não verifica invariantes no caminho definitivo → LiveTest.test_setup_retry_does_not_finalize_wrong_branch
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Ignora origem efetiva na etapa final → LiveTest.test_setup_checks_effective_origin_at_the_final_path
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Entrega o clone sem finalizar o marcador → LiveTest.test_setup_clones_main_with_worktree_lock
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Recoloca a finalização pelo caminho tolerante que R11 removeu → LiveTest.test_setup_does_not_finalize_missing_or_replaced_destination
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree_lock
+- 2026-11-28 06:45 · `R11` · R11 sabotage: Repor o literal do hook na instalação é equivalente, pois seus bytes são idênticos ao valor compartilhado com a validação. Alterar esses bytes para permitir commit foi detectado. Mudanças de formatação e de divisão das expressões não têm efeito observável.
+- 2026-11-28 06:45 · `R11` · A primeira execução de TEST_CMD herdou o ambiente Git do runner e criou 139 commits vazios e o ref de fixture `base` na cópia privada. Os reflogs e as árvores confirmaram a origem; somente esse ref e esses commits foram retirados do ramo, voltando a `4dbbc9c` sem mudar a árvore nem o índice. A linha de base foi verde com GIT_DIR e GIT_WORK_TREE isolados.
+- 2026-11-28 06:45 · `R11` · Red sobre `4dbbc9c` reproduziu destino removido ou substituído, origem declarada incompatível, ramo incorreto e trava incompleta. R10 permaneceu verde. Green em `fb134ce`: Check de R11, jornada de QA, 156 regressões dirigidas, TEST_CMD (154 testes da loja, 3 pulados, e 144 do Stop), camada 1 e 42 âncoras. As 33 sabotagens foram detectadas numa cópia descartável, com controle de 15 provas sem pulos, grupo próprio, 20 s e 512 MiB por execução.

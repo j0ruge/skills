@@ -2,9 +2,9 @@
 missao: 20261127-retrofit-watch-050
 fase: EXEC
 status: done
-sessao: 01a22167-6577-7980-b294-7f3292691515
-data: 2026-11-28 06:21
-gate: "Em 1ca718dd666bb0f4d98ed6bf4540ea97fa49934a, TEST_CMD rc 0 (154 testes da loja, 3 pulados; 144 do Stop), 14 Checks, 146 testes dirigidos, jornada da QA e regressão de Stop verdes. As três provas nativas passaram no host Linux. Camada 1 limpa contra origin/main."
+sessao: 01a22180-2764-7272-9863-f4f98a202c53
+data: 2026-11-28 06:45
+gate: "Em fb134ce9e1b4e4aa0a316dafeff6b212db433e44, `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval \"$TEST_CMD\"'` → rc 0 (154 testes da loja, 3 pulados, e 144 do Stop, adaptadores, catálogo e versões válidos). Check de R11 em checkpoint.md → 0, 156 regressões dirigidas e jornada de QA verdes, camada 1 contra origin/main limpa e 42 âncoras válidas. 33 sabotagens detectadas."
 ---
 
 # Handoff — EXEC — Retrofit de skills locais listadas
@@ -14,16 +14,16 @@ gate: "Em 1ca718dd666bb0f4d98ed6bf4540ea97fa49934a, TEST_CMD rc 0 (154 testes da
 
 ## TL;DR
 
-I1–I4 e R1–R10 concluídos. O setup preserva destinos concorrentes e retoma a
-validação da mesma origem sem apagar arquivos. O startup avisa quando o avanço não
-consegue iniciar. Suíte, 14 Checks, jornada e distribuição em host verdes em `1ca718d`.
+I1–I4 e R1–R11 concluídos. O setup confere a identidade do clone, o ramo `main`,
+a origem declarada e efetiva e a trava de commit antes de liberar. A retomada
+preserva arquivos locais. Check de R11, TEST_CMD e jornada verdes em `fb134ce`.
 
 ## Estado do repo
 
 - **Branch:** `feat/retrofit-watch-050-loja` — base de comparação `origin/main` local.
-- **Último commit de produto:** `1ca718d` — retoma a validação final sem apagar arquivos.
+- **Último commit de produto:** `fb134ce` — confere a identidade, a origem, o ramo e a trava antes de liberar o clone.
 - **Working tree:** limpo após o commit de checkpoint, notas e handoff.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `1ca718d`. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `fb134ce`. 154 testes da loja, 3 pulados, e 144 do Stop. Adaptadores, catálogo e versões válidos.
 - **E2E:** sem `E2E_CMD` na config. Jornada automatizada em `sonda-qa.py` com remotos bare de fixture. Nenhum deploy ou repo privado real.
 
 ## O que foi feito
@@ -82,6 +82,11 @@ consegue iniciar. Suíte, 14 Checks, jornada e distribuição em host verdes em 
 
 - `1ca718d` — R10 substitui a limpeza da cópia após uma recusa final por uma retentativa vinculada à origem original. O Red reproduziu a perda de um arquivo local. O Green preservou o arquivo e o diretório, recusou origem diferente e validou a mesma origem após corrigir a regra Git. Passaram 34 testes de clone e 146 regressões dirigidas.
 
+### Rodada de revisão r5
+
+- `fb134ce` — R11 vincula a instalação e a retomada à identidade do checkout e de `.git`. Confere a origem declarada e efetiva, a `main` e a trava de commit no worktree principal antes de remover o marcador. No POSIX, a remoção é relativa ao descritor do diretório validado. Não troca o ramo nem apaga arquivos de trabalho para completar o setup. O Red reproduziu os achados com Git real em bares locais e manteve verde a prova de R10.
+  Em `fb134ce`, `PYTHONDONTWRITEBYTECODE=1 python3 scripts/anonymity-gate.py --camada1 --base origin/main --repo "$GIT_DIR"` confirmou a camada 1 limpa. A base local era `e14062c`.
+
 ## Artefatos
 
 | Arquivo | O que contém |
@@ -92,6 +97,11 @@ consegue iniciar. Suíte, 14 Checks, jornada e distribuição em host verdes em 
 | `KAIZEN_LOG.md` e `TODO.md` | Medida da fixture, limite da adoção e achados fora do escopo. |
 
 ## Boot da próxima fase
+
+Para QA, leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Comece pela célula R11.
+As regressões mudam o destino depois de validar a origem, comparam o checkout e o `.git`, e tentam retomar com origem declarada divergente, ramo incorreto ou trava incompleta.
+Para reproduzir a jornada de bare local com HOME isolado, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py`.
+Não é preciso preparar remotos reais nem iniciar serviços. Para as regressões dirigidas, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests:plugins/retrofit-skill/tests python3 -B -m unittest test_fixture_private test_lean_auto test_lean_window test_lean_live test_lean_batch test_lean_gate test_auto_docs test_modo_autonomo`.
 
 Leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Comece pelas células R9 e R10. A primeira confere a identidade do diretório vazio concorrente, a retentativa depois de retirar a
 regra Git exclusiva do destino e o aviso de startup mesmo com registro anterior `ok`. R10 mede a preservação de arquivos durante a retentativa.
@@ -144,6 +154,7 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
 
 ## Riscos e não-feitos
 
+- R11 foi exercitado no Linux. No Windows, a remoção ainda usa o caminho entre duas conferências de identidade. O caminho alternativo foi testado com dublê no Linux, não em Windows nativo. Uma troca estritamente entre a última conferência e a remoção pode retirar o marcador do substituto antes de ser detectada. Há um item no TODO para a prova e a remoção ancorada no Windows. O macOS não foi exercitado nativamente nesta rodada.
 - A instalação exclusiva foi exercitada no Linux. A seleção das APIs de macOS e Windows
   foi verificada com dublês, sem execução nativa. O setup recusa a instalação se não houver
   operação de movimentação sem substituição.
@@ -164,6 +175,8 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
 
 ## Achados fora de escopo
 
+- A receita que herda a localização Git do runner voltou a desviar as fixtures. O item existente em `TODO.md` ganhou a recorrência R11. A árvore de produto não foi afetada.
+- A janela de remoção por caminho no Windows está em `TODO.md`, na seção do clone dedicado.
 - A receita de status manual da revisão r4 já consta como resolvida em `TODO.md` pelo commit `84a0b0e`.
 - Aprovação pública da v1 não vinculada ao patch revisto → `TODO.md`, rulings da retrofit-watch 0.4.0.
 - Segunda skill full do mesmo plugin ausente no estado, inclusive na base → `TODO.md`, recorrência I4.
