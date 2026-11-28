@@ -255,6 +255,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r3.md` —
   descoberto por `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
 
+- [ ] **O status manual não preserva a porta HTTPS explícita** —
+  `plugins/retrofit-skill/references/modo-autonomo.md:49` (`--hostname`) —
+  o endpoint relativo usa a porta padrão. O cliente recusa passar a porta no hostname.
+  Direção: descrever a URL absoluta para esse caso e manter o hostname sem porta.
+  Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r4.md` —
+  descoberto por `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
+
 ### Clone dedicado da retrofit-watch
 
 - [ ] **O avanço pode mover outro ramo depois da última conferência** —

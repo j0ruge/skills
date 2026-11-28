@@ -1,6 +1,6 @@
 ---
 missao: 20261127-retrofit-watch-050
-atualizado: 2026-11-28 05:42
+atualizado: 2026-11-28 06:01
 ---
 
 # Checkpoint — Skills locais da lista
@@ -19,6 +19,7 @@ atualizado: 2026-11-28 05:42
 | R6 | Distinguir destinos Git por transporte e forma do caminho onde não há equivalência comprovada | `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_auto.LeanAutoTest.test_unverified_transport_equivalence_stays_manual test_lean_gate.GateTest.test_changed_transport_target_holds_before_fetch >/dev/null && env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → `0` | done | 8744b1d |
 | R7 | Usar uma chamada válida ao gh para status com porta HTTPS explícita | `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_gate.GateTest.test_private_status_custom_https_port_uses_valid_cli_arguments test_lean_gate.GateTest.test_private_status_uses_api_host_not_ssh_port >/dev/null && env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → `0` | done | 38c46e3 |
 | R8 | Preparar o clone com trava antes de expor o destino | `(unset GIT_DIR GIT_WORK_TREE; export TMPDIR=/var/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests; python3 -B -m unittest test_lean_live.LiveTest.test_setup_waits_for_the_lock_before_exposing_the_clone test_lean_live.LiveTest.test_setup_preserves_a_destination_created_while_cloning test_lean_live.LiveTest.test_setup_checks_effective_origin_at_the_final_path >/dev/null; echo $?)` → `0` | done | af9095a |
+| R9 | Preservar o destino concorrente, recuperar a instalação recusada e mostrar falha ao iniciar o avanço | `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_live.LiveTest.test_setup_does_not_replace_concurrent_empty_destination test_lean_live.LiveTest.test_setup_retries_after_final_origin_validation_failure test_lean_live.StartupTest.test_spawn_failure_warns_even_with_prior_ok >/dev/null && env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → `0` | pending | — |
 
 Atualizar a linha depois do commit do incremento, com SHA curto nu. As notas de execução seguem em `checkpoint-notas.md` quando o relay materializar o layout do kit.
 
