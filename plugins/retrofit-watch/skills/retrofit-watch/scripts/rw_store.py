@@ -429,8 +429,8 @@ def _skill_folder(clone, base, skill, env):
     return folders[0]
 
 
-def _private_clone(ctx, slug):
-    clone = live_clone(ctx, slug)
+def _private_clone(ctx, slug, *, require_main=True):
+    clone = live_clone(ctx, slug, require_main=require_main)
     if clone is None:
         raise StoreError(f"sem clone dedicado: {slug}")
     return clone
@@ -942,7 +942,7 @@ def _configured_origin(path, *, allow_pending=False):
     return None
 
 
-def live_clone(ctx, slug, *, origin=None):
+def live_clone(ctx, slug, *, origin=None, require_main=True):
     """Identifica o checkout dedicado sem git no caminho da elegibilidade."""
     try:
         path = live_path(ctx, slug)
@@ -950,6 +950,14 @@ def live_clone(ctx, slug, *, origin=None):
         return None
     configured = _configured_origin(path)
     if configured and configured[0] == slug and (origin is None or configured == origin):
+        if require_main:
+            # Leia o ramo depois do marcador, inclusive durante a remoção seguida de recusa.
+            try:
+                with (path / ".git" / "HEAD").open("rb") as head:
+                    if head.read(64).rstrip(b"\r\n") != b"ref: refs/heads/main":
+                        return None
+            except OSError:
+                return None
         return path
     return None
 
@@ -1047,6 +1055,8 @@ def _check_live_setup(ctx, path, expected):
     if _configured_origin(path, allow_pending=True) != expected:
         raise StoreError(f"origem declarada do clone dedicado não corresponde a {expected[0]}")
     env = git_env(home=ctx.home)
+    if _git(["symbolic-ref", "-q", "HEAD"], path, env, "ramo do clone").strip() != "refs/heads/main":
+        raise StoreError("cópia em uso fora da main")
     hook = path / ".git" / "rw-live-hooks" / "pre-commit"
     hooks = _git(["config", "--show-scope", "--type=path", "--get", "core.hooksPath"],
                  path, env, "trava do clone").removesuffix("\n")
@@ -1054,8 +1064,6 @@ def _check_live_setup(ctx, path, expected):
     if (scope != "worktree" or Path(directory) != hook.parent or not hook.is_file()
             or not os.access(hook, os.X_OK) or hook.read_bytes() != LIVE_SETUP_HOOK):
         raise StoreError("trava de commit do clone dedicado incompleta")
-    if _git(["symbolic-ref", "-q", "HEAD"], path, env, "ramo do clone").strip() != "refs/heads/main":
-        raise StoreError("cópia em uso fora da main")
 
 
 def live_setup(ctx, slug, url=None):
@@ -1158,7 +1166,8 @@ def live_advance(ctx, slug, *, expected_id=None):
     before = after = None
     result, detail = "ok", ""
     try:
-        _private_clone(ctx, slug)
+        # O diagnóstico de avanço ainda precisa identificar o clone fora da main.
+        _private_clone(ctx, slug, require_main=False)
         before = after = _git(["rev-parse", "HEAD"], path, env, "HEAD").strip()
         obstruction = _live_obstruction(path, env)
         if obstruction is None:

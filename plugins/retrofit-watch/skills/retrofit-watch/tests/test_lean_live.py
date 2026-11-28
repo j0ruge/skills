@@ -461,7 +461,7 @@ class LiveTest(unittest.TestCase):
             return read_git(args, cwd, env, label)
 
         with mock.patch.object(store, "_git", side_effect=switch_before_hooks):
-            with self.assertRaisesRegex(store.StoreError, "fora da main"):
+            with self.assertRaisesRegex(store.StoreError, "ramo.*mudou"):
                 store.live_setup(self.ctx, SLUG, str(w.remote))
         self.assertTrue(pending.is_file())
         self.assertIsNone(store.live_clone(self.ctx, SLUG))
@@ -507,6 +507,84 @@ class LiveTest(unittest.TestCase):
         self.assertTrue(pending.is_file())
         self.assertEqual(pending.read_bytes(), expected)
         self.assertIsNone(store.live_clone(self.ctx, SLUG))
+
+    def test_setup_stays_ineligible_during_branch_change_at_marker_removal(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        expected = pending.read_bytes()
+        observed = []
+        unlink = os.unlink
+
+        def observe_removal(name, *args, **kwargs):
+            if name not in (pending, pending.name):
+                return unlink(name, *args, **kwargs)
+            w.git(w.live, "switch", "-qc", "rascunho")
+            unlink(name, *args, **kwargs)
+            observed.append((pending.exists(), store.live_clone(self.ctx, SLUG)))
+
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+        with mock.patch.object(os, "unlink", side_effect=observe_removal):
+            with self.assertRaisesRegex(store.StoreError, "ramo.*mudou"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertEqual(pending.read_bytes(), expected)
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+        self.assertEqual(observed, [(False, None)])
+        w.git(w.live, "switch", "-q", "main")
+        self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+        self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
+
+    def test_setup_rejects_hook_change_during_branch_validation(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        expected = pending.read_bytes()
+        empty_hooks = w.tmp / "hooks-vazios"
+        empty_hooks.mkdir()
+        read_git = store._git
+
+        def change_hook_on_branch_query(args, cwd, env, label):
+            if args == ["symbolic-ref", "-q", "HEAD"]:
+                w.git(cwd, "config", "--worktree", "core.hooksPath", str(empty_hooks))
+            return read_git(args, cwd, env, label)
+
+        with mock.patch.object(store, "_git", side_effect=change_hook_on_branch_query):
+            with self.assertRaisesRegex(store.StoreError, "trava de commit"):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertEqual(w.git(w.live, "config", "--get", "core.hooksPath"), str(empty_hooks))
+        self.assertEqual(pending.read_bytes(), expected)
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
+        w.git(w.live, "config", "--worktree", "--unset", "core.hooksPath")
+        checked_hooks = False
+
+        def change_hook_only_after_verification(args, cwd, env, label):
+            nonlocal checked_hooks
+            if args == ["symbolic-ref", "-q", "HEAD"] and checked_hooks:
+                w.git(cwd, "config", "--worktree", "core.hooksPath", str(empty_hooks))
+            result = read_git(args, cwd, env, label)
+            if args[-1] == "core.hooksPath":
+                checked_hooks = True
+            return result
+
+        with mock.patch.object(store, "_git", side_effect=change_hook_only_after_verification):
+            self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+        hook_dir = pending.parent / "rw-live-hooks"
+        self.assertEqual(w.git(w.live, "config", "--get", "core.hooksPath"), str(hook_dir))
+        self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
+
+    def test_live_clone_requires_readable_main(self):
+        head = self.w.live / ".git" / "HEAD"
+        head.write_bytes(b"ref: refs/heads/main\r\n")
+        self.assertEqual(store.live_clone(self.ctx, SLUG), self.w.live)
+        open_path = type(head).open
+
+        def unreadable(path, *args, **kwargs):
+            if path == head:
+                raise PermissionError("HEAD ilegível")
+            return open_path(path, *args, **kwargs)
+
+        with mock.patch.object(type(head), "open", unreadable):
+            self.assertIsNone(store.live_clone(self.ctx, SLUG))
+            with self.assertRaisesRegex(store.StoreError, "sem clone dedicado"):
+                store._private_clone(self.ctx, SLUG)
 
     def test_setup_retry_requires_effective_worktree_lock(self):
         w = self.w
