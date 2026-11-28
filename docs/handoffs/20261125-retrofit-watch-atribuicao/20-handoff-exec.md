@@ -4,7 +4,7 @@ fase: EXEC
 status: done
 sessao: 01a22008-97b9-7ad1-aa29-23211304c9cb
 data: 2026-11-27 23:46
-gate: 'Em bdf75fa, env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' → rc 0. Loja com 154 testes (3 pulados), hook com 133, adaptadores, catálogo e versão 0.4.1 válidos. Os 21 Checks de checkpoint.md passaram, inclusive R19 e F1. Cinco mutações detectadas.'
+gate: 'TEST_CMD em 41f2952 com GIT_DIR e GIT_WORK_TREE removidos retornou rc 0. Loja com 154 testes (3 pulados) e hook com 134. As três provas nativas, a jornada F1 e os controles de R19 e R20 passaram.'
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -452,3 +452,7 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 
 - As duas âncoras do CHANGELOG apontadas em R8 foram reposicionadas em `9f9a08c`.
   A recorrência histórica permanece no item já aberto, sem duplicata.
+
+### Retorno da revisão externa do Codex — R20
+
+O [P2](https://github.com/j0ruge/skills/pull/13#discussion_r4725187745) foi reproduzido no SHA publicado. O commit `41f2952` exige um ID válido antes de consultar os aposentados. O teste novo falhou nos três controles antes da correção e passou com fonte ausente, vazia ou inválida. A prova com fonte aposentada válida, a jornada de Stop e o R19 continuaram verdes. O achado preexistente da r29 foi assim tratado no próprio PR.
