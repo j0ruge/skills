@@ -575,6 +575,120 @@ class StopTest(HookHarness, unittest.TestCase):
                     self.assertTrue(saved["skill_correlation_lost"])
                     self.assertIsNone(saved["current_origin"])
 
+    def test_reused_call_across_correlation_overflow_does_not_close_attribution(self):
+        for limit in ("messages", "ids"):
+            for position in ("before", "trigger"):
+                for cut in (None, "before", "after", "legacy"):
+                    with self.subTest(limit=limit, position=position, cut=cut), self.sub_world() as world:
+                        by_id = limit == "ids"
+                        cap = rw.MAX_SKILL_CALL_IDS if by_id else rw.MAX_SKILL_MESSAGES
+                        pending = [
+                            identified_load("irrelevante", world.other_skill,
+                                            "msg_pending" if by_id else f"msg_{i}", f"toolu_{i}")[0]
+                            for i in range(cap + 1)
+                        ]
+                        other = identified_load("irrelevante", world.other_skill,
+                                                "msg_pending" if by_id else "msg_other", "toolu_same")
+                        active = identified_load("codereview:coderabbit-pr", world.mkt_skill,
+                                                 "msg_active", "toolu_same")
+                        pending[-1 if position == "trigger" else 0] = other[0]
+                        self.write(pending[:-1], compact=True)
+                        if cut == "before":
+                            out, saved = self.checked_stop(mode="plan")
+                            self.assertIsNone(out)
+                            self.assertFalse(saved["skill_correlation_lost"])
+                        self.write(pending[-1:], compact=True)
+                        if cut in ("after", "legacy"):
+                            out, saved = self.checked_stop(mode="plan")
+                            self.assertIsNone(out)
+                            self.assertTrue(saved["skill_correlation_lost"])
+                            if cut == "legacy":
+                                fields = ("offset", "skills", "current", "classified", "pending", "done")
+                                path = world.data / "sessions/s1.json"
+                                path.write_text(json.dumps({key: saved[key] for key in fields}), encoding="utf-8")
+                        other[1]["message"]["content"][0]["is_error"] = True
+                        self.write(active, other[1:2], tool(error=True), compact=True)
+                        out, saved = self.checked_stop()
+                        self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                        self.assertFalse(saved["attribution_closed"])
+                        self.assertIsNone(saved["current_origin"])
+                        self.assertIsNone(saved["current_call"])
+
+    def test_transition_history_keeps_retained_ids_only_and_stays_bounded(self):
+        for reused, excess in (("toolu_0", False), ("toolu_1", False), ("toolu_3", False),
+                               ("toolu_5", False), ("toolu_5", True)):
+            with self.subTest(reused=reused, excess=excess), self.sub_world() as world:
+                script = world.tmp / "limited.py"
+                source = SCRIPT.read_text(encoding="utf-8")
+                script.write_text(source.replace("MAX_SKILL_CALL_IDS = 1024", "MAX_SKILL_CALL_IDS = 2"),
+                                  encoding="utf-8")
+                loads = [
+                    identified_load("codereview:coderabbit-pr" if i < 4 else "irrelevante",
+                                    world.mkt_skill, f"msg_{i}", f"toolu_{i}")
+                    for i in range(6)
+                ]
+                self.write(*loads[:4], loads[4][:1], compact=True)
+                out, saved = self.checked_stop(script=script, mode="plan")
+                self.assertIsNone(out)
+                self.assertEqual(saved["retired_skill_calls"], ["toolu_1", "toolu_2"])
+                self.assertIn("toolu_3", saved["skill_call_history"])
+                if excess:
+                    saved["retired_skill_calls"].append("toolu_extra")
+                    path = world.data / "sessions/s1.json"
+                    path.write_text(json.dumps(saved), encoding="utf-8")
+                self.write(loads[5][:1], compact=True)
+                out, saved = self.checked_stop(script=script, mode="plan")
+                self.assertIsNone(out)
+                self.assertTrue(saved["skill_correlation_lost"])
+                self.assertEqual(set(saved["overflow_skill_calls"]), {f"toolu_{i}" for i in range(1, 6)})
+                self.assertEqual(saved["uncorrelated_skill_calls"], {})
+                active = identified_load("codereview:coderabbit-pr", world.mkt_skill, "msg_new", reused)
+                active[1]["message"]["content"][0]["is_error"] = True
+                self.write(active[:2], tool(error=True), compact=True)
+                out, saved = self.checked_stop(script=script)
+                if reused == "toolu_0":
+                    self.assertIsNone(out)
+                    self.assertTrue(saved["attribution_closed"])
+                else:
+                    self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                    self.assertFalse(saved["attribution_closed"])
+
+    def test_invalid_direct_call_history_does_not_break_stop(self):
+        for invalid, bad_snapshot in ((None, False), ([], False), (7, True), ("toolu_old", False)):
+            with self.subTest(invalid=invalid, bad_snapshot=bad_snapshot), self.sub_world() as world:
+                active, _ = self.identified_loads()
+                self.write(active, tool(), tool(), compact=True)
+                pending = [
+                    identified_load("irrelevante", world.other_skill,
+                                    f"msg_pending_{i}", f"toolu_pending_{i}")[0]
+                    for i in range(rw.MAX_SKILL_MESSAGES)
+                ]
+                self.write(pending, compact=True)
+                out, saved = self.checked_stop(mode="plan")
+                self.assertIsNone(out)
+                self.assertTrue(saved["skill_correlation_lost"])
+                self.assertEqual(saved["current"], "full:codereview")
+                key = "full:codereview"
+                self.assertEqual(saved["skills"][key]["work"], 2)
+                saved["uncorrelated_skill_calls"] = invalid
+                if bad_snapshot:
+                    saved["overflow_skill_calls"] = None
+                path = world.data / "sessions/s1.json"
+                path.write_text(json.dumps(saved), encoding="utf-8")
+                other = identified_load("irrelevante", world.other_skill, "msg_new", "toolu_new")
+                self.write(other[:1], tool(error=True), compact=True)
+                out, final = self.checked_stop(mode="plan")
+                self.assertIsNone(out)
+                self.assertEqual(final["current"], saved["current"])
+                self.assertEqual(final["classified"], saved["classified"])
+                self.assertEqual(final["uncorrelated_skill_calls"], {"toolu_new": True})
+                self.assertEqual(final["overflow_skill_calls"], saved["overflow_skill_calls"] or {})
+                self.assertEqual(final["skills"][key]["work"], 3)
+                out, final = self.checked_stop()
+                self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                self.assertEqual(final["skills"][key]["reviews"], 1)
+                self.assertIsNone(self.checked_stop()[0])
+
     def test_direct_call_history_stays_bounded_without_proving_metadata(self):
         for case in ("last_slot", "over_capacity", "external_meta", "repeat_active",
                      "old_active", "rejected_replay"):

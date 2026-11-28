@@ -423,9 +423,11 @@ class State:
         for key, default in (("offset", 0), ("skills", {}), ("current", None), ("classified", {}),
                              ("pending", []), ("done", []), ("current_origin", None),
                              ("skill_message", None), ("skill_calls", {}), ("retired_skill_calls", []),
-                             ("uncorrelated_skill_calls", {}),
                              ("skill_correlation_lost", False), ("pending_slash", None)):
             self.data.setdefault(key, default)
+        for key in ("uncorrelated_skill_calls", "overflow_skill_calls"):
+            if not isinstance(self.data.get(key), dict):
+                self.data[key] = {}
         origin = self.data["current_origin"]
         if (not isinstance(origin, list) or len(origin) != 2
                 or not all(map(Scanner._transcript_id, origin))):
@@ -552,6 +554,9 @@ class Scanner:
     def _bound_skill_correlation(self):
         if (len(self.st["skill_message_order"]) > MAX_SKILL_MESSAGES
                 or len(self.st["skill_calls"]) + len(self.st["skill_call_history"]) > MAX_SKILL_CALL_IDS):
+            # Preservar a prova de reuso sem consumir a capacidade reservada às chamadas novas.
+            retained = (*self.st["skill_calls"], *self.st["skill_call_history"], *self.st["retired_skill_calls"])
+            self.st["overflow_skill_calls"] = dict.fromkeys(retained[:2 * MAX_SKILL_CALL_IDS + 1])
             self._clear_skill_correlation()
             self.st["current_origin"] = None
             self.st["skill_correlation_lost"] = True
@@ -772,7 +777,8 @@ class Scanner:
                                   and len(seen) < MAX_SKILL_CALL_IDS)
                         if new_id:
                             seen[call_id] = True
-                        unique = new_id and call_id != self.st["current_call"]
+                        unique = (new_id and call_id != self.st["current_call"]
+                                  and call_id not in self.st["overflow_skill_calls"])
                     else:
                         unique = call_id in self.st["skill_calls"]
                     if not unique:
@@ -875,7 +881,8 @@ def recover_legacy_correlation(path, st, ctx):
         for key in ("current_origin", "current_call", "pending_slash", "slash_prior_calls"):
             st[key] = replay[key]
     for key in ("attribution_closed", "skill_message", "skill_calls", "skill_message_order",
-                "skill_call_history", "retired_skill_calls", "skill_correlation_lost", "uncorrelated_skill_calls"):
+                "skill_call_history", "retired_skill_calls", "skill_correlation_lost", "uncorrelated_skill_calls",
+                "overflow_skill_calls"):
         st[key] = replay[key]
 
 

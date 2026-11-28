@@ -27,11 +27,14 @@ servem como prova para outra carga. Ao exceder 64 mensagens ou 1.024 IDs
 retidos, o hook deixa de correlacionar mensagens nessa sessão. Isso não zera
 contadores nem impede uma carga explícita. O ID direto da nova carga ainda pode
 ligar seu próprio erro ao crédito aberto, sem comprovar que duas cargas vieram
-da mesma mensagem. O hook registra os primeiros 1.024 IDs distintos de
-chamadas vistas após o limite. Reutilizar um ID observado impede o vínculo
-direto, inclusive se a outra chamada veio antes da monitorada. Repetir o ID
-da carga ativa também revoga seu vínculo. Quando esse registro se esgota,
-novos IDs deixam de provar erro próprio. O registro não valida metadados.
+da mesma mensagem. Na transição, o hook guarda até 2.049 IDs ainda retidos,
+incluindo o que acionou o limite. IDs já descartados não voltam. Outro
+registro guarda os primeiros 1.024 IDs distintos observados após o
+limite. Reutilizar um ID de qualquer registro impede o vínculo direto.
+Repetir o ID da carga ativa também revoga seu vínculo. Quando o registro de
+chamadas novas se esgota, novos IDs deixam de provar erro próprio. Nenhum
+desses registros valida metadados. Um registro opcional salvo com tipo
+inválido volta vazio, sem zerar o offset, a atribuição ou os contadores.
 O hook guarda à parte até 1.024 IDs aposentados dentro da janela.
 Só entram nessa lista IDs com donos conhecidos e comprovadamente antigos. Ao
 reaparecer numa chamada nova, um ID deixa de provar que o metadado é antigo.
