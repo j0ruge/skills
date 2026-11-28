@@ -296,6 +296,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r37.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 
+- [ ] **A cópia histórica do Check da retrofit-watch diverge do resultado canônico** —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r37.md:91` (`skill_externa`) —
+  a grafia não coincide com o stdout da sonda, embora a célula do checkpoint passe.
+  Direção: indicar o checkpoint como fonte da expectativa, sem alterar o comando.
+  Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r38.md` —
+  descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
+
 ### Documentação da loja
 
 - [ ] **Separar o histórico de releases da tabela de plugins no README** —

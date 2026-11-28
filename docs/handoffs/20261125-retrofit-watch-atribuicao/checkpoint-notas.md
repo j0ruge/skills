@@ -680,3 +680,4 @@
 - 2026-11-28 02:15 · R25 sabotage: reposição da declaração nonlocal antiga → equivalente, declarar as duas tabelas não altera as leituras
 - 2026-11-28 02:15 · R25 · 149086f. A sonda da 0.4.0 real reproduziu quatro vereditos invertidos no Red e todos acertaram no Green. A regressão durável mostrou seis divergências no Red. A suíte isolada passou com 154 testes da loja (3 pulados) e 143 do hook. Os 27 Checks, incluindo R23, R24 e F1, e os quatro testes de release passaram. Foram detectadas 25 degradações sob grupo próprio, 25 s e 512 MiB. A grafia de `skill_externa` foi corrigida na expectativa da célula de R25. Provas nativas não repetidas.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 02:20 · written by the runner
+- 2026-11-28 02:27 · r38, achado 1 → R26. Texto sem carga acima do teto faz perder posições já conhecidas no replay. Dois silêncios indevidos, reproduzidos com a 0.4.0 real.
