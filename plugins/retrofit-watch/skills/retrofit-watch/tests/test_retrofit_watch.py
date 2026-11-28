@@ -965,6 +965,30 @@ class StopTest(HookHarness, unittest.TestCase):
                     self.write(external[2:], slash[1:], tool(error=True), compact=True)
                     self.assert_graphify_retro()
 
+    def test_invalid_retired_entry_cannot_hide_external_without_source(self):
+        for source in (None, "", "id inválido"):
+            with self.subTest(source=source), self.sub_world() as world:
+                ours, other = self.identified_loads(other_message="msg_2")
+                self.write(ours, compact=True)
+                out, saved = self.checked_stop()
+                self.assertIsNone(out)
+                self.assertEqual(saved["current"], "full:codereview")
+                saved["retired_skill_calls"].append(None)
+                state_file = world.data / "sessions/s1.json"
+                state_file.write_text(json.dumps(saved), encoding="utf-8")
+                if source is None:
+                    del other[2]["sourceToolUseID"]
+                else:
+                    other[2]["sourceToolUseID"] = source
+                self.write(other[2:], tool(error=True), compact=True)
+
+                out, final = self.checked_stop()
+
+                self.assertIsNone(out)
+                self.assertIsNone(final["current"])
+                self.assertTrue(final["attribution_closed"])
+                self.assertEqual(final["skills"], saved["skills"])
+
     def test_only_proven_retired_external_metadata_keeps_later_attribution(self):
         for case in ("pending", "consumed", "stacked", "unknown", "reused", "unowned", "ambiguous", "evicted", "reset"):
             for resumed in (False, True):

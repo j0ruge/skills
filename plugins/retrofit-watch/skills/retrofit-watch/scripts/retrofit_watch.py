@@ -717,7 +717,7 @@ class Scanner:
             cache[path] = classify_path(path, self.ctx)
         info = cache[path]
         source = self._transcript_id(source)
-        if source in self.st["retired_skill_calls"]:
+        if source is not None and source in self.st["retired_skill_calls"]:
             return
         # Um metadado de chamada descartada ou ambígua não pode reabrir a atribuição.
         # Uma externa sem vínculo continua encerrando-a, inclusive no estado legado.
