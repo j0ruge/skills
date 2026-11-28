@@ -519,3 +519,4 @@
 - 2026-11-27 23:45 · R19 sabotage: descartar também os IDs aposentados válidos → test_invalid_retired_id_does_not_break_correlation_overflow, test_transition_history_keeps_retained_ids_only_and_stays_bounded
 - 2026-11-27 23:45 · R19 sabotage: restaurar a união de R18 com os itens brutos → test_invalid_retired_id_does_not_break_correlation_overflow
 - 2026-11-27 23:46 · R19 · bdf75fa: Red na sonda e nas seis variantes inválidas da regressão. No Green, offset, atribuição, contadores e IDs válidos preservados sem ampliar o histórico. TEST_CMD com 154 testes da loja (3 pulados) e 133 do hook, 21 Checks incluindo F1, quatro testes de release e cinco mutações detectadas. Provas nativas não repetidas.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 23:49 · written by the runner
