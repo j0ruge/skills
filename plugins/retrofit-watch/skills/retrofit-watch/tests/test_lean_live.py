@@ -1,5 +1,6 @@
 """O clone em uso segue a main sem tocar o checkout de desenvolvimento."""
 import errno
+import io
 import json
 import os
 import shlex
@@ -634,6 +635,36 @@ class LiveTest(unittest.TestCase):
 
         self.assertEqual(w.git(w.live, "rev-parse", "--verify", "HEAD"), before)
         self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
+
+    def test_live_main_confirms_head_after_git_ref_query(self):
+        path = self.w.live
+        head = path / ".git" / "HEAD"
+        states = iter((b"ref: refs/heads/main\n", b"ref: refs/heads/rascunho\n"))
+        open_path = type(head).open
+
+        def read_head(current, *args, **kwargs):
+            if current == head:
+                return io.BytesIO(next(states))
+            return open_path(current, *args, **kwargs)
+
+        with mock.patch.object(type(head), "open", read_head):
+            self.assertFalse(store._live_main(path))
+
+    def test_setup_finalization_distinguishes_unavailable_main_ref(self):
+        path = self.w.live
+        pending = self._leave_pending_setup()
+        origin_id = pending.read_bytes()
+        identity = store._live_setup_identity(path)
+
+        with mock.patch.object(store, "_live_main_ref", return_value=None):
+            with self.assertRaisesRegex(store.StoreError, "main do clone ilegível"):
+                store._finish_live_setup(path, pending, identity, origin_id)
+            self.assertEqual(pending.read_bytes(), origin_id)
+
+            pending.unlink()
+            with self.assertRaisesRegex(store.StoreError, "main do clone ilegível"):
+                store._verify_live_setup_finalization(path, pending, identity, origin_id)
+            self.assertEqual(pending.read_bytes(), origin_id)
 
     def test_live_main_accepts_sha256_loose_and_packed_refs(self):
         w = self.w

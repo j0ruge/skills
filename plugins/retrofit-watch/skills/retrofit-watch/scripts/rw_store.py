@@ -974,17 +974,21 @@ def _live_main_ref(path, *, deadline=None):
     return "refs/heads/main\0\0commit" in lines
 
 
-def _live_main(path, *, deadline=None):
+def _live_head_is_main(path):
     try:
         with (path / ".git" / "HEAD").open("rb") as head:
-            if head.read(64).rstrip(b"\r\n") != b"ref: refs/heads/main":
-                return False
+            return head.read(64).rstrip(b"\r\n") == b"ref: refs/heads/main"
     except OSError as error:
         raise StoreError("HEAD do clone ilegível") from error
+
+
+def _live_main(path, *, deadline=None):
+    if not _live_head_is_main(path):
+        return False
     on_main = _live_main_ref(path, deadline=deadline)
     if on_main is None:
         raise StoreError("refs/heads/main do clone ilegível")
-    return on_main
+    return on_main and _live_head_is_main(path)
 
 
 def live_clone(ctx, slug, *, origin=None, require_main=True, deadline=None):
@@ -1053,6 +1057,7 @@ def _live_setup_identity(path):
 
 def _verify_live_setup_finalization(path, marker, identity, origin_id, directory_fd=None):
     current = _live_setup_identity(path)
+    on_main = False
     if current == identity:
         on_main = _live_main_ref(path)
         current = _live_setup_identity(path)
@@ -1068,6 +1073,8 @@ def _verify_live_setup_finalization(path, marker, identity, origin_id, directory
             with os.fdopen(fd, "wb") as pending:
                 pending.write(origin_id)
     if same_clone:
+        if on_main is None:
+            raise StoreError("refs/heads/main do clone ilegível")
         raise StoreError("ramo do clone mudou durante a validação")
     raise StoreError(f"destino do setup mudou: {path}")
 
@@ -1076,7 +1083,12 @@ def _finish_live_setup(path, marker, identity, origin_id):
     current = _live_setup_identity(path)
     if identity is None or current is None or current[:2] != identity[:2]:
         raise StoreError(f"destino do setup mudou: {path}")
-    if current[2] != identity[2] or not _live_main_ref(path):
+    if current[2] != identity[2]:
+        raise StoreError("ramo do clone mudou durante a validação")
+    on_main = _live_main_ref(path)
+    if on_main is None:
+        raise StoreError("refs/heads/main do clone ilegível")
+    if not on_main:
         raise StoreError("ramo do clone mudou durante a validação")
     if os.name == "nt":
         marker.unlink()
