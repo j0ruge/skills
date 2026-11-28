@@ -413,3 +413,4 @@
 - 2026-11-27 22:04 · R13 sabotage: replay-isolado → test_legacy_prefix_imports_retired_ids_only_after_complete_replay ficou vermelho
 - 2026-11-27 22:04 · R13 · fcbd6cb: cinco regressões duráveis, 30 mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 119 do hook, 15 Checks e F1 verdes. As três provas nativas pararam na criação do namespace Bubblewrap.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 22:07 · written by the runner
+- 2026-11-27 22:13 · REVIEW r23 · R14 aberto pelos achados 1–3, reproduzidos no Stop contínuo e retomado. Achado 4 de prosa registrado no backlog.
