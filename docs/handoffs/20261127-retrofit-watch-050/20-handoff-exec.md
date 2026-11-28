@@ -2,9 +2,9 @@
 missao: 20261127-retrofit-watch-050
 fase: EXEC
 status: done
-sessao: codex-exec-r18
-data: 2026-11-28 11:05
-gate: "Em 3af4a5d5724fcfcd44daefd76fec322bd8fb0753, TEST_CMD rc 0, 176 regressões dirigidas, jornada de QA, três provas de distribuição no Linux e anonimização verdes. O Check R18 cobre a releitura da identidade e a transição normal para a ref empacotada."
+sessao: codex-exec-r20
+data: 2026-11-28 15:25
+gate: "Em 4f649989c2a3c08cd0cfa79d286dafd990dbd61c, TEST_CMD rc 0, 180 testes dirigidos, jornada de QA, três provas de distribuição no Linux e anonimização verdes. R19 e R20 tiveram Red verificado antes dos consertos e Checks verdes depois."
 ---
 
 # Handoff — EXEC — Retrofit de skills locais listadas
@@ -14,16 +14,17 @@ gate: "Em 3af4a5d5724fcfcd44daefd76fec322bd8fb0753, TEST_CMD rc 0, 176 regressõ
 
 ## TL;DR
 
-I1–I4 e R1–R18 concluídos. O setup reconfere a identidade após ler a ref da main.
-A compactação normal preserva a consulta à main. Passaram 176 regressões dirigidas,
-a jornada de QA, a suíte e as provas de distribuição no Linux.
+I1–I4 e R1–R20 concluídos. O Git resolve a ref da main em consulta local.
+A elegibilidade e a janela usam o mesmo prazo do hook. Uma segunda leitura de HEAD
+confirma o ramo após a consulta. Passaram 180 testes dirigidos, QA em fixture, TEST_CMD
+e as provas de distribuição no Linux.
 
 ## Estado do repo
 
 - **Branch:** `feat/retrofit-watch-050-loja` — base de comparação `origin/main` local.
-- **Último commit de produto:** `3af4a5d` — reconfere a identidade e preserva a consulta após a compactação.
+- **Último commit de produto:** `4f64998` — reconfere HEAD e distingue falha de leitura da ref.
 - **Working tree:** limpo após o commit de checkpoint, notas e handoff.
-- **Suíte:** TEST_CMD rc 0 em `3af4a5d`, com 154 testes da loja (3 pulos configurados) e 144 do Stop. As três provas nativas passaram em execução separada no Linux.
+- **Suíte:** TEST_CMD rc 0 em `4f64998`, com 154 testes da loja (3 pulos configurados) e 144 do Stop. As três provas nativas passaram em execução separada no Linux.
 - **E2E:** sem `E2E_CMD` na config. Jornada automatizada em `sonda-qa.py` com remotos bare de fixture. Nenhum deploy ou repo privado real.
 
 ## O que foi feito
@@ -218,18 +219,25 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
 - Em `3af4a5d`, a liberação reconfere a identidade depois de ler a ref da main. Se a compactação remover a ref solta antes da abertura, a consulta passa para `packed-refs`. As duas regressões falharam antes do conserto e passaram depois.
 - Passaram 64 testes do clone, 176 testes dirigidos, a jornada em fixture, o TEST_CMD, as três provas de distribuição no Linux e a anonimização. A conferência estática confirmou os dois consertos. Ainda há divergências entre a leitura manual das refs e a resolução do Git.
 
+### Resolução pelo Git e revalidação final
+
+- Em `c4b6192`, a resolução local passou a usar o Git com transporte bloqueado. O hook usa o mesmo prazo de três segundos na elegibilidade e na janela. O prazo esgotado mantém a entrada em fluxo manual ou ensaio, conforme a etapa.
+- A r13 confirmou a correção e apontou a releitura de HEAD após a consulta e o diagnóstico da falha de ref. Em `4f64998`, esses dois casos têm regressões permanentes, entraram verdes e preservam o marcador de pendência.
+- Em `4f64998`, passaram 180 testes dirigidos, a jornada de QA em bare local, o TEST_CMD, as três provas de distribuição no Linux e a camada 1 de anonimização.
+- A suíte ampla de R19 em `c4b6192` executou 623 testes e registrou somente a falha preexistente da segunda skill full.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Vinte e dois Checks e seus commits. |
+| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Vinte e quatro Checks e seus commits. |
 | `docs/retrofit-watch/clone-dedicado.md` | Contrato de clone, selo, ensaio, publicação e avanço. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py` | Cópia de distribuição com contratos dos dois plugins e controles do catálogo. |
 | `KAIZEN_LOG.md` e `TODO.md` | Medida da fixture, limite da adoção e achados fora do escopo. |
 
 ## Boot da próxima fase
 
-Para QA, leia `00-missao.md`, `01-plano.md` e `checkpoint.md`. Rode os Checks R17 e R18 e repita a jornada em fixture.
+Para QA, leia `00-missao.md`, `01-plano.md` e `checkpoint.md`. Rode os Checks R19 e R20 e repita a jornada em fixture.
 Para reproduzir a jornada de bare local com HOME isolado, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py`.
 Não é preciso preparar remotos reais nem iniciar serviços. Para as regressões dirigidas, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests:plugins/retrofit-skill/tests python3 -B -m unittest test_fixture_private test_lean_auto test_lean_window test_lean_live test_lean_batch test_lean_gate test_auto_docs test_modo_autonomo`.
 

@@ -420,3 +420,5 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 09:24 · written by the runner
 
 - 2026-11-28 11:05 · R18 · Dois Reds confirmados antes do fix. Em `3af4a5d`, passaram 176 regressões dirigidas, TEST_CMD, QA em fixture, distribuição Linux e anonimização. As divergências de leitura de ref continuam na revisão r12.
+
+- 2026-11-28 15:25 · R19/R20 · Git local com prazo compartilhado em `c4b6192`. Releitura de HEAD e diagnóstico de falha de ref em `4f64998`. Quatro Reds verificados antes das correções, 180 regressões, QA em fixture, TEST_CMD, distribuição Linux e anonimização verdes.
