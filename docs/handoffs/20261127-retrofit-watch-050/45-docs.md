@@ -12,8 +12,8 @@
 | Decisão arquitetural | `docs/adr/0001-retrofit-lean-publicacao.md` | ✅ | `6d72029` registra a decisão de publicar com clone e lote separados. |
 | Medição e evidências | `KAIZEN_LOG.md`, `20-handoff-exec.md`, `checkpoint.md` | ✅ | `04a1a77` registra o antes e depois. `071e298` registra 24 incrementos, QA em fixture e os testes do produto em `4f64998`. |
 | Fixtures e regressões | `30-handoff-qa.md`, `20-handoff-exec.md` | ✅ | `1f1b008` registra a jornada em remoto local. `071e298` registra a repetição no último código do candidato. |
-| Backlog da loja | `TODO.md` | ✅ | `d708375` e `6a791c0` vinculam as resoluções às provas. `4f64998` atualiza as âncoras do clone dedicado. |
+| Backlog da loja | `TODO.md` | ✅ | `d708375` e `6a791c0` vinculam as resoluções às provas. `8df070f` marca o achado do avanço como resolvido pela transação nomeada de `a5a2302`. |
 
 ## Achados conferidos
 
-O TODO conserva os achados sobre troca de ramo após a prova de ancestralidade, remoção do marcador no Windows e a falha preexistente de atribuição da segunda skill full. A adoção em repositórios reais pertence a cada mantenedor.
+O avanço protege a `main` e registra os estados que exigem conferência. O guia do clone descreve a retomada e `checkpoint-notas.md` registra a validação em Linux com Git 2.43. O TODO conserva a validação do marcador no Windows e a falha preexistente de atribuição da segunda skill full. A adoção em repositórios reais pertence a cada mantenedor.

@@ -38,12 +38,17 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
 - `retrofit_watch.py live-advance [<dono/repo>]` busca e avança com `--ff-only`.
   Sem argumento, tenta os repos listados. Confere o ramo e a árvore antes e
   depois do fetch. Ramo errado, árvore suja ou divergência conservam o HEAD.
+  A atualização aponta para `refs/heads/main`, exige o SHA anterior esperado e
+  mantém a trava do índice enquanto atualiza os arquivos.
   Se a nova conferência antes da busca encontrar outro ramo, grava
   `fora-da-main` sem buscar nem alterar refs.
   Se não conseguir ler HEAD ou a ref da main nessa conferência, grava `erro`
   com o detalhe `HEAD do clone ilegível` ou `refs/heads/main do clone ilegível`,
   respectivamente, também sem buscar nem alterar refs.
   Um arquivo apenas ignorado não impede o avanço se não precisar ser sobrescrito.
+  Se `.git/rw-live-advance` permanecer após um erro, confira os SHAs, as travas,
+  o índice e os arquivos do clone antes de remover a pendência e repetir. A pasta
+  preserva o índice anterior e o diagnóstico local da tentativa.
   O resultado fica em `<dados>/live/<dono>/<repo>.json`.
 
 ## Preparação e selo
@@ -84,7 +89,8 @@ falham. A porta indica ao `gh` o servidor da origem conferida. Uma porta explíc
 SSH continua valendo para o Git, mas não é repassada à API de status. Uma porta
 HTTPS explícita não padrão fica na URL absoluta da API (`/api/v3/repos/…/statuses/…`).
 O argumento `--hostname` do `gh` identifica o servidor sem porta.
-Rode `publish` novamente para concluir esses efeitos sem repetir o push.
+Resolva qualquer pendência do clone e rode `publish` novamente para concluir
+esses efeitos sem repetir o push.
 Em sessões assistidas, o startup lança o avanço em segundo plano. Se não conseguir
 iniciar o processo, avisa na mesma sessão e registra o erro em `errors.log`,
 mesmo se o avanço anterior tiver sido bem-sucedido. Os avisos de resultado são
