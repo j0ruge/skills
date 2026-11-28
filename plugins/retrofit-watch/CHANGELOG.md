@@ -49,6 +49,8 @@
   A leitura linha a linha preserva o slash pendente se o prefixo confirma o estado salvo.
   Um metadado rejeitado que poderia ser do dono salvo só preserva IDs comprovadamente
   anteriores à mensagem de sua chamada, além das demais cargas compatíveis.
+  Na comparação, vale a primeira ocorrência de cada mensagem do assistente, mesmo se
+  começar por texto. O vínculo com o ID da chamada ainda exige uma chamada Skill válida.
   Acima de 2 MiB por registro, o hook segue do offset salvo sem importar vínculos parciais.
   Sem atribuição ativa, esse fallback também ignora metadado atrasado sem vínculo.
 

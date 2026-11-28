@@ -155,7 +155,10 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
   comprovadamente aposentado por uma mensagem posterior
   não encerra a atribuição atual. Ao retomar a 0.4.0, o primeiro Stop consulta uma vez o trecho
   até o offset salvo para recuperar vínculos e distinguir uma chamada pendente anterior à externa
-  de uma posterior. O hook não reconta trabalho antigo. Se um registro ultrapassar 2 MiB ou o
+  de uma posterior. Para comparar mensagens fragmentadas, vale a primeira ocorrência de
+  cada `message.id` válido do assistente, mesmo antes do bloco `Skill`. A ordem, por si só,
+  não comprova o vínculo com uma chamada. O hook não reconta trabalho antigo.
+  Se um registro ultrapassar 2 MiB ou o
   prefixo não for utilizável, o hook processa o trecho novo a partir do estado já gravado,
   sem importar vínculos parciais. Se não havia atribuição ativa e a reconstrução não pôde
   confirmar o estado salvo, o hook mantém a atribuição encerrada. Metadado atrasado sem vínculo

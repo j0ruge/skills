@@ -464,7 +464,7 @@ A Stop hook notices when one of **our** skills did real work in the session and 
 
 | Piece | What it does |
 |-------|--------------|
-| `Stop` hook | Processa as novas linhas do transcript, reconhece cargas por `Skill` e `/skill`, conta trabalho e atrito e pede a retro via `additionalContext`. Na migração da 0.4.0, consulta o prefixo salvo só para recuperar vínculos, sem recontar trabalho |
+| `Stop` hook | Processa as novas linhas do transcript, reconhece cargas por `Skill` e `/skill`, conta trabalho e atrito e pede a retro via `additionalContext`. Na migração da 0.4.0, recupera vínculos e usa a primeira ocorrência de cada ID de mensagem do assistente para recuperar a ordem, sem recontar trabalho |
 | `SessionStart` (`resume\|fork`) | Baselines the transcript offset so a fork's copied history never triggers |
 | `SessionStart` (`startup`) | A one-line notice: retros queued by headless sessions, and autonomous items that are held, unfinished, or whose installed copy is behind |
 | `/retrofit-watch:retrofit-watch [skill]` | The same retro on demand (always manual) |

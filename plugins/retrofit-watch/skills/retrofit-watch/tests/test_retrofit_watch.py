@@ -1284,6 +1284,83 @@ class StopTest(HookHarness, unittest.TestCase):
                     self.assertIsNone(out)
                     self.assertEqual(after["skills"]["full:codereview"], credits)
 
+    def test_legacy_replay_orders_messages_from_first_assistant_block(self):
+        cases = {
+            "owner_text": False, "external_text": True, "external_empty": True,
+            "user": False, "invalid_entry": False, "invalid_id": False, "missing_id": True,
+            "missing_call_origin": False, "unproved_call": False,
+            "message_limit": False, "byte_limit": False,
+        }
+        for case, older in cases.items():
+            for split in (False, True):
+                with self.subTest(case=case, split=split), self.sub_world() as world:
+                    owner = identified_load("coderabbit-pr", world.mkt_skill, "owner", "toolu_owner")
+                    external = identified_load("brainstorming", world.other_skill, "external", "toolu_external")
+                    marker, = assistant_text("Vou conferir a mudança.")
+                    marker["message"]["id"] = "owner" if case == "owner_text" else "external"
+                    if case == "external_empty":
+                        marker["message"]["content"] = []
+                    if case == "user":
+                        marker["type"] = "user"
+                    if case == "invalid_entry":
+                        marker["message"] = []
+                    if case == "invalid_id":
+                        marker["message"]["id"] = ["external"]
+                    if case == "missing_id":
+                        del marker["message"]["id"]
+                    if case == "missing_call_origin":
+                        del owner[0]["message"]["id"]
+                    if case == "unproved_call":
+                        call, _ = tool()
+                        call["message"]["id"] = "only_tool"
+                        owner[2]["sourceToolUseID"] = call["message"]["content"][0]["id"]
+                    self.write([marker], compact=True)
+                    external_first = case in ("owner_text", "missing_id", "missing_call_origin", "unproved_call")
+                    loads = (external, owner) if external_first else (owner, external)
+                    for load in loads:
+                        self.write(load[:2], compact=True)
+                    if case == "unproved_call":
+                        self.write([call], compact=True)
+                    for i in range(2):
+                        self.write(identified_load("codereview:coderabbit-pr", world.mkt_skill,
+                                                   f"new_{i}", f"toolu_new_{i}"), compact=True)
+                    if case in ("message_limit", "byte_limit"):
+                        for i in range(2):
+                            row, = assistant_text("Bloco sem carga.")
+                            row["message"]["id"] = (str(i) * 400 if case == "byte_limit" else f"text_{i}")
+                            self.write([row], compact=True)
+                    self.write(owner[2:], compact=True)
+                    credits = self.save_legacy_owner(world.mkt_skill)
+
+                    if case == "missing_id":
+                        ctx = world.ctx()
+                        with mock.patch.object(rw, "MAX_SKILL_MESSAGES", 4), rw.State(ctx, "s1") as state:
+                            rw.recover_legacy_correlation(world.transcript, state.data, ctx)
+                            self.assertIn("toolu_external", state.data["retired_skill_calls"])
+                    if case in ("message_limit", "byte_limit"):
+                        cap, limit = ("MAX_SKILL_MESSAGES", 4) if case == "message_limit" else (
+                            "MAX_LEGACY_RECORD_BYTES",
+                            max(map(len, world.transcript.read_bytes().splitlines(keepends=True))),
+                        )
+                        ctx = world.ctx()
+                        with mock.patch.object(rw, cap, limit), rw.State(ctx, "s1") as state:
+                            rw.recover_legacy_correlation(world.transcript, state.data, ctx)
+                            self.assertNotIn("toolu_external", state.data["retired_skill_calls"])
+                        continue
+                    if split:
+                        out, migrated = self.checked_stop()
+                        self.assertIsNone(out)
+                        self.assertEqual(migrated["skills"]["full:codereview"], credits)
+                    self.write(external[2:], tool(error=True), compact=True)
+                    out, after = self.checked_stop()
+                    self.assertEqual("toolu_external" in after["retired_skill_calls"], older)
+                    self.assertEqual(after["attribution_closed"], not older)
+                    if older:
+                        self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+                    else:
+                        self.assertIsNone(out)
+                        self.assertEqual(after["skills"]["full:codereview"], credits)
+
     def save_legacy_owner(self, *paths):
         world = self.w
         cache = {str(path): rw.classify_path(str(path), world.ctx()) for path in paths}

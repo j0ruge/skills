@@ -867,24 +867,36 @@ def recover_legacy_correlation(path, st, ctx):
         _legacy_replay = True
         first_cached_path = False
 
+        def entry(self, entry):
+            nonlocal position_bytes
+            msg = entry.get("message")
+            if entry.get("type") == "assistant" and isinstance(msg, dict) and message_positions is not None:
+                message = self._transcript_id(msg.get("id"))
+                if message is not None and message not in message_positions:
+                    position_bytes += sys.getsizeof(message)
+                    message_positions[message] = len(message_positions)
+                    self._bound_positions()
+            super().entry(entry)
+
+        def _bound_positions(self):
+            nonlocal call_positions, message_positions
+            # A poda normal pode esquecer o dono antes de seu metadado chegar.
+            if (len(call_positions) > MAX_SKILL_CALL_IDS or len(message_positions) > MAX_SKILL_MESSAGES
+                    or position_bytes > MAX_LEGACY_RECORD_BYTES):
+                call_positions = message_positions = None
+
         def _skill_origin(self, message_id, call_id):
-            nonlocal call_positions, message_positions, position_bytes
+            nonlocal position_bytes
             # Reuso no prefixo invalida a prova antiga, mesmo se o replay aposentar o ID de novo.
             common_retired.discard(call_id)
             if call_positions is not None and call_id is not None:
                 message = self._transcript_id(message_id)
-                if message is not None and message not in message_positions:
-                    position_bytes += sys.getsizeof(message)
-                    message_positions[message] = len(message_positions)
                 if call_id not in call_positions:
                     position_bytes += sys.getsizeof(call_id)
                     call_positions[call_id] = message_positions.get(message)
                 else:
                     call_positions[call_id] = None
-                # A poda normal pode esquecer o dono antes de seu metadado chegar.
-                if (len(call_positions) > MAX_SKILL_CALL_IDS or len(message_positions) > MAX_SKILL_MESSAGES
-                        or position_bytes > MAX_LEGACY_RECORD_BYTES):
-                    call_positions = message_positions = None
+                self._bound_positions()
             return super()._skill_origin(message_id, call_id)
 
         def skill_path(self, path, source):
