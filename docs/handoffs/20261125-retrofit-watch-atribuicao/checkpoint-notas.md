@@ -469,3 +469,4 @@
 - 2026-11-27 22:55 · R16 sabotage: falsa-validacao-de-id-disputado-na-janela → active_skill_failure_after_correlation_overflow, ambiguous_call_failure_does_not_close_attribution
 - 2026-11-27 22:55 · R16 sabotage: aceitacao-de-id-repetido-apos-esgotar-a-janela → active_skill_failure_after_correlation_overflow
 - 2026-11-27 22:55 · R16 · fcdea17: nove subcasos vermelhos antes do conserto, uma regressão durável, quatro mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 127 do hook, 18 Checks e F1 verdes. Git isolado na suíte inicial e final. Provas nativas não repetidas.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 22:57 · written by the runner
