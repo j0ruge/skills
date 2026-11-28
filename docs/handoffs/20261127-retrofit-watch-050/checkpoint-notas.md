@@ -236,3 +236,4 @@
 - 2026-11-28 05:51 · `R8` · Red: dois casos falharam no checkout integrado. Green em `af9095a`: 23 testes de clone. A validação em `b5512cb` confirmou os 12 Checks, 135 testes dirigidos, a jornada da QA, TEST_CMD, camada 1 e as três provas nativas no host.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 05:54 · written by the runner
 - 2026-11-28 06:01 · `R9` · Revisão r4, achados 1–3: o setup substitui diretório vazio no rename e não permite retentativa após recusa final. Falha ao iniciar o avanço não aparece no startup. TEST_CMD, 135 regressões e jornada passaram no HEAD revisado.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 06:05 · written by the runner
