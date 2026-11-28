@@ -416,3 +416,32 @@
 - 2026-11-27 22:13 · REVIEW r23 · R14 aberto pelos achados 1–3, reproduzidos no Stop contínuo e retomado. Achado 4 de prosa registrado no backlog.
 - 2026-11-27 22:15 · R14 · Use o ID da chamada para invalidar a carga ativa que falha, inclusive se não houver message.id, mantendo isso distinto da prova de mesma mensagem. Preserve a ambiguidade de origem enquanto houver donos retidos e só aposente IDs comprovadamente antigos. Compare a ordem da carga confirmada com o slash para expirar apenas o slash supersedido. Além da sonda R14, feche o changelog e os dois comentários do CodeRabbit em 40-review-r9.md e 40-review-r10.md: os blocos ainda chamam git show antes de remover GIT_DIR e GIT_WORK_TREE. Com um repositório de fixture no ambiente, ambas as receitas falham no HEAD e passam ao isolar antes do primeiro Git. Preserve as medições e os Checks anteriores.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 22:15 · written by the runner
+- 2026-11-27 22:24 · R14 sabotage: valor-padrão-do-ID-ativo → resumed_attribution_recovers_call_identity_from_old_state ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: presença-do-ID-ativo-salvo → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: presença-da-ordem-salva → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ordem-padrão-do-slash-antigo → resumed_slash_keeps_prior_call_order_from_old_state ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: marca-sem-origem-com-dono-retido → retirement_requires_known_origin_after_multiple_advances ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: limpeza-do-ID-no-encerramento-externo → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: limpeza-da-ordem-no-encerramento-externo → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: gravação-do-ID-ativo → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ID-da-chamada-reconhecida-pelo-nome → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ID-reutilizado-deixa-de-ser-anterior-ao-slash → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: limpeza-da-ordem-no-metadado-do-slash → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: fonte-vinculada-para-metadado → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: comprovação-do-ID-da-carga-por-caminho → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ausência-de-vínculo-não-expira-slash → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ordem-da-carga-externa-e-do-slash → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ordem-chega-ao-encerramento → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ID-chega-à-classificação-por-caminho → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ID-chega-à-classificação-por-nome → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ID-chega-à-prova-de-origem → third_party_skill_in_same_message_keeps_attribution ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: cronologia-gravada-quando-o-slash-é-digitado → confirmed_external_call_expires_only_older_slash ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ID-de-erro-ausente-não-encerra → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: ID-de-erro-diferente-não-encerra → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: retorno-à-verificação-antiga-do-erro → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: limpeza-do-ID-da-chamada-falha → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: recuperação-do-ID-ativo-no-replay → resumed_attribution_recovers_call_identity_from_old_state ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: recuperação-da-ordem-do-slash-no-replay → resumed_slash_keeps_prior_call_order_from_old_state ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: normalização-do-ID-de-chamada-em-um-só-ponto → active_call_failure_without_message_origin ficou vermelho
+- 2026-11-27 22:24 · R14 sabotage: isolamento-da-ordem-do-slash-no-replay-parcial → resumed_slash_keeps_prior_call_order_from_old_state ficou vermelho
+- 2026-11-27 22:24 · R14 · 5459e8c: cinco regressões duráveis, 28 mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 124 do hook, 16 Checks e F1 verdes. As receitas de r9 e r10 passaram com Git de fixture no ambiente. Provas nativas não repetidas.

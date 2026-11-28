@@ -257,7 +257,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 - [ ] **A nota de release torna exclusiva a proteção por ID aposentado** —
   `plugins/retrofit-watch/CHANGELOG.md:21` (`prova de ID aposentado`) —
   a sonda de r23 também preserva a monitorada com metadado externo atrasado e vínculo da mesma mensagem.
-  Direção: distinguir as duas provas de preservação.
+  Direção: distinguir as duas provas de preservação. RESOLVED by 5459e8c
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r23.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
