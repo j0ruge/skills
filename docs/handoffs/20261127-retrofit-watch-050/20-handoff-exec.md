@@ -148,6 +148,7 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
   grupo de processos próprio, 20 s e 512 MiB por execução. Comentários, documentação e
   asserções não têm comportamento de produção para sabotar. A duplicação tardia da consulta
   de ramo também foi detectada após restaurar a trava no teste de retomada.
+- No host Linux, em `66dd118`, passaram as três provas nativas de distribuição e a camada 1 de anonimização.
 
 ## Artefatos
 
