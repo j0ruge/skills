@@ -528,3 +528,4 @@
 2026-11-28 00:24 · r31 · 22 Checks e TEST_CMD verdes em 84ece79. Correção de prosa da r30 confirmada em ac6c96f. Documentation B por condição de merge não explicitada, backlog atualizado, sem R21.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 00:27 · written by the runner
 - 2026-11-28 00:32 · r32 · Delta documental de fd66d07 verificado. TEST_CMD, 22 Checks e quatro testes de release passaram. Achado da r31 fechado no handoff em b6b1d3c. Contradição residual na missão foi para o backlog. Documentation em B, demais critérios em A, sem novo incremento.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 00:35 · written by the runner
