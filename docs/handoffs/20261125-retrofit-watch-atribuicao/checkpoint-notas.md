@@ -488,3 +488,4 @@
 - 2026-11-27 23:11 · R17 sabotage: omitir evidência da reconstrução válida → prior_reused_call_does_not_close_after_correlation_overflow
 - 2026-11-27 23:11 · R17 sabotage: restaurar condição de R16 no filtro → prior_reused_call_does_not_close_after_correlation_overflow, direct_call_history_stays_bounded_without_proving_metadata
 - 2026-11-27 23:11 · R17 · a19e5b5: seis casos vermelhos na sonda, sete na regressão de reuso, duas regressões duráveis, quatorze mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 129 do hook, 19 Checks e F1 verdes. Provas nativas não repetidas.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 23:13 · written by the runner
