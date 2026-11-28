@@ -470,3 +470,4 @@
 - 2026-11-27 22:55 · R16 sabotage: aceitacao-de-id-repetido-apos-esgotar-a-janela → active_skill_failure_after_correlation_overflow
 - 2026-11-27 22:55 · R16 · fcdea17: nove subcasos vermelhos antes do conserto, uma regressão durável, quatro mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 127 do hook, 18 Checks e F1 verdes. Git isolado na suíte inicial e final. Provas nativas não repetidas.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 22:57 · written by the runner
+- 2026-11-27 23:02 · R17 · r26, achado 1 — Após esgotar a janela, um erro de chamada anterior com ID reutilizado encerra indevidamente o crédito da monitorada. Sonda vermelha em seis casos nos dois limites. Preservar o erro próprio de R16 e repetir F1.
