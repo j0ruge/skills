@@ -692,3 +692,4 @@
 - 2026-11-28 02:35 · R26 sabotage: admissão de ID inválido ou já conhecido → test_legacy_replay_orders_messages_from_first_assistant_block (primeira ocorrência) e controles de R24
 - 2026-11-28 02:35 · R26 sabotage: retirada do teto de chamadas → test_legacy_replay_keeps_older_external_with_ignored_owner (MAX_SKILL_CALL_IDS)
 - 2026-11-28 02:35 · R26 · 0bd4efa. A sonda com a 0.4.0 real mostrou dois silêncios indevidos no Red e dois pedidos de retro no Green. A suíte isolada passou com 154 testes da loja (3 pulados) e 144 do hook. Os 28 Checks e os quatro testes de release passaram. Sete degradações detectadas e uma equivalente, sob grupo próprio, 25 s e 512 MiB. Expectativa histórica de R25 alinhada sem mudar a sonda. Provas nativas não repetidas.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 02:39 · written by the runner
