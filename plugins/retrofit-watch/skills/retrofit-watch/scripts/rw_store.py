@@ -1000,7 +1000,25 @@ def _live_setup_identity(path):
     return None
 
 
-def _finish_live_setup(path, marker, identity):
+def _verify_live_setup_finalization(path, marker, identity, origin_id, directory_fd=None):
+    current = _live_setup_identity(path)
+    if current == identity:
+        return
+    same_clone = current is not None and current[:2] == identity[:2]
+    if directory_fd is not None or same_clone:
+        # Preserve a pendência sem sobrescrever um marcador criado por outro processo.
+        name = marker if directory_fd is None else marker.name
+        with contextlib.suppress(FileExistsError):
+            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+            fd = os.open(name, flags, 0o600, dir_fd=directory_fd)
+            with os.fdopen(fd, "wb") as pending:
+                pending.write(origin_id)
+    if same_clone:
+        raise StoreError("ramo do clone mudou durante a validação")
+    raise StoreError(f"destino do setup mudou: {path}")
+
+
+def _finish_live_setup(path, marker, identity, origin_id):
     current = _live_setup_identity(path)
     if identity is None or current is None or current[:2] != identity[:2]:
         raise StoreError(f"destino do setup mudou: {path}")
@@ -1008,6 +1026,7 @@ def _finish_live_setup(path, marker, identity):
         raise StoreError("ramo do clone mudou durante a validação")
     if os.name == "nt":
         marker.unlink()
+        _verify_live_setup_finalization(path, marker, identity, origin_id)
     else:
         # Ancore a remoção no .git conferido, mesmo se o caminho for trocado depois do stat.
         fd = os.open(marker.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
@@ -1019,10 +1038,9 @@ def _finish_live_setup(path, marker, identity):
             if _head_signature(head) != identity[2]:
                 raise StoreError("ramo do clone mudou durante a validação")
             os.unlink(marker.name, dir_fd=fd)
+            _verify_live_setup_finalization(path, marker, identity, origin_id, directory_fd=fd)
         finally:
             os.close(fd)
-    if _live_setup_identity(path) != identity:
-        raise StoreError(f"destino do setup mudou: {path}")
 
 
 def _check_live_setup(ctx, path, expected):
@@ -1073,7 +1091,7 @@ def live_setup(ctx, slug, url=None):
     if identity is None or current is None or current[:2] != identity[:2]:
         raise StoreError(f"destino do setup mudou: {path}")
     _check_live_setup(ctx, path, expected)
-    _finish_live_setup(path, marker, identity)
+    _finish_live_setup(path, marker, identity, origin_id)
     return path
 
 

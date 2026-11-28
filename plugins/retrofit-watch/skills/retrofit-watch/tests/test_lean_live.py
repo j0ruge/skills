@@ -356,10 +356,11 @@ class LiveTest(unittest.TestCase):
         pending = self._leave_pending_setup()
         path = self.w.live
         identity = store._live_setup_identity(path)
+        origin_id = pending.read_bytes()
         with mock.patch.object(store.os, "name", "nt"):
-            store._finish_live_setup(path, pending, identity)
+            store._finish_live_setup(path, pending, identity, origin_id)
             with self.assertRaises(FileNotFoundError):
-                store._finish_live_setup(path, pending, identity)
+                store._finish_live_setup(path, pending, identity, origin_id)
         self.assertEqual(store.live_clone(self.ctx, SLUG), path)
 
     @unittest.skipIf(os.name == "nt", "Abertura de diretório sem seguir links no POSIX")
@@ -487,6 +488,25 @@ class LiveTest(unittest.TestCase):
         self.assertIsNone(store.live_clone(self.ctx, SLUG))
         w.git(w.tmp, "config", "--global", "--unset", key)
         self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
+
+    @unittest.skipIf(os.name == "nt", "Remoção por descritor de diretório no POSIX")
+    def test_setup_keeps_pending_if_branch_changes_at_marker_removal(self):
+        w = self.w
+        pending = self._leave_pending_setup()
+        expected = pending.read_bytes()
+        unlink = os.unlink
+
+        def switch_at_removal(name, *args, **kwargs):
+            if name == pending.name and kwargs.get("dir_fd") is not None:
+                w.git(w.live, "switch", "-qc", "rascunho")
+            return unlink(name, *args, **kwargs)
+
+        with mock.patch.object(os, "unlink", side_effect=switch_at_removal):
+            with self.assertRaises(store.StoreError):
+                store.live_setup(self.ctx, SLUG, str(w.remote))
+        self.assertTrue(pending.is_file())
+        self.assertEqual(pending.read_bytes(), expected)
+        self.assertIsNone(store.live_clone(self.ctx, SLUG))
 
     def test_setup_retry_requires_effective_worktree_lock(self):
         w = self.w
