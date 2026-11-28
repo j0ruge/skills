@@ -2,8 +2,8 @@
 missao: 20261127-retrofit-watch-050
 fase: EXEC
 status: done
-sessao: 01a2220f-19ad-7372-9904-8c9b247e321f
-data: 2026-11-28 09:20
+sessao: codex-exec-r18
+data: 2026-11-28 11:05
 gate: "Em 3af4a5d5724fcfcd44daefd76fec322bd8fb0753, TEST_CMD rc 0, 176 regressões dirigidas, jornada de QA, três provas de distribuição no Linux e anonimização verdes. O Check R18 cobre a releitura da identidade e a transição normal para a ref empacotada."
 ---
 
@@ -21,9 +21,9 @@ a jornada de QA, a suíte e as provas de distribuição no Linux.
 ## Estado do repo
 
 - **Branch:** `feat/retrofit-watch-050-loja` — base de comparação `origin/main` local.
-- **Último commit anterior a R18:** `0321097` — valida a ref da main na liberação do clone.
+- **Último commit de produto:** `3af4a5d` — reconfere a identidade e preserva a consulta após a compactação.
 - **Working tree:** limpo após o commit de checkpoint, notas e handoff.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp GIT_CEILING_DIRECTORIES=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c '. .sdd/config.sh && eval "$TEST_CMD"'` → rc 0 em `0321097`. 154 testes da loja, 3 pulados, e 144 do Stop. Adaptadores, catálogo e versões válidos.
+- **Suíte:** TEST_CMD rc 0 em `3af4a5d`, com 154 testes da loja (3 pulos configurados) e 144 do Stop. As três provas nativas passaram em execução separada no Linux.
 - **E2E:** sem `E2E_CMD` na config. Jornada automatizada em `sonda-qa.py` com remotos bare de fixture. Nenhum deploy ou repo privado real.
 
 ## O que foi feito
@@ -222,14 +222,14 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
 
 | Arquivo | O que contém |
 |---|---|
-| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Vinte e um Checks e seus commits. |
+| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Vinte e dois Checks e seus commits. |
 | `docs/retrofit-watch/clone-dedicado.md` | Contrato de clone, selo, ensaio, publicação e avanço. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py` | Cópia de distribuição com contratos dos dois plugins e controles do catálogo. |
 | `KAIZEN_LOG.md` e `TODO.md` | Medida da fixture, limite da adoção e achados fora do escopo. |
 
 ## Boot da próxima fase
 
-Para QA, leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Comece pelo Check de R17. Em clone pendente da fixture, redirecione a ref da main durante a validação da trava e na remoção do marcador. O clone deve continuar pendente e retomar após corrigir a ref, com os arquivos locais intactos. Confira avanço com main empacotada e diretório solto vazio, recusa quando a main não existe e o diagnóstico `refs/heads/main do clone ilegível` sem fetch quando só a ref falha. Repita R14–R16 para conferir a trava, o ramo errado e o diagnóstico distinto `HEAD do clone ilegível`.
+Para QA, leia `00-missao.md`, `01-plano.md` e `checkpoint.md`. Rode os Checks R17 e R18 e repita a jornada em fixture.
 Para reproduzir a jornada de bare local com HOME isolado, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py`.
 Não é preciso preparar remotos reais nem iniciar serviços. Para as regressões dirigidas, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests:plugins/retrofit-skill/tests python3 -B -m unittest test_fixture_private test_lean_auto test_lean_window test_lean_live test_lean_batch test_lean_gate test_auto_docs test_modo_autonomo`.
 
