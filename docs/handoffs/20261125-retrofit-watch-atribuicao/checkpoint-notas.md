@@ -647,3 +647,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 01:59 · written by the runner
 - 2026-11-28 02:06 · r37 achado 1 → R25: a ordem inverte quando o primeiro bloco da mensagem é texto. Quatro retomadas divergiram, com R24 e F1 verdes.
 - 2026-11-28 02:06 · R25 · No replay, registre a ordem na primeira ocorrência de um message.id válido, antes de filtrar o tipo do bloco. Mantenha a associação com o ID da chamada somente quando houver chamada Skill válida. Reuse o registro limitado, preserve a ordem de mensagens fragmentadas e teste a origem ausente ou sem prova. Corrija o inventário e os totais vigentes do handoff para refletir todos os incrementos, preservando resultados históricos. Repita R23 e R24 junto com R25.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 02:08 · written by the runner
