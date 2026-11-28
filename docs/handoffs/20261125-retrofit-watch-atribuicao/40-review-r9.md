@@ -135,11 +135,11 @@ from tempfile import TemporaryDirectory
 
 from test_retrofit_watch import StopTest, identified_load, tool
 
+for name in ("GIT_DIR", "GIT_WORK_TREE"):
+    os.environ.pop(name, None)
 p = "plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py"
 scripts = {name: subprocess.check_output(["git", "-P", "show", f"{ref}:{p}"])
            for name, ref in (("old", "fe38d1f"), ("base", "90837f5"))}
-for name in ("GIT_DIR", "GIT_WORK_TREE"):
-    os.environ.pop(name, None)
 
 
 def run(old, finish, order, external_meta):

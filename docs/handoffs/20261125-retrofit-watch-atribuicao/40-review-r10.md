@@ -173,12 +173,12 @@ from unittest import TestCase
 
 from test_retrofit_watch import SCRIPT, HookHarness, World, identified_load, skill_typed, tool
 
+for key in ("GIT_DIR", "GIT_WORK_TREE"):
+    os.environ.pop(key, None)
 legacy_code = subprocess.check_output([
     "git", "show",
     "fe38d1f:plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py",
 ])
-for key in ("GIT_DIR", "GIT_WORK_TREE"):
-    os.environ.pop(key, None)
 
 
 class Journey(HookHarness, TestCase):

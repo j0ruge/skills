@@ -17,7 +17,7 @@ própria carga que o hook reconheceu primeiro pelo nome.
 |---|---|
 | Uma carga externa distinta e uma monitorada na mesma mensagem, com vínculo confiável | Mantém a monitorada. |
 | Uma carga externa posterior ou sem prova de que veio da mesma mensagem | Encerra a atribuição. O trabalho já creditado permanece registrado. |
-| Resultado de erro da chamada que abriu a atribuição ativa | Encerra a atribuição sem apagar os outros vínculos pendentes. |
+| Resultado de erro da chamada que abriu a atribuição ativa | Encerra a atribuição sem apagar os outros vínculos pendentes. O ID da chamada basta, mesmo sem `message.id`. |
 | Metadado externo com ID comprovadamente aposentado por uma mensagem posterior | Não altera a atribuição. ID desconhecido ou fora da janela mantém o tratamento conservador. |
 | Metadado atrasado da monitorada sem vínculo, depois do encerramento | Não reabre a atribuição. Uma carga nova com vínculo ou um slash explícito para a própria skill pode iniciá-la. |
 
@@ -25,7 +25,13 @@ Chamadas pendentes mantêm a ordem das mensagens mesmo se os metadados chegarem
 fora de ordem. Dentro da janela retida, IDs falhos, consumidos ou ambíguos não
 servem como prova para outra carga. Ao exceder 64 mensagens ou 1.024 IDs
 retidos, o hook deixa de correlacionar nessa sessão. Isso não zera contadores
-nem impede uma carga explícita. O hook guarda à parte até 1.024 IDs aposentados. Ao reaparecer numa chamada nova, um ID deixa de provar que o metadado é antigo. Uma tentativa irrelevante não descarta o slash explícito enquanto aguarda o caminho da skill.
+nem impede uma carga explícita. O hook guarda à parte até 1.024 IDs aposentados.
+Só entram nessa lista IDs com donos conhecidos e comprovadamente antigos. Ao
+reaparecer numa chamada nova, um ID deixa de provar que o metadado é antigo.
+Uma tentativa irrelevante não descarta o slash explícito enquanto aguarda o
+caminho da skill. Uma carga externa que encerra a atribuição expira o slash
+se a chamada externa for comprovadamente posterior. Um slash digitado depois
+da chamada pode sobreviver ao metadado atrasado.
 
 ## Retomada da 0.4.0
 

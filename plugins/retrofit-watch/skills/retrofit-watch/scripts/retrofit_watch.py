@@ -425,6 +425,11 @@ class State:
                              ("skill_message", None), ("skill_calls", {}), ("retired_skill_calls", []),
                              ("skill_correlation_lost", False), ("pending_slash", None)):
             self.data.setdefault(key, default)
+        origin = self.data["current_origin"]
+        self.data.setdefault("current_call", origin[1] if origin else None)
+        if "slash_prior_calls" not in self.data:
+            # Sem a ordem gravada, não presumir que uma chamada pendente é posterior ao slash.
+            self.data["slash_prior_calls"] = list(self.data["skill_calls"]) if self.data["pending_slash"] else []
         if "attribution_closed" not in self.data:
             # Na 0.4.0, caminho sem dono encerrava a atribuição, mas kit sem dono não.
             self.data["attribution_closed"] = self.data["current"] is None and (
@@ -532,8 +537,8 @@ class Scanner:
             self.st["skill_calls"] = {call: message for call, message in calls.items() if message in live}
         for call, owners in list(history.items()):
             retained = [message for message in owners if message in live]
-            # Só o avanço entre mensagens confirmadas aposenta a ambiguidade sem origem.
-            if (not owners or owners[0] is None) and not (advanced and previous):
+            # Um dono retido não resolve a colisão com uma chamada sem origem.
+            if (not owners or owners[0] is None) and (retained or not (advanced and previous)):
                 history[call] = [None, *retained] if retained else []
             elif retained:
                 history[call] = retained
@@ -547,7 +552,7 @@ class Scanner:
             self.st["current_origin"] = None
             self.st["skill_correlation_lost"] = True
 
-    def _watch(self, info, origin=None, *, preserve_slash=False):
+    def _watch(self, info, origin=None, *, call_id=None, preserve_slash=False):
         if origin:
             self._prune_skill_correlation(origin[0])
         if info is None:
@@ -559,9 +564,11 @@ class Scanner:
                 self._clear_skill_correlation()
             self.st["current"] = None
             self.st["current_origin"] = None
+            self.st["current_call"] = None
             self.st["attribution_closed"] = True
             if not preserve_slash:
                 self.st["pending_slash"] = None
+                self.st["slash_prior_calls"] = []
             return
         key = info["key"]
         entry = self.st["skills"].setdefault(key, dict(info, reviews=0, work=0, friction=0))
@@ -573,6 +580,7 @@ class Scanner:
             entry["reviews"] = MAX_REVIEWS
         self.st["current"] = key
         self.st["current_origin"] = origin
+        self.st["current_call"] = call_id
         self.st["attribution_closed"] = False
 
     def _bump(self, field):
@@ -638,7 +646,7 @@ class Scanner:
         elif name in ("Edit", "Write"):
             self.kit_todo_written(tool_input.get("file_path"))
 
-    def invocation(self, name, args, origin=None):
+    def invocation(self, name, args, origin=None, *, call_id=None):
         plugin = name.split(":", 1)[0]
         if plugin == "retrofit-skill":
             self._retrofit_ran(args)
@@ -648,7 +656,7 @@ class Scanner:
         elif ":" in name:
             info = classify_plugin(plugin, self.ctx)
             if info is not None:
-                self._watch(info, origin)
+                self._watch(info, origin, call_id=call_id)
             elif self.ctx.installed_marketplaces(plugin):
                 self._watch(None, origin)
 
@@ -662,12 +670,13 @@ class Scanner:
         if self.st["skill_correlation_lost"]:
             return None
         message_id = self._transcript_id(message_id)
-        call_id = self._transcript_id(call_id)
         if self.st["skill_message"] is None:
             # Já vimos uma chamada, ainda que nenhuma carga tenha sido reconhecida.
             self.st["skill_message"] = ""
         if call_id is None:
             return None
+        if call_id in self.st["slash_prior_calls"]:
+            self.st["slash_prior_calls"].remove(call_id)
         retired = self.st["retired_skill_calls"]
         if call_id in retired:
             retired.remove(call_id)
@@ -702,7 +711,8 @@ class Scanner:
         # Uma externa sem vínculo continua encerrando-a, inclusive no estado legado.
         conservative = self.st["attribution_closed"] or self.st["skill_correlation_lost"]
         unlinked = False if source and (self.st["skill_message"] is not None or conservative) else None
-        message_id = self.st["skill_calls"].get(source, unlinked)
+        calls = self.st["skill_calls"]
+        message_id = calls.get(source, unlinked)
         if message_id is False and info is not None:
             return
         # Sem vínculo não há prova de nova carga após o encerramento. O slash digitado
@@ -713,7 +723,11 @@ class Scanner:
                 return
         if source is None:
             self.st["pending_slash"] = None
-        self._watch(info, [message_id, source] if message_id else None, preserve_slash=source is not None)
+            self.st["slash_prior_calls"] = []
+        call_id = source if source in calls else None
+        preserve_slash = call_id is None or call_id in self.st["slash_prior_calls"]
+        self._watch(info, [message_id, source] if message_id else None, call_id=call_id,
+                    preserve_slash=preserve_slash)
         self._retire_skill_call(source)
 
     def _retire_skill_call(self, call_id):
@@ -745,8 +759,10 @@ class Scanner:
                 self.last_tool = name
                 tool_input = block.get("input") if isinstance(block.get("input"), dict) else {}
                 if name == "Skill":
-                    origin = self._skill_origin(msg.get("id"), block.get("id"))
-                    self.invocation(str(tool_input.get("skill", "")), tool_input.get("args", ""), origin)
+                    call_id = self._transcript_id(block.get("id"))
+                    origin = self._skill_origin(msg.get("id"), call_id)
+                    self.invocation(str(tool_input.get("skill", "")), tool_input.get("args", ""), origin,
+                                    call_id=call_id)
                     self._bound_skill_correlation()
                 elif name not in NON_WORK_TOOLS:
                     self.tool_use(name, tool_input)
@@ -767,6 +783,7 @@ class Scanner:
                 if command:
                     args = ARGS_RE.search(content)
                     self.st["pending_slash"] = command.group(1)
+                    self.st["slash_prior_calls"] = list(self.st["skill_calls"])
                     self.invocation(command.group(1), args.group(1) if args else "")
                 else:
                     self.user_text(content)
@@ -777,10 +794,10 @@ class Scanner:
                     if block.get("type") == "tool_result" and block.get("is_error"):
                         call_id = self._transcript_id(block.get("tool_use_id"))
                         self._retire_skill_call(call_id)
-                        origin = self.st["current_origin"]
-                        if origin and call_id == origin[1]:
+                        if call_id is not None and call_id == self.st["current_call"]:
                             self.st["current"] = None
                             self.st["current_origin"] = None
+                            self.st["current_call"] = None
                             self.st["attribution_closed"] = True
                         self._bump("friction")
                     elif block.get("type") == "text":
@@ -803,7 +820,7 @@ def recover_legacy_correlation(path, st, ctx):
     was_closed = st["attribution_closed"]
     st["attribution_closed"] = was_closed or st["current"] is None
     replay = dict(st, skills={}, current=None, classified=st["classified"].copy(), done=[],
-                  retired_skill_calls=[],
+                  retired_skill_calls=[], slash_prior_calls=[],
                   skill_calls={}, skill_message_order=[], skill_call_history={}, attribution_closed=False)
     scanner = Scanner(replay, ctx)
     scanner.silent = True
@@ -837,8 +854,8 @@ def recover_legacy_correlation(path, st, ctx):
         return
     # O cache legado confirma se a origem reconstruída corresponde à carga que foi observada.
     if replay["classified"] == st["classified"]:
-        st["current_origin"] = replay["current_origin"]
-        st["pending_slash"] = replay["pending_slash"]
+        for key in ("current_origin", "current_call", "pending_slash", "slash_prior_calls"):
+            st[key] = replay[key]
     for key in ("attribution_closed", "skill_message", "skill_calls", "skill_message_order",
                 "skill_call_history", "retired_skill_calls", "skill_correlation_lost"):
         st[key] = replay[key]

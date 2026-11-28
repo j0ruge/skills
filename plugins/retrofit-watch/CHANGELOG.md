@@ -16,9 +16,12 @@
   Se a tentativa falha não tiver origem, a marca do ID permanece na janela de correlação,
   inclusive após a primeira confirmação.
 - Se falhar a chamada que abriu a atribuição ativa, seu crédito futuro termina sem apagar os
-  outros vínculos. Metadados externos atrasados só deixam de encerrá-la com prova de ID aposentado.
+  outros vínculos. O ID da chamada basta para reconhecer a falha, mesmo sem ID de mensagem.
+  Metadados externos atrasados não encerram a atribuição quando remontam à mesma mensagem
+  por vínculo confirmado ou quando há prova de ID aposentado.
 - Tentativas irrelevantes preservam o slash explícito. Blocos inválidos não ocultam caminhos
-  válidos na mesma linha do transcript.
+  válidos na mesma linha do transcript. Uma carga externa posterior confirmada expira o slash
+  anterior se ela encerrar a atribuição, mas não descarta um slash digitado depois da chamada.
 - A ordem de uma mensagem é mantida se perder o último vínculo enquanto uma mensagem posterior
   ainda aguarda confirmação. Reusar um ID falho, consumido ou ambíguo na janela retida não
   comprova a origem, mesmo antes de uma carga daquela mensagem ser reconhecida. Ao exceder
@@ -27,8 +30,8 @@
   ID consumido sem origem não apaga sua marca. Reusar esse ID numa carga externa não comprova
   a origem para preservar a atribuição.
 - Se a mensagem que reutilizou o ID continuar na janela e for confirmada, sua colisão continua
-  registrada. O avanço entre mensagens confirmadas pode aposentar a marca sem origem, mas não
-  libera o ID enquanto uma mensagem que colidiu com ele continuar retida.
+  registrada, inclusive a marca sem origem. Só um ID cujos donos sejam todos conhecidos e
+  tenham saído da janela com o avanço pode provar que o metadado é antigo.
 - Sem skill ativa, a retomada da 0.4.0 respeita o encerramento indicado pelo histórico ou
   por um caminho de skill não monitorada. A marca de colisão com chamada sem origem
   sobrevive à poda em ambas as ordens da disputa, enquanto a mensagem ativa não mudar.
