@@ -1411,9 +1411,12 @@ def _publish_private(ctx, rid, lote, effects, done):
     status_detail = line.get("status_detalhe", "")
     if not status_ok:
         try:
-            _, _, origin = _private_origin(p)
+            url, _, origin = _private_origin(p)
+            host = origin[1] or "localhost"
+            if url.lower().startswith("ssh://"):
+                host = host.partition(":")[0]
             status_ok, status_detail = effects.status(p.repo, line["commit"], line["gate"],
-                                                      host=origin[1] or "localhost")
+                                                      host=host)
         except Exception as exc:
             status_detail = _short(exc)
     if line["instalacao"] == "pendente":

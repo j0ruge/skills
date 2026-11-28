@@ -162,9 +162,10 @@ com os argumentos, as refs e os SHAs do push real. A janela v2 incompleta manté
 ensaio. Com o gate verde, o motivo é `auto-dry`, acompanhado do resumo. O SHA remoto não muda.
 Com a janela cumprida ou a aprovação do patch para esse motivo, o Git executa novamente o
 pre-push e pode recusar. A porta rejeita mudanças de origem e direciona `local/ci` ao servidor
-validado. O lote publicado leva `repo` e o SHA correspondente. A porta
-avança o clone dedicado. Sem status ou avanço, a publicação continua registrada com rc 4 e
-`status-falhou` ou `clone-atras`. Repetir `publish` não refaz o push.
+validado sem repassar a porta do transporte SSH à API. O lote publicado leva `repo` e o SHA
+correspondente. A porta avança o clone dedicado. Sem status ou avanço, a publicação
+continua registrada com rc 4 e `status-falhou` ou `clone-atras`. Repetir `publish`
+não refaz o push.
 
 Lotes de plugins diferentes podem correr em paralelo, cada um no seu worktree: a trava da porta
 serializa os pushes. Lotes do mesmo plugin correm em sequência, o `auto` antes do `description`, na

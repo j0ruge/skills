@@ -304,6 +304,44 @@ class GateTest(unittest.TestCase):
                          ["gh", "api", "-X", "POST", f"repos/{SLUG}/statuses/{self.base}",
                           "--hostname", "forge.example"])
 
+    def test_private_status_uses_api_host_not_ssh_port(self):
+        self.assert_private_status_target("SSH://git@localhost:2222", "localhost")
+
+    def test_private_status_keeps_custom_https_port(self):
+        self.assert_private_status_target("https://localhost:8443", "localhost:8443")
+
+    def assert_private_status_target(self, transport, api_host):
+        head = self.edit()
+        url = f"{transport}/{SLUG}.git"
+        private_origin = gate._private_origin
+        run = store.run
+        gh_calls = []
+
+        def origin_for_status(p):
+            origin = private_origin(p)
+            # O push fica no bare local. Só a origem revalidada para o status recebe a URL sintética.
+            if self.remote_head() == head:
+                return url, origin[1], gate.rw.origin_identity(url)
+            return origin
+
+        def capture_gh(command, **kw):
+            if command[0] != "gh":
+                return run(command, **kw)
+            gh_calls.append(command)
+            return (0, "") if command[5:7] == ["--hostname", api_host] else (1, "endereço inesperado")
+
+        with mock.patch.object(store, "lean_mode", return_value="auto"), \
+                mock.patch.object(gate, "_private_origin", side_effect=origin_for_status), \
+                mock.patch.object(self.effects, "status", side_effect=lambda *a, **kw: REAL_STATUS(self.effects, *a, **kw)), \
+                mock.patch.object(store, "run", side_effect=capture_gh):
+            out = self.publish()
+        self.assertEqual([args[:7] for args in gh_calls],
+                         [["gh", "api", "-X", "POST", f"repos/{SLUG}/statuses/{head}",
+                           "--hostname", api_host]])
+        self.assertIn("context=local/ci", gh_calls[0])
+        self.assertEqual((gate.exit_code(out), out["commit"], self.remote_head(),
+                          self.w.git(self.w.live, "rev-parse", "HEAD")), (0, head, head, head), out)
+
     def test_origin_change_after_push_cannot_redirect_status_or_advance(self):
         head = self.edit()
         push = self.effects.push_private

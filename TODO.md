@@ -148,7 +148,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: uma frase em cada uma.
   Fonte: codereview r2, forma — descoberto por `codereview r2` (2026-11-24)
 - [ ] **A saída do escopo ambígua na referência** —
-  `plugins/retrofit-watch/skills/retrofit-watch/references/modo-autonomo.md:269` (`escopo`) — a "Saída" junta
+  `plugins/retrofit-watch/skills/retrofit-watch/references/modo-autonomo.md:280` (`escopo`) — a "Saída" junta
   a do executor e a do dono numa célula, e a frase "também o que o ramo tira" não diz de quem é a saída.
   Direção: duas frases, uma por saída, com o sensor do `test_auto_docs.py` verde.
   Fonte: codereview r2, forma — descoberto por `codereview r2` (2026-11-24)

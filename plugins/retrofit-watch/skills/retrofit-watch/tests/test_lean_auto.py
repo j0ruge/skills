@@ -82,12 +82,12 @@ class LeanAutoTest(unittest.TestCase):
 
     def test_same_slug_on_another_host_stays_manual(self):
         w = self.w
-        w.git(w.live, "remote", "set-url", "origin", f"https://forge.example/{SLUG}.git")
+        w.git(w.live, "remote", "set-url", "origin", f"https://localhost/{SLUG}.git")
         for url, reason in (
-            (f"git@FORGE.example:{SLUG}.git", None),
-            (f"ssh://git@forge.example:22/{SLUG}.git", None),
+            (f"git@LOCALHOST:{SLUG}.git", None),
+            (f"ssh://git@localhost:22/{SLUG}.git", None),
             (f"https://other.example/{SLUG}.git", "sem-clone"),
-            (f"https://forge.example:8443/{SLUG}.git", "sem-clone"),
+            (f"https://localhost:8443/{SLUG}.git", "sem-clone"),
         ):
             with self.subTest(url=url):
                 w.git(w.dev, "remote", "set-url", "origin", url)
