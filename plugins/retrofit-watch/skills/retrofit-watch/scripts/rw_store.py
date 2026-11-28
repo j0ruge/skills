@@ -49,13 +49,6 @@ BASE_REF = "origin/main"
 # As duas listas do portão: mudam só com a aprovação do dono, e o patch (D20) não as conta.
 LIST_FILES = ("scripts/public-names.txt", "scripts/private-names.sha256")
 REDO_REASON = "rebase"
-# As variáveis que apontam outro repo: com elas, `git -C <dir>` age no repo delas.
-GIT_LOCATION = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
-                "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR")
-# As que trocam a config lida ou a saída do diff. As GIT_CONFIG* saem todas (GIT_CONFIG_GLOBAL,
-# GIT_CONFIG_SYSTEM, GIT_CONFIG_PARAMETERS, GIT_CONFIG_COUNT...); o XDG_CONFIG_HOME também, para o git
-# ler a config global do HOME do Context.
-GIT_OVERRIDES = ("XDG_CONFIG_HOME", "GIT_DIFF_OPTS", "GIT_EXTERNAL_DIFF")
 GATE_FINDING = re.compile(r'.+:[0-9]+: (lista|colheita|email|caminho|segredo) ".*"')
 GATE_CLEAN = "ok: camada 1 limpa"
 TERM_KEYS = frozenset({"termo", "onde", "contexto"})
@@ -98,22 +91,7 @@ def _decode(raw):
     return (raw or b"").decode("utf-8", "replace")
 
 
-def git_env(home=None, nosystem=False, neutral=False):
-    """O ambiente de um git daqui: sem as variáveis de localização e de config herdadas.
-
-    `home` vira o HOME (a config global lida é a do Context). `nosystem` tira a config de sistema.
-    `neutral` não lê config nenhuma: o diff do patch e o portão não podem mudar com a config local."""
-    env = {k: v for k, v in os.environ.items()
-           if k not in GIT_LOCATION and k not in GIT_OVERRIDES and not k.startswith("GIT_CONFIG")}
-    if home is not None:
-        env["HOME"] = str(home)
-    if nosystem or neutral:
-        env["GIT_CONFIG_NOSYSTEM"] = "1"
-    if neutral:
-        env["GIT_CONFIG_GLOBAL"] = os.devnull
-    return env
-
-
+git_env = rw_auto.rw.git_env
 BATCH_SSH = "ssh -o BatchMode=yes"
 
 
@@ -629,6 +607,9 @@ def layer1(ctx, rid, worktree, tools, private=False, *, base=None, head=None):
         if not base or not head:
             raise StoreError("camada 1 privada sem o par de commits")
         rc, out = _gate(tools, worktree, "--camada1", "--private", "--head", head, base=base)
+        if rc == 2:
+            raise StoreError("camada 1 privada recusada; confira se o origin/main local da loja suporta "
+                             "--private e --head")
     else:
         pedido = rw_auto.retro_pedido(ctx, rid)
         extra = _private_harvest(ctx, pedido["cwd"])

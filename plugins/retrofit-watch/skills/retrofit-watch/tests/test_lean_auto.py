@@ -1,5 +1,6 @@
 """Elegibilidade e formato do pedido de uma sessão com origens mistas."""
 import json
+import os
 import shlex
 import subprocess
 import unittest
@@ -42,6 +43,19 @@ class LeanAutoTest(watch.HookHarness, unittest.TestCase):
     def test_origin_recheck_uses_the_evidence_checkout_despite_inherited_git_locations(self):
         with mock.patch.dict("os.environ", GIT_DIR=str(self.w.store / ".git"), GIT_WORK_TREE=str(self.w.store)):
             self.assertIsNone(self.reason())
+
+    @unittest.skipUnless(os.name == "posix", "o POSIX permite nomes fora do UTF-8")
+    def test_unrepresentable_tracked_path_stays_manual(self):
+        folder = self.w.dev / os.fsdecode(b"pasta-\xff") / "demo"
+        folder.mkdir(parents=True)
+        skill = folder / "SKILL.md"
+        skill.write_text("# Demo\n", encoding="utf-8")
+        self.w.git(self.w.dev, "add", "--", str(skill))
+
+        entry = rw.classify_path(folder, self.w.ctx())
+
+        self.assertEqual(entry["origin"], SLUG)
+        self.assertEqual(self.reason(entry=entry), "origem-da-skill")
 
     def test_stop_dispatch_uses_the_evidence_checkout_identity(self):
         w = self.w

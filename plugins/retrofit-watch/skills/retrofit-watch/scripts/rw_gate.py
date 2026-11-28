@@ -1146,9 +1146,20 @@ IFS= read -r ref
 if IFS= read -r extra; then exit 1; fi
 [ "$(git rev-parse HEAD)" = "$RW_GATE_HEAD" ]
 [ -x "$RW_GATE_HOOK" ]
+if ! "$RW_GATE_PYTHON" -c '
+import hashlib
+import sys
+from pathlib import Path
+
+digest = hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest()
+sys.exit(0 if digest == sys.argv[2] else 1)
+' "$RW_GATE_HOOK" "$RW_GATE_DIGEST"; then
+    printf '%s\n' 'pre-push mudou depois do ensaio' >&2
+    exit 1
+fi
 hook=$RW_GATE_HOOK
 output=$RW_GATE_OUTPUT
-unset GIT_CONFIG_PARAMETERS RW_GATE_URL RW_GATE_REF RW_GATE_HEAD RW_GATE_HOOK RW_GATE_OUTPUT
+unset GIT_CONFIG_PARAMETERS RW_GATE_URL RW_GATE_REF RW_GATE_HEAD RW_GATE_HOOK RW_GATE_OUTPUT RW_GATE_DIGEST RW_GATE_PYTHON
 rc=0
 printf '%s\n' "$ref" | "$hook" "$@" >"$output" 2>&1 || rc=$?
 cat "$output" >&2
@@ -1156,7 +1167,8 @@ exit "$rc"
 ''')
             wrapper.chmod(0o755)
             env = dict(env, RW_GATE_URL=url, RW_GATE_REF=_prepush_line(p), RW_GATE_HEAD=p.head,
-                       RW_GATE_HOOK=hook.as_posix(), RW_GATE_OUTPUT=report.as_posix())
+                       RW_GATE_HOOK=hook.as_posix(), RW_GATE_OUTPUT=report.as_posix(),
+                       RW_GATE_DIGEST=digest.hex(), RW_GATE_PYTHON=Path(sys.executable).as_posix())
             rc, out = rw_store.run(["git", "-C", p.worktree, "-c", f"core.hooksPath={Path(tmp).as_posix()}",
                                     "push", "--no-follow-tags", "origin", "HEAD:main"], env=env)
             if rc:

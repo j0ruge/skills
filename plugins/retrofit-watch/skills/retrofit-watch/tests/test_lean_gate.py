@@ -172,6 +172,12 @@ class GateTest(unittest.TestCase):
         self.edit(path="scripts/gate_stub.py", text="# fora da pasta")
         self.held("escopo")
 
+    def test_private_scan_reports_when_the_store_scanner_rejects_its_interface(self):
+        with mock.patch.object(store, "_gate", return_value=(2, "interface da fixture")):
+            with self.assertRaisesRegex(store.StoreError, "origin/main local da loja"):
+                store.layer1(self.ctx, self.rid, self.wt, self.w.store,
+                             private=True, base=self.base, head=self.base)
+
     def test_secret_is_not_overridable(self):
         self.edit(text="gh" + "p_" + "Z" * 36)
         self.held("segredo")

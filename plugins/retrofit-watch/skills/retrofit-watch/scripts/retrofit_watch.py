@@ -248,16 +248,33 @@ def _slashed(path):
     return path.replace(os.sep, "/")
 
 
-def _git(args, cwd, *, deadline=None):
-    from rw_store import git_env
+# As variáveis de localização podem redirecionar o Git para outro checkout.
+GIT_LOCATION = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
+                "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR")
+GIT_OVERRIDES = ("XDG_CONFIG_HOME", "GIT_DIFF_OPTS", "GIT_EXTERNAL_DIFF")
 
+
+def git_env(home=None, nosystem=False, neutral=False):
+    """Prepara o ambiente Git com a localização e configuração definidas pelo chamador."""
+    env = {k: v for k, v in os.environ.items()
+           if k not in GIT_LOCATION and k not in GIT_OVERRIDES and not k.startswith("GIT_CONFIG")}
+    if home is not None:
+        env["HOME"] = str(home)
+    if nosystem or neutral:
+        env["GIT_CONFIG_NOSYSTEM"] = "1"
+    if neutral:
+        env["GIT_CONFIG_GLOBAL"] = os.devnull
+    return env
+
+
+def _git(args, cwd, *, deadline=None):
     timeout = GIT_TIMEOUT if deadline is None else min(GIT_TIMEOUT, deadline - time.monotonic())
     if timeout <= 0:
         return None
     env = dict(git_env(), GIT_NO_LAZY_FETCH="1", GIT_ALLOW_PROTOCOL="")
     try:
-        proc = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True,
-                              timeout=timeout, env=env)
+        proc = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True,
+                              encoding="utf-8", errors="surrogateescape", timeout=timeout, env=env)
         return proc.stdout.strip() if proc.returncode == 0 else None
     except (OSError, subprocess.TimeoutExpired):
         return None

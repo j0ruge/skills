@@ -5,6 +5,10 @@ desenvolvimento continua separado. `lean_auto` lista os slugs `dono/repo`
 autorizados. O dono precisa estar em `owners` e o diretório padrão é
 `~/.local/share/skills-live`.
 
+Sincronize o `origin/main` local do clone da loja antes de adotar a versão 0.5.0.
+O selo e a porta privada usam a camada 1 dessa revisão, com suporte a `--private`
+e `--head`.
+
 - `retrofit_watch.py live-setup <dono/repo> [--url URL]` clona a `main` sem substituir
   o destino, mesmo se um diretório vazio surgir durante a instalação.
   A recusa também vale se o nome do clone já foi usado por outro dono.
@@ -81,8 +85,9 @@ após verificar o estado local e concluir a validação da publicação.
 Depois do selo o revisor grava `diff.json` para o patch da skill. `publish` confere
 os achados do mesmo relatório cujo patch validou. A verificação de segredo e caminho
 e o cálculo do patch usam o mesmo par de commits fixado pelo rebase. O pre-push do
-repo roda no worktree com o mesmo SHA e refs do push. Se o executável mudar
-desde o ensaio, a porta aguarda um novo ensaio.
+repo roda no worktree com o mesmo SHA e refs do push. A porta compara o executável
+no fim do ensaio, antes do push e na invocação pelo Git. Essas verificações cobrem
+os bytes do hook. O mantenedor controla as dependências executadas pelo hook.
 Antes de buscar ou publicar, confere o destino efetivo do Git, inclusive reescritas
 de URL e `pushurl`. O slug sozinho não distingue servidores, transportes ou caminhos.
 Sem prova da janela v2, o gate verde deixa o lote em `auto-dry` e conserva o remoto.

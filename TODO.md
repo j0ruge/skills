@@ -28,13 +28,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 ### Rulings do merge da retrofit-watch 0.4.0
 
 - [ ] **O commit autônomo sem guarda de autor** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:1317` (`_mark_approved`) — nenhuma guarda
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:1329` (`_mark_approved`) — nenhuma guarda
   lê o autor nem o committer, e o `--amend` mantém autor e data do HEAD, não os do `reviewed`. Um `includeIf`
   com outro e-mail passa. Anterior ao plano: a spec 5.6 só nomeia o diff e a mensagem (Ruling FR-1).
   Direção: uma guarda que confere autor e committer, ou o `commit-tree` com o autor explícito.
   Fonte: `docs/retrofit-watch/2026-11-24-pendencias-0.4.0.md` (T8-1) — descoberto por `revisor final` (2026-11-24)
 - [ ] **Os hooks globais no amend da aprovação** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:1318` (`--amend`) — o `commit --amend` do
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_gate.py:1330` (`--amend`) — o `commit --amend` do
   `_mark_approved` roda os hooks do `core.hooksPath` global. Um `commit-msg` global mudaria a mensagem depois
   da camada 1. Nesta máquina nenhuma config global ou de sistema tem a chave (Ruling FR-2).
   Direção: `-c core.hooksPath=<devnull>` no amend, ou o `commit-tree`, com o par.
@@ -50,7 +50,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: normalizar em NFC na `chave` e no `candidatos`, com o par; abrir antes de usar o `auto` num macOS.
   Fonte: `docs/retrofit-watch/2026-11-24-pendencias-0.4.0.md` (T12-4) — descoberto por `revisor final` (2026-11-24)
 - [ ] **A busca do .git do projeto da sessão ignora o teto do git** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:276` (`_session_project`) — ignora o
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:259` (`_session_project`) — ignora o
   `GIT_CEILING_DIRECTORIES` e o `GIT_DISCOVERY_ACROSS_FILESYSTEM`. Falha fechada: um `~/.git` de dotfiles com
   o teto no `$HOME` seguraria as sessões fora de repo (R3, codereview r1 #14).
   Direção: respeitar as duas variáveis na subida pelos pais.
@@ -110,7 +110,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: o teste chama o `rw_store.network_env`, e o alias sai; ou o comentário diz para quê.
   Fonte: codereview r1 #8 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **O seal roda o portão do próprio ramo** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:693` (`seal`) — o portão do `seal` sai
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:674` (`seal`) — o portão do `seal` sai
   do commit do ramo. Rebaixado de MEDIUM: a porta segura com `escopo` todo caminho fora de
   `plugins/<plugin>/` antes da camada 1 (r1 #10). Direção, opcional: o portão do `seal` do `origin/main`.
   Fonte: codereview r1 #10 — descoberto por `codereview r1` (2026-11-24)
@@ -121,12 +121,12 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: o estouro numa chave à parte; o rótulo pula o par `-c k=v`.
   Fonte: codereview r1 #11 e #12 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **As pastas .porta- que sobram** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:596` (`ignore_errors=True`) — um SIGKILL
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:574` (`ignore_errors=True`) — um SIGKILL
   deixa `.porta-*` na pasta de dados (r1 #13), e o `rmtree` falha em silêncio: no Windows sobram cerca de
   7,6 MB por porta (minor T10-4). Direção: limpar as pastas velhas no início, ou avisar.
   Fonte: codereview r1 #13 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **As mensagens de erro do projeto da sessão** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:303` (`run(command, env=env)`) — o rc da
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:286` (`run(command, env=env)`) — o rc da
   1ª chamada sai com a saída da 2ª (r2 #3). Um `PermissionError` no `isdir` dá "nao deu uma pasta" (r2 #4).
   Nenhum teste confere que o texto da 2ª chamada chega à mensagem (r3).
   Direção: o rc da chamada que deu o texto; o `os.stat` no lugar do `isdir`; o subteste do texto.
@@ -173,7 +173,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: "todo git que fala com o `origin`".
   Fonte: codereview r1 #24 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **A cópia da porta não confere o info/attributes** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:570` (`info/attributes`) — a C2 do plano
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:548` (`info/attributes`) — a C2 do plano
   deixa fora o `info/attributes` do `.git` comum, e um `export-ignore` ali tiraria um arquivo da cópia
   (r1 #25). Direção, opcional: comparar a lista da cópia com o `ls-tree` do commit.
   Fonte: codereview r1 #25 — descoberto por `codereview r1` (2026-11-24)
@@ -197,7 +197,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 ### Revisão da atribuição da retrofit-watch
 
 - [ ] **ID de chamada reaproveitado entre mensagens passa por vínculo novo** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:770` (`_skill_origin`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:790` (`_skill_origin`) —
   após trocar a mensagem ativa, o ID consumido antes ainda pode preservar a monitorada diante de uma carga externa.
   Direção: medir a janela de ambiguidade antes de ampliar a detecção além da mensagem ativa.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r2.md` —
@@ -228,14 +228,14 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   RECURRED 6: 20261127-retrofit-watch-050/I2 (2026-11-28); 20261127-retrofit-watch-050/I3 (2026-11-28); 20261127-retrofit-watch-050/I4 (2026-11-28); 20261127-retrofit-watch-050/R15 (2026-11-28); 20261127-retrofit-watch-050/R16 (2026-11-28); 20261127-retrofit-watch-050/R17 (2026-11-28)
 
 - [ ] **Estado intermediário inverte a precedência do slash** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:521` (`slash_prior_calls`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:541` (`slash_prior_calls`) —
   um slash anterior volta a valer após a externa no snapshot de c2c0c8c. O estado real da 0.4.0 passa.
   Direção: decidir se snapshots intermediários precisam recuperar a ordem antes de ampliar a migração.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r24.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-27)
 
 - [ ] **A suíte ampla da retrofit-watch precisa de um temporário fora de Git** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:351` (`_harvest_dir`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:328` (`_harvest_dir`) —
   o marcador ancestral `/tmp/.git` no sandbox invalida fixtures de colheita na base e na candidata.
   Direção: prover um pai temporário gravável sem marcador Git para repetir as provas sem alterar a guarda.
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/20-handoff-exec.md` —
@@ -273,14 +273,14 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 ### Clone dedicado da retrofit-watch
 
 - [ ] **O avanço podia mover outro ramo depois da última conferência** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:1285` (`_live_ref_update`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:1266` (`_live_ref_update`) —
   o merge pelo HEAD podia mover o ramo em uso. O avanço agora usa uma transação em `refs/heads/main`,
   verifica o SHA anterior e materializa os arquivos em HEAD temporário destacado. RESOLVED by a5a2302
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r2.md` — descoberto por
   `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
 
 - [ ] **A remoção do marcador do setup no Windows ainda depende do caminho** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:1131` (`_finish_live_setup`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:1112` (`_finish_live_setup`) —
   As duas checagens de identidade sinalizam a troca, mas não ancoram a remoção entre elas.
   Direção: testar a remoção pelo identificador do arquivo numa fixture Windows nativa.
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/20-handoff-exec.md` — descoberto por
