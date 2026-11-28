@@ -14,8 +14,9 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
   Na validação final, inclusive na retomada, o destino precisa ser o mesmo clone,
   estar na `main`, declarar a origem pedida, resolver para essa mesma origem no Git
   e ter a trava de commit efetiva no worktree principal. O setup confere a trava
-  depois de consultar o ramo. Se o `HEAD` mudar durante
-  a validação, a cópia fica pendente. O comando não troca o ramo
+  depois de consultar o ramo. Se o arquivo simbólico `.git/HEAD` mudar durante
+  a validação, a cópia fica pendente. Uma mudança de commit dentro da `main` pode
+  preservar esse arquivo. O comando não troca o ramo
   nem remove arquivos para concluir a validação. Se a plataforma ou o sistema
   de arquivos não oferecer movimentação sem substituição, o setup recusa a instalação.
   A leitura de elegibilidade só aceita a cópia na `main`, mesmo durante a
