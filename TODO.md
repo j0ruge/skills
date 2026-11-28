@@ -80,7 +80,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   o `RUN_TIMEOUT` de 900 s dá `erro` (falha fechada). Aceito: 15 min por lote numa máquina assim (FR-5).
   Fonte: Ruling FR-5 da revisão final — descoberto por `revisor final` (2026-11-24)
 - [ ] **O MAX_PATH da cópia do commit no Windows** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:505` (`TREE_PREFIX`) — a cópia
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:547` (`TREE_PREFIX`) — a cópia
   `.porta-*` sob a pasta de dados tem cerca de 60 caracteres de margem no `MAX_PATH`, não medida. Passar dá
   `interno` (falha fechada) (Ruling FR-6). Direção: o passo 4 do dono mede a margem.
   Fonte: Ruling FR-6 da revisão final — descoberto por `revisor final` (2026-11-24)
@@ -114,18 +114,18 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: o teste chama o `rw_store.network_env`, e o alias sai; ou o comentário diz para quê.
   Fonte: codereview r1 #8 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **O seal roda o portão do próprio ramo** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:624` (`seal`) — o portão do `seal` sai
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:672` (`seal`) — o portão do `seal` sai
   do commit do ramo. Rebaixado de MEDIUM: a porta segura com `escopo` todo caminho fora de
   `plugins/<plugin>/` antes da camada 1 (r1 #10). Direção, opcional: o portão do `seal` do `origin/main`.
   Fonte: codereview r1 #10 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **O estouro do critério apaga o cache dos commits** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:688` (`_startup_git`) — o `criterion`
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:743` (`_startup_git`) — o `criterion`
   grava `{sha, estouro}` por cima dos commits: por 24 h, "desconhecido" parece "não cumprido" (r1 #11).
   Depois do `-c`, a mensagem do `_startup_git` (`args[:2]`) não nomeia o `archive` (r1 #12).
   Direção: o estouro numa chave à parte; o rótulo pula o par `-c k=v`.
   Fonte: codereview r1 #11 e #12 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **As pastas .porta- que sobram** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:535` (`ignore_errors=True`) — um SIGKILL
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:577` (`ignore_errors=True`) — um SIGKILL
   deixa `.porta-*` na pasta de dados (r1 #13), e o `rmtree` falha em silêncio: no Windows sobram cerca de
   7,6 MB por porta (minor T10-4). Direção: limpar as pastas velhas no início, ou avisar.
   Fonte: codereview r1 #13 — descoberto por `codereview r1` (2026-11-24)
@@ -141,12 +141,12 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: uma frase em cada uma.
   Fonte: codereview r2, forma — descoberto por `codereview r2` (2026-11-24)
 - [ ] **A saída do escopo ambígua na referência** —
-  `plugins/retrofit-watch/skills/retrofit-watch/references/modo-autonomo.md:241` (`escopo`) — a "Saída" junta
+  `plugins/retrofit-watch/skills/retrofit-watch/references/modo-autonomo.md:256` (`escopo`) — a "Saída" junta
   a do executor e a do dono numa célula, e a frase "também o que o ramo tira" não diz de quem é a saída.
   Direção: duas frases, uma por saída, com o sensor do `test_auto_docs.py` verde.
   Fonte: codereview r2, forma — descoberto por `codereview r2` (2026-11-24)
 - [ ] **O discard_retro conta no teto da sessão** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_auto.py:975` (`discard_retro`) — as linhas
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_auto.py:1007` (`discard_retro`) — as linhas
   `descartado` dele contam no `used` e no teto da sessão (r1 #15). A função é longa, o `_own` não tem
   docstring e o acento é desigual nas mensagens (r1 #17).
   Direção: dizer na docstring, ou marcar as linhas; extrair dois helpers.
@@ -177,7 +177,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: "todo git que fala com o `origin`".
   Fonte: codereview r1 #24 — descoberto por `codereview r1` (2026-11-24)
 - [ ] **A cópia da porta não confere o info/attributes** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:509` (`info/attributes`) — a C2 do plano
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/rw_store.py:551` (`info/attributes`) — a C2 do plano
   deixa fora o `info/attributes` do `.git` comum, e um `export-ignore` ali tiraria um arquivo da cópia
   (r1 #25). Direção, opcional: comparar a lista da cópia com o `ls-tree` do commit.
   Fonte: codereview r1 #25 — descoberto por `codereview r1` (2026-11-24)
@@ -247,6 +247,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: verificar se os IDs das duas cargas na fixture representam chamadas distintas no Stop da 0.4.1.
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/checkpoint-notas.md` — descoberto por
   `sdd-executor` na missão `20261127-retrofit-watch-050` (2026-11-28)
+  RECURRED 1: 20261127-retrofit-watch-050/I2 (2026-11-28)
 
 - [ ] **A migração perde a ordem de cargas anteriores ao offset** —
   `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:491` (`attribution_closed`) —

@@ -1402,6 +1402,8 @@ CLI_USAGE = {
     "prepare": ("prepare <id> <lote> [--redo]", None),
     "seal": ("seal <id> <lote> --licoes L1,L2 [--fases a,b]", None),
     "harvest": ("harvest", None),
+    "live-setup": ("live-setup <dono/repo> [--url URL]", None),
+    "live-advance": ("live-advance [<dono/repo>]", None),
     # A porta de publicação (rw_gate.py) também confere os próprios argumentos.
     "publish": ("publish <id> <lote>", None),
 }

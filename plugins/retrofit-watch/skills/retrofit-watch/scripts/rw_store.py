@@ -33,7 +33,7 @@ import sys
 import tarfile
 import tempfile
 import time
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import rw_auto
 
@@ -408,14 +408,48 @@ def _last_line(ctx, rid, lote):
     return rw_auto.last_lines(rw_auto.read_registry(ctx)).get(f"{rid}/{lote}")
 
 
+def _skill_folder(clone, base, skill, env):
+    """O caminho sai da árvore buscada, nunca de arquivo sujo ou de link da cópia em uso."""
+    raw = _git_bytes(["ls-tree", "-rz", base], clone, env, "pasta da skill")
+    suffix = f"{skill}/SKILL.md".encode()
+    folders = []
+    for row in raw.split(b"\0"):
+        meta, _, path = row.partition(b"\t")
+        if meta.startswith((b"100644 blob ", b"100755 blob ")) and (b"/" + path).endswith(b"/" + suffix):
+            try:
+                folder = path.decode("utf-8").removesuffix("/SKILL.md")
+            except UnicodeError:
+                continue
+            if rw_auto.valid_skill_folder(folder):
+                folders.append(folder)
+    if len(folders) != 1:
+        raise StoreError(f"pasta rastreada de {skill} ausente ou ambígua em {clone}")
+    return folders[0]
+
+
+def _private_clone(ctx, slug):
+    clone = live_clone(ctx, slug)
+    if clone is None:
+        raise StoreError(f"sem clone dedicado: {slug}")
+    return clone
+
+
+def _prepared(path, rid, lote, repo):
+    current = rw_auto.load_retrofit(path)
+    if (current["id"], current["lote"], current.get("repo")) != (rid, lote, repo):
+        raise StoreError(f"{path}: origem ou identificação não corresponde ao lote")
+    return current
+
+
 def prepare(ctx, rid, lote, redo=False):
     """O worktree ligado do lote, do `origin/main` recém-buscado, e o retrofit.json dele.
 
     Chamado de novo, devolve o retrofit.json que já existe. `redo` abre a tentativa seguinte só
     quando a última linha do lote é `segurado` por `rebase` (D23); a anterior fica no lugar. Com a
     tentativa atual ainda sem selo, o `redo` devolve a atual: rodar duas vezes não abre duas."""
-    store = store_clone(ctx)
     found = _lote_of_triage(ctx, rid, lote)
+    repo = found.get("repo")
+    store = _private_clone(ctx, repo) if repo else store_clone(ctx)
     path = rw_auto.lote_dir(ctx, rid, lote) / "retrofit.json"
     tentativa = 1
     if redo:
@@ -425,25 +459,33 @@ def prepare(ctx, rid, lote, redo=False):
                              f"`{REDO_REASON}`")
         if not path.exists():
             raise StoreError(f"--redo sem retrofit.json de {rid}/{lote}: rode prepare sem --redo")
-        current = rw_auto.load_retrofit(path)
+        current = _prepared(path, rid, lote, repo)
         if current["commit"] is None:
             return current
         tentativa = current["tentativa"] + 1
         # Nada é apagado (D23): o retrofit.json da tentativa anterior fica como retrofit-r<n>.json.
         _atomic_write(path.with_name(f"retrofit-r{current['tentativa']}.json"), path.read_bytes())
     elif path.exists():
-        return rw_auto.load_retrofit(path)
+        return _prepared(path, rid, lote, repo)
     worktree = worktree_path(ctx, rid, lote, tentativa)
     branch = branch_name(rid, lote, tentativa)
     env = git_env(home=ctx.home)
-    _git(["fetch", "origin"], store, remote_env(ctx, store), "fetch")
+    if repo:
+        _live_fetch(ctx, repo, store)
+        base = _git(["rev-parse", BASE_REF], store, env, "base").strip()
+        pasta = _skill_folder(store, base, found["plugin"], env)
+    else:
+        _git(["fetch", "origin"], store, remote_env(ctx, store), "fetch")
+        base = BASE_REF
     worktree.parent.mkdir(parents=True, exist_ok=True)
-    _git(["worktree", "add", "-q", "-b", branch, str(worktree), BASE_REF], store, env, "worktree")
+    _git(["worktree", "add", "-q", "-b", branch, str(worktree), base], store, env, "worktree")
     base = _git(["rev-parse", "HEAD"], worktree, env, "base").strip()
     retrofit = {"id": rid, "lote": lote, "plugin": found["plugin"], "tipo": found["tipo"], "tentativa": tentativa,
                 "worktree": str(worktree), "ramo": branch, "base": base, "licoes": list(found["licoes"]),
                 "fases": None, "commit": None, "versao": None, "patch": None}
-    rw_auto._fields(retrofit, rw_auto.RETROFIT_SPEC, "retrofit.json")
+    if repo:
+        retrofit.update(repo=repo, pasta=pasta)
+    rw_auto._fields(retrofit, rw_auto.PRIVATE_RETROFIT_SPEC if repo else rw_auto.RETROFIT_SPEC, "retrofit.json")
     path.parent.mkdir(parents=True, exist_ok=True)
     rw_auto._write_json(path, retrofit)
     return retrofit
@@ -559,21 +601,27 @@ def _unlink(path):
         pass
 
 
-def layer1(ctx, rid, worktree, tools):
+def layer1(ctx, rid, worktree, tools, private=False):
     """Os achados da camada 1 no que o ramo de `worktree` acrescenta, pelo portão de `tools` (a cópia do
     commit), com a colheita feita agora (com o `cwd` do pedido.json), num arquivo só desta chamada. Saída
-    do portão fora do formato é StoreError, nunca "nada achado" (C1)."""
-    pedido = rw_auto.retro_pedido(ctx, rid)
-    extra = _private_harvest(ctx, pedido["cwd"])
-    try:
-        rc, out = _gate(tools, worktree, "--camada1", "--extra", extra)
-    finally:
-        _unlink(extra)
+    do portão fora do formato é StoreError, nunca "nada achado" (C1). No lote privado só importam
+    segredo e caminho com usuário, e não há colheita."""
+    if private:
+        rc, out = _gate(tools, worktree, "--camada1")
+    else:
+        pedido = rw_auto.retro_pedido(ctx, rid)
+        extra = _private_harvest(ctx, pedido["cwd"])
+        try:
+            rc, out = _gate(tools, worktree, "--camada1", "--extra", extra)
+        finally:
+            _unlink(extra)
     lines = [line for line in out.splitlines() if line.strip()]
     findings = [line for line in lines if GATE_FINDING.fullmatch(line)]
     if rc == 0 and lines == [GATE_CLEAN]:
         return []
     if rc == 1 and findings and lines == findings + [f"{len(findings)} achado(s) na camada 1"]:
+        if private:
+            return [line for line in findings if GATE_FINDING.fullmatch(line)[1] in ("caminho", "segredo")]
         return findings
     raise StoreError(f"camada 1 inutilizavel: o portao saiu {rc} com: {out.strip()[:500]}")
 
@@ -635,18 +683,25 @@ def seal(ctx, rid, lote, licoes, fases):
         if phase not in phases:
             phases.append(phase)
     folder = rw_auto.lote_dir(ctx, rid, lote)
-    retrofit = rw_auto.load_retrofit(folder / "retrofit.json")
+    repo = found.get("repo")
+    retrofit = _prepared(folder / "retrofit.json", rid, lote, repo)
     worktree = worktree_path(ctx, rid, lote, retrofit["tentativa"])
     env = git_env(neutral=True)
+    if repo:
+        clone = _private_clone(ctx, repo)
+        common = _git(["rev-parse", "--path-format=absolute", "--git-common-dir"], worktree, env, "selo")
+        if Path(common.strip()).resolve() != clone / ".git":
+            raise StoreError("selo: worktree não pertence ao clone dedicado")
     count = _git(["rev-list", "--count", f"{BASE_REF}..HEAD"], worktree, env, "selo").strip()
     if count in ("", "0"):
         raise StoreError(f"o ramo de {rid}/{lote} nao tem commit acima do {BASE_REF}")
     commit = _git(["rev-parse", "HEAD"], worktree, env, "selo").strip()
-    versao = _version(worktree, retrofit["plugin"])
+    versao = None if repo else _version(worktree, retrofit["plugin"])
     patch = patch_id(worktree)
-    with clean_tree(ctx, worktree, commit) as tools:
-        termos = new_terms(worktree, tools)
-        camada1 = layer1(ctx, rid, worktree, tools)
+    # O lote privado nunca fornece os scripts que examinam o próprio diff.
+    with clean_tree(ctx, store_clone(ctx) if repo else worktree, BASE_REF if repo else commit) as tools:
+        termos = [] if repo else new_terms(worktree, tools)
+        camada1 = layer1(ctx, rid, worktree, tools, private=True) if repo else layer1(ctx, rid, worktree, tools)
     rw_auto._write_json(folder / "termos-novos.json", {"patch": patch, "termos": termos})
     retrofit.update(licoes=chosen, fases=phases, commit=commit, versao=versao, patch=patch)
     rw_auto._write_json(folder / "retrofit.json", retrofit)
@@ -847,12 +902,25 @@ def criterion_notice(ctx, now=None):
             f"vazados desde {got['desde']} — o kit pode entrar (ver a spec do modo autônomo)")
 
 
-def live_clone(ctx, slug):
-    """Identifica o checkout dedicado pela config local, sem git no caminho da elegibilidade."""
+def live_path(ctx, slug):
+    """Resolve só um repo explicitamente autorizado dentro da raiz dedicada."""
     root = ctx.live_dir
     if not rw_auto.rw.valid_slug(slug) or slug not in ctx.lean_auto or root is None:
+        raise StoreError(f"repo sem destino autorizado: {slug}")
+    name = slug.split("/")[1]
+    path = root / name
+    if (not rw_auto.valid_skill_folder(name) or PureWindowsPath(name).is_reserved()
+            or rw_auto.rw._denied(rw_auto.rw._slashed(str(path)), ctx)):
+        raise StoreError(f"nome ou destino do clone inválido: {slug}")
+    return path
+
+
+def live_clone(ctx, slug):
+    """Identifica o checkout dedicado pela config local, sem git no caminho da elegibilidade."""
+    try:
+        path = live_path(ctx, slug)
+    except StoreError:
         return None
-    path = root / slug.split("/")[1]
     gitdir = path / ".git"
     config = configparser.ConfigParser(interpolation=None, allow_no_value=True)
     try:
@@ -866,6 +934,83 @@ def live_clone(ctx, slug):
     except (OSError, ValueError, KeyError, configparser.Error):
         pass
     return None
+
+
+def live_setup(ctx, slug, url=None):
+    path = live_path(ctx, slug)
+    remote = f"https://github.com/{slug}.git" if url is None else url
+    if rw_auto.rw.origin_slug(remote) != slug:
+        raise StoreError(f"URL não corresponde ao repo autorizado: {slug}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        path.mkdir()
+    except FileExistsError:
+        raise StoreError(f"destino já existe: {path}") from None
+    # Sem a config de um repo vizinho, mas com a configuração de credenciais do dono.
+    env = remote_env(ctx, path)
+    rc, _ = run(["git", "clone", "--branch", "main", "--", remote, str(path)], cwd=path, env=env)
+    if rc:
+        raise StoreError(f"clone de {slug} falhou (git saiu {rc})")
+    _live_remote(ctx, slug, path)
+    gitdir = path / ".git"
+    hooks = gitdir / "rw-live-hooks"
+    hooks.mkdir()
+    hook = hooks / "pre-commit"
+    hook.write_bytes(b'#!/bin/sh\necho "retrofit-watch: este clone so segue a main; '
+                     b'commite num worktree do lote" >&2\nexit 1\n')
+    hook.chmod(0o755)
+    _git(["config", "extensions.worktreeConfig", "true"], path, env, "trava do clone")
+    # O Git pode copiar config.worktree no worktree add. A condição não acompanha a cópia.
+    lock_config = gitdir / "rw-live.config"
+    _git(["config", "--file", str(lock_config), "core.hooksPath", str(hooks)], path, env, "trava do clone")
+    git_pattern = re.sub(r"([*?\[\]\\])", r"\\\1", gitdir.as_posix())
+    condition = "gitdir/i" if os.name == "nt" else "gitdir"
+    _git(["config", "--worktree", f"includeIf.{condition}:{git_pattern}.path", str(lock_config)],
+         path, env, "trava do clone")
+    return path
+
+
+def _live_remote(ctx, slug, path):
+    env = remote_env(ctx, path)
+    url = _git(["remote", "get-url", "origin"], path, env, "origem do clone")
+    if rw_auto.rw.origin_slug(url.strip()) != slug:
+        raise StoreError(f"origin do clone dedicado não corresponde a {slug}")
+    return env
+
+
+def _live_fetch(ctx, slug, path):
+    env = _live_remote(ctx, slug, path)
+    _git(["fetch", "origin", "+refs/heads/main:refs/remotes/origin/main"], path, env, "fetch")
+
+
+def live_advance(ctx, slug):
+    """Avança o checkout dedicado sem sobrescrever estado local e registra o resultado."""
+    path = live_path(ctx, slug)
+    env = git_env(home=ctx.home)
+    before = after = None
+    result, detail = "ok", ""
+    try:
+        _private_clone(ctx, slug)
+        before = after = _git(["rev-parse", "HEAD"], path, env, "HEAD").strip()
+        rc, branch = run(["git", "symbolic-ref", "-q", "--short", "HEAD"], cwd=path, env=env)
+        if rc not in (0, 1):
+            raise StoreError(f"branch do clone ilegível (git saiu {rc})")
+        if rc or branch.strip() != "main":
+            result, detail = "fora-da-main", "cópia em uso fora da main"
+        elif _git(["status", "--porcelain", "-unormal", "--ignore-submodules=none"], path, env, "status").strip():
+            result, detail = "suja", "cópia em uso suja"
+        else:
+            _live_fetch(ctx, slug, path)
+            _git(["merge-base", "--is-ancestor", "HEAD", BASE_REF], path, env, "avanço rápido indisponível")
+            _git(["merge", "--ff-only", "--no-overwrite-ignore", BASE_REF], path, env, "avanço da main")
+            after = _git(["rev-parse", "HEAD"], path, env, "HEAD").strip()
+    except StoreError as exc:
+        result, detail = "erro", str(exc)
+    record = dict(repo=slug, resultado=result, antes=before, depois=after, detalhe=detail, ts=int(time.time()))
+    folder = ctx.data_dir / "live"
+    folder.mkdir(parents=True, exist_ok=True)
+    rw_auto._write_json(folder / f"{path.name}.json", record)
+    return record
 
 
 def _lean_leaks(ctx, heads, store, head, commits, git):
@@ -940,6 +1085,8 @@ USAGE = {
     "prepare": "prepare <id> <lote> [--redo]",
     "seal": "seal <id> <lote> --licoes L1,L2 [--fases a,b]",
     "harvest": "harvest",
+    "live-setup": "live-setup <dono/repo> [--url URL]",
+    "live-advance": "live-advance [<dono/repo>]",
 }
 
 
@@ -953,7 +1100,8 @@ def _split(value):
 
 def _parse(verb, args):
     """(posicionais, opções) ou None quando o uso está errado."""
-    flags = {"prepare": {"--redo": False}, "seal": {"--licoes": True, "--fases": True}, "harvest": {}}[verb]
+    flags = {"prepare": {"--redo": False}, "seal": {"--licoes": True, "--fases": True},
+             "live-setup": {"--url": True}}.get(verb, {})
     positional, options, i = [], {}, 0
     while i < len(args):
         arg = args[i]
@@ -972,15 +1120,16 @@ def _parse(verb, args):
         else:
             positional.append(arg)
         i += 1
-    wanted = 0 if verb == "harvest" else 2
-    if len(positional) != wanted or (verb == "seal" and "--licoes" not in options):
+    wanted = {"harvest": (0,), "live-setup": (1,), "live-advance": (0, 1)}.get(verb, (2,))
+    if len(positional) not in wanted or (verb == "seal" and "--licoes" not in options):
         return None
     return positional, options
 
 
 def cli(verb, args, ctx):
     """rc 0 certo; 1 recusado (achado da camada 1 no `seal`); 2 uso, StoreError, arquivo do fluxo fora
-    do formato ou OSError, com a mensagem em ASCII no stderr e sem traceback."""
+    do formato ou OSError, com a mensagem em ASCII no stderr e sem traceback. Os verbos `live-*`
+    saem com 1 na recusa ou erro de operação."""
     parsed = _parse(verb, args)
     if parsed is None:
         sys.stderr.write(f"retrofit-watch: uso: retrofit_watch.py {USAGE[verb]}\n")
@@ -991,11 +1140,17 @@ def cli(verb, args, ctx):
             result = prepare(ctx, *positional, redo=bool(options.get("--redo")))
         elif verb == "seal":
             result = seal(ctx, *positional, _split(options["--licoes"]), _split(options.get("--fases", "")))
+        elif verb == "live-setup":
+            result = {"clone": str(live_setup(ctx, *positional, url=options.get("--url")))}
+        elif verb == "live-advance":
+            result = [live_advance(ctx, slug) for slug in (positional or sorted(ctx.lean_auto))]
         else:
             path = write_harvest(ctx)
             result = {"termos": len(path.read_text(encoding="utf-8").splitlines()), "arquivo": str(path)}
     except (StoreError, rw_auto.Malformed, OSError) as exc:
         sys.stderr.write(_ascii(f"retrofit-watch: {exc}") + "\n")
-        return 2
+        return 1 if verb.startswith("live-") else 2
     sys.stdout.write(json.dumps(result, indent=2) + "\n")
+    if verb == "live-advance":
+        return 0 if all(r["resultado"] == "ok" for r in result) else 1
     return 1 if verb == "seal" and result["camada1"] else 0

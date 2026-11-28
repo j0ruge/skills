@@ -15,6 +15,10 @@ Dois nomes valem em toda a página:
 A loja é o clone da chave `store` do `~/.claude/retrofit-watch.json`. Esse clone é o checkout
 compartilhado: ninguém escreve nele. Cada lote tem o seu worktree.
 
+Para os repos de `lean_auto`, `retrofit_watch.py live-setup <dono/repo> [--url URL]` cria o clone
+dedicado na `main` sem substituir um destino existente. `retrofit_watch.py live-advance [<dono/repo>]`
+avança só uma cópia limpa na `main`, sem merge de divergência. Sem argumento, tenta os repos da lista.
+
 ## Formatos
 
 | Arquivo | Diretório | Quem grava | Chaves |
@@ -62,6 +66,8 @@ Com lição, grave o `licoes.json` no caminho que o pedido dá, com a ferramenta
 ```
 
 - `n` começa em 1 e não se repete. `tipo` é `pitfall` ou `melhoria`.
+- Para skill local de repo listado, use o nome da skill em `plugin` e `skill`, e copie `repo` da
+  entrada correspondente no pedido. Para a loja, omita `repo` ou grave `null`.
 - `resolveu: null` quer dizer "sem correção verificada". A lição fica, e a triagem a segura.
 - `muda_description: true` quando a correção muda a `description` da skill.
 - Nunca cite valor de segredo, nem na evidência.
@@ -88,6 +94,8 @@ Rode `retrofit_watch.py triage <id>`. A saída é um JSON com três listas:
 - `lotes`: o que vai ao passo 4. Cada lote tem `lote`, `plugin`, `tipo` e `licoes`. O lote `<plugin>` é do
   tipo `auto`. O lote `<plugin>__description` leva as lições que mudam a `description`: ele vira um ramo
   pronto, e a porta o segura com `muda-description`.
+- O lote privado tem o nome da skill e leva `repo`. Quando duas origens disputam o mesmo nome,
+  a segunda fica `segurado` por `fora-do-pedido`, com detalhe `lote duplicado`.
 - `segurar`: a triagem já gravou a linha `segurado` de cada lição. Não faça nada agora: elas entram na
   linha ao dono e no verbo `segurados`.
 - `descartar`: a triagem já gravou a linha `descartado`. Não faça nada: elas ficam fora do aviso de
@@ -100,7 +108,8 @@ Rodar a triagem de novo não repete linha. Com rc 2 e a mensagem sobre o `veredi
 Para cada lote, nesta ordem:
 
 1. `retrofit_watch.py prepare <id> <lote>`. Ele faz `git fetch origin` na loja e cria o worktree do lote
-   e o ramo `retrofit-auto/<lote>-<id>`. A saída é o `retrofit.json`.
+   e o ramo `retrofit-auto/<lote>-<id>`. A saída é o `retrofit.json`. Para o lote privado, busca no
+   clone dedicado, cria o worktree a partir dele e grava também `repo` e `pasta`.
 2. Antes da primeira segunda passada da retro, rode `retrofit_watch.py harvest` uma vez. Ele grava
    `<dados>/colheita.txt`, que o revisor usa como referência.
 3. Despache o executor com a ferramenta `Agent`:
@@ -115,6 +124,12 @@ Para cada lote, nesta ordem:
    > linha `segurado` com `executor-recusou` para cada lição do lote fora do `--licoes`. Responda em
    > até 5 linhas: o commit, a versão, as lições incluídas e as deixadas de fora, as fases e o
    > resultado do `seal`.
+
+   Se `retrofit.json` tiver `repo`, passe ao executor o mesmo comando `seal` e o contrato
+   enxuto. Ele usa só as lições aprovadas do lote, trabalha em `<worktree>/<pasta>` e atualiza
+   o `CHANGELOG.md` dessa skill com uma entrada datada. Faz um commit com
+   `Retrofit-Mode: autonomous`, sem coautoria, sem bump e sem tocar no catálogo. Não procura o
+   comando da loja no worktree privado, não faz push e termina no selo.
 
    Não chame `hold` para as lições que o selo deixou de fora: o `seal` já as segurou. Sem selo (o
    `commit` do `retrofit.json` continua `null`), vá ao passo 7.

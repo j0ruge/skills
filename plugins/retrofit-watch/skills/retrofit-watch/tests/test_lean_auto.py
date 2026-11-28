@@ -89,7 +89,7 @@ class LeanAutoTest(unittest.TestCase):
         lesson = {"plugin": full["plugin"], "skill": full["plugin"]}
         self.assertTrue(auto.in_request(ctx, pedido, lesson))
         with_collision = dict(pedido, skills=[full, dict(lean, plugin=full["plugin"])])
-        self.assertFalse(auto.in_request(ctx, with_collision, lesson))
+        self.assertTrue(auto.in_request(ctx, with_collision, lesson))
         path = auto.retro_dir(ctx, pedido["id"]) / "pedido.json"
         self.assertEqual(auto.load_pedido(path), pedido)
         lean["repo"] = "fixture/../kb-libs"

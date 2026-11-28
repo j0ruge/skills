@@ -250,7 +250,7 @@ def open_request(ctx, payload, entries):
 
             effective = lean_mode(ctx)
         skills.append({"key": entry["key"], "plugin": entry["arg"], "label": entry["label"],
-                       "skills": list(entry.get("skills") or []), "repo": slug,
+                       "skills": [entry["arg"]] if slug else list(entry.get("skills") or []), "repo": slug,
                        "modo": effective if slug else ctx.mode})
     pedido = {
         "id": rid,
@@ -482,6 +482,16 @@ RETROFIT_SPEC = {
     "versao": _opt_text,
     "patch": _opt_text,
 }
+
+
+def valid_skill_folder(value):
+    """Só caminhos relativos portáveis, sem segmentos de navegação nem metadados do Git."""
+    return (_text(value) and not any(c in value for c in '\\:\0\r\n')
+            and all(part.rstrip(" .") == part and part.lower() not in ("", ".", "..", ".git")
+                    for part in value.split("/")))
+
+
+PRIVATE_RETROFIT_SPEC = {**RETROFIT_SPEC, "repo": rw.valid_slug, "pasta": valid_skill_folder}
 ANONIMATO_SPEC = {
     "patch": _text,
     "termos": _list,
@@ -532,10 +542,13 @@ def _fields(obj, spec, where):
     return obj
 
 
-def _items(obj, key, spec, where):
+def _items(obj, key, spec, where, optional=None):
     """Confere cada objeto da lista `obj[key]` contra `spec`."""
     for i, item in enumerate(obj[key]):
-        _fields(item, spec, f"{where}, `{key}`[{i}]")
+        fields = spec
+        if optional and isinstance(item, dict):
+            fields = spec | {k: check for k, check in optional.items() if k in item}
+        _fields(item, fields, f"{where}, `{key}`[{i}]")
     return obj[key]
 
 
@@ -572,15 +585,19 @@ def load_pedido(path):
     return data
 
 
-def _numbered(path, spec, item_spec):
+def _numbered(path, spec, item_spec, optional=None):
     """(`id`, os itens de `licoes` por número) de um arquivo, numa leitura só."""
     data = _fields(_read_json(path), spec, str(path))
-    return data["id"], _by_number(_items(data, "licoes", item_spec, str(path)), str(path))
+    return data["id"], _by_number(_items(data, "licoes", item_spec, str(path), optional), str(path))
+
+
+def _read_licoes(path):
+    return _numbered(path, LICOES_SPEC, LICAO_SPEC, {"repo": PEDIDO_SKILL_ORIGIN_SPEC["repo"]})
 
 
 def load_licoes(path):
     """As lições de licoes.json, por número (`"1"`, `"2"`...), na ordem do arquivo."""
-    return _numbered(path, LICOES_SPEC, LICAO_SPEC)[1]
+    return _read_licoes(path)[1]
 
 
 def load_veredito(path):
@@ -608,7 +625,7 @@ def retro_pedido(ctx, rid):
 def retro_licoes(ctx, rid):
     """As lições do licoes.json da retro `rid`, por número; com outro `id`, Malformed."""
     path = retro_dir(ctx, rid) / "licoes.json"
-    got, licoes = _numbered(path, LICOES_SPEC, LICAO_SPEC)
+    got, licoes = _read_licoes(path)
     _own(path, got, rid)
     return licoes
 
@@ -622,7 +639,9 @@ def retro_veredito(ctx, rid):
 
 
 def load_retrofit(path):
-    return _fields(_read_json(path), RETROFIT_SPEC, str(path))
+    data = _read_json(path)
+    spec = PRIVATE_RETROFIT_SPEC if isinstance(data, dict) and ("repo" in data or "pasta" in data) else RETROFIT_SPEC
+    return _fields(data, spec, str(path))
 
 
 def load_anonimato(path):
@@ -641,16 +660,15 @@ def in_request(ctx, pedido, licao):
     """A lição cabe no pedido? O plugin tem de estar nele, e a skill na lista da entrada quando a
     entrada lista skills (spec 5.2). Plugin ou skill no `exclude` ou na lista `manual` da config
     de agora ficam fora, mesmo que a config tenha mudado depois do pedido."""
-    plugin, skill = licao["plugin"], licao["skill"]
-    entries = [e for e in pedido["skills"] if e["plugin"] == plugin]
-    # O fluxo full não pode receber uma lição sem origem de um nome reservado por um repo privado.
-    if not entries or any(e.get("repo") is not None for e in entries):
+    plugin, skill, repo = licao["plugin"], licao["skill"], licao.get("repo")
+    if repo is not None and (repo not in ctx.lean_auto or skill != plugin):
         return False
     excluded, manual = ctx.excluded, ctx.manual
     if plugin in excluded or skill in excluded or plugin in manual or skill in manual:
         return False
+    entries = [e for e in pedido["skills"] if e["plugin"] == plugin and e.get("repo") == repo]
     listed = [s for e in entries for s in e["skills"]]
-    return not listed or skill in listed
+    return bool(entries) and (not listed or skill in listed)
 
 
 def classify(licao, parecer):
@@ -701,7 +719,7 @@ def _plan(ctx, rid):
     pedido = retro_pedido(ctx, rid)
     licoes = retro_licoes(ctx, rid)
     veredito = retro_veredito(ctx, rid)
-    lotes, hold, drop = {}, [], []
+    lotes, origins, hold, drop = {}, {}, [], []
     for key, licao in licoes.items():
         plugin, n = licao["plugin"], licao["n"]
         if not in_request(ctx, pedido, licao):
@@ -709,13 +727,27 @@ def _plan(ctx, rid):
         else:
             parecer = veredito.get(key)
             destino, motivo = classify(licao, parecer)
+        detalhe = _detail(motivo, parecer)
         if destino in ("publicar", "ramo-pronto"):
+            repo = licao.get("repo")
             tipo = "auto" if destino == "publicar" else "description"
-            name = plugin if tipo == "auto" else f"{plugin}__description"
-            lotes.setdefault(name, {"lote": name, "plugin": plugin, "tipo": tipo, "licoes": []})["licoes"].append(n)
-            continue
+            name = plugin if repo is not None or tipo == "auto" else f"{plugin}__description"
+            batch = lotes.get(name)
+            if (origins.get(plugin, repo) != repo
+                    or (batch is not None and (batch["plugin"], batch.get("repo")) != (plugin, repo))):
+                destino, motivo, detalhe = "segurar", "fora-do-pedido", "lote duplicado"
+            else:
+                if batch is None:
+                    origins[plugin] = repo
+                    batch = lotes[name] = {"lote": name, "plugin": plugin, "tipo": tipo, "licoes": []}
+                    if repo is not None:
+                        batch["repo"] = repo
+                if tipo == "description":
+                    batch["tipo"] = tipo
+                batch["licoes"].append(n)
+                continue
         entry = {"item": f"{rid}/{plugin}#{n}", "plugin": plugin, "licoes": [n], "motivo": motivo,
-                 "detalhe": _detail(motivo, parecer)}
+                 "detalhe": detalhe}
         (hold if destino == "segurar" else drop).append(entry)
     ordered = sorted(lotes.values(), key=lambda lote: (lote["tipo"] != "auto", lote["plugin"]))
     return pedido, ordered, hold, drop
