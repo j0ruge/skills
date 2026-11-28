@@ -1,6 +1,6 @@
 ---
 missao: 20261127-retrofit-watch-050
-atualizado: 2026-11-28 08:53
+atualizado: 2026-11-28 09:06
 ---
 
 # Checkpoint — Skills locais da lista
@@ -27,6 +27,7 @@ atualizado: 2026-11-28 08:53
 | R14 | Manter o clone inelegível até confirmar ramo e trava na liberação | `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_live.LiveTest.test_setup_stays_ineligible_during_branch_change_at_marker_removal test_lean_live.LiveTest.test_setup_rejects_hook_change_during_branch_validation test_lean_live.LiveTest.test_setup_keeps_pending_if_branch_changes_at_marker_removal >/dev/null && env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → `0` | done | 680d355 |
 | R15 | Alinhar a liberação e a elegibilidade ao conferir o ramo e preservar o diagnóstico do avanço | `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_live.LiveTest.test_setup_and_eligibility_agree_on_symbolic_main test_lean_live.LiveTest.test_advance_reports_branch_change_before_fetch >/dev/null && env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → `0` | done | 4ea2ef0 |
 | R16 | Recusar no setup a main que resolve para outro ramo e distinguir HEAD ilegível no avanço | `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_live.LiveTest.test_setup_rejects_main_resolving_to_other_branch test_lean_live.LiveTest.test_advance_reports_unreadable_head_before_fetch >/dev/null && env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → `0` | done | d0edd66 |
+| R17 | Validar a main efetiva até a liberação, aceitar a ref empacotada válida e diagnosticar a ref inacessível | `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_live.LiveTest.test_setup_keeps_pending_when_main_redirects_during_validation test_lean_live.LiveTest.test_setup_and_advance_accept_packed_main_with_empty_loose_dir test_lean_live.LiveTest.test_setup_rejects_missing_main_ref test_lean_live.LiveTest.test_advance_reports_unreadable_main_ref_separately >/dev/null && env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → `0` | pending | — |
 
 Atualizar a linha depois do commit do incremento, com SHA curto nu. As notas de execução seguem em `checkpoint-notas.md` quando o relay materializar o layout do kit.
 
