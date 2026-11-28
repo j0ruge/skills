@@ -88,7 +88,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
 ### O que o uso da retrofit-watch 0.4.0 mostrou
 
 - [ ] **A skill de fora carregada na mesma mensagem apaga a atribuição da vigiada** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:555` (`_watch`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:567` (`_watch`) —
   uma mensagem carregou `zitadel-idp` e uma externa juntas. A monitorada ficou com `work: 0` e sem pedido de retro.
   Direção: preservar o par no mesmo `message.id` e testar que a externa posterior ainda encerra a atribuição.
   Corrigido no patch 0.4.1. RESOLVED by 682cd3d
@@ -206,14 +206,14 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 
 - [ ] **ID de chamada reaproveitado entre mensagens passa por vínculo novo** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:669` (`_skill_origin`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:681` (`_skill_origin`) —
   após trocar a mensagem ativa, o ID consumido antes ainda pode preservar a monitorada diante de uma carga externa.
   Direção: medir a janela de ambiguidade antes de ampliar a detecção além da mensagem ativa.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r2.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 
 - [ ] **Metadado externo antigo encerra a atribuição de uma carga posterior** —
-  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:713` (`unlinked = False`) —
+  `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:725` (`unlinked = False`) —
   após confirmar a carga posterior, o metadado externo antigo encerra o crédito futuro. O caso já falha na base.
   Direção: diferenciar ID comprovadamente obsoleto de metadado sem origem conhecida. RESOLVED by fcbd6cb
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r3.md` — descoberto por
