@@ -65,3 +65,13 @@
 - 2026-11-28 04:34 ·  · REVIEW r1, achado 2. Classificação e porta aceitaram origens de servidores diferentes com o mesmo slug, inclusive com reescrita efetiva.
 - 2026-11-28 04:34 ·  · REVIEW r1, achados 3–6. Reprodução de troca de ramo durante fetch, setup residual, colisão de registros e JSON inválido silencioso.
 - 2026-11-28 04:34 · Registro canônico de REVIEW r1, em complemento às três linhas anteriores sem ID. `R1` veio do achado 1 (emenda fora do digest), `R2` do achado 2 (origens homônimas) e `R3` dos achados 3–6 (ramo, setup e avisos).
+- 2026-11-28 04:41 · `R1` · R1 sabotage: Modo privado por padrão → test_patch_id_survives_a_rebase_and_changes_with_content
+- 2026-11-28 04:41 · `R1` · R1 sabotage: Exclusões da loja também no privado → test_private_patch_includes_store_list_paths
+- 2026-11-28 04:41 · `R1` · R1 sabotage: Exclusões removidas também do full → test_patch_id_survives_a_rebase_and_changes_with_content
+- 2026-11-28 04:41 · `R1` · R1 sabotage: Selo sem modo privado → test_private_patch_includes_store_list_paths
+- 2026-11-28 04:41 · `R1` · R1 sabotage: Selo full no modo privado → test_patch_id_survives_a_rebase_and_changes_with_content
+- 2026-11-28 04:41 · `R1` · R1 sabotage: Aprovação privada com digest full → test_private_patch_includes_store_list_paths
+- 2026-11-28 04:41 · `R1` · R1 sabotage: Comparação da base invertida na conferência final → test_private_patch_includes_store_list_paths
+- 2026-11-28 04:41 · `R1` · R1 sabotage: Conferência final com digest full → test_private_patch_includes_store_list_paths
+- 2026-11-28 04:41 · `R1` · R1 sabotage: Linha anterior da conferência final recolocada → test_private_patch_includes_store_list_paths
+- 2026-11-28 04:41 · `R1` · Em `fe68792`, o Red na base `8a70707` não detectava a emenda em caminho de lista. O Check passou e conservou o bare. A sonda repetiu ensaio, nova aprovação, publicação, avanço e revert. Passaram 45 testes direcionados, o contrato documental e o TEST_CMD (154 da loja, 3 pulados, 144 do Stop, adaptadores, catálogo e versões). Controle íntegro e 9 mutações de código em cópia descartável, sob grupo próprio, 25 s e 512 MiB por processo. A montagem da fixture e suas asserções são os próprios sensores, sem sensor funcional separado para cada linha. A prosa foi conferida no contexto e nas referências ao patch. A camada 1 do incremento passou e o TODO tem 61 âncoras válidas.
