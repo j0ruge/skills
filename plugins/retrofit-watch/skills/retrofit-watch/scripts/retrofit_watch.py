@@ -1319,9 +1319,12 @@ def cmd_stop(payload, ctx):
             output = None
             if auto is not None:
                 try:
-                    auto_entries, manual, reasons = auto.split(ctx, payload, ready, st.get("entrypoint"))
+                    from rw_store import STARTUP_TIMEOUT
+
+                    deadline = time.monotonic() + STARTUP_TIMEOUT
+                    auto_entries, manual, reasons = auto.split(ctx, payload, ready, st.get("entrypoint"), deadline=deadline)
                     if auto_entries:
-                        pedido = auto.open_request(ctx, payload, auto_entries)
+                        pedido = auto.open_request(ctx, payload, auto_entries, deadline=deadline)
                         output = build_output(manual, auto.auto_text(ctx, pedido, auto_entries), reasons)
                         output["systemMessage"] = "\n".join(
                             m for m in (auto.auto_message(pedido, auto_entries), output.get("systemMessage")) if m)

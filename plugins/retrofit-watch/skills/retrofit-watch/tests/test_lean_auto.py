@@ -43,8 +43,7 @@ class LeanAutoTest(unittest.TestCase):
         self.assertEqual(self.entry["origin"], SLUG)
         self.assertEqual(self.entry["repo"], str(self.w.dev))
         self.w.config(owners=["fixture", "chewiesoft"])
-        with mock.patch.object(store, "run_bytes", side_effect=AssertionError("git desnecessário")):
-            self.assertIsNone(self.reason())
+        self.assertIsNone(self.reason())
         ctx = self.w.ctx()
         self.assertIsNone(rw.classify_path(self.w.local_only, ctx))
         self.assertIsNone(rw.classify_path(self.w.locked, ctx))
@@ -56,6 +55,30 @@ class LeanAutoTest(unittest.TestCase):
         self.assertEqual(self.reason(entry=forced), "kit-ou-lean")
         self.w.config(owners=["other"])
         self.assertEqual(self.reason(), "kit-ou-lean")
+
+    def test_split_shares_the_local_ref_budget_across_entries(self):
+        self.w.config(mode="auto")
+        ctx = self.w.ctx()
+        second = dict(self.entry, key="segunda-skill", arg="segunda-skill")
+        now = [100.0]
+        deadline = now[0] + store.STARTUP_TIMEOUT
+
+        def resolve(*args, **kwargs):
+            self.assertIn("for-each-ref", args[0])
+            self.assertEqual(kwargs["timeout"], store.STARTUP_TIMEOUT)
+            self.assertEqual(kwargs["env"]["GIT_ALLOW_PROTOCOL"], "")
+            now[0] += store.STARTUP_TIMEOUT + 1
+            return 0, "refs/heads/main\0\0commit\n"
+
+        with mock.patch.object(auto.time, "monotonic", side_effect=lambda: now[0]), \
+                mock.patch.object(store, "run", side_effect=resolve) as git:
+            automatic, manual, _ = auto.split(ctx, PAYLOAD, [self.entry, second], "cli", deadline=deadline)
+            pedido = auto.open_request(ctx, PAYLOAD, automatic, deadline=deadline)
+
+        self.assertEqual(automatic, [self.entry])
+        self.assertEqual(manual, [second])
+        self.assertEqual(pedido["skills"][0]["modo"], "auto-dry")
+        self.assertEqual(git.call_count, 1)
 
     def test_precedence(self):
         w = self.w

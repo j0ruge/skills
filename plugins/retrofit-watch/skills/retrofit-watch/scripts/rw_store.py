@@ -946,48 +946,49 @@ def _configured_origin(path, *, allow_pending=False):
     return None
 
 
-LIVE_REF_OID = rb"[0-9a-fA-F]{40}(?:[0-9a-fA-F]{24})?"
-
-
-def _live_main_ref(path):
+def _live_main_ref(path, *, deadline=None):
     """Confere a ref direta, distinguindo ausência de falha de leitura."""
     gitdir = path / ".git"
     main = gitdir / "refs" / "heads" / "main"
     try:
-        try:
-            mode = main.lstat().st_mode
-            if stat.S_ISREG(mode):
-                with main.open("rb") as ref:
-                    return re.fullmatch(LIVE_REF_OID, ref.read(66).rstrip(b"\r\n")) is not None
-            if not stat.S_ISDIR(mode):
-                return False
-        except FileNotFoundError:
-            # A compactação pode retirar a ref solta entre o stat e a abertura.
-            pass
-        # Um diretório no caminho solto não encobre a ref empacotada no Git.
-        with (gitdir / "packed-refs").open("rb") as refs:
-            return any(re.fullmatch(LIVE_REF_OID + rb" refs/heads/main\r?\n", line) for line in refs)
+        mode = main.lstat().st_mode
     except FileNotFoundError:
-        return False
+        pass
     except OSError:
         return None
+    else:
+        if not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
+            return False
+
+    remaining = STARTUP_TIMEOUT if deadline is None else deadline - time.monotonic()
+    if remaining <= 0:
+        return None
+    env = dict(git_env(neutral=True), GIT_NO_LAZY_FETCH="1", GIT_ALLOW_PROTOCOL="",
+               GIT_NO_REPLACE_OBJECTS="1")
+    rc, output = run(["git", "--git-dir", str(gitdir), "for-each-ref", "--count=1",
+                      "--format=%(refname)%00%(symref)%00%(objecttype)", "refs/heads/main"],
+                     env=env, timeout=remaining)
+    lines = output.splitlines()
+    if rc or any(line.count("\0") != 2 for line in lines):
+        return None
+    return "refs/heads/main\0\0commit" in lines
 
 
-def _live_main(path):
+def _live_main(path, *, deadline=None):
     try:
         with (path / ".git" / "HEAD").open("rb") as head:
             if head.read(64).rstrip(b"\r\n") != b"ref: refs/heads/main":
                 return False
     except OSError as error:
         raise StoreError("HEAD do clone ilegível") from error
-    on_main = _live_main_ref(path)
+    on_main = _live_main_ref(path, deadline=deadline)
     if on_main is None:
         raise StoreError("refs/heads/main do clone ilegível")
     return on_main
 
 
-def live_clone(ctx, slug, *, origin=None, require_main=True):
-    """Identifica o checkout dedicado sem git no caminho da elegibilidade."""
+def live_clone(ctx, slug, *, origin=None, require_main=True, deadline=None):
+    """Identifica o checkout dedicado com consulta local e limitada de refs."""
     try:
         path = live_path(ctx, slug)
     except StoreError:
@@ -996,7 +997,7 @@ def live_clone(ctx, slug, *, origin=None, require_main=True):
     if configured and configured[0] == slug and (origin is None or configured == origin):
         # Leia o ramo depois do marcador, inclusive durante a remoção seguida de recusa.
         try:
-            if require_main and not _live_main(path):
+            if require_main and not _live_main(path, deadline=deadline):
                 return None
         except StoreError:
             return None
@@ -1264,13 +1265,14 @@ def _lean_leaks(ctx, heads, store, head, commits, git):
     return leaks
 
 
-def lean_window(ctx, now=None):
+def lean_window(ctx, now=None, *, deadline=None):
     """Conta só publicações da loja e reinicia no último revert marcado de qualquer origem listada."""
     store = ctx.store
     if store is None:
         return None
     now = time.time() if now is None else now
-    deadline = time.monotonic() + STARTUP_TIMEOUT
+    if deadline is None:
+        deadline = time.monotonic() + STARTUP_TIMEOUT
 
     def git(repo, args, what, env=None):
         remaining = deadline - time.monotonic()
@@ -1281,7 +1283,7 @@ def lean_window(ctx, now=None):
         return _startup_git(repo, args, what, env=local, timeout=remaining)
 
     try:
-        repos = {"store": store, **{slug: live_clone(ctx, slug) for slug in sorted(ctx.lean_auto)}}
+        repos = {"store": store, **{slug: live_clone(ctx, slug, deadline=deadline) for slug in sorted(ctx.lean_auto)}}
         heads, reverts, commits = {}, [], []
         for key, repo in repos.items():
             if repo is None:
@@ -1309,18 +1311,18 @@ def lean_window(ctx, now=None):
         return None
 
 
-def lean_mode_state(ctx, now=None):
+def lean_mode_state(ctx, now=None, *, deadline=None):
     if ctx.mode != "auto":
         return ctx.mode, None
-    window = lean_window(ctx, now)
+    window = lean_window(ctx, now, deadline=deadline)
     if not window:
         return "auto-dry", None
     return ("auto" if window["cumprido"] else "auto-dry",
             window["desde"] if window["ultimo_revert"] is not None else None)
 
 
-def lean_mode(ctx, now=None):
-    return lean_mode_state(ctx, now)[0]
+def lean_mode(ctx, now=None, *, deadline=None):
+    return lean_mode_state(ctx, now, deadline=deadline)[0]
 
 
 # --- linha de comando --------------------------------------------------------------------------

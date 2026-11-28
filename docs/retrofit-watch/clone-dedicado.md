@@ -21,9 +21,12 @@ autorizados. O dono precisa estar em `owners` e o diretório padrão é
   de arquivos não oferecer movimentação sem substituição, o setup recusa a instalação.
   O setup e a elegibilidade exigem que `.git/HEAD` aponte diretamente para
   `refs/heads/main`, sem passar por outra referência simbólica. A própria
-  `refs/heads/main` precisa existir e ser direta. Pode estar em `packed-refs`,
-  mesmo com um diretório vazio no caminho da ref solta. O setup reconfere a ref
-  ao liberar a cópia e mantém a pendência se ela deixar de ser direta ou legível.
+  `refs/heads/main` precisa ser direta e resolver para um commit. O Git faz essa
+  consulta local, inclusive para refs empacotadas. No hook, a elegibilidade e
+  a medição da janela compartilham três segundos. Se o prazo se esgotar na triagem,
+  a entrada segue no fluxo manual. Uma janela inconclusiva mantém o ensaio.
+  O setup reconfere a ref ao
+  liberar a cópia e mantém a pendência se ela deixar de ser direta ou legível.
   A URL precisa corresponder ao slug. Sem `--url`, usa HTTPS do GitHub.
   O clone declara a origem autorizada. Em `github.com` nas portas padrão,
   HTTPS e as formas SSH podem representar o mesmo repo. Nos demais servidores,

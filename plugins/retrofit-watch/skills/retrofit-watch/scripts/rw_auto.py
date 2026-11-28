@@ -1,8 +1,8 @@
 """retrofit-watch, modo autônomo: o pedido do Stop hook e o registro das retros autônomas.
 
 O `cmd_stop` de retrofit_watch.py importa este módulo só com `mode` diferente de `manual` na config;
-o `cmd_pending` (o aviso de startup) o importa sempre. Ele roda dentro do hook (10 s): nenhuma chamada
-de rede, nenhum git, nenhum subagente.
+o `cmd_pending` (o aviso de startup) o importa sempre. Ele roda dentro do hook (10 s). A leitura
+de refs do clone usa Git local com prazo compartilhado. Rede e subagentes ficam fora deste hook.
 
 Arquivos, todos em <dados> (o CLAUDE_PLUGIN_DATA), fora de qualquer repo:
   auto/<id>/pedido.json   o hook grava ao pedir a retro autônoma
@@ -42,7 +42,7 @@ REASONS = ("modo", "kit-ou-lean", "lista-manual", "permissao", "entrypoint", "se
 REASON_TEXT = {
     "permissao": "o modo autônomo só vale com o modo de permissão bypassPermissions",
     "sem-loja": "falta na config a chave store com o clone de trabalho da loja",
-    "sem-clone": "falta o clone dedicado do repo (retrofit_watch.py live-setup <dono/repo>)",
+    "sem-clone": "a elegibilidade do clone dedicado ficou sem confirmação (retrofit_watch.py live-setup <dono/repo>)",
     "teto": "o teto de retrofits autônomos da sessão (auto_limits) foi atingido",
 }
 # Os motivos de nome da porta (rw_gate): só o dono os resolve, ensinando o portão (O7). Moram aqui porque
@@ -160,7 +160,7 @@ def used(registry, session, plugin=None, skip=None):
 
 # --- decisão -----------------------------------------------------------------------------------
 
-def why_manual(ctx, payload, entry, registry, entrypoint):
+def why_manual(ctx, payload, entry, registry, entrypoint, *, deadline=None):
     """Por que a entrada fica no modo manual, ou None quando o modo autônomo vale para ela."""
     if ctx.mode == "manual":
         return "modo"
@@ -182,7 +182,7 @@ def why_manual(ctx, payload, entry, registry, entrypoint):
         from rw_store import live_clone
 
         origin = entry.get("origin_identity")
-        if not origin or live_clone(ctx, lean, origin=origin) is None:
+        if not origin or live_clone(ctx, lean, origin=origin, deadline=deadline) is None:
             return "sem-clone"
     limits = ctx.auto_limits
     session = payload.get("session_id") or "unknown"
@@ -197,16 +197,20 @@ def _listed_origin(ctx, entry):
     return slug if entry.get("mode") == "lean" and rw.valid_slug(slug) and slug in ctx.lean_auto else None
 
 
-def split(ctx, payload, entries, entrypoint):
+def split(ctx, payload, entries, entrypoint, *, deadline=None):
     """Separa as entradas prontas: (autônomas, manuais, motivos por extenso das manuais).
 
     As autônomas do mesmo Stop entram no teto umas das outras: cada uma conta como um retrofit
     da sessão para a seguinte, senão quatro entradas prontas de uma vez passariam do teto de 3."""
+    if deadline is None:
+        from rw_store import STARTUP_TIMEOUT
+
+        deadline = time.monotonic() + STARTUP_TIMEOUT
     registry = read_registry(ctx)
     session = payload.get("session_id") or "unknown"
     planned, auto, manual, reasons = [], [], [], []
     for entry in entries:
-        why = why_manual(ctx, payload, entry, registry + planned, entrypoint)
+        why = why_manual(ctx, payload, entry, registry + planned, entrypoint, deadline=deadline)
         if why is None:
             auto.append(entry)
             planned.append({"sessao": session, "id": None, "plugin": entry.get("arg"),
@@ -228,7 +232,7 @@ def _write_json(path, data):
     os.replace(tmp, path)
 
 
-def open_request(ctx, payload, entries):
+def open_request(ctx, payload, entries, *, deadline=None):
     """Grava <dados>/auto/<id>/pedido.json e o devolve. O id não repete: com a pasta já ocupada
     (dois pedidos no mesmo segundo), avança um segundo."""
     session = payload.get("session_id") or "unknown"
@@ -249,7 +253,7 @@ def open_request(ctx, payload, entries):
         if slug and effective is None:
             from rw_store import lean_mode
 
-            effective = lean_mode(ctx)
+            effective = lean_mode(ctx, deadline=deadline)
         skills.append({"key": entry["key"], "plugin": entry["arg"], "label": entry["label"],
                        "skills": [entry["arg"]] if slug else list(entry.get("skills") or []), "repo": slug,
                        "modo": effective if slug else ctx.mode})

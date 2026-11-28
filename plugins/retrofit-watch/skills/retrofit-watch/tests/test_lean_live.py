@@ -552,8 +552,7 @@ class LiveTest(unittest.TestCase):
         self.assertEqual(w.git(w.live, "rev-parse", "--verify", "HEAD"), head)
         self.assertEqual(store.live_setup(self.ctx, SLUG, str(w.remote)), w.live)
         self.assertFalse(pending.exists())
-        with mock.patch.object(store, "run", side_effect=AssertionError("consulta Git na elegibilidade")):
-            self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
+        self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
         new_head = w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
         record = store.live_advance(self.ctx, SLUG)
         self.assertEqual((record["resultado"], record["antes"], record["depois"]), ("ok", head, new_head))
@@ -617,7 +616,8 @@ class LiveTest(unittest.TestCase):
                     packed.unlink()
                 try:
                     if state != "ref empacotada sem SHA":
-                        with self.assertRaisesRegex(store.StoreError, "fora da main"):
+                        reason = "main do clone ilegível" if state == "ref solta sem SHA" else "fora da main"
+                        with self.assertRaisesRegex(store.StoreError, reason):
                             store.live_setup(self.ctx, SLUG, str(w.remote))
                     self.assertEqual(pending.read_bytes(), marker)
                     pending.unlink()
@@ -625,6 +625,15 @@ class LiveTest(unittest.TestCase):
                 finally:
                     pending.write_bytes(marker)
                     main_ref.unlink(missing_ok=True)
+
+    def test_live_clone_accepts_whitespace_in_loose_ref_when_git_resolves_it(self):
+        w = self.w
+        ref = w.live / ".git" / "refs/heads/main"
+        before = w.git(w.live, "rev-parse", "--verify", "HEAD")
+        ref.write_bytes(ref.read_bytes().rstrip() + b" \n")
+
+        self.assertEqual(w.git(w.live, "rev-parse", "--verify", "HEAD"), before)
+        self.assertEqual(store.live_clone(self.ctx, SLUG), w.live)
 
     def test_live_main_accepts_sha256_loose_and_packed_refs(self):
         w = self.w
@@ -1108,42 +1117,18 @@ class LiveTest(unittest.TestCase):
         w.commit_on_origin({"README.md": "nova revisão"}, "Avança o bare")
         head_file = w.live / ".git" / "HEAD"
         head_bytes = head_file.read_bytes()
-        obstruction = store._live_obstruction
-        inspected = False
-        read_failed = False
+        run = store.run
+        for response in ((128, "ref ilegível"), (0, "warning: ignoring broken ref")):
+            with self.subTest(response=response):
+                def unreadable(args, *rest, **kwargs):
+                    if "for-each-ref" in args:
+                        return response
+                    return run(args, *rest, **kwargs)
 
-        def after_inspection(path, env):
-            nonlocal inspected
-            result = obstruction(path, env)
-            inspected = result is None
-            return result
-
-        main_ref = head_file.parent / "refs/heads/main"
-        for operation in ("open", "lstat", "packed-refs"):
-            with self.subTest(operation=operation):
-                if operation == "packed-refs":
-                    w.git(w.live, "pack-refs", "--all")
-                    target = head_file.parent / "packed-refs"
-                else:
-                    target = main_ref
-                method = operation if operation != "packed-refs" else "open"
-                read_path = getattr(type(target), method)
-                inspected = read_failed = False
-
-                def unreadable(path, *args, **kwargs):
-                    nonlocal read_failed
-                    if inspected and path == target:
-                        read_failed = True
-                        self.assertEqual(head_file.read_bytes(), head_bytes)
-                        raise PermissionError("falha de leitura simulada na ref")
-                    return read_path(path, *args, **kwargs)
-
-                with mock.patch.object(store, "_live_obstruction", side_effect=after_inspection), \
-                        mock.patch.object(type(target), method, unreadable), \
-                        mock.patch.object(store, "run", wraps=store.run) as commands:
+                with mock.patch.object(store, "run", side_effect=unreadable) as commands:
                     record = store.live_advance(self.ctx, SLUG)
 
-                self.assertTrue(read_failed)
+                self.assertTrue(any("for-each-ref" in call.args[0] for call in commands.call_args_list))
                 self.assertFalse(any("fetch" in call.args[0] for call in commands.call_args_list))
                 self.assertEqual((record["resultado"], record["detalhe"]),
                                  ("erro", "refs/heads/main do clone ilegível"))
