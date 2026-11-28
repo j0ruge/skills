@@ -694,3 +694,4 @@
 - 2026-11-28 02:35 · R26 · 0bd4efa. A sonda com a 0.4.0 real mostrou dois silêncios indevidos no Red e dois pedidos de retro no Green. A suíte isolada passou com 154 testes da loja (3 pulados) e 144 do hook. Os 28 Checks e os quatro testes de release passaram. Sete degradações detectadas e uma equivalente, sob grupo próprio, 25 s e 512 MiB. Expectativa histórica de R25 alinhada sem mudar a sonda. Provas nativas não repetidas.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 02:39 · written by the runner
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 02:47 · written by the runner
+- 2026-11-28 02:52 · r40 · Delta de prosa. Alvo de R26 confirmado. Proveniência incorreta das provas nativas registrada no backlog. Sem R novo. Suíte e 28 Checks passaram.
