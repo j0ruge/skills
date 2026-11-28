@@ -404,6 +404,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r35.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 
+- [ ] **O executor privado herda caminhos de auditoria da loja no worktree errado** —
+  `plugins/retrofit-skill/references/modo-autonomo.md:13` (`skill-quality-audit/skills`) —
+  o diretório nominal do worktree não contém o auditor da loja.
+  Direção: declarar a origem de Q, SQA e RS para lote privado e manter o alvo na pasta da skill.
+  Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r1.md` —
+  descoberto por `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
+
 ## Decidido — não reabrir
 <!-- sdd:decided -->
 
