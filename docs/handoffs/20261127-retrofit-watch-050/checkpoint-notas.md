@@ -319,3 +319,4 @@
 - 2026-11-28 07:45 · `R13` · Três Reds de troca de ramo confirmados e 49 testes de clone verdes em `ea37315`. 17 Checks, TEST_CMD, QA em fixture, 161 regressões dirigidas, distribuição nativa e camada 1 passaram.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 07:56 · written by the runner
 - 2026-11-28 08:01 · `R14` · REVIEW r8, achados 1 e 2: elegibilidade observável durante a liberação recusada e alteração do caminho efetivo da trava durante a consulta de ramo. Check exige os dois Reds, o controle de R13 e a jornada de QA.
+- intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 08:04 · written by the runner
