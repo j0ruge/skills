@@ -340,3 +340,23 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 08:15 · written by the runner
 - 2026-11-28 08:20 · `R15` · Achados 1 e 2 da revisão r9. Setup libera referência simbólica que a elegibilidade não reconhece, e o avanço perde o diagnóstico de troca de ramo antes da busca. Dois Reds confirmados no delta.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 08:23 · written by the runner
+- 2026-11-28 08:32 · `R15` · R15 sabotage: recusa deixa de ser StoreError → test_advance_reports_branch_change_before_fetch
+- 2026-11-28 08:32 · `R15` · R15 sabotage: leitura consulta a referência de rastreio em vez de HEAD → test_setup_and_eligibility_agree_on_symbolic_main
+- 2026-11-28 08:32 · `R15` · R15 sabotage: predicado aceita qualquer referência legível → test_setup_and_eligibility_agree_on_symbolic_main
+- 2026-11-28 08:32 · `R15` · R15 sabotage: predicado rejeita HEAD com CRLF → test_live_clone_requires_readable_main
+- 2026-11-28 08:32 · `R15` · R15 sabotage: leitura não captura erro do arquivo → test_live_clone_requires_readable_main
+- 2026-11-28 08:32 · `R15` · R15 sabotage: leitura ilegível vira elegível → test_live_clone_requires_readable_main
+- 2026-11-28 08:32 · `R15` · R15 sabotage: elegibilidade deixa de conferir a main → test_live_clone_requires_readable_main
+- 2026-11-28 08:32 · `R15` · R15 sabotage: elegibilidade devolve o clone no ramo rejeitado → test_live_clone_requires_readable_main
+- 2026-11-28 08:32 · `R15` · R15 sabotage: setup volta à consulta recursiva → test_setup_and_eligibility_agree_on_symbolic_main
+- 2026-11-28 08:32 · `R15` · R15 sabotage: setup segue após rejeitar a referência → test_setup_and_eligibility_agree_on_symbolic_main
+- 2026-11-28 08:32 · `R15` · R15 sabotage: setup volta à mensagem que não explica a referência indireta → test_setup_and_eligibility_agree_on_symbolic_main
+- 2026-11-28 08:32 · `R15` · R15 sabotage: setup só confere HEAD após a trava → test_setup_rejects_hook_change_during_branch_validation
+- 2026-11-28 08:32 · `R15` · R15 sabotage: busca usa o caminho sem revalidar a identidade → test_advance_revalidates_clone_identity_before_fetch
+- 2026-11-28 08:32 · `R15` · R15 sabotage: busca volta a excluir ramo errado na identificação → test_advance_reports_branch_change_before_fetch
+- 2026-11-28 08:32 · `R15` · R15 sabotage: busca ignora o ramo trocado → test_advance_reports_branch_change_before_fetch
+- 2026-11-28 08:32 · `R15` · R15 sabotage: busca perde o tipo de erro do ramo → test_advance_reports_branch_change_before_fetch
+- 2026-11-28 08:32 · `R15` · R15 sabotage: busca perde a origem declarada → test_setup_and_eligibility_agree_on_symbolic_main
+- 2026-11-28 08:32 · `R15` · R15 sabotage: avanço perde o tratamento específico → test_advance_reports_branch_change_before_fetch
+- 2026-11-28 08:32 · `R15` · R15 sabotage: avanço volta a gravar erro genérico para ramo errado → test_advance_reports_branch_change_before_fetch
+- 2026-11-28 08:32 · `R15` · Dois Reds confirmados em `e184101` com o controle de remoção do marcador verde. Em `4ea2ef0`, Check R15, 167 regressões dirigidas, TEST_CMD, jornada de QA e camada 1 verdes. As 19 sabotagens foram acusadas em cópia descartável, com controle de oito provas sem pulos, grupo próprio, 20 s e 512 MiB por execução. A leitura direta movida para o predicado comum preservou as provas de CRLF, leitura ilegível e ramo fora da main. A suíte ampla da retrofit-watch em TMPDIR=/tmp terminou com 612 testes, 5 falhas e 176 erros. O marcador /tmp/.git interferiu nas fixtures de colheita e a segunda skill full ficou ausente. Ambos foram reproduzidos na base e184101. A falha da segunda skill ganhou a recorrência R15 no TODO.
