@@ -276,7 +276,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 
 - [ ] **Handoff de EXEC não explicita a condição da delegação de merge** —
-  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:446` (`delegação full`) —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:467` (`delegação full`) —
   a condição de vigência e a fonte da autorização não aparecem no handoff, que antes apontava para o mantenedor.
   Direção: explicitar a vigência e vincular a decisão. RESOLVED by b6b1d3c
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r31.md` —
