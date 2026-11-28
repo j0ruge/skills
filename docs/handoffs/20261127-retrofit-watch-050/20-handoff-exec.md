@@ -205,6 +205,13 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
   interferiu nas fixtures de colheita. A falha da segunda skill full também ocorreu nas duas
   árvores. Ambas foram registradas no TODO, sem alteração no código de colheita ou atribuição.
 - Depois do EXEC, as três provas nativas de distribuição e a camada 1 de anonimização passaram no host Linux em `7c69dd9`.
+- A suíte ampla no host Linux, com um temporário isolado em `/var/tmp`, retornou esta saída em `e3814d3`.
+
+  ```text
+  FAIL: test_second_skill_of_the_same_plugin_is_recorded (test_auto_mode.AutoStopTest.test_second_skill_of_the_same_plugin_is_recorded)
+  Ran 619 tests in 260.969s
+  FAILED (failures=1)
+  ```
 
 ## Artefatos
 
