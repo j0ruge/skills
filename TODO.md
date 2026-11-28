@@ -311,9 +311,9 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 
 - [ ] **Resumo de EXEC atribui provas nativas ao SHA errado** —
-  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:21` (`provas nativas passaram`) —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r40.md:69` (`o resultado verde das três provas nativas`) —
   o resumo cita `5c54699`, mas o handoff nesse SHA registra apenas a prova histórica de R20 no host.
-  Direção: distinguir a prova de R20 da cobertura efetiva de R26 no resumo.
+  Direção: distinguir a prova de R20 da cobertura efetiva de R26 no resumo. RESOLVED by dfb63d6
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r40.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 
