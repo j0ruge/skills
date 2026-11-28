@@ -381,3 +381,34 @@
 - 2026-11-27 20:05 · r22 · Em a07e588, suíte e 14 Checks verdes. A fonte fixada em a664c98 reproduziu rc 0/1/0 em Bash e Zsh. Todos os critérios em A, sem achado novo ou incremento pendente.
 - 2026-11-27 21:54 · R13 · Achados externos do PR #13 validados em 43e4686. Quatro regressões de Stop reproduzidas em leitura contínua e após retomada. Plano e sonda em plano-r13.md. Baseline TEST_CMD verde com 154 testes da loja, 3 pulados, e 114 do hook.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 21:55 · written by the runner
+- 2026-11-27 22:04 · R13 sabotage: default-aposentados → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: limpeza-correlação → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: limite-da-ordem → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: mensagens-anteriores → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: aposenta-pendentes → test_legacy_prefix_imports_retired_ids_only_after_complete_replay ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: aposenta-consumidos → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: ambiguidade-aposentada → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: teto-de-aposentados → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: poda-da-ordem → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: restaura-limpeza-do-slash → test_irrelevant_skill_attempt_preserves_typed_slash ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: registro-usado-no-reuso → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: guarda-do-reuso → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: retirada-no-reuso → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: guarda-de-metadado-aposentado → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: retorno-de-metadado-aposentado → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: guarda-de-bloco-inválido → test_malformed_metadata_block_keeps_valid_path_in_delta_and_legacy_prefix ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: pula-bloco-inválido → test_malformed_metadata_block_keeps_valid_path_in_delta_and_legacy_prefix ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: leitura-do-texto → test_malformed_metadata_block_keeps_valid_path_in_delta_and_legacy_prefix ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: guarda-de-texto-inválido → test_malformed_metadata_block_keeps_valid_path_in_delta_and_legacy_prefix ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: origem-da-carga-falha → test_failed_active_skill_closes_only_its_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: erro-de-outra-chamada → test_failed_active_skill_closes_only_its_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: encerra-carga-falha → test_failed_active_skill_closes_only_its_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: limpa-origem-falha → test_failed_active_skill_closes_only_its_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: marca-encerramento-falho → test_failed_active_skill_closes_only_its_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: importação-de-aposentados → test_legacy_prefix_imports_retired_ids_only_after_complete_replay ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: F1-trabalho-depois-da-externa → e2e/test_retrofit_watch_stop.py ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: F1-testemunha-do-crédito → e2e/test_retrofit_watch_stop.py ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: F1-testemunha-do-encerramento → e2e/test_retrofit_watch_stop.py ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: registro-de-aposentados → test_only_proven_retired_external_metadata_keeps_later_attribution ficou vermelho
+- 2026-11-27 22:04 · R13 sabotage: replay-isolado → test_legacy_prefix_imports_retired_ids_only_after_complete_replay ficou vermelho
+- 2026-11-27 22:04 · R13 · fcbd6cb: cinco regressões duráveis, 30 mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 119 do hook, 15 Checks e F1 verdes. As três provas nativas pararam na criação do namespace Bubblewrap.

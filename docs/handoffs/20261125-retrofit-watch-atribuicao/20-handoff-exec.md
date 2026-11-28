@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a21edd-09d0-7ba0-bf86-42c33cb70546
-data: 2026-11-27 18:20
-gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' em d77e6a1 → rc 0. Loja com 154 testes (3 pulados). Hook com 114 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada. Os 14 Checks de checkpoint.md passaram.'
+sessao: 01a21fa6-a4e1-7870-af98-9e951c686714
+data: 2026-11-27 22:04
+gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' no conteúdo de fcbd6cb → rc 0. Loja com 154 testes (3 pulados). Hook com 119 testes. Adaptadores, catálogo e versões válidos. Os 15 Checks de checkpoint.md passaram, incluindo F1 e R13.'
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,19 +14,19 @@ gate: 'env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''sourc
 
 ## TL;DR
 
-R12 impede que metadado atrasado sem vínculo reabra a atribuição quando a migração da 0.4.0 não comprova o prefixo.
-O offset avança e a proteção é salva mesmo em um Stop sem trabalho. Carga nova e slash explícito continuam funcionando.
-A regressão durável, os 14 Checks e o TEST_CMD passaram.
-A QA deve começar pelo Check de R12 e repetir os controles de I1, F1 e R9–R11.
+R13 encerra a carga ativa que falhou, ignora metadados externos com ID comprovadamente aposentado e mantém o tratamento conservador dos desconhecidos.
+O slash explícito sobrevive a uma tentativa irrelevante. Blocos inválidos em metadados não ocultam caminhos válidos.
+TEST_CMD, 15 Checks, F1 e 30 mutações passaram nos respectivos controles.
+A QA começa por R13 e F1. As provas nativas ainda precisam de um host que permita Bubblewrap.
 
 ## Estado do repo
 
-- **Branch:** `fix/retrofit-watch-atribuicao-mesma-mensagem`, em Git isolado pelo runner.
-- **Último commit do incremento:** `d77e6a1` — manter a atribuição encerrada quando o prefixo legado não pôde ser comprovado.
+- **Branch:** `fix/retrofit-watch-atribuicao-mesma-mensagem`, em Git isolado pelo runner, sem envio ao remoto.
+- **Último commit do incremento:** `fcbd6cb` — preserva apenas atribuições comprovadas no Stop.
 - **Working tree:** limpo após o commit deste registro.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` em `d77e6a1` → rc 0. Loja com 154 testes (3 pulados). Hook com 114 testes. Adaptadores e catálogo válidos. Versão 0.4.1 confirmada.
-- **E2E:** os 14 Checks de `checkpoint.md` passaram em `d77e6a1`, incluindo as jornadas com a 0.4.0 real.
-- **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_auto_docs.ReleaseTest.test_the_four_places_agree_at_0_4_0_or_later` em `8b861d2` → 1 teste, rc 0.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` no conteúdo de `fcbd6cb` → rc 0. Loja com 154 testes (3 pulados), hook com 119 testes, adaptadores e catálogo válidos, versão 0.4.1 confirmada.
+- **E2E:** 15 Checks com rc 0 e stdout esperado, incluindo F1 em subprocesso real com `linked=silêncio missing=silêncio empty=silêncio` e R13 em leitura contínua e retomada.
+- **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_auto_docs.ReleaseTest` → 4 testes, rc 0.
 
 ## O que foi feito
 
@@ -195,21 +195,33 @@ A QA deve começar pelo Check de R12 e repetir os controles de I1, F1 e R9–R11
 - Cinco mutações detectadas, com controles verdes antes e depois. Cada execução usou grupo
   próprio de processos, timeout de 20 s e teto de 256 MiB de memória virtual.
 
+### Retorno da revisão externa — R13 do PR #13
+
+- `fcbd6cb` — invalida só a atribuição da chamada ativa que falhou, sem apagar vínculos independentes. Registra IDs aposentados com teto de 1.024, retira o ID ao ser reutilizado e mantém o tratamento conservador sem prova. Preserva o slash explícito em tentativa irrelevante e processa blocos válidos de `isMeta` no delta e na recuperação legada.
+- `fcbd6cb` — fixa a revisão legada na r1, isola o roteamento Git nas receitas históricas, explicita a origem de `check` na r18 e resolve o caminho do kit no boot de DOCS. As saídas e os campos de evidência histórica foram preservados.
+- F1 creditou uma chamada de trabalho a `full:codereview` no primeiro Stop e gravou o encerramento. O segundo permaneceu em silêncio nas três variantes.
+- Cinco testes novos exercitam persistência, controles negativos, reuso, teto, falha, slash e migração completa ou parcial. Das mutações dirigidas ao código e à jornada F1, 30 derrubaram seu sensor sob timeout de 25 s e teto de 256 MiB por processo. Os detalhes estão nas notas.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1, F1 e R1–R12 com as sondas executáveis e os hashes das correções. |
-| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R12. |
+| `checkpoint.md` | I1, F1 e R1–R13 com as sondas executáveis e os hashes das correções. |
+| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R13. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
 | `TODO.md` | Issue #12 e ordem legada marcadas `RESOLVED by 682cd3d` e `RESOLVED by 8fa5c7d` até o merge. |
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as 14 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as 15 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
-- Comece por R12. A célula extrai a sonda de `40-review-r12.md`, roda a migração sob
+- Comece por R13 e F1. R13 extrai a sonda de `plano-r13.md` e mede falha, sucesso, ID aposentado,
+  ID desconhecido, slash e bloco inválido com e sem retomada. F1 deve provar que o primeiro Stop
+  creditou o trabalho à monitorada e já salvou o encerramento. Execute `TEST_CMD` com
+  `GIT_DIR` e `GIT_WORK_TREE` removidos da suíte para isolar os repositórios das fixtures.
+
+- Em seguida, rode R12. A célula extrai a sonda de `40-review-r12.md`, roda a migração sob
   256 MiB e exige silêncio no limite e acima dele, inclusive após um Stop sem trabalho.
   Exija `graphify` para carga nova e slash explícito, avanço de offset e `regressao=1`.
 
@@ -261,7 +273,7 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 
 ## Pendências / Decisions for a Human
 
-- O merge cabe ao mantenedor. A execução não publicou a versão nem abriu PR.
+- O mantenedor decide o merge do PR #13. Esta execução não alterou o remoto nem publicou a versão.
 
 ## Riscos e não-feitos
 
@@ -274,7 +286,13 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
   para metadado atrasado sem vínculo, até uma carga confirmada no trecho novo.
 - Modo autônomo, fila e distribuição Codex ficaram fora do patch.
 
-- A medida de crescimento cobre tentativas em mensagens distintas. IDs de mensagens já aposentadas não integram a janela de correlação. Ampliar o histórico continua fora do R4.
+- R13 mantém até 1.024 IDs aposentados à parte da janela ativa. Quando a prova sai do limite,
+  se perde ou o ID é reutilizado, o hook volta às regras normais de correlação. Um ID reaproveitado
+  após sair da janela ainda pode se parecer com um vínculo novo, conforme o item aberto no backlog.
+- As três provas nativas foram tentadas nesta sessão no HEAD inicial `824db1f` com
+  `env -u GIT_DIR -u GIT_WORK_TREE -u SKILLS_SKIP_NATIVE_DISTRIBUTION python3 -B -m unittest discover -s tests -p test_codex_distribution.py`.
+  As três pararam em `bwrap: No permissions to create new namespace`, antes de executar o CLI
+  dentro do namespace. Repetir no host com Bubblewrap habilitado.
 
 ## Achados fora de escopo
 
@@ -286,7 +304,12 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 
 - kit: em R2, a execução literal voltou a herdar o Git privado. O reflog e a comparação da árvore confirmaram o início em `0aa7b40`. A ponta e a referência temporária criada pelas fixtures foram restauradas no espelho. A suíte passou com as duas variáveis removidas, antes e depois da correção.
 
-- O metadado externo obsoleto ainda pode encerrar uma carga posterior. O caso anterior a R3 permanece no item já aberto em `TODO.md`.
+- O caso de metadado externo obsoleto registrado em R3 foi resolvido em `fcbd6cb`. O histórico
+  permanece no mesmo item de `TODO.md` até o merge.
+- kit: a primeira execução literal da suíte em R13 repetiu o problema de roteamento Git já
+  registrado acima. O reflog e a comparação de árvores confirmaram a ponta inicial `824db1f`.
+  A ponta e a referência temporária foram restauradas no espelho privado. A suíte isolada voltou
+  a verde antes da edição. O kit não foi alterado.
 
 - kit: a execução literal em R3 voltou a contaminar o espelho Git privado com fixtures. O teste foi encerrado, o reflog e a árvore confirmaram a ponta inicial `f382fa2` e a referência temporária foi removida. As repetições isoladas de `TEST_CMD` passaram antes da correção e no commit final. A correção do ambiente do runner permanece fora da missão.
 
