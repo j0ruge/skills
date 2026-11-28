@@ -5,7 +5,7 @@ license: MIT
 compatibility: Claude Code 2.1.163+ (Stop additionalContext); testado na 2.1.283 em 2026-09-30. Hook em Python 3, só biblioteca padrão, e git no PATH.
 metadata:
   author: JorUge
-  version: "0.4.0"
+  version: "0.4.1"
 ---
 
 # retrofit-watch
@@ -146,7 +146,31 @@ O estado fica em `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json` e é apagado
 
 - **Skill usada dentro de subagente** não é vista: ela não aparece no transcript principal.
 - **A atribuição gruda na última skill carregada** até outra ser carregada, inclusive em outra
-  tarefa da mesma sessão. Medido em 2026-10-02 (376 sessões, 14 dias): 41% do atrito atribuído
+  tarefa da mesma sessão. Uma skill externa não encerra a atribuição da monitorada quando o hook
+  consegue ligar as duas cargas à mesma mensagem do assistente. Se a externa veio depois ou o vínculo
+  não pôde ser confirmado, ela encerra a atribuição para trabalho futuro. Metadado atrasado sem
+  vínculo não reabre a atribuição. O erro ligado sem ambiguidade à carga ativa encerra seu crédito
+  futuro, mesmo sem `message.id`, e preserva outros vínculos. Uma externa que encerra a atribuição
+  expira o slash anterior à sua chamada, não o slash mais novo. Metadado externo com ID
+  comprovadamente aposentado por uma mensagem posterior
+  não encerra a atribuição atual. Ao retomar a 0.4.0, o primeiro Stop consulta uma vez o trecho
+  até o offset salvo para recuperar vínculos e distinguir uma chamada pendente anterior à externa
+  de uma posterior. Para comparar mensagens fragmentadas, vale a primeira ocorrência de
+  cada `message.id` válido do assistente, mesmo antes do bloco `Skill`. A ordem, por si só,
+  não comprova o vínculo com uma chamada. O hook não reconta trabalho antigo.
+  Se um registro ultrapassar 2 MiB ou o
+  prefixo não for utilizável, o hook processa o trecho novo a partir do estado já gravado,
+  sem importar vínculos parciais. Se não havia atribuição ativa e a reconstrução não pôde
+  confirmar o estado salvo, o hook mantém a atribuição encerrada. Metadado atrasado sem vínculo
+  não inicia uma atribuição, mas cargas novas no trecho novo continuam válidas.
+  IDs falhos ou repetidos não comprovam origem. A primeira confirmação não descarta
+  uma marca sem origem. Acima de 64 mensagens ou 1.024 IDs retidos, o hook deixa de correlacionar
+  mensagens até outra sessão. O erro de uma chamada explícita ainda pode encerrar seu crédito
+  pelo ID direto. O hook preserva até 2.049 IDs ainda retidos na transição e registra à parte
+  até 1.024 IDs distintos observados depois. Nenhum registro valida metadados. IDs reutilizados não provam erro
+  próprio e IDs novos também deixam de prová-lo quando seu registro enche. Registros salvos
+  com tipo inválido voltam vazios. Os contadores são preservados e um slash explícito ainda pode iniciar
+  a atribuição da skill que ele nomeia. Medido em 2026-10-02 (376 sessões, 14 dias): 41% do atrito atribuído
   vem depois de um prompt novo seu. Encerrar no prompt novo foi refutado: a continuação chega como
   "sim", "roda", "pode empurrar", sem "?" antes. Por isso a retro filtra por evidência ligada à
   skill (seção 2 do `criteria.md`): atrito de outra tarefa é "sem lições novas". Fases headless
