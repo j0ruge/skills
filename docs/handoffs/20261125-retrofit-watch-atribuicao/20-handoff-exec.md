@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a21fd8-2a87-7ae1-94ae-3d12aa35634a
-data: 2026-11-27 22:55
-gate: 'Em fcdea17, env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' → rc 0. Loja com 154 testes (3 pulados), hook com 127. Adaptadores, catálogo e versão 0.4.1 válidos. As 18 células de checkpoint.md retornaram rc 0 e stdout esperado, incluindo a regressão de R16 e a jornada F1. Quatro mutações detectadas.'
+sessao: 01a21fe5-fb08-7663-8566-645318ec75e0
+data: 2026-11-27 23:11
+gate: 'Em a19e5b5, env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' → rc 0. Loja com 154 testes (3 pulados), hook com 129. Adaptadores, catálogo e versão 0.4.1 válidos. As 19 células de checkpoint.md retornaram rc 0 e stdout esperado, incluindo as regressões R15–R17 e a jornada F1. Quatorze mutações detectadas.'
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,18 +14,18 @@ gate: 'Em fcdea17, env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bas
 
 ## TL;DR
 
-R16 encerra o crédito quando a nova chamada explícita falha, mesmo com a janela esgotada.
-Sucesso, erro de outra chamada e ID disputado não encerram o crédito. A janela não reabre.
-TEST_CMD, 18 Checks, jornada F1 e quatro mutações verificados.
-A QA começa por R16 e F1. As provas nativas ainda precisam de um host com Bubblewrap.
+R17 preserva o crédito da monitorada quando o mesmo ID de chamada já apareceu depois do limite.
+O erro próprio de R16 segue fechando o crédito quando o ID é novo e cabe no registro.
+TEST_CMD, 19 Checks, jornada F1 e quatorze mutações verificados.
+A QA começa por R17, R16 e F1. As provas nativas ainda precisam de um host com Bubblewrap.
 
 ## Estado do repo
 
 - **Branch:** `fix/retrofit-watch-atribuicao-mesma-mensagem`, em Git isolado pelo runner, sem envio ao remoto.
-- **Último commit do incremento:** `fcdea17` — encerra o crédito de carga falha após o limite de correlação.
+- **Último commit do incremento:** `a19e5b5` — distingue ID direto novo de ID reutilizado após o limite.
 - **Working tree:** limpo após o commit deste registro.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` no conteúdo de `fcdea17` → rc 0. Loja com 154 testes (3 pulados), hook com 127, adaptadores e catálogo válidos e versão 0.4.1 confirmada.
-- **E2E:** 18 Checks com rc 0 e stdout esperado. F1 manteve `linked=silêncio missing=silêncio empty=silêncio`. R16 cobriu os dois tetos da janela em leitura contínua e retomada.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` no conteúdo de `a19e5b5` → rc 0. Loja com 154 testes (3 pulados), hook com 129, adaptadores e catálogo válidos e versão 0.4.1 confirmada.
+- **E2E:** 19 Checks com rc 0 e stdout esperado. F1 manteve `linked=silêncio missing=silêncio empty=silêncio`. R17 preservou a retro nos dois limites e nos três cortes, sem perder o silêncio para falha própria.
 - **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest -q test_auto_docs.ReleaseTest` → 4 testes, rc 0.
 
 ## O que foi feito
@@ -248,21 +248,37 @@ A QA começa por R16 e F1. As provas nativas ainda precisam de um host com Bubbl
   em nove subcasos. No Green, os 18 Checks passaram. Quatro mutações foram detectadas em cópia
   descartável, com grupo de processos próprio, timeout de 20 s e memória virtual de 512 MiB.
 
+### Retorno da revisão — rodada r26
+
+- `a19e5b5` — mantém um registro de até 1.024 IDs distintos vistos depois de perder a janela. Se o
+  ID já apareceu, seu erro não encerra o crédito da nova carga. O registro persiste entre
+  Stops, não reabre a janela e não dá validade ao metadado externo desconhecido.
+- `a19e5b5` — acrescenta dois sensores duráveis para reuso nos dois limites, cortes de Stop,
+  reconstrução válida e rejeitada, saturação do registro e vínculo direto da carga ativa.
+  A sonda r26 reproduziu seis encerramentos indevidos no Red, e o teste durável reproduziu
+  os seis e mais um na retomada de estado legado. No Green, os 19 Checks passaram. Quatorze
+  mutações foram detectadas com grupo próprio, timeout de 25 s e memória virtual de 512 MiB.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1, F1 e R1–R16 com as sondas executáveis e os hashes das correções. |
-| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R16. |
+| `checkpoint.md` | I1, F1 e R1–R17 com as sondas executáveis e os hashes das correções. |
+| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R17. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
 | `TODO.md` | Issue #12 e ordem legada marcadas `RESOLVED by 682cd3d` e `RESOLVED by 8fa5c7d` até o merge. |
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as 18 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as 19 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
-- Comece por R16 e F1. A célula R16 extrai a sonda de `40-review-r25.md` com `--expect`.
+- Comece por R17 e F1. O Check de R17 extrai a sonda de `40-review-r26.md` e usa `--expect`.
+  Deve haver retro de `codereview` para ID em disputa ou alheio e silêncio para falha própria,
+  em leitura contínua e com corte de Stop antes ou depois da carga. A suíte também testa
+  o teto do registro direto e que sua presença não faz o hook ignorar metadado externo.
+
+- Repita R16 e F1. A célula R16 extrai a sonda de `40-review-r25.md` com `--expect`.
   Compare silêncio e encerramento nos dois limites, inclusive em retomada e sem `message.id`.
   Sucesso e reuso observado na janela ativa devem pedir retro. A célula roda a jornada
   F1 e a regressão durável, que também verifica erro de outra chamada, reuso do ID ativo
@@ -340,6 +356,10 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 - O mantenedor decide o merge do PR #13. Esta execução não alterou o remoto nem publicou a versão.
 
 ## Riscos e não-feitos
+
+- O registro direto de R17 não reconstrói IDs descartados pela janela. Ao atingir seu próprio limite,
+  conserva os IDs conhecidos e deixa de usar IDs novos como prova de erro próprio. Nem o registro
+  nem o ID direto provam que duas cargas são da mesma mensagem.
 
 - Um estado intermediário já salvo sem ID da chamada e sem origem de mensagem não prova qual
   chamada abriu a atribuição. Se não houver reconstrução legada, a comparação começa nas

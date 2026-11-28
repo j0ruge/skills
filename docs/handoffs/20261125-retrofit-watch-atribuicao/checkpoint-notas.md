@@ -473,3 +473,18 @@
 - 2026-11-27 23:02 · R17 · r26, achado 1 — Após esgotar a janela, um erro de chamada anterior com ID reutilizado encerra indevidamente o crédito da monitorada. Sonda vermelha em seis casos nos dois limites. Preservar o erro próprio de R16 e repetir F1.
 - 2026-11-27 23:04 · R17 · Quando a janela por mensagem estiver desligada, mantenha evidência limitada dos IDs de chamadas observados depois do limite, sem usá-los para religar correlação ou para ignorar metadados externos desconhecidos. Dados de IDs disputados devem impedir que a falha de uma tentativa anterior encerre a nova carga. Reuse as estruturas limitadas onde couber. Confirme conjuntamente os REDs R15, R16 e R17, com erro próprio, alheio, repetido, sucesso e cortes de Stop. Exercite o limite do novo registro e preserve o contrato para histórico sem prova.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 23:04 · written by the runner
+- 2026-11-27 23:11 · R17 sabotage: sem padrão para retomada → prior_reused_call_does_not_close_after_correlation_overflow, direct_call_history_stays_bounded_without_proving_metadata, active_skill_failure_after_correlation_overflow
+- 2026-11-27 23:11 · R17 sabotage: ignorar modo sem janela → direct_call_history_stays_bounded_without_proving_metadata, active_skill_failure_after_correlation_overflow
+- 2026-11-27 23:11 · R17 sabotage: consultar mapa vazio a cada chamada → prior_reused_call_does_not_close_after_correlation_overflow, direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 sabotage: guardar ID ausente → direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 sabotage: aceitar ID já observado → prior_reused_call_does_not_close_after_correlation_overflow
+- 2026-11-27 23:11 · R17 sabotage: ultrapassar a última vaga → direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 sabotage: não registrar IDs novos → prior_reused_call_does_not_close_after_correlation_overflow, direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 sabotage: não gravar o ID observado → prior_reused_call_does_not_close_after_correlation_overflow, direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 sabotage: aceitar repetição da carga ativa anterior à perda → direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 sabotage: aceitar disputa durante janela ativa → ambiguous_call_failure_does_not_close_attribution
+- 2026-11-27 23:11 · R17 sabotage: ignorar invalidação do vínculo → prior_reused_call_does_not_close_after_correlation_overflow, direct_call_history_stays_bounded_without_proving_metadata, active_skill_failure_after_correlation_overflow, ambiguous_call_failure_does_not_close_attribution
+- 2026-11-27 23:11 · R17 sabotage: vazar evidência de reconstrução rejeitada → direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 sabotage: omitir evidência da reconstrução válida → prior_reused_call_does_not_close_after_correlation_overflow
+- 2026-11-27 23:11 · R17 sabotage: restaurar condição de R16 no filtro → prior_reused_call_does_not_close_after_correlation_overflow, direct_call_history_stays_bounded_without_proving_metadata
+- 2026-11-27 23:11 · R17 · a19e5b5: seis casos vermelhos na sonda, sete na regressão de reuso, duas regressões duráveis, quatorze mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 129 do hook, 19 Checks e F1 verdes. Provas nativas não repetidas.
