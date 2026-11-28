@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a21ff6-08d9-7642-afc6-282f25a22240
-data: 2026-11-27 23:31
-gate: 'Em 7b1da02, env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' → rc 0. Loja com 154 testes (3 pulados), hook com 132. Adaptadores, catálogo e versão 0.4.1 válidos. Os 20 Checks de checkpoint.md passaram, inclusive R18 e F1. 14 mutações detectadas.'
+sessao: 01a22008-97b9-7ad1-aa29-23211304c9cb
+data: 2026-11-27 23:46
+gate: 'Em bdf75fa, env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' → rc 0. Loja com 154 testes (3 pulados), hook com 133, adaptadores, catálogo e versão 0.4.1 válidos. Os 21 Checks de checkpoint.md passaram, inclusive R19 e F1. Cinco mutações detectadas.'
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,18 +14,18 @@ gate: 'Em 7b1da02, env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bas
 
 ## TL;DR
 
-R18 preserva a evidência de IDs ainda retidos quando a correlação por mensagem se desliga.
-Stop retoma com registro opcional malformado sem perder offset, atribuição ou contadores.
-TEST_CMD, 20 Checks, F1 e 14 mutações verificados. A QA começa por R18 e F1.
+R19 permite retomar o Stop mesmo com IDs aposentados malformados no estado salvo.
+A transição conserva o ID válido, o teto, o progresso do offset e a atribuição.
+TEST_CMD, 21 Checks, F1 e cinco mutações verificados. A QA começa por R19 e F1.
 As três provas nativas não foram repetidas no sandbox.
 
 ## Estado do repo
 
 - **Branch:** `fix/retrofit-watch-atribuicao-mesma-mensagem`, em Git isolado pelo runner, sem envio ao remoto.
-- **Último commit do incremento:** `7b1da02` — preserva os IDs da transição e normaliza os registros opcionais.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` no conteúdo de `7b1da02` → rc 0. Loja com 154 testes (3 pulados), hook com 132, adaptadores, catálogo e versão 0.4.1 válidos.
+- **Último commit do incremento:** `bdf75fa` — valida os IDs aposentados usados na transição.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` no conteúdo de `bdf75fa` → rc 0. Loja com 154 testes (3 pulados), hook com 133, adaptadores, catálogo e versão 0.4.1 válidos.
 - **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest -q test_auto_docs.ReleaseTest` → 4 testes, rc 0.
-- **E2E:** os 20 Checks de `checkpoint.md` retornaram rc 0 e stdout esperado. F1 manteve `linked=silêncio missing=silêncio empty=silêncio`.
+- **E2E:** os 21 Checks de `checkpoint.md` retornaram rc 0 e stdout esperado. F1 manteve `linked=silêncio missing=silêncio empty=silêncio`.
 
 ## O que foi feito
 
@@ -270,21 +270,38 @@ As três provas nativas não foram repetidas no sandbox.
   o teto e a retomada com estado inválido passaram. As mutações rodaram em grupo separado
   com teto de 25 s e 512 MiB de memória virtual. Os resultados individuais estão nas notas.
 
+### Retorno da revisão — rodada r28
+
+- `bdf75fa` — normaliza o campo de aposentados quando não for lista e valida seus itens
+  antes de montar o snapshot da transição. Conserva os IDs válidos sem aumentar o teto
+  nem recuperar IDs já descartados.
+- `bdf75fa` — acrescenta uma regressão de Stop com oito casos. No Red, a sonda repetiu
+  `TypeError` sem avançar o offset com um objeto e uma lista entre os itens. O teste
+  permanente falhou nas seis variantes inválidas. O estado intacto e o campo ausente
+  passaram. No Green, a retomada preservou a atribuição e os contadores e avançou o
+  offset. Cinco mutações foram detectadas com grupo próprio, timeout de 20 s e
+  memória virtual de 512 MiB. Os resultados individuais estão nas notas.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1, F1 e R1–R18 com as sondas executáveis e os hashes das correções. |
-| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R18. |
+| `checkpoint.md` | I1, F1 e R1–R19 com as sondas executáveis e os hashes das correções. |
+| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R19. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
 | `TODO.md` | Issue #12 e ordem legada marcadas `RESOLVED by 682cd3d` e `RESOLVED by 8fa5c7d` até o merge. |
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as 20 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as 21 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
-- Comece por R18 e F1. A célula R18 extrai a sonda de `40-review-r27.md` e executa
+- Comece por R19 e F1. A célula R19 extrai a sonda de `40-review-r28.md` com
+  `--expect` e roda a regressão permanente. Confira a retro de `codereview`, o offset no
+  fim e a perda da janela sem erro nos três casos da sonda. O teste permanente também
+  confere o campo opcional ausente ou inválido, os IDs sobreviventes e os contadores.
+
+- Repita R18 e F1. A célula R18 extrai a sonda de `40-review-r27.md` e executa
   `--expect --group window` e `--expect --group state`. Compare o crédito nos dois limites
   e três cortes, o silêncio para erro próprio novo e o avanço do offset após retomar
   um registro inválido. Depois, repita R15 a R17. A suíte também inclui
@@ -374,7 +391,7 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 
 ## Riscos e não-feitos
 
-- R18 conserva os IDs ainda retidos ao desligar a janela, mas não recupera os já descartados.
+- R19 conserva os IDs válidos ainda retidos ao desligar a janela, mas não recupera os já descartados.
   O registro de IDs novos de R17 mantém o próprio teto. Quando ele enche, IDs novos deixam
   de provar erro próprio. Nenhum dos registros prova que duas cargas são da mesma mensagem.
 

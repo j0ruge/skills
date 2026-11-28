@@ -513,3 +513,9 @@
 - 2026-11-27 23:40 · r28, achado 1 → R19 · o snapshot de transição trava com item aposentado inválido; duas variantes reproduzidas no HEAD, ambas passam na base.
 - 2026-11-27 23:41 · R19 · Valide a forma do registro de IDs aposentados e de cada ID antes de usá-lo na união da transição. Preserve o ID válido da mesma lista, o limite de memória, o progresso do offset e a atribuição. Prove lista mista com objetos ou listas, campo opcional ausente ou inválido se atingido pelo mesmo leitor, controle intacto e a transição normalmente suportada. Repita os Checks anteriores sem ampliar a captura de histórico.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 23:42 · written by the runner
+- 2026-11-27 23:45 · R19 sabotage: inverter a validação do tipo da lista → test_invalid_retired_id_does_not_break_correlation_overflow, test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:45 · R19 sabotage: substituir a lista vazia por um mapa → test_invalid_retired_id_does_not_break_correlation_overflow
+- 2026-11-27 23:45 · R19 sabotage: aceitar todos os itens aposentados → test_invalid_retired_id_does_not_break_correlation_overflow
+- 2026-11-27 23:45 · R19 sabotage: descartar também os IDs aposentados válidos → test_invalid_retired_id_does_not_break_correlation_overflow, test_transition_history_keeps_retained_ids_only_and_stays_bounded
+- 2026-11-27 23:45 · R19 sabotage: restaurar a união de R18 com os itens brutos → test_invalid_retired_id_does_not_break_correlation_overflow
+- 2026-11-27 23:46 · R19 · bdf75fa: Red na sonda e nas seis variantes inválidas da regressão. No Green, offset, atribuição, contadores e IDs válidos preservados sem ampliar o histórico. TEST_CMD com 154 testes da loja (3 pulados) e 133 do hook, 21 Checks incluindo F1, quatro testes de release e cinco mutações detectadas. Provas nativas não repetidas.
