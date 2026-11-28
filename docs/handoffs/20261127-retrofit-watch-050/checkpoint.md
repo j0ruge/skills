@@ -1,6 +1,6 @@
 ---
 missao: 20261127-retrofit-watch-050
-atualizado: 2026-11-28 06:57
+atualizado: 2026-11-28 08:01
 ---
 
 # Checkpoint — Skills locais da lista
@@ -24,6 +24,7 @@ atualizado: 2026-11-28 06:57
 | R11 | Finalizar somente o clone validado, na main, com origem consistente e trava efetiva | `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_live.LiveTest.test_setup_does_not_finalize_missing_or_replaced_destination test_lean_live.LiveTest.test_setup_retry_requires_declared_and_effective_origin test_lean_live.LiveTest.test_setup_retry_does_not_finalize_wrong_branch test_lean_live.LiveTest.test_setup_retry_requires_effective_worktree_lock test_lean_live.LiveTest.test_setup_retry_keeps_files_after_final_origin_rejection >/dev/null && env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → `0` | done | fb134ce |
 | R12 | Conferir o caminho exato da trava e não liberar o clone se o ramo mudar durante a validação | `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_live.LiveTest.test_setup_retry_rejects_hooks_path_with_trailing_space test_lean_live.LiveTest.test_setup_retry_does_not_finalize_branch_changed_during_validation test_lean_live.LiveTest.test_setup_retry_keeps_files_after_final_origin_rejection >/dev/null && env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → `0` | done | 39490d1 |
 | R13 | Detectar mudanças de HEAD durante a validação do clone | `(unset GIT_DIR GIT_WORK_TREE; export TMPDIR=/var/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests; python3 -B -m unittest test_lean_live.LiveTest.test_setup_does_not_finalize_branch_changed_while_reading_hooks test_lean_live.LiveTest.test_setup_does_not_finalize_origin_verified_on_another_branch test_lean_live.LiveTest.test_setup_keeps_pending_if_branch_changes_at_marker_removal >/dev/null; echo $?)` → `0` | done | ea37315 |
+| R14 | Manter o clone inelegível até confirmar ramo e trava na liberação | `(env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest test_lean_live.LiveTest.test_setup_stays_ineligible_during_branch_change_at_marker_removal test_lean_live.LiveTest.test_setup_rejects_hook_change_during_branch_validation test_lean_live.LiveTest.test_setup_keeps_pending_if_branch_changes_at_marker_removal >/dev/null && env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py >/dev/null); echo $?` → `0` | pending | — |
 
 Atualizar a linha depois do commit do incremento, com SHA curto nu. As notas de execução seguem em `checkpoint-notas.md` quando o relay materializar o layout do kit.
 

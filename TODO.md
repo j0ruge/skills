@@ -279,6 +279,13 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/20-handoff-exec.md` — descoberto por
   `sdd-executor` na missão `20261127-retrofit-watch-050` (2026-11-28)
 
+- [ ] **O guia do clone não distingue o arquivo HEAD do SHA resolvido** —
+  `docs/retrofit-watch/clone-dedicado.md:16` (`HEAD`) —
+  Um reset na mesma main muda o SHA sem reescrever o arquivo simbólico, e o setup pode concluir.
+  Direção: delimitar a garantia ao arquivo que aponta para o ramo e à observação do estado durante o setup.
+  Fonte: `docs/handoffs/20261127-retrofit-watch-050/40-review-r8.md` — descoberto por
+  `sdd-reviewer` na missão `20261127-retrofit-watch-050` (2026-11-28)
+
 ## Decidido — não reabrir
 <!-- sdd:decided -->
 
