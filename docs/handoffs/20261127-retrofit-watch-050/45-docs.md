@@ -17,3 +17,5 @@
 ## Achados conferidos
 
 O avanço protege a `main` e registra os estados que exigem conferência. O guia do clone descreve a retomada e `checkpoint-notas.md` registra a validação em Linux com Git 2.43. O TODO conserva a validação do marcador no Windows e a falha preexistente de atribuição da segunda skill full. A adoção em repositórios reais pertence a cada mantenedor.
+
+Os comentários do PR #15 também atualizaram o guia do clone e a referência do executor. Eles registram o caminho exato da skill, o ensaio enquanto falta prova de ordem entre históricos, a sincronização do scanner e a fonte do resumo de `local/ci`.
