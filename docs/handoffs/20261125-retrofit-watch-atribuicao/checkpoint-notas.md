@@ -522,3 +522,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-27 23:49 · written by the runner
 - 2026-11-27 23:55 · r29 · R19 verificada em bdf75fa. TEST_CMD e 21 Checks passaram. Nota A no delta, sem novo incremento. Achado anterior à transição reproduzido nos dois SHAs e registrado no backlog.
 - 2026-11-28 00:11 · R20 · P2 Codex 4725187745. Retomada com retired_skill_calls contendo null reproduziu três pedidos indevidos em 7ecb60a. A guarda em 41f2952 distinguiu fonte ausente de ID válido. Controles de R19, aposentado válido, F1, 134 testes do hook e as três provas nativas verdes.
+- intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 00:12 · written by the runner
