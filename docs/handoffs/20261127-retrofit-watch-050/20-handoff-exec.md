@@ -2,9 +2,9 @@
 missao: 20261127-retrofit-watch-050
 fase: EXEC
 status: done
-sessao: 01a2213a-8ca8-76b1-8aeb-e7a1a87696ae
-data: 2026-11-28 05:23
-gate: "Em def54f4, env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval \"$TEST_CMD\"' → rc 0. Adaptadores e catálogo válidos, 154 testes da loja (3 pulados), 144 do Stop e versões validadas. A célula R5 do checkpoint imprimiu 0 sobre o Git delegado, com a regressão SSH, camada 1 desde a base da r2 e sonda de QA."
+sessao: 01a2214d-5b73-78b3-ad62-9dc2c34de288
+data: 2026-11-28 05:42
+gate: "Em 329b5f5, env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval \"$TEST_CMD\"' → rc 0. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos. A célula R7 do checkpoint imprimiu 0, com as regressões HTTPS e SSH e a sonda de QA."
 ---
 
 # Handoff — EXEC — Retrofit de skills locais listadas
@@ -14,16 +14,16 @@ gate: "Em def54f4, env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBY
 
 ## TL;DR
 
-I1–I4 e R1–R5 concluídos. A porta distingue caminhos de origem e não repassa a porta SSH à API de status.
-A regressão confirmou o mesmo SHA no bare, no status capturado e no clone. O TEST_CMD, o Check R5
-e a sonda local passaram. QA deve repetir as provas da rodada e validar distribuição nativa no host.
+I1–I4 e R1–R7 concluídos. O status privado preserva a porta HTTPS na URL da API e usa hostname sem porta.
+A regressão e a sonda confirmaram o mesmo SHA no bare, no status capturado e no clone.
+TEST_CMD e Check R7 passaram. QA deve repetir as provas da rodada e validar a distribuição nativa no host.
 
 ## Estado do repo
 
 - **Branch:** `feat/retrofit-watch-050-loja` — base de comparação `origin/main` local.
-- **Último commit de produto:** `def54f4` — separa a porta SSH do status privado.
+- **Último commit de produto:** `329b5f5` — preserva a porta HTTPS no status privado.
 - **Working tree:** limpo após o commit de checkpoint, notas e handoff.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `def54f4`. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `329b5f5`. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos.
 - **E2E:** sem `E2E_CMD` na config. Jornada automatizada em `sonda-qa.py` com remotos bare de fixture. Nenhum deploy ou repo privado real.
 
 ## O que foi feito
@@ -52,19 +52,31 @@ e a sonda local passaram. QA deve repetir as provas da rodada e validar distribu
   Check R5 e 130 regressões verdes, 13 mutações detectadas em cópias descartáveis com grupo próprio,
   teto de 20 s e 512 MiB por processo. As 62 âncoras do TODO passaram.
 
+### Rodada 3 de revisão
+
+- `d5acecb` — R6 distingue destinos Git cuja equivalência não foi comprovada. Os controles
+  verificam inelegibilidade e retenção antes do fetch em caso de troca de destino.
+- `329b5f5` — R7 deixa a porta HTTPS não padrão na URL absoluta da API, não em `--hostname`.
+  A regressão ficou vermelha no comando antigo e comparou o SHA publicado no bare, capturado
+  no status e recebido no clone. A variante SSH manteve a URL relativa sem sua porta de transporte.
+  O Check, 132 regressões dirigidas sem pulos e 63 âncoras do TODO passaram. As oito mutações da
+  implementação falharam nas regressões, com controles íntegros antes e depois, grupo próprio,
+  teto de 20 s e 512 MiB por processo. README, CHANGELOG, contrato do clone e referência acompanham R7.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Nove Checks e seus commits. |
+| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Onze Checks e seus commits. |
 | `docs/retrofit-watch/clone-dedicado.md` | Contrato de clone, selo, ensaio, publicação e avanço. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py` | Cópia de distribuição com contratos dos dois plugins e controles do catálogo. |
 | `KAIZEN_LOG.md` e `TODO.md` | Medida da fixture, limite da adoção e achados fora do escopo. |
 
 ## Boot da próxima fase
 
-Leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Priorize os Checks R4 e R5, confira R1–R3 e repita os quatro de I1–I4. Não use um
-`TMPDIR` com ancestral Git. Desarme `GIT_DIR` e `GIT_WORK_TREE` do runner antes de executar testes que criam repos.
+Leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Priorize os Checks R6 e R7,
+confira R1–R5 e repita os quatro de I1–I4. Não use um `TMPDIR` com ancestral Git.
+Desarme `GIT_DIR` e `GIT_WORK_TREE` do runner antes de executar testes que criam repos.
 A jornada que muda para o usuário é o Stop de uma skill em repo listado, seguido de pedido, selo, revisão e porta.
 Comece com `PrivateWorld` em `plugins/retrofit-watch/skills/retrofit-watch/tests/fixture_private.py` e
 `test_lean_gate`. Compare o SHA do bare antes do ensaio e depois de aprovar. Emende o patch aprovado, confira
@@ -85,6 +97,12 @@ A camada 1 da rodada usa a base `1f1b008`. No EXEC delegado, o `HEAD` descoberto
 primeiro o SHA descoberto pelo Git. Em um checkout comum da candidata, rode a célula sem adaptação.
 Para conferir somente o scanner sobre a cópia delegada, use
 `python3 scripts/anonymity-gate.py --camada1 --base 1f1b008 --repo "$GIT_DIR"`.
+
+Para R6, confira que os destinos Git não equivalentes ficam manuais ou retidos antes do fetch.
+Para R7, rode a célula do checkpoint. Ela confere o POST do status na porta HTTPS explícita,
+o hostname sem porta e o controle SSH. O `gh` 2.85.0 real, com ambiente isolado, recusou o argumento
+antigo e tentou conectar a `127.0.0.1:8443` com a nova chamada. O sandbox bloqueou o socket.
+A jornada local verifica o status capturado, não a resposta de uma API real.
 
 Em `04a1a77`, além do TEST_CMD, os contratos `test_auto_docs test_modo_autonomo` passaram com 44 testes.
 `TMPDIR=/var/tmp python3 -m unittest discover -s plugins/retrofit-skill/tests -v` passou com 11.
@@ -118,6 +136,10 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
 - Em `def54f4`, a camada 1 desde a base da r2 está limpa. A comparação da branch inteira com
   `origin/main` ainda retorna rc 1 por três sinalizações preexistentes. QA deve reavaliar
   esse gate antes de encaminhar a entrega.
+- No Git delegado, `python3 scripts/anonymity-gate.py --camada1 --base 6746848 --repo "$GIT_DIR"`
+  retornou rc 0 em `329b5f5`. Com base `1f1b008`, o scanner retorna os mesmos dois alertas
+  nas URLs SSH públicas de fixture em `test_lean_auto.py:126–127` no estado de entrada
+  `6746848` e no produto R7. A medição com o Git delegado corrige o registro anterior de R6.
 
 ## Achados fora de escopo
 
@@ -127,7 +149,7 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
 - Segunda skill full do mesmo plugin ausente no estado, inclusive na base → `TODO.md`, recorrência I4.
 - Camada 1 sobre `origin/main` ainda sinaliza a impressão digital pública do plano e duas URLs
   SSH de fixture anteriores à rodada → `TODO.md`, minors adiados. R5 removeu os dois alertas
-  novos da r2 sem mudar o scanner.
+  novos da r2 sem mudar o scanner. A recorrência das duas URLs de R6 foi registrada no mesmo item.
 - Corrida residual após a prova de ancestralidade → `TODO.md`, item sobre mover outro ramo
   após a última conferência. Não integra R5.
 - kit: o EXEC recebeu as variáveis `GIT_DIR` e `GIT_WORK_TREE` da cópia privada do runner
