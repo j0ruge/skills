@@ -3,8 +3,8 @@ missao: 20261127-retrofit-watch-050
 fase: EXEC
 status: done
 sessao: 01a22180-2764-7272-9863-f4f98a202c53
-data: 2026-11-28 06:45
-gate: "Em fb134ce9e1b4e4aa0a316dafeff6b212db433e44, `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval \"$TEST_CMD\"'` → rc 0 (154 testes da loja, 3 pulados, e 144 do Stop, adaptadores, catálogo e versões válidos). Check de R11 em checkpoint.md → 0, 156 regressões dirigidas e jornada de QA verdes, camada 1 contra origin/main limpa e 42 âncoras válidas. 33 sabotagens detectadas."
+data: 2026-11-28 07:33
+gate: "Em 39490d17b420bc0d5ff016ce92337059416c329e, TEST_CMD rc 0 (154 testes da loja, 3 pulados; 144 do Stop), 16 Checks, 158 testes dirigidos, jornada da QA e regressão de Stop verdes. Três provas de distribuição no host Linux e camada 1 contra origin/main passaram."
 ---
 
 # Handoff — EXEC — Retrofit de skills locais listadas
@@ -14,16 +14,16 @@ gate: "Em fb134ce9e1b4e4aa0a316dafeff6b212db433e44, `env -u GIT_DIR -u GIT_WORK_
 
 ## TL;DR
 
-I1–I4 e R1–R11 concluídos. O setup confere a identidade do clone, o ramo `main`,
-a origem declarada e efetiva e a trava de commit antes de liberar. A retomada
-preserva arquivos locais. Check de R11, TEST_CMD e jornada verdes em `fb134ce`.
+I1–I4 e R1–R12 concluídos. O setup valida a origem efetiva e depois confirma a `main`,
+a identidade do clone e o caminho exato da trava antes de liberar. Os 16 Checks, a jornada,
+a suíte e os testes de distribuição no Linux passaram em `39490d1`.
 
 ## Estado do repo
 
 - **Branch:** `feat/retrofit-watch-050-loja` — base de comparação `origin/main` local.
-- **Último commit de produto:** `fb134ce` — confere a identidade, a origem, o ramo e a trava antes de liberar o clone.
+- **Último commit de produto:** `39490d1` — preserva o caminho da trava e reconfere o ramo depois da origem.
 - **Working tree:** limpo após o commit de checkpoint, notas e handoff.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `fb134ce`. 154 testes da loja, 3 pulados, e 144 do Stop. Adaptadores, catálogo e versões válidos.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `39490d1`. 154 testes da loja, 3 pulados, e 144 do Stop. Adaptadores, catálogo e versões válidos.
 - **E2E:** sem `E2E_CMD` na config. Jornada automatizada em `sonda-qa.py` com remotos bare de fixture. Nenhum deploy ou repo privado real.
 
 ## O que foi feito
@@ -125,6 +125,11 @@ Entrega o clone sem finalizar o marcador → LiveTest.test_setup_clones_main_wit
 Recoloca a finalização pelo caminho tolerante que R11 removeu → LiveTest.test_setup_does_not_finalize_missing_or_replaced_destination
 Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree_lock
 ```
+
+### Revisão r6 e correção de R12
+
+- `39490d1` — o Red reproduziu dois casos. Após o Green, o setup preserva espaços significativos no caminho da trava e mantém o marcador se o ramo muda no mesmo checkout durante a validação da origem. A suíte de `test_lean_live` passou com 46 testes.
+- Em `39490d1`, a leitura do checkpoint confirmou a saída dos 16 Checks. Passaram também 158 testes dirigidos, a jornada da QA em fixture, a regressão de Stop, o TEST_CMD, a camada 1 e os três testes de distribuição no host.
 
 ## Artefatos
 
