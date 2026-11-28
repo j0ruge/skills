@@ -530,3 +530,4 @@
 - 2026-11-28 00:32 · r32 · Delta documental de fd66d07 verificado. TEST_CMD, 22 Checks e quatro testes de release passaram. Achado da r31 fechado no handoff em b6b1d3c. Contradição residual na missão foi para o backlog. Documentation em B, demais critérios em A, sem novo incremento.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 00:35 · written by the runner
 - 2026-11-28 00:40 · r33 · Achado da r32 fechado em 02fe0ac. TEST_CMD, 22 Checks e quatro testes de release passaram. Todos os critérios em A. Nenhum novo incremento.
+- 2026-11-28 00:46 · R21 · Revisão externa do PR #13. Quatro casos reproduzidos em 677b60a com fixture local, incluindo a 0.4.0 real. Plano e sonda em plano-r21.md. R20 mantém corrigido o falso aposentado nulo.
