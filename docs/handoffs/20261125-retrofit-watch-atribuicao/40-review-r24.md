@@ -156,7 +156,7 @@ com R15 registrado. Decidir a continuidade depois da regressão e integrar o PR 
   `--old-script "$legado"`, imprime `older=silêncio:1 newer=graphify:1`.
   O dígito nesses dois controles confirma o consumo do slash.
 - Para repetir o pré-scan, em Bash, use
-  `git -c diff.noprefix=false -P diff c2c0c8c394eccfbde1e91039306886f7955844dd...9ddaaab25ab27f0e7f6b0230738e1c5cb517b903 --unified=0 -- . ':(exclude)**/checkpoint-notas.md' | bash /home/joruge/.agents/skills/codereview/scripts/scan_secrets.sh`.
+  `git -c diff.noprefix=false -P diff c2c0c8c394eccfbde1e91039306886f7955844dd...9ddaaab25ab27f0e7f6b0230738e1c5cb517b903 --unified=0 -- . ':(exclude)**/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh"`.
 - Os 16 Checks da rodada são I1, F1 e R1–R14. Da raiz, execute em Bash cada comando
   antes de `→` nas células do checkpoint em `9ddaaab25ab27f0e7f6b0230738e1c5cb517b903`, com o ambiente
   Git do runner. Exija rc 0 e igualdade do stdout após normalizar só espaços em

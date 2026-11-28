@@ -114,6 +114,7 @@ above_delayed_resumed=silêncio above_fresh=graphify above_slash=graphify regres
 ~~~bash
 (
   set -euo pipefail
+  unset GIT_DIR GIT_WORK_TREE
   git show 3af42ecc55cb7267189720a9e8de6e729e770fdd:TODO.md | sed -n '91,97p'
   git -P show 1b6b72f -- TODO.md
   scan=$(git -c diff.noprefix=false -P diff --text --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ 3af42ecc55cb7267189720a9e8de6e729e770fdd...11ae63baa9d93c2236f04c651fd5900d5ba1151a --unified=0 -- . ':(exclude)docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh")
@@ -128,7 +129,7 @@ above_delayed_resumed=silêncio above_fresh=graphify above_slash=graphify regres
 
 Para reproduzir o achado 1, use o item do incidente «A fonte do incidente da
 atribuição leva à reprodução sintética» do blob obtido com
-`git show 11ae63baa9d93c2236f04c651fd5900d5ba1151a:TODO.md`.
+`env -u GIT_DIR -u GIT_WORK_TREE git show 11ae63baa9d93c2236f04c651fd5900d5ba1151a:TODO.md`.
 Copie o item para um `TODO.md` temporário com os marcadores `sdd:open` e `sdd:decided`.
 Use `TODO.md:1` na âncora do item para a cópia isolada. Com `fixture` apontando
 para a pasta temporária, execute a validação abaixo para cada amostra.

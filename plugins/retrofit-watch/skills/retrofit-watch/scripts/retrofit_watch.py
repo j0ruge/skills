@@ -435,7 +435,7 @@ class State:
                 or not all(map(Scanner._transcript_id, origin))):
             self.data["current_origin"] = origin = None
         self.data.setdefault("current_call", origin[1] if origin else None)
-        if "slash_prior_calls" not in self.data:
+        if not isinstance(self.data.get("slash_prior_calls"), list):
             # Sem a ordem gravada, não presumir que uma chamada pendente é posterior ao slash.
             self.data["slash_prior_calls"] = list(self.data["skill_calls"]) if self.data["pending_slash"] else []
         if "attribution_closed" not in self.data:
@@ -505,6 +505,8 @@ def end_offset(path):
 
 
 class Scanner:
+    _legacy_replay = False
+
     def __init__(self, state, ctx):
         self.st = state
         self.ctx = ctx
@@ -733,7 +735,8 @@ class Scanner:
             plugin, _, name = (self.st["pending_slash"] or "").rpartition(":")
             if name not in info.get("skills", [info["arg"]]) or (plugin and plugin != info["arg"]):
                 return
-        if source is None:
+        # O replay não pode supor que a intenção sobreviveu com a regra nova.
+        if source is None and (info is not None or self._legacy_replay):
             self.st["pending_slash"] = None
             self.st["slash_prior_calls"] = []
         call_id = source if source in calls else None
@@ -763,7 +766,8 @@ class Scanner:
             for block in content:
                 if not isinstance(block, dict):
                     continue
-                if block.get("type") == "text" and DEVIATION_RE.search(block.get("text", "")):
+                text = block.get("text")
+                if block.get("type") == "text" and isinstance(text, str) and DEVIATION_RE.search(text):
                     self._bump("friction")
                 if block.get("type") != "tool_use":
                     continue
@@ -827,8 +831,8 @@ class Scanner:
                             self.st["current_call"] = None
                             self.st["attribution_closed"] = True
                         self._bump("friction")
-                    elif block.get("type") == "text":
-                        self.user_text(block.get("text", ""))
+                    elif block.get("type") == "text" and isinstance(block.get("text"), str):
+                        self.user_text(block["text"])
 
     def scan(self, chunk):
         for raw in chunk.split(b"\n"):
@@ -849,7 +853,21 @@ def recover_legacy_correlation(path, st, ctx):
     replay = dict(st, skills={}, current=None, classified=st["classified"].copy(), done=[],
                   retired_skill_calls=[], slash_prior_calls=[], uncorrelated_skill_calls={},
                   skill_calls={}, skill_message_order=[], skill_call_history={}, attribution_closed=False)
-    scanner = Scanner(replay, ctx)
+    owner = None
+    ambiguous = False
+
+    class ReplayScanner(Scanner):
+        _legacy_replay = True
+
+        def _watch(self, info, origin=None, **kwargs):
+            nonlocal owner, ambiguous
+            super()._watch(info, origin, **kwargs)
+            if info is not None and info["key"] == st["current"]:
+                candidate = (tuple(origin or ()), self.st["current_call"])
+                ambiguous |= owner is not None and owner != candidate
+                owner = candidate
+
+    scanner = ReplayScanner(replay, ctx)
     scanner.silent = True
     try:
         with open(path, "rb") as fh:
@@ -875,6 +893,9 @@ def recover_legacy_correlation(path, st, ctx):
                     return
                 scanner.entry(entry)
     except OSError:
+        return
+    # Um Stop ativo na 0.4.0 podia avançar o offset sem observar a carga mais recente.
+    if ambiguous:
         return
     # A leitura serve para recuperar vínculos, sem substituir a atribuição gravada pela 0.4.0.
     if replay["current"] != st["current"] or (was_closed and not replay["attribution_closed"]):

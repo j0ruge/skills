@@ -131,7 +131,7 @@ o mantenedor.
   em pasta temporária. Rode o mesmo comando da sonda com `--script "$arquivo"` no lugar de
   `--expect`. A base imprime `silêncio:1:0,silêncio:1:0` nos três casos. Também silencia
   indevidamente em `reused`, o controle que não pode regredir com a correção.
-- Para repetir o pré-scan, use `git -c diff.noprefix=false -P diff 9ddaaab25ab27f0e7f6b0230738e1c5cb517b903...4794fd4d63d95bb1911540da725720f58ac5ef9e --unified=0 -- . ':(exclude)**/checkpoint-notas.md' | bash /home/joruge/.agents/skills/codereview/scripts/scan_secrets.sh`.
+- Para repetir o pré-scan, use `git -c diff.noprefix=false -P diff 9ddaaab25ab27f0e7f6b0230738e1c5cb517b903...4794fd4d63d95bb1911540da725720f58ac5ef9e --unified=0 -- . ':(exclude)**/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh"`.
 
 ### Sonda de R16
 

@@ -61,14 +61,18 @@ def run(case, legacy):
                     compact=True)
             assert t.run_hook(script=legacy) is None
             t.write(ours, tool(error=True), compact=True)
-        elif case == "skipped_owner":
+        elif case in ("skipped_owner", "unique_owner"):
             t.write(ours, compact=True)
             assert t.run_hook(script=legacy) is None
-            newer = identified_load("codereview:coderabbit-pr", w.mkt_skill, "msg_new", "toolu_new")
-            t.write(newer, compact=True)
-            assert t.run_hook(script=legacy, active=True) is None
-            newer[1]["message"]["content"][0]["is_error"] = True
-            t.write(newer[1:2], tool(error=True), compact=True)
+            failed = ours
+            if case == "skipped_owner":
+                failed = identified_load("codereview:coderabbit-pr", w.mkt_skill, "msg_new", "toolu_new")
+                t.write(failed, compact=True)
+                assert t.run_hook(script=legacy, active=True) is None
+                saved = json.loads((w.data / "sessions/s1.json").read_bytes())
+                assert saved["offset"] == w.transcript.stat().st_size
+            failed[1]["message"]["content"][0]["is_error"] = True
+            t.write(failed[1:2], tool(error=True), compact=True)
         else:
             raise AssertionError(case)
         out = t.run_hook()
@@ -85,6 +89,7 @@ name = "plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py"
 with TemporaryDirectory() as tmp:
     old = Path(tmp) / "legacy.py"
     old.write_bytes(subprocess.check_output(["git", "show", f"7e623fe:{name}"]))
+    assert run("unique_owner", old) == "silêncio"
     for case in ("slash_list", "slash_unlinked", "null_replay", "skipped_owner"):
         print(f"{case}={run(case, old)}")
 ~~~

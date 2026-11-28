@@ -167,7 +167,7 @@ proprio=silêncio:1:0,silêncio:1:0,silêncio:1:0
 ~~~
 
 - Para repetir o pré-scan, use
-  `git -P diff 4794fd4d63d95bb1911540da725720f58ac5ef9e...c883c7b35b0192f7b532265807dcc4e485883778 --unified=0 -- . ':(exclude)**/checkpoint-notas.md' | bash /home/joruge/.agents/skills/codereview/scripts/scan_secrets.sh`.
+  `git -P diff 4794fd4d63d95bb1911540da725720f58ac5ef9e...c883c7b35b0192f7b532265807dcc4e485883778 --unified=0 -- . ':(exclude)**/checkpoint-notas.md' | bash "$HOME/.agents/skills/codereview/scripts/scan_secrets.sh"`.
 
 ### Sonda de R17
 

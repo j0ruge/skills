@@ -111,8 +111,9 @@ mantenedor.
 ## Evidências reproduzíveis
 
 Execute da raiz. A suíte e os Checks rodaram em `739d48510f66dd56b2f9cadc78ecb36e5977ff4a`.
-O comando exato da suíte está no campo `gate`. Para os Checks, execute cada célula
-de `checkpoint.md` com `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c "$check"`
+O comando exato da suíte está no campo `gate`. Para cada célula de `checkpoint.md`,
+atribua a `check` somente o comando à esquerda da seta, sem a saída esperada.
+Execute-o com `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c "$check"`
 e confira rc 0 e o stdout inteiro após normalizar espaços. A checagem estrutural
 do kit confirmou 14 linhas válidas no checkpoint.
 
@@ -131,13 +132,14 @@ import tempfile
 
 mission = "docs/handoffs/20261125-retrofit-watch-atribuicao"
 reviewed = "739d48510f66dd56b2f9cadc78ecb36e5977ff4a"
+git_env = {k: v for k, v in os.environ.items() if k not in {"GIT_DIR", "GIT_WORK_TREE"}}
 with tempfile.TemporaryDirectory() as directory:
     temporary = Path(directory)
     attributes = temporary / "attributes"
     attributes.write_text("*.md -diff\n")
     for round_, expected in [(14, 382), (15, 175)]:
         blob = subprocess.check_output(
-            ["git", "show", f"{reviewed}:{mission}/40-review-r{round_}.md"], text=True
+            ["git", "show", f"{reviewed}:{mission}/40-review-r{round_}.md"], text=True, env=git_env
         )
         recipe = blob.split("~~~bash\n", 1)[1].split("\n~~~", 1)[0]
         original = temporary / "original"
@@ -149,11 +151,11 @@ with tempfile.TemporaryDirectory() as directory:
         assert edits == 1
         negative.write_text(rejected)
         for shell in ("bash", "zsh"):
-            env = dict(os.environ, GIT_CONFIG_COUNT="1", GIT_CONFIG_KEY_0="core.attributesFile",
+            env = dict(git_env, GIT_CONFIG_COUNT="1", GIT_CONFIG_KEY_0="core.attributesFile",
                        GIT_CONFIG_VALUE_0=str(attributes))
             binary = subprocess.run([shell, str(original)], env=env, capture_output=True, text=True)
-            plain = subprocess.run([shell, str(negative)], capture_output=True, text=True)
-            strict = subprocess.run([shell, "-e", str(negative)], capture_output=True, text=True)
+            plain = subprocess.run([shell, str(negative)], env=git_env, capture_output=True, text=True)
+            strict = subprocess.run([shell, "-e", str(negative)], env=git_env, capture_output=True, text=True)
             assert binary.returncode == 0 and f'"added_lines": {expected}' in binary.stdout
             assert plain.returncode == (0 if round_ == 15 else 1)
             assert '"added_lines"' not in plain.stdout and strict.returncode == 1
