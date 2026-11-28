@@ -269,8 +269,11 @@ class VersionTest(unittest.TestCase):
 
 class PrivateFlowTest(unittest.TestCase):
     def test_auto_uses_private_folder_and_seals(self):
-        text = read(REFERENCE)
-        for field in ("`pasta`", "`<pasta>/CHANGELOG.md`", "sem bump", "Retrofit-Mode: autonomous", "seal"):
+        text = section(read(REFERENCE), "Lote privado")
+        for field in ("`pasta`", "`<pasta>/CHANGELOG.md`", "sem bump", "Retrofit-Mode: autonomous", "seal",
+                      "`store`", "`Q=<loja>/plugins/skill-quality-audit/skills`",
+                      "`SQA=$Q/skill-quality-audit/scripts/audit_skill_quality.py`",
+                      "`RS=<loja>/plugins/retrofit-skill`", "`<worktree>/<pasta>`"):
             self.assertIn(field, text)
 
     def test_manual_confirmation_and_publish_contract(self):

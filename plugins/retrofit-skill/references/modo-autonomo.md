@@ -19,8 +19,10 @@ variante privada abaixo no lugar dos passos exclusivos da loja.
 
 ## Lote privado com `--auto`
 
-Trabalhe no `worktree` preparado e edite só a `pasta` do lote. Use os scripts de auditoria
-da loja para o baseline e o gate da seção 4, apontando o alvo para `<worktree>/<pasta>`.
+Trabalhe no `worktree` preparado e edite só a `pasta` do lote. Para o baseline e o gate
+da seção 4, `<loja>` é o caminho `store` de `~/.claude/retrofit-watch.json`. Use
+`Q=<loja>/plugins/skill-quality-audit/skills`, `SQA=$Q/skill-quality-audit/scripts/audit_skill_quality.py`
+e `RS=<loja>/plugins/retrofit-skill`. O alvo da auditoria continua sendo `<worktree>/<pasta>`.
 Confira o veredito e as lições como na seção 1. Se o lote muda a descrição, mude somente a
 `description` do próprio SKILL.md. Faça os testes da mudança e acrescente uma entrada sob
 um título com a data do commit em `<pasta>/CHANGELOG.md`, sem bump e sem mudar catálogo
@@ -85,7 +87,7 @@ A porta roda os testes do plugin e a suíte `tests/` da raiz. Rode os dois antes
 
 ## 4. A auditoria
 
-A família da auditoria é a do worktree, em `$Q`. O baseline vai para uma pasta fora do worktree, como o
+A família da auditoria fica em `$Q`. O baseline vai para uma pasta fora do worktree, como o
 comando manda (`mktemp -d -p ~/.wt`): um arquivo novo no worktree deixa a árvore suja.
 
 | Quando | O que roda | Nome em `--fases` |
