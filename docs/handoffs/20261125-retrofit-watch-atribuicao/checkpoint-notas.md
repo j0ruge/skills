@@ -696,3 +696,4 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 02:47 · written by the runner
 - 2026-11-28 02:52 · r40 · Delta de prosa. Alvo de R26 confirmado. Proveniência incorreta das provas nativas registrada no backlog. Sem R novo. Suíte e 28 Checks passaram.
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 02:54 · written by the runner
+2026-11-28 03:00 · r41 · Delta documental aprovado com A nos oito critérios. Resolução da r40 confirmada. Suíte isolada, 28 Checks e quatro testes de release passaram. Sem R novo.
