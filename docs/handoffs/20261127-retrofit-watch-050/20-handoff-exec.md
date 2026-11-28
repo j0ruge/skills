@@ -4,7 +4,7 @@ fase: EXEC
 status: done
 sessao: 01a2214d-5b73-78b3-ad62-9dc2c34de288
 data: 2026-11-28 05:42
-gate: "Em 329b5f5, env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval \"$TEST_CMD\"' → rc 0. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos. A célula R7 do checkpoint imprimiu 0, com as regressões HTTPS e SSH e a sonda de QA."
+gate: "Em 38c46e3, env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval \"$TEST_CMD\"' → rc 0. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos. A célula R7 do checkpoint imprimiu 0, com as regressões HTTPS e SSH e a sonda de QA."
 ---
 
 # Handoff — EXEC — Retrofit de skills locais listadas
@@ -21,9 +21,9 @@ TEST_CMD e Check R7 passaram. QA deve repetir as provas da rodada e validar a di
 ## Estado do repo
 
 - **Branch:** `feat/retrofit-watch-050-loja` — base de comparação `origin/main` local.
-- **Último commit de produto:** `329b5f5` — preserva a porta HTTPS no status privado.
+- **Último commit de produto:** `38c46e3` — preserva a porta HTTPS no status privado.
 - **Working tree:** limpo após o commit de checkpoint, notas e handoff.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `329b5f5`. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `38c46e3`. Loja 154 (3 pulados), Stop 144, adaptadores, catálogo e versões válidos.
 - **E2E:** sem `E2E_CMD` na config. Jornada automatizada em `sonda-qa.py` com remotos bare de fixture. Nenhum deploy ou repo privado real.
 
 ## O que foi feito
@@ -54,9 +54,9 @@ TEST_CMD e Check R7 passaram. QA deve repetir as provas da rodada e validar a di
 
 ### Rodada 3 de revisão
 
-- `d5acecb` — R6 distingue destinos Git cuja equivalência não foi comprovada. Os controles
+- `8744b1d` — R6 distingue destinos Git cuja equivalência não foi comprovada. Os controles
   verificam inelegibilidade e retenção antes do fetch em caso de troca de destino.
-- `329b5f5` — R7 deixa a porta HTTPS não padrão na URL absoluta da API, não em `--hostname`.
+- `38c46e3` — R7 deixa a porta HTTPS não padrão na URL absoluta da API, não em `--hostname`.
   A regressão ficou vermelha no comando antigo e comparou o SHA publicado no bare, capturado
   no status e recebido no clone. A variante SSH manteve a URL relativa sem sua porta de transporte.
   O Check, 132 regressões dirigidas sem pulos e 63 âncoras do TODO passaram. As oito mutações da
@@ -136,10 +136,10 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
 - Em `def54f4`, a camada 1 desde a base da r2 está limpa. A comparação da branch inteira com
   `origin/main` ainda retorna rc 1 por três sinalizações preexistentes. QA deve reavaliar
   esse gate antes de encaminhar a entrega.
-- No Git delegado, `python3 scripts/anonymity-gate.py --camada1 --base 6746848 --repo "$GIT_DIR"`
-  retornou rc 0 em `329b5f5`. Com base `1f1b008`, o scanner retorna os mesmos dois alertas
+- No Git delegado, `python3 scripts/anonymity-gate.py --camada1 --base 62e7e8f --repo "$GIT_DIR"`
+  retornou rc 0 em `38c46e3`. Com base `1f1b008`, o scanner retorna os mesmos dois alertas
   nas URLs SSH públicas de fixture em `test_lean_auto.py:126–127` no estado de entrada
-  `6746848` e no produto R7. A medição com o Git delegado corrige o registro anterior de R6.
+  `62e7e8f` e no produto R7. A medição com o Git delegado corrige o registro anterior de R6.
 
 ## Achados fora de escopo
 
