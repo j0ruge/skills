@@ -464,3 +464,8 @@
 2026-11-27 22:47 · r25 · achado 1 → R16: falha da carga nova após esgotar a janela pede retro indevida nos dois limites; base silenciosa, TEST_CMD e 17 Checks existentes verdes.
 - 2026-11-27 22:48 · R16 · Mantenha separada a identificação direta da chamada que abriu a atribuição e a prova de mesma mensagem que a janela limitada oferece. Depois da saturação, um erro da própria nova carga explícita ainda encerra o crédito, sem tratar um ID disputado como prova durante a janela ativa. Preserve o controle de sucesso, erro de outra chamada, falta de message.id, tamanho máximo do histórico e ausência de reativação pela correlação desativada. Use a sonda da r25 e repita os Checks anteriores.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 22:49 · written by the runner
+- 2026-11-27 22:55 · R16 sabotage: retorno-da-condicao-anterior → active_skill_failure_after_correlation_overflow
+- 2026-11-27 22:55 · R16 sabotage: remocao-da-consulta-ao-mapa-ativo → ambiguous_call_failure_does_not_close_attribution
+- 2026-11-27 22:55 · R16 sabotage: falsa-validacao-de-id-disputado-na-janela → active_skill_failure_after_correlation_overflow, ambiguous_call_failure_does_not_close_attribution
+- 2026-11-27 22:55 · R16 sabotage: aceitacao-de-id-repetido-apos-esgotar-a-janela → active_skill_failure_after_correlation_overflow
+- 2026-11-27 22:55 · R16 · fcdea17: nove subcasos vermelhos antes do conserto, uma regressão durável, quatro mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 127 do hook, 18 Checks e F1 verdes. Git isolado na suíte inicial e final. Provas nativas não repetidas.

@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a21fcb-5f05-78f1-b1c8-1eac0ee363ec
-data: 2026-11-27 22:40
-gate: 'Em 1dd3224, env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' → rc 0. Loja com 154 testes (3 pulados), hook com 126. Adaptadores, catálogo e versão 0.4.1 válidos. As 17 células de checkpoint.md retornaram rc 0 e stdout esperado, incluindo as duas regressões de R15 e a jornada F1. Dez mutações detectadas.'
+sessao: 01a21fd8-2a87-7ae1-94ae-3d12aa35634a
+data: 2026-11-27 22:55
+gate: 'Em fcdea17, env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' → rc 0. Loja com 154 testes (3 pulados), hook com 127. Adaptadores, catálogo e versão 0.4.1 válidos. As 18 células de checkpoint.md retornaram rc 0 e stdout esperado, incluindo a regressão de R16 e a jornada F1. Quatro mutações detectadas.'
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,18 +14,18 @@ gate: 'Em 1dd3224, env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bas
 
 ## TL;DR
 
-R15 mantém o crédito quando um erro chega com ID de chamada disputado, mesmo sem ID de mensagem.
-Origem salva inválida é descartada sem perder atribuição, contadores ou posição de leitura.
-TEST_CMD, 17 Checks, jornada F1 e dez mutações verificados.
-A QA começa por R15 e F1. As provas nativas ainda precisam de um host com Bubblewrap.
+R16 encerra o crédito quando a nova chamada explícita falha, mesmo com a janela esgotada.
+Sucesso, erro de outra chamada e ID disputado não encerram o crédito. A janela não reabre.
+TEST_CMD, 18 Checks, jornada F1 e quatro mutações verificados.
+A QA começa por R16 e F1. As provas nativas ainda precisam de um host com Bubblewrap.
 
 ## Estado do repo
 
 - **Branch:** `fix/retrofit-watch-atribuicao-mesma-mensagem`, em Git isolado pelo runner, sem envio ao remoto.
-- **Último commit do incremento:** `1dd3224` — preserva a atribuição quando o vínculo é ambíguo.
+- **Último commit do incremento:** `fcdea17` — encerra o crédito de carga falha após o limite de correlação.
 - **Working tree:** limpo após o commit deste registro.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` no conteúdo de `1dd3224` → rc 0. Loja com 154 testes (3 pulados), hook com 126, adaptadores e catálogo válidos e versão 0.4.1 confirmada.
-- **E2E:** 17 Checks com rc 0 e stdout esperado. F1 manteve `linked=silêncio missing=silêncio empty=silêncio`. R15 conferiu erros contínuos e retomados e o avanço do Stop com estados recuperáveis.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` no conteúdo de `fcdea17` → rc 0. Loja com 154 testes (3 pulados), hook com 127, adaptadores e catálogo válidos e versão 0.4.1 confirmada.
+- **E2E:** 18 Checks com rc 0 e stdout esperado. F1 manteve `linked=silêncio missing=silêncio empty=silêncio`. R16 cobriu os dois tetos da janela em leitura contínua e retomada.
 - **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest -q test_auto_docs.ReleaseTest` → 4 testes, rc 0.
 
 ## O que foi feito
@@ -236,21 +236,39 @@ A QA começa por R15 e F1. As provas nativas ainda precisam de um host com Bubbl
   após controle verde com grupo de processos isolado, timeout de 25 s e teto de 384 MiB
   de memória virtual por processo. Cada mutação tem seu sensor nas notas de execução.
 
+### Retorno da revisão — rodada r25
+
+- `fcdea17` — mantém o ID direto da nova chamada explícita após esgotar a janela. O erro próprio encerra
+  o crédito futuro sem restaurar a origem ou os mapas. Na janela ativa, um ID disputado continua
+  sem abrir esse vínculo, e repetir o ID da carga ativa após o limite ainda revoga o vínculo direto.
+- `fcdea17` — atualiza guia, SKILL, README e CHANGELOG para distinguir identidade da chamada e prova de
+  mesma mensagem. A regressão de Stop cobre 12 subcasos com estado em disco, incluindo os dois limites,
+  a ausência de `message.id`, sucesso, erro de outro ID, reuso e metadado que não reativa a atribuição.
+- `fcdea17` — no Red em `b3d009c`, a sonda da r25 acusou seis emissões indevidas e o teste durável falhou
+  em nove subcasos. No Green, os 18 Checks passaram. Quatro mutações foram detectadas em cópia
+  descartável, com grupo de processos próprio, timeout de 20 s e memória virtual de 512 MiB.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1, F1 e R1–R15 com as sondas executáveis e os hashes das correções. |
-| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R15. |
+| `checkpoint.md` | I1, F1 e R1–R16 com as sondas executáveis e os hashes das correções. |
+| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R16. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
 | `TODO.md` | Issue #12 e ordem legada marcadas `RESOLVED by 682cd3d` e `RESOLVED by 8fa5c7d` até o merge. |
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as 17 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as 18 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
-- Comece por R15 e F1. A célula R15 extrai a sonda de `40-review-r24.md` com `--expect`.
+- Comece por R16 e F1. A célula R16 extrai a sonda de `40-review-r25.md` com `--expect`.
+  Compare silêncio e encerramento nos dois limites, inclusive em retomada e sem `message.id`.
+  Sucesso e reuso observado na janela ativa devem pedir retro. A célula roda a jornada
+  F1 e a regressão durável, que também verifica erro de outra chamada, reuso do ID ativo
+  depois do limite e ausência de reativação pelo metadado tardio.
+
+- Confira R15. A célula R15 extrai a sonda de `40-review-r24.md` com `--expect`.
   Confira silêncio para falha própria com e sem ID de mensagem, `codereview` para ID
   distinto ou disputado, e avanço sem `errors.log` com origem intacta, curta,
   numérica ou em objeto. A mesma célula roda a jornada de F1 e os dois testes duráveis.
