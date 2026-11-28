@@ -490,6 +490,56 @@ class StopTest(HookHarness, unittest.TestCase):
                         self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
                         self.assertEqual(saved["current"], "full:codereview")
 
+    def test_active_skill_failure_after_correlation_overflow(self):
+        for case in ("message_limit", "id_limit", "no_message", "success", "other_id", "reused"):
+            for resumed in (False, True):
+                with self.subTest(case=case, resumed=resumed), self.sub_world() as world:
+                    id_limit = case == "id_limit"
+                    limit = rw.MAX_SKILL_CALL_IDS if id_limit else rw.MAX_SKILL_MESSAGES
+                    pending = [
+                        identified_load("irrelevante", world.other_skill,
+                                        "msg_pending" if id_limit else f"msg_{i}", f"toolu_{i}")[0]
+                        for i in range(limit + 1)
+                    ]
+                    fresh_id = "toolu_fresh"
+                    call, result, meta = identified_load(
+                        "codereview:coderabbit-pr", world.mkt_skill, "msg_fresh", fresh_id
+                    )
+                    if case == "no_message":
+                        call["message"].pop("id")
+                    self.write(pending, [call], compact=True)
+                    if resumed:
+                        out, saved = self.checked_stop(mode="plan")
+                        self.assertIsNone(out)
+                        self.assertEqual(saved["current"], "full:codereview")
+                        self.assertEqual(saved["current_call"], fresh_id)
+                        self.assertIsNone(saved["current_origin"])
+                    error = result["message"]["content"][0]
+                    error["is_error"] = case != "success"
+                    if case == "other_id":
+                        error["tool_use_id"] = "toolu_0"
+                    if case == "reused":
+                        duplicate = identified_load("irrelevante", world.other_skill, "msg_reused", fresh_id)
+                        self.write(duplicate[:1], compact=True)
+                    closes = case in ("message_limit", "id_limit", "no_message")
+                    self.write([result], [meta] if closes else [], tool(error=True), compact=True)
+                    out, saved = self.checked_stop()
+                    self.assertTrue(saved["skill_correlation_lost"])
+                    self.assertEqual(saved["skill_calls"], {})
+                    self.assertEqual(saved["skill_call_history"], {})
+                    self.assertEqual(saved["skill_message_order"], [])
+                    self.assertEqual(saved["retired_skill_calls"], [])
+                    self.assertIsNone(saved["current_origin"])
+                    self.assertEqual(saved["attribution_closed"], closes)
+                    credits = saved["skills"]["full:codereview"]
+                    self.assertEqual(credits["reviews"], int(not closes))
+                    if closes:
+                        self.assertIsNone(out)
+                        self.assertIsNone(saved["current"])
+                        self.assertEqual((credits["work"], credits["friction"]), (0, 0))
+                    else:
+                        self.assertIn("`/retrofit-skill:retrofit-skill codereview`", self.context_of(out))
+
     def test_malformed_saved_origin_does_not_break_stop(self):
         for origin in (["msg_1", "toolu_1"], ["msg_1"], 42, {"message": "msg_1"},
                        ["msg_1", "toolu_1", "extra"], ["msg_1", []], ["bad id", "toolu_1"], []):

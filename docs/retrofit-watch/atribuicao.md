@@ -24,8 +24,11 @@ própria carga que o hook reconheceu primeiro pelo nome.
 Chamadas pendentes mantêm a ordem das mensagens mesmo se os metadados chegarem
 fora de ordem. Dentro da janela retida, IDs falhos, consumidos ou ambíguos não
 servem como prova para outra carga. Ao exceder 64 mensagens ou 1.024 IDs
-retidos, o hook deixa de correlacionar nessa sessão. Isso não zera contadores
-nem impede uma carga explícita. O hook guarda à parte até 1.024 IDs aposentados.
+retidos, o hook deixa de correlacionar mensagens nessa sessão. Isso não zera
+contadores nem impede uma carga explícita. O ID direto da nova carga ainda pode
+ligar seu próprio erro ao crédito aberto, sem comprovar que duas cargas vieram
+da mesma mensagem. Repetir o ID da chamada ativa invalida esse vínculo direto.
+O hook guarda à parte até 1.024 IDs aposentados dentro da janela.
 Só entram nessa lista IDs com donos conhecidos e comprovadamente antigos. Ao
 reaparecer numa chamada nova, um ID deixa de provar que o metadado é antigo.
 Uma tentativa irrelevante não descarta o slash explícito enquanto aguarda o

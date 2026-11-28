@@ -764,7 +764,9 @@ class Scanner:
                 if name == "Skill":
                     call_id = self._transcript_id(block.get("id"))
                     origin = self._skill_origin(msg.get("id"), call_id)
-                    if call_id not in self.st["skill_calls"]:
+                    # Sem janela, o ID direto ainda vale se não repetir o da carga ativa.
+                    if (call_id not in self.st["skill_calls"]
+                            and (call_id == self.st["current_call"] or not self.st["skill_correlation_lost"])):
                         if call_id == self.st["current_call"]:
                             self.st["current_call"] = None
                         call_id = None
