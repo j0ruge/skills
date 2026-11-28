@@ -225,7 +225,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   Direção: verificar se os IDs das duas cargas na fixture representam chamadas distintas no Stop da 0.4.1.
   Fonte: `docs/handoffs/20261127-retrofit-watch-050/checkpoint-notas.md` — descoberto por
   `sdd-executor` na missão `20261127-retrofit-watch-050` (2026-11-28)
-  RECURRED 4: 20261127-retrofit-watch-050/I2 (2026-11-28); 20261127-retrofit-watch-050/I3 (2026-11-28); 20261127-retrofit-watch-050/I4 (2026-11-28); 20261127-retrofit-watch-050/R15 (2026-11-28)
+  RECURRED 5: 20261127-retrofit-watch-050/I2 (2026-11-28); 20261127-retrofit-watch-050/I3 (2026-11-28); 20261127-retrofit-watch-050/I4 (2026-11-28); 20261127-retrofit-watch-050/R15 (2026-11-28); 20261127-retrofit-watch-050/R16 (2026-11-28)
 
 - [ ] **Estado intermediário inverte a precedência do slash** —
   `plugins/retrofit-watch/skills/retrofit-watch/scripts/retrofit_watch.py:510` (`slash_prior_calls`) —

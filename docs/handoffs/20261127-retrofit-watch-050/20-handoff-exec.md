@@ -2,9 +2,9 @@
 missao: 20261127-retrofit-watch-050
 fase: EXEC
 status: done
-sessao: 01a221e5-aa9b-7813-a97e-003e3c96de94
-data: 2026-11-28 08:32
-gate: "Em 4ea2ef02da9d3e6eb725b845868dd40619d2d7ac, `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval \"$TEST_CMD\"'` → rc 0, 154 testes da loja (3 pulados) e 144 do Stop. Adaptadores, catálogo e versões válidos. O Check R15 retornou 0. A jornada `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py` no mesmo SHA retornou rc 0."
+sessao: 01a221f8-d696-7cc0-82ea-2cd906fc52bd
+data: 2026-11-28 08:53
+gate: "Em d0edd6609cbbbe6f2d4b6a172cb86d7b85ca899a, `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp GIT_CEILING_DIRECTORIES=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c '. .sdd/config.sh && eval \"$TEST_CMD\"'` → rc 0, 154 testes da loja (3 pulados) e 144 do Stop. Adaptadores, catálogo e versões válidos. O Check R16 do checkpoint retornou 0, inclusive `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py`."
 ---
 
 # Handoff — EXEC — Retrofit de skills locais listadas
@@ -14,16 +14,16 @@ gate: "Em 4ea2ef02da9d3e6eb725b845868dd40619d2d7ac, `env -u GIT_DIR -u GIT_WORK_
 
 ## TL;DR
 
-I1–I4 e R1–R15 concluídos. Setup e elegibilidade exigem HEAD direto para a main.
-O avanço registra `fora-da-main` ao detectar a troca de ramo antes da busca.
-O Check R15, a jornada da QA e o TEST_CMD passaram. Comece a QA pelo Check de R15.
+I1–I4 e R1–R16 concluídos. O setup não libera a cópia se a main redireciona para outro ramo.
+Se a releitura de HEAD falhar antes do fetch, o avanço grava `erro` e preserva as refs.
+O Check R16, a jornada de QA e o TEST_CMD passaram. Comece a QA pelo Check de R16.
 
 ## Estado do repo
 
 - **Branch:** `feat/retrofit-watch-050-loja` — base de comparação `origin/main` local.
-- **Último commit de produto:** `4ea2ef0` — alinha a leitura do ramo do clone dedicado.
+- **Último commit de produto:** `d0edd66` — recusa main simbólica e distingue falha de leitura.
 - **Working tree:** limpo após o commit de checkpoint, notas e handoff.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `4ea2ef0`. 154 testes da loja, 3 pulados, e 144 do Stop. Adaptadores, catálogo e versões válidos.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp GIT_CEILING_DIRECTORIES=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c '. .sdd/config.sh && eval "$TEST_CMD"'` → rc 0 em `d0edd66`. 154 testes da loja, 3 pulados, e 144 do Stop. Adaptadores, catálogo e versões válidos.
 - **E2E:** sem `E2E_CMD` na config. Jornada automatizada em `sonda-qa.py` com remotos bare de fixture. Nenhum deploy ou repo privado real.
 
 ## O que foi feito
@@ -157,18 +157,25 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
 - Depois do EXEC, as três provas nativas de distribuição e a camada 1 de anonimização passaram no host Linux em `42042d1`.
 - A suíte ampla no mesmo host, com diretório temporário isolado, executou 612 testes. A única falha foi `test_second_skill_of_the_same_plugin_is_recorded`, reproduzida na base.
 
+### Revisão r10 e correção de R16
+
+- `d0edd66` — a leitura compartilhada recusa uma main que redireciona para outro ramo, mesmo com HEAD direto. O setup conserva o marcador e retoma com uma main direta, inclusive empacotada. Antes do fetch, HEAD ilegível produz `erro` sem busca nem alteração de refs, ao passo que ramo errado continua como `fora-da-main`.
+- Em `37c2274`, os dois Reds falharam pela causa esperada. Em `d0edd66`, passaram o Check R16, 169 regressões dirigidas sem pulos, a jornada de QA, o TEST_CMD e a camada 1 sobre a cópia Git do runner (`python3 scripts/anonymity-gate.py --camada1 --base origin/main --repo "$GIT_DIR"`).
+- As 19 sabotagens foram detectadas em cópia descartável, com oito controles sem pulos antes e depois, grupo próprio, 20 s e 512 MiB por execução. A extração do caminho de `.git`, quando reescrita com o mesmo caminho anterior, não muda o comportamento. A leitura do arquivo errado foi detectada.
+- A suíte ampla da retrofit-watch em temporários isolados rodou 614 testes, com 5 falhas e 176 erros na candidata. Em `37c2274` rodou 612, com 5 falhas e 176 erros nos mesmos casos. As fixtures de colheita sob /tmp ainda encontram o marcador /tmp/.git. A falha da segunda skill full ganhou a recorrência R16 no TODO.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Dezenove Checks e seus commits. |
+| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Vinte Checks e seus commits. |
 | `docs/retrofit-watch/clone-dedicado.md` | Contrato de clone, selo, ensaio, publicação e avanço. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py` | Cópia de distribuição com contratos dos dois plugins e controles do catálogo. |
 | `KAIZEN_LOG.md` e `TODO.md` | Medida da fixture, limite da adoção e achados fora do escopo. |
 
 ## Boot da próxima fase
 
-Para QA, leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Comece pelo Check de R15. Confirme que o setup recusa HEAD indireto sem liberar a cópia, mantém o marcador e conclui após restaurar a referência direta. Na troca de ramo antes do fetch, confira o registro `fora-da-main`, nenhum fetch, HEAD e refs locais preservados. Repita os Checks anteriores, incluindo a prova de R14 da ordem entre a leitura do ramo e a validação da trava, e a jornada de QA em fixture.
+Para QA, leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Comece pelo Check de R16. Em clone pendente da fixture, confira que HEAD direto não basta quando a main resolve para outro ramo. O marcador deve ficar e a elegibilidade só volta após corrigir a ref. Antes do fetch, a falha de leitura deve persistir como `erro` com a mensagem `HEAD do clone ilegível`, sem busca nem alteração das refs. Repita R14 e R15 para conferir a trava, o HEAD indireto e o diagnóstico distinto `fora-da-main`.
 Para reproduzir a jornada de bare local com HOME isolado, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py`.
 Não é preciso preparar remotos reais nem iniciar serviços. Para as regressões dirigidas, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests:plugins/retrofit-skill/tests python3 -B -m unittest test_fixture_private test_lean_auto test_lean_window test_lean_live test_lean_batch test_lean_gate test_auto_docs test_modo_autonomo`.
 
@@ -217,6 +224,8 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
 
 ## Riscos e não-feitos
 
+- R16 foi verificado no Linux com remotos bare de fixture. As três provas nativas de distribuição não foram repetidas, e não houve execução em Windows nativo.
+
 - No sandbox da fase EXEC de R15, a suíte ampla da retrofit-watch em TMPDIR=/tmp terminou com 612 testes, 5 falhas e 176 erros. O marcador /tmp/.git interferiu nas fixtures de colheita e a segunda skill full ficou ausente. Ambos foram reproduzidos na base e184101. A falha da segunda skill ganhou a recorrência R15 no TODO.
 
 - R14 não mediu a distribuição nativa. A execução sem os três pulos do TEST_CMD parou no Bubblewrap, antes do registro da loja, porque o sandbox não permite criar o namespace. Repita em um host que permita esse isolamento. Não houve validação em Windows nativo.
@@ -253,3 +262,5 @@ O executor não abriu PR, não alterou repos reais e não repontou links.
   em vez da fixture. Em R3, a primeira execução criou commits vazios e um ref na cópia do runner.
   O ramo foi recomposto sobre o estado de entrada com a mesma árvore testada. A receita com
   as duas variáveis desarmadas passou, sem alterar o Check externo.
+  Em R16, o mesmo ambiente voltou a criar commits vazios e o ref `base`. Após confirmar que a árvore
+  era idêntica à de entrada, o EXEC retirou apenas esses efeitos e repetiu a suíte com as variáveis desarmadas.

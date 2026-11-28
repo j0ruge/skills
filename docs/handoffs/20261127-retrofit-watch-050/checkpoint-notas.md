@@ -363,3 +363,23 @@
 - intervention: sdd run --phase REVIEW (the starting phase was forced from the CLI) — REVIEW — 2026-11-28 08:36 · written by the runner
 - 2026-11-28 08:42 · `R16` · Achados 1 e 2 da r10: setup libera main que resolve para outro ramo e avanço chama HEAD ilegível de ramo errado; Check exige as duas regressões e a jornada de QA.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 08:44 · written by the runner
+- 2026-11-28 08:50 · `R16` · R16 sabotage: resolve o diretório de metadados no lugar errado → test_setup_rejects_main_resolving_to_other_branch, test_setup_and_eligibility_agree_on_symbolic_main, test_advance_reports_unreadable_head_before_fetch, test_live_clone_requires_readable_main, test_advance_reports_branch_change_before_fetch, test_setup_rejects_hook_change_during_branch_validation, test_setup_clones_main_with_worktree_lock
+- 2026-11-28 08:50 · `R16` · R16 sabotage: lê o arquivo errado em vez de HEAD → test_setup_rejects_main_resolving_to_other_branch, test_setup_and_eligibility_agree_on_symbolic_main, test_advance_reports_unreadable_head_before_fetch, test_live_clone_requires_readable_main, test_advance_reports_branch_change_before_fetch, test_setup_rejects_hook_change_during_branch_validation, test_setup_clones_main_with_worktree_lock
+- 2026-11-28 08:50 · `R16` · R16 sabotage: omite a exigência de HEAD direto → test_setup_and_eligibility_agree_on_symbolic_main, test_advance_reports_branch_change_before_fetch
+- 2026-11-28 08:50 · `R16` · R16 sabotage: aceita HEAD indireto → test_setup_and_eligibility_agree_on_symbolic_main, test_advance_reports_branch_change_before_fetch
+- 2026-11-28 08:50 · `R16` · R16 sabotage: relê a ref de outro ramo → test_setup_rejects_main_resolving_to_other_branch
+- 2026-11-28 08:50 · `R16` · R16 sabotage: deixa de recusar ref não regular → test_setup_rejects_main_resolving_to_other_branch
+- 2026-11-28 08:50 · `R16` · R16 sabotage: aceita main implementada como link de arquivo → test_setup_rejects_main_resolving_to_other_branch
+- 2026-11-28 08:50 · `R16` · R16 sabotage: abre a ref solta no lugar errado → test_setup_rejects_main_resolving_to_other_branch
+- 2026-11-28 08:50 · `R16` · R16 sabotage: aceita o prefixo de referência simbólica → test_setup_rejects_main_resolving_to_other_branch
+- 2026-11-28 08:50 · `R16` · R16 sabotage: perde o tratamento da ref empacotada → test_setup_rejects_main_resolving_to_other_branch
+- 2026-11-28 08:50 · `R16` · R16 sabotage: recusa a main empacotada → test_setup_rejects_main_resolving_to_other_branch
+- 2026-11-28 08:50 · `R16` · R16 sabotage: não trata falta de permissão na leitura → test_advance_reports_unreadable_head_before_fetch, test_live_clone_requires_readable_main
+- 2026-11-28 08:50 · `R16` · R16 sabotage: volta a chamar I/O de ramo errado → test_advance_reports_unreadable_head_before_fetch
+- 2026-11-28 08:50 · `R16` · R16 sabotage: ignora o resultado da releitura → test_advance_reports_unreadable_head_before_fetch, test_advance_reports_branch_change_before_fetch
+- 2026-11-28 08:50 · `R16` · R16 sabotage: não separa falha de I/O antes do fetch → test_advance_reports_unreadable_head_before_fetch
+- 2026-11-28 08:50 · `R16` · R16 sabotage: grava diagnóstico genérico para I/O → test_advance_reports_unreadable_head_before_fetch
+- 2026-11-28 08:50 · `R16` · R16 sabotage: não recusa ramo errado no fetch → test_advance_reports_branch_change_before_fetch
+- 2026-11-28 08:50 · `R16` · R16 sabotage: repõe a leitura de HEAD que não consulta a ref da main → test_setup_rejects_main_resolving_to_other_branch
+- 2026-11-28 08:50 · `R16` · R16 sabotage: repõe o teste antigo de ramo, que não distingue I/O → test_advance_reports_unreadable_head_before_fetch
+- 2026-11-28 08:53 · `R16` · Dois Reds confirmados em `37c2274`. Em `d0edd66`, Check R16, 169 regressões dirigidas, TEST_CMD, jornada de QA e camada 1 verdes. As 19 sabotagens falharam em cópia descartável, com oito controles verdes sem pulos, grupo próprio, 20 s e 512 MiB por execução. A suíte ampla da retrofit-watch em temporários isolados rodou 614 testes, com 5 falhas e 176 erros na candidata. Em `37c2274` rodou 612, com 5 falhas e 176 erros nos mesmos casos. As fixtures de colheita sob /tmp ainda encontram o marcador /tmp/.git. A falha da segunda skill full ganhou a recorrência R16. A suíte inicial herdou o Git do runner e criou commits vazios e o ref base, retirados após confirmar a árvore de entrada. A repetição com GIT_DIR e GIT_WORK_TREE desarmadas passou.
