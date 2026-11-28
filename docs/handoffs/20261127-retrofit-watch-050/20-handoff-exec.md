@@ -3,8 +3,8 @@ missao: 20261127-retrofit-watch-050
 fase: EXEC
 status: done
 sessao: 01a22180-2764-7272-9863-f4f98a202c53
-data: 2026-11-28 07:33
-gate: "Em 39490d17b420bc0d5ff016ce92337059416c329e, TEST_CMD rc 0 (154 testes da loja, 3 pulados; 144 do Stop), 16 Checks, 158 testes dirigidos, jornada da QA e regressão de Stop verdes. Três provas de distribuição no host Linux e camada 1 contra origin/main passaram."
+data: 2026-11-28 07:45
+gate: "Em ea373158c7b4d50b31b766807a813515121bcf88, TEST_CMD rc 0 (154 testes da loja, 3 pulados; 144 do Stop), 17 Checks, 161 testes dirigidos, jornada da QA e regressão de Stop verdes. Três provas de distribuição no host Linux e camada 1 contra origin/main passaram."
 ---
 
 # Handoff — EXEC — Retrofit de skills locais listadas
@@ -14,16 +14,16 @@ gate: "Em 39490d17b420bc0d5ff016ce92337059416c329e, TEST_CMD rc 0 (154 testes da
 
 ## TL;DR
 
-I1–I4 e R1–R12 concluídos. O setup valida a origem efetiva e depois confirma a `main`,
-a identidade do clone e o caminho exato da trava antes de liberar. Os 16 Checks, a jornada,
-a suíte e os testes de distribuição no Linux passaram em `39490d1`.
+I1–I4 e R1–R13 concluídos. O setup detecta mudanças de `HEAD` durante a validação
+e preserva a pendência se o ramo muda na liberação. Os 17 Checks, a jornada, a suíte
+e os testes de distribuição no Linux passaram em `ea37315`.
 
 ## Estado do repo
 
 - **Branch:** `feat/retrofit-watch-050-loja` — base de comparação `origin/main` local.
-- **Último commit de produto:** `39490d1` — preserva o caminho da trava e reconfere o ramo depois da origem.
+- **Último commit de produto:** `ea37315` — preserva o marcador durante uma troca de ramo.
 - **Working tree:** limpo após o commit de checkpoint, notas e handoff.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `39490d1`. 154 testes da loja, 3 pulados, e 144 do Stop. Adaptadores, catálogo e versões válidos.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh; eval "$TEST_CMD"'` → rc 0 em `ea37315`. 154 testes da loja, 3 pulados, e 144 do Stop. Adaptadores, catálogo e versões válidos.
 - **E2E:** sem `E2E_CMD` na config. Jornada automatizada em `sonda-qa.py` com remotos bare de fixture. Nenhum deploy ou repo privado real.
 
 ## O que foi feito
@@ -131,11 +131,16 @@ Grava o hook no caminho errado → LiveTest.test_setup_clones_main_with_worktree
 - `39490d1` — o Red reproduziu dois casos. Após o Green, o setup preserva espaços significativos no caminho da trava e mantém o marcador se o ramo muda no mesmo checkout durante a validação da origem. A suíte de `test_lean_live` passou com 46 testes.
 - Em `39490d1`, a leitura do checkpoint confirmou a saída dos 16 Checks. Passaram também 158 testes dirigidos, a jornada da QA em fixture, a regressão de Stop, o TEST_CMD, a camada 1 e os três testes de distribuição no host.
 
+### Revisão independente e correção de R13
+
+- A r7 reproduziu a troca de ramo durante a leitura do hook e a validação da origem no ramo anterior. Em `ea37315`, a versão de `HEAD` acompanha a identidade do clone. A liberação reconfere essa versão e preserva o marcador caso a troca ocorra durante sua remoção.
+- Os três Reds reproduziram as falhas. Em `ea37315`, passaram os 49 testes do clone, 17 Checks, 161 regressões dirigidas, a jornada em fixture, a suíte e a distribuição no host.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Quatorze Checks e seus commits. |
+| `docs/handoffs/20261127-retrofit-watch-050/checkpoint.md` | Dezessete Checks e seus commits. |
 | `docs/retrofit-watch/clone-dedicado.md` | Contrato de clone, selo, ensaio, publicação e avanço. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_auto_docs.py` | Cópia de distribuição com contratos dos dois plugins e controles do catálogo. |
 | `KAIZEN_LOG.md` e `TODO.md` | Medida da fixture, limite da adoção e achados fora do escopo. |
@@ -147,12 +152,7 @@ As regressões mudam o destino depois de validar a origem, comparam o checkout e
 Para reproduzir a jornada de bare local com HOME isolado, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B docs/handoffs/20261127-retrofit-watch-050/sonda-qa.py`.
 Não é preciso preparar remotos reais nem iniciar serviços. Para as regressões dirigidas, use `env -u GIT_DIR -u GIT_WORK_TREE TMPDIR=/tmp PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests:plugins/retrofit-skill/tests python3 -B -m unittest test_fixture_private test_lean_auto test_lean_window test_lean_live test_lean_batch test_lean_gate test_auto_docs test_modo_autonomo`.
 
-Leia `00-missao.md`, `01-plano.md` e `checkpoint.md` deste diretório. Comece pelas células R9 e R10. A primeira confere a identidade do diretório vazio concorrente, a retentativa depois de retirar a
-regra Git exclusiva do destino e o aviso de startup mesmo com registro anterior `ok`. R10 mede a preservação de arquivos durante a retentativa.
-Rode também `test_lean_live.StartupTest.test_offline_advance_is_in_child_and_reported_on_next_startup`
-com o mesmo ambiente do Check R9. A sonda da célula reproduz a jornada em bare de fixture,
-sem serviço real para iniciar. Depois repita os Checks anteriores. Não use um `TMPDIR` com
-ancestral Git.
+Leia `00-missao.md`, `01-plano.md` e `checkpoint.md`. Comece pelos Checks R12 e R13, que conferem o caminho da trava, a origem sob mudança de ramo e a preservação do marcador. Depois repita os Checks anteriores e a jornada da QA em fixture.
 Desarme `GIT_DIR` e `GIT_WORK_TREE` do runner antes de executar testes que criam repos.
 A jornada que muda para o usuário é o Stop de uma skill em repo listado, seguido de pedido, selo, revisão e porta.
 Comece com `PrivateWorld` em `plugins/retrofit-watch/skills/retrofit-watch/tests/fixture_private.py` e

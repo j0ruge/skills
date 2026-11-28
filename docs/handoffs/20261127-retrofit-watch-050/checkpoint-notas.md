@@ -316,3 +316,4 @@
 - 2026-11-28 06:57 · `R12` · REVIEW r6, achados 1 e 2: caminho efetivo da trava com espaço final e troca do ramo no mesmo checkout durante a validação. Check exige as duas regressões, R10 e a jornada de QA.
 - 2026-11-28 07:29 · REVIEW r6 · CLI encerrou por limite de uso com rc 3. O relatório já estava gravado e descreveu os dois achados de R12. O runner não concluiu a sessão nem aprovou o candidato.
 - 2026-11-28 07:33 · `R12` · Dois Reds confirmados, 46 testes de clone verdes em `39490d1`. 16 Checks, TEST_CMD, 158 testes dirigidos, QA em fixture, distribuição no Linux e camada 1 passaram.
+- 2026-11-28 07:45 · `R13` · Três Reds de troca de ramo confirmados e 49 testes de clone verdes em `ea37315`. 17 Checks, TEST_CMD, QA em fixture, 161 regressões dirigidas, distribuição nativa e camada 1 passaram.
