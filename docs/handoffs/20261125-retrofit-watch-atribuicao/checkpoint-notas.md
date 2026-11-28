@@ -532,3 +532,25 @@
 - 2026-11-28 00:40 · r33 · Achado da r32 fechado em 02fe0ac. TEST_CMD, 22 Checks e quatro testes de release passaram. Todos os critérios em A. Nenhum novo incremento.
 - 2026-11-28 00:46 · R21 · Revisão externa do PR #13. Quatro casos reproduzidos em 677b60a com fixture local, incluindo a 0.4.0 real. Plano e sonda em plano-r21.md. R20 mantém corrigido o falso aposentado nulo.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-28 00:47 · written by the runner
+- 2026-11-28 00:55 · R21 sabotage: regra legado padrão → external_metadata_without_source_preserves_pending_slash
+- 2026-11-28 00:55 · R21 sabotage: guarda de slash_prior_calls → malformed_slash_history_uses_missing_field_fallback
+- 2026-11-28 00:55 · R21 sabotage: guarda da fonte externa → external_metadata_without_source_preserves_pending_slash
+- 2026-11-28 00:55 · R21 sabotage: leitura de text do assistente → malformed_text_keeps_valid_events_in_delta_and_replay
+- 2026-11-28 00:55 · R21 sabotage: guarda de text do assistente → malformed_text_keeps_valid_events_in_delta_and_replay
+- 2026-11-28 00:55 · R21 sabotage: guarda de text do usuário → malformed_text_keeps_valid_events_in_delta_and_replay
+- 2026-11-28 00:55 · R21 sabotage: encaminhamento de text do usuário → malformed_text_keeps_valid_events_in_delta_and_replay
+- 2026-11-28 00:55 · R21 sabotage: candidato inicial → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: ambiguidade inicial → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: herança do scanner de replay → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: regra legada no replay → legacy_migration_preserves_split_typed_slash
+- 2026-11-28 00:55 · R21 sabotage: interceptação do dono → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: escopo do candidato → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: classificação no replay → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: filtro pela atribuição persistida → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: identidade do candidato → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: acúmulo da ambiguidade → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: retenção do candidato → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: scanner usado no replay → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: guarda de importação ambígua → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 sabotage: retorno antes de importar → legacy_replay_cannot_choose_between_compatible_owners
+- 2026-11-28 00:55 · R21 · e5c249d. Quatro regressões vermelhas antes da correção. Suíte isolada com 154 testes da loja (3 pulados), 138 do hook, 23 Checks, F1 e quatro testes de release verdes. Vinte e uma mutações detectadas com grupo próprio, timeout de 20 s e 512 MiB. Receitas históricas confirmadas com Git roteado para uma fixture. O Bubblewrap bloqueou as três provas nativas antes do CLI. O Git privado contaminado na primeira suíte foi restaurado sem tocar a árvore.

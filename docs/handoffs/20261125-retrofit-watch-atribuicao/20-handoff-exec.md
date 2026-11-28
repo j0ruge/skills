@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a22008-97b9-7ad1-aa29-23211304c9cb
-data: 2026-11-27 23:46
-gate: 'TEST_CMD em 41f2952 com GIT_DIR e GIT_WORK_TREE removidos retornou rc 0. Loja com 154 testes (3 pulados) e hook com 134. As três provas nativas, a jornada F1 e os controles de R19 e R20 passaram.'
+sessao: 01a22043-cca8-7b91-9af0-fae225be0b96
+data: 2026-11-28 00:55
+gate: 'TEST_CMD de .sdd/config.sh com Git isolado em e5c249d: rc 0, 154 testes da loja (3 pulados), 138 do hook e validação da 0.4.1. Os 23 Checks e quatro testes de release passaram.'
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,15 +14,17 @@ gate: 'TEST_CMD em 41f2952 com GIT_DIR e GIT_WORK_TREE removidos retornou rc 0. 
 
 ## TL;DR
 
-R20 exige um ID válido antes de ignorar metadado externo por aposentadoria.
-R19 continua protegendo a transição com dados salvos malformados.
-O TEST_CMD, os 22 Checks, F1 e os controles de R19 e R20 passaram.
-As três provas nativas passaram no host Linux. A QA começa por R20, R19 e F1.
+R21 preserva o slash no delta sem vínculo e o crédito legado quando o dono reconstruído é ambíguo.
+O Stop ignora texto malformado e retoma com o histórico de slash inválido.
+A suíte isolada, os 23 Checks e F1 passaram. As provas nativas aguardam execução fora do sandbox.
+A QA começa por R21, R14, R20 e F1.
 
 ## Estado do repo
 
 - **Branch** `fix/retrofit-watch-atribuicao-mesma-mensagem`, ligada ao PR #13.
-- O incremento mais recente é R20 em `41f2952`. R19 em `bdf75fa` mediu 133 testes do hook.
+- O incremento mais recente é R21 em `e5c249d`. A versão continua 0.4.1.
+- O `TEST_CMD` isolado em R21 retornou rc 0 com 154 testes da loja (3 pulados) e 138 do hook. Os 23 Checks compararam o stdout completo. F1 confirmou `linked=silêncio missing=silêncio empty=silêncio`.
+- R20 em `41f2952` mediu 134 testes do hook. R19 em `bdf75fa` mediu 133.
 - O `TEST_CMD` de `.sdd/config.sh` foi executado para R20 com `GIT_DIR` e `GIT_WORK_TREE` removidos. Retornou rc 0 com 154 testes da loja (3 pulados) e 134 do hook. Adaptadores, catálogo e versão 0.4.1 foram validados.
 - A suíte `test_auto_docs.ReleaseTest` passou com quatro testes. As três provas de distribuição nativa passaram separadamente no host Linux, fora do sandbox.
 - A r30 confirmou rc 0 e a saída esperada dos 22 Checks. F1 manteve `linked=silêncio missing=silêncio empty=silêncio`.
@@ -282,21 +284,50 @@ As três provas nativas passaram no host Linux. A QA começa por R20, R19 e F1.
   offset. Cinco mutações foram detectadas com grupo próprio, timeout de 20 s e
   memória virtual de 512 MiB. Os resultados individuais estão nas notas.
 
+### R21 — Retorno da revisão externa do PR #13
+
+- `e5c249d` — corrige os quatro casos de Stop em [plano-r21.md](plano-r21.md).
+  Histórico de slash malformado usa a mesma regra do campo ausente. Metadado externo
+  sem vínculo encerra a atribuição, mas preserva o slash no delta. O replay mantém o
+  controle legado de slash já consumido. Campos `text` não string não interrompem a
+  leitura do delta ou do prefixo. A 0.4.0 pode ter avançado o offset sem varrer o
+  delta. Com dois donos compatíveis, o replay mantém a atribuição e os contadores
+  persistidos sem importar correlação. Um dono único continua recuperável.
+- `e5c249d` — isola o Git nas receitas de r14, r15 e r19 e usa o caminho do scanner
+  relativo ao diretório pessoal em r24–r27. Em uma fixture Git sem os SHAs
+  históricos, a receita antiga falhou e a corrigida passou. r14 e r15 repetiram
+  382 e 175 linhas em Bash e Zsh. r19 manteve os controles negativos com e sem
+  `errexit`. r24–r27 repetiram os pré-scans de 530, 452, 327 e 428 linhas.
+- As quatro regressões ficaram vermelhas antes da correção. Vinte e uma mutações
+  do código final morreram depois de um controle verde com grupo próprio,
+  timeout de 20 s e memória virtual de 512 MiB. Os resultados individuais estão
+  nas notas de execução.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1, F1 e R1–R20 com as sondas executáveis e os hashes das correções. |
-| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R19. |
+| `checkpoint.md` | I1, F1 e R1–R21 com as sondas executáveis e os hashes das correções. |
+| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R19 e R21. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
 | `TODO.md` | Issue #12 e ordem legada marcadas `RESOLVED by 682cd3d` e `RESOLVED by 8fa5c7d` até o merge. |
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as 22 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as 23 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
-- Comece por R20, R19 e F1. R20 exercita fonte ausente, vazia e inválida. A célula R19 extrai a sonda de `40-review-r28.md` com
+- Comece pela célula de R21. A sonda usa a 0.4.0 do Git e deve retornar
+  `slash_list=graphify slash_unlinked=graphify null_replay=codereview skipped_owner=codereview`.
+  Confirme também o silêncio no controle de erro próprio com dono único. Repita
+  R14 para slash posterior comprovado, R20 para externo sem fonte válida e F1 para
+  metadado atrasado. Execute a suíte da raiz com:
+
+  ~~~bash
+  env -u GIT_DIR -u GIT_WORK_TREE bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'
+  ~~~
+
+- Repita R20, R19 e F1. R20 exercita fonte ausente, vazia e inválida. A célula R19 extrai a sonda de `40-review-r28.md` com
   `--expect` e roda a regressão permanente. Confira a retro de `codereview`, o offset no
   fim e a perda da janela sem erro nos três casos da sonda. O teste permanente também
   confere o campo opcional ausente ou inválido, os IDs sobreviventes e os contadores.
@@ -393,6 +424,13 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 
 ## Riscos e não-feitos
 
+- As três provas nativas de R21 retornaram rc 1 antes de executar o CLI, pois o
+  Bubblewrap não pôde criar um namespace no sandbox. Para repetir no host Linux
+  fora do sandbox, na raiz do checkout com R21, execute
+  `env -u GIT_DIR -u GIT_WORK_TREE -u SKILLS_SKIP_NATIVE_DISTRIBUTION python3 -B -m unittest discover -s tests -p test_codex_distribution.py -v`.
+  O resultado verde de R20 é histórico e não substitui essa execução.
+- R21 não publica a 0.4.1, não atua nas conversas do PR e não tenta integrar a branch.
+
 - R19 conserva os IDs válidos ainda retidos ao desligar a janela, mas não recupera os já descartados.
   O registro de IDs novos de R17 mantém o próprio teto. Quando ele enche, IDs novos deixam
   de provar erro próprio. Nenhum dos registros prova que duas cargas são da mesma mensagem.
@@ -421,6 +459,12 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
   dentro do namespace. O R20 confirmou as três no host.
 
 ## Achados fora de escopo
+
+- kit: em R21, `bin/sdd-codex:468` voltou a deixar o Git privado chegar às
+  fixtures de TEST_CMD. O reflog e a árvore idêntica confirmaram a ponta inicial
+  `b2f6de8`. Somente a ponta, a referência e a configuração contaminadas do
+  espelho privado foram restauradas. A suíte isolada passou antes e depois.
+  Nenhuma alteração foi feita no kit.
 
 - O snapshot intermediário que perde a ordem do slash continua no item aberto de `TODO.md`.
   R15 não ampliou a migração para esse formato.
