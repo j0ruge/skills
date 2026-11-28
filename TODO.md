@@ -220,14 +220,14 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-25)
 
 - [ ] **O handoff de R3 não distingue de qual mensagem é a chamada pendente** —
-  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:56` (`outra chamada pendente`) —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r4.md:64` (`outra chamada pendente`) —
   a frase estende a garantia a uma chamada de outra mensagem, mas a sonda de R4 devolve o alvo errado nesse caso.
   Direção: distinguir vínculo restante na mesma mensagem de pendência em outra. RESOLVED by 893c9c6
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r4.md` —
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-26)
 
 - [ ] **Medições históricas da atribuição sem saída preservada** —
-  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:64` (`58 degradações`) —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r6.md:225` (`58 degradações`) —
   totais de mutações e a prova nativa foram resumidos sem as saídas nos artefatos de revisão.
   Direção: guardar os resultados junto do commit e do comando que os produziu.
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r5.md` —
@@ -290,7 +290,7 @@ seção. Análise longa mora em `docs/`, e o item aponta com `Fonte:`.
   descoberto por `sdd-reviewer` na missão `20261125-retrofit-watch-atribuicao` (2026-11-28)
 
 - [ ] **Inventário de EXEC não inclui o Check de R24** —
-  `docs/handoffs/20261125-retrofit-watch-atribuicao/20-handoff-exec.md:374` (`sondas executáveis`) —
+  `docs/handoffs/20261125-retrofit-watch-atribuicao/checkpoint.md:35` (`possível dono rejeitado`) —
   a tabela termina em R23, mas o checkpoint inclui R24 e o boot manda repetir 26 Checks.
   O inventário remete à tabela canônica sem repetir o intervalo. RESOLVED by 149086f
   Fonte: `docs/handoffs/20261125-retrofit-watch-atribuicao/40-review-r37.md` —
