@@ -2,9 +2,9 @@
 missao: 20261125-retrofit-watch-atribuicao
 fase: EXEC
 status: done
-sessao: 01a21fb9-2977-7590-834f-f66ab42b264d
-data: 2026-11-27 22:24
-gate: 'Em 5459e8c, env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' → rc 0. Loja com 154 testes (3 pulados), hook com 124. Adaptadores, catálogo e versão 0.4.1 válidos. As 16 células de checkpoint.md retornaram rc 0 e stdout esperado, incluindo o Stop contínuo e retomado de R14 e a jornada F1.'
+sessao: 01a21fcb-5f05-78f1-b1c8-1eac0ee363ec
+data: 2026-11-27 22:40
+gate: 'Em 1dd3224, env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c ''source .sdd/config.sh && eval "$TEST_CMD"'' → rc 0. Loja com 154 testes (3 pulados), hook com 126. Adaptadores, catálogo e versão 0.4.1 válidos. As 17 células de checkpoint.md retornaram rc 0 e stdout esperado, incluindo as duas regressões de R15 e a jornada F1. Dez mutações detectadas.'
 ---
 
 # Handoff — EXEC — Atribuição da retrofit-watch por mensagem
@@ -14,18 +14,18 @@ gate: 'Em 5459e8c, env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bas
 
 ## TL;DR
 
-R14 encerra o crédito futuro da chamada falha pelo ID, sem exigir ID de mensagem.
-Um ID ambíguo não prova antiguidade. Só a carga externa comprovadamente posterior expira o slash anterior quando encerra a atribuição.
-TEST_CMD, 16 Checks, F1 e 28 mutações verificados. As receitas de r9 e r10 passam com Git de fixture no ambiente.
-A QA começa por R14 e F1. As provas nativas ainda precisam de um host com Bubblewrap.
+R15 mantém o crédito quando um erro chega com ID de chamada disputado, mesmo sem ID de mensagem.
+Origem salva inválida é descartada sem perder atribuição, contadores ou posição de leitura.
+TEST_CMD, 17 Checks, jornada F1 e dez mutações verificados.
+A QA começa por R15 e F1. As provas nativas ainda precisam de um host com Bubblewrap.
 
 ## Estado do repo
 
 - **Branch:** `fix/retrofit-watch-atribuicao-mesma-mensagem`, em Git isolado pelo runner, sem envio ao remoto.
-- **Último commit do incremento:** `5459e8c` — distingue ID da chamada, origem e precedência no Stop.
+- **Último commit do incremento:** `1dd3224` — preserva a atribuição quando o vínculo é ambíguo.
 - **Working tree:** limpo após o commit deste registro.
-- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` no conteúdo de `5459e8c` → rc 0. Loja com 154 testes (3 pulados), hook com 124, adaptadores e catálogo válidos e versão 0.4.1 confirmada.
-- **E2E:** 16 Checks com rc 0 e stdout esperado. F1 manteve `linked=silêncio missing=silêncio empty=silêncio`. R14 conferiu nove pares em Stops com persistência real.
+- **Suíte:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source .sdd/config.sh && eval "$TEST_CMD"'` no conteúdo de `1dd3224` → rc 0. Loja com 154 testes (3 pulados), hook com 126, adaptadores e catálogo válidos e versão 0.4.1 confirmada.
+- **E2E:** 17 Checks com rc 0 e stdout esperado. F1 manteve `linked=silêncio missing=silêncio empty=silêncio`. R15 conferiu erros contínuos e retomados e o avanço do Stop com estados recuperáveis.
 - **Release:** `env -u GIT_DIR -u GIT_WORK_TREE PYTHONPATH=plugins/retrofit-watch/skills/retrofit-watch/tests python3 -B -m unittest -q test_auto_docs.ReleaseTest` → 4 testes, rc 0.
 
 ## O que foi feito
@@ -222,21 +222,40 @@ A QA começa por R14 e F1. As provas nativas ainda precisam de um host com Bubbl
   sensor de cada mutação. A normalização do ID foi movida, não suprimida. Repeti-la no ponto antigo
   seria idempotente, mas retirar a validação do ponto novo ficou vermelho com um ID inválido.
 
+### Retorno da revisão — rodada r24
+
+- `1dd3224` — só associa erro à carga ativa quando o ID da chamada foi vinculado sem disputa.
+  Uma chamada que repete o ID invalida essa prova, mesmo que a monitorada tenha sido
+  reconhecida antes da colisão. Um erro com ID único ainda encerra o crédito, mesmo sem
+  ID da mensagem. Colisão de outro ID não invalida a chamada ativa.
+- `1dd3224` — valida tipo, comprimento e os dois IDs de `current_origin` antes de deduzir
+  `current_call`. Descarta somente a origem inválida e retoma o trabalho a partir do
+  offset gravado. Os testes preservam duas chamadas já creditadas e as somam às três novas.
+- Treze subcasos falharam com o hook de `7811d0d` antes do conserto. Os dois testes de
+  regressão ficaram verdes em `1dd3224`. Dez mutações foram detectadas em cópia temporária,
+  após controle verde com grupo de processos isolado, timeout de 25 s e teto de 384 MiB
+  de memória virtual por processo. Cada mutação tem seu sensor nas notas de execução.
+
 ## Artefatos
 
 | Arquivo | O que contém |
 |---|---|
-| `checkpoint.md` | I1, F1 e R1–R14 com as sondas executáveis e os hashes das correções. |
-| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R14. |
+| `checkpoint.md` | I1, F1 e R1–R15 com as sondas executáveis e os hashes das correções. |
+| `checkpoint-notas.md` | Evidência de execução, isolamento do Git e resultados individuais das mutações de R9–R15. |
 | `plugins/retrofit-watch/skills/retrofit-watch/tests/test_retrofit_watch.py` | Regressões de Stop com persistência em disco. |
 | `e2e/test_retrofit_watch_stop.py` | Jornada de BUG-01 em dois Stops com transcript e estado em disco. |
 | `TODO.md` | Issue #12 e ordem legada marcadas `RESOLVED by 682cd3d` e `RESOLVED by 8fa5c7d` até o merge. |
 
 ## Boot da próxima fase
 
-Leia `checkpoint.md` e rode as 16 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
+Leia `checkpoint.md` e rode as 17 células de Check da raiz, comparando o stdout completo. Use Python 3, Git e um diretório temporário gravável. As jornadas criam transcript e estado próprios, sem iniciar o Claude Code.
 
-- Comece por R14 e F1. A célula R14 extrai a sonda de `40-review-r23.md` com `--expect`
+- Comece por R15 e F1. A célula R15 extrai a sonda de `40-review-r24.md` com `--expect`.
+  Confira silêncio para falha própria com e sem ID de mensagem, `codereview` para ID
+  distinto ou disputado, e avanço sem `errors.log` com origem intacta, curta,
+  numérica ou em objeto. A mesma célula roda a jornada de F1 e os dois testes duráveis.
+
+- Repita R14 e F1. A célula R14 extrai a sonda de `40-review-r23.md` com `--expect`
   e executa a jornada de Stop. Compare os nove pares completos, com crédito e encerramento
   preservados em disco e com a distinção entre ID ambíguo e ID aposentado.
   Para repetir a checagem das receitas de r9 e r10, extraia os blocos Python como nas células
@@ -307,7 +326,7 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
 - Um estado intermediário já salvo sem ID da chamada e sem origem de mensagem não prova qual
   chamada abriu a atribuição. Se não houver reconstrução legada, a comparação começa nas
   cargas observadas com o código novo. Ordem de slash não gravada não prova precedência.
-- R14 não repetiu as três provas de distribuição nativa que o TEST_CMD pula. O bloqueio
+- R14 e R15 não repetiram as três provas de distribuição nativa que o TEST_CMD pula. O bloqueio
   de Bubblewrap e a necessidade de repetir fora do sandbox continuam registrados abaixo.
 
 - Não houve smoke no host Claude Code ou no Windows. As jornadas foram medidas com transcripts sintéticos no formato do hook e persistência em disco.
@@ -328,6 +347,14 @@ Rode `env -u GIT_DIR -u GIT_WORK_TREE PYTHONDONTWRITEBYTECODE=1 bash -c 'source 
   dentro do namespace. Repetir no host com Bubblewrap habilitado.
 
 ## Achados fora de escopo
+
+- O snapshot intermediário que perde a ordem do slash continua no item aberto de `TODO.md`.
+  R15 não ampliou a migração para esse formato.
+- kit: A primeira execução literal de `TEST_CMD` em R15 reproduziu a herança de
+  `GIT_DIR` e `GIT_WORK_TREE` já registrada abaixo. O reflog e a árvore idêntica
+  confirmaram a ponta inicial `7811d0d`. Foram revertidas somente as referências
+  afetadas no espelho privado da sessão, sem editar a árvore de trabalho. A suíte
+  isolada passou antes e depois da correção.
 
 - kit: `bin/sdd-codex:468` exporta `GIT_DIR` e `GIT_WORK_TREE` para o Git privado. Na primeira execução literal de `TEST_CMD`, fixtures Git da loja herdaram essas variáveis, geraram commits de teste no espelho privado e a suíte terminou com 2 falhas e 146 erros. O reflog e a árvore idêntica confirmaram a ponta anterior `7bd6eeb`, restaurada no espelho sem editar a árvore de trabalho. A repetição com as duas variáveis removidas passou antes e depois da correção. Isolar as variáveis no ambiente de testes que criam repositórios evita redirecionar `git -C`. Nenhuma mudança foi feita no kit.
 

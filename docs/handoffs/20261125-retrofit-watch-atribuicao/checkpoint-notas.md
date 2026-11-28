@@ -449,3 +449,14 @@
 - 2026-11-27 22:33 · REVIEW r24 · R15 agrupa os achados 1–2 reproduzidos no Stop: ID em disputa fecha a monitorada e origem persistida inválida impede progresso. R14 e 16 Checks verdes.
 - 2026-11-27 22:34 · R15 · Para invalidar a atribuição pelo resultado de erro, exija que o ID da chamada ativa tenha vínculo não ambíguo, mesmo sem message.id. Não use ausência de origem como prova de unicidade. Na leitura do estado, valide a forma de current_origin antes de usar qualquer índice e descarte apenas a correlação inválida, preservando offset, atribuição e contadores. Cubra a colisão sustentada por outra pendência e as três formas inválidas de estado, com os controles da r24. Preserve o escopo do snapshot intermediário já registrado no backlog e repita todos os Checks anteriores.
 - intervention: sdd run --phase EXEC (the starting phase was forced from the CLI) — EXEC — 2026-11-27 22:35 · written by the runner
+- 2026-11-27 22:39 · R15 sabotage: validação-do-tipo-da-origem → active_call_failure_without_message_origin, ambiguous_call_failure_does_not_close_attribution, malformed_saved_origin_does_not_break_stop ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: validação-do-tamanho-da-origem → malformed_saved_origin_does_not_break_stop ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: validação-dos-IDs-da-origem → malformed_saved_origin_does_not_break_stop ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: remoção-da-origem-inválida-do-estado → malformed_saved_origin_does_not_break_stop ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: descarte-da-origem-inválida-antes-do-índice → malformed_saved_origin_does_not_break_stop ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: confirmação-do-ID-pela-pendência → ambiguous_call_failure_does_not_close_attribution ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: restrição-da-invalidação-ao-ID-atual → ambiguous_call_failure_does_not_close_attribution ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: revogação-do-ID-já-atribuído-ao-reaparecer → ambiguous_call_failure_does_not_close_attribution ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: bloqueio-da-atribuição-de-ID-disputado → ambiguous_call_failure_does_not_close_attribution ficou vermelho
+- 2026-11-27 22:39 · R15 sabotage: ausência-de-mensagem-como-falsa-prova-de-unicidade → ambiguous_call_failure_does_not_close_attribution ficou vermelho
+- 2026-11-27 22:40 · R15 · 1dd3224: 13 subcasos vermelhos antes do conserto, duas regressões duráveis, dez mutações detectadas, TEST_CMD com 154 testes da loja (3 pulados) e 126 do hook, 17 Checks e F1 verdes. A suíte literal herdou o Git privado. Restauradas apenas as referências afetadas no espelho e repetida a suíte isolada. Provas nativas não repetidas.
